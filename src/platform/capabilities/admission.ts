@@ -48,10 +48,11 @@ export class CapabilityAdmissionError extends Error {
       | "UNKNOWN_CAPABILITY_VERSION"
       | "RUNTIME_HANDLER_MISSING"
       | "FORBIDDEN_EXECUTABLE_CONTENT"
-      | "CAPABILITY_UNAVAILABLE"
+      | "CAPABILITY_DISABLED"
       | "CAPABILITY_REVOKED"
+      | "CAPABILITY_DEPENDENCY_UNAVAILABLE"
+      | "REGISTRY_SNAPSHOT_MISMATCH"
       | "RESOURCE_LIMIT_EXCEEDED"
-      | "DEPENDENCY_UNAVAILABLE"
       | "INVALID_DEPENDENCY_VERSION_RANGE",
     message: string
   ) {
@@ -216,8 +217,14 @@ function assertEligible(definition: CapabilityDefinition, context: CapabilityAdm
   if (outcome === "REVOKED") {
     throw new CapabilityAdmissionError("CAPABILITY_REVOKED", `${refKey(definition)} is revoked.`);
   }
-  if (definition.lifecycle.availability !== "ENABLED" || outcome === "INCOMPATIBLE") {
-    throw new CapabilityAdmissionError("CAPABILITY_UNAVAILABLE", `${refKey(definition)} is unavailable.`);
+  if (definition.lifecycle.availability !== "ENABLED") {
+    throw new CapabilityAdmissionError("CAPABILITY_DISABLED", `${refKey(definition)} is disabled.`);
+  }
+  if (outcome === "INCOMPATIBLE") {
+    throw new CapabilityAdmissionError(
+      "REGISTRY_SNAPSHOT_MISMATCH",
+      `${refKey(definition)} is incompatible with the current registry snapshot.`
+    );
   }
   if (!context.trustedRuntimeRegistrationKeys.has(definition.runtime.registrationKey)) {
     throw new CapabilityAdmissionError(
@@ -246,22 +253,52 @@ function buildVersionIndex(source: RegistrySource): ReadonlyMap<string, readonly
   return byId;
 }
 
+function copyTrialState(target: DependencyState, trial: DependencyState): void {
+  target.visiting.clear();
+  target.admitted.clear();
+  for (const key of trial.visiting) {
+    target.visiting.add(key);
+  }
+  for (const key of trial.admitted) {
+    target.admitted.add(key);
+  }
+  target.dependencies.splice(0, target.dependencies.length, ...trial.dependencies);
+}
+
+function trialState(state: DependencyState): DependencyState {
+  return {
+    context: state.context,
+    byId: state.byId,
+    visiting: new Set(state.visiting),
+    admitted: new Set(state.admitted),
+    dependencies: [...state.dependencies]
+  };
+}
+
 function resolveRequiredDependency(
   id: string,
   versionRange: string,
   state: DependencyState
 ): CapabilityDefinition {
-  const candidates = state.byId.get(id) ?? [];
-  const definition = candidates.find((candidate) =>
+  const candidates = (state.byId.get(id) ?? []).filter((candidate) =>
     matchesCapabilityVersionRange(candidate.version, versionRange)
   );
-  if (definition === undefined) {
-    throw new CapabilityAdmissionError(
-      "DEPENDENCY_UNAVAILABLE",
-      `Required dependency ${id}@${versionRange} is unavailable.`
-    );
+  for (const candidate of candidates) {
+    const trial = trialState(state);
+    try {
+      admitDependencies(candidate, trial);
+      copyTrialState(state, trial);
+      return candidate;
+    } catch (error: unknown) {
+      if (!(error instanceof CapabilityAdmissionError)) {
+        throw error;
+      }
+    }
   }
-  return definition;
+  throw new CapabilityAdmissionError(
+    "CAPABILITY_DEPENDENCY_UNAVAILABLE",
+    `Required dependency ${id}@${versionRange} is unavailable.`
+  );
 }
 
 function admitDependencies(definition: CapabilityDefinition, state: DependencyState): void {
@@ -270,7 +307,10 @@ function admitDependencies(definition: CapabilityDefinition, state: DependencySt
     return;
   }
   if (state.visiting.has(key)) {
-    throw new CapabilityAdmissionError("DEPENDENCY_UNAVAILABLE", `Dependency cycle reached at ${key}.`);
+    throw new CapabilityAdmissionError(
+      "CAPABILITY_DEPENDENCY_UNAVAILABLE",
+      `Dependency cycle reached at ${key}.`
+    );
   }
   state.visiting.add(key);
   assertEligible(definition, state.context);
@@ -279,7 +319,6 @@ function admitDependencies(definition: CapabilityDefinition, state: DependencySt
       continue;
     }
     const resolved = resolveRequiredDependency(dependency.id, dependency.versionRange, state);
-    admitDependencies(resolved, state);
     state.dependencies.push({ id: resolved.id, version: resolved.version });
   }
   state.visiting.delete(key);

@@ -65,7 +65,7 @@ function expectDependencyFailure(
   registry: RegistrySource,
   admissionContext = context(registry)
 ): void {
-  expectAdmissionFailure(registry, admissionContext, "DEPENDENCY_UNAVAILABLE");
+  expectAdmissionFailure(registry, admissionContext, "CAPABILITY_DEPENDENCY_UNAVAILABLE");
 }
 
 function expectAdmissionFailure(
@@ -112,13 +112,13 @@ describe("required capability dependency admission", () => {
     expectAdmissionFailure(
       disabledSource,
       context(disabledSource),
-      "CAPABILITY_UNAVAILABLE"
+      "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
 
     expectAdmissionFailure(
       eligibleSource,
       context(eligibleSource, [dependency.runtime.registrationKey]),
-      "RUNTIME_HANDLER_MISSING"
+      "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
 
     expectAdmissionFailure(
@@ -128,7 +128,7 @@ describe("required capability dependency admission", () => {
         [],
         new Map([[`${dependency.id}@${dependency.version}`, "REVOKED"]])
       ),
-      "CAPABILITY_REVOKED"
+      "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
 
     const unavailableLeaf = definition(leaf.id, leaf.version, leaf.compatibility.dependencies, "DISABLED");
@@ -136,7 +136,38 @@ describe("required capability dependency admission", () => {
     expectAdmissionFailure(
       unavailableTransitiveSource,
       context(unavailableTransitiveSource),
-      "CAPABILITY_UNAVAILABLE"
+      "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
+
+    const disabledNewer = definition(dependency.id, "1.9.0", [], "DISABLED");
+    const eligibleOlder = definition(dependency.id, "1.5.0");
+    const multiVersionRoot = definition(root.id, root.version, [
+      { id: dependency.id, versionRange: "^1.0.0", required: true }
+    ]);
+    const multiVersionSource = source([multiVersionRoot, disabledNewer, eligibleOlder]);
+    expect(admitCapability(request(), context(multiVersionSource))).toEqual({
+      capability: { id: multiVersionRoot.id, version: multiVersionRoot.version },
+      requiredDependencies: [{ id: eligibleOlder.id, version: eligibleOlder.version }]
+    });
+
+    const bridge = definition("bridge.capability", "1.0.0", [
+      { id: dependency.id, versionRange: "^1.0.0", required: true }
+    ]);
+    const transitiveRoot = definition(root.id, root.version, [
+      { id: bridge.id, versionRange: "1.0.0", required: true }
+    ]);
+    const transitiveMultiVersionSource = source([
+      transitiveRoot,
+      bridge,
+      disabledNewer,
+      eligibleOlder
+    ]);
+    expect(admitCapability(request(), context(transitiveMultiVersionSource))).toEqual({
+      capability: { id: transitiveRoot.id, version: transitiveRoot.version },
+      requiredDependencies: [
+        { id: eligibleOlder.id, version: eligibleOlder.version },
+        { id: bridge.id, version: bridge.version }
+      ]
+    });
   });
 });

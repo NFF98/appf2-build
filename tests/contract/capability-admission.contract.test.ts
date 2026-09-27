@@ -93,7 +93,7 @@ describe("capability trust admission contract", () => {
 
     expectAdmissionError(
       () => admitCapability(request(), context(disabledSource)),
-      "CAPABILITY_UNAVAILABLE"
+      "CAPABILITY_DISABLED"
     );
     expectAdmissionError(
       () =>
