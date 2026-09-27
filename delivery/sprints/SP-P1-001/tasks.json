@@ -316,7 +316,7 @@
         "BL-P1-031"
       ],
       "title": "Implement anonymous identity and privacy boundary",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Generate first-party random anonymous_id and browser-session identity without fingerprinting.",
@@ -399,7 +399,7 @@
         "BL-P1-032"
       ],
       "title": "Implement evidence envelope, intake validation and idempotent ingestion",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Implement event envelope/registry validation, property allowlist and payload bounds.",
