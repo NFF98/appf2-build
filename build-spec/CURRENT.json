@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-001",
-  "implementation_enabled": true,
-  "reason": "Human Sprint Activation approved for SP-P1-001 under locked BS-P1-001; implementation remains enabled while the active Sprint is in execution."
+  "implementation_enabled": false,
+  "reason": "BF-007 evidence property schema SPEC_AMBIGUITY HOLD; Product implementation is paused until replacement Build Spec rebaseline is approved and activated."
 }
