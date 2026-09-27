@@ -7,7 +7,7 @@
   "sha256": null,
   "recorded_at": "2026-09-27T03:11:00Z",
   "blocking_findings": [],
-  "source_commit": "32eed692975df9b5343f10b6ddc1c99360f3a85c",
+  "source_commit": "825ca65a51e20c719db6394a2aaf0537b4d31fe9",
   "evidence_id": "EV-SP-P1-001-T001-002",
   "kind": "COMMAND_RESULT",
   "acceptance_ids": [],
