@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-001",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T004",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-09-27T08:20:00Z",
+  "blocking_findings": [],
+  "source_commit": "9e5c758ff823de611a6bec786090cd5bac92f646",
+  "evidence_id": "EV-SP-P1-001-T004-001",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F02-AC-001",
+    "F02-AC-002",
+    "F02-AC-003",
+    "F02-AC-018"
+  ],
+  "test_ids": [
+    "TEST-F02-001",
+    "TEST-F02-002",
+    "TEST-F02-003",
+    "TEST-F02-AC-018"
+  ],
+  "locator": "command://npm-cmd-run-product-ci/2026-09-27#mapped-4-of-4",
+  "command": null,
+  "review_checks": null
+}
