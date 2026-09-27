@@ -34,11 +34,16 @@ export interface CapabilityAdmissionContext {
   readonly source: RegistrySource;
   readonly trustedRuntimeRegistrationKeys: ReadonlySet<string>;
   readonly compatibilityOutcomes?: ReadonlyMap<string, CompatibilityOutcome>;
+  readonly allowExperimental?: boolean;
 }
 
 export interface CapabilityAdmission {
   readonly capability: CapabilityRef;
   readonly requiredDependencies: readonly CapabilityRef[];
+}
+
+export interface CapabilityAdmissionResolver {
+  admit(request: unknown): CapabilityAdmission;
 }
 
 export class CapabilityAdmissionError extends Error {
@@ -217,7 +222,10 @@ function assertEligible(definition: CapabilityDefinition, context: CapabilityAdm
   if (outcome === "REVOKED") {
     throw new CapabilityAdmissionError("CAPABILITY_REVOKED", `${refKey(definition)} is revoked.`);
   }
-  if (definition.lifecycle.availability !== "ENABLED") {
+  const unavailable =
+    definition.lifecycle.availability === "DISABLED" ||
+    (definition.lifecycle.availability === "EXPERIMENTAL" && context.allowExperimental !== true);
+  if (unavailable) {
     throw new CapabilityAdmissionError("CAPABILITY_DISABLED", `${refKey(definition)} is disabled.`);
   }
   if (outcome === "INCOMPATIBLE") {
@@ -340,12 +348,11 @@ function assertUsageWithinBudget(
   }
 }
 
-export function admitCapability(
-  request: unknown,
-  context: CapabilityAdmissionContext
+function admitParsed(
+  parsed: ParsedAdmissionRequest,
+  context: CapabilityAdmissionContext,
+  versionIndex: ReadonlyMap<string, readonly CapabilityDefinition[]>
 ): CapabilityAdmission {
-  const parsed = parseAdmissionRequest(request);
-  const versionIndex = buildVersionIndex(context.source);
   const versions = versionIndex.get(parsed.capability.id);
   if (versions === undefined) {
     throw new CapabilityAdmissionError(
@@ -370,4 +377,22 @@ export function admitCapability(
     dependencies
   });
   return { capability: parsed.capability, requiredDependencies: dependencies };
+}
+
+export function createCapabilityAdmissionResolver(
+  context: CapabilityAdmissionContext
+): CapabilityAdmissionResolver {
+  const versionIndex = buildVersionIndex(context.source);
+  return {
+    admit(request: unknown): CapabilityAdmission {
+      return admitParsed(parseAdmissionRequest(request), context, versionIndex);
+    }
+  };
+}
+
+export function admitCapability(
+  request: unknown,
+  context: CapabilityAdmissionContext
+): CapabilityAdmission {
+  return createCapabilityAdmissionResolver(context).admit(request);
 }
