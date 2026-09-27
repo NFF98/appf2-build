@@ -5,5 +5,5 @@
   "active_task": "T002",
   "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human T002 Activation pending/approved transition: T001 closed with complete Evidence; T002 is the sole active Task."
+  "reason": "T001 closed with complete Evidence; T002 is the sole active Task under SP-P1-001."
 }
