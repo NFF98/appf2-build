@@ -4,9 +4,7 @@ import { execFileSync } from "node:child_process";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
-const exists=r=>fs.existsSync(path.join(root,r));
 const current=read("delivery/CURRENT-SPRINT.json");
-const build=read("build-spec/CURRENT.json");
 const requireActive=process.env.REQUIRE_ACTIVE_TASK_TESTS==="1";
 const testRoots=["tests/unit","tests/contract","tests/behavior","tests/api","tests/runtime","tests/state-machine","tests/e2e","tests/accessibility","tests/responsive","tests/visual","tests/regression"];
 const testFiles=[];
@@ -26,6 +24,14 @@ const idsIn=text=>{
   const re=/(?:test|it)\s*\(\s*["'`]([^"'`]*(TEST-[A-Z0-9-]+)[^"'`]*)["'`]/g;
   let m; while((m=re.exec(text))) ids.push(m[2]);
   return ids;
+};
+const idsAtRef=(base,rel)=>{
+  try{return idsIn(execFileSync("git",["show",base+":"+rel],{encoding:"utf8"}));}
+  catch{return [];}
+};
+const changedFilesFrom=(base,head)=>{
+  try{return execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
+  catch{return [];}
 };
 for(const abs of testFiles){
   const rel=path.relative(root,abs).replaceAll("\\","/");
@@ -54,15 +60,12 @@ if(requireActive){
 // A later Task may not silently rewrite executable tests owned by another Task.
 const base=process.env.BASE_SHA;
 if(activeTask && base && !/^0+$/.test(base)){
-  let changed=[];
-  try{changed=execFileSync("git",["diff","--name-only",base,process.env.HEAD_SHA||"HEAD"],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
-  catch{}
+  const changed=changedFilesFrom(base,process.env.HEAD_SHA||"HEAD");
   const activeIds=new Set((activeTask.acceptance_links||[]).map(x=>x.test_id));
   for(const rel of changed.filter(p=>p.startsWith("tests/") && /\.(?:test|spec)\.(?:ts|tsx)$/.test(p))){
-    try{
-      const old=execFileSync("git",["show",base+":"+rel],{encoding:"utf8"});
-      for(const id of idsIn(old)) if(!activeIds.has(id)) errors.push("Active Task may not modify previously existing mapped Test "+id+" in "+rel);
-    }catch{}
+    for(const id of idsAtRef(base,rel)){
+      if(!activeIds.has(id)) errors.push("Active Task may not modify previously existing mapped Test "+id+" in "+rel);
+    }
   }
 }
 
