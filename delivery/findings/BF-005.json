@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-005",
+  "classification": "IMPLEMENTATION_BUG",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-001",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T001",
+  "expected": "F04-AC-007 rejects every logical capability ID dependency cycle declared by any capability version in a registry snapshot.",
+  "actual": "Closure audit found that dependency edges were stored in a last-write-wins Map keyed by capability ID, allowing a later version to overwrite an earlier version's edges and conceal a cycle.",
+  "evidence": [
+    "audit://T001-closure/F04-AC-007-multi-version-cycle"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "CLOSURE_AUDIT_MULTI_VERSION_COUNTEREXAMPLE",
+      "result": "FAILED",
+      "evidence": "alpha.node@2.0.0 overwrote alpha.node@1.0.0 dependency edges before cycle traversal."
+    }
+  ],
+  "affected_contracts": [],
+  "affected_acceptance": [
+    "F04-AC-007"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}
