@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-001",
   "active_task": "T003",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T002 closed with complete final Evidence; T003 is the sole active Task under SP-P1-001."
+  "reason": "T003 implementation and normalized final Evidence package merged; T003 is under final review. No next Task is activated."
 }
