@@ -2,8 +2,8 @@
   "schema_version": 1,
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-001",
-  "active_task": "T004",
-  "status": "REVIEW",
+  "active_task": "T005",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T004 implementation and normalized final Evidence package merged; T004 is under final review. T005 is not activated."
+  "reason": "T004 closed with normalized final Evidence; T005 is the sole active Task under SP-P1-001."
 }
