@@ -1,0 +1,32 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-001",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T002",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-09-27T06:16:42Z",
+  "blocking_findings": [],
+  "source_commit": "29f3a8a3dbea356165f67f4886c874e168d2d3ce",
+  "evidence_id": "EV-SP-P1-001-T002-001",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F04-AC-004",
+    "F04-AC-005",
+    "F04-AC-008",
+    "F04-AC-009",
+    "F04-AC-010",
+    "F04-AC-011"
+  ],
+  "test_ids": [
+    "TEST-F04-004",
+    "TEST-F04-005",
+    "TEST-F04-008",
+    "TEST-F04-009",
+    "TEST-F04-AC-010",
+    "TEST-F04-AC-011"
+  ],
+  "locator": "command://npm-cmd-test-contract-behavior-runtime/2026-09-27#11-of-11",
+  "command": null,
+  "review_checks": null
+}
