@@ -2,8 +2,8 @@
   "schema_version": 1,
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-001",
-  "active_task": "T001",
-  "status": "REVIEW",
+  "active_task": "T002",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T001 closure package merged and complete Evidence bound; T001 is under final review. T002 is not activated."
+  "reason": "Human T002 Activation pending/approved transition: T001 closed with complete Evidence; T002 is the sole active Task."
 }

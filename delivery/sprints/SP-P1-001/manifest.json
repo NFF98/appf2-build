@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "sprint_id": "SP-P1-001",
-  "status": "REVIEW",
+  "status": "ACTIVE",
   "build_spec_id": "BS-P1-001",
   "goal": "Establish Phase 1 platform foundations: trusted Capability Registry, canonical Blueprint identity, anonymous identity, and safe evidence intake primitives that unblock later validation/compiler/runtime work.",
   "scope": [
