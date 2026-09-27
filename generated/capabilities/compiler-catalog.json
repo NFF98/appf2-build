@@ -1,0 +1,290 @@
+{
+  "capabilities": [
+    {
+      "events": [
+        "press"
+      ],
+      "id": "action.button",
+      "intent_classes": [
+        "action",
+        "button"
+      ],
+      "meaning": "Trigger an action from an explicit user gesture.",
+      "public_parameters": [
+        "disabled"
+      ],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use for user-initiated actions."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "content.card",
+      "intent_classes": [
+        "card",
+        "grouped_content"
+      ],
+      "meaning": "Present a semantically grouped content card.",
+      "public_parameters": [
+        "title",
+        "description",
+        "children"
+      ],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use when related content needs a titled group."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "content.list",
+      "intent_classes": [
+        "list",
+        "repeated_content"
+      ],
+      "meaning": "Present a bounded list using a declarative item template.",
+      "public_parameters": [
+        "items",
+        "item_template"
+      ],
+      "rejection_hints": [
+        "Do not use arbitrary template code."
+      ],
+      "selection_hints": [
+        "Use for bounded repeated content."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "content.text",
+      "intent_classes": [
+        "text",
+        "label",
+        "heading"
+      ],
+      "meaning": "Present literal or derived text.",
+      "public_parameters": [
+        "text"
+      ],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use for human-readable textual content."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "data.stat",
+      "intent_classes": [
+        "statistic",
+        "metric",
+        "result"
+      ],
+      "meaning": "Present an important value or metric.",
+      "public_parameters": [
+        "value"
+      ],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use to emphasize a single value."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "data.table_basic",
+      "intent_classes": [
+        "table",
+        "tabular_data"
+      ],
+      "meaning": "Present bounded rows and columns without executable cell renderers.",
+      "public_parameters": [
+        "rows"
+      ],
+      "rejection_hints": [
+        "Do not use arbitrary cell renderer code."
+      ],
+      "selection_hints": [
+        "Use for bounded tabular data."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [
+        "change"
+      ],
+      "id": "input.number",
+      "intent_classes": [
+        "numeric_input",
+        "calculator",
+        "budget"
+      ],
+      "meaning": "Edit a numeric value bound to typed runtime state.",
+      "public_parameters": [
+        "bind"
+      ],
+      "rejection_hints": [
+        "Do not use for display-only values."
+      ],
+      "selection_hints": [
+        "Use when the user must edit a numeric value."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [
+        "change"
+      ],
+      "id": "input.select",
+      "intent_classes": [
+        "selection",
+        "chooser",
+        "form"
+      ],
+      "meaning": "Select one value from a bounded local option set.",
+      "public_parameters": [
+        "bind"
+      ],
+      "rejection_hints": [
+        "Do not use a remote option loader in Phase 1."
+      ],
+      "selection_hints": [
+        "Use for a bounded set of local options."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [
+        "change"
+      ],
+      "id": "input.text",
+      "intent_classes": [
+        "text_input",
+        "form"
+      ],
+      "meaning": "Edit bounded text bound to typed runtime state.",
+      "public_parameters": [
+        "bind"
+      ],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use when the user must enter bounded text."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [
+        "change"
+      ],
+      "id": "input.toggle",
+      "intent_classes": [
+        "boolean_input",
+        "toggle",
+        "form"
+      ],
+      "meaning": "Edit a boolean value bound to typed runtime state.",
+      "public_parameters": [
+        "bind"
+      ],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use for a boolean choice."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "layout.container",
+      "intent_classes": [
+        "layout",
+        "grouping"
+      ],
+      "meaning": "Compose child nodes with bounded layout configuration.",
+      "public_parameters": [
+        "children"
+      ],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use to arrange child nodes in rows or columns."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "logic.random",
+      "intent_classes": [
+        "randomizer",
+        "chooser",
+        "dice"
+      ],
+      "meaning": "Produce bounded random outcomes through the Runtime RNG service.",
+      "public_parameters": [],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use when a seeded random outcome is required."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [
+        "change"
+      ],
+      "id": "logic.score",
+      "intent_classes": [
+        "score",
+        "counter",
+        "game"
+      ],
+      "meaning": "Maintain bounded score state.",
+      "public_parameters": [],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use for a bounded score or counter."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [
+        "complete"
+      ],
+      "id": "logic.timer",
+      "intent_classes": [
+        "timer",
+        "countdown"
+      ],
+      "meaning": "Maintain bounded timer state.",
+      "public_parameters": [],
+      "rejection_hints": [],
+      "selection_hints": [
+        "Use for bounded countdown or elapsed-time behavior."
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "events": [],
+      "id": "system.notice",
+      "intent_classes": [
+        "notice",
+        "status",
+        "recovery"
+      ],
+      "meaning": "Present a human-facing notice or recovery direction.",
+      "public_parameters": [
+        "action_refs"
+      ],
+      "rejection_hints": [
+        "Do not expose raw internal error details."
+      ],
+      "selection_hints": [
+        "Use for safe consumer-facing status and recovery messages."
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "registry_digest": "567c227d8f0726a7a3bfa50b357ce933d48ab5aaa629b25bfcac3cab4fb6bafa",
+  "registry_version": "1.0.0"
+}
