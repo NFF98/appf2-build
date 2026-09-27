@@ -82,7 +82,7 @@
         "BL-P1-002"
       ],
       "title": "Enforce capability trust, admission and dependency safety",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Reject unknown capability/version and unavailable trusted runtime mappings.",
@@ -166,7 +166,7 @@
         "BL-P1-002"
       ],
       "title": "Implement capability coverage and degradation semantics",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Produce complete material-requirement Coverage Result statuses.",
