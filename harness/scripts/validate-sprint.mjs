@@ -30,6 +30,36 @@ const sprintRoot=path.join(root,"delivery/sprints");
 const sprintDirs=fs.existsSync(sprintRoot)
   ? fs.readdirSync(sprintRoot,{withFileTypes:true}).filter(x=>x.isDirectory() && /^SP-P\d+-\d{3}$/.test(x.name)).map(x=>x.name)
   : [];
+const validateActiveTaskDependencies=(active,taskById)=>{
+  for(const dep of active.blocked_by||[]){
+    const d=taskById.get(dep);
+    if(d && !["VERIFIED","CLOSED"].includes(d.status)){
+      errors.push("active_task "+active.task_id+" blocked_by unfinished Task "+dep+" ("+d.status+")");
+    }
+  }
+};
+const validateActiveTask=td=>{
+  const taskById=new Map((td.tasks||[]).map(t=>[t.task_id,t]));
+  const active=taskById.get(cs.active_task);
+  if(!active){
+    errors.push("active_task not found: "+cs.active_task);
+    return;
+  }
+  const allowed={ACTIVE:new Set(["IN_PROGRESS"]),REVIEW:new Set(["REVIEW"]),BLOCKED:new Set(["BLOCKED"])};
+  if(!allowed[cs.status]?.has(active.status)) errors.push("active_task status "+active.status+" incompatible with Sprint "+cs.status);
+  validateActiveTaskDependencies(active,taskById);
+};
+const validateActiveSprint=v=>{
+  const {m,td}=v;
+  if(!cb.implementation_enabled) errors.push("Active Sprint requires implementation_enabled=true");
+  if(cs.active_build_spec!==cb.active_baseline || m.build_spec_id!==cb.active_baseline) errors.push("Active Sprint Build Spec mismatch");
+  if(!["ACTIVE","BLOCKED","REVIEW"].includes(cs.status)) errors.push("CURRENT active Sprint status must be ACTIVE/BLOCKED/REVIEW");
+  if(m.status==="PLANNED") errors.push("Active Sprint manifest may not remain PLANNED");
+  if(m.entry_gate?.user_approved!==true || !m.entry_gate?.approval_ref) errors.push("Active Sprint requires Human approval reference");
+  validateActiveTask(td);
+  const activeCount=(td.tasks||[]).filter(t=>["IN_PROGRESS","REVIEW"].includes(t.status)).length;
+  if(activeCount>1) errors.push("Only one Task may be IN_PROGRESS/REVIEW at a time");
+};
 
 const validated=new Map();
 for(const sid of sprintDirs){
@@ -147,27 +177,7 @@ if(cs.active_sprint===null){
 }else{
   const v=validated.get(cs.active_sprint);
   if(!v) errors.push("CURRENT active Sprint missing or invalid: "+cs.active_sprint);
-  else{
-    const {m,td}=v;
-    if(!cb.implementation_enabled) errors.push("Active Sprint requires implementation_enabled=true");
-    if(cs.active_build_spec!==cb.active_baseline || m.build_spec_id!==cb.active_baseline) errors.push("Active Sprint Build Spec mismatch");
-    if(!["ACTIVE","BLOCKED","REVIEW"].includes(cs.status)) errors.push("CURRENT active Sprint status must be ACTIVE/BLOCKED/REVIEW");
-    if(m.status==="PLANNED") errors.push("Active Sprint manifest may not remain PLANNED");
-    if(m.entry_gate?.user_approved!==true || !m.entry_gate?.approval_ref) errors.push("Active Sprint requires Human approval reference");
-    const taskById=new Map((td.tasks||[]).map(t=>[t.task_id,t]));
-    const active=taskById.get(cs.active_task);
-    if(!active) errors.push("active_task not found: "+cs.active_task);
-    else{
-      const allowed={ACTIVE:new Set(["IN_PROGRESS"]),REVIEW:new Set(["REVIEW"]),BLOCKED:new Set(["BLOCKED"])};
-      if(!allowed[cs.status]?.has(active.status)) errors.push("active_task status "+active.status+" incompatible with Sprint "+cs.status);
-      for(const dep of active.blocked_by||[]){
-        const d=taskById.get(dep);
-        if(d && !["VERIFIED","CLOSED"].includes(d.status)) errors.push("active_task "+active.task_id+" blocked_by unfinished Task "+dep+" ("+d.status+")");
-      }
-    }
-    const activeCount=(td.tasks||[]).filter(t=>["IN_PROGRESS","REVIEW"].includes(t.status)).length;
-    if(activeCount>1) errors.push("Only one Task may be IN_PROGRESS/REVIEW at a time");
-  }
+  else validateActiveSprint(v);
 }
 
 if(errors.length){console.error("SPRINT GATE: FAIL");errors.forEach(e=>console.error("- "+e));process.exit(1);}
