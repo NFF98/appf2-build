@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-001",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T005",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-09-27T08:58:53Z",
+  "blocking_findings": [],
+  "source_commit": "fafa5bc49e9f02c7e1cc8fa8aca7b87b12f0cc7a",
+  "evidence_id": "EV-SP-P1-001-T005-007",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "command://npm-cmd-run-test-behavior/2026-09-27#pass",
+  "command": "npm run test:behavior",
+  "review_checks": null
+}
