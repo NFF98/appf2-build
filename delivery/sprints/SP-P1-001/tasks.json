@@ -8,7 +8,7 @@
         "BL-P1-001"
       ],
       "title": "Build canonical capability registry source and deterministic artifacts",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Implement F04 canonical CapabilityDefinition source contract.",
@@ -64,7 +64,17 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-001-T001-001",
+        "EV-SP-P1-001-T001-002",
+        "EV-SP-P1-001-T001-003",
+        "EV-SP-P1-001-T001-004",
+        "EV-SP-P1-001-T001-005",
+        "EV-SP-P1-001-T001-006",
+        "EV-SP-P1-001-T001-007",
+        "EV-SP-P1-001-T001-008",
+        "EV-SP-P1-001-T001-009"
+      ]
     },
     {
       "task_id": "T002",
