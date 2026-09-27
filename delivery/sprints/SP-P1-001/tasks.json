@@ -243,7 +243,7 @@
         "BL-P1-004"
       ],
       "title": "Implement canonical Blueprint serialization and content identity",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Implement canonical Blueprint serialization.",
@@ -296,7 +296,19 @@
       "blocked_by": [
         "T001"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-001-T004-001",
+        "EV-SP-P1-001-T004-002",
+        "EV-SP-P1-001-T004-003",
+        "EV-SP-P1-001-T004-004",
+        "EV-SP-P1-001-T004-005",
+        "EV-SP-P1-001-T004-006",
+        "EV-SP-P1-001-T004-007",
+        "EV-SP-P1-001-T004-008",
+        "EV-SP-P1-001-T004-009",
+        "EV-SP-P1-001-T004-010",
+        "EV-SP-P1-001-T004-011"
+      ]
     },
     {
       "task_id": "T005",
