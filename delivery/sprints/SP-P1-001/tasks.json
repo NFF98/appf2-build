@@ -82,7 +82,7 @@
         "BL-P1-002"
       ],
       "title": "Enforce capability trust, admission and dependency safety",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Reject unknown capability/version and unavailable trusted runtime mappings.",
@@ -145,7 +145,20 @@
       "blocked_by": [
         "T001"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-001-T002-013",
+        "EV-SP-P1-001-T002-014",
+        "EV-SP-P1-001-T002-015",
+        "EV-SP-P1-001-T002-016",
+        "EV-SP-P1-001-T002-017",
+        "EV-SP-P1-001-T002-018",
+        "EV-SP-P1-001-T002-019",
+        "EV-SP-P1-001-T002-020",
+        "EV-SP-P1-001-T002-021",
+        "EV-SP-P1-001-T002-022",
+        "EV-SP-P1-001-T002-023",
+        "EV-SP-P1-001-T002-024"
+      ]
     },
     {
       "task_id": "T003",
