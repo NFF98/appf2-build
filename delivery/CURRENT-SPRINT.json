@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-001",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T005 closed with normalized final Evidence; BL-P1-031 is DONE; T006 is the sole active Task under SP-P1-001."
+  "reason": "T006 blocked by BF-007: locked evidence event registry defines allowed property names but not event-specific property types/enums required by F07 intake validation. Rebaseline required before implementation can resume."
 }
