@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-007",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-001",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T006",
+  "expected": "F07-RQ-009 requires server-side evidence intake to validate property types and bounds using locked event contract truth without inventing Product semantics.",
+  "actual": "BS-P1-001 evidence-event-registry entries provide allowed property names but no event-specific machine-readable property type, enum, or per-property bound contract. A generic validator therefore cannot complete the locked property-types validation requirement deterministically without inventing semantics.",
+  "evidence": [
+    "build-spec://BS-P1-001/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md#F07-RQ-009-property-types-bounds",
+    "build-spec://BS-P1-001/registries/evidence-event-registry.json#entries-allowed_properties-without-property-schema"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "IMPLEMENT_LOCKED_REGISTRY_PROPERTY_VALIDATION",
+      "result": "FAILED",
+      "evidence": "Registry entry schema exposes event_type/function_id/schema_version/allowed_properties but no machine-readable type, enum, or property-specific bounds for those properties."
+    }
+  ],
+  "affected_contracts": [
+    "F07-RQ-009",
+    "F07-SEC-007"
+  ],
+  "affected_acceptance": [
+    "F07-AC-008"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
