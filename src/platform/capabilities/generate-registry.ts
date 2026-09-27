@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+import {
+  assertResourceBudgetWithinGlobalCeilings,
+  CapabilityAdmissionError,
+  matchesCapabilityVersionRange
+} from "./admission.js";
 import { CAPABILITY_REGISTRY_SOURCE } from "./registry.js";
 import type { CapabilityDefinition, RegistrySource } from "./schema/capability-definition.js";
 
@@ -16,6 +21,8 @@ export class RegistryGenerationError extends Error {
       | "DEPENDENCY_CYCLE"
       | "INVALID_CAPABILITY_ID"
       | "INVALID_VERSION"
+      | "INVALID_DEPENDENCY_VERSION_RANGE"
+      | "RESOURCE_CEILING_EXCEEDED"
       | "REGISTRY_VERSION_DIGEST_MISMATCH",
     message: string
   ) {
@@ -154,6 +161,29 @@ function assertAcyclicDependencies(definitions: readonly CapabilityDefinition[])
   }
 }
 
+function assertSafetyContracts(definitions: readonly CapabilityDefinition[]): void {
+  for (const definition of definitions) {
+    try {
+      assertResourceBudgetWithinGlobalCeilings(definition.runtime.resourceBudget);
+    } catch (error: unknown) {
+      if (error instanceof CapabilityAdmissionError) {
+        throw new RegistryGenerationError("RESOURCE_CEILING_EXCEEDED", error.message);
+      }
+      throw error;
+    }
+    for (const dependency of definition.compatibility.dependencies) {
+      try {
+        matchesCapabilityVersionRange("0.0.0", dependency.versionRange);
+      } catch (error: unknown) {
+        if (error instanceof CapabilityAdmissionError) {
+          throw new RegistryGenerationError("INVALID_DEPENDENCY_VERSION_RANGE", error.message);
+        }
+        throw error;
+      }
+    }
+  }
+}
+
 export function validateRegistrySource(source: RegistrySource): void {
   if (!SEMVER_PATTERN.test(source.registryVersion) || !SEMVER_PATTERN.test(source.runtimeVersion)) {
     throw new RegistryGenerationError("INVALID_VERSION", "Registry and runtime versions must be SemVer.");
@@ -162,6 +192,7 @@ export function validateRegistrySource(source: RegistrySource): void {
   assertValidIdentifiers(definitions);
   assertUniqueRefs(definitions);
   assertAcyclicDependencies(definitions);
+  assertSafetyContracts(definitions);
 }
 
 export function assertRegistryVersionIntegrity(
