@@ -243,7 +243,7 @@
         "BL-P1-004"
       ],
       "title": "Implement canonical Blueprint serialization and content identity",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Implement canonical Blueprint serialization.",
@@ -316,7 +316,7 @@
         "BL-P1-031"
       ],
       "title": "Implement anonymous identity and privacy boundary",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Generate first-party random anonymous_id and browser-session identity without fingerprinting.",
