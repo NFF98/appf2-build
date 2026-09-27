@@ -6,6 +6,13 @@ const sprint=JSON.parse(fs.readFileSync("delivery/CURRENT-SPRINT.json","utf8"));
 const policy=JSON.parse(fs.readFileSync("ci/policy.json","utf8"));
 const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
 
+const npmExecPath=process.env.npm_execpath;
+const runNpmScript=script=>spawnSync(
+  npmExecPath?process.execPath:"npm",
+  npmExecPath?[npmExecPath,"run",script]:["run",script],
+  {stdio:"inherit",shell:false,env:process.env}
+);
+
 if(!current.implementation_enabled){
   console.log("PRODUCT CI: HOLD — implementation not enabled.");
   process.exit(0);
@@ -60,7 +67,7 @@ if(r.status!==0) process.exit(r.status||1);
 
 for(const script of scripts){
   console.log("\n> npm run "+script);
-  r=spawnSync("npm",["run",script],{stdio:"inherit",shell:false});
+  r=runNpmScript(script);
   if(r.status!==0) process.exit(r.status||1);
 }
 console.log("PRODUCT CI: PASS");
