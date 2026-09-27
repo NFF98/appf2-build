@@ -23,6 +23,43 @@ const getDelta=id=>{
   const rel="delivery/deltas/"+id+".json";
   return exists(rel)?readJson(rel):null;
 };
+const showJsonAt=(base,rel)=>{
+  try{return JSON.parse(execFileSync("git",["show",base+":"+rel],{encoding:"utf8"}));}
+  catch{return null;}
+};
+const activationTouched=(base,head,baselineId)=>{
+  let diff="";
+  try{diff=execFileSync("git",["diff","--name-status","-M",base,head],{encoding:"utf8"});}
+  catch{errors.push("Unable to inspect CURRENT activation diff");}
+  const activationPath="build-spec/activations/"+baselineId+".json";
+  const touched=diff.split("\n").some(line=>line.split("\t").slice(1).includes(activationPath));
+  if(!touched) errors.push("CURRENT transition requires Activation Record in the same change: "+activationPath);
+};
+const validateRebaseline=(base,oldCurrent,current,a)=>{
+  if(a.type!=="REBASELINE" || a.previous_baseline!==oldCurrent.active_baseline){
+    errors.push("CURRENT rebaseline must supersede previous active baseline");
+  }
+  const oldSprint=showJsonAt(base,"delivery/CURRENT-SPRINT.json");
+  if(oldSprint && oldSprint.active_sprint!==null && oldSprint.status!=="BLOCKED"){
+    errors.push("Rebaseline while a Sprint exists requires previous Sprint state BLOCKED");
+  }
+};
+const validateCurrentTransition=(base,head,current)=>{
+  const oldCurrent=showJsonAt(base,"build-spec/CURRENT.json");
+  if(!oldCurrent || oldCurrent.active_baseline===current.active_baseline) return;
+  if(current.active_baseline===null){
+    errors.push("CURRENT active_baseline cannot be cleared; supersede with a new approved baseline");
+    return;
+  }
+
+  const a=getActivation(current.active_baseline);
+  const m=getBaseline(current.active_baseline);
+  if(!a||!m) errors.push("CURRENT transition requires valid Activation Record and baseline");
+  else if(oldCurrent.active_baseline===null){
+    if(a.type!=="INITIAL_FREEZE" || a.previous_baseline!==null) errors.push("First CURRENT activation must be INITIAL_FREEZE");
+  }else validateRebaseline(base,oldCurrent,current,a);
+  activationTouched(base,head,current.active_baseline);
+};
 
 for(const file of activationFiles){
   const a=readJson("build-spec/activations/"+file);
@@ -72,35 +109,7 @@ if(current.active_baseline!==null && !getActivation(current.active_baseline)){
 
 const base=process.env.BASE_SHA, head=process.env.HEAD_SHA||"HEAD";
 if(base && !/^0+$/.test(base)){
-  const showJson=rel=>{
-    try{return JSON.parse(execFileSync("git",["show",base+":"+rel],{encoding:"utf8"}));}
-    catch{return null;}
-  };
-  const oldCurrent=showJson("build-spec/CURRENT.json");
-  if(oldCurrent && oldCurrent.active_baseline!==current.active_baseline){
-    if(current.active_baseline===null) errors.push("CURRENT active_baseline cannot be cleared; supersede with a new approved baseline");
-    else{
-      const a=getActivation(current.active_baseline);
-      const m=getBaseline(current.active_baseline);
-      if(!a||!m) errors.push("CURRENT transition requires valid Activation Record and baseline");
-      else if(oldCurrent.active_baseline===null){
-        if(a.type!=="INITIAL_FREEZE" || a.previous_baseline!==null) errors.push("First CURRENT activation must be INITIAL_FREEZE");
-      }else{
-        if(a.type!=="REBASELINE" || a.previous_baseline!==oldCurrent.active_baseline) errors.push("CURRENT rebaseline must supersede previous active baseline");
-        const oldSprint=showJson("delivery/CURRENT-SPRINT.json");
-        if(oldSprint && oldSprint.active_sprint!==null && oldSprint.status!=="BLOCKED"){
-          errors.push("Rebaseline while a Sprint exists requires previous Sprint state BLOCKED");
-        }
-      }
-
-      let diff="";
-      try{diff=execFileSync("git",["diff","--name-status","-M",base,head],{encoding:"utf8"});}
-      catch{errors.push("Unable to inspect CURRENT activation diff");}
-      const activationPath="build-spec/activations/"+current.active_baseline+".json";
-      const touched=diff.split("\n").some(line=>line.split("\t").slice(1).includes(activationPath));
-      if(!touched) errors.push("CURRENT transition requires Activation Record in the same change: "+activationPath);
-    }
-  }
+  validateCurrentTransition(base,head,current);
 }
 
 if(errors.length){console.error("ACTIVATION GATE: FAIL");errors.forEach(e=>console.error("- "+e));process.exit(1);}
