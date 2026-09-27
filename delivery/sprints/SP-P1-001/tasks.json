@@ -8,7 +8,7 @@
         "BL-P1-001"
       ],
       "title": "Build canonical capability registry source and deterministic artifacts",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Implement F04 canonical CapabilityDefinition source contract.",
