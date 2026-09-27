@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-001",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "CLOSED",
   "build_spec_id": "BS-P1-001",
   "sprint_id": "SP-P1-001",
   "task_id": "T001",
@@ -10,7 +10,8 @@
   "actual": "The repository-wide lint command reports 33 pre-existing errors in ci/, deploy/, and harness/ files outside T001 allowed_write_paths. Scoped lint for all T001 files passes.",
   "evidence": [
     "command://npm-run-check-lint/2026-09-26",
-    "command://npx-eslint-t001-scope/2026-09-26"
+    "command://npx-eslint-t001-scope/2026-09-26",
+    "command://npm-run-check-lint/2026-09-27#pass-0-errors"
   ],
   "attempts": [
     {
@@ -18,6 +19,12 @@
       "strategy": "RUN_REQUIRED_REPOSITORY_LINT",
       "result": "FAILED",
       "evidence": "npm run check:lint: 33 errors outside T001 allowed_write_paths"
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "VERIFY_REPOSITORY_LINT_AFTER_BUILD_MACHINE_MAINTENANCE",
+      "result": "PASSED",
+      "evidence": "npm run check:lint PASS with 0 errors after maintenance PR #26."
     }
   ],
   "affected_contracts": [],
