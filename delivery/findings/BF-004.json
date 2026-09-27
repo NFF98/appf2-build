@@ -2,14 +2,15 @@
   "schema_version": 1,
   "finding_id": "BF-004",
   "classification": "TEST_BUG",
-  "status": "OPEN",
+  "status": "CLOSED",
   "build_spec_id": "BS-P1-001",
   "sprint_id": "SP-P1-001",
   "task_id": "T001",
   "expected": "TEST-F04-002 binds the current registry identity to any historical registry manifest present at the Product CI base ref.",
   "actual": "Closure audit found that TEST-F04-002 only supplied a synthetic previous identity, so regenerated artifacts with an unchanged registry version could pass without comparison to the repository base identity.",
   "evidence": [
-    "audit://T001-closure/F04-AC-002-historical-registry-identity"
+    "audit://T001-closure/F04-AC-002-historical-registry-identity",
+    "command://npm-run-test-contract/2026-09-27#TEST-F04-002"
   ],
   "attempts": [
     {
@@ -17,6 +18,12 @@
       "strategy": "CLOSURE_AUDIT_HISTORICAL_IDENTITY_REVIEW",
       "result": "FAILED",
       "evidence": "The historical registry identity was not bound into the executable build gate."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "BIND_HISTORICAL_REGISTRY_IDENTITY_TO_EXECUTABLE_TEST",
+      "result": "PASSED",
+      "evidence": "TEST-F04-002 now checks BASE_SHA/HEAD historical registry identity and contract suite passes 5/5."
     }
   ],
   "affected_contracts": [],
