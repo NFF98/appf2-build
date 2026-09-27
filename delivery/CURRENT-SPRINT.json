@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-001",
-  "active_build_spec": "BS-P1-001",
-  "active_task": "T006",
-  "status": "BLOCKED",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T006 blocked by BF-007: locked evidence event registry defines allowed property names but not event-specific property types/enums required by F07 intake validation. Rebaseline required before implementation can resume."
+  "reason": "SP-P1-001 / T006 paused for BF-007 evidence property schema rebaseline; preserve T006 local implementation and resume only after replacement Build Spec activation."
 }
