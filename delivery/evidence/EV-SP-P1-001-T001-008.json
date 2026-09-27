@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-001",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T001",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-09-27T03:11:00Z",
+  "blocking_findings": [],
+  "source_commit": "32eed692975df9b5343f10b6ddc1c99360f3a85c",
+  "evidence_id": "EV-SP-P1-001-T001-008",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "command://npm-run-build/2026-09-27#pass",
+  "command": "npm run build",
+  "review_checks": null
+}
