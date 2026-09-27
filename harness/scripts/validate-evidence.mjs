@@ -12,6 +12,18 @@ const ciPolicy=read("ci/policy.json");
 const qualityPolicy=read("harness/policy/engineering-quality.json");
 const requiredReviewChecks=qualityPolicy.required_review_checks||[];
 const seen=new Set(), evidence=new Map(), taskMap=new Map();
+const validateReviewEvidence=e=>{
+  if(e.kind!=="REVIEW") return;
+  if(!e.review_checks || typeof e.review_checks!=="object"){
+    errors.push(e.evidence_id+" REVIEW requires review_checks");
+  }else{
+    for(const key of requiredReviewChecks){
+      if(e.review_checks[key]!=="PASS") errors.push(e.evidence_id+" REVIEW check must PASS: "+key);
+    }
+  }
+  if(!Array.isArray(e.blocking_findings)) errors.push(e.evidence_id+" REVIEW blocking_findings must be array");
+  else if(e.status==="PASS" && e.blocking_findings.length) errors.push(e.evidence_id+" PASS REVIEW cannot contain blocking_findings");
+};
 
 const sprintRoot=path.join(root,"delivery/sprints");
 if(fs.existsSync(sprintRoot)){
@@ -62,12 +74,7 @@ for(const file of files){
     if(e.kind==="COMMAND_RESULT"){
       if(typeof e.command!=="string" || !requiredCommands.has(e.command)) errors.push(e.evidence_id+" COMMAND_RESULT command is not required by Task/global CI: "+e.command);
     }
-    if(e.kind==="REVIEW"){
-      if(!e.review_checks || typeof e.review_checks!=="object") errors.push(e.evidence_id+" REVIEW requires review_checks");
-      else for(const key of requiredReviewChecks) if(e.review_checks[key]!=="PASS") errors.push(e.evidence_id+" REVIEW check must PASS: "+key);
-      if(!Array.isArray(e.blocking_findings)) errors.push(e.evidence_id+" REVIEW blocking_findings must be array");
-      else if(e.status==="PASS" && e.blocking_findings.length) errors.push(e.evidence_id+" PASS REVIEW cannot contain blocking_findings");
-    }
+    validateReviewEvidence(e);
   }
   evidence.set(e.evidence_id,e);
 }
