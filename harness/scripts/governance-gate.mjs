@@ -8,6 +8,22 @@ const exists=rel=>fs.existsSync(path.join(root,rel));
 const assert=(c,m)=>{if(!c) fail.push(m);};
 const policy=readJson('harness/policy/repo-policy.json');
 
+const existsAtRef=(ref,rel)=>{
+  try{execFileSync('git',['cat-file','-e',ref+':'+rel],{stdio:'ignore'}); return true;}
+  catch{return false;}
+};
+const inspectProtectedChange=(base,status,changed)=>{
+  const baseline=changed.match(/^build-spec\/baselines\/(BS-P\d+-\d{3})(?:\/|$)/);
+  if(baseline && existsAtRef(base,'build-spec/baselines/'+baseline[1]+'/manifest.json')){
+    fail.push('Locked baseline changed after merge: '+changed);
+  }
+  const activation=changed.match(/^build-spec\/activations\/(BS-P\d+-\d{3})\.json$/);
+  if(!activation) return;
+  const existed=existsAtRef(base,changed);
+  if(existed) fail.push('Activation Record is append-only and cannot be modified/deleted: '+changed);
+  if(!existed && !status.startsWith('A')) fail.push('New Activation Record must be added, not renamed into place: '+changed);
+};
+
 for(const dir of policy.forbidden_top_level_directories) assert(!exists(dir),'Forbidden shadow directory: '+dir+'/');
 const current=readJson('build-spec/CURRENT.json');
 assert(typeof current.implementation_enabled==='boolean','CURRENT build state missing implementation_enabled');
@@ -29,23 +45,7 @@ if(base && !/^0+$/.test(base)){
 
   for(const line of diff.split('\n').filter(Boolean)){
     const cols=line.split('\t'), status=cols[0], paths=cols.slice(1);
-    for(const changed of paths){
-      const m=changed.match(/^build-spec\/baselines\/(BS-P\d+-\d{3})(?:\/|$)/);
-      if(m){
-        let existed=true;
-        try{execFileSync('git',['cat-file','-e',base+':build-spec/baselines/'+m[1]+'/manifest.json'],{stdio:'ignore'});}
-        catch{existed=false;}
-        if(existed) fail.push('Locked baseline changed after merge: '+changed);
-      }
-      const a=changed.match(/^build-spec\/activations\/(BS-P\d+-\d{3})\.json$/);
-      if(a){
-        let existed=true;
-        try{execFileSync('git',['cat-file','-e',base+':'+changed],{stdio:'ignore'});}
-        catch{existed=false;}
-        if(existed) fail.push('Activation Record is append-only and cannot be modified/deleted: '+changed);
-        if(!existed && !status.startsWith('A')) fail.push('New Activation Record must be added, not renamed into place: '+changed);
-      }
-    }
+    for(const changed of paths) inspectProtectedChange(base,status,changed);
   }
 }
 
