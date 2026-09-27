@@ -166,7 +166,7 @@
         "BL-P1-002"
       ],
       "title": "Implement capability coverage and degradation semantics",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-001",
       "scope": [
         "Produce complete material-requirement Coverage Result statuses.",
@@ -223,7 +223,19 @@
       "blocked_by": [
         "T002"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-001-T003-001",
+        "EV-SP-P1-001-T003-002",
+        "EV-SP-P1-001-T003-003",
+        "EV-SP-P1-001-T003-004",
+        "EV-SP-P1-001-T003-005",
+        "EV-SP-P1-001-T003-006",
+        "EV-SP-P1-001-T003-007",
+        "EV-SP-P1-001-T003-008",
+        "EV-SP-P1-001-T003-009",
+        "EV-SP-P1-001-T003-010",
+        "EV-SP-P1-001-T003-011"
+      ]
     },
     {
       "task_id": "T004",
