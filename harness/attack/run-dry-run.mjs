@@ -31,6 +31,7 @@ fs.mkdirSync(path.join(repo,"delivery","sprints"),{recursive:true});
 fs.rmSync(path.join(repo,"delivery","evidence"),{recursive:true,force:true});
 fs.mkdirSync(path.join(repo,"delivery","evidence"),{recursive:true});
 must(git("init","-b","main").status===0,"git init failed");
+must(git("config","core.autocrlf","false").status===0,"git core.autocrlf configuration failed");
 git("config","user.name","appf2 Attack Dry Run");
 git("config","user.email","attack@example.invalid");
 

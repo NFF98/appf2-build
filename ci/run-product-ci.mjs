@@ -15,7 +15,7 @@ const base=process.env.BASE_SHA, head=process.env.HEAD_SHA||"HEAD";
 let changed=[];
 if(base && !/^0+$/.test(base)){
   try{changed=execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
-  catch{}
+  catch{changed=[];}
 }
 const controlPaths=new Set([
   "build-spec/CURRENT.json",

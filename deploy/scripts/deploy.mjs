@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  root,parseArgs,requireEnv,safePath,loadRelease,ensureDir,writeJson,run,
+  parseArgs,requireEnv,safePath,loadRelease,ensureDir,writeJson,run,
   wranglerArgs,supabaseArgs,parseWranglerOutput,statePath,outputDir
 } from "./common.mjs";
 
@@ -44,7 +44,8 @@ for(const t of manifest.targets.filter(x=>x.enabled)){
     const env=cfEnv();
     let previous=null;
     if(environment==="production"){
-      try{previous=JSON.parse(run("npx",[...wranglerArgs(),"deployments","status","--name",name,"--config",config,"--env","production","--json"],{env,capture:true}));}catch{}
+      try{previous=JSON.parse(run("npx",[...wranglerArgs(),"deployments","status","--name",name,"--config",config,"--env","production","--json"],{env,capture:true}));}
+      catch{previous=null;}
     }
     const output=path.join(outDir,"worker.ndjson");
     const depEnv={...env,WRANGLER_OUTPUT_FILE_PATH:output};
@@ -64,7 +65,7 @@ for(const t of manifest.targets.filter(x=>x.enabled)){
         const arr=JSON.parse(run("npx",[...wranglerArgs(),"pages","deployment","list","--project-name",project,"--environment","production","--json"],{env,capture:true}));
         const first=Array.isArray(arr)?arr[0]:null;
         previous_id=first?.id||first?.Id||null;
-      }catch{}
+      }catch{previous_id=null;}
     }
     const output=path.join(outDir,"pages.ndjson");
     const depEnv={...env,WRANGLER_OUTPUT_FILE_PATH:output};

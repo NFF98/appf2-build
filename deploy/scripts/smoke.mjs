@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import path from "node:path";
 import {parseArgs,requireEnv,loadRelease,writeJson,outputDir} from "./common.mjs";
 

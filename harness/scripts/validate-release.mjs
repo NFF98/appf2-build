@@ -9,6 +9,16 @@ const allowedTypes=new Set(["CLOUDFLARE_PAGES","CLOUDFLARE_WORKER","SUPABASE_MIG
 const manifestsDir=path.join(root,"releases/manifests");
 const files=fs.existsSync(manifestsDir)?fs.readdirSync(manifestsDir).filter(f=>/^REL-P\d+-\d{3}\.json$/.test(f)):[];
 const selected=args.release?[args.release+".json"]:files;
+const validatePromotionHead=(id,m,head)=>{
+  if(!head) return;
+  try{
+    execFileSync("git",["cat-file","-e",m.source_commit+"^{commit}"],{stdio:"ignore"});
+    const changed=execFileSync("git",["diff","--name-only",m.source_commit,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
+    for(const f of changed){
+      if(!f.startsWith("releases/")) errors.push(id+" release promotion head differs from source_commit outside releases/: "+f);
+    }
+  }catch{errors.push(id+" source_commit is not available / comparable to promotion head");}
+};
 
 for(const file of selected){
   const p=path.join(manifestsDir,file);
@@ -51,13 +61,7 @@ for(const file of selected){
   }
   if(m.rollback?.cloudflare_code_auto!==true || m.rollback?.database_auto!==false || m.rollback?.database_strategy!=="FORWARD_ONLY") errors.push(id+" invalid rollback policy");
 
-  if(args.head){
-    try{
-      execFileSync("git",["cat-file","-e",m.source_commit+"^{commit}"],{stdio:"ignore"});
-      const changed=execFileSync("git",["diff","--name-only",m.source_commit,args.head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
-      for(const f of changed) if(!f.startsWith("releases/")) errors.push(id+" release promotion head differs from source_commit outside releases/: "+f);
-    }catch{errors.push(id+" source_commit is not available / comparable to promotion head");}
-  }
+  validatePromotionHead(id,m,args.head);
 }
 if(errors.length){console.error("RELEASE GATE: FAIL");errors.forEach(e=>console.error("- "+e));process.exit(1);}
 console.log("RELEASE GATE: PASS"+(selected.length?" ("+selected.length+" manifest(s))":""));
