@@ -8,10 +8,26 @@ const classes=new Set(policy.finding_classifications), findingStates=new Set(pol
 const jsonFiles=rel=>{const d=path.join(root,rel);return fs.existsSync(d)?fs.readdirSync(d).filter(f=>f.endsWith('.json')).map(f=>path.join(d,f)):[];};
 const sprintTasks=new Map();
 const sprintRoot=path.join(root,'delivery/sprints');
-if(fs.existsSync(sprintRoot)) for(const ent of fs.readdirSync(sprintRoot,{withFileTypes:true})) if(ent.isDirectory()){
-  const tp=path.join(sprintRoot,ent.name,'tasks.json');
-  if(fs.existsSync(tp)) for(const t of readJson(tp).tasks||[]) sprintTasks.set(ent.name+':'+t.task_id,t);
-}
+const loadSprintTasks=()=>{
+  if(!fs.existsSync(sprintRoot)) return;
+  for(const ent of fs.readdirSync(sprintRoot,{withFileTypes:true})){
+    if(!ent.isDirectory()) continue;
+    const tp=path.join(sprintRoot,ent.name,'tasks.json');
+    if(!fs.existsSync(tp)) continue;
+    for(const t of readJson(tp).tasks||[]) sprintTasks.set(ent.name+':'+t.task_id,t);
+  }
+};
+const validateClosedDelta=d=>{
+  if(d.status!=='CLOSED' || d.replacement_build_spec_required!==true) return;
+  if(!/^BS-P\d+-\d{3}$/.test(d.replacement_build_spec||'')){
+    errors.push(d.delta_id+' closed Design Delta requires replacement Build Spec');
+    return;
+  }
+  const mp=path.join(root,'build-spec/baselines',d.replacement_build_spec,'manifest.json');
+  if(!fs.existsSync(mp)) errors.push(d.delta_id+' replacement Build Spec missing');
+  else if(readJson(mp).supersedes!==d.affected_build_spec) errors.push(d.delta_id+' replacement baseline does not supersede affected baseline');
+};
+loadSprintTasks();
 
 const findings=new Map();
 for(const file of jsonFiles('delivery/findings')){
@@ -56,14 +72,7 @@ for(const file of jsonFiles('delivery/deltas')){
       if(!/^[0-9a-f]{40}$/.test(d.upstream_working_commit||'')) errors.push(d.delta_id+' approved lifecycle requires upstream Working commit');
       if(d.replacement_build_spec_required!==true) errors.push(d.delta_id+' approved DESIGN_DELTA must require replacement Build Spec');
     }
-    if(d.status==='CLOSED' && d.replacement_build_spec_required===true){
-      if(!/^BS-P\d+-\d{3}$/.test(d.replacement_build_spec||'')) errors.push(d.delta_id+' closed Design Delta requires replacement Build Spec');
-      else{
-        const mp=path.join(root,'build-spec/baselines',d.replacement_build_spec,'manifest.json');
-        if(!fs.existsSync(mp)) errors.push(d.delta_id+' replacement Build Spec missing');
-        else if(readJson(mp).supersedes!==d.affected_build_spec) errors.push(d.delta_id+' replacement baseline does not supersede affected baseline');
-      }
-    }
+    validateClosedDelta(d);
   }
   if(d.status==='CLOSED' && (!Array.isArray(d.verification)||!d.verification.length)) errors.push(d.delta_id+' CLOSED requires verification evidence');
 }
