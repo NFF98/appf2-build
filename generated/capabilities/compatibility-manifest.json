@@ -1,0 +1,158 @@
+{
+  "blueprint_schema_range": ">=1.0.0 <2.0.0",
+  "capabilities": [
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "action.button",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "content.card",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "content.list",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "content.text",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "data.stat",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "data.table_basic",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "input.number",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "input.select",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "input.text",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "input.toggle",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "layout.container",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "logic.random",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "logic.score",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "logic.timer",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    },
+    {
+      "availability": "ENABLED",
+      "blueprint_schema_range": ">=1.0.0 <2.0.0",
+      "deprecated": false,
+      "id": "system.notice",
+      "max_runtime_version": "<2.0.0",
+      "min_runtime_version": "1.0.0",
+      "replacement": null,
+      "version": "1.0.0"
+    }
+  ],
+  "registry_digest": "567c227d8f0726a7a3bfa50b357ce933d48ab5aaa629b25bfcac3cab4fb6bafa",
+  "registry_version": "1.0.0",
+  "runtime_version": "1.0.0"
+}
