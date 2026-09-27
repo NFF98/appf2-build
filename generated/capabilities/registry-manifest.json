@@ -1,0 +1,66 @@
+{
+  "capabilities": [
+    {
+      "id": "action.button",
+      "version": "1.0.0"
+    },
+    {
+      "id": "content.card",
+      "version": "1.0.0"
+    },
+    {
+      "id": "content.list",
+      "version": "1.0.0"
+    },
+    {
+      "id": "content.text",
+      "version": "1.0.0"
+    },
+    {
+      "id": "data.stat",
+      "version": "1.0.0"
+    },
+    {
+      "id": "data.table_basic",
+      "version": "1.0.0"
+    },
+    {
+      "id": "input.number",
+      "version": "1.0.0"
+    },
+    {
+      "id": "input.select",
+      "version": "1.0.0"
+    },
+    {
+      "id": "input.text",
+      "version": "1.0.0"
+    },
+    {
+      "id": "input.toggle",
+      "version": "1.0.0"
+    },
+    {
+      "id": "layout.container",
+      "version": "1.0.0"
+    },
+    {
+      "id": "logic.random",
+      "version": "1.0.0"
+    },
+    {
+      "id": "logic.score",
+      "version": "1.0.0"
+    },
+    {
+      "id": "logic.timer",
+      "version": "1.0.0"
+    },
+    {
+      "id": "system.notice",
+      "version": "1.0.0"
+    }
+  ],
+  "registry_digest": "567c227d8f0726a7a3bfa50b357ce933d48ab5aaa629b25bfcac3cab4fb6bafa",
+  "registry_version": "1.0.0"
+}
