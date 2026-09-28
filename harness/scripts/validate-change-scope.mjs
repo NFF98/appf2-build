@@ -88,16 +88,33 @@ if(changed.length && changed.every(p=>controlAllowed.has(p)) && baseSha && !/^0+
   if(safeControlTransition) console.log("- Safe execution control transition recognized; Task definitions remain immutable.");
 }
 
+const rebaselineActivationPath=currentBuild.active_baseline
+  ?"build-spec/activations/"+currentBuild.active_baseline+".json"
+  :null;
+const rebaselineControlAllowed=new Set([
+  "build-spec/CURRENT.json",
+  "delivery/CURRENT-SPRINT.json",
+  "delivery/backlog/QUEUE.json",
+  ...(targetSprint?["delivery/sprints/"+targetSprint+"/manifest.json","delivery/sprints/"+targetSprint+"/tasks.json"]:[]),
+  ...(rebaselineActivationPath?[rebaselineActivationPath]:[])
+]);
+const previousExecutionPaused=
+  baseCurrentSprint?.status==="BLOCKED" ||
+  (baseCurrentSprint?.status==="HOLD" &&
+   baseCurrentSprint?.active_sprint===null &&
+   baseCurrentSprint?.active_build_spec===null &&
+   baseCurrentSprint?.active_task===null);
 const approvedRebaselineTransition=
   baseCurrentBuild?.active_baseline &&
   currentBuild.active_baseline &&
   baseCurrentBuild.active_baseline!==currentBuild.active_baseline &&
-  baseCurrentSprint?.status==="BLOCKED" &&
-  cs.status==="BLOCKED" &&
-  changed.some(p=>p==="build-spec/activations/"+currentBuild.active_baseline+".json") &&
-  changed.every(p=>isGov(p) || isSideEffect(p));
+  previousExecutionPaused &&
+  ["BLOCKED","ACTIVE"].includes(cs.status) &&
+  rebaselineActivationPath &&
+  changed.includes(rebaselineActivationPath) &&
+  changed.every(p=>rebaselineControlAllowed.has(p));
 
-if(approvedRebaselineTransition) console.log("- Blocked Sprint rebaseline transition recognized; Activation/Baseline gates must independently approve it.");
+if(approvedRebaselineTransition) console.log("- Human-approved rebaseline control transition recognized; Activation/Baseline/Sprint gates must independently approve it.");
 
 if(cs.active_sprint===null){
   for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
