@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { canPreserveCompletedBaseline } from "./baseline-lineage.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -79,7 +80,10 @@ for(const sid of sprintDirs){
     selectedIds.add(bid);
     const bi=backlogById.get(bid);
     if(!bi){errors.push(sid+" unknown backlog item "+bid); continue;}
-    if(bi.build_spec_id!==m.build_spec_id) errors.push(sid+" backlog baseline mismatch "+bid);
+    if(bi.build_spec_id!==m.build_spec_id){
+      const legacyDone=bi.status==="DONE" && canPreserveCompletedBaseline(root,bi.build_spec_id,m.build_spec_id,bi.acceptance_links);
+      if(!legacyDone) errors.push(sid+" backlog baseline mismatch "+bid);
+    }
     if(m.status==="PLANNED"){
       if(bi.status!=="READY") errors.push(sid+" PLANNED backlog must be READY: "+bid+" is "+bi.status);
       if(bi.sprint_id) errors.push(sid+" PLANNED backlog must not already have sprint_id: "+bid);
@@ -103,7 +107,10 @@ for(const sid of sprintDirs){
     if(taskIds.has(t.task_id)) errors.push(sid+" duplicate task ID "+t.task_id); taskIds.add(t.task_id);
     if(!taskStates.has(t.status)) errors.push(sid+"/"+t.task_id+" invalid task status");
     if(m.status==="PLANNED" && t.status!=="PLANNED") errors.push(sid+"/"+t.task_id+" must remain PLANNED before activation");
-    if(t.build_spec_id!==m.build_spec_id) errors.push(sid+"/"+t.task_id+" baseline mismatch");
+    if(t.build_spec_id!==m.build_spec_id){
+      const legacyClosed=t.status==="CLOSED" && canPreserveCompletedBaseline(root,t.build_spec_id,m.build_spec_id,t.acceptance_links);
+      if(!legacyClosed) errors.push(sid+"/"+t.task_id+" baseline mismatch");
+    }
     if(t.product_decision_allowed!==false) errors.push(sid+"/"+t.task_id+" product_decision_allowed must be false");
     if(!Array.isArray(t.scope)||!t.scope.length || !Array.isArray(t.non_scope)||!t.non_scope.length) errors.push(sid+"/"+t.task_id+" requires scope and non_scope");
     if(!Array.isArray(t.backlog_item_ids)||!t.backlog_item_ids.length) errors.push(sid+"/"+t.task_id+" missing backlog mapping");

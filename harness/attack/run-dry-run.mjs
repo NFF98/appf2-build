@@ -3,8 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { spawnSync } from "node:child_process";
+import { canPreserveCompletedBaseline } from "../scripts/baseline-lineage.mjs";
 
 const source=process.cwd();
+const lineageUnchanged=canPreserveCompletedBaseline(source,"BS-P1-001","BS-P1-002",[{acceptance_id:"F04-AC-001",test_id:"TEST-F04-AC-001"}]);
+const lineageChanged=canPreserveCompletedBaseline(source,"BS-P1-001","BS-P1-002",[{acceptance_id:"F07-AC-008",test_id:"TEST-F07-008"}]);
+if(!lineageUnchanged) throw new Error("Rebaseline lineage must preserve completed work when mapped Acceptance semantics are unchanged.");
+if(lineageChanged) throw new Error("Rebaseline lineage must reject completed-work carry-forward when mapped Acceptance semantics changed.");
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-attack-"));
 const repo=path.join(tmp,"repo");
 const results=[];
