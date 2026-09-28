@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-013",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-001",
   "task_id": "T006",
@@ -17,7 +17,10 @@
     "supabase/migrations/20260927123000_t006_evidence_intake.sql stores occurred_at/received_at but defines no effective_event_at query/aggregate consumer",
     "delivery/backlog/QUEUE.json :: BL-P1-034 Canonical outcome metrics & cross-function evidence links is QUEUED",
     "delivery/evidence/EV-SP-P1-001-T006-012.json :: current BS-P1-003 mapped test evidence is PASS but cannot substitute for missing production consumer",
-    "Human Governance approval 2026-09-28: approved Option A — minimally expand T006 execution scope to a canonical event-time query primitive while keeping final product metrics out of scope."
+    "Human Governance approval 2026-09-28: approved Option A — minimally expand T006 execution scope to a canonical event-time query primitive while keeping final product metrics out of scope.",
+    "PR #83 merged as 718185bd9bb93810a743bbb13d25dc63c65c144d: production PostgresEvidenceEventTimeQuery now reads durable product_event occurred_at/received_at and derives effective_event_at via effectiveEventAt().",
+    "EV-SP-P1-001-T006-030: BS-P1-003 RUNTIME_TRACE covers F07-AC-030/031 at merge SHA 718185bd.",
+    "EV-SP-P1-001-T006-031: independent Engineering/Semantic REVIEW PASS with blocking_findings=[] at merge SHA 718185bd."
   ],
   "attempts": [
     {
@@ -37,6 +40,12 @@
       "strategy": "HUMAN_APPROVED_MINIMAL_T006_QUERY_PRIMITIVE_REPLAN",
       "result": "PASSED",
       "evidence": "Human approved Option A. T006 scope now explicitly permits a production canonical event-time query primitive that consumes persisted occurred_at/received_at and derives effective_event_at, while final product metrics remain non-scope."
+    },
+    {
+      "attempt_id": "A4",
+      "strategy": "VERIFY_OPTION_A_PRODUCTION_QUERY_PRIMITIVE_AND_RUNTIME_EVIDENCE",
+      "result": "PASSED",
+      "evidence": "PR #83 remote CI/Governance/Attack/CodeQL all PASS; production query primitive consumes durable timestamps, TEST-F07-031 exercises the production query path, EV-T006-030/031 normalize runtime/review proof to merge SHA 718185bd."
     }
   ],
   "affected_contracts": [
