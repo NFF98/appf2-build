@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-007",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-001",
   "sprint_id": "SP-P1-001",
   "task_id": "T006",
@@ -10,7 +10,9 @@
   "actual": "BS-P1-001 evidence-event-registry entries provide allowed property names but no event-specific machine-readable property type, enum, or per-property bound contract. A generic validator therefore cannot complete the locked property-types validation requirement deterministically without inventing semantics.",
   "evidence": [
     "build-spec://BS-P1-001/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md#F07-RQ-009-property-types-bounds",
-    "build-spec://BS-P1-001/registries/evidence-event-registry.json#entries-allowed_properties-without-property-schema"
+    "build-spec://BS-P1-001/registries/evidence-event-registry.json#entries-allowed_properties-without-property-schema",
+    "build-spec/baselines/BS-P1-002/manifest.json",
+    "delivery/deltas/BD-001.json"
   ],
   "attempts": [
     {
@@ -18,6 +20,12 @@
       "strategy": "IMPLEMENT_LOCKED_REGISTRY_PROPERTY_VALIDATION",
       "result": "FAILED",
       "evidence": "Registry entry schema exposes event_type/function_id/schema_version/allowed_properties but no machine-readable type, enum, or property-specific bounds for those properties."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_DESIGN_DELTA_AND_REPLACEMENT_BUILD_FREEZE",
+      "result": "PASSED",
+      "evidence": "appf2-design 05f7c55323c2d4c9f4335e1931893959776a078c + BD-001 APPROVED + BS-P1-002 LOCKED at appf2-build merge 15c02a417ed7c69c3be5909ed6e07f184961fbe1"
     }
   ],
   "affected_contracts": [
