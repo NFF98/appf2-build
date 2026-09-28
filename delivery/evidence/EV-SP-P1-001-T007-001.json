@@ -20,7 +20,7 @@
     "TEST-F07-014",
     "TEST-F07-AC-015"
   ],
-  "locator": "github-actions://NFF98/appf2-build/actions/runs/36489013784#17-unit-10-behavior-5-api-9-regression-pass",
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/36489013784#17-unit-12-behavior-5-api-9-regression-pass",
   "command": null,
   "review_checks": null
 }
