@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { canPreserveCompletedBaseline } from "./baseline-lineage.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -45,7 +46,10 @@ if(current.active_baseline===null){
 
     if(typeof item.title!=="string" || !item.title.trim()) errors.push((id||"<unknown>")+" requires non-empty title");
     if(item.source!=="BUILD_SPEC") errors.push(id+" source must be BUILD_SPEC");
-    if(item.build_spec_id!==current.active_baseline) errors.push(id+" baseline mismatch");
+    if(item.build_spec_id!==current.active_baseline){
+      const legacyDone=item.status==="DONE" && canPreserveCompletedBaseline(root,item.build_spec_id,current.active_baseline,item.acceptance_links);
+      if(!legacyDone) errors.push(id+" baseline mismatch");
+    }
     if(!/^F\d{2}$/.test(item.function_id||"")) errors.push(id+" invalid function_id");
     if(!states.has(item.status)) errors.push(id+" invalid status");
     if(!priorities.has(item.priority)) errors.push(id+" invalid priority");
