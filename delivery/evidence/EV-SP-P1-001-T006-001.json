@@ -5,9 +5,9 @@
   "task_id": "T006",
   "status": "PASS",
   "sha256": null,
-  "recorded_at": "2026-09-28T12:00:00Z",
+  "recorded_at": "2026-09-28T12:35:00Z",
   "blocking_findings": [],
-  "source_commit": "d153d6473f3c99d7b6af48d5894b276113f64cfe",
+  "source_commit": "a883ba2c9f6f62d0c9dd3b71fee15efdc9eab842",
   "evidence_id": "EV-SP-P1-001-T006-001",
   "kind": "TEST_RESULT",
   "acceptance_ids": [
