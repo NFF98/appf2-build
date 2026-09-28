@@ -355,6 +355,13 @@ makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["B
 const holdResolved=read("delivery/findings/BF-999.json"); holdResolved.status="RESOLVED"; write("delivery/findings/BF-999.json",holdResolved);
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"DRYRUN_REBASELINE_HOLD"});
 write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"DRYRUN_REBASELINE_HOLD"});
+write("delivery/evidence/EV-SP-P9-001-T001-001.json",{
+  schema_version:2,build_spec_id:"BS-P9-001",sprint_id:"SP-P9-001",task_id:"T001",status:"PASS",
+  sha256:null,recorded_at:"2026-09-24T00:00:00Z",blocking_findings:[],source_commit:blockedBase,
+  evidence_id:"EV-SP-P9-001-T001-001",kind:"TEST_RESULT",
+  acceptance_ids:["F99-AC-001"],test_ids:["TEST-F99-001"],
+  locator:"dryrun://historical-pre-rebaseline-evidence",command:null,review_checks:null
+});
 const holdRebaselineBase=commit("fixture: frozen replacement baseline awaiting HOLD rebaseline activation");
 
 makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceB,deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE"});
