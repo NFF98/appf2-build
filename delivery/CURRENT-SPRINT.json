@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-003",
   "active_task": "T007",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved T007 activation. T007 is the sole active Task for F07-AC-013/014/015; T006 remains CLOSED."
+  "reason": "T007 implementation merged and final BS-P1-003 Evidence EV-T007-001..012 normalized. Hold next Task while independent T007 closure audit completes."
 }
