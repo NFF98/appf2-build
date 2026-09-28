@@ -340,10 +340,10 @@ write("delivery/deltas/BD-999.json",{
 const blockedBase=commit("fixture: blocked for approved design delta");
 
 makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE"});
-const frozenRebaselineBase=commit("fixture: replacement baseline already frozen");
+const resolved=read("delivery/findings/BF-999.json"); resolved.status="RESOLVED"; write("delivery/findings/BF-999.json",resolved);
+const frozenRebaselineBase=commit("fixture: finding resolved and replacement baseline already frozen");
 makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceB,deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE"});
 baseWorkState("BS-P9-002","BLOCKED","BLOCKED");
-const resolved=read("delivery/findings/BF-999.json"); resolved.status="RESOLVED"; write("delivery/findings/BF-999.json",resolved);
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:true,reason:"APPROVED_DRYRUN_REBASELINE"});
 const goodRebaseline=commit("positive: approved rebaseline remains blocked");
 expectHarnessPass("Approved rebaseline transition",governanceHarness,{base:frozenRebaselineBase,head:goodRebaseline});
