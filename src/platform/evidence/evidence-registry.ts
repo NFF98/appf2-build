@@ -1,4 +1,4 @@
-import registryDocument from "../../../build-spec/baselines/BS-P1-002/registries/evidence-event-registry.json" with {
+import registryDocument from "../../../build-spec/baselines/BS-P1-003/registries/evidence-event-registry.json" with {
   type: "json"
 };
 

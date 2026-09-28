@@ -6,8 +6,13 @@ import type {
 } from "./evidence-repository.js";
 import type {
   EvidenceBatchResult,
+  EvidenceIntakeDiagnostic,
   EvidenceRejection
 } from "./evidence-types.js";
+import {
+  clockInvalidDiagnostic,
+  isClockInvalid
+} from "./evidence-clock.js";
 import { validateEvidenceEvent } from "./evidence-validator.js";
 
 export interface EvidenceIngestionDependencies {
@@ -61,6 +66,7 @@ export class EvidenceIngestionService {
     let accepted = 0;
     let duplicates = 0;
     const rejections: EvidenceRejection[] = [];
+    const diagnostics: EvidenceIntakeDiagnostic[] = [];
     const identities = new Map<string, Promise<AnonymousIdentityStatus>>();
 
     for (const candidate of events) {
@@ -93,6 +99,9 @@ export class EvidenceIngestionService {
         );
         if (result === "INSERTED") {
           accepted += 1;
+          if (isClockInvalid(validation.event.occurred_at, receivedAt)) {
+            diagnostics.push(clockInvalidDiagnostic(validation.event.event_id));
+          }
         } else if (result === "DUPLICATE") {
           duplicates += 1;
         } else {
@@ -108,7 +117,8 @@ export class EvidenceIngestionService {
       accepted,
       duplicates,
       rejected: rejections.length,
-      rejections
+      rejections,
+      diagnostics
     };
   }
 }

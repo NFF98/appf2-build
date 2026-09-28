@@ -53,9 +53,20 @@ export type EvidenceWriteResult =
   | "DUPLICATE"
   | "IDENTITY_DISABLED";
 
+export type EvidenceDiagnosticCode = "F07-ERR-013";
+export type EvidenceDiagnosticAction = "USE_RECEIVED_AT";
+
+export interface EvidenceIntakeDiagnostic {
+  readonly event_id: string;
+  readonly code: EvidenceDiagnosticCode;
+  readonly field: string;
+  readonly action: EvidenceDiagnosticAction;
+}
+
 export interface EvidenceBatchResult {
   readonly accepted: number;
   readonly duplicates: number;
   readonly rejected: number;
   readonly rejections: readonly EvidenceRejection[];
+  readonly diagnostics: readonly EvidenceIntakeDiagnostic[];
 }
