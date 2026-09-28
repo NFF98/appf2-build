@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-001",
   "type": "DESIGN_DELTA",
-  "status": "OPEN",
+  "status": "APPROVED",
   "source_finding_ids": [
     "BF-007"
   ],
@@ -27,8 +27,8 @@
   "owner": "HUMAN_GOVERNANCE",
   "user_decision_required": true,
   "user_decision": {
-    "status": "PENDING",
-    "decision_ref": null
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-09-28: 批准 BD-001"
   },
   "replacement_build_spec_required": true,
   "upstream_working_commit": "05f7c55323c2d4c9f4335e1931893959776a078c",
