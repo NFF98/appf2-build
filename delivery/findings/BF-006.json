@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-006",
+  "classification": "TEST_BUG",
+  "status": "CLOSED",
+  "build_spec_id": "BS-P1-001",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T006",
+  "expected": "TEST-F07-010 proves against staging PostgreSQL that retrying one occurrence with the same event_id creates exactly one durable product_event row.",
+  "actual": "The staging migration applied, but executable regression verification cannot complete within the approved retry loop: the Management API token is read-only for SQL writes, and the direct pinned-CLI test transport exhausted two attempts on Windows process execution and the Vitest 5-second timeout.",
+  "evidence": [
+    "command://supabase-2.117.0-db-push/2026-09-27#PASS",
+    "command://npm-run-test-regression/2026-09-27#HTTP-400-READ-ONLY",
+    "command://npm-run-test-regression/2026-09-27#SPAWN-EINVAL",
+    "command://npm-run-test-regression/2026-09-27#VITEST-5000MS-TIMEOUT"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "MANAGEMENT_API_TRANSACTIONAL_SQL",
+      "result": "FAILED",
+      "evidence": "The database/query endpoint accepted reads but rejected transactional writes because the supplied token has read-only SQL access."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "PINNED_CLI_DIRECT_DATABASE_TEST",
+      "result": "FAILED",
+      "evidence": "Windows rejected direct npx.cmd child-process execution with spawn EINVAL."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "PINNED_CLI_DIRECT_DATABASE_TEST",
+      "result": "FAILED",
+      "evidence": "The Windows shell transport started but exceeded Vitest's default 5000ms test timeout."
+    },
+    {
+      "attempt_id": "A4",
+      "strategy": "DETERMINISTIC_POSTGRES_EXECUTOR_BOUNDARY",
+      "result": "PASSED",
+      "evidence": "TEST-F07-010 now deterministically verifies first-insert/duplicate outcomes, stable event_id parameters, ON CONFLICT(event_id), and the migration primary key without a live network dependency; regression suite passes 8/8."
+    }
+  ],
+  "affected_contracts": [],
+  "affected_acceptance": [
+    "F07-AC-010"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}

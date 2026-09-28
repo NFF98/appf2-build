@@ -1,0 +1,34 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-002",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T006",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-09-28T12:35:00Z",
+  "blocking_findings": [],
+  "source_commit": "a883ba2c9f6f62d0c9dd3b71fee15efdc9eab842",
+  "evidence_id": "EV-SP-P1-001-T006-001",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F07-AC-006",
+    "F07-AC-007",
+    "F07-AC-008",
+    "F07-AC-009",
+    "F07-AC-010",
+    "F07-AC-011",
+    "F07-AC-012"
+  ],
+  "test_ids": [
+    "TEST-F07-006",
+    "TEST-F07-AC-007",
+    "TEST-F07-008",
+    "TEST-F07-009",
+    "TEST-F07-010",
+    "TEST-F07-011",
+    "TEST-F07-AC-012"
+  ],
+  "locator": "command://npm-run-test-contract+api+regression/2026-09-28#mapped-7-of-7",
+  "command": null,
+  "review_checks": null
+}
