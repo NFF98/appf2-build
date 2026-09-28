@@ -2,5 +2,5 @@
   "schema_version": 1,
   "active_baseline": "BS-P1-003",
   "implementation_enabled": false,
-  "reason": "Human-approved T007 closure complete; pause execution before separate SP-P1-001 Sprint closure audit and approval."
+  "reason": "Human-approved SP-P1-001 Sprint closure complete. Keep execution disabled until a separate later Sprint planning/activation decision."
 }

@@ -38,5 +38,5 @@ Total: **43 Backlog Items / 288 ACTIVE Acceptance**.
 
 ## Current Detailed Planning Boundary
 
-`SP-P1-001` is fully detailed and all seven Tasks are CLOSED; the Sprint manifest remains REVIEW pending the separate Human Sprint Close gate.
+`SP-P1-001` is fully detailed and CLOSED; all seven Tasks are CLOSED and its five selected Backlog items are DONE.
 `SP-P1-002` onward remain provisional and must not be treated as activated execution scope.

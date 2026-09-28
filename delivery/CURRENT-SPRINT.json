@@ -5,5 +5,5 @@
   "active_task": null,
   "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved T007 closure. T007 is CLOSED and BL-P1-032 is DONE. SP-P1-001 remains REVIEW pending separate Sprint closure audit and Human approval."
+  "reason": "Human approved SP-P1-001 Sprint closure. SP-P1-001 is CLOSED; no later Sprint is active."
 }
