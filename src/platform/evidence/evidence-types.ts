@@ -70,3 +70,10 @@ export interface EvidenceBatchResult {
   readonly rejections: readonly EvidenceRejection[];
   readonly diagnostics: readonly EvidenceIntakeDiagnostic[];
 }
+
+export interface EvidenceEventTimeProjection {
+  readonly event_id: string;
+  readonly occurred_at: string;
+  readonly received_at: string;
+  readonly effective_event_at: string;
+}
