@@ -201,6 +201,45 @@ const plannedMissingAc=commit("attack: planned sprint omits mapped acceptance");
 expectFail("PLANNED Sprint exact AC coverage cannot omit Acceptance","harness/scripts/validate-sprint.mjs",{base:fixtureBase,head:plannedMissingAc});
 cleanTo(fixtureBase);
 
+// CLOSED Sprint must fail closed unless every Task is CLOSED, every selected Backlog is DONE,
+// and CURRENT no longer points at it as an active Sprint.
+cleanTo(fixtureBase);
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"SPRINT_CLOSE_AUDIT"});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"SPRINT_CLOSE_AUDIT"});
+const fakeClosedManifest=read("delivery/sprints/SP-P9-001/manifest.json"); fakeClosedManifest.status="CLOSED"; write("delivery/sprints/SP-P9-001/manifest.json",fakeClosedManifest);
+const fakeClosedTasks=read("delivery/sprints/SP-P9-001/tasks.json"); fakeClosedTasks.tasks[0].status="IN_PROGRESS"; write("delivery/sprints/SP-P9-001/tasks.json",fakeClosedTasks);
+const fakeClosedBacklog=read("delivery/backlog/QUEUE.json"); fakeClosedBacklog.items[0].status="DONE"; write("delivery/backlog/QUEUE.json",fakeClosedBacklog);
+const closedWithOpenTask=commit("attack: close sprint with unfinished task");
+expectFail("CLOSED Sprint requires every Task CLOSED","harness/scripts/validate-sprint.mjs",{base:fixtureBase,head:closedWithOpenTask});
+cleanTo(fixtureBase);
+
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"SPRINT_CLOSE_AUDIT"});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"SPRINT_CLOSE_AUDIT"});
+const fakeDoneManifest=read("delivery/sprints/SP-P9-001/manifest.json"); fakeDoneManifest.status="CLOSED"; write("delivery/sprints/SP-P9-001/manifest.json",fakeDoneManifest);
+const fakeDoneTasks=read("delivery/sprints/SP-P9-001/tasks.json"); fakeDoneTasks.tasks[0].status="CLOSED"; write("delivery/sprints/SP-P9-001/tasks.json",fakeDoneTasks);
+const fakeSprintedBacklog=read("delivery/backlog/QUEUE.json"); fakeSprintedBacklog.items[0].status="SPRINTED"; write("delivery/backlog/QUEUE.json",fakeSprintedBacklog);
+const closedWithOpenBacklog=commit("attack: close sprint with unfinished backlog");
+expectFail("CLOSED Sprint requires every selected Backlog DONE","harness/scripts/validate-sprint.mjs",{base:fixtureBase,head:closedWithOpenBacklog});
+cleanTo(fixtureBase);
+
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"SPRINT_CLOSE_AUDIT"});
+const activeClosedManifest=read("delivery/sprints/SP-P9-001/manifest.json"); activeClosedManifest.status="CLOSED"; write("delivery/sprints/SP-P9-001/manifest.json",activeClosedManifest);
+const activeClosedTasks=read("delivery/sprints/SP-P9-001/tasks.json"); activeClosedTasks.tasks[0].status="CLOSED"; write("delivery/sprints/SP-P9-001/tasks.json",activeClosedTasks);
+const activeClosedBacklog=read("delivery/backlog/QUEUE.json"); activeClosedBacklog.items[0].status="DONE"; write("delivery/backlog/QUEUE.json",activeClosedBacklog);
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:"SP-P9-001",active_build_spec:"BS-P9-001",active_task:"T001",status:"REVIEW",automation_mode:"SAFE_AUTOMATION",reason:"SPRINT_CLOSE_AUDIT"});
+const closedStillActive=commit("attack: closed sprint remains current active sprint");
+expectFail("CLOSED Sprint cannot remain CURRENT active_sprint","harness/scripts/validate-sprint.mjs",{base:fixtureBase,head:closedStillActive});
+cleanTo(fixtureBase);
+
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"SPRINT_CLOSE_AUDIT"});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"SPRINT_CLOSE_AUDIT"});
+const validClosedManifest=read("delivery/sprints/SP-P9-001/manifest.json"); validClosedManifest.status="CLOSED"; write("delivery/sprints/SP-P9-001/manifest.json",validClosedManifest);
+const validClosedTasks=read("delivery/sprints/SP-P9-001/tasks.json"); validClosedTasks.tasks[0].status="CLOSED"; write("delivery/sprints/SP-P9-001/tasks.json",validClosedTasks);
+const validClosedBacklog=read("delivery/backlog/QUEUE.json"); validClosedBacklog.items[0].status="DONE"; write("delivery/backlog/QUEUE.json",validClosedBacklog);
+const validClosed=commit("positive: valid closed sprint");
+expectPass("Valid CLOSED Sprint passes sprint validator","node",["harness/scripts/validate-sprint.mjs"],{base:fixtureBase,head:validClosed});
+cleanTo(fixtureBase);
+
 // Active Task cannot bypass an unfinished blocked_by dependency.
 const depRegistry=read("build-spec/baselines/BS-P9-001/registries/acceptance-test-registry.json");
 depRegistry.entries.push({acceptance_id:"F99-AC-002",test_id:"TEST-F99-002",contract_status:"ACTIVE",required_for_build_freeze:true});

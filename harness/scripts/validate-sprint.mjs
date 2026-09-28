@@ -175,6 +175,17 @@ for(const sid of sprintDirs){
     visiting.delete(id); visited.add(id);
   };
   for(const id of taskIds) visit(id);
+
+  if(m.status==="CLOSED"){
+    for(const t of td.tasks||[]){
+      if(t.status!=="CLOSED") errors.push(sid+" CLOSED Sprint requires every Task CLOSED: "+t.task_id+" is "+t.status);
+    }
+    for(const bid of selectedIds){
+      const bi=backlogById.get(bid);
+      if(bi && bi.status!=="DONE") errors.push(sid+" CLOSED Sprint requires every selected Backlog DONE: "+bid+" is "+bi.status);
+    }
+    if(cs.active_sprint===sid) errors.push(sid+" CLOSED Sprint cannot remain CURRENT active_sprint");
+  }
 }
 
 if(cs.active_sprint===null){
