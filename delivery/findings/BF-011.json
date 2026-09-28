@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-011",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-002",
   "sprint_id": "SP-P1-001",
   "task_id": "T006",
@@ -15,7 +15,9 @@
     "build-spec/baselines/BS-P1-002/registries/acceptance-test-registry.json :: no clock/occurred_at Acceptance entry",
     "src/platform/evidence/evidence-types.ts :: EvidenceRejectionCode omits F07-ERR-013",
     "src/platform/evidence/evidence-validator.ts :: occurred_at validates parseability only",
-    "delivery PR #66 merged as 7f3fc6db0ea3e5a3b1afa9ab1be2b845749c3803; closure audit retained clock sanity as anomaly"
+    "delivery PR #66 merged as 7f3fc6db0ea3e5a3b1afa9ab1be2b845749c3803; closure audit retained clock sanity as anomaly",
+    "build-spec/baselines/BS-P1-003/manifest.json",
+    "delivery/deltas/BD-002.json"
   ],
   "attempts": [
     {
@@ -29,6 +31,12 @@
       "strategy": "ACCEPT_EVENT_AND_SILENTLY_FALL_BACK_TO_RECEIVED_AT",
       "result": "FAILED",
       "evidence": "No canonical response/error/diagnostic marker or Acceptance/Test defines how F07-ERR-013 is surfaced or how downstream aggregation knows the clock was invalid."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "HUMAN_APPROVED_DESIGN_DELTA_AND_REPLACEMENT_BUILD_FREEZE",
+      "result": "PASSED",
+      "evidence": "appf2-design 3818926b82ae2c5edaf9d6115fda3d1505757781 + BD-002 APPROVED + BS-P1-003 LOCKED at appf2-build merge c0627e1e099ac8862a3b747f1e4a001a06a3fb36"
     }
   ],
   "affected_contracts": [
