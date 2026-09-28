@@ -1,0 +1,3309 @@
+{
+  "registry_version": "2.0.0",
+  "phase_1_freeze_audit": {
+    "status": "PASS",
+    "scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+    "eligibility": "HUMAN_APPROVED_BUILD_FREEZE_REQUIRED",
+    "excludes": [
+      "PHASE_2_PLUS",
+      "DEFERRED_CONTENT"
+    ],
+    "audited_on": "2026-09-28",
+    "change_ref": "BF-007"
+  },
+  "owner": "working/detailed-design/registries/evidence-event-registry.json",
+  "source_of_truth": "Fxx event contracts + F07 evidence policy",
+  "entries": [
+    {
+      "event_type": "F00-EVT-001",
+      "event_name": "shell_opened",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-002",
+      "event_name": "capsule_viewed",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-003",
+      "event_name": "capsule_forked",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-004",
+      "event_name": "prompt_submitted",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-005",
+      "event_name": "clarification_shown",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-006",
+      "event_name": "clarification_submitted",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-007",
+      "event_name": "assumption_review_shown",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-008",
+      "event_name": "assumption_accepted",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-009",
+      "event_name": "assumption_edited",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-010",
+      "event_name": "app_ready",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-011",
+      "event_name": "share_opened",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-012",
+      "event_name": "remix_opened",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00",
+        "remix"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-013",
+      "event_name": "correction_opened",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-014",
+      "event_name": "recovery_shown",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-015",
+      "event_name": "recovery_action_selected",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-016",
+      "event_name": "compare_shown",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-017",
+      "event_name": "compare_accept_new",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F00-EVT-018",
+      "event_name": "compare_keep_previous",
+      "function_id": "F00",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "surface",
+        "source_capsule_id",
+        "intent_id",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f00"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-001",
+      "event_name": "intent_received",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-002",
+      "event_name": "intent_analysis_completed",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-003",
+      "event_name": "clarification_required",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-004",
+      "event_name": "clarification_answered",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-005",
+      "event_name": "visible_assumption_shown",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-006",
+      "event_name": "visible_assumption_accepted",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-007",
+      "event_name": "resolved_intent_ready",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-008",
+      "event_name": "capability_coverage_resolved",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-009",
+      "event_name": "composition_started",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-010",
+      "event_name": "composition_succeeded",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-011",
+      "event_name": "composition_failed",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-012",
+      "event_name": "validation_recompose",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01",
+        "validation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-013",
+      "event_name": "intent_validated",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F01-EVT-014",
+      "event_name": "provider_failure",
+      "function_id": "F01",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "intent_id",
+        "intent_kind",
+        "policy_version",
+        "prompt_version",
+        "schema_version",
+        "registry_version",
+        "model_adapter",
+        "attempt_no",
+        "latency_ms",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f01"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-001",
+      "event_name": "validation_started",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "validation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-002",
+      "event_name": "validation_passed",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "validation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-003",
+      "event_name": "validation_rejected",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "validation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-004",
+      "event_name": "validation_incompatible",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "validation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-005",
+      "event_name": "resource_rejected",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-006",
+      "event_name": "security_rejected",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-007",
+      "event_name": "blueprint_admitted",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-008",
+      "event_name": "trust_revoked",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-009",
+      "event_name": "hash_integrity_failure",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "validation_stage",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-010",
+      "event_name": "execution_admission_requested",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id",
+        "blueprint_hash"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "registry_digest",
+        "runtime_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "execution_admission"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-011",
+      "event_name": "execution_admission_allowed",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id",
+        "blueprint_hash"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "registry_digest",
+        "runtime_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "execution_admission"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-012",
+      "event_name": "execution_admission_denied",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id",
+        "blueprint_hash"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "registry_digest",
+        "runtime_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "execution_admission"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F02-EVT-013",
+      "event_name": "execution_admission_failed",
+      "function_id": "F02",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id",
+        "blueprint_hash"
+      ],
+      "allowed_properties": [
+        "content_hash",
+        "schema_version",
+        "registry_version",
+        "registry_digest",
+        "runtime_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f02",
+        "execution_admission"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-001",
+      "event_name": "runtime_hydration_started",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-002",
+      "event_name": "runtime_ready",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-003",
+      "event_name": "runtime_hydration_failed",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-004",
+      "event_name": "action_committed",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-005",
+      "event_name": "action_rolled_back",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-006",
+      "event_name": "capability_runtime_failed",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-007",
+      "event_name": "node_isolated",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-008",
+      "event_name": "loop_guard_triggered",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-009",
+      "event_name": "result_evaluated",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-010",
+      "event_name": "runtime_fatal",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "blueprint_hash",
+        "runtime_version",
+        "registry_version",
+        "capability_id",
+        "error_code",
+        "trace_id",
+        "runtime_status",
+        "operation_status",
+        "integrity_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-011",
+      "event_name": "runtime_operation_started",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "operation_token",
+        "instance_session_id",
+        "instance_epoch",
+        "planned_checkpoint_count",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime",
+        "operation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-012",
+      "event_name": "runtime_checkpoint_completed",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "operation_token",
+        "instance_session_id",
+        "instance_epoch",
+        "checkpoint_id",
+        "completed_checkpoint_count",
+        "planned_checkpoint_count",
+        "progress_percent",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime",
+        "operation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-013",
+      "event_name": "runtime_soft_timeout_observed",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "operation_token",
+        "instance_session_id",
+        "instance_epoch",
+        "last_completed_checkpoint_id",
+        "progress_percent",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime",
+        "timeout"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-014",
+      "event_name": "runtime_action_timed_out",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "operation_token",
+        "instance_session_id",
+        "instance_epoch",
+        "error_code",
+        "integrity_status",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime",
+        "timeout"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-015",
+      "event_name": "stale_completion_discarded",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "operation_token",
+        "instance_session_id",
+        "instance_epoch",
+        "discard_reason",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime",
+        "operation"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F03-EVT-016",
+      "event_name": "runtime_safe_state_restored",
+      "function_id": "F03",
+      "schema_version": "2.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "operation_token",
+        "instance_session_id",
+        "instance_epoch",
+        "safe_surface",
+        "recovery_episode_id",
+        "trace_id",
+        "runtime_status",
+        "operation_status"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f03",
+        "runtime",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-001",
+      "event_name": "capability_selected",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-002",
+      "event_name": "capability_rejected",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-003",
+      "event_name": "coverage_full",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-004",
+      "event_name": "coverage_partial",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-005",
+      "event_name": "coverage_unsupported",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-006",
+      "event_name": "capability_gap",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-007",
+      "event_name": "registry_mismatch",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F04-EVT-008",
+      "event_name": "capability_runtime_failure",
+      "function_id": "F04",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "capability_id",
+        "capability_version",
+        "coverage_status",
+        "registry_version",
+        "registry_digest",
+        "error_code"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f04",
+        "runtime"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-001",
+      "event_name": "share_create_started",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-002",
+      "event_name": "share_created",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-003",
+      "event_name": "share_create_failed",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-004",
+      "event_name": "share_link_copied",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-005",
+      "event_name": "share_opened",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-006",
+      "event_name": "share_resolved",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-007",
+      "event_name": "share_restore_ready",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-008",
+      "event_name": "share_restore_failed",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F05-EVT-009",
+      "event_name": "shared_app_remix_opened",
+      "function_id": "F05",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "share_id",
+        "blueprint_hash",
+        "share_mode",
+        "runtime_version",
+        "schema_version",
+        "registry_version",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f05",
+        "share",
+        "remix"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-001",
+      "event_name": "refine_opened",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06",
+        "remix"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-002",
+      "event_name": "remix_opened",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06",
+        "remix"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-003",
+      "event_name": "change_submitted",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-004",
+      "event_name": "change_clarification_required",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-005",
+      "event_name": "semantic_delta_resolved",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-006",
+      "event_name": "child_blueprint_validated",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-007",
+      "event_name": "child_preview_ready",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-008",
+      "event_name": "child_accepted",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-009",
+      "event_name": "child_kept_previous",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-010",
+      "event_name": "adjust_again",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-011",
+      "event_name": "no_effective_change",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F06-EVT-012",
+      "event_name": "change_failed",
+      "function_id": "F06",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "relation_type",
+        "source_blueprint_hash",
+        "child_blueprint_hash",
+        "intent_id",
+        "share_id",
+        "coverage_status",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f06"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-001",
+      "event_name": "recovery_presented",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-002",
+      "event_name": "recovery_action_selected",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-003",
+      "event_name": "recovery_started",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-004",
+      "event_name": "recovery_succeeded",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-005",
+      "event_name": "recovery_failed",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-006",
+      "event_name": "recovery_abandoned",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-007",
+      "event_name": "recovery_escalated",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12",
+        "recovery"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F12-EVT-008",
+      "event_name": "terminal_failure_presented",
+      "function_id": "F12",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "recovery_episode_id",
+        "source_function_id",
+        "source_error_code",
+        "recovery_class",
+        "severity",
+        "policy_id",
+        "action_type",
+        "attempt_no",
+        "safe_surface",
+        "outcome"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f12"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-001",
+      "event_name": "semantic_mismatch_opened",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "PRODUCT_SAMPLE",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-002",
+      "event_name": "correction_submitted",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-003",
+      "event_name": "correction_clarification_required",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-004",
+      "event_name": "correction_delta_resolved",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-005",
+      "event_name": "corrected_blueprint_validated",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-006",
+      "event_name": "correction_replay_started",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-007",
+      "event_name": "correction_compare_ready",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-008",
+      "event_name": "correction_accepted",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-009",
+      "event_name": "correction_rejected",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-010",
+      "event_name": "correction_adjust_again",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-011",
+      "event_name": "correction_reverted",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-012",
+      "event_name": "correction_failed",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "RELIABILITY",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-013",
+      "event_name": "no_effective_correction",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16",
+        "correction"
+      ],
+      "deprecated": false
+    },
+    {
+      "event_type": "F16-EVT-014",
+      "event_name": "comparison_limited",
+      "function_id": "F16",
+      "schema_version": "1.0.0",
+      "collection_class": "CORE_OUTCOME",
+      "required_context": [
+        "function_id"
+      ],
+      "allowed_properties": [
+        "correction_id",
+        "intent_id",
+        "base_blueprint_hash",
+        "new_blueprint_hash",
+        "comparison_mode",
+        "correction_scope",
+        "outcome",
+        "error_code",
+        "trace_id"
+      ],
+      "retention_class": "RAW_90D",
+      "metric_tags": [
+        "f16"
+      ],
+      "deprecated": false
+    }
+  ],
+  "property_schemas": {
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "RETRY",
+        "RETRY_LATER",
+        "EDIT_REQUEST",
+        "ANSWER_QUESTION",
+        "ACCEPT_DEGRADATION",
+        "KEEP_CURRENT_APP",
+        "KEEP_PREVIOUS",
+        "USE_SIMPLER_VERSION",
+        "RETURN_HOME",
+        "RELOAD",
+        "REFRESH_COMPATIBILITY",
+        "REMIX",
+        "CORRECT_RESULT",
+        "CANCEL",
+        "CONTACT_SUPPORT",
+        "CONTINUE"
+      ]
+    },
+    "attempt_no": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255
+    },
+    "base_blueprint_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "blueprint_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "capability_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 256,
+      "pattern": "^[a-z0-9]+(?:\\\\.[a-z0-9]+)+$"
+    },
+    "capability_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "checkpoint_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+    },
+    "child_blueprint_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "comparison_mode": {
+      "type": "string",
+      "enum": [
+        "DETERMINISTIC_REPLAY",
+        "SEEDED_REPLAY",
+        "TIME_CONTEXT_REPLAY",
+        "LIMITED_COMPARISON"
+      ]
+    },
+    "completed_checkpoint_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "x-cross-field-rule": "completed_checkpoint_count <= planned_checkpoint_count when planned_checkpoint_count is present"
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "correction_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correction_scope": {
+      "type": "string",
+      "enum": [
+        "RULE_LOGIC",
+        "ASSUMPTION",
+        "RESULT_INTERPRETATION",
+        "RESULT_FORMAT_SEMANTIC",
+        "INPUT_INTERPRETATION",
+        "MIXED_CHANGE",
+        "UNKNOWN"
+      ]
+    },
+    "coverage_status": {
+      "type": "string",
+      "enum": [
+        "FULLY_SUPPORTED",
+        "PARTIALLY_SUPPORTED",
+        "EXTERNAL_OR_HEAVY_REQUIRED",
+        "UNSUPPORTED"
+      ]
+    },
+    "discard_reason": {
+      "type": "string",
+      "enum": [
+        "TOKEN_CLOSED",
+        "TOKEN_NOT_CURRENT",
+        "INSTANCE_EPOCH_MISMATCH",
+        "HARD_DEADLINE_ELAPSED"
+      ]
+    },
+    "error_code": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 64,
+      "pattern": "^(?:F\\\\d{2}-ERR-\\\\d{3}|[A-Z][A-Z0-9_-]{2,63})$",
+      "x-semantic-rule": "must be a canonical source Function error ID or registered shared API error ID"
+    },
+    "instance_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "instance_session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "integrity_status": {
+      "type": "string",
+      "enum": [
+        "PROVEN",
+        "UNKNOWN",
+        "ASSURANCE_DEGRADED",
+        "CORRUPTED"
+      ]
+    },
+    "intent_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "intent_kind": {
+      "type": "string",
+      "enum": [
+        "CREATE",
+        "REFINE",
+        "REMIX",
+        "CORRECT"
+      ]
+    },
+    "last_completed_checkpoint_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+      "x-semantic-rule": "must be a member of the current operation checkpoint_plan"
+    },
+    "latency_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647,
+      "x-unit": "ms"
+    },
+    "model_adapter": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "new_blueprint_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "operation_status": {
+      "type": "string",
+      "enum": [
+        "STARTED",
+        "PROCESSING",
+        "COMMITTED",
+        "TIMED_OUT",
+        "FAILED",
+        "CANCELLED"
+      ]
+    },
+    "operation_token": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "OPENED",
+        "ACTION_SELECTED",
+        "RECOVERED",
+        "ABANDONED",
+        "ESCALATED",
+        "TERMINATED",
+        "REQUESTED",
+        "GENERATED",
+        "ACCEPTED",
+        "REJECTED",
+        "REVERTED",
+        "FAILED"
+      ],
+      "x-enum-by-function": {
+        "F12": [
+          "OPENED",
+          "ACTION_SELECTED",
+          "RECOVERED",
+          "ABANDONED",
+          "ESCALATED",
+          "TERMINATED"
+        ],
+        "F16": [
+          "REQUESTED",
+          "GENERATED",
+          "ACCEPTED",
+          "REJECTED",
+          "REVERTED",
+          "FAILED"
+        ]
+      }
+    },
+    "planned_checkpoint_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255
+    },
+    "policy_id": {
+      "type": "string",
+      "pattern": "^F12-POL-\\\\d{3}$"
+    },
+    "policy_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "progress_percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "prompt_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "recovery_class": {
+      "type": "string",
+      "enum": [
+        "USER_INPUT_INVALID",
+        "USER_DECISION_REQUIRED",
+        "TRANSIENT_DEPENDENCY",
+        "RATE_LIMITED",
+        "TIMEOUT",
+        "NOT_FOUND",
+        "EXPIRED_OR_REVOKED",
+        "UNSUPPORTED",
+        "INCOMPATIBLE",
+        "RESOURCE_LIMIT",
+        "LOCAL_EFFECT_FAILURE",
+        "PARTIAL_COMPONENT_FAILURE",
+        "STATE_OR_ACTION_FAILURE",
+        "SECURITY_TERMINAL",
+        "INTEGRITY_FAILURE",
+        "INTERNAL_INVARIANT"
+      ]
+    },
+    "recovery_episode_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "registry_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "registry_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "relation_type": {
+      "type": "string",
+      "enum": [
+        "REFINE",
+        "REMIX"
+      ]
+    },
+    "runtime_status": {
+      "type": "string",
+      "enum": [
+        "UNINITIALIZED",
+        "HYDRATING",
+        "READY",
+        "RECOVERABLE_ERROR",
+        "FATAL_ERROR",
+        "DISPOSED"
+      ]
+    },
+    "runtime_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "safe_surface": {
+      "type": "string",
+      "enum": [
+        "DISCOVER",
+        "CREATE",
+        "APP_CURRENT",
+        "APP_PREVIOUS",
+        "COMPARE",
+        "SHARE_ROUTE",
+        "NONE_FATAL"
+      ]
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "INFO",
+        "DEGRADED",
+        "BLOCKING_RECOVERABLE",
+        "TERMINAL",
+        "CRITICAL"
+      ]
+    },
+    "share_id": {
+      "type": "string",
+      "format": "uuid",
+      "x-uuid-version": 4
+    },
+    "share_mode": {
+      "type": "string",
+      "enum": [
+        "DURABLE_REFERENCE"
+      ]
+    },
+    "source_blueprint_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "source_capsule_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+    },
+    "source_error_code": {
+      "type": "string",
+      "pattern": "^F\\\\d{2}-ERR-\\\\d{3}$"
+    },
+    "source_function_id": {
+      "type": "string",
+      "pattern": "^F\\\\d{2}$"
+    },
+    "surface": {
+      "type": "string",
+      "enum": [
+        "DISCOVER",
+        "CREATE",
+        "APP",
+        "COMPARE"
+      ]
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^(?!0{32}$)[0-9a-f]{32}$"
+    },
+    "validation_stage": {
+      "type": "string",
+      "enum": [
+        "V01",
+        "V02",
+        "V03",
+        "V04",
+        "V05",
+        "V06",
+        "V07",
+        "V08",
+        "V09",
+        "V10",
+        "V11",
+        "V12",
+        "TRUST"
+      ]
+    }
+  },
+  "event_property_constraints": {
+    "F03-EVT-010": {
+      "integrity_status": {
+        "enum": [
+          "UNKNOWN",
+          "ASSURANCE_DEGRADED",
+          "CORRUPTED"
+        ],
+        "x-required-when": "error_code = F03-ERR-018"
+      }
+    },
+    "F03-EVT-011": {
+      "operation_status": {
+        "enum": [
+          "STARTED"
+        ]
+      }
+    },
+    "F03-EVT-012": {
+      "operation_status": {
+        "enum": [
+          "PROCESSING"
+        ]
+      }
+    },
+    "F03-EVT-013": {
+      "operation_status": {
+        "enum": [
+          "PROCESSING"
+        ]
+      }
+    },
+    "F03-EVT-014": {
+      "operation_status": {
+        "enum": [
+          "TIMED_OUT"
+        ]
+      },
+      "integrity_status": {
+        "enum": [
+          "PROVEN"
+        ]
+      }
+    },
+    "F03-EVT-015": {
+      "discard_reason": {
+        "enum": [
+          "TOKEN_CLOSED",
+          "TOKEN_NOT_CURRENT",
+          "INSTANCE_EPOCH_MISMATCH",
+          "HARD_DEADLINE_ELAPSED"
+        ]
+      },
+      "x-invariant": "integrity failure is not encoded as discard_reason; non-PROVEN integrity routes to F03-ERR-018"
+    }
+  }
+}
