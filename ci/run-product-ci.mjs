@@ -28,7 +28,8 @@ const controlPaths=new Set([
   "build-spec/CURRENT.json",
   "delivery/CURRENT-SPRINT.json",
   "delivery/backlog/QUEUE.json",
-  ...(sprint.active_sprint?["delivery/sprints/"+sprint.active_sprint+"/manifest.json","delivery/sprints/"+sprint.active_sprint+"/tasks.json"]:[])
+  ...(sprint.active_sprint?["delivery/sprints/"+sprint.active_sprint+"/manifest.json","delivery/sprints/"+sprint.active_sprint+"/tasks.json"]:[]),
+  ...(current.active_baseline?["build-spec/activations/"+current.active_baseline+".json"]:[])
 ]);
 if(policy.activation_control_only_skip_product_ci && changed.length && changed.every(p=>controlPaths.has(p))){
   console.log("PRODUCT CI: CONTROL-ONLY — governance gates validate activation/task-state transition; no product code changed.");
