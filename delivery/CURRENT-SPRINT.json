@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-001",
-  "active_build_spec": "BS-P1-003",
-  "active_task": "T007",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T007 implementation merged and final BS-P1-003 Evidence EV-T007-001..012 normalized. Hold next Task while independent T007 closure audit completes."
+  "reason": "Human approved T007 closure. T007 is CLOSED and BL-P1-032 is DONE. SP-P1-001 remains REVIEW pending separate Sprint closure audit and Human approval."
 }
