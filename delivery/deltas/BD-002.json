@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-002",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-011"
+  ],
+  "affected_build_spec": "BS-P1-002",
+  "affected_tasks": [
+    "T006"
+  ],
+  "affected_contracts": [
+    "F07-RQ-008",
+    "F07-RQ-009",
+    "F07-ERR-013",
+    "DATA-MODEL product_event time semantics"
+  ],
+  "affected_acceptance": [
+    "F07-AC-030",
+    "F07-AC-031"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-09-28: 批准這份 Design Delta；批准把這版 Design 交給 Build"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "3818926b82ae2c5edaf9d6115fda3d1505757781",
+  "replacement_build_spec": "BS-P1-003",
+  "verification": [
+    "appf2-design PR #3 merged to main as 3818926b82ae2c5edaf9d6115fda3d1505757781",
+    "BF-011 Design Delta targeted cross-contract audit PASS before merge",
+    "Human approved Build handoff / replacement Build Freeze on 2026-09-28",
+    "BS-P1-003 freezes appf2-design 3818926b82ae2c5edaf9d6115fda3d1505757781 and supersedes BS-P1-002"
+  ]
+}

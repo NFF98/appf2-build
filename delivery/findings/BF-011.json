@@ -36,7 +36,10 @@
     "F07-RQ-009",
     "F07-ERR-013"
   ],
-  "affected_acceptance": [],
+  "affected_acceptance": [
+    "F07-AC-030",
+    "F07-AC-031"
+  ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-002"
 }
