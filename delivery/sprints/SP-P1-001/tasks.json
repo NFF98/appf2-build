@@ -498,7 +498,7 @@
         "BL-P1-032"
       ],
       "title": "Implement evidence batching, retry and non-blocking product isolation",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Batch normal Runtime evidence instead of sending one request per action.",
@@ -549,7 +549,20 @@
       "blocked_by": [
         "T006"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-001-T007-001",
+        "EV-SP-P1-001-T007-002",
+        "EV-SP-P1-001-T007-003",
+        "EV-SP-P1-001-T007-004",
+        "EV-SP-P1-001-T007-005",
+        "EV-SP-P1-001-T007-006",
+        "EV-SP-P1-001-T007-007",
+        "EV-SP-P1-001-T007-008",
+        "EV-SP-P1-001-T007-009",
+        "EV-SP-P1-001-T007-010",
+        "EV-SP-P1-001-T007-011",
+        "EV-SP-P1-001-T007-012"
+      ]
     }
   ]
 }
