@@ -399,7 +399,7 @@
         "BL-P1-032"
       ],
       "title": "Implement evidence envelope, intake validation and idempotent ingestion",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Implement event envelope/registry validation, property allowlist and payload bounds.",
