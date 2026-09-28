@@ -399,7 +399,7 @@
         "BL-P1-032"
       ],
       "title": "Implement evidence envelope, intake validation and idempotent ingestion",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Implement event envelope/registry validation, property allowlist and payload bounds.",
@@ -478,7 +478,19 @@
       "blocked_by": [
         "T005"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-001-T006-021",
+        "EV-SP-P1-001-T006-022",
+        "EV-SP-P1-001-T006-023",
+        "EV-SP-P1-001-T006-024",
+        "EV-SP-P1-001-T006-025",
+        "EV-SP-P1-001-T006-026",
+        "EV-SP-P1-001-T006-027",
+        "EV-SP-P1-001-T006-028",
+        "EV-SP-P1-001-T006-029",
+        "EV-SP-P1-001-T006-030",
+        "EV-SP-P1-001-T006-031"
+      ]
     },
     {
       "task_id": "T007",

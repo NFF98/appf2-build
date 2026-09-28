@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-003",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved BF-013 Option A re-plan applied; resume T006 only to implement the canonical effective event-time query primitive required by F07-AC-031. T007 remains PLANNED."
+  "reason": "T006 Option A implementation merged, final BS-P1-003 Evidence EV-T006-021..031 normalized, and BF-013 resolved. Hold T007 PLANNED while independent T006 closure audit completes."
 }
