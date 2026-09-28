@@ -2,6 +2,12 @@ import type { EvidenceEventInput } from "./evidence-types.js";
 
 export const EVIDENCE_EVENTS_BATCH_PATH = "/api/v1/events/batch";
 
+export const RETRYABLE_INGESTION_REJECTION_CODES = Object.freeze([
+  "F07-ERR-008",
+  "F07-ERR-009",
+  "F07-ERR-010"
+]);
+
 export interface EvidenceBatchPayload {
   readonly batch_id: string;
   readonly events: readonly EvidenceEventInput[];
@@ -19,14 +25,48 @@ export function isRetryableHttpStatus(status: number): boolean {
   return status === 429 || status >= 500;
 }
 
-function outcomeFromResponse(response: Response): EvidenceBatchTransportResult {
-  if (response.ok) {
-    return { ok: true };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function canonicalRejections(body: unknown): readonly unknown[] | null {
+  if (!isRecord(body) || !isRecord(body.data) || !Array.isArray(body.data.rejections)) {
+    return null;
   }
-  return {
-    ok: false,
-    retryable: isRetryableHttpStatus(response.status)
-  };
+  return body.data.rejections;
+}
+
+function hasRetryableIngestionRejection(rejections: readonly unknown[]): boolean {
+  return rejections.some(rejection =>
+    isRecord(rejection) &&
+    typeof rejection.code === "string" &&
+    (RETRYABLE_INGESTION_REJECTION_CODES as readonly string[]).includes(rejection.code)
+  );
+}
+
+function outcomeFromSuccessBody(body: unknown): EvidenceBatchTransportResult {
+  const rejections = canonicalRejections(body);
+  if (rejections === null) {
+    return { ok: false, retryable: true };
+  }
+  if (hasRetryableIngestionRejection(rejections)) {
+    return { ok: false, retryable: true };
+  }
+  return { ok: true };
+}
+
+async function outcomeFromResponse(response: Response): Promise<EvidenceBatchTransportResult> {
+  if (!response.ok) {
+    return {
+      ok: false,
+      retryable: isRetryableHttpStatus(response.status)
+    };
+  }
+  try {
+    return outcomeFromSuccessBody(await response.json());
+  } catch {
+    return { ok: false, retryable: true };
+  }
 }
 
 export function createBrowserEvidenceBatchTransport(
@@ -43,7 +83,7 @@ export function createBrowserEvidenceBatchTransport(
             events: payload.events
           })
         });
-        return outcomeFromResponse(response);
+        return await outcomeFromResponse(response);
       } catch {
         return { ok: false, retryable: true };
       }

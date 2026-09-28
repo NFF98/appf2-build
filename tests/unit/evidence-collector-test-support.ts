@@ -9,7 +9,45 @@ export const ANONYMOUS_ID = "423e4567-e89b-42d3-a456-426614174000";
 export const SESSION_ID = "623e4567-e89b-42d3-a456-426614174000";
 export const SHARE_ID = "723e4567-e89b-42d3-a456-426614174000";
 
-export type ScriptedFetchResult = number | "network";
+export type ScriptedFetchResult =
+  | number
+  | "network"
+  | {
+      readonly status: number;
+      readonly body: unknown;
+    };
+
+export function canonicalBatchSuccessBody() {
+  return {
+    request_id: "523e4567-e89b-42d3-a456-426614174000",
+    data: {
+      accepted: 1,
+      duplicates: 0,
+      rejected: 0,
+      rejections: [],
+      diagnostics: []
+    }
+  };
+}
+
+export function batchRejectionBody(eventId: string, code: string) {
+  return {
+    request_id: "523e4567-e89b-42d3-a456-426614174000",
+    data: {
+      accepted: 0,
+      duplicates: 0,
+      rejected: 1,
+      rejections: [
+        {
+          event_id: eventId,
+          code,
+          field: null
+        }
+      ],
+      diagnostics: []
+    }
+  };
+}
 
 export interface RecordedBatchRequest {
   readonly url: string;
@@ -77,7 +115,7 @@ export function createScriptedFetch(script: readonly ScriptedFetchResult[] = [])
     if (next === "network") {
       throw new TypeError("Failed to fetch");
     }
-    return new Response("{}", { status: next });
+    return scriptedResponse(next);
   };
   return { fetchImpl, requests, remaining };
 }
@@ -114,4 +152,14 @@ function headerNames(headers: HeadersInit | undefined): string[] {
     return [];
   }
   return [...new Headers(headers).keys()];
+}
+
+function scriptedResponse(next: Exclude<ScriptedFetchResult, "network">): Response {
+  if (typeof next === "number") {
+    const body = next >= 200 && next < 300
+      ? JSON.stringify(canonicalBatchSuccessBody())
+      : "{}";
+    return new Response(body, { status: next });
+  }
+  return new Response(JSON.stringify(next.body), { status: next.status });
 }
