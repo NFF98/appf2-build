@@ -32,9 +32,11 @@
   },
   "replacement_build_spec_required": true,
   "upstream_working_commit": "05f7c55323c2d4c9f4335e1931893959776a078c",
-  "replacement_build_spec": null,
+  "replacement_build_spec": "BS-P1-002",
   "verification": [
     "appf2-design PR #2 merged to main as 05f7c55323c2d4c9f4335e1931893959776a078c",
-    "Design-side Evidence/Acceptance registry re-audit PASS before merge"
+    "Design-side Evidence/Acceptance registry re-audit PASS before merge",
+    "Human approved BS-P1-002 Build Freeze on 2026-09-28",
+    "BS-P1-002 freezes appf2-design 05f7c55323c2d4c9f4335e1931893959776a078c and supersedes BS-P1-001"
   ]
 }
