@@ -1405,7 +1405,7 @@
       "build_spec_id": "BS-P1-003",
       "function_id": "F07",
       "contract_scope": "BS-P1-003/F07",
-      "implementation_scope": "Evidence event validation, batching, retry & ingestion isolation",
+      "implementation_scope": "Evidence event validation, batching, retry, ingestion isolation, and canonical effective event-time query primitive for F07-AC-031; excludes final product metrics.",
       "acceptance_links": [
         {
           "acceptance_id": "F07-AC-006",

@@ -16,7 +16,8 @@
     "closure audit of all 20 production src TS/JS files at implementation merge 1404880d3588118201ba3b5733ef778140eb3dbb found no effectiveEventAt/effective_event_at query or aggregate consumer",
     "supabase/migrations/20260927123000_t006_evidence_intake.sql stores occurred_at/received_at but defines no effective_event_at query/aggregate consumer",
     "delivery/backlog/QUEUE.json :: BL-P1-034 Canonical outcome metrics & cross-function evidence links is QUEUED",
-    "delivery/evidence/EV-SP-P1-001-T006-012.json :: current BS-P1-003 mapped test evidence is PASS but cannot substitute for missing production consumer"
+    "delivery/evidence/EV-SP-P1-001-T006-012.json :: current BS-P1-003 mapped test evidence is PASS but cannot substitute for missing production consumer",
+    "Human Governance approval 2026-09-28: approved Option A — minimally expand T006 execution scope to a canonical event-time query primitive while keeping final product metrics out of scope."
   ],
   "attempts": [
     {
@@ -30,6 +31,12 @@
       "strategy": "IMPLEMENT_FINAL_METRICS_CONSUMER_INSIDE_T006",
       "result": "FAILED",
       "evidence": "Would violate T006 non_scope and expand active Task implementation beyond approved Sprint scope."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "HUMAN_APPROVED_MINIMAL_T006_QUERY_PRIMITIVE_REPLAN",
+      "result": "PASSED",
+      "evidence": "Human approved Option A. T006 scope now explicitly permits a production canonical event-time query primitive that consumes persisted occurred_at/received_at and derives effective_event_at, while final product metrics remain non-scope."
     }
   ],
   "affected_contracts": [

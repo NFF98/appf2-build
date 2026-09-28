@@ -404,7 +404,8 @@
       "scope": [
         "Implement event envelope/registry validation, property allowlist and payload bounds.",
         "Implement batch partial acceptance and event_id idempotent dedupe.",
-        "Implement anonymous identity ensure at evidence ingestion without making evidence an authorization source."
+        "Implement anonymous identity ensure at evidence ingestion without making evidence an authorization source.",
+        "Implement a production canonical event-time query primitive that reads persisted occurred_at/received_at and derives effective_event_at using the BS-P1-003 clock rule, without computing final product metrics."
       ],
       "non_scope": [
         "Do not implement client offline queue retention/expiry.",
