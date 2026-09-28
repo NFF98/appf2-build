@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-013",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T006",
+  "expected": "T006 may close only when every mapped Acceptance observable is truthfully satisfied within the approved Task scope/non-scope boundary. F07-AC-031 requires canonical effective_event_at behavior to be used by a query/aggregate consumer, while T006 must not implement final product metrics.",
+  "actual": "BS-P1-003 maps F07-AC-031 / TEST-F07-031 to T006, but current production code only defines the deterministic effectiveEventAt helper and directly tests it. A repo-wide production scan found no query/aggregate consumer using that helper or equivalent rule. T006 non_scope explicitly forbids final product metrics. BL-P1-034 is the queued canonical outcome metrics & cross-function evidence owner.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-003/registries/acceptance-test-registry.json :: F07-AC-031 expected_observable requires query/aggregate use of canonical effective_event_at",
+    "delivery/sprints/SP-P1-001/tasks.json :: T006 maps F07-AC-031 and non_scope says Do not implement final product metrics",
+    "src/platform/evidence/evidence-clock.ts :: deterministic effectiveEventAt helper exists",
+    "tests/regression/evidence-clock-invalid.regression.test.ts :: TEST-F07-031 directly exercises helper/duplicate timestamp behavior",
+    "closure audit of all 20 production src TS/JS files at implementation merge 1404880d3588118201ba3b5733ef778140eb3dbb found no effectiveEventAt/effective_event_at query or aggregate consumer",
+    "supabase/migrations/20260927123000_t006_evidence_intake.sql stores occurred_at/received_at but defines no effective_event_at query/aggregate consumer",
+    "delivery/backlog/QUEUE.json :: BL-P1-034 Canonical outcome metrics & cross-function evidence links is QUEUED",
+    "delivery/evidence/EV-SP-P1-001-T006-012.json :: current BS-P1-003 mapped test evidence is PASS but cannot substitute for missing production consumer"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "TREAT_DETERMINISTIC_HELPER_AND_DIRECT_TEST_AS_FULL_AC031_OBSERVABLE",
+      "result": "FAILED",
+      "evidence": "F07-AC-031 expected_observable explicitly requires future-skew query/aggregate behavior; direct helper execution proves the rule implementation but not a production consumer."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "IMPLEMENT_FINAL_METRICS_CONSUMER_INSIDE_T006",
+      "result": "FAILED",
+      "evidence": "Would violate T006 non_scope and expand active Task implementation beyond approved Sprint scope."
+    }
+  ],
+  "affected_contracts": [
+    "T006 scope/non_scope",
+    "BL-P1-032 Acceptance ownership",
+    "BL-P1-034 canonical metrics ownership"
+  ],
+  "affected_acceptance": [
+    "F07-AC-031"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}
