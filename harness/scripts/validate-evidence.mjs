@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { canPreserveCompletedBaseline } from "./baseline-lineage.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -59,7 +60,10 @@ for(const file of files){
   const task=taskMap.get(e.sprint_id+"/"+e.task_id);
   if(!task) errors.push(e.evidence_id+" binds unknown Sprint/Task");
   else{
-    if(e.build_spec_id!==task.build_spec_id) errors.push(e.evidence_id+" build_spec binding mismatch");
+    const evidenceLinks=(e.acceptance_ids||[]).map((acceptance_id,index)=>({acceptance_id,test_id:(e.test_ids||[])[index]}));
+    const legacyCompatible=e.build_spec_id!==task.build_spec_id &&
+      canPreserveCompletedBaseline(root,e.build_spec_id,task.build_spec_id,evidenceLinks);
+    if(e.build_spec_id!==task.build_spec_id && !legacyCompatible) errors.push(e.evidence_id+" build_spec binding mismatch");
     const mapped=new Map((task.acceptance_links||[]).map(x=>[x.acceptance_id,x.test_id]));
     if((e.acceptance_ids||[]).length!==(e.test_ids||[]).length) errors.push(e.evidence_id+" acceptance_ids/test_ids length mismatch");
     for(let i=0;i<(e.acceptance_ids||[]).length;i++){
