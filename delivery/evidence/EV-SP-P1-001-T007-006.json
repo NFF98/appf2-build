@@ -12,7 +12,7 @@
   "kind": "COMMAND_RESULT",
   "acceptance_ids": [],
   "test_ids": [],
-  "locator": "github-actions://NFF98/appf2-build/actions/runs/36489013784#10-behavior-pass",
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/36489013784#12-behavior-pass",
   "command": "npm run test:behavior",
   "review_checks": null
 }
