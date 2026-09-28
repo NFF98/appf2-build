@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T006",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-09-28T20:10:00Z",
+  "blocking_findings": [],
+  "source_commit": "718185bd9bb93810a743bbb13d25dc63c65c144d",
+  "evidence_id": "EV-SP-P1-001-T006-030",
+  "kind": "RUNTIME_TRACE",
+  "acceptance_ids": [
+    "F07-AC-030",
+    "F07-AC-031"
+  ],
+  "test_ids": [
+    "TEST-F07-030",
+    "TEST-F07-031"
+  ],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/36475704112#production-like-runtime-evidence-clock-invalid-and-effective-event-time",
+  "command": null,
+  "review_checks": null
+}
