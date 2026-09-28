@@ -76,7 +76,8 @@ for(const file of activationFiles){
   if(!m){errors.push(id+" activation points to missing baseline"); continue;}
   if(m.status!=="LOCKED") errors.push(id+" activated baseline must be LOCKED");
   if(m.source_working_commit!==a.source_working_commit) errors.push(id+" activation/source Working commit mismatch");
-  if(m.approval?.status!=="USER_APPROVED" || m.approval?.decision_ref!==a.decision_ref) errors.push(id+" activation approval must match baseline manifest approval");
+  if(m.approval?.status!=="USER_APPROVED" || !m.approval?.decision_ref) errors.push(id+" baseline must have explicit User-approved Build Freeze evidence");
+  if(a.status!=="USER_APPROVED" || !a.decision_ref) errors.push(id+" activation must have its own explicit User approval reference");
 
   const md=[...(m.approved_delta_ids||[])].sort();
   const ad=[...(a.approved_delta_ids||[])].sort();
