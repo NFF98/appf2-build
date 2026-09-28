@@ -10,6 +10,12 @@ build-spec/activations/<BS-ID>.json
 
 Activation Record 是 governance approval evidence，不是 Cursor execution artifact。
 
+Build Freeze 與 Activation 是兩道不同 Human Gate：
+
+- baseline manifest `approval.decision_ref` = Human Build Freeze approval evidence
+- Activation Record `decision_ref` = Human Activation approval evidence
+- 兩者都必須存在，但不得要求兩個 reference 相同；相同只代表當次流程曾合併批准，不能作為 machine invariant。
+
 ## INITIAL_FREEZE
 
 - previous_baseline = null
