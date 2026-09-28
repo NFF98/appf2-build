@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-003",
-  "implementation_enabled": false,
-  "reason": "BF-013 Human-approved re-plan HOLD; BS-P1-003 remains active baseline while execution pauses for T006 scope correction."
+  "implementation_enabled": true,
+  "reason": "Human-approved BF-013 Option A re-plan applied; resume SP-P1-001/T006 under BS-P1-003 for canonical event-time query primitive. Final product metrics remain out of scope."
 }

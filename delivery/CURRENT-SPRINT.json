@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-001",
+  "active_build_spec": "BS-P1-003",
+  "active_task": "T006",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BF-013 Human-approved option A re-plan HOLD. Preserve SP-P1-001/T006 blocked state while ChatGPT updates T006 scope; T007 remains PLANNED."
+  "reason": "Human-approved BF-013 Option A re-plan applied; resume T006 only to implement the canonical effective event-time query primitive required by F07-AC-031. T007 remains PLANNED."
 }
