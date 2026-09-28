@@ -1,5 +1,6 @@
 import type {
   EvidenceEventInput,
+  EvidenceEventTimeProjection,
   EvidenceWriteResult
 } from "./evidence-types.js";
 
@@ -19,4 +20,10 @@ export interface EvidenceRepository {
 
 export interface EvidenceIngestionDiagnostics {
   reportNonBlockingFailure(error: unknown): void;
+}
+
+export interface EvidenceEventTimeQuery {
+  lookupByEventIds(
+    eventIds: readonly string[]
+  ): Promise<readonly EvidenceEventTimeProjection[]>;
 }
