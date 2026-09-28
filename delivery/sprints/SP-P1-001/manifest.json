@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "sprint_id": "SP-P1-001",
-  "status": "BLOCKED",
-  "build_spec_id": "BS-P1-002",
+  "status": "ACTIVE",
+  "build_spec_id": "BS-P1-003",
   "goal": "Establish Phase 1 platform foundations: trusted Capability Registry, canonical Blueprint identity, anonymous identity, and safe evidence intake primitives that unblock later validation/compiler/runtime work.",
   "scope": [
     "BL-P1-001 Canonical registry generation & version integrity",
@@ -25,7 +25,7 @@
     "baseline_gate_passed": true,
     "acceptance_mapped": true,
     "user_approved": true,
-    "approval_ref": "HUMAN-ACTIVATION-BS-P1-002-SP-P1-001-T006-20260928"
+    "approval_ref": "HUMAN-ACTIVATION-BS-P1-003-SP-P1-001-T006-20260928"
   },
   "backlog_item_ids": [
     "BL-P1-001",
