@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-003",
+  "previous_baseline": "BS-P1-002",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "HUMAN-ACTIVATION-BS-P1-003-SP-P1-001-T006-20260928",
+  "approved_delta_ids": [
+    "BD-002"
+  ],
+  "source_working_commit": "3818926b82ae2c5edaf9d6115fda3d1505757781",
+  "activated_at": "2026-09-28T13:50:00Z"
+}
