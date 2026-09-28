@@ -205,4 +205,16 @@ describe("locked evidence payload and context bounds", () => {
       rejection: { code: "F07-ERR-003", field: "context" }
     });
   });
+
+  test("rejects a malformed anonymous_id as ANONYMOUS_ID_INVALID without treating null as invalid", () => {
+    expect(validate({ ...validEvent(), anonymous_id: "not-a-uuid" })).toEqual({
+      accepted: false,
+      rejection: {
+        event_id: EVENT_ID,
+        code: "F07-ERR-001",
+        field: "anonymous_id"
+      }
+    });
+    expect(validate({ ...validEvent(), anonymous_id: null }).accepted).toBe(true);
+  });
 });

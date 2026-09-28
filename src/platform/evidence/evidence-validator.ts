@@ -44,7 +44,6 @@ const ENVELOPE_FIELDS = new Set([
 ]);
 const UUID_CONTEXT_FIELDS = [
   "event_id",
-  "anonymous_id",
   "session_id",
   "intent_id",
   "share_id"
@@ -286,23 +285,35 @@ function validateProperties(
   return validateRequiredProperties(source, properties, entry);
 }
 
-function validContext(source: Record<string, unknown>, entry: EvidenceRegistryEntry): boolean {
+function contextRejection(
+  source: Record<string, unknown>,
+  entry: EvidenceRegistryEntry
+): Pick<EvidenceRejection, "code" | "field"> | null {
   for (const requiredField of entry.requiredContext) {
     if (source[requiredField] === undefined || source[requiredField] === null) {
-      return false;
+      return { code: "F07-ERR-003", field: "context" };
     }
+  }
+  if (malformedAnonymousId(source.anonymous_id)) {
+    return { code: "F07-ERR-001", field: "anonymous_id" };
   }
   for (const field of UUID_CONTEXT_FIELDS) {
     if (!validOptionalString(source, field, UUID_PATTERN)) {
-      return false;
+      return { code: "F07-ERR-003", field: "context" };
     }
   }
   if (!validOptionalString(source, "blueprint_hash", BLUEPRINT_HASH_PATTERN)) {
-    return false;
+    return { code: "F07-ERR-003", field: "context" };
   }
   return BOUNDED_CONTEXT_FIELDS.every(field =>
     validOptionalString(source, field, BOUNDED_IDENTIFIER_PATTERN)
-  );
+  )
+    ? null
+    : { code: "F07-ERR-003", field: "context" };
+}
+
+function malformedAnonymousId(value: unknown): boolean {
+  return value !== undefined && value !== null && !isUuid(value);
 }
 
 function asEvidenceEvent(source: Record<string, unknown>): EvidenceEventInput {
@@ -339,8 +350,9 @@ export function validateEvidenceEvent(
   if (typeof input.occurred_at !== "string" || !Number.isFinite(Date.parse(input.occurred_at))) {
     return rejection(input, "F07-ERR-003", "occurred_at");
   }
-  if (!validContext(input, entry)) {
-    return rejection(input, "F07-ERR-003", "context");
+  const invalidContext = contextRejection(input, entry);
+  if (invalidContext !== null) {
+    return rejection(input, invalidContext.code, invalidContext.field);
   }
   const serializedProperties = JSON.stringify(input.properties ?? {});
   const propertyRejection = validateProperties(input, entry, serializedProperties);
