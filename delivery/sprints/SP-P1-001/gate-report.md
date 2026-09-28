@@ -1,5 +1,7 @@
 # SP-P1-001 Build Readiness Gate Report
 
+> **Historical readiness snapshot:** This report records the original BS-P1-001 / pre-activation readiness state. SP-P1-001 was later rebaselined through BS-P1-002 to BS-P1-003. Current lifecycle truth is `build-spec/CURRENT.json`, `delivery/CURRENT-SPRINT.json`, and this Sprint's `manifest.json` / `tasks.json`. The 36-AC and PLANNED/Activation statements below are intentionally historical.
+
 ## Status
 
 **BUILD READINESS: PASS — SPRINT STILL NOT ACTIVATED**
