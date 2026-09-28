@@ -399,8 +399,8 @@
         "BL-P1-032"
       ],
       "title": "Implement evidence envelope, intake validation and idempotent ingestion",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-001",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-002",
       "scope": [
         "Implement event envelope/registry validation, property allowlist and payload bounds.",
         "Implement batch partial acceptance and event_id idempotent dedupe.",
@@ -478,7 +478,7 @@
       ],
       "title": "Implement evidence batching, retry and non-blocking product isolation",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-001",
+      "build_spec_id": "BS-P1-002",
       "scope": [
         "Batch normal Runtime evidence instead of sending one request per action.",
         "Enforce maximum 50 events per batch.",
