@@ -498,7 +498,7 @@
         "BL-P1-032"
       ],
       "title": "Implement evidence batching, retry and non-blocking product isolation",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Batch normal Runtime evidence instead of sending one request per action.",
