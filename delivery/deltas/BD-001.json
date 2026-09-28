@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-001",
+  "type": "DESIGN_DELTA",
+  "status": "OPEN",
+  "source_finding_ids": [
+    "BF-007"
+  ],
+  "affected_build_spec": "BS-P1-001",
+  "affected_tasks": [
+    "T006"
+  ],
+  "affected_contracts": [
+    "F03-RQ-016",
+    "F07-DATA-003",
+    "F07-RQ-009",
+    "F07-RQ-010",
+    "F07-RQ-011",
+    "F07-SEC-007"
+  ],
+  "affected_acceptance": [
+    "F03-AC-037",
+    "F03-AC-038",
+    "F07-AC-008"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "PENDING",
+    "decision_ref": null
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "05f7c55323c2d4c9f4335e1931893959776a078c",
+  "replacement_build_spec": null,
+  "verification": [
+    "appf2-design PR #2 merged to main as 05f7c55323c2d4c9f4335e1931893959776a078c",
+    "Design-side Evidence/Acceptance registry re-audit PASS before merge"
+  ]
+}
