@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-003",
-  "implementation_enabled": true,
-  "reason": "Human-approved BS-P1-003 Activation; resume SP-P1-001 at T006 under replacement Build Spec. T007 remains PLANNED."
+  "implementation_enabled": false,
+  "reason": "BF-013 Human-approved re-plan HOLD; BS-P1-003 remains active baseline while execution pauses for T006 scope correction."
 }
