@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-001",
-  "active_build_spec": "BS-P1-002",
-  "active_task": "T006",
-  "status": "BLOCKED",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T006 closure audit found unresolved F07 clock-invalid intake semantics (F07-RQ-008 / F07-ERR-013); block execution pending BF-011."
+  "reason": "SP-P1-001 / T006 paused for BF-011 rebaseline; preserve merged T006 implementation/evidence and resume only after BS-P1-003 Activation."
 }
