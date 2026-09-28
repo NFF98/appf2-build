@@ -29,11 +29,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
 function canonicalRejections(body: unknown): readonly unknown[] | null {
-  if (!isRecord(body) || !isRecord(body.data) || !Array.isArray(body.data.rejections)) {
+  if (!isRecord(body) || typeof body.request_id !== "string" || !isRecord(body.data)) {
     return null;
   }
-  return body.data.rejections;
+  const data = body.data;
+  if (
+    !isNonNegativeInteger(data.accepted) ||
+    !isNonNegativeInteger(data.duplicates) ||
+    !isNonNegativeInteger(data.rejected) ||
+    !Array.isArray(data.rejections) ||
+    !Array.isArray(data.diagnostics)
+  ) {
+    return null;
+  }
+  return data.rejections;
 }
 
 function hasRetryableIngestionRejection(rejections: readonly unknown[]): boolean {

@@ -160,6 +160,29 @@ describe("EvidenceCollector retry isolation", () => {
     expect(malformedCollector.queuedCount()).toBe(1);
   });
 
+  test("incomplete HTTP 200 canonical batch shape is retryable and does not dequeue", async () => {
+    const sleepLog: number[] = [];
+    const incomplete = { status: 200, body: { data: { rejections: [] } } };
+    const fetch = createScriptedFetch([incomplete, incomplete, incomplete]);
+    const collector = createTestCollector({
+      fetch: fetch.fetchImpl,
+      sleepLog,
+      batchIds: [batchId(9)]
+    });
+
+    collector.emit(shareOpenEvent(8));
+    await collector.flush();
+
+    expect(fetch.requests).toHaveLength(3);
+    expect(sleepLog).toEqual([1000, 5000]);
+    expect(fetch.requests.map(request => request.batch_id)).toEqual([
+      batchId(9),
+      batchId(9),
+      batchId(9)
+    ]);
+    expect(collector.queuedCount()).toBe(1);
+  });
+
   test("flush rejects are swallowed so evidence failure cannot become an unhandled rejection", async () => {
     const fetch = createScriptedFetch(["network", "network", "network"]);
     const collector = createTestCollector({ fetch: fetch.fetchImpl });
