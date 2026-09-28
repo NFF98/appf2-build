@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-012",
+  "classification": "TEST_BUG",
+  "status": "RESOLVED",
+  "build_spec_id": "BS-P1-002",
+  "sprint_id": "SP-P1-001",
+  "task_id": "T006",
+  "expected": "Evidence gate must preserve immutable historical Evidence provenance across an approved rebaseline while preventing ancestor-baseline Evidence from being used as current-baseline completion evidence.",
+  "actual": "validate-evidence.mjs required every Evidence record build_spec_id to exactly equal the Task current build_spec_id. Rebinding T006 from BS-P1-002 to BS-P1-003 therefore rejected all eleven valid historical T006 Evidence records unless their provenance was falsified.",
+  "evidence": [
+    "PR #73 Governance Gate: Activation/Backlog/Sprint PASS followed by EV-SP-P1-001-T006-001..011 build_spec binding mismatch",
+    "harness/scripts/validate-evidence.mjs exact build_spec equality check",
+    "harness/scripts/baseline-lineage.mjs existing ancestor + Acceptance semantic-equivalence helper"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "REBIND_HISTORICAL_EVIDENCE_TO_BS-P1-003",
+      "result": "FAILED",
+      "evidence": "Would falsely claim BS-P1-002 test/review/runtime evidence was produced under BS-P1-003 and would erase provenance, including EV-T006-010 staging proof."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "ALLOW_ANCESTOR_BASELINE_EVIDENCE_WITH_SEMANTICALLY_UNCHANGED_AC_TEST_PAIRS",
+      "result": "PASSED",
+      "evidence": "Evidence validator now accepts ancestor-baseline records only when baseline lineage and referenced Acceptance/Test semantics are preserved; completion_evidence still requires exact current Task build_spec_id."
+    }
+  ],
+  "affected_contracts": [
+    "HARNESS-EVIDENCE-BINDING"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}
