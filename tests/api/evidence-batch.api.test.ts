@@ -33,12 +33,17 @@ class RecordingIdentities implements AnonymousIdentityRepository {
 
 class RecordingEvidence implements EvidenceRepository {
   public readonly events = new Map<string, EvidenceEventInput>();
+  public readonly receivedAtByEventId = new Map<string, string>();
 
-  public async insert(event: EvidenceEventInput): Promise<EvidenceWriteResult> {
+  public async insert(
+    event: EvidenceEventInput,
+    receivedAt: string
+  ): Promise<EvidenceWriteResult> {
     if (this.events.has(event.event_id)) {
       return "DUPLICATE";
     }
     this.events.set(event.event_id, event);
+    this.receivedAtByEventId.set(event.event_id, receivedAt);
     return "INSERTED";
   }
 }
@@ -161,5 +166,40 @@ describe("POST /api/v1/events/batch", () => {
     expect(first.body).toMatchObject({ data: { accepted: 1, duplicates: 0 } });
     expect(retry.body).toMatchObject({ data: { accepted: 0, duplicates: 1 } });
     expect(harness.evidence.events.size).toBe(1);
+  });
+
+  test("TEST-F07-030 accepts a clock-invalid event with F07-ERR-013 diagnostic", async () => {
+    const harness = createHarness();
+    const clockInvalid = {
+      ...event(1),
+      occurred_at: "2026-09-27T02:11:00.000Z"
+    };
+
+    const response = await post(harness.handler, [clockInvalid]);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      request_id: REQUEST_ID,
+      data: {
+        accepted: 1,
+        duplicates: 0,
+        rejected: 0,
+        rejections: [],
+        diagnostics: [
+          {
+            event_id: clockInvalid.event_id,
+            code: "F07-ERR-013",
+            field: "occurred_at",
+            action: "USE_RECEIVED_AT"
+          }
+        ]
+      }
+    });
+    expect(harness.evidence.events.get(clockInvalid.event_id)?.occurred_at).toBe(
+      "2026-09-27T02:11:00.000Z"
+    );
+    expect(harness.evidence.receivedAtByEventId.get(clockInvalid.event_id)).toBe(
+      "2026-09-27T02:00:00.000Z"
+    );
   });
 });
