@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-002",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved BS-P1-002 rebaseline activated; resume preserved T006 implementation under replacement evidence property schema."
+  "reason": "T006 closure audit found unresolved F07 clock-invalid intake semantics (F07-RQ-008 / F07-ERR-013); block execution pending BF-011."
 }
