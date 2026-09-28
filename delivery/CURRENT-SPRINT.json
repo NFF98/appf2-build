@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-001",
   "active_build_spec": "BS-P1-003",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved BS-P1-003 Activation; resume T006 for BF-011 clock-invalid implementation/verification. T007 remains PLANNED and blocked by T006."
+  "reason": "T006 closure audit found BF-013: F07-AC-031 query/aggregate observable is not closed within T006 scope; execution blocked pending Human-governed re-plan. T007 remains PLANNED."
 }
