@@ -1460,7 +1460,7 @@
         "BL-P1-031"
       ],
       "priority": "P1",
-      "status": "SPRINTED",
+      "status": "DONE",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure.",
       "sprint_id": "SP-P1-001"
