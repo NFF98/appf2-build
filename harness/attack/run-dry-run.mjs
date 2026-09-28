@@ -340,12 +340,29 @@ write("delivery/deltas/BD-999.json",{
 const blockedBase=commit("fixture: blocked for approved design delta");
 
 makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE"});
+const resolved=read("delivery/findings/BF-999.json"); resolved.status="RESOLVED"; write("delivery/findings/BF-999.json",resolved);
+const frozenRebaselineBase=commit("fixture: finding resolved and replacement baseline already frozen");
 makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceB,deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE"});
 baseWorkState("BS-P9-002","BLOCKED","BLOCKED");
-const resolved=read("delivery/findings/BF-999.json"); resolved.status="RESOLVED"; write("delivery/findings/BF-999.json",resolved);
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:true,reason:"APPROVED_DRYRUN_REBASELINE"});
 const goodRebaseline=commit("positive: approved rebaseline remains blocked");
-expectHarnessPass("Approved rebaseline transition",governanceHarness,{base:blockedBase,head:goodRebaseline});
+expectHarnessPass("Approved rebaseline transition",governanceHarness,{base:frozenRebaselineBase,head:goodRebaseline});
+
+// Positive HOLD -> ACTIVE rebaseline: replacement baseline is already frozen, then one Human-approved
+// activation/control transition may move CURRENT + Sprint/Task bindings without requiring pre-existing product tests.
+cleanTo(blockedBase);
+makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE"});
+const holdResolved=read("delivery/findings/BF-999.json"); holdResolved.status="RESOLVED"; write("delivery/findings/BF-999.json",holdResolved);
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"DRYRUN_REBASELINE_HOLD"});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"DRYRUN_REBASELINE_HOLD"});
+const holdRebaselineBase=commit("fixture: frozen replacement baseline awaiting HOLD rebaseline activation");
+
+makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceB,deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE"});
+baseWorkState("BS-P9-002","ACTIVE","IN_PROGRESS");
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:true,reason:"DRYRUN_REBASELINE_ACTIVE"});
+const holdRebaselineHead=commit("positive: HOLD to ACTIVE approved rebaseline");
+expectHarnessPass("HOLD to ACTIVE approved rebaseline",governanceHarness,{base:holdRebaselineBase,head:holdRebaselineHead});
+expectPass("HOLD rebaseline control-only Product CI skips pre-code tests","node",["ci/run-product-ci.mjs"],{base:holdRebaselineBase,head:holdRebaselineHead});
 
 // Positive Sprint Activation transition: control files may cross HOLD -> ACTIVE without pretending product tests already exist.
 cleanTo(fixtureBase);
