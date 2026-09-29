@@ -9,6 +9,7 @@
 - 不得修改 `build-spec/baselines/<existing-baseline>/`。
 - 不得建立 `working/`、`spec/`、`execution/` shadow trees。
 - 不得把 code behavior、library limitation 或「比較好做」反推成 product truth。
+- Capability support 必須以 locked F04 Registry / Coverage Result 的實際能力為準；不得把 Registry 不支援、不可用或 semantic core 已失真的需求硬湊成「看起來支援」。Unknown / unavailable / semantic-core-not-preserved 必須依 contract 誠實回 degraded / external / unsupported。
 - 發現 gap 先記錄 Finding；受影響 Task 必須 BLOCKED。
 - 同一 implementation strategy 失敗兩次，停止 retry loop，建立 Finding。
 - Sprint 外工作不得混入當前 Sprint commit。
