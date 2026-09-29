@@ -19,14 +19,29 @@
       "blocking_scope": [],
       "blocks_activation": false,
       "items": [
-        "PR #1 actions/upload-artifact 4→7",
-        "PR #2 actions/setup-node 4→7",
-        "PR #3 @types/node 22→26",
-        "PR #4 actions/checkout 4→7",
-        "PR #94 vitest 5.0.1→5.0.2"
+        {
+          "pr": 1,
+          "disposition": "DEFERRED_REVIEW",
+          "reason": "GitHub Actions upload-artifact v4→v7 major upgrade; separate Build Machine maintenance; non-blocking for SP2."
+        },
+        {
+          "pr": 2,
+          "disposition": "DEFERRED_REVIEW",
+          "reason": "GitHub Actions setup-node v4→v7 major upgrade; separate Build Machine maintenance; non-blocking for SP2."
+        },
+        {
+          "pr": 4,
+          "disposition": "DEFERRED_REVIEW",
+          "reason": "GitHub Actions checkout v4→v7 major upgrade across governance/release workflows; separate Build Machine maintenance."
+        },
+        {
+          "pr": 94,
+          "disposition": "MERGE_CANDIDATE",
+          "reason": "Vitest 5.0.1→5.0.2 patch; non-blocking; requires separate explicit Human merge approval."
+        }
       ],
-      "next_action": "Keep unmerged. Re-audit complete open PR inventory at SP-P1-002 Pre-Activation final review and Sprint Close. Any merge requires separate explicit Human approval.",
-      "completion_criterion": "Each PR is explicitly merged with Human approval, closed as superseded, or remains intentionally DEFERRED_REVIEW.",
+      "next_action": "Do not merge during SP2 Pre-Activation. Re-audit complete open PR inventory at final Human review and Sprint Close. #1/#2/#4 stay deferred; #94 may be considered only with separate explicit Human approval.",
+      "completion_criterion": "Each dependency PR is explicitly merged with Human approval, closed as superseded/rejected, or remains intentionally documented as deferred.",
       "resolution_ref": null
     },
     {
@@ -51,14 +66,13 @@
   ],
   "last_full_pr_audit": {
     "build_repo_open_prs": [
-      1,
-      2,
-      3,
-      4,
+      98,
       94,
-      98
+      4,
+      2,
+      1
     ],
     "design_repo_open_prs": [],
-    "note": "Complete open-pulls collection audit after closing superseded build PR #10/#11 and merging design PR #4."
+    "note": "Complete open-pulls collection audit after closing superseded PR #10/#11, closing Node-major-mismatch PR #3, and merging appf2-design language PR #4."
   }
 }
