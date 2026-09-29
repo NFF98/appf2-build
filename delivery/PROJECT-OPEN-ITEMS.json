@@ -11,20 +11,6 @@
   ],
   "items": [
     {
-      "id": "POI-001",
-      "title": "Official Language Rule merge",
-      "status": "BLOCKED_ON_PR",
-      "owner": "HUMAN_GOVERNANCE",
-      "source": "NFF98/appf2-design PR #4",
-      "blocking_scope": [
-        "SP-P1-002_PRE_ACTIVATION"
-      ],
-      "blocks_activation": true,
-      "next_action": "Review and merge appf2-design PR #4 after governance verification.",
-      "completion_criterion": "Official Language Rule is present on appf2-design main.",
-      "resolution_ref": null
-    },
-    {
       "id": "POI-002",
       "title": "Deferred dependency PR inventory",
       "status": "DEFERRED_REVIEW",
@@ -61,34 +47,18 @@
       "next_action": "Human verifies the two dead patches are no longer needed, then deletes the archive or intentionally keeps it outside project execution paths and reports completion status only.",
       "completion_criterion": "Human confirms the dead local patch artifacts are deleted or intentionally archived outside project execution paths; no project workflow references them.",
       "resolution_ref": null
-    },
-    {
-      "id": "POI-004",
-      "title": "Project Open Items + new Chat continuity governance",
-      "status": "BLOCKED_ON_PR",
-      "owner": "CHATGPT_PLANNING + HUMAN_GOVERNANCE",
-      "source": "planning/sp-p1-002-preactivation",
-      "blocking_scope": [
-        "SP-P1-002_PRE_ACTIVATION"
-      ],
-      "blocks_activation": true,
-      "next_action": "Merge the approved governance rules in the SP-P1-002 Pre-Activation planning PR after final Human review.",
-      "completion_criterion": "OPERATING-MODEL, EXECUTION-HANDOFF-PROTOCOL, AGENTS and task-planner rules are on main and reference this ledger.",
-      "resolution_ref": null
-    },
-    {
-      "id": "POI-005",
-      "title": "SP-P1-002 browser END_TO_END proof readiness",
-      "status": "OPEN",
-      "owner": "CHATGPT_PLANNING",
-      "source": "F01-AC-002 + F02-AC-017 proof_scope=END_TO_END",
-      "blocking_scope": [
-        "SP-P1-002_PRE_ACTIVATION"
-      ],
-      "blocks_activation": true,
-      "next_action": "Finalize T009 browser verification harness plan, executable proof path, write scope and required commands without implementing SP4/SP5 product UI.",
-      "completion_criterion": "T009 has a credible real-browser proof path executable by the current repository toolchain, and governance/readiness validation passes.",
-      "resolution_ref": null
     }
-  ]
+  ],
+  "last_full_pr_audit": {
+    "build_repo_open_prs": [
+      1,
+      2,
+      3,
+      4,
+      94,
+      98
+    ],
+    "design_repo_open_prs": [],
+    "note": "Complete open-pulls collection audit after closing superseded build PR #10/#11 and merging design PR #4."
+  }
 }
