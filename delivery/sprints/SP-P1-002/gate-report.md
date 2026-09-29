@@ -122,7 +122,7 @@ Disposition：
 
 尚待 Human/manual：
 - Official Language Rule：appf2-design PR #4 已 merge，merge SHA `e2b4b0e31de53ddadc283adb6e88ee3926023280`
-- local `$env:USERPROFILE\Desktop\T002-patch-archive` 中 `T002-candidate.patch` / `T002-full-candidate.patch` 需 Human 確認刪除或明確 archive disposition
+- local `$env:USERPROFILE\Desktop\T002-patch-archive` 中 `T002-candidate.patch` / `T002-full-candidate.patch` 仍待 Human 確認；2026-09-29 Human 已條件式批准：**不阻擋 SP-P1-002 Activation，但在第一個 Cursor implementation command 前是 hard stop，必須再次確認 cleanup/disposition**
 
 ## 8. Activation Gate
 
@@ -140,9 +140,9 @@ Human Activation = NOT GRANTED
 在以下條件完成前不得 Activation：
 
 1. Pre-Activation PR required checks PASS。
-2. Local dead patch manual cleanup/disposition confirmed。
-3. Complete Open PR inventory rechecked。
-4. Human reviews this plan and explicitly approves `SP-P1-002 Activation`。
+2. Complete Open PR inventory rechecked。
+3. Human reviews this plan and explicitly approves `SP-P1-002 Activation`。
+4. Local dead patch cleanup may remain pending through Activation only; **before the first Cursor implementation command it must be confirmed complete/disposed**。
 
 
 ## 9. PR Validation Evidence
@@ -155,3 +155,14 @@ PR #98 head `a45d571eaffc011ea208d42a56dc513397df5f5a` 完成 required checks：
 - CodeQL — PASS — run `36509339232`
 
 此 check set 驗證的是 Pre-Activation planning/governance change；**不是 Sprint Activation，也不是 Product implementation approval**。
+
+
+### Conditional Local Patch Decision
+
+2026-09-29 Human decision:
+
+- local dead patch cleanup remains **MANUAL_ACTION_REQUIRED**
+- it does **not** block SP-P1-002 Activation
+- it **does** block the first Cursor implementation command
+- ChatGPT must explicitly re-check this condition before giving Cursor any SP-P1-002 implementation command
+- this is a one-time SP-P1-002 exception, **not** a permanent relaxation of Temporary Local Artifact Hygiene
