@@ -55,6 +55,59 @@ Cursor = Execution Agent
 
 Canonical Human / ChatGPT / Cursor execution handoff protocol: [`delivery/EXECUTION-HANDOFF-PROTOCOL.md`](EXECUTION-HANDOFF-PROTOCOL.md). Keep execution-collaboration rules there instead of duplicating them in this Operating Model.
 
+## 2.2 Sprint Pre-Activation Gate
+
+每個 Sprint 在 Human Activation 前都必須完成同一套 Pre-Activation Gate；這是永久治理規則，不是單一 Sprint 的臨時 Task。
+
+Mandatory sequence：
+
+```text
+1. Cold-read live main + build-spec/CURRENT.json + delivery/CURRENT-SPRINT.json
+2. Read PROJECT-OPEN-ITEMS + unresolved Findings + complete live Open PR inventory
+3. Verify selected Backlog dependencies
+4. Verify 100% Acceptance ↔ Test mapping
+5. Decompose executable Tasks with dependency order
+6. Fix allowed_write_paths / required_commands / required_skills before Activation
+7. Prove every mapped AC/Test has an actually executable proof path
+8. Audit required harness / validator / CI / toolchain / external test environment
+9. Any machine/governance blocker must be fixed while Sprint remains HOLD/PLANNED
+10. Persist Sprint planning artifacts in GitHub
+11. Selected Backlog moves QUEUED → READY only after readiness is real
+12. Run governance/readiness validation
+13. Human reviews the complete plan
+14. Only explicit Human approval may activate the Sprint
+```
+
+Hard rules：
+
+- Search results may locate PRs/files but **must not** be used to claim a complete repository-wide inventory. Open PR count/status must come from the complete pull-request collection, with pagination when needed.
+- Pre-Activation Gate PASS requires zero unresolved **blocking** project open items for that Sprint.
+- A Test ID alone is not proof readiness. The test must have a credible executable path in the current repository/toolchain.
+- If an AC needs browser/runtime/infrastructure proof that the current machine cannot execute, planning remains BLOCKED until the proof path exists or Human-approved Product/roadmap governance changes the scope.
+- Sprint ACTIVE/REVIEW 後，不得把原本應在 Pre-Activation 解決的 planning/toolchain 缺口偷偷塞進 implementation scope。
+- Sprint-specific Task IDs / harness details belong to that Sprint plan；本節只固定永久 Gate。
+
+### Open PR Audit
+
+Pre-Activation 與 Sprint Close 都必須做完整 Open PR inventory。
+
+每個 Open PR 必須被分類為：
+- MERGE_CANDIDATE — 需獨立 Human approval 才可 merge
+- DEFERRED_REVIEW — 明確保留，不得假裝已處理
+- SUPERSEDED — 可在有 evidence 時關閉，不 merge
+- BLOCKING — 必須在 Activation/Close 前處理
+
+不得因 PR 與當前 Sprint 無關就讓它從 handoff 消失。
+
+### Temporary Local Artifact Hygiene
+
+已知會影響後續協作判斷的 local temporary artifact / patch 必須在 Task 或 Sprint close 時明確分類：
+- DELETE
+- ARCHIVE_WITH_PATH
+- PROMOTE_TO_REPO
+
+若 artifact 不在 GitHub，必須在 `PROJECT-OPEN-ITEMS.json` 留下 Human/manual owner、exact known path（不得包含 secret）與 completion criterion；不得靠 Chat memory。
+
 ## 3. Backlog Rule
 
 Backlog 是 Build Spec 的 projection，不是新的需求層。
