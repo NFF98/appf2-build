@@ -109,12 +109,16 @@ T009 只允許寫：
 完整 live build Open PR inventory（#10/#11 關閉後、含本 planning PR）：
 - #1
 - #2
-- #3
 - #4
 - #94
 - #98（本 Pre-Activation Planning PR）
 
-全部維持 **DEFERRED_REVIEW / NOT MERGED**；任何 merge 仍需獨立 Human approval。
+Disposition：
+- #1 / #2 / #4 = **DEFERRED_REVIEW**（GitHub Actions major upgrade，改由獨立 Build Machine maintenance 審查）
+- #94 = **MERGE_CANDIDATE / NON_BLOCKING**（Vitest patch；仍需獨立 Human merge approval）
+- #3 = **CLOSED / NOT MERGED**（@types/node 26 與目前 Node 22 engine baseline 不一致）
+
+任何 dependency PR merge 仍需獨立 Human approval。
 
 尚待 Human/manual：
 - Official Language Rule：appf2-design PR #4 已 merge，merge SHA `e2b4b0e31de53ddadc283adb6e88ee3926023280`
