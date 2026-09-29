@@ -26,12 +26,25 @@
 
 Canonical execution collaboration / handoff rule: [`delivery/EXECUTION-HANDOFF-PROTOCOL.md`](delivery/EXECUTION-HANDOFF-PROTOCOL.md). This file is the single Current Truth for Human / ChatGPT / Cursor handoff, manual actions, secrets, review outcomes, and execution escalation.
 
+## Official Human-facing Language
+
+Project-wide canonical language rule is owned by `NFF98/appf2-design/SSOT.md#official-language-rule`.
+
+Build / Delivery enforcement:
+- Human-facing summaries、handoffs、governance、Findings、Evidence descriptions、review conclusions、Product/Spec explanation 使用繁體中文。
+- PR / commit 說明在 practical 時使用繁體中文。
+- code、identifier、schema/field、command、path、branch、AC/Test ID、error code、established technical terminology、machine-facing instruction 可保留英文以維持 exact meaning。
+- 混合語言時，繁體中文 Human-readable explanation 是 authoritative interpretation。
+- 不得翻譯或改寫 canonical technical token 到改變 contract meaning。
+
 ## Mandatory Read Order
 
 ```text
 build-spec/CURRENT.json
 → delivery/backlog/QUEUE.json
 → delivery/CURRENT-SPRINT.json
+→ delivery/PROJECT-OPEN-ITEMS.json
+→ unresolved Findings + complete live Open PR inventory
 → active Sprint manifest/tasks
 → active Build Spec + mapped contracts
 → skills/REGISTRY.json
