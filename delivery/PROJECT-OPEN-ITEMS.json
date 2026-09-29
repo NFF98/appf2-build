@@ -51,28 +51,32 @@
       "owner": "HUMAN",
       "source": "User-recorded local path",
       "blocking_scope": [
-        "SP-P1-002_PRE_ACTIVATION"
+        "SP-P1-002_FIRST_CURSOR_COMMAND"
       ],
-      "blocks_activation": true,
+      "blocks_activation": false,
       "local_path": "$env:USERPROFILE\\Desktop\\T002-patch-archive",
       "artifacts": [
         "T002-candidate.patch",
         "T002-full-candidate.patch"
       ],
-      "next_action": "Human verifies the two dead patches are no longer needed, then deletes the archive or intentionally keeps it outside project execution paths and reports completion status only.",
-      "completion_criterion": "Human confirms the dead local patch artifacts are deleted or intentionally archived outside project execution paths; no project workflow references them.",
-      "resolution_ref": null
+      "next_action": "At the first Cursor-command gate, re-ask Human to verify PC B local T002 dead patch disposition. Do not issue the first Cursor implementation command until confirmation is received.",
+      "completion_criterion": "Human confirms both dead patch artifacts are deleted or intentionally archived outside project execution paths; no project workflow references them.",
+      "resolution_ref": null,
+      "conditional_human_decision": {
+        "date": "2026-09-29",
+        "decision": "SP-P1-002 Activation may proceed while this local cleanup remains pending, because the Human is temporarily away from PC B.",
+        "hard_stop": "Before ChatGPT issues the first Cursor implementation command for SP-P1-002, Human must confirm the two dead patch artifacts are deleted or intentionally archived outside project execution paths."
+      }
     }
   ],
   "last_full_pr_audit": {
     "build_repo_open_prs": [
-      98,
       94,
       4,
       2,
       1
     ],
     "design_repo_open_prs": [],
-    "note": "Complete open-pulls collection audit after closing superseded PR #10/#11, closing Node-major-mismatch PR #3, and merging appf2-design language PR #4."
+    "note": "Complete open-pulls collection audit after PR #98 merge. #1/#2/#4 deferred; #94 merge candidate; none merged by this decision."
   }
 }
