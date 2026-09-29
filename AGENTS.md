@@ -9,6 +9,7 @@
 - 不得修改 `build-spec/baselines/<existing-baseline>/`。
 - 不得建立 `working/`、`spec/`、`execution/` shadow trees。
 - 不得把 code behavior、library limitation 或「比較好做」反推成 product truth。
+- Capability support 必須以 locked F04 Registry / Coverage Result 的實際能力為準；不得把 Registry 不支援、不可用或 semantic core 已失真的需求硬湊成「看起來支援」。Unknown / unavailable / semantic-core-not-preserved 必須依 contract 誠實回 degraded / external / unsupported。
 - 發現 gap 先記錄 Finding；受影響 Task 必須 BLOCKED。
 - 同一 implementation strategy 失敗兩次，停止 retry loop，建立 Finding。
 - Sprint 外工作不得混入當前 Sprint commit。
@@ -26,12 +27,25 @@
 
 Canonical execution collaboration / handoff rule: [`delivery/EXECUTION-HANDOFF-PROTOCOL.md`](delivery/EXECUTION-HANDOFF-PROTOCOL.md). This file is the single Current Truth for Human / ChatGPT / Cursor handoff, manual actions, secrets, review outcomes, and execution escalation.
 
+## Official Human-facing Language
+
+Project-wide canonical language rule is owned by `NFF98/appf2-design/SSOT.md#official-language-rule`.
+
+Build / Delivery enforcement:
+- Human-facing summaries、handoffs、governance、Findings、Evidence descriptions、review conclusions、Product/Spec explanation 使用繁體中文。
+- PR / commit 說明在 practical 時使用繁體中文。
+- code、identifier、schema/field、command、path、branch、AC/Test ID、error code、established technical terminology、machine-facing instruction 可保留英文以維持 exact meaning。
+- 混合語言時，繁體中文 Human-readable explanation 是 authoritative interpretation。
+- 不得翻譯或改寫 canonical technical token 到改變 contract meaning。
+
 ## Mandatory Read Order
 
 ```text
 build-spec/CURRENT.json
 → delivery/backlog/QUEUE.json
 → delivery/CURRENT-SPRINT.json
+→ delivery/PROJECT-OPEN-ITEMS.json
+→ unresolved Findings + complete live Open PR inventory
 → active Sprint manifest/tasks
 → active Build Spec + mapped contracts
 → skills/REGISTRY.json

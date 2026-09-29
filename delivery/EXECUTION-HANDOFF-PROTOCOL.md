@@ -404,3 +404,37 @@ Build Spec / Sprint / Task = execution scope and Product contract authority
 ```
 
 If this protocol conflicts with locked Product truth, locked Build Spec, machine-enforced Sprint/Task controls, or Human authority, those higher-order controls win. This protocol defines collaboration behavior; it does not redefine Product semantics.
+
+
+## 16. Project Open Items / New Chat Continuity
+
+Canonical project-level unresolved-work ledger：
+
+```text
+delivery/PROJECT-OPEN-ITEMS.json
+```
+
+它只保存「不能忘、但不一定屬於 active Sprint Task / Finding」的事項，例如：
+- deferred Open PR review
+- Human manual cleanup
+- non-blocking governance cleanup
+- local artifact cleanup
+- future checkpoint that must survive a new Chat
+
+不得把已由 Backlog / Finding / Task 擁有的完整內容再複製一份；ledger 只保存 pointer、status、owner、blocking scope、next action、resolution reference。
+
+每次 new Chat / handoff 的最低 cold-start set：
+
+```text
+build-spec/CURRENT.json
+delivery/CURRENT-SPRINT.json
+active/next Sprint plan when applicable
+delivery/PROJECT-OPEN-ITEMS.json
+unresolved delivery/findings/
+complete live Open PR inventory
+next governance gate
+```
+
+不要求每次重讀整個專案歷史。完整歷史 review 固定在 Sprint Close / Phase Close 執行。
+
+Handoff 不得只靠 Chat transcript 或 model memory；任何仍需 carry-forward 的 project-level item 必須先進 GitHub canonical ledger。

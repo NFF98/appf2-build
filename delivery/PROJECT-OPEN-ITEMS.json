@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "updated_date": "2026-09-29",
+  "purpose": "Canonical carry-forward ledger for project-level unresolved items that are not fully owned by an active Backlog/Task/Finding. Do not duplicate Product truth.",
+  "status_values": [
+    "OPEN",
+    "MANUAL_ACTION_REQUIRED",
+    "DEFERRED_REVIEW",
+    "BLOCKED_ON_PR",
+    "RESOLVED"
+  ],
+  "items": [
+    {
+      "id": "POI-002",
+      "title": "Deferred dependency PR inventory",
+      "status": "DEFERRED_REVIEW",
+      "owner": "CHATGPT_AUDIT + HUMAN_MERGE_AUTHORITY",
+      "source": "Complete GitHub open-pulls inventory on 2026-09-29",
+      "blocking_scope": [],
+      "blocks_activation": false,
+      "items": [
+        {
+          "pr": 1,
+          "disposition": "DEFERRED_REVIEW",
+          "reason": "GitHub Actions upload-artifact v4→v7 major upgrade; separate Build Machine maintenance; non-blocking for SP2."
+        },
+        {
+          "pr": 2,
+          "disposition": "DEFERRED_REVIEW",
+          "reason": "GitHub Actions setup-node v4→v7 major upgrade; separate Build Machine maintenance; non-blocking for SP2."
+        },
+        {
+          "pr": 4,
+          "disposition": "DEFERRED_REVIEW",
+          "reason": "GitHub Actions checkout v4→v7 major upgrade across governance/release workflows; separate Build Machine maintenance."
+        },
+        {
+          "pr": 94,
+          "disposition": "MERGE_CANDIDATE",
+          "reason": "Vitest 5.0.1→5.0.2 patch; non-blocking; requires separate explicit Human merge approval."
+        }
+      ],
+      "next_action": "Do not merge during SP2 Pre-Activation. Re-audit complete open PR inventory at final Human review and Sprint Close. #1/#2/#4 stay deferred; #94 may be considered only with separate explicit Human approval.",
+      "completion_criterion": "Each dependency PR is explicitly merged with Human approval, closed as superseded/rejected, or remains intentionally documented as deferred.",
+      "resolution_ref": null
+    },
+    {
+      "id": "POI-003",
+      "title": "Delete/archive dead local T002 patch artifacts",
+      "status": "MANUAL_ACTION_REQUIRED",
+      "owner": "HUMAN",
+      "source": "User-recorded local path",
+      "blocking_scope": [
+        "SP-P1-002_PRE_ACTIVATION"
+      ],
+      "blocks_activation": true,
+      "local_path": "$env:USERPROFILE\\Desktop\\T002-patch-archive",
+      "artifacts": [
+        "T002-candidate.patch",
+        "T002-full-candidate.patch"
+      ],
+      "next_action": "Human verifies the two dead patches are no longer needed, then deletes the archive or intentionally keeps it outside project execution paths and reports completion status only.",
+      "completion_criterion": "Human confirms the dead local patch artifacts are deleted or intentionally archived outside project execution paths; no project workflow references them.",
+      "resolution_ref": null
+    }
+  ],
+  "last_full_pr_audit": {
+    "build_repo_open_prs": [
+      98,
+      94,
+      4,
+      2,
+      1
+    ],
+    "design_repo_open_prs": [],
+    "note": "Complete open-pulls collection audit after closing superseded PR #10/#11, closing Node-major-mismatch PR #3, and merging appf2-design language PR #4."
+  }
+}

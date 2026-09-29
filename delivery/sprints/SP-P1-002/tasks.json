@@ -1,0 +1,554 @@
+{
+  "schema_version": 3,
+  "sprint_id": "SP-P1-002",
+  "tasks": [
+    {
+      "task_id": "T001",
+      "backlog_item_ids": [
+        "BL-P1-003"
+      ],
+      "title": "Implement Registry evidence and traceability",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Emit traceable Registry evidence for capability selected/rejected/gap/mismatch outcomes.",
+        "Carry capability_version and registry_version in Registry evidence without requiring raw user intent."
+      ],
+      "non_scope": [
+        "Do not change Capability Coverage product semantics.",
+        "Do not add new capability IDs or broaden Registry support."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F04-AC-017",
+          "test_id": "TEST-F04-AC-017"
+        },
+        {
+          "acceptance_id": "F04-AC-018",
+          "test_id": "TEST-F04-AC-018"
+        },
+        {
+          "acceptance_id": "F04-AC-019",
+          "test_id": "TEST-F04-AC-019"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/capabilities/",
+        "src/platform/evidence/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:regression"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T002",
+      "backlog_item_ids": [
+        "BL-P1-005"
+      ],
+      "title": "Implement Blueprint validation core and admitted-content persistence",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Implement Candidate Blueprint top-level/schema/reference/graph validation for F02-AC-004 through F02-AC-008.",
+        "Admit only valid candidates and persist immutable blueprint_content linked to the successful validation run.",
+        "Add the Phase 1 database migration required for validation_run / blueprint_content persistence under the locked BS-P1-003 data contract."
+      ],
+      "non_scope": [
+        "Do not implement arbitrary Compiler behavior.",
+        "Do not implement user-facing App Shell or Runtime execution.",
+        "Do not relax Registry compatibility or trust rules."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F02-AC-004",
+          "test_id": "TEST-F02-004"
+        },
+        {
+          "acceptance_id": "F02-AC-005",
+          "test_id": "TEST-F02-005"
+        },
+        {
+          "acceptance_id": "F02-AC-006",
+          "test_id": "TEST-F02-006"
+        },
+        {
+          "acceptance_id": "F02-AC-007",
+          "test_id": "TEST-F02-007"
+        },
+        {
+          "acceptance_id": "F02-AC-008",
+          "test_id": "TEST-F02-AC-008"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/blueprint/",
+        "supabase/migrations/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "db-migration",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T003",
+      "backlog_item_ids": [
+        "BL-P1-005"
+      ],
+      "title": "Enforce Blueprint execution safety, hard ceilings and trust anti-bypass",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Reject arbitrary executable code, eval/dynamic import paths and hard-ceiling violations before Runtime.",
+        "Enforce disabled/revoked/incompatible Blueprint denial and prevent client trust flags from bypassing validation."
+      ],
+      "non_scope": [
+        "Do not add Runtime feature semantics beyond validation/admission safety.",
+        "Do not change locked resource ceilings or trust states."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F02-AC-009",
+          "test_id": "TEST-F02-009"
+        },
+        {
+          "acceptance_id": "F02-AC-010",
+          "test_id": "TEST-F02-010"
+        },
+        {
+          "acceptance_id": "F02-AC-011",
+          "test_id": "TEST-F02-011"
+        },
+        {
+          "acceptance_id": "F02-AC-012",
+          "test_id": "TEST-F02-012"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/blueprint/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T002"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T004",
+      "backlog_item_ids": [
+        "BL-P1-006"
+      ],
+      "title": "Implement validation failure and degradation semantics",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Ensure validation failure never corrupts an existing validated Blueprint and rejected candidate bodies do not become executable durable artifacts.",
+        "Enforce explicit PARTIALLY_SUPPORTED degradation metadata and semantic-core preservation."
+      ],
+      "non_scope": [
+        "Do not implement the browser proof for F02-AC-017; that proof is isolated in T009.",
+        "Do not invent new degradation policy beyond BS-P1-003."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F02-AC-013",
+          "test_id": "TEST-F02-AC-013"
+        },
+        {
+          "acceptance_id": "F02-AC-014",
+          "test_id": "TEST-F02-AC-014"
+        },
+        {
+          "acceptance_id": "F02-AC-015",
+          "test_id": "TEST-F02-015"
+        },
+        {
+          "acceptance_id": "F02-AC-016",
+          "test_id": "TEST-F02-AC-016"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/blueprint/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:regression"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T003"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T005",
+      "backlog_item_ids": [
+        "BL-P1-007"
+      ],
+      "title": "Implement validation evidence and admission traceability",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Make validation stage/error/trace evidence observable without raw Blueprint telemetry.",
+        "Trace admitted Blueprint content to validation_run and trace revoke/incompatible outcomes without mutating immutable Blueprint body."
+      ],
+      "non_scope": [
+        "Do not change validation Product semantics.",
+        "Do not store raw Blueprint or raw Intent in evidence events."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F02-AC-019",
+          "test_id": "TEST-F02-AC-019"
+        },
+        {
+          "acceptance_id": "F02-AC-020",
+          "test_id": "TEST-F02-AC-020"
+        },
+        {
+          "acceptance_id": "F02-AC-021",
+          "test_id": "TEST-F02-021"
+        },
+        {
+          "acceptance_id": "F02-AC-022",
+          "test_id": "TEST-F02-AC-022"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/blueprint/",
+        "src/platform/evidence/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:regression"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T003"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T006",
+      "backlog_item_ids": [
+        "BL-P1-008"
+      ],
+      "title": "Implement Intent Envelope, clarification policy and visible assumptions",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
+        "Require explicit clarification for money/permission/cost assumptions, expose material proposals, avoid re-asking answered questions unless upstream facts change, and prevent client resolved_intent bypass."
+      ],
+      "non_scope": [
+        "Do not implement LLM provider integration or full Compiler composition.",
+        "Do not implement the browser proof for F01-AC-002; that proof is isolated in T009."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F01-AC-001",
+          "test_id": "TEST-F01-001"
+        },
+        {
+          "acceptance_id": "F01-AC-003",
+          "test_id": "TEST-F01-CP-003"
+        },
+        {
+          "acceptance_id": "F01-AC-004",
+          "test_id": "TEST-F01-004"
+        },
+        {
+          "acceptance_id": "F01-AC-005",
+          "test_id": "TEST-F01-005"
+        },
+        {
+          "acceptance_id": "F01-AC-006",
+          "test_id": "TEST-F01-006"
+        },
+        {
+          "acceptance_id": "F01-AC-017",
+          "test_id": "TEST-F01-SEC-007"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/intent/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:regression"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T007",
+      "backlog_item_ids": [
+        "BL-P1-033"
+      ],
+      "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",
+        "On overflow, preferentially retain CORE_OUTCOME / RELIABILITY over DEBUG / PRODUCT_SAMPLE.",
+        "Implement best-effort pagehide/visibility flush using the locked browser-safe transport boundary."
+      ],
+      "non_scope": [
+        "Do not implement raw product_event retention/deletion policy; that is T008.",
+        "Do not make the evidence queue a durable source of Product truth."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F07-AC-016",
+          "test_id": "TEST-F07-016"
+        },
+        {
+          "acceptance_id": "F07-AC-017",
+          "test_id": "TEST-F07-017"
+        },
+        {
+          "acceptance_id": "F07-AC-018",
+          "test_id": "TEST-F07-AC-018"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/evidence/",
+        "tests/unit/",
+        "tests/behavior/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:unit",
+        "npm run test:behavior",
+        "npm run test:regression"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T008",
+      "backlog_item_ids": [
+        "BL-P1-033"
+      ],
+      "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
+        "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default."
+      ],
+      "non_scope": [
+        "Do not define final cross-function Product metrics from BL-P1-034.",
+        "Do not weaken F07 privacy allowlists or identity boundaries."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F07-AC-026",
+          "test_id": "TEST-F07-026"
+        },
+        {
+          "acceptance_id": "F07-AC-027",
+          "test_id": "TEST-F07-AC-027"
+        },
+        {
+          "acceptance_id": "F07-AC-028",
+          "test_id": "TEST-F07-AC-028"
+        },
+        {
+          "acceptance_id": "F07-AC-029",
+          "test_id": "TEST-F07-029"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/evidence/",
+        "supabase/migrations/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/api/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:api",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "db-migration",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T007"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T009",
+      "backlog_item_ids": [
+        "BL-P1-006",
+        "BL-P1-008"
+      ],
+      "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-003",
+      "scope": [
+        "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
+        "Prove F01-AC-002 by showing NEEDS_CLARIFICATION when required intent data is missing and no safe default exists.",
+        "Prove F02-AC-017 by showing explicit result.outputs from the validation result contract rather than inferring a result from a UI tree.",
+        "Use existing Playwright + npm run build/test:e2e toolchain; a test support server/page may be added under tests/e2e and wired through playwright.config.ts."
+      ],
+      "non_scope": [
+        "This is not the SP4 Create shell and not the SP5 product App surface.",
+        "Do not create production navigation, styling, dashboard/chat UI, or new Product behavior.",
+        "Do not duplicate F01/F02 logic inside the test harness; the harness must exercise production modules."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F01-AC-002",
+          "test_id": "TEST-F01-CP-001"
+        },
+        {
+          "acceptance_id": "F02-AC-017",
+          "test_id": "TEST-F02-017"
+        }
+      ],
+      "allowed_write_paths": [
+        "tests/e2e/",
+        "playwright.config.ts"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:e2e"
+      ],
+      "required_skills": [
+        "test-builder",
+        "ui-verifier",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T004",
+        "T006"
+      ],
+      "completion_evidence": []
+    }
+  ]
+}
