@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "updated_date": "2026-09-29",
+  "purpose": "Canonical carry-forward ledger for project-level unresolved items that are not fully owned by an active Backlog/Task/Finding. Do not duplicate Product truth.",
+  "status_values": [
+    "OPEN",
+    "MANUAL_ACTION_REQUIRED",
+    "DEFERRED_REVIEW",
+    "BLOCKED_ON_PR",
+    "RESOLVED"
+  ],
+  "items": [
+    {
+      "id": "POI-001",
+      "title": "Official Language Rule merge",
+      "status": "BLOCKED_ON_PR",
+      "owner": "HUMAN_GOVERNANCE",
+      "source": "NFF98/appf2-design PR #4",
+      "blocking_scope": [
+        "SP-P1-002_PRE_ACTIVATION"
+      ],
+      "blocks_activation": true,
+      "next_action": "Review and merge appf2-design PR #4 after governance verification.",
+      "completion_criterion": "Official Language Rule is present on appf2-design main.",
+      "resolution_ref": null
+    },
+    {
+      "id": "POI-002",
+      "title": "Deferred dependency PR inventory",
+      "status": "DEFERRED_REVIEW",
+      "owner": "CHATGPT_AUDIT + HUMAN_MERGE_AUTHORITY",
+      "source": "Complete GitHub open-pulls inventory on 2026-09-29",
+      "blocking_scope": [],
+      "blocks_activation": false,
+      "items": [
+        "PR #1 actions/upload-artifact 4→7",
+        "PR #2 actions/setup-node 4→7",
+        "PR #3 @types/node 22→26",
+        "PR #4 actions/checkout 4→7",
+        "PR #94 vitest 5.0.1→5.0.2"
+      ],
+      "next_action": "Keep unmerged. Re-audit complete open PR inventory at SP-P1-002 Pre-Activation final review and Sprint Close. Any merge requires separate explicit Human approval.",
+      "completion_criterion": "Each PR is explicitly merged with Human approval, closed as superseded, or remains intentionally DEFERRED_REVIEW.",
+      "resolution_ref": null
+    },
+    {
+      "id": "POI-003",
+      "title": "Delete/archive dead local T002 patch artifacts",
+      "status": "MANUAL_ACTION_REQUIRED",
+      "owner": "HUMAN",
+      "source": "User-recorded local path",
+      "blocking_scope": [
+        "SP-P1-002_PRE_ACTIVATION"
+      ],
+      "blocks_activation": true,
+      "local_path": "$env:USERPROFILE\\Desktop\\T002-patch-archive",
+      "artifacts": [
+        "T002-candidate.patch",
+        "T002-full-candidate.patch"
+      ],
+      "next_action": "Human verifies the two dead patches are no longer needed, then deletes the archive or intentionally keeps it outside project execution paths and reports completion status only.",
+      "completion_criterion": "Human confirms the dead local patch artifacts are deleted or intentionally archived outside project execution paths; no project workflow references them.",
+      "resolution_ref": null
+    },
+    {
+      "id": "POI-004",
+      "title": "Project Open Items + new Chat continuity governance",
+      "status": "BLOCKED_ON_PR",
+      "owner": "CHATGPT_PLANNING + HUMAN_GOVERNANCE",
+      "source": "planning/sp-p1-002-preactivation",
+      "blocking_scope": [
+        "SP-P1-002_PRE_ACTIVATION"
+      ],
+      "blocks_activation": true,
+      "next_action": "Merge the approved governance rules in the SP-P1-002 Pre-Activation planning PR after final Human review.",
+      "completion_criterion": "OPERATING-MODEL, EXECUTION-HANDOFF-PROTOCOL, AGENTS and task-planner rules are on main and reference this ledger.",
+      "resolution_ref": null
+    },
+    {
+      "id": "POI-005",
+      "title": "SP-P1-002 browser END_TO_END proof readiness",
+      "status": "OPEN",
+      "owner": "CHATGPT_PLANNING",
+      "source": "F01-AC-002 + F02-AC-017 proof_scope=END_TO_END",
+      "blocking_scope": [
+        "SP-P1-002_PRE_ACTIVATION"
+      ],
+      "blocks_activation": true,
+      "next_action": "Finalize T009 browser verification harness plan, executable proof path, write scope and required commands without implementing SP4/SP5 product UI.",
+      "completion_criterion": "T009 has a credible real-browser proof path executable by the current repository toolchain, and governance/readiness validation passes.",
+      "resolution_ref": null
+    }
+  ]
+}
