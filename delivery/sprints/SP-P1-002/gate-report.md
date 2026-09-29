@@ -129,7 +129,8 @@ Disposition：
 目前：
 
 ```text
-Planning = READY FOR PR VALIDATION
+Planning = PR VALIDATION PASS
+Required checks = 4 / 4 PASS
 Sprint = PLANNED
 CURRENT-SPRINT = HOLD
 implementation_enabled = false
@@ -142,3 +143,15 @@ Human Activation = NOT GRANTED
 2. Local dead patch manual cleanup/disposition confirmed。
 3. Complete Open PR inventory rechecked。
 4. Human reviews this plan and explicitly approves `SP-P1-002 Activation`。
+
+
+## 9. PR Validation Evidence
+
+PR #98 head `a45d571eaffc011ea208d42a56dc513397df5f5a` 完成 required checks：
+
+- CI Gate — PASS — run `36509339243`
+- Governance Gate — PASS — run `36509339278`
+- Governance Attack Dry-run — PASS — run `36509339311`
+- CodeQL — PASS — run `36509339232`
+
+此 check set 驗證的是 Pre-Activation planning/governance change；**不是 Sprint Activation，也不是 Product implementation approval**。
