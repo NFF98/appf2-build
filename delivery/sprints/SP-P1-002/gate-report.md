@@ -106,17 +106,18 @@ T009 只允許寫：
 - permanent Sprint Pre-Activation Gate / complete Open PR audit / proof readiness / machine readiness / temp local artifact hygiene / new Chat carry-forward：已放入本 planning PR
 - canonical `delivery/PROJECT-OPEN-ITEMS.json`：已建立
 
-完整 live build Open PR inventory（#10/#11 關閉後）：
+完整 live build Open PR inventory（#10/#11 關閉後、含本 planning PR）：
 - #1
 - #2
 - #3
 - #4
 - #94
+- #98（本 Pre-Activation Planning PR）
 
 全部維持 **DEFERRED_REVIEW / NOT MERGED**；任何 merge 仍需獨立 Human approval。
 
 尚待 Human/manual：
-- appf2-design Official Language Rule PR #4 尚未 merge
+- Official Language Rule：appf2-design PR #4 已 merge，merge SHA `e2b4b0e31de53ddadc283adb6e88ee3926023280`
 - local `$env:USERPROFILE\Desktop\T002-patch-archive` 中 `T002-candidate.patch` / `T002-full-candidate.patch` 需 Human 確認刪除或明確 archive disposition
 
 ## 8. Activation Gate
@@ -134,7 +135,6 @@ Human Activation = NOT GRANTED
 在以下條件完成前不得 Activation：
 
 1. Pre-Activation PR required checks PASS。
-2. Official Language Rule governance item resolved。
-3. Local dead patch manual cleanup/disposition confirmed。
-4. Complete Open PR inventory rechecked。
-5. Human reviews this plan and explicitly approves `SP-P1-002 Activation`。
+2. Local dead patch manual cleanup/disposition confirmed。
+3. Complete Open PR inventory rechecked。
+4. Human reviews this plan and explicitly approves `SP-P1-002 Activation`。
