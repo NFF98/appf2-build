@@ -187,7 +187,7 @@ Live revalidation:
 - PFR-01 approved that SP2 continues on `BS-P1-003` without rebaseline.
 - Current Product Design F01 / F02 / F04 / F07 plus Acceptance Registry and Evidence Registry have identical Git blob SHAs to the `BS-P1-003` source Working commit `3818926b82ae2c5edaf9d6115fda3d1505757781`; no SP2 contract drift was found.
 - PR #98 is merged. Its CI / Governance / attack / CodeQL checks completed successfully.
-- Current Build open PR inventory remains #1 / #2 / #4 / #94. They are dependency maintenance items and remain non-blocking for SP2 Activation; no dependency PR is approved for merge by this review.
+- Immediately before this review record PR was opened, the existing Build open PR inventory was #1 / #2 / #4 / #94. They are dependency maintenance items and remain non-blocking for SP2 Activation; no dependency PR is approved for merge by this review. PR #100 is this governance-only Activation Review record and does not add Product implementation scope.
 - `POI-003` remains `MANUAL_ACTION_REQUIRED`, but the 2026-09-29 Human decision explicitly allows Sprint Activation before cleanup. It remains a **hard stop before the first Cursor implementation command**.
 
 Therefore no technical, Product Truth, Build Spec, dependency, Acceptance mapping, or governance blocker prevents Human from activating `SP-P1-002`.
