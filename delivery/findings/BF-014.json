@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-014",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "T001 must emit traceable F04 Registry evidence (F04-EVT-001 capability_selected, F04-EVT-002 capability_rejected, F04-EVT-006 capability_gap, F04-EVT-007 registry_mismatch) through the canonical F07 evidence validator, carrying capability_version and registry_version (F04-AC-017/018, proof_scope RUNTIME_EVIDENCE). F04-RQ-002/003/004 define capability_id as lowercase namespace.name and capability_version / registry_version as SemVer (e.g. layout.container, 1.0.0), and F04 section 25 lists capability_version + registry_version as minimum F04 evidence dimensions.",
+  "actual": "The locked BS-P1-003 evidence-event-registry.json property_schemas contain double-escaped regex patterns. After JSON parsing, the pattern strings contain a literal backslash pair (e.g. capability_version = '^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)...'), so new RegExp() requires a literal backslash character in the value. The canonical validator (src/platform/evidence/evidence-validator.ts via evidence-registry.ts) therefore rejects every valid F04 value: capability_version '1.0.0', registry_version '1.0.0' and property capability_id 'layout.container' all return F07-ERR-003. As a result, no F04 event can carry capability_version or registry_version through the canonical evidence path, so F04-AC-018 is unsatisfiable under BS-P1-003 without reinterpreting the locked contract. Secondary: property registry_digest requires '^sha256:[0-9a-f]{64}$', while the canonical Registry computeRegistryDigest() emits bare 64-hex; the locked F04 contract does not define the digest string representation, so mapping between them is also undecided.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-003/registries/evidence-event-registry.json :: property_schemas.capability_id / capability_version / registry_version patterns contain escaped backslash pairs (raw file text '\\\\\\\\.' / '\\\\\\\\d')",
+    "Byte-exact upstream copy: git hash-object of the baseline file = 3b6d813b262473b49706df24ad00a6bbb43ed9c1 = projection-map.json source_blob_sha for working/detailed-design/registries/evidence-event-registry.json at appf2-design commit 3818926b82ae2c5edaf9d6115fda3d1505757781 (FULL_COPY); output_sha256 42f1ed8a2f47b2f335fbd65774be6d0edb215fc11d611f54b5f87986eb214e5c verified. The defect originates upstream, not in projection.",
+    "Scope of defect: 9 property schemas are double-escaped (capability_id, capability_version, error_code, policy_id, registry_version, runtime_version, schema_version, source_error_code, source_function_id); 107 locked event types across F00/F01/F02/F03/F04/F05/F06/F12/F16 allow at least one of them. BS-P1-002 has the same 9 defects; BS-P1-001 has none.",
+    "Production-path reproduction (throwaway Vitest probe, not committed) calling validateEvidenceEvent() with a canonical F04-EVT-001 envelope (function_id F04, envelope capability_id layout.container): properties {} -> accepted; {capability_version:'1.0.0'} -> rejected F07-ERR-003 field capability_version; {registry_version: CAPABILITY_REGISTRY_SOURCE.registryVersion ('1.0.0')} -> rejected F07-ERR-003 field registry_version; {capability_id:'layout.container'} -> rejected F07-ERR-003 field capability_id; {registry_digest: computeRegistryDigest(CAPABILITY_REGISTRY_SOURCE), coverage_status:'FULLY_SUPPORTED'} -> rejected F07-ERR-003 field registry_digest (bare hex vs sha256: prefix).",
+    "error_code values such as F04-ERR-001 are accepted only because the second alternative [A-Z][A-Z0-9_-]{2,63} matches; the intended F\\d{2}-ERR-\\d{3} branch is also unreachable.",
+    "build-spec/baselines/BS-P1-003/functions/F04-CAPABILITY-REGISTRY.md :: F04-RQ-002/003/004, section 25 Telemetry / Evidence minimum dimensions, F04-AC-017/018/019",
+    "build-spec/baselines/BS-P1-003/registries/acceptance-test-registry.json :: F04-AC-017/018/019 proof_scope RUNTIME_EVIDENCE",
+    "src/platform/capabilities/generate-registry.ts :: computeRegistryDigest returns createHash('sha256').digest('hex') with no sha256: prefix",
+    "Branch task/SP2-T001-registry-evidence from main 572efe4442d8c31aa9fc788a0dc9ea86ba96b5e0 contains no src/ or tests/ change; T001 implementation was stopped before any product code was written."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "EMIT_F04_EVIDENCE_THROUGH_CANONICAL_F07_VALIDATOR_WITH_LOCKED_DIMENSIONS",
+      "result": "FAILED",
+      "evidence": "Canonical validateEvidenceEvent rejects capability_version, registry_version and property capability_id with F07-ERR-003 for valid F04 values; AC-018 observable cannot be produced on the canonical evidence path."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "DECODE_DOUBLE_ESCAPED_PATTERNS_IN_EVIDENCE_REGISTRY_LOADER",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Would reinterpret the locked BS-P1-003 contract literal for 9 properties across 107 event types in many Functions, beyond T001 scope. Forbidden by 30-build-spec rule (never reinterpret a contract because implementation is difficult) and requires Human governance."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "BUILD_F04_EVIDENCE_OBJECTS_WITHOUT_CANONICAL_VALIDATION",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Would create a parallel evidence system whose events the canonical intake rejects, producing fake-green RUNTIME_EVIDENCE for F04-AC-017/018."
+    }
+  ],
+  "resolution_options_for_human": [
+    "Option A (rebaseline): fix the pattern escaping in appf2-design working/detailed-design/registries/evidence-event-registry.json (and decide the registry_digest string representation), rerun Freeze Audit, freeze a new BS-P1-004 superseding BS-P1-003, rebind SP-P1-002 tasks, then resume T001.",
+    "Option B (governance interpretation): Human governance records an approved decision that the escaped patterns are a serialization defect with the obvious SemVer / namespace.name intent, and authorizes a governed, test-covered correction path. Cursor must not choose this on its own because it changes validator behavior for all affected Functions."
+  ],
+  "downstream_risk": [
+    "SP-P1-002 T005 (F02 validation evidence) and T008 (evidence retention/observability) consume the same canonical validator and locked property schemas; any event carrying error_code (F-pattern branch), schema_version, runtime_version, registry_version, source_error_code or source_function_id is affected."
+  ],
+  "affected_contracts": [
+    "BS-P1-003 registries/evidence-event-registry.json property_schemas",
+    "F04-RQ-003 capability version SemVer",
+    "F04-RQ-004 registry_version / registry_digest",
+    "F04 section 25 Telemetry / Evidence minimum dimensions"
+  ],
+  "affected_acceptance": [
+    "F04-AC-017",
+    "F04-AC-018",
+    "F04-AC-019"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
