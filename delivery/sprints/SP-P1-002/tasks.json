@@ -8,7 +8,7 @@
         "BL-P1-003"
       ],
       "title": "Implement Registry evidence and traceability",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Emit traceable Registry evidence for capability selected/rejected/gap/mismatch outcomes.",

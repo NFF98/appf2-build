@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-003",
   "active_task": "T001",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved SP-P1-002 Sprint Activation on 2026-10-01; T001 is active under BS-P1-003. Do not issue the first Cursor implementation command until POI-003 is confirmed resolved/disposed."
+  "reason": "T001 blocked by BF-014: locked BS-P1-003 evidence property regex patterns reject canonical capability/version values required by F04-AC-018. Execution paused pending Human-governed resolution."
 }
