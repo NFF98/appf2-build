@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-003",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-014"
+  ],
+  "affected_build_spec": "BS-P1-003",
+  "affected_tasks": [
+    "T001"
+  ],
+  "affected_contracts": [
+    "F04-RQ-003 capability version SemVer",
+    "F04-RQ-004 registry_version / registry_digest representation",
+    "F07-DATA-003 machine-readable property schema",
+    "F07-RQ-011 Evidence Registry generation / regex serialization",
+    "Evidence Registry property_schemas regex serialization"
+  ],
+  "affected_acceptance": [
+    "F04-AC-017",
+    "F04-AC-018",
+    "F04-AC-019"
+  ],
+  "changes_contract_semantics": false,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-01: continue BF-014 resolution under the same Sprint 1 Build Flow Constitution."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "8ca4625ab71cd8884120ad1fe86d78f97cb19523",
+  "replacement_build_spec": "BS-P1-004",
+  "verification": [
+    "appf2-design PR #5 merged as 8ca4625ab71cd8884120ad1fe86d78f97cb19523",
+    "Targeted Evidence Registry audit PASS: 112 events, 52 property schemas, zero duplicate/prefix/missing-schema/regex errors; canonical smoke values pass.",
+    "F04-AC-017/018/019 semantics and Acceptance/Test mapping unchanged.",
+    "Replacement projection-scope audit BLOCKED: 11 projected outputs differ from BS-P1-003; only F04, F07, and evidence-event-registry are owned by BF-014. Eight additional projected outputs belong to PFR/F19/future-compatibility work and must not be silently frozen under BD-003.",
+    "No BS-P1-004 baseline has been created or activated; Build execution remains HOLD."
+  ]
+}

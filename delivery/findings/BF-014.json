@@ -19,7 +19,9 @@
     "src/platform/capabilities/generate-registry.ts :: computeRegistryDigest returns createHash('sha256').digest('hex') with no sha256: prefix",
     "Branch task/SP2-T001-registry-evidence from main 572efe4442d8c31aa9fc788a0dc9ea86ba96b5e0 contains no src/ or tests/ change; T001 implementation was stopped before any product code was written.",
     "PR #105 merged as 43e54cc70f2fdc3da079a78f6b698935de1d393b: SP-P1-002 / T001 moved to BLOCKED.",
-    "PR #107 merged as ccb9be29fe0b3513f420c860554226ff3c1e00d6: execution moved to HOLD pending Human-governed BF-014 resolution."
+    "PR #107 merged as ccb9be29fe0b3513f420c860554226ff3c1e00d6: execution moved to HOLD pending Human-governed BF-014 resolution.",
+    "appf2-design PR #5 merged as 8ca4625ab71cd8884120ad1fe86d78f97cb19523: BF-014 Working serialization defect corrected and registry_digest wire representation clarified.",
+    "Replacement Freeze scope audit against BS-P1-003 source 3818926 found 11 changed projected outputs at Working 8ca4625; BF-014 owns only F04, F07, and evidence-event-registry. Eight additional projected outputs are PFR/F19/future-compatibility drift and cannot be silently included before their own PFR-05 gate."
   ],
   "attempts": [
     {
@@ -60,5 +62,5 @@
     "F04-AC-019"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-003"
 }
