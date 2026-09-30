@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_date": "2026-09-29",
+  "updated_date": "2026-10-01",
   "purpose": "Canonical carry-forward ledger for project-level unresolved items that are not fully owned by an active Backlog/Task/Finding. Do not duplicate Product truth.",
   "status_values": [
     "OPEN",
@@ -77,6 +77,6 @@
       1
     ],
     "design_repo_open_prs": [],
-    "note": "Complete open-pulls collection audit after PR #98 merge. #1/#2/#4 deferred; #94 merge candidate; none merged by this decision."
+    "note": "Rechecked at SP-P1-002 Activation Review. PR #100 governance review record merged. #1/#2/#4 remain deferred; #94 remains a non-blocking merge candidate. Human approved SP-P1-002 Activation on 2026-10-01; POI-003 continues to block the first Cursor implementation command, not Sprint Activation."
   }
 }

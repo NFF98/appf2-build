@@ -193,3 +193,33 @@ Live revalidation:
 Therefore no technical, Product Truth, Build Spec, dependency, Acceptance mapping, or governance blocker prevents Human from activating `SP-P1-002`.
 
 > This review does not itself activate the Sprint. Activation still requires an explicit Human decision and the corresponding Build authority state change.
+
+
+## 11. Human Activation Decision — 2026-10-01
+
+Human decision:
+
+~~~text
+SP-P1-002 Activation = APPROVED
+Build Spec = BS-P1-003
+Activation Control Transition = AUTHORIZED
+First Cursor Command = HARD STOP UNTIL POI-003 CONFIRMED
+~~~
+
+Human explicitly approved `SP-P1-002 Activation` after the PFR-02 live Activation Review PASS.
+
+The approved control-state transition is:
+
+- `SP-P1-002`: `PLANNED → ACTIVE`
+- `T001`: `PLANNED → IN_PROGRESS`
+- selected Backlog `BL-P1-003 / 005 / 006 / 007 / 008 / 033`: `READY → SPRINTED`
+- `build-spec/CURRENT.json`: `implementation_enabled=false → true`
+- `delivery/CURRENT-SPRINT.json`: bind `SP-P1-002 / BS-P1-003 / T001` as the sole active execution context
+
+This Human decision does **not** itself bypass protected-branch / machine gates. The control-state transition must still land through the repository's required PR checks.
+
+The 2026-09-29 conditional decision for `POI-003` remains unchanged:
+
+> Sprint Activation may proceed, but **the first Cursor implementation command is forbidden** until the Human confirms `T002-candidate.patch` and `T002-full-candidate.patch` are deleted or intentionally archived outside the project execution path.
+
+No dependency PR merge, Product scope expansion, SP-P1-003+ implementation, or Build Spec rebaseline is approved by this decision.
