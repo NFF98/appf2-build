@@ -1,6 +1,6 @@
 # SP-P1-002 Pre-Activation Gate Report
 
-> 狀態：**HUMAN REVIEW PENDING / NOT ACTIVATED**
+> 狀態：**HISTORICAL PRE-ACTIVATION SNAPSHOT / LIVE STATUS IN §§10–11**
 >
 > 本報告是 2026-09-29 的 SP-P1-002 Pre-Activation planning snapshot。它不授權 implementation。
 
@@ -193,3 +193,31 @@ Live revalidation:
 Therefore no technical, Product Truth, Build Spec, dependency, Acceptance mapping, or governance blocker prevents Human from activating `SP-P1-002`.
 
 > This review does not itself activate the Sprint. Activation still requires an explicit Human decision and the corresponding Build authority state change.
+
+
+## 11. Human Activation Decision — 2026-10-01
+
+Human decision:
+
+~~~text
+SP-P1-002 Activation = APPROVED
+Sprint = ACTIVE
+Build Spec = BS-P1-003
+Active Task = T001
+implementation_enabled = true
+Cursor Command = NOT YET AUTHORIZED
+~~~
+
+Control-state transition authorized by Human:
+
+- `SP-P1-002`: `PLANNED → ACTIVE`
+- `T001`: `PLANNED → IN_PROGRESS`
+- selected Backlog `BL-P1-003 / 005 / 006 / 007 / 008 / 033`: `READY → SPRINTED`
+- `build-spec/CURRENT.json`: `implementation_enabled=false → true`
+- `delivery/CURRENT-SPRINT.json`: bind `SP-P1-002 / BS-P1-003 / T001` as the sole active execution context
+
+The 2026-09-29 conditional Human decision for `POI-003` remains in force:
+
+> Sprint Activation is allowed, but **the first Cursor implementation command is a hard stop** until the Human confirms `T002-candidate.patch` and `T002-full-candidate.patch` are deleted or intentionally archived outside the project execution path.
+
+This activation does not approve any dependency PR merge, Product scope expansion, SP-P1-003+ implementation, or Build Spec rebaseline.

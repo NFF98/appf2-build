@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-003",
+  "active_task": "T001",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved SP-P1-001 Sprint closure. SP-P1-001 is CLOSED; no later Sprint is active."
+  "reason": "Human approved SP-P1-002 Sprint Activation on 2026-10-01; T001 is active under BS-P1-003. Do not issue the first Cursor implementation command until POI-003 is confirmed resolved/disposed."
 }
