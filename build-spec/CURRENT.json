@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-003",
-  "implementation_enabled": false,
-  "reason": "Human-approved SP-P1-001 Sprint closure complete. Keep execution disabled until a separate later Sprint planning/activation decision."
+  "implementation_enabled": true,
+  "reason": "Human approved SP-P1-002 Sprint Activation on 2026-10-01; T001 is the sole active Task under BS-P1-003. First Cursor implementation command remains blocked until POI-003 dead patch disposition is confirmed."
 }
