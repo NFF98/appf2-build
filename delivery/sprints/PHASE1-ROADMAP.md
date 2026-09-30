@@ -39,5 +39,5 @@ Total: **43 Backlog Items / 288 ACTIVE Acceptance**.
 ## Current Detailed Planning Boundary
 
 `SP-P1-001` is fully detailed and CLOSED; all seven Tasks are CLOSED and its five selected Backlog items are DONE.
-`SP-P1-002` has completed detailed planning on the Pre-Activation branch: six Backlog items / 35 Acceptance are decomposed into T001–T009 and remain **PLANNED / NOT ACTIVATED** pending Pre-Activation Gate, CI/Governance validation and explicit Human Activation.
+`SP-P1-002` has completed detailed planning: six Backlog items / 35 Acceptance are decomposed into T001–T009. Human approved Sprint Activation on 2026-10-01; repository control-state transition must pass protected PR checks. T001 is the intended sole active Task after that transition, while the first Cursor implementation command remains blocked until POI-003 dead patch disposition is confirmed.
 `SP-P1-003` onward remain provisional and must not be treated as activated execution scope.
