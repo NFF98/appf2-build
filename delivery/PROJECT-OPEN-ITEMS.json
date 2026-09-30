@@ -47,7 +47,7 @@
     {
       "id": "POI-003",
       "title": "Delete/archive dead local T002 patch artifacts",
-      "status": "MANUAL_ACTION_REQUIRED",
+      "status": "RESOLVED",
       "owner": "HUMAN",
       "source": "User-recorded local path",
       "blocking_scope": [
@@ -59,14 +59,26 @@
         "T002-candidate.patch",
         "T002-full-candidate.patch"
       ],
-      "next_action": "At the first Cursor-command gate, re-ask Human to verify PC B local T002 dead patch disposition. Do not issue the first Cursor implementation command until confirmation is received.",
+      "next_action": "None. Human verified both recorded dead patch paths return Test-Path=False before the first SP-P1-002 Cursor command.",
       "completion_criterion": "Human confirms both dead patch artifacts are deleted or intentionally archived outside project execution paths; no project workflow references them.",
-      "resolution_ref": null,
+      "resolution_ref": "HUMAN-CONFIRMATION-2026-10-01-POI-003-FALSE-FALSE",
       "conditional_human_decision": {
         "date": "2026-09-29",
         "decision": "SP-P1-002 Activation may proceed while this local cleanup remains pending, because the Human is temporarily away from PC B.",
         "hard_stop": "Before ChatGPT issues the first Cursor implementation command for SP-P1-002, Human must confirm the two dead patch artifacts are deleted or intentionally archived outside project execution paths."
       }
+    },
+    {
+      "id": "POI-004",
+      "title": "Blocked-task product:ci requires mapped tests before implementation can exist",
+      "status": "OPEN",
+      "owner": "CHATGPT_AUDIT",
+      "source": "PR #106 CI run 36787496427 after BF-014 blocked T001",
+      "blocking_scope": [],
+      "blocks_activation": false,
+      "next_action": "Before the next maintenance window or before relying on blocked-state Finding side-effect PRs with unimplemented mapped tests, update product:ci/test-integrity logic so BLOCKED execution can persist Findings without requiring unavailable Task tests; retain normal active implementation enforcement.",
+      "completion_criterion": "A governance-only fix passes CI/Governance/Attack/CodeQL and proves ACTIVE tasks still require mapped executable tests while BLOCKED Finding/Evidence side effects do not.",
+      "resolution_ref": null
     }
   ],
   "last_full_pr_audit": {
