@@ -100,6 +100,32 @@ for(const sid of sprintDirs){
     }
   }
 
+  const revalidationIds=new Set();
+  const revalidationByAcceptance=new Map();
+  if(m.revalidation_item_ids!==undefined && !Array.isArray(m.revalidation_item_ids)) errors.push(sid+" revalidation_item_ids must be array");
+  for(const bid of m.revalidation_item_ids||[]){
+    if(revalidationIds.has(bid)) errors.push(sid+" duplicate revalidation item "+bid);
+    revalidationIds.add(bid);
+    if(selectedIds.has(bid)) errors.push(sid+" revalidation item must not duplicate selected backlog item "+bid);
+    const bi=backlogById.get(bid);
+    if(!bi){ errors.push(sid+" unknown revalidation backlog item "+bid); continue; }
+    if(bi.status!=="DONE") errors.push(sid+" revalidation backlog item must preserve DONE history: "+bid);
+    const r=bi.revalidation;
+    if(!r || r.target_build_spec_id!==m.build_spec_id || r.sprint_id!==sid){
+      errors.push(sid+" invalid revalidation metadata for "+bid);
+      continue;
+    }
+    if(!/^T\d{3}$/.test(r.task_id||"")) errors.push(sid+" revalidation "+bid+" invalid task_id");
+    if(!Array.isArray(r.acceptance_ids)||!r.acceptance_ids.length) errors.push(sid+" revalidation "+bid+" requires acceptance_ids");
+    for(const aid of r.acceptance_ids||[]){
+      const a=activeAcceptance.get(aid);
+      if(!a){ errors.push(sid+" revalidation "+bid+" unknown/inactive Acceptance "+aid); continue; }
+      if(expectedPairs.has(aid)) errors.push(sid+" revalidation Acceptance duplicates selected backlog coverage: "+aid);
+      expectedPairs.set(aid,a.test_id);
+      revalidationByAcceptance.set(aid,{backlog_item_id:bid,task_id:r.task_id,status:r.status});
+    }
+  }
+
   const taskIds=new Set(), claims=new Map(), taskById=new Map(), taskBacklogs=new Set();
   for(const t of td.tasks||[]){
     taskById.set(t.task_id,t);
@@ -155,8 +181,12 @@ for(const sid of sprintDirs){
     if(!claim) errors.push(sid+" missing Task coverage for "+aid);
     else if(claim.test_id!==tid) errors.push(sid+" Task coverage Test mismatch for "+aid);
   }
-  for(const aid of claims.keys()) if(!expectedPairs.has(aid)) errors.push(sid+" Task claims Acceptance outside selected Backlog: "+aid);
+  for(const aid of claims.keys()) if(!expectedPairs.has(aid)) errors.push(sid+" Task claims Acceptance outside selected Backlog/revalidation: "+aid);
   if(claims.size!==expectedPairs.size) errors.push(sid+" Acceptance coverage mismatch: "+claims.size+" / "+expectedPairs.size);
+  for(const [aid,r] of revalidationByAcceptance){
+    const claim=claims.get(aid);
+    if(claim && claim.task_id!==r.task_id) errors.push(sid+" revalidation "+aid+" must be owned by Task "+r.task_id+", not "+claim.task_id);
+  }
 
   for(const t of td.tasks||[]){
     const seen=new Set();
@@ -183,6 +213,10 @@ for(const sid of sprintDirs){
     for(const bid of selectedIds){
       const bi=backlogById.get(bid);
       if(bi && bi.status!=="DONE") errors.push(sid+" CLOSED Sprint requires every selected Backlog DONE: "+bid+" is "+bi.status);
+    }
+    for(const bid of revalidationIds){
+      const bi=backlogById.get(bid);
+      if(bi && !["VERIFIED","CLOSED"].includes(bi.revalidation?.status)) errors.push(sid+" CLOSED Sprint requires revalidation complete: "+bid+" is "+bi.revalidation?.status);
     }
     if(cs.active_sprint===sid) errors.push(sid+" CLOSED Sprint cannot remain CURRENT active_sprint");
   }
