@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-014",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -21,7 +21,8 @@
     "PR #105 merged as 43e54cc70f2fdc3da079a78f6b698935de1d393b: SP-P1-002 / T001 moved to BLOCKED.",
     "PR #107 merged as ccb9be29fe0b3513f420c860554226ff3c1e00d6: execution moved to HOLD pending Human-governed BF-014 resolution.",
     "appf2-design PR #5 merged as 8ca4625ab71cd8884120ad1fe86d78f97cb19523: BF-014 Working serialization defect corrected and registry_digest wire representation clarified.",
-    "Replacement Freeze scope audit against BS-P1-003 source 3818926 found 11 changed projected outputs at Working 8ca4625; BF-014 owns only F04, F07, and evidence-event-registry. Eight additional projected outputs are PFR/F19/future-compatibility drift and cannot be silently included before their own PFR-05 gate."
+    "Replacement Freeze scope audit against BS-P1-003 source 3818926 found 11 changed projected outputs at Working 8ca4625; BF-014 owns only F04, F07, and evidence-event-registry. Eight additional projected outputs are PFR/F19/future-compatibility drift and cannot be silently included before their own PFR-05 gate.",
+    "Human approved BS-P1-004 Build Freeze on 2026-10-01; PR #113 locks scope-clean Design source 91894ae8bd6241bb5ee1897180db72e9e578d1bf and supersedes BS-P1-003."
   ],
   "attempts": [
     {
@@ -41,6 +42,12 @@
       "strategy": "BUILD_F04_EVIDENCE_OBJECTS_WITHOUT_CANONICAL_VALIDATION",
       "result": "NOT_EXECUTED_FORBIDDEN",
       "evidence": "Would create a parallel evidence system whose events the canonical intake rejects, producing fake-green RUNTIME_EVIDENCE for F04-AC-017/018."
+    },
+    {
+      "attempt_id": "FREEZE-BF-014",
+      "strategy": "HUMAN_APPROVED_BS_P1_004_REPLACEMENT_FREEZE",
+      "result": "PASSED",
+      "evidence": "BS-P1-004 immutable candidate contains the verified A0 remediation and canonical hashes; replacement Freeze resolves the stale BS-P1-003 contract blocker."
     }
   ],
   "resolution_options_for_human": [
