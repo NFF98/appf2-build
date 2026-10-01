@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-019",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -12,7 +12,8 @@
     "F02 V01 Intake / JSON Parse",
     "F02 Validation Report Contract",
     "DATA-MODEL-DETAILED validation_run.candidate_digest",
-    "A0 found no exact candidate_digest representation rule"
+    "A0 found no exact candidate_digest representation rule",
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
   ],
   "attempts": [
     {
@@ -20,6 +21,12 @@
       "strategy": "A0_CANDIDATE_DIGEST_CONTRACT_AUDIT",
       "result": "FAILED",
       "evidence": "A deterministic candidate identity is required by V01 and persistence but its representation is undefined."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
+      "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
+      "evidence": "Working F02 now defines candidate_digest as SHA-256 of exact UTF-8 candidate payload bytes before parse, encoded sha256:<64 lowercase hex>."
     }
   ],
   "affected_contracts": [
@@ -33,5 +40,5 @@
     "F02-AC-019"
   ],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": "BD-004"
 }
