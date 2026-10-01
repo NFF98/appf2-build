@@ -59,7 +59,7 @@
       "target_path": "functions/F01-INTENT-COMPILATION.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "4327adec8951401c3c0cbb203851e1d427455167c985287c2fc6b9f0649efe2e"
     },
     {
       "source_path": "working/detailed-design/functions/F02-BLUEPRINT-VALIDATION.md",
@@ -68,7 +68,7 @@
       "target_path": "functions/F02-BLUEPRINT-VALIDATION.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "0f2b80b9f913587eb251c7e904e5408576892f04f6b622f0ddb5b77bc31ebe23"
     },
     {
       "source_path": "working/detailed-design/functions/F03-RUNTIME-EXECUTION.md",
@@ -77,7 +77,7 @@
       "target_path": "functions/F03-RUNTIME-EXECUTION.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "89bbb6727961631a7385d08244a95991e05a75764cf91049ded4e6e92556fd49"
     },
     {
       "source_path": "working/detailed-design/functions/F04-CAPABILITY-REGISTRY.md",
@@ -86,7 +86,7 @@
       "target_path": "functions/F04-CAPABILITY-REGISTRY.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "3674e69e82d74102efd8360a7d4af5763d111a7cdbc286ec02bf322b06c51721"
     },
     {
       "source_path": "working/detailed-design/functions/F05-SHARE-RESTORE.md",
@@ -95,7 +95,7 @@
       "target_path": "functions/F05-SHARE-RESTORE.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "d68299d98e490a58f69e48273f808107122bf8fce014de6593a058f9f0b76783"
     },
     {
       "source_path": "working/detailed-design/functions/F06-REMIX-REFINE.md",
@@ -113,7 +113,7 @@
       "target_path": "functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "ad1fef1262511e2427e7e68d61890046ddc9d1024a43a78fbf678d6de906f6ae"
     },
     {
       "source_path": "working/detailed-design/functions/F12-HUMANIZED-RECOVERY.md",
@@ -356,7 +356,7 @@
       "target_path": "registries/acceptance-test-registry.json",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "4342d363fc2717e066cc87bdcadcc8c1c8bd1e6430ea94790fba86e958f7a360"
     },
     {
       "source_path": "working/detailed-design/registries/evidence-event-registry.json",
@@ -365,7 +365,7 @@
       "target_path": "registries/evidence-event-registry.json",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "f30c8e60509a50415204753d7f36756f9448e5a506038403ba5381f83e17283c"
     },
     {
       "source_path": "working/detailed-design/registries/recovery-registry.json",
@@ -473,7 +473,7 @@
           }
         }
       ],
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "a124fc53302817ba5f38d96588f5e24858dbcb3f86c33d8cee7d555b03b9b4aa"
     },
     {
       "source_path": "working/detailed-design/APP-DETAILED-DESIGN-OVERVIEW.md",
@@ -522,7 +522,7 @@
           }
         }
       ],
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "d7b70feabb8338562883c89509b290e15de8ff722acf99afa2ae22d1cf3415bd"
     },
     {
       "source_path": "working/detailed-design/infrastructure/INFRASTRUCTURE-DETAILED.md",
@@ -542,7 +542,7 @@
           }
         }
       ],
-      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      "output_sha256": "75bd4b6be704507217ef18da04105f3883610464e16838a2c92c66715bbea05e"
     },
     {
       "source_path": "working/README.md",
