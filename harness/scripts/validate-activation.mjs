@@ -98,17 +98,21 @@ for(const file of activationFiles){
   }else{
     if(!/^BS-P\d+-\d{3}$/.test(a.previous_baseline||"")) errors.push(id+" REBASELINE requires previous_baseline");
     if(m.supersedes!==a.previous_baseline) errors.push(id+" REBASELINE supersedes mismatch");
-    if(!ad.length) errors.push(id+" REBASELINE requires at least one approved DESIGN_DELTA");
+    const previousManifest=getBaseline(a.previous_baseline);
+    const inherited=new Set(previousManifest?.approved_delta_ids||[]);
+    const introduced=ad.filter(did=>!inherited.has(did));
+    if(!introduced.length) errors.push(id+" REBASELINE requires at least one newly approved DESIGN_DELTA");
     for(const did of ad){
       const d=getDelta(did);
       if(!d){errors.push(id+" activation references missing Delta "+did); continue;}
       if(d.type!=="DESIGN_DELTA") errors.push(id+" activation Delta "+did+" must be DESIGN_DELTA");
       if(!["APPROVED","IMPLEMENTING","VERIFIED","CLOSED"].includes(d.status)) errors.push(id+" activation Delta "+did+" is not approved");
       if(d.user_decision?.status!=="APPROVED" || !d.user_decision?.decision_ref) errors.push(id+" activation Delta "+did+" lacks explicit User approval");
-      if(d.affected_build_spec!==a.previous_baseline) errors.push(id+" activation Delta "+did+" affected_build_spec mismatch");
-      if(!deltaMatchesActivationSource(d,a.source_working_commit)) errors.push(id+" activation Delta "+did+" source provenance does not match activation source");
       if(d.replacement_build_spec_required!==true) errors.push(id+" activation Delta "+did+" must require replacement Build Spec");
-      if(d.replacement_build_spec && d.replacement_build_spec!==id) errors.push(id+" activation Delta "+did+" replacement_build_spec mismatch");
+      if(inherited.has(did)) continue;
+      if(d.affected_build_spec!==a.previous_baseline) errors.push(id+" newly introduced Delta "+did+" affected_build_spec mismatch");
+      if(!deltaMatchesActivationSource(d,a.source_working_commit)) errors.push(id+" newly introduced Delta "+did+" source provenance does not match activation source");
+      if(d.replacement_build_spec && d.replacement_build_spec!==id) errors.push(id+" newly introduced Delta "+did+" replacement_build_spec mismatch");
     }
   }
 }

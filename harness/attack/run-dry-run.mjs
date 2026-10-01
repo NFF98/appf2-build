@@ -286,6 +286,29 @@ expectPass("DONE semantic drift revalidation is owned by active Sprint Task","no
 const brokenQueue=read("delivery/backlog/QUEUE.json"); delete brokenQueue.items[0].revalidation; write("delivery/backlog/QUEUE.json",brokenQueue);
 const missingRevalidation=commit("attack: semantic drift without revalidation");
 expectFail("DONE semantic drift without revalidation is rejected","harness/scripts/validate-backlog.mjs",{base:validRevalidation,head:missingRevalidation});
+
+// A CLOSED ancestor revalidation may carry forward only while its Acceptance semantics remain unchanged.
+cleanTo(validRevalidation);
+const carryQueue=read("delivery/backlog/QUEUE.json");
+carryQueue.items[0].revalidation.status="CLOSED";
+carryQueue.items[1].status="DONE";
+carryQueue.build_spec_id="BS-P9-003";
+write("delivery/backlog/QUEUE.json",carryQueue);
+const carryTasks=read("delivery/sprints/SP-P9-002/tasks.json");
+carryTasks.tasks[0].status="CLOSED";
+write("delivery/sprints/SP-P9-002/tasks.json",carryTasks);
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"REVALIDATION_CARRY_FORWARD"});
+makeBaseline("BS-P9-003",{sourceCommit:sourceC,supersedes:"BS-P9-002",decisionRef:"DRYRUN-CARRY-FREEZE",acceptanceEntries:[newAc,stableAc]});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-003",implementation_enabled:false,reason:"REVALIDATION_CARRY_FORWARD"});
+const carryForward=commit("positive: closed revalidation carries across unchanged Acceptance");
+expectPass("CLOSED ancestor revalidation carries forward across unchanged semantics","node",["harness/scripts/validate-backlog.mjs"],{base:validRevalidation,head:carryForward});
+
+const changedAgain={...newAc,criterion:"changed again"};
+makeBaseline("BS-P9-004",{sourceCommit:"d".repeat(40),supersedes:"BS-P9-003",decisionRef:"DRYRUN-CARRY-CHANGED",acceptanceEntries:[changedAgain,stableAc]});
+const changedAgainQueue=read("delivery/backlog/QUEUE.json"); changedAgainQueue.build_spec_id="BS-P9-004"; write("delivery/backlog/QUEUE.json",changedAgainQueue);
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-004",implementation_enabled:false,reason:"REVALIDATION_CARRY_CHANGED"});
+const staleCarry=commit("attack: historical revalidation reused after later semantic drift");
+expectFail("Historical revalidation cannot cover later semantic drift","harness/scripts/validate-backlog.mjs",{base:carryForward,head:staleCarry});
 cleanTo(fixtureBase);
 
 // Active Task cannot bypass an unfinished blocked_by dependency.
@@ -510,6 +533,48 @@ baseWorkState("BS-P9-002","BLOCKED","BLOCKED");
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:true,reason:"APPROVED_DRYRUN_REBASELINE"});
 const goodRebaseline=commit("positive: approved rebaseline remains blocked");
 expectHarnessPass("Approved rebaseline transition",governanceHarness,{base:frozenRebaselineBase,head:goodRebaseline});
+
+// Cumulative delta lineage: inherited deltas remain provenance, while only newly introduced deltas
+// must bind to the immediate previous baseline and current replacement source.
+cleanTo(blockedBase);
+makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-CUMULATIVE-PREV"});
+makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceB,deltas:["BD-999"],decisionRef:"DRYRUN-CUMULATIVE-PREV"});
+write("delivery/deltas/BD-998.json",{
+  schema_version:1,delta_id:"BD-998",type:"DESIGN_DELTA",status:"APPROVED",source_finding_ids:["BF-999"],
+  affected_build_spec:"BS-P9-002",affected_tasks:["T001"],affected_contracts:["functions/demo.md"],affected_acceptance:["F99-AC-001"],
+  changes_contract_semantics:true,owner:"HUMAN_GOVERNANCE",user_decision_required:true,
+  user_decision:{status:"APPROVED",decision_ref:"DRYRUN-CUMULATIVE-NEW"},replacement_build_spec_required:true,
+  upstream_working_commit:sourceC,replacement_build_spec:"BS-P9-003",verification:[]
+});
+makeBaseline("BS-P9-003",{sourceCommit:sourceC,supersedes:"BS-P9-002",deltas:["BD-999","BD-998"],decisionRef:"DRYRUN-CUMULATIVE-CURRENT"});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:false,reason:"DRYRUN_CUMULATIVE_BASE"});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"DRYRUN_CUMULATIVE_BASE"});
+const cumulativeBase=commit("fixture: cumulative delta baseline awaiting activation");
+makeActivation("BS-P9-003",{previous:"BS-P9-002",type:"REBASELINE",sourceCommit:sourceC,deltas:["BD-999","BD-998"],decisionRef:"DRYRUN-CUMULATIVE-ACTIVATION"});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-003",implementation_enabled:false,reason:"DRYRUN_CUMULATIVE_ACTIVE"});
+const cumulativeGood=commit("positive: cumulative delta activation");
+expectPass("Rebaseline accepts inherited approved deltas plus current introduced delta","node",["harness/scripts/validate-activation.mjs"],{base:cumulativeBase,head:cumulativeGood});
+
+cleanTo(cumulativeBase);
+makeBaseline("BS-P9-003",{sourceCommit:sourceC,supersedes:"BS-P9-002",deltas:["BD-998"],decisionRef:"DRYRUN-CUMULATIVE-DROP"});
+makeActivation("BS-P9-003",{previous:"BS-P9-002",type:"REBASELINE",sourceCommit:sourceC,deltas:["BD-998"],decisionRef:"DRYRUN-CUMULATIVE-DROP"});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-003",implementation_enabled:false,reason:"DRYRUN_CUMULATIVE_DROP"});
+const cumulativeDrop=commit("positive: non-cumulative replacement delta list");
+expectPass("Rebaseline may omit predecessor deltas and treats only repeated IDs as inherited","node",["harness/scripts/validate-activation.mjs"],{base:cumulativeBase,head:cumulativeDrop});
+
+cleanTo(cumulativeBase);
+write("delivery/deltas/BD-997.json",{
+  schema_version:1,delta_id:"BD-997",type:"DESIGN_DELTA",status:"APPROVED",source_finding_ids:["BF-999"],
+  affected_build_spec:"BS-P9-001",affected_tasks:["T001"],affected_contracts:["functions/demo.md"],affected_acceptance:["F99-AC-001"],
+  changes_contract_semantics:true,owner:"HUMAN_GOVERNANCE",user_decision_required:true,
+  user_decision:{status:"APPROVED",decision_ref:"DRYRUN-FORGED-INHERITED"},replacement_build_spec_required:true,
+  upstream_working_commit:sourceB,replacement_build_spec:"BS-P9-002",verification:[]
+});
+makeBaseline("BS-P9-003",{sourceCommit:sourceC,supersedes:"BS-P9-002",deltas:["BD-999","BD-997","BD-998"],decisionRef:"DRYRUN-FORGED-INHERITED"});
+makeActivation("BS-P9-003",{previous:"BS-P9-002",type:"REBASELINE",sourceCommit:sourceC,deltas:["BD-999","BD-997","BD-998"],decisionRef:"DRYRUN-FORGED-INHERITED"});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-003",implementation_enabled:false,reason:"DRYRUN_FORGED_INHERITED"});
+const forgedInherited=commit("attack: old delta injected as if inherited");
+expectFail("Delta not inherited from predecessor must satisfy current rebaseline provenance","harness/scripts/validate-activation.mjs",{base:cumulativeBase,head:forgedInherited});
 
 // Positive HOLD -> ACTIVE rebaseline: replacement baseline is already frozen, then one Human-approved
 // activation/control transition may move CURRENT + Sprint/Task bindings without requiring pre-existing product tests.

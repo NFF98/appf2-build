@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-033",
+  "classification": "BUILD_BLOCKER",
+  "status": "RESOLVED",
+  "build_spec_id": "BS-P1-005",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "A replacement Build Spec may either use a non-cumulative delta list (historical convention) or retain some predecessor delta IDs as cumulative provenance. Activation validation must classify only delta IDs present in both predecessor and replacement manifests as inherited; every other listed delta is newly introduced and must satisfy the immediate previous-baseline/current-source checks.",
+  "actual": "validate-activation.mjs requires every approved_delta_id in the new manifest/activation to have affected_build_spec equal the immediate previous baseline and to match the new activation source. BS-P1-005 correctly retains inherited BD-003/BD-004 provenance from BS-P1-004 and adds BD-005 for the BS-P1-004→005 change, so the current validator would falsely reject the inherited deltas.",
+  "evidence": [
+    "BS-P1-004 manifest approved_delta_ids = [BD-003, BD-004].",
+    "BS-P1-005 manifest approved_delta_ids = [BD-003, BD-004, BD-005].",
+    "BD-003/BD-004 describe the earlier BS-P1-003→BS-P1-004 remediation; BD-005 is the only new delta affecting BS-P1-004.",
+    "harness/scripts/validate-activation.mjs currently applies affected_build_spec/source provenance checks indiscriminately to every activation delta.",
+    "Historical baseline manifests are non-cumulative: BS-P1-002=[BD-001], BS-P1-003=[BD-002], BS-P1-004=[BD-003,BD-004]; therefore predecessor delta omission is valid repository history.",
+    "PR #135 attack result: cumulative inherited+introduced PASS; non-cumulative replacement PASS; forged old-delta injection FAIL as expected."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "DROP_INHERITED_DELTA_PROVENANCE_OR_REWRITE_BD_003_BD_004_TO_BS_P1_004",
+      "result": "REJECTED_FALSE_PROVENANCE",
+      "evidence": "Dropping or rewriting inherited deltas would falsify the lineage of semantics already incorporated in BS-P1-004."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "INTERSECTION_BASED_INHERITED_DELTA_CLASSIFICATION",
+      "result": "PASSED",
+      "evidence": "PR #135 head b75b65c3... Governance/CI/Attack direct gates PASS. Attack dry-run accepts cumulative and non-cumulative lineage, while rejecting an old delta injected as a newly listed delta without current rebaseline provenance."
+    }
+  ],
+  "requested_planning_action": [
+    "Classify inherited deltas as the intersection of predecessor and replacement approved_delta_ids; do not require a replacement baseline to repeat every predecessor delta.",
+    "Apply immediate previous-baseline affected_build_spec and current-source provenance checks only to delta IDs newly introduced by the replacement baseline.",
+    "Add attack cases for valid cumulative-delta rebaseline, valid non-cumulative replacement lineage, and forged old-delta injection."
+  ],
+  "affected_contracts": [
+    "Build governance rebaseline activation delta provenance"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}
