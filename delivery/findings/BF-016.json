@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-016",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T006",
+  "expected": "F01 evidence documentation must agree with F07 evidence-source ownership and the machine Evidence Registry.",
+  "actual": "F01 section 31 lists policy rule IDs and compiler usage/cost values as event minimum dimensions, but F01 event entries do not allow those properties. F07 assigns compiler usage/cost truth to compiler_run, while policy rule IDs belong to clarification-policy semantic diagnostics.",
+  "evidence": [
+    "F01 section 31 Evidence / Economics",
+    "F07-POL-003 Evidence Source Precedence",
+    "DATA-MODEL-DETAILED compiler_run usage/cost fields",
+    "Evidence Registry F01 allowed_properties"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_F01_EVIDENCE_OWNER_RECONCILIATION",
+      "result": "FAILED",
+      "evidence": "Documented event dimensions include values owned by other canonical evidence sources and absent from F01 event property contracts."
+    }
+  ],
+  "affected_contracts": [
+    "F01 section 31 Evidence / Economics",
+    "F07-POL-003",
+    "Evidence Registry F01 properties"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}
