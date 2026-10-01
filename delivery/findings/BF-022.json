@@ -12,7 +12,9 @@
     "build-spec/baselines/BS-P1-003/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md :: F07-DATA-001 Common Evidence Event Envelope",
     "build-spec/baselines/BS-P1-003/registries/evidence-event-registry.json :: allowed_properties",
     "src/platform/evidence/evidence-validator.ts :: independent envelope/properties validation with no equality/precedence rule",
-    "A0 machine audit: 104/112 events collide; error_code=99, trace_id=78, intent_id=58, schema_version=36, share_id=21, blueprint_hash=19, capability_id=18."
+    "A0 machine audit: 104/112 events collide; error_code=99, trace_id=78, intent_id=58, schema_version=36, share_id=21, blueprint_hash=19, capability_id=18.",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: F07/Evidence Registry v3 now makes common envelope the single event-level truth, prohibits reserved names in properties, renames Blueprint version to blueprint_schema_version, and major-bumps affected event families.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b: exact 11-file A0/BF14-23 allowlist, zero unexpected projected files."
   ],
   "attempts": [
     {
@@ -20,6 +22,12 @@
       "strategy": "A0_ASSUME_ENVELOPE_PRECEDENCE_OR_EQUALITY",
       "result": "FAILED",
       "evidence": "Neither precedence nor equality is locked, and at least schema_version can plausibly denote different semantics. Cursor cannot choose without changing contract meaning."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "PASSED_WORKING_BASELINE_PENDING",
+      "evidence": "F07/Evidence Registry v3 now makes common envelope the single event-level truth, prohibits reserved names in properties, renames Blueprint version to blueprint_schema_version, and major-bumps affected event families."
     }
   ],
   "affected_contracts": [
@@ -34,5 +42,12 @@
     "F02-AC-022"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-004",
+  "resolution": {
+    "status": "WORKING_REMEDIATED_BASELINE_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN until Human-approved replacement BS-P1-004 freezes the remediated contract."
+  }
 }
