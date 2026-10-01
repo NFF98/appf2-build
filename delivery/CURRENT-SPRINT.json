@@ -5,5 +5,5 @@
   "active_task": null,
   "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-002 / T001 remain BLOCKED by BF-014 in their Sprint records; execution context cleared pending Human-governed resolution."
+  "reason": "SP-P1-002 is rebound to BS-P1-004 and under Activation Review. No Sprint/Task is active; execution remains HOLD until separate Human Activation approval."
 }
