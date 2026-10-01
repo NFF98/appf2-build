@@ -13,7 +13,9 @@
     "SP-P1-002 T002 migration scope",
     "SP-P1-002 T006 scope/write paths",
     "Backlog BL-P1-010 and BL-P1-011 are later queued work",
-    "Current migration creates only anonymous_identity and product_event"
+    "Current migration creates only anonymous_identity and product_event",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: DATA-MODEL now defines SP2 staged nullable compiler_run_id column with later integrity-checked FK migration after compiler persistence exists.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b contains only A0/BF14-23 projected changes."
   ],
   "attempts": [
     {
@@ -21,6 +23,12 @@
       "strategy": "A0_T002_MIGRATION_DEPENDENCY_AUDIT",
       "result": "FAILED",
       "evidence": "No SP2 owner creates compiler_run before T002 and no staging rule preserves the nullable reference without scope expansion."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "PASSED_WORKING_BASELINE_PENDING",
+      "evidence": "DATA-MODEL now defines SP2 staged nullable compiler_run_id column with later integrity-checked FK migration after compiler persistence exists."
     }
   ],
   "affected_contracts": [
@@ -33,5 +41,12 @@
     "F02-AC-021"
   ],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": null,
+  "resolution": {
+    "status": "WORKING_REMEDIATED_BASELINE_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN until replacement BS-P1-004 is Human-approved/frozen; no Cursor implementation is authorized."
+  }
 }
