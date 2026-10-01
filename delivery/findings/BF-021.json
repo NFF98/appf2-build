@@ -12,7 +12,9 @@
     "build-spec/baselines/BS-P1-003/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md :: section 28 raw retention + F07-AC-027",
     "build-spec/baselines/BS-P1-003/shared/data-model/DATA-MODEL-DETAILED.md :: Phase 1 product_event model; no aggregate durable owner",
     "supabase/migrations/20260927123000_t006_evidence_intake.sql :: product_event only",
-    "A0 audit: a SQL query/view over deleted raw rows cannot preserve historical aggregate values."
+    "A0 audit: a SQL query/view over deleted raw rows cannot preserve historical aggregate values.",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: DATA-MODEL now owns bounded non-identifying evidence_daily_aggregate with deterministic logical unique key, watermark, and aggregate-before-delete fail-closed semantics.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b: exact 11-file A0/BF14-23 allowlist, zero unexpected projected files."
   ],
   "attempts": [
     {
@@ -20,6 +22,12 @@
       "strategy": "A0_AGGREGATE_SURVIVAL_OWNER_AUDIT",
       "result": "FAILED",
       "evidence": "No canonical durable aggregate owner exists; implementing one requires a Data/retention contract rather than an implementation guess."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "PASSED_WORKING_BASELINE_PENDING",
+      "evidence": "DATA-MODEL now owns bounded non-identifying evidence_daily_aggregate with deterministic logical unique key, watermark, and aggregate-before-delete fail-closed semantics."
     }
   ],
   "affected_contracts": [
@@ -31,5 +39,12 @@
     "F07-AC-027"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-004",
+  "resolution": {
+    "status": "WORKING_REMEDIATED_BASELINE_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN until Human-approved replacement BS-P1-004 freezes the remediated contract."
+  }
 }
