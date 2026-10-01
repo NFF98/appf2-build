@@ -657,12 +657,26 @@ Rules：
 Candidate digest 與 content hash 分離：
 
 ~~~text
+candidate_payload_bytes
+= 進入 F02 validation boundary 的 exact UTF-8 candidate payload bytes
+= parse / normalization / canonicalization 之前的 bytes
+
 candidate_digest
-= untrusted candidate intake evidence
+= SHA-256(candidate_payload_bytes)
+= sha256:<64 lowercase hex>
+= untrusted candidate intake identity
 
 content_hash
+= SHA-256(admitted canonical_json_bytes)
 = admitted canonical Blueprint identity
 ~~~
+
+Rules：
+
+1. `candidate_digest` 必須在 JSON parse 前計算，因此 invalid JSON / duplicate-key candidate 仍有 deterministic identity。
+2. 不得以 parsed object re-serialize 後的 bytes 取代 `candidate_payload_bytes`，避免 parse / serializer 行為改寫 untrusted intake identity。
+3. Internal Composer / Restore / Import 呼叫 F02 時，也必須先形成 exact UTF-8 candidate payload bytes 再跨入 validation boundary；F02 不接受 implementation-defined object identity。
+4. `candidate_digest` 只作 intake / validation trace，不代表 admitted Blueprint；只有完整 PASS 後的 `content_hash` 可作 durable Blueprint identity。
 
 # 19. Global Phase 1 Resource Ceilings
 
@@ -735,7 +749,7 @@ Reject：
 - non-object root
 - prohibited binary / executable payload
 
-先產生 candidate_digest + trace id。
+先對 exact `candidate_payload_bytes` 產生 `candidate_digest = sha256:<hex>` + trace id，再 parse。
 
 # 22. V02 — Schema Validation
 
@@ -970,7 +984,7 @@ Candidate invalid
 Canonical service boundaries：
 
 ~~~text
-validateBlueprintCandidate(candidate, context)
+validateBlueprintCandidate(candidatePayloadBytes, context)
 canonicalizeBlueprint(validatedLogicalBlueprint)
 hashBlueprint(canonicalBytes)
 admitBlueprint(validationResult)
@@ -997,7 +1011,7 @@ F02 可為 Edge internal service/module；是否獨立 public endpoint 由 F01/A
 Request context：
 
 ~~~text
-candidate
+candidate_payload_bytes  // exact UTF-8 bytes；F02 boundary 前不得 parse / re-serialize
 candidate_source:
   COMPOSER
   RESTORE
@@ -1103,13 +1117,15 @@ Minimum dimensions：
 ~~~text
 function_id = F02
 validation_stage
-schema_version
+blueprint_schema_version
 registry_version
 capability_id when relevant
 error_code when relevant
 content_hash when PASSED
 trace_id
 ~~~
+
+Event `schema_version` 只代表 Evidence event schema；validated / candidate Blueprint version 使用 `blueprint_schema_version`。
 
 Raw Blueprint body 不複製進 telemetry。
 
