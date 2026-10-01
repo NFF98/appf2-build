@@ -138,7 +138,9 @@ system.notice
 
 規則：
 
-- lowercase ASCII
+- exact grammar = `^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$`
+- namespace / name 各自以 lowercase ASCII letter 開頭，可包含 lowercase ASCII digit / underscore
+- `data.table_basic` / `data.chart_basic` 是合法 canonical Capability ID
 - semantic identity 不包含 vendor
 - ID 一旦進正式 Spec / Released snapshot，不得改作另一種語意
 - breaking semantic change 使用新 major version
@@ -172,9 +174,10 @@ registry_digest
 
 1. registry_version 是人類可理解 release version。
 2. registry_digest 是 canonical source / manifest deterministic digest。
-3. 相同 registry_version 不得對應兩個不同 digest；CI 必須拒絕。
-4. Blueprint durable record 保存 registry_version；validation/debug 可同時保存 digest。
-5. Registry source material change 必須 version bump。
+3. Registry digest 在 Evidence / wire / persisted reference 中的 canonical string representation = `sha256:<64 lowercase hex>`；內部 hash helper 可持有 bare 64-hex，但跨 contract boundary 前必須正規化為帶 `sha256:` prefix 的 canonical representation。
+4. 相同 registry_version 不得對應兩個不同 digest；CI 必須拒絕。
+5. Blueprint durable record 保存 registry_version；validation/debug 可同時保存 digest。
+6. Registry source material change 必須 version bump；純 serialization defect correction 使用 PATCH bump。
 
 # 5. Canonical Capability Definition
 
