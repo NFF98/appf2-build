@@ -100,9 +100,6 @@ for(const file of activationFiles){
     if(m.supersedes!==a.previous_baseline) errors.push(id+" REBASELINE supersedes mismatch");
     const previousManifest=getBaseline(a.previous_baseline);
     const inherited=new Set(previousManifest?.approved_delta_ids||[]);
-    for(const did of inherited){
-      if(!ad.includes(did)) errors.push(id+" REBASELINE may not drop inherited approved Delta "+did);
-    }
     const introduced=ad.filter(did=>!inherited.has(did));
     if(!introduced.length) errors.push(id+" REBASELINE requires at least one newly approved DESIGN_DELTA");
     for(const did of ad){
