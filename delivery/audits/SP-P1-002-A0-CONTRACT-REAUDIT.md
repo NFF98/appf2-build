@@ -2,48 +2,28 @@
 
 Program = PFR-2026
 Sprint = SP-P1-002
-Build state = HOLD
-Baseline under audit = BS-P1-003
-Product implementation = NOT AUTHORIZED
+Build = HOLD
+Baseline = BS-P1-003
+Cursor Product Implementation = NOT AUTHORIZED
 
-## Audit scope
-
-F01 / F02 / F04 / F07; T001–T009; Acceptance/Test mapping; Evidence Registry machine rules; canonical examples; Data Model/migration ownership; retention execution; E2E feasibility; Design→Build projection.
+## Scope
+F01/F02/F04/F07; T001–T009; Acceptance/Test; machine registries; canonical examples; persistence/retention ownership; E2E feasibility; Design→Build projection.
 
 ## Verified PASS
+- 35/35 selected Acceptance/Test mappings present, unique, and owner text matches.
+- Current Working vs BS-P1-003 selected 35 Acceptance entries: 0 drift.
+- F01 events 14/14, F02 13/13, F04 8/8 match Evidence Registry IDs/names.
+- F01/F02/F04/F07 errors all have Recovery Registry coverage; Recovery Registry structural audit passes.
+- T007 queue contract is bounded and implementable.
+- T009 Playwright/build toolchain and write paths are sufficient.
+- Blueprint identity references are consistent.
 
-- T001–T009 selected Acceptance/Test mapping: 35/35 present and unique.
-- F01 event IDs/names: 14/14 match Evidence Registry.
-- F02 event IDs/names: 13/13 match.
-- F04 event IDs/names: 8/8 match.
-- F01/F02/F04/F07 error IDs all have Recovery Registry references.
-- Evidence Registry structural checks pass except Findings below.
-- T007 client queue boundary is implementable and bounded.
-- T009 existing Playwright/build toolchain and allowed paths are sufficient.
-- blueprint_hash fields reference blueprint_content.content_hash consistently.
-- validation_run / blueprint_content field contracts are otherwise explicit.
-
-## Open Findings
-
-- BF-014 — original Evidence regex escaping / digest representation blocker.
-- BF-015 — capability_id Evidence grammar contradicts canonical F04 grammar.
-- BF-016 — F01 Evidence dimension text conflicts with canonical evidence-source ownership.
-- BF-017 — T002 validation migration lacks compiler_run reference staging ownership.
-- BF-018 — T008 90-day retention lacks a defined periodic execution owner.
-- BF-019 — F02 candidate_digest representation is undefined.
-
-## Clarification, not blocker
-
-Evidence Registry x-semantic-rule metadata is not part of generic F07 intake type/enum/format/bounds enforcement. Domain producers own those semantic obligations. Working must say this explicitly to prevent future false assumptions.
+## Open
+BF-014, BF-015, BF-016, BF-017, BF-018, BF-019, BF-020.
+T001 and T008 are BLOCKED. Build remains HOLD.
 
 ## Projection
+Replacement Freeze is blocked until SP2 projection is scope-clean and does not pull unapproved PFR/F19/future work into BS-P1-004.
 
-Replacement Freeze remains blocked because current Working includes projected PFR/F19/future-compatibility changes beyond SP2. A0 must produce scope-clean projection truth before BS-P1-004.
-
-## Exit gate
-
-A0 can advance to Human Build Freeze Review only when:
-1. all blocking Findings are resolved/verified;
-2. comprehensive re-audit returns zero blocking issues;
-3. Design→Build projection is scope-clean;
-4. Build remains HOLD until Human explicitly approves the replacement freeze.
+## Exit
+All blocking Findings resolved + executable re-audit PASS + scope-clean projection + Human Build Freeze approval.
