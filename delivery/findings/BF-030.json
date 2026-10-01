@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-030",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -13,7 +13,8 @@
     "T002 candidate commit d8f1b17d1d05e276e0ed9d007abb4153f3774fbf :: src/platform/blueprint/state-schema.ts introduces constraints.allowed, item_type, max_length and fields without canonical Build Spec authority.",
     "T002 candidate commit d8f1b17d1d05e276e0ed9d007abb4153f3774fbf :: STRING rejects constraints entirely even though locked F02 says STRING has a length bound, demonstrating that semantic prose is insufficient as executable machine truth.",
     ".cursor/rules/20-finding-delta.mdc :: SPEC_AMBIGUITY requires affected Task BLOCKED and Product/design change path Finding → Human governance → Working → User approval → new Build Spec → Activation → rebind.",
-    "delivery/sprints/SP-P1-002/tasks.json :: T002 product_decision_allowed=false."
+    "delivery/sprints/SP-P1-002/tasks.json :: T002 product_decision_allowed=false.",
+    "PROOF-ONLY branch state: marked RESOLVED solely to exercise future-diff gates against the previously Human-approved BS-P1-004/T002 activation state. This is not canonical blocker closure."
   ],
   "attempts": [
     {
