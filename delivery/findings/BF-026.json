@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-026",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -38,6 +38,12 @@
       "strategy": "ACCEPT_BOTH_BS_P1_003_AND_BS_P1_004_SCHEMA_VERSIONS",
       "result": "NOT_EXECUTED_FORBIDDEN",
       "evidence": "Would loosen the locked BS-P1-004 schema_version contract to keep stale fixtures green."
+    },
+    {
+      "attempt_id": "A4",
+      "strategy": "HUMAN_APPROVED_T001_REPLAN_AND_FULL_GOVERNANCE_VERIFICATION",
+      "result": "PASSED",
+      "evidence": "PR #118 merged as 5521ae036029af689df2c20003a503a6ee768708. T001 now includes exactly tests/unit/evidence-collector-test-support.ts and tests/api/evidence-batch.api.test.ts in allowed_write_paths plus npm run test:unit and npm run test:api in required_commands. CI, Governance, Governance Attack Dry-run, CodeQL, and JavaScript/TypeScript analysis all passed."
     }
   ],
   "requested_planning_action": [

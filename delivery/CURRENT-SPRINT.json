@@ -5,5 +5,5 @@
   "active_task": null,
   "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-002 is governance-blocked by BF-026 / BF-027; execution context cleared for governance remediation. T001 implementation history remains IN_PROGRESS but is not authorized to execute while HOLD."
+  "reason": "BF-026 / BF-027 remediation is verified; execution remains HOLD pending explicit SP-P1-002 / T001 Reactivation Review. No Product implementation is authorized yet."
 }

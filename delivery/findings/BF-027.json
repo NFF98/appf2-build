@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-027",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -28,6 +28,12 @@
       "strategy": "EDIT_HARNESS_SCRIPTS_OR_ESLINT_CONFIG_FROM_T001",
       "result": "NOT_EXECUTED_FORBIDDEN",
       "evidence": "harness/ and lint configuration are outside T001 allowed_write_paths; harness/ is governance-only during an ACTIVE Sprint; disabling rules would be a blanket lint suppression."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "BEHAVIOR_PRESERVING_GOVERNANCE_LINT_REFACTOR",
+      "result": "PASSED",
+      "evidence": "PR #118 merged as 5521ae036029af689df2c20003a503a6ee768708. validate-backlog.mjs and validate-findings.mjs were refactored without lint suppression; CI including check:lint passed, and Governance, Governance Attack Dry-run, CodeQL, and JavaScript/TypeScript analysis all passed."
     }
   ],
   "requested_planning_action": [
