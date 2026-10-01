@@ -1443,7 +1443,7 @@ trace_id when relevant
 
 ## F03-RQ-016 — Evidence Runtime / Operation Status Separation
 
-BF-007 Human Review closure將原本模糊的 `runtime_stage` 拆成兩個不同維度；F03 Evidence schema自本 Delta起使用 `schema_version = 2.0.0`：
+BF-007 Human Review closure將原本模糊的 `runtime_stage` 拆成兩個不同維度。A0 / BF-022 又移除 properties 對 common envelope 欄位的重複 ownership，因此 F03 Evidence family 的 breaking schema 現為 `schema_version = 3.0.0`；v2 semantics 保留，但 v3 不再允許 `blueprint_hash / capability_id / error_code / trace_id` 重複出現在 properties：
 
 ~~~text
 runtime_status
