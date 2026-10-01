@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-004",
-  "implementation_enabled": false,
-  "reason": "SP-P1-002 execution paused for BF-028 / BF-029 governance remediation. BS-P1-004 remains the active locked baseline; Product implementation is disabled until direct-proof remediation and T001 reactivation review pass."
+  "implementation_enabled": true,
+  "reason": "TEMPORARY FUTURE-DIFF PROOF ONLY: simulate T001 reactivation for BF-028 direct test-integrity verification; branch will never merge."
 }
