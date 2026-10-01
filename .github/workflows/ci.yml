@@ -27,6 +27,8 @@ jobs:
       - name: Install locked dependencies
         if: ${{ hashFiles('package-lock.json') != '' }}
         run: npm ci
+      - name: Repository lint
+        run: npm run check:lint
       - name: Product CI
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}

@@ -62,9 +62,13 @@ const base=process.env.BASE_SHA;
 if(activeTask && base && !/^0+$/.test(base)){
   const changed=changedFilesFrom(base,process.env.HEAD_SHA||"HEAD");
   const activeIds=new Set((activeTask.acceptance_links||[]).map(x=>x.test_id));
+  const maintenanceKeys=new Set((activeTask.test_maintenance_authorizations||[])
+    .filter(a=>a?.mode==="BASELINE_FIXTURE_REBIND" && a?.to_build_spec===activeTask.build_spec_id)
+    .map(a=>a.test_id+"::"+a.file));
   for(const rel of changed.filter(p=>p.startsWith("tests/") && /\.(?:test|spec)\.(?:ts|tsx)$/.test(p))){
     for(const id of idsAtRef(base,rel)){
-      if(!activeIds.has(id)) errors.push("Active Task may not modify previously existing mapped Test "+id+" in "+rel);
+      const maintenanceAuthorized=maintenanceKeys.has(id+"::"+rel);
+      if(!activeIds.has(id) && !maintenanceAuthorized) errors.push("Active Task may not modify previously existing mapped Test "+id+" in "+rel);
     }
   }
 }

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-029",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "BF-027 remediation leaves npm run check:lint (eslint .) passing on main, so T001 required command check:lint and product:ci can pass.",
+  "actual": "On main 69963bc790792992ffc0b790b94c0ef030be6723 npm run check:lint still fails with 2 ESLint errors in governance-only harness scripts changed by the BF-027 remediation commit. CI did not detect this: the remediation commit ran product:ci while implementation_enabled=false (PRODUCT CI: HOLD, exit 0), and the reactivation commit changed only control paths (PRODUCT CI: CONTROL-ONLY skip). check:lint therefore never ran in CI against the remediated harness scripts.",
+  "evidence": [
+    "harness/scripts/validate-backlog.mjs 157:9 max-depth: Blocks are nested too deeply (5). Maximum allowed is 4",
+    "harness/scripts/validate-findings.mjs 30:29 complexity: Arrow function has a complexity of 16. Maximum allowed is 15",
+    "Reproduced on the committed blob: git show HEAD:harness/scripts/validate-findings.mjs | npx eslint --stdin --stdin-filename harness/scripts/validate-findings.mjs -> 1 error (complexity 16); working tree line endings i/lf w/lf; installed eslint 10.11.0 / typescript-eslint 8.70.1 / @eslint/js 10.0.1 equal package-lock.json.",
+    "git log 24d37a4..69963bc: 5521ae0 (Remediate BF-026 / BF-027) changed harness/scripts/validate-backlog.mjs and validate-findings.mjs; git show 5521ae0:build-spec/CURRENT.json implementation_enabled=false.",
+    "git diff --name-only 69963bc~1 69963bc = build-spec/CURRENT.json, delivery/CURRENT-SPRINT.json, delivery/sprints/SP-P1-002/manifest.json (all control paths -> ci/run-product-ci.mjs CONTROL-ONLY skip).",
+    "GitHub check-runs for 69963bc: ci success in ~14s (consistent with product:ci skip), so a green CI on main does not prove check:lint passes.",
+    "harness/ is governance-only during an ACTIVE Sprint and outside T001 allowed_write_paths."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "RUN_T001_REQUIRED_CHECK_LINT_ON_REACTIVATED_MAIN",
+      "result": "FAILED",
+      "evidence": "eslint . -> 2 problems (2 errors, 0 warnings), both in harness/scripts."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "EDIT_HARNESS_OR_LINT_CONFIG_FROM_T001",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "harness/ and lint configuration are outside T001 allowed_write_paths and governance-only during an ACTIVE Sprint; suppression would be a blanket lint disable."
+    }
+  ],
+  "requested_planning_action": [
+    "Human governance completes the BF-027 remediation with a behavior-preserving refactor of harness/scripts/validate-backlog.mjs (line 157 nesting) and harness/scripts/validate-findings.mjs (line 30 complexity), and verifies npm run check:lint explicitly (CI product:ci skips lint for HOLD / control-only commits)."
+  ],
+  "affected_contracts": [
+    "SP-P1-002 T001 required_commands (npm run check:lint)",
+    "ci/policy.json required_on_every_implementation_change (check:lint)"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}

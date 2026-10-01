@@ -326,6 +326,52 @@ expectFail("skip/todo/fake-green test patterns are rejected","harness/scripts/va
 cleanTo(fixtureBase);
 expectFail("Active mapped Test ID must exist as executable test()","harness/scripts/validate-test-integrity.mjs",{base:fixtureBase,head:"HEAD",env:{REQUIRE_ACTIVE_TASK_TESTS:"1"}});
 
+// Baseline fixture maintenance must remain exact, recorded and fail-closed.
+cleanTo(fixtureBase);
+const maintenanceFile="tests/behavior/maintenance.test.ts";
+const maintenanceV1='import { test, expect } from "vitest";\n'+
+  'test("TEST-F99-001 owned",()=>{expect("1.0.0").toBe("1.0.0");});\n'+
+  'test("TEST-F99-002 foreign fixture",()=>{expect("1.0.0").toBe("1.0.0");});\n';
+const maintenanceV2=maintenanceV1.replaceAll('"1.0.0"','"2.0.0"');
+write(maintenanceFile,maintenanceV1);
+const maintenanceBase=commit("fixture: baseline test file with foreign Test ID");
+write(maintenanceFile,maintenanceV2);
+const maintenanceUnauthorized=commit("attack: rebind foreign fixture without authorization");
+expectFail("Foreign mapped Test fixture rebind requires exact authorization","harness/scripts/validate-test-integrity.mjs",{base:maintenanceBase,head:maintenanceUnauthorized});
+
+cleanTo(maintenanceBase);
+const maintenanceTasks=read("delivery/sprints/SP-P9-001/tasks.json");
+maintenanceTasks.tasks[0].test_maintenance_authorizations=[{
+  test_id:"TEST-F99-002",file:maintenanceFile,mode:"BASELINE_FIXTURE_REBIND",
+  from_build_spec:"BS-P9-000",to_build_spec:"BS-P9-001"
+}];
+write("delivery/sprints/SP-P9-001/tasks.json",maintenanceTasks);
+write(maintenanceFile,maintenanceV2);
+const maintenanceAuthorized=commit("positive: exact foreign fixture rebind authorization");
+expectPass("Exact Test ID + file fixture rebind authorization passes Test Integrity","node",["harness/scripts/validate-test-integrity.mjs"],{base:maintenanceBase,head:maintenanceAuthorized});
+
+cleanTo(maintenanceBase);
+const wrongMaintenanceTasks=read("delivery/sprints/SP-P9-001/tasks.json");
+wrongMaintenanceTasks.tasks[0].test_maintenance_authorizations=[{
+  test_id:"TEST-F99-002",file:"tests/behavior/other.test.ts",mode:"BASELINE_FIXTURE_REBIND",
+  from_build_spec:"BS-P9-000",to_build_spec:"BS-P9-001"
+}];
+write("delivery/sprints/SP-P9-001/tasks.json",wrongMaintenanceTasks);
+write(maintenanceFile,maintenanceV2);
+const wrongMaintenanceFile=commit("attack: maintenance authorization bound to wrong file");
+expectFail("Maintenance authorization may not authorize a different test file","harness/scripts/validate-test-integrity.mjs",{base:maintenanceBase,head:wrongMaintenanceFile});
+
+cleanTo(fixtureBase);
+const malformedMaintenanceTasks=read("delivery/sprints/SP-P9-001/tasks.json");
+malformedMaintenanceTasks.tasks[0].test_maintenance_authorizations=[{
+  test_id:"TEST-F99-999",file:"tests/behavior/*",mode:"ANY",
+  from_build_spec:"BS-P9-001",to_build_spec:"BS-P9-001"
+}];
+write("delivery/sprints/SP-P9-001/tasks.json",malformedMaintenanceTasks);
+const malformedMaintenance=commit("attack: malformed maintenance authorization");
+expectFail("Sprint Gate rejects wildcard / wrong-mode maintenance authorization","harness/scripts/validate-sprint.mjs",{base:fixtureBase,head:malformedMaintenance});
+cleanTo(fixtureBase);
+
 // First real implementation change cannot proceed without reproducible lockfile.
 cleanTo(fixtureBase);
 fs.rmSync(path.join(repo,"package-lock.json"),{force:true});

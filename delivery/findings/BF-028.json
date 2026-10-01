@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-028",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "After the BF-026 remediation, T001 can rebind every BS-P1-003 evidence fixture that Evidence Registry v3 invalidates (schema_version per F07-RQ-010, reserved-envelope ownership) and revalidate TEST-F07-008 in place, while npm run gate (including TEST INTEGRITY GATE with CI BASE_SHA) passes.",
+  "actual": "harness/scripts/validate-test-integrity.mjs fails CI-mode gate when the active Task changes any test file that contains a mapped Test ID outside the active Task's acceptance_links ('Active Task may not modify previously existing mapped Test ...'). The v3-invalidated fixtures are hard-coded inside test files owned by BL-P1-032 / earlier Tasks. T001 cannot change them without failing the gate. This includes T001's own mapped TEST-F07-008, which shares tests/contract/evidence-intake.contract.test.ts with TEST-F07-006 / TEST-F07-AC-007 / TEST-F07-009 / TEST-F07-AC-012. Under v3 those suites fail unless rebound: F05 events must be 2.0.0 (not 1.0.0), F03 3.0.0 (not 2.0.0), and F03-EVT-010 error_code must move from properties to the envelope. Only tests/unit/evidence-collector-test-support.ts is a non-test support file and is unaffected by the rule. BF-026 widened allowed_write_paths but did not change the test-integrity rule or T001 acceptance_links, so the authorized path tests/api/evidence-batch.api.test.ts is still blocked by the gate.",
+  "evidence": [
+    "harness/scripts/validate-test-integrity.mjs lines 60-70 :: for each changed tests/**/*.test.ts file, every Test ID present at BASE_SHA that is not in the active Task acceptance_links is an error; no fixture-only or revalidation exemption exists.",
+    ".github/workflows/ci.yml :: npm run gate and npm run product:ci run with BASE_SHA = pull_request.base.sha, so the rule is enforced on every T001 PR.",
+    "delivery/sprints/SP-P1-002/tasks.json T001 acceptance_links = TEST-F04-AC-017, TEST-F04-AC-018, TEST-F04-AC-019, TEST-F07-008 only.",
+    "Machine probe (throwaway local commit on scratch branch, then deleted; implementation branch untouched at 69963bc790792992ffc0b790b94c0ef030be6723): changing only schema_version \"1.0.0\" -> \"2.0.0\" in tests/api/evidence-batch.api.test.ts, tests/contract/evidence-intake.contract.test.ts and tests/regression/evidence-clock-invalid.regression.test.ts, then BASE_SHA=69963bc... node harness/scripts/validate-test-integrity.mjs -> TEST INTEGRITY GATE: FAIL with 7 errors: TEST-F07-011, TEST-F07-030 (tests/api/evidence-batch.api.test.ts); TEST-F07-006, TEST-F07-AC-007, TEST-F07-009, TEST-F07-AC-012 (tests/contract/evidence-intake.contract.test.ts); TEST-F07-031 (tests/regression/evidence-clock-invalid.regression.test.ts).",
+    "BF-026 machine experiment (BS-P1-004 registry bind only): tests/contract/evidence-intake.contract.test.ts 5/7 fail, tests/regression/evidence-clock-invalid.regression.test.ts 1/1 fail, tests/api/evidence-batch.api.test.ts 4/5 fail; therefore leaving these files unchanged is not possible once v3 is adopted.",
+    "build-spec/baselines/BS-P1-004/registries/evidence-event-registry.json :: F05@2.0.0, F03@3.0.0; error_code is a reserved_envelope_field and is not in any allowed_properties.",
+    "delivery/findings/BF-025.json :: only F07-AC-008 was designated for BS-P1-004 revalidation; F07-AC-006/007/009/011/012/030/031 tests require fixture-shape rebinding only (asserted semantics unchanged), which the current gate cannot distinguish from a semantic rewrite."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "REBIND_V3_FIXTURES_IN_OWNING_TEST_FILES_UNDER_T001",
+      "result": "FAILED",
+      "evidence": "CI-mode TEST INTEGRITY GATE fails with 7 errors for previously existing mapped Tests not owned by T001."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "MOVE_OR_DUPLICATE_TESTS_INTO_NEW_FILES",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Removing the stale tests from their owning files is still a modification that trips the gate; keeping them creates duplicate executable Test IDs (also a gate failure) or leaves red suites; duplicating fixtures is fake-green duplication explicitly forbidden by the Task instruction."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "KEEP_STALE_FIXTURES_GREEN_BY_ACCEPTING_BS_P1_003_SHAPES",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Would loosen the locked BS-P1-004 Registry v3 contract (dual schema_version compatibility path is explicitly forbidden)."
+    }
+  ],
+  "requested_planning_action": [
+    "Option A (planning): add fixture-rebind-only revalidation links for TEST-F07-006, TEST-F07-AC-007, TEST-F07-009, TEST-F07-AC-012, TEST-F07-011, TEST-F07-030, TEST-F07-031 to T001 (or a governed revalidation list the gate honors), explicitly limited to BS-P1-004 envelope/schema_version fixture rebinding with unchanged asserted semantics.",
+    "Option B (governance tooling): extend validate-test-integrity.mjs with an explicit, recorded Task-level authorization (for example a list of Test IDs whose files the Task may modify for baseline fixture rebind) and keep the default fail-closed rule.",
+    "Either option must cover tests/contract/evidence-intake.contract.test.ts, tests/regression/evidence-clock-invalid.regression.test.ts and tests/api/evidence-batch.api.test.ts in the same T001 change, because the validator v3 adoption and the fixture rebind must land atomically for the suites to stay green."
+  ],
+  "affected_contracts": [
+    "harness/scripts/validate-test-integrity.mjs test-ownership rule",
+    "SP-P1-002 T001 acceptance_links / revalidation scope",
+    "BS-P1-004 Evidence Registry v3 adoption (T001 scope item 3)"
+  ],
+  "affected_acceptance": [
+    "F07-AC-006",
+    "F07-AC-007",
+    "F07-AC-008",
+    "F07-AC-009",
+    "F07-AC-011",
+    "F07-AC-012",
+    "F07-AC-030",
+    "F07-AC-031"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}

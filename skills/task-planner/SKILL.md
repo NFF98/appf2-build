@@ -34,6 +34,7 @@ Task 必須包含：
 - required_skills
 - completion_evidence placeholder
 - product_decision_allowed=false
+- optional test_maintenance_authorizations only for Human-governed baseline fixture rebinding; each authorization must pin exact Test ID + exact test file + from/to Build Spec and must not change Acceptance ownership
 
 ## Method
 
@@ -45,6 +46,7 @@ Task 必須包含：
 6. 先檢查該 Sprint 所需 harness / validator / CI / toolchain。若缺口只能在 HOLD/PLANNED 安全修正，必須先修再 Activation。
 7. Open PR inventory 必須使用 complete collection；search 只能定位，不能宣稱總數。
 8. 未決產品行為不得轉成 Task；建立 Finding / governance question。
+9. `test_maintenance_authorizations` 不得作為一般 test write permission；只允許 `BASELINE_FIXTURE_REBIND`，必須逐筆綁定 exact Test ID、exact test file、from_build_spec、to_build_spec，且不得把 fixture maintenance 寫進 `acceptance_links` 冒充 Acceptance ownership / semantic revalidation。
 
 ## Stop
 

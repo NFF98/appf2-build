@@ -4,7 +4,9 @@
   "tasks": [
     {
       "task_id": "T001",
-      "backlog_item_ids": ["BL-P1-001"],
+      "backlog_item_ids": [
+        "BL-P1-001"
+      ],
       "title": "",
       "status": "PLANNED",
       "build_spec_id": "BS-P1-001",
@@ -16,13 +18,23 @@
           "test_id": "TEST-F00-001"
         }
       ],
-      "allowed_write_paths": ["src/example/", "tests/behavior/"],
-      "required_commands": ["npm run gate"],
-      "required_skills": ["implementer", "test-builder", "reviewer"],
+      "allowed_write_paths": [
+        "src/example/",
+        "tests/behavior/"
+      ],
+      "required_commands": [
+        "npm run gate"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [],
+      "test_maintenance_authorizations": []
     }
   ]
 }

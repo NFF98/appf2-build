@@ -96,6 +96,16 @@ const validateRevalidation=(item,id,currentBaseline,driftIds)=>{
   return ids;
 };
 
+const resolveItemRevalidationIds=(item,id,currentBaseline)=>{
+  if(item.build_spec_id===currentBaseline) return new Set();
+  const legacyDone=item.status==="DONE" && canPreserveCompletedBaseline(root,item.build_spec_id,currentBaseline,item.acceptance_links);
+  if(legacyDone) return new Set();
+  const drift=item.status==="DONE" ? acceptanceSemanticDriftIds(root,item.build_spec_id,currentBaseline,item.acceptance_links) : [];
+  if(item.status==="DONE" && drift.length) return validateRevalidation(item,id,currentBaseline,drift);
+  errors.push(id+" baseline mismatch");
+  return new Set();
+};
+
 const validateAcceptanceLinks=(item,id,ac,claimed,revalidationIds)=>{
   for(const link of item.acceptance_links||[]){
     const e=ac.get(link.acceptance_id);
@@ -149,15 +159,7 @@ if(current.active_baseline===null){
 
     if(typeof item.title!=="string" || !item.title.trim()) errors.push((id||"<unknown>")+" requires non-empty title");
     if(item.source!=="BUILD_SPEC") errors.push(id+" source must be BUILD_SPEC");
-    let revalidationIds=new Set();
-    if(item.build_spec_id!==current.active_baseline){
-      const legacyDone=item.status==="DONE" && canPreserveCompletedBaseline(root,item.build_spec_id,current.active_baseline,item.acceptance_links);
-      if(!legacyDone){
-        const drift=item.status==="DONE" ? acceptanceSemanticDriftIds(root,item.build_spec_id,current.active_baseline,item.acceptance_links) : [];
-        if(item.status==="DONE" && drift.length) revalidationIds=validateRevalidation(item,id,current.active_baseline,drift);
-        else errors.push(id+" baseline mismatch");
-      }
-    }
+    const revalidationIds=resolveItemRevalidationIds(item,id,current.active_baseline);
     if(!/^F\d{2}$/.test(item.function_id||"")) errors.push(id+" invalid function_id");
     if(!states.has(item.status)) errors.push(id+" invalid status");
     if(!priorities.has(item.priority)) errors.push(id+" invalid priority");

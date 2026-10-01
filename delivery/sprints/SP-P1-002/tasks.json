@@ -65,7 +65,58 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [],
+      "test_maintenance_authorizations": [
+        {
+          "test_id": "TEST-F07-006",
+          "file": "tests/contract/evidence-intake.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-003",
+          "to_build_spec": "BS-P1-004"
+        },
+        {
+          "test_id": "TEST-F07-AC-007",
+          "file": "tests/contract/evidence-intake.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-003",
+          "to_build_spec": "BS-P1-004"
+        },
+        {
+          "test_id": "TEST-F07-009",
+          "file": "tests/contract/evidence-intake.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-003",
+          "to_build_spec": "BS-P1-004"
+        },
+        {
+          "test_id": "TEST-F07-AC-012",
+          "file": "tests/contract/evidence-intake.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-003",
+          "to_build_spec": "BS-P1-004"
+        },
+        {
+          "test_id": "TEST-F07-011",
+          "file": "tests/api/evidence-batch.api.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-003",
+          "to_build_spec": "BS-P1-004"
+        },
+        {
+          "test_id": "TEST-F07-030",
+          "file": "tests/api/evidence-batch.api.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-003",
+          "to_build_spec": "BS-P1-004"
+        },
+        {
+          "test_id": "TEST-F07-031",
+          "file": "tests/regression/evidence-clock-invalid.regression.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-003",
+          "to_build_spec": "BS-P1-004"
+        }
+      ]
     },
     {
       "task_id": "T002",
