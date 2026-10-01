@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-021",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T008",
@@ -13,7 +13,8 @@
     "build-spec/baselines/BS-P1-003/shared/data-model/DATA-MODEL-DETAILED.md :: Phase 1 product_event model; no aggregate durable owner",
     "supabase/migrations/20260927123000_t006_evidence_intake.sql :: product_event only",
     "A0 audit: a SQL query/view over deleted raw rows cannot preserve historical aggregate values.",
-    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf.",
+    "Human approved BS-P1-004 Build Freeze on 2026-10-01; PR #113 locks scope-clean Design source 91894ae8bd6241bb5ee1897180db72e9e578d1bf and supersedes BS-P1-003."
   ],
   "attempts": [
     {
@@ -27,6 +28,12 @@
       "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
       "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
       "evidence": "Working Data Model now defines evidence_daily_aggregate as the bounded non-identifying durable aggregate owner with idempotent materialization and watermark-guarded raw deletion."
+    },
+    {
+      "attempt_id": "FREEZE-BF-021",
+      "strategy": "HUMAN_APPROVED_BS_P1_004_REPLACEMENT_FREEZE",
+      "result": "PASSED",
+      "evidence": "BS-P1-004 immutable candidate contains the verified A0 remediation and canonical hashes; replacement Freeze resolves the stale BS-P1-003 contract blocker."
     }
   ],
   "affected_contracts": [
