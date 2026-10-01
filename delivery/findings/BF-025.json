@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-025",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -13,7 +13,8 @@
     "BS-P1-003 F07-AC-008 only covers forbidden/property schema validation",
     "BS-P1-004 F07-AC-008 additionally covers envelope UUID version and reserved-envelope separation",
     "BF-023 proves current evidence-validator is weaker than the BS-P1-004 UUID-v4 contract",
-    "harness/scripts/baseline-lineage.mjs semantic comparison rejects F07-AC-008 carry-forward"
+    "harness/scripts/baseline-lineage.mjs semantic comparison rejects F07-AC-008 carry-forward",
+    "PR #114 machine validation proved completed Acceptance revalidation: CI/Governance/CodeQL PASS; attack dry-run 81/81 with explicit semantic-drift revalidation PASS and missing revalidation FAIL."
   ],
   "attempts": [
     {
@@ -27,6 +28,12 @@
       "strategy": "REOPEN_SP_P1_001_OR_REWRITE_HISTORICAL_DONE_PROVENANCE",
       "result": "NOT_EXECUTED_FORBIDDEN",
       "evidence": "Would corrupt closed Sprint history instead of expressing new-baseline revalidation."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "MACHINE_VALIDATE_COMPLETED_ACCEPTANCE_REVALIDATION",
+      "result": "PASSED",
+      "evidence": "PR #114 machine validation proved completed Acceptance revalidation: CI/Governance/CodeQL PASS; attack dry-run 81/81 with explicit semantic-drift revalidation PASS and missing revalidation FAIL."
     }
   ],
   "affected_contracts": [
