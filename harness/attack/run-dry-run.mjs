@@ -134,7 +134,7 @@ const governanceHarness=[
   "harness/scripts/validate-change-scope.mjs"
 ];
 
-const sourceA="a".repeat(40), sourceB="b".repeat(40);
+const sourceA="a".repeat(40), sourceB="b".repeat(40), sourceC="c".repeat(40);
 makeBaseline("BS-P9-001",{sourceCommit:sourceA,decisionRef:"DRYRUN-INITIAL"});
 makeActivation("BS-P9-001",{type:"INITIAL_FREEZE",sourceCommit:sourceA,decisionRef:"DRYRUN-INITIAL"});
 baseWorkState("BS-P9-001");
@@ -377,6 +377,36 @@ write("delivery/deltas/BD-999.json",{
   upstream_working_commit:sourceB,replacement_build_spec:"BS-P9-002",verification:[]
 });
 const blockedBase=commit("fixture: blocked for approved design delta");
+
+// Scope-clean derived freeze source must preserve truthful upstream Working provenance.
+cleanTo(blockedBase);
+const derivedDelta=read("delivery/deltas/BD-999.json");
+derivedDelta.freeze_source={
+  type:"SCOPE_CLEAN_DERIVED",
+  commit:sourceC,
+  base_commit:sourceA,
+  provenance_audit:"delivery/audits/SP-P1-002-A0-PHASE2-REMEDIATION.md"
+};
+write("delivery/deltas/BD-999.json",derivedDelta);
+makeBaseline("BS-P9-002",{sourceCommit:sourceC,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-DERIVED-FREEZE"});
+const derivedResolved=read("delivery/findings/BF-999.json"); derivedResolved.status="RESOLVED"; write("delivery/findings/BF-999.json",derivedResolved);
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"DRYRUN_DERIVED_HOLD"});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"DRYRUN_DERIVED_HOLD"});
+const derivedFrozenBase=commit("fixture: scope-clean derived replacement baseline awaiting activation");
+makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceC,deltas:["BD-999"],decisionRef:"DRYRUN-DERIVED-ACTIVATION"});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:false,reason:"DRYRUN_DERIVED_ACTIVE_POINTER"});
+const derivedActivation=commit("positive: derived freeze provenance activation");
+expectPass("Derived freeze source with truthful upstream provenance passes Activation Gate","node",["harness/scripts/validate-activation.mjs"],{base:derivedFrozenBase,head:derivedActivation});
+
+cleanTo(derivedFrozenBase);
+const forgedDerived=read("delivery/deltas/BD-999.json");
+forgedDerived.freeze_source.commit="d".repeat(40);
+write("delivery/deltas/BD-999.json",forgedDerived);
+makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceC,deltas:["BD-999"],decisionRef:"DRYRUN-DERIVED-ACTIVATION"});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:false,reason:"DRYRUN_DERIVED_BAD_POINTER"});
+const badDerivedActivation=commit("attack: derived freeze provenance mismatch");
+expectFail("Derived freeze source mismatch is rejected","harness/scripts/validate-activation.mjs",{base:derivedFrozenBase,head:badDerivedActivation});
+cleanTo(blockedBase);
 
 makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-REBASELINE-FREEZE"});
 const resolved=read("delivery/findings/BF-999.json"); resolved.status="RESOLVED"; write("delivery/findings/BF-999.json",resolved);
