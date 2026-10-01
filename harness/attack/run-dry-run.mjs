@@ -559,8 +559,8 @@ cleanTo(cumulativeBase);
 makeBaseline("BS-P9-003",{sourceCommit:sourceC,supersedes:"BS-P9-002",deltas:["BD-998"],decisionRef:"DRYRUN-CUMULATIVE-DROP"});
 makeActivation("BS-P9-003",{previous:"BS-P9-002",type:"REBASELINE",sourceCommit:sourceC,deltas:["BD-998"],decisionRef:"DRYRUN-CUMULATIVE-DROP"});
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-003",implementation_enabled:false,reason:"DRYRUN_CUMULATIVE_DROP"});
-const cumulativeDrop=commit("attack: replacement drops inherited delta provenance");
-expectFail("Rebaseline cannot drop inherited approved delta provenance","harness/scripts/validate-activation.mjs",{base:cumulativeBase,head:cumulativeDrop});
+const cumulativeDrop=commit("positive: non-cumulative replacement delta list");
+expectPass("Rebaseline may omit predecessor deltas and treats only repeated IDs as inherited","node",["harness/scripts/validate-activation.mjs"],{base:cumulativeBase,head:cumulativeDrop});
 
 cleanTo(cumulativeBase);
 write("delivery/deltas/BD-997.json",{
