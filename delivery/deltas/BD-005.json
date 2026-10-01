@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-005",
+  "type": "DESIGN_DELTA",
+  "status": "ASSESSING",
+  "source_finding_ids": [
+    "BF-030",
+    "BF-031"
+  ],
+  "affected_build_spec": "BS-P1-004",
+  "affected_tasks": [
+    "T002",
+    "T003",
+    "T004",
+    "T005",
+    "T009"
+  ],
+  "affected_contracts": [
+    "F02 executable Blueprint schema and typed validation semantics",
+    "F04 canonical Capability machine contract",
+    "F04 generated Validator Registry contract",
+    "F02↔F04 typed props/bindings/events/actions boundary"
+  ],
+  "affected_acceptance": [
+    "F02-AC-004",
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-007",
+    "F02-AC-008",
+    "F02-AC-009",
+    "F02-AC-010",
+    "F02-AC-011",
+    "F02-AC-012",
+    "F02-AC-017"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-02: 批准 BF-030 / BF-031 resolution direction，然後做 governance remediation，再讓 Cursor 回 T002。"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": null,
+  "replacement_build_spec": null,
+  "verification": [
+    "Resolution direction approved; executable machine truth must be canonicalized upstream before implementation resumes.",
+    "T002 candidate d8f1b17d... is review-blocked and must not be merged as Product truth.",
+    "Class-level F02/F04 contract audit required before BD-005 may advance to APPROVED/IMPLEMENTING.",
+    "appf2-design remediation candidate commit b3f2fdb14dd0fe7a10a44fbd0c9e98ff96c5e3b7 on branch governance/BF-030-031-f02-f04-contract; not yet merged/approved as Working truth."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-031",
+  "classification": "BUILD_BLOCKER",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "Locked F04 requires generated validator-registry.ts to provide F02 with capability existence, exact version, props schema, state/port types, actions, events, binding restrictions and related validation truth. F02 must consume that generated artifact and must not maintain a second hand-authored capability schema.",
+  "actual": "The current CapabilityDefinition and generated Validator Registry do not carry executable typed capability contracts sufficient for F02 V07/V08. propsSchema/stateSchema are reference strings without resolved schemas, core capability inputs/outputs are empty, and the generated artifact exposes binding/action/event names but not enough type information to prove examples such as input.number↔NUMBER state, input.text↔STRING state, event payload types or INVOKE_CAPABILITY argument types. T002 therefore cannot satisfy the locked typed-validation boundary without either guessing or creating a second Registry truth.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-004/functions/F04-CAPABILITY-REGISTRY.md §9 Generated Validator Artifact requires props schema, state / port types, binding restrictions, actions and events; F02 must read this artifact and cannot maintain a second schema.",
+    "src/platform/capabilities/schema/capability-definition.ts@2fc449eb :: SchemaReference contains only ref:string; CapabilityDefinition contract.inputs/outputs are PortDefinition[] but current core definitions populate them as empty arrays.",
+    "src/platform/capabilities/definitions/core.ts@2fc449eb :: defineCore emits propsSchema/stateSchema refs and inputs:[]/outputs:[] for core capabilities; input.number semantic prose says bound type number but that type is not machine-carried into the validator artifact.",
+    "generated/capabilities/validator-registry.ts@2fc449eb :: generated Registry supports exact capability identity and names, but not the full executable typed schemas promised by F04 §9.",
+    "T002 candidate commit d8f1b17d... :: registry-contract.ts can validate exact IDs/versions and declared names, but has no canonical source for the missing typed schema semantics."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "USE_CURRENT_GENERATED_VALIDATOR_REGISTRY_AS_ONLY_F02_CAPABILITY_TRUTH",
+      "result": "FAILED_CONTRACT_COVERAGE",
+      "evidence": "Current artifact can prove ID/version and named binding/action/event existence, but cannot prove the typed props/state/port/binding/action semantics required by locked F02/F04."
+    }
+  ],
+  "requested_planning_action": [
+    "Define canonical machine-readable Capability validator contracts in appf2-design Working for every Phase 1 core Capability, including typed props/bindings/events/actions/ports as applicable.",
+    "Define generation semantics so validator-registry.ts contains the executable validator truth directly or by a single generated resolvable schema graph; no second hand-maintained F02 capability allowlist/schema is allowed.",
+    "Audit all Phase 1 core Capability Cards against the generated contract and add positive/negative verification before replacement Build Freeze."
+  ],
+  "affected_contracts": [
+    "F04 Canonical Capability Definition",
+    "F04 §9 Generated Validator Artifact",
+    "F04 §13 Minimum Core Card Semantics",
+    "F02 V04/V07/V08 Registry-backed validation"
+  ],
+  "affected_acceptance": [
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-007",
+    "F02-AC-008"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-005"
+}

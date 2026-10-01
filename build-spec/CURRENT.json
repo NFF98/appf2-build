@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-004",
-  "implementation_enabled": true,
-  "reason": "T002 Activation Review PASS under locked BS-P1-004; resume SP-P1-002 execution for Blueprint validation core and admitted-content persistence. T002 is the sole active implementation Task."
+  "implementation_enabled": false,
+  "reason": "T002 blocked by BF-030/BF-031. BS-P1-004 remains the active locked baseline, but implementation is HOLD pending Human-governed F02/F04 contract remediation and replacement Build Spec."
 }
