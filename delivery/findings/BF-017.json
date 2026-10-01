@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-017",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "T002 must be able to create validation_run and blueprint_content persistence without implementing unrelated F01 persistence or omitting required referential-integrity truth.",
+  "actual": "validation_run.compiler_run_id is a nullable FK to compiler_run, but the current database has no compiler_run or intent_record table. T002 owns validation persistence; T006 does not own F01 database persistence; compiler persistence is scheduled in later backlog. No approved staged-FK rule exists.",
+  "evidence": [
+    "DATA-MODEL-DETAILED validation_run.compiler_run_id",
+    "SP-P1-002 T002 migration scope",
+    "SP-P1-002 T006 scope/write paths",
+    "Backlog BL-P1-010 and BL-P1-011 are later queued work",
+    "Current migration creates only anonymous_identity and product_event"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_T002_MIGRATION_DEPENDENCY_AUDIT",
+      "result": "FAILED",
+      "evidence": "No SP2 owner creates compiler_run before T002 and no staging rule preserves the nullable reference without scope expansion."
+    }
+  ],
+  "affected_contracts": [
+    "validation_run.compiler_run_id",
+    "T002 migration scope",
+    "F01 compiler persistence ownership"
+  ],
+  "affected_acceptance": [
+    "F02-AC-008",
+    "F02-AC-021"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}

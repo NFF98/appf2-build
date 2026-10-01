@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-023",
+  "classification": "IMPLEMENTATION_BUG",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "Evidence intake follows the existing UUID v4 identity contracts.",
+  "actual": "F07/F05 and browser identity require UUID v4, but evidence-validator accepts UUID versions 1 through 5 for relevant envelope identifiers.",
+  "evidence": [
+    "F07-RQ-001 and F07-RQ-003",
+    "F05-RQ-001",
+    "src/platform/identity/browser-identity.ts UUID_V4_PATTERN",
+    "src/platform/evidence/evidence-validator.ts UUID_PATTERN"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_UUID_BOUNDARY_COMPARE",
+      "result": "FAILED",
+      "evidence": "Evidence intake validation is weaker than the existing canonical UUID v4 contracts."
+    }
+  ],
+  "affected_contracts": [
+    "F07-RQ-001",
+    "F07-RQ-003",
+    "F05-RQ-001"
+  ],
+  "affected_acceptance": [
+    "F07-AC-002",
+    "F07-AC-003"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}

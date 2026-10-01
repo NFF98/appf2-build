@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-020",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T008",
+  "expected": "The 90-day product_event retention rule must define one canonical cutoff timestamp.",
+  "actual": "F07 defines both occurred_at and received_at but does not state which one starts the 90-day retention period.",
+  "evidence": [
+    "F07-RQ-008 event time semantics",
+    "F07-POL-009 90-day retention",
+    "A0 found no cutoff-anchor rule"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_RETENTION_CUTOFF_AUDIT",
+      "result": "FAILED",
+      "evidence": "No canonical cutoff timestamp is defined."
+    }
+  ],
+  "affected_contracts": [
+    "F07-RQ-008",
+    "F07-POL-009",
+    "F07-AC-026"
+  ],
+  "affected_acceptance": [
+    "F07-AC-026",
+    "F07-AC-027"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-022",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "Every Evidence dimension has one canonical semantic owner or an explicit relationship between envelope and properties so one event cannot contain conflicting truth.",
+  "actual": "The F07 envelope contains schema_version, intent_id, blueprint_hash, share_id, capability_id, error_code and trace_id, while the Evidence Registry allows the same names again inside properties. A0 counted 104 of 112 events with at least one collision. The validator accepts both independently and defines no equality or precedence rule; some collisions may represent different concepts, especially event schema_version versus a source/target contract schema version.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-003/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md :: F07-DATA-001 Common Evidence Event Envelope",
+    "build-spec/baselines/BS-P1-003/registries/evidence-event-registry.json :: allowed_properties",
+    "src/platform/evidence/evidence-validator.ts :: independent envelope/properties validation with no equality/precedence rule",
+    "A0 machine audit: 104/112 events collide; error_code=99, trace_id=78, intent_id=58, schema_version=36, share_id=21, blueprint_hash=19, capability_id=18."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_ASSUME_ENVELOPE_PRECEDENCE_OR_EQUALITY",
+      "result": "FAILED",
+      "evidence": "Neither precedence nor equality is locked, and at least schema_version can plausibly denote different semantics. Cursor cannot choose without changing contract meaning."
+    }
+  ],
+  "affected_contracts": [
+    "F07-DATA-001",
+    "F07-DATA-003",
+    "Evidence Registry all Phase 1 event families"
+  ],
+  "affected_acceptance": [
+    "F04-AC-017",
+    "F04-AC-018",
+    "F02-AC-019",
+    "F02-AC-022"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
