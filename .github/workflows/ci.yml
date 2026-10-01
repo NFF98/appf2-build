@@ -19,6 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: T001 future-diff test-integrity proof
+        env:
+          BASE_SHA: 691172bfa5ec8eabcaa666d418f841de52d48036
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node harness/scripts/validate-test-integrity.mjs
       - name: Governance / traceability gates
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
