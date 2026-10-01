@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-004",
-  "implementation_enabled": true,
-  "reason": "SP-P1-002 / T001 Reactivation Review PASS after direct-proof BF-028 / BF-029 remediation. BS-P1-004 remains the active locked baseline and T001 is the sole active implementation Task."
+  "implementation_enabled": false,
+  "reason": "Human-approved T001 closure complete; pause execution before any separate T002 activation decision."
 }
