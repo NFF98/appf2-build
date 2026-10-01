@@ -1,17 +1,18 @@
 {
   "schema_version": 1,
-  "baseline_id": "BS-P1-003",
+  "baseline_id": "BS-P1-004",
   "status": "LOCKED",
   "source_repo": "NFF98/appf2-design",
-  "source_working_commit": "3818926b82ae2c5edaf9d6115fda3d1505757781",
-  "created_at": "2026-09-28T13:35:00.000Z",
-  "supersedes": "BS-P1-002",
+  "source_working_commit": "91894ae8bd6241bb5ee1897180db72e9e578d1bf",
+  "created_at": "2026-10-01T04:42:00.000Z",
+  "supersedes": "BS-P1-003",
   "approved_delta_ids": [
-    "BD-002"
+    "BD-003",
+    "BD-004"
   ],
   "approval": {
     "status": "USER_APPROVED",
-    "decision_ref": "HUMAN-BUILD-FREEZE-BS-P1-003-20260928"
+    "decision_ref": "HUMAN-BUILD-FREEZE-BS-P1-004-20261001"
   },
   "projection_map": "projection-map.json",
   "acceptance_registry": "registries/acceptance-test-registry.json",
@@ -23,23 +24,23 @@
     },
     {
       "path": "functions/F01-INTENT-COMPILATION.md",
-      "sha256": "2a5695acbc2a526f5e87bbc3016d9598279d4037e5b4dbd25f6a5c276663ef56"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "functions/F02-BLUEPRINT-VALIDATION.md",
-      "sha256": "b5a4ee2df8c2fff68cfaaa6f9ace93bd89241bf03c2d899718b61c181cd2a92c"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "functions/F03-RUNTIME-EXECUTION.md",
-      "sha256": "51764ee16372f5008e99ba141abadb60662fe3736cf64ae8b415549bb74cf535"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "functions/F04-CAPABILITY-REGISTRY.md",
-      "sha256": "26d95802f63e8c5f9f198d3930fb183d8716dd8f0796aaa7ed58b8a333e7bfeb"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "functions/F05-SHARE-RESTORE.md",
-      "sha256": "ac0cd6318b98504217be467cabb80286d1ec416ca6ba30af79ff8559dc6518d7"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "functions/F06-REMIX-REFINE.md",
@@ -47,7 +48,7 @@
     },
     {
       "path": "functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
-      "sha256": "e2567029cdfb50c4306b2afd506f2e9fd84758323fed5397bbf0e9b2be657b94"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "functions/F12-HUMANIZED-RECOVERY.md",
@@ -59,15 +60,15 @@
     },
     {
       "path": "projection-map.json",
-      "sha256": "c5510cc4b3619aaed63e8230393612779991674fea7fb1a55f5b90f93e2b4b17"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "registries/acceptance-test-registry.json",
-      "sha256": "d281a04ddf0e0923a6dc34a3f7160243e3d0194bf8537ddb6291f08df01965eb"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "registries/evidence-event-registry.json",
-      "sha256": "42f1ed8a2f47b2f335fbd65774be6d0edb215fc11d611f54b5f87986eb214e5c"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "registries/recovery-registry.json",
@@ -99,7 +100,7 @@
     },
     {
       "path": "shared/data-model/DATA-MODEL-DETAILED.md",
-      "sha256": "c3e8260274366a42975edb66ec808085bf9b56a229d99a5b0145bc8d3d642667"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "shared/EXECUTION-ADMISSION.md",
@@ -107,11 +108,11 @@
     },
     {
       "path": "shared/INFRA-ARCHITECTURE.md",
-      "sha256": "05d4e3514204afe01515485e9eeb7d6e2bd14c33eac2f188d191d9d4f8fad219"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "shared/infrastructure/INFRASTRUCTURE-DETAILED.md",
-      "sha256": "e2973620e93092daf46ad483f70e1fa0844b91edfc56dd12e2aa644cfb23be33"
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "path": "UI-UX/DESIGN-SYSTEM.md",
@@ -210,5 +211,5 @@
       "sha256": "6709eabe3b86589b92f82f4f2dda809e44daca1dd283b9553c6331cc297ccb6f"
     }
   ],
-  "content_sha256": "f6c930e9b715cccf17a5ff63da9cb6f20d87f18562d5bf445446844be7844adb"
+  "content_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
 }
