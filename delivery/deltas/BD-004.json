@@ -56,6 +56,6 @@
     "Second machine audit PASS: 112 events, 35/35 SP2 Acceptance/Test mappings, canonical Capability IDs accepted, invalid Capability samples rejected, zero registry regex warnings.",
     "Scope-clean freeze source created at appf2-design commit 91894ae8bd6241bb5ee1897180db72e9e578d1bf from BS-P1-003 source 3818926b82ae2c5edaf9d6115fda3d1505757781.",
     "Scope-clean source changes exactly 11 approved remediation paths and excludes F18/F19/F20, Phase 4 UI, Business Plan, and other future Product work.",
-    "No BS-P1-004 baseline has been created; Build execution remains HOLD pending Human Build Freeze approval."
+    "Human approved BS-P1-004 Build Freeze on 2026-10-01; PR #113 freezes scope-clean Design source 91894ae8bd6241bb5ee1897180db72e9e578d1bf, supersedes BS-P1-003, and keeps CURRENT on BS-P1-003/HOLD until separate activation."
   ]
 }
