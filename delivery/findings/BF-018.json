@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-018",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T008",
@@ -12,7 +12,8 @@
     "F07-POL-009 and F07-AC-026",
     "Phase 1 Infrastructure baseline",
     "SP-P1-002 T008 scope",
-    "Build repository has no periodic-maintenance configuration"
+    "Build repository has no periodic-maintenance configuration",
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
   ],
   "attempts": [
     {
@@ -20,6 +21,12 @@
       "strategy": "A0_RETENTION_EXECUTION_OWNER_AUDIT",
       "result": "FAILED",
       "evidence": "The retention outcome is defined but its periodic execution owner is not."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
+      "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
+      "evidence": "Working Infra now defines appf2-owned EvidenceRetentionMaintenance with daily default cadence and replaceable scheduler trigger; retention semantics remain provider-independent."
     }
   ],
   "affected_contracts": [
@@ -33,5 +40,5 @@
     "F07-AC-027"
   ],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": "BD-004"
 }

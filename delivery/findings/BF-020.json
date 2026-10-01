@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-020",
   "classification": "SPEC_AMBIGUITY",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T008",
@@ -11,7 +11,8 @@
   "evidence": [
     "F07-RQ-008 event time semantics",
     "F07-POL-009 90-day retention",
-    "A0 found no cutoff-anchor rule"
+    "A0 found no cutoff-anchor rule",
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
   ],
   "attempts": [
     {
@@ -19,6 +20,12 @@
       "strategy": "A0_RETENTION_CUTOFF_AUDIT",
       "result": "FAILED",
       "evidence": "No canonical cutoff timestamp is defined."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
+      "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
+      "evidence": "Working F07 now defines the raw retention cutoff exclusively from first durable received_at: eligible when received_at < maintenance_now - 90 days."
     }
   ],
   "affected_contracts": [
@@ -31,5 +38,5 @@
     "F07-AC-027"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-004"
 }

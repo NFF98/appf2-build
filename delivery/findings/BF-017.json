@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-017",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -13,7 +13,8 @@
     "SP-P1-002 T002 migration scope",
     "SP-P1-002 T006 scope/write paths",
     "Backlog BL-P1-010 and BL-P1-011 are later queued work",
-    "Current migration creates only anonymous_identity and product_event"
+    "Current migration creates only anonymous_identity and product_event",
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
   ],
   "attempts": [
     {
@@ -21,6 +22,12 @@
       "strategy": "A0_T002_MIGRATION_DEPENDENCY_AUDIT",
       "result": "FAILED",
       "evidence": "No SP2 owner creates compiler_run before T002 and no staging rule preserves the nullable reference without scope expansion."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
+      "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
+      "evidence": "Working Data Model now defines staged nullable compiler_run_id semantics so validation_run can exist before compiler persistence, with FK added only when compiler_run exists."
     }
   ],
   "affected_contracts": [
@@ -33,5 +40,5 @@
     "F02-AC-021"
   ],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": "BD-004"
 }
