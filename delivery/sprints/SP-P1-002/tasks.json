@@ -43,7 +43,9 @@
         "src/platform/evidence/",
         "tests/contract/",
         "tests/behavior/",
-        "tests/regression/"
+        "tests/regression/",
+        "tests/unit/evidence-collector-test-support.ts",
+        "tests/api/evidence-batch.api.test.ts"
       ],
       "required_commands": [
         "npm run gate",
@@ -51,6 +53,8 @@
         "npm run check:lint",
         "npm run test:contract",
         "npm run test:behavior",
+        "npm run test:unit",
+        "npm run test:api",
         "npm run test:regression"
       ],
       "required_skills": [

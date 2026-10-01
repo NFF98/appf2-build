@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-026",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "T001 adopts the BS-P1-004 locked Evidence Registry v3 in production evidence code (scope item 3) and closes BF-023, while every required command passes and no existing verified test suite regresses. All test fixtures that must be rebound from BS-P1-003 to BS-P1-004 event shapes are inside T001 allowed_write_paths.",
+  "actual": "Evidence Registry v3 bumps event schema versions (F00/F01/F02/F04/F05/F06/F16 = 2.0.0, F03 = 3.0.0; F07-RQ-010). The canonical validator rejects any event whose schema_version differs from the registry entry. Shared evidence fixtures hard-code the BS-P1-003 shape F05-EVT-007 schema_version 1.0.0 in files outside T001 allowed_write_paths: tests/unit/evidence-collector-test-support.ts (shareOpenEvent, imported by tests/behavior/evidence-collector.behavior.test.ts and tests/unit/evidence-collector.unit.test.ts) and tests/api/evidence-batch.api.test.ts (event()). Rebinding src/platform/evidence/evidence-registry.ts from BS-P1-003 to BS-P1-004, with no other change, makes those suites fail. T001 cannot make required command npm run test:behavior pass, and cannot avoid regressing test:unit / test:api, without editing paths outside its allowlist. CI product:ci for T001 runs only the T001 required_commands plus check:types/check:lint/security:audit/build, so test:unit and test:api regressions would not be caught by CI. Redirecting only the behavior test to a new in-scope fixture would hide the regression (fake green) and is rejected.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-004/registries/evidence-event-registry.json :: registry_version 3.0.0; entries schema_version F05@2.0.0 (9 events), F03@3.0.0, F04@2.0.0, F12@1.0.0; reserved_envelope_fields + envelope_field_schemas present",
+    "build-spec/baselines/BS-P1-004/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md :: F07-RQ-010 schema_version table; server validation step 2 envelope_field_schemas incl. UUID v4; step 7 reserved_envelope_fields collision rejection",
+    "src/platform/evidence/evidence-registry.ts line 1 :: imports build-spec/baselines/BS-P1-003/registries/evidence-event-registry.json (production still bound to BS-P1-003)",
+    "src/platform/evidence/evidence-validator.ts :: input.schema_version !== entry.schemaVersion -> F07-ERR-003; EvidenceCollector.emit drops events that fail validateEvidenceEvent",
+    "tests/unit/evidence-collector-test-support.ts lines 81-93 :: shareOpenEvent uses event_type F05-EVT-007, schema_version 1.0.0",
+    "tests/behavior/evidence-collector.behavior.test.ts line 9 :: imports shareOpenEvent from ../unit/evidence-collector-test-support.js",
+    "tests/api/evidence-batch.api.test.ts lines 59-71 :: event() uses F05-EVT-007 schema_version 1.0.0",
+    "delivery/sprints/SP-P1-002/tasks.json T001 allowed_write_paths = src/platform/capabilities/, src/platform/evidence/, tests/contract/, tests/behavior/, tests/regression/ (no tests/unit/, no tests/api/)",
+    "ci/run-product-ci.mjs + ci/policy.json :: product CI runs T001 required_commands + check:types/check:lint/security:audit/build only",
+    "Uncommitted experiment on branch task/SP2-T001-bs-p1-004-registry-evidence from main 24d37a43be8b79bafceaf96c45c60d2599e5bcb8: only the evidence-registry.ts import path changed BS-P1-003 -> BS-P1-004, then `npx vitest run tests` gave Test Files 5 failed | 15 passed, Tests 18 failed | 49 passed. Out-of-scope failures: tests/unit/evidence-collector.unit.test.ts 3/3 (TEST-F07-013, TEST-F07-014, single-flight), tests/api/evidence-batch.api.test.ts 4/5 (TEST-F07-011, TEST-F07-030, identity, duplicate). In-scope suites failing only because of the out-of-scope fixture: tests/behavior/evidence-collector.behavior.test.ts 5/5 (incl. TEST-F07-AC-015). In-scope fixtures T001 can rebind itself: tests/contract/evidence-intake.contract.test.ts 5/7, tests/regression/evidence-clock-invalid.regression.test.ts 1/1 (TEST-F07-031). Experiment reverted; working tree clean before this Finding."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "REBIND_EVIDENCE_REGISTRY_TO_BS_P1_004_WITHIN_T001_ALLOWED_PATHS",
+      "result": "FAILED",
+      "evidence": "18 failing tests; 12 of them (tests/unit x3, tests/api x4, tests/behavior x5) are only fixable by editing out-of-scope fixture files tests/unit/evidence-collector-test-support.ts and tests/api/evidence-batch.api.test.ts."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "DUPLICATE_FIXTURE_INTO_TESTS_BEHAVIOR_AND_LEAVE_UNIT_API_RED",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Would make required test:behavior green while tests/unit and tests/api silently regress outside CI coverage (fake green / hidden regression), and would duplicate T007-verified test support."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "ACCEPT_BOTH_BS_P1_003_AND_BS_P1_004_SCHEMA_VERSIONS",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Would loosen the locked BS-P1-004 schema_version contract to keep stale fixtures green."
+    }
+  ],
+  "requested_planning_action": [
+    "Planning Agent re-plans T001 write scope so the fixture rebind can happen inside T001: add exactly tests/unit/evidence-collector-test-support.ts and tests/api/evidence-batch.api.test.ts (or tests/unit/ and tests/api/) to allowed_write_paths, limited to rebinding BS-P1-003 evidence fixture shapes to BS-P1-004 (schema_version / envelope ownership) without changing their asserted semantics.",
+    "Add npm run test:unit and npm run test:api to T001 required_commands so CI proves those suites are not regressed by Registry v3 adoption."
+  ],
+  "t001_implementation_plan_after_replan": [
+    "evidence-registry.ts: bind BS-P1-004 v3; load reserved_envelope_fields and envelope_field_schemas; support x-required-when-envelope; reject registry entries whose allowed_properties contain a reserved field.",
+    "evidence-validator.ts: validate each envelope field against its envelope_field_schemas entry (UUID v4 for event_id/anonymous_id/session_id/share_id; intent_id stays format uuid without a version constraint, using the existing RFC 4122 v1-v5 pattern); reject reserved-envelope property collisions; apply v3 patterns for event_type/function_id/schema_version/blueprint_hash/capability_id/error_code/policy_rule_id/trace_id and date-time for occurred_at. isUuid() stays generic because src/edge/events-batch.ts uses it for batch_id/request_id.",
+    "src/platform/capabilities: add F04 Registry evidence builder for selected/rejected/gap/mismatch built from CoverageResult / admission outcomes, carrying capability_version, registry_version and sha256:-normalized registry_digest from CAPABILITY_REGISTRY_SOURCE; no intent input. Internal computeRegistryDigest / CoverageResult.registryDigest keep bare hex (permitted internally by F04-RQ-004 rule 3; existing verified TEST asserts bare hex).",
+    "Tests: TEST-F04-AC-017/018/019 and revalidated TEST-F07-008 (UUID v1/v3/v5 negatives per v4 field, intent_id non-v4 positive, reserved collision, allowlist, type/enum/format/bounds/narrowing, envelope-aware F03-EVT-010 constraint); rebind in-scope fixtures in tests/contract and tests/regression."
+  ],
+  "affected_contracts": [
+    "SP-P1-002 T001 allowed_write_paths / required_commands",
+    "BS-P1-004 Evidence Registry v3 schema_version (F07-RQ-010)"
+  ],
+  "affected_acceptance": [
+    "F07-AC-008",
+    "F07-AC-011",
+    "F07-AC-013",
+    "F07-AC-014",
+    "F07-AC-015",
+    "F07-AC-030"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}
