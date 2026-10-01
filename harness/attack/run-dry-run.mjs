@@ -40,12 +40,13 @@ must(git("config","core.autocrlf","false").status===0,"git core.autocrlf configu
 git("config","user.name","appf2 Attack Dry Run");
 git("config","user.email","attack@example.invalid");
 
-function makeBaseline(id,{sourceCommit,supersedes=null,deltas=[],decisionRef}){
+function makeBaseline(id,{sourceCommit,supersedes=null,deltas=[],decisionRef,acceptanceEntries=null}){
   const base="build-spec/baselines/"+id;
   write(base+"/functions/demo.md","# Fake Build Contract\n\nDeterministic demo contract.\n");
+  const entries=acceptanceEntries||[{acceptance_id:"F99-AC-001",test_id:"TEST-F99-001",contract_status:"ACTIVE",required_for_build_freeze:true}];
   write(base+"/registries/acceptance-test-registry.json",{
-    schema_version:1,total_acceptance:1,
-    entries:[{acceptance_id:"F99-AC-001",test_id:"TEST-F99-001",contract_status:"ACTIVE",required_for_build_freeze:true}]
+    schema_version:1,total_acceptance:entries.length,
+    entries
   });
   const demoSha=fileSha(path.join(repo,base,"functions/demo.md"));
   const registrySha=fileSha(path.join(repo,base,"registries/acceptance-test-registry.json"));
@@ -67,7 +68,7 @@ function makeBaseline(id,{sourceCommit,supersedes=null,deltas=[],decisionRef}){
     supersedes,approved_delta_ids:deltas,
     approval:{status:"USER_APPROVED",decision_ref:decisionRef},
     projection_map:"projection-map.json",
-    acceptance_registry:"registries/acceptance-test-registry.json",acceptance_count:1,
+    acceptance_registry:"registries/acceptance-test-registry.json",acceptance_count:entries.length,
     file_inventory:inventory,content_sha256:aggregate
   });
 }
@@ -238,6 +239,53 @@ const validClosedTasks=read("delivery/sprints/SP-P9-001/tasks.json"); validClose
 const validClosedBacklog=read("delivery/backlog/QUEUE.json"); validClosedBacklog.items[0].status="DONE"; write("delivery/backlog/QUEUE.json",validClosedBacklog);
 const validClosed=commit("positive: valid closed sprint");
 expectPass("Valid CLOSED Sprint passes sprint validator","node",["harness/scripts/validate-sprint.mjs"],{base:fixtureBase,head:validClosed});
+cleanTo(fixtureBase);
+
+// Completed Acceptance semantic drift must be revalidated without rewriting closed Sprint history.
+const oldAc={acceptance_id:"F99-AC-001",test_id:"TEST-F99-001",contract_status:"ACTIVE",required_for_build_freeze:true,criterion:"old semantic"};
+const newAc={acceptance_id:"F99-AC-001",test_id:"TEST-F99-001",contract_status:"ACTIVE",required_for_build_freeze:true,criterion:"new semantic"};
+const stableAc={acceptance_id:"F99-AC-002",test_id:"TEST-F99-002",contract_status:"ACTIVE",required_for_build_freeze:true,criterion:"stable semantic"};
+const oldReg=read("build-spec/baselines/BS-P9-001/registries/acceptance-test-registry.json");
+oldReg.entries=[oldAc,stableAc]; oldReg.total_acceptance=2;
+write("build-spec/baselines/BS-P9-001/registries/acceptance-test-registry.json",oldReg);
+makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",decisionRef:"DRYRUN-REVALIDATION-FREEZE",acceptanceEntries:[newAc,stableAc]});
+
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:true,reason:"REVALIDATION_POSITIVE"});
+write("delivery/backlog/QUEUE.json",{schema_version:1,build_spec_id:"BS-P9-002",status:"OPEN",items:[
+  {
+    backlog_item_id:"BL-P9-001",source:"BUILD_SPEC",build_spec_id:"BS-P9-001",function_id:"F99",title:"Historical done",
+    status:"DONE",priority:"P0",scope_contracts:["functions/demo.md"],
+    acceptance_links:[{acceptance_id:"F99-AC-001",test_id:"TEST-F99-001"}],dependencies:[],sprint_id:"SP-P9-001",product_decision_allowed:false,
+    revalidation:{target_build_spec_id:"BS-P9-002",status:"IN_PROGRESS",sprint_id:"SP-P9-002",task_id:"T001",acceptance_ids:["F99-AC-001"]}
+  },
+  {
+    backlog_item_id:"BL-P9-002",source:"BUILD_SPEC",build_spec_id:"BS-P9-002",function_id:"F99",title:"Current work",
+    status:"SPRINTED",priority:"P0",scope_contracts:["functions/demo.md"],
+    acceptance_links:[{acceptance_id:"F99-AC-002",test_id:"TEST-F99-002"}],dependencies:[],sprint_id:"SP-P9-002",product_decision_allowed:false
+  }
+]});
+const histManifest=read("delivery/sprints/SP-P9-001/manifest.json"); histManifest.status="CLOSED"; write("delivery/sprints/SP-P9-001/manifest.json",histManifest);
+const histTasks=read("delivery/sprints/SP-P9-001/tasks.json"); histTasks.tasks[0].status="CLOSED"; write("delivery/sprints/SP-P9-001/tasks.json",histTasks);
+write("delivery/sprints/SP-P9-002/manifest.json",{
+  schema_version:1,sprint_id:"SP-P9-002",build_spec_id:"BS-P9-002",status:"ACTIVE",goal:"revalidation",scope:["fake"],non_scope:["none"],tasks_file:"tasks.json",
+  backlog_item_ids:["BL-P9-002"],revalidation_item_ids:["BL-P9-001"],
+  entry_gate:{build_spec_locked:true,baseline_gate_passed:true,acceptance_mapped:true,user_approved:true,approval_ref:"DRYRUN-REVALIDATION"}
+});
+write("delivery/sprints/SP-P9-002/tasks.json",{schema_version:3,sprint_id:"SP-P9-002",tasks:[{
+  task_id:"T001",backlog_item_ids:["BL-P9-002"],title:"Revalidate changed Acceptance",status:"IN_PROGRESS",build_spec_id:"BS-P9-002",
+  scope:["revalidate"],non_scope:["none"],
+  acceptance_links:[{acceptance_id:"F99-AC-002",test_id:"TEST-F99-002"},{acceptance_id:"F99-AC-001",test_id:"TEST-F99-001"}],
+  allowed_write_paths:["src/demo/","tests/behavior/"],required_commands:["npm run gate"],
+  required_skills:["implementer","test-builder","reviewer"],parallel_safe:false,product_decision_allowed:false,blocked_by:[],completion_evidence:[]
+}]});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:"SP-P9-002",active_build_spec:"BS-P9-002",active_task:"T001",status:"ACTIVE",automation_mode:"SAFE_AUTOMATION",reason:"REVALIDATION_POSITIVE"});
+const validRevalidation=commit("positive: completed Acceptance revalidation");
+expectPass("DONE semantic drift with explicit revalidation passes Backlog Gate","node",["harness/scripts/validate-backlog.mjs"],{base:fixtureBase,head:validRevalidation});
+expectPass("DONE semantic drift revalidation is owned by active Sprint Task","node",["harness/scripts/validate-sprint.mjs"],{base:fixtureBase,head:validRevalidation});
+
+const brokenQueue=read("delivery/backlog/QUEUE.json"); delete brokenQueue.items[0].revalidation; write("delivery/backlog/QUEUE.json",brokenQueue);
+const missingRevalidation=commit("attack: semantic drift without revalidation");
+expectFail("DONE semantic drift without revalidation is rejected","harness/scripts/validate-backlog.mjs",{base:validRevalidation,head:missingRevalidation});
 cleanTo(fixtureBase);
 
 // Active Task cannot bypass an unfinished blocked_by dependency.
