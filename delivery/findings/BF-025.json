@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-025",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "A replacement baseline must not silently preserve DONE backlog work when one of its mapped Acceptance semantics changed; historical completion provenance must remain intact while the changed Acceptance is explicitly revalidated under the new baseline.",
+  "actual": "BL-P1-032 is DONE under BS-P1-003, but F07-AC-008 changes in BS-P1-004 to additionally require canonical envelope identifiers/UUID-v4 and reserved-envelope separation. Existing baseline-lineage correctly rejects silent carry-forward, while reopening the closed SP-P1-001 or rewriting its historical DONE provenance would be incorrect.",
+  "evidence": [
+    "delivery/backlog/QUEUE.json :: BL-P1-032 status DONE, build_spec_id BS-P1-003",
+    "BS-P1-003 F07-AC-008 only covers forbidden/property schema validation",
+    "BS-P1-004 F07-AC-008 additionally covers envelope UUID version and reserved-envelope separation",
+    "BF-023 proves current evidence-validator is weaker than the BS-P1-004 UUID-v4 contract",
+    "harness/scripts/baseline-lineage.mjs semantic comparison rejects F07-AC-008 carry-forward"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "SILENTLY_PRESERVE_BL_P1_032_DONE_ACROSS_BS_P1_004",
+      "result": "FAILED",
+      "evidence": "F07-AC-008 semantics are not equal, so completed-work lineage cannot be preserved."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "REOPEN_SP_P1_001_OR_REWRITE_HISTORICAL_DONE_PROVENANCE",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Would corrupt closed Sprint history instead of expressing new-baseline revalidation."
+    }
+  ],
+  "affected_contracts": [
+    "Completed backlog lineage / revalidation governance",
+    "F07-AC-008"
+  ],
+  "affected_acceptance": [
+    "F07-AC-008"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}
