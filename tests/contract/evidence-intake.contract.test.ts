@@ -9,7 +9,7 @@ function validEvent(): Record<string, unknown> {
   return {
     event_id: EVENT_ID,
     event_type: "F05-EVT-007",
-    schema_version: "1.0.0",
+    schema_version: "2.0.0",
     occurred_at: "2026-09-27T01:23:45.000Z",
     anonymous_id: null,
     session_id: null,
@@ -46,7 +46,7 @@ function invalidF03IntakeEvents(
 function f03Event(
   eventType: string,
   properties: Record<string, unknown>,
-  schemaVersion = "2.0.0"
+  schemaVersion = "3.0.0"
 ): Record<string, unknown> {
   return {
     event_id: EVENT_ID,
