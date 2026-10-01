@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-004",
-  "implementation_enabled": true,
-  "reason": "Human approved BS-P1-004 / SP-P1-002 Activation; atomic rebind completed and T001 is the sole active Task under the replacement baseline."
+  "implementation_enabled": false,
+  "reason": "SP-P1-002 execution paused for Human-approved BF-026 / BF-027 Governance Unblock. BS-P1-004 remains the active locked baseline; Product implementation is disabled until governance remediation and reactivation review pass."
 }
