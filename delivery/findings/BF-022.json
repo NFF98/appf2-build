@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-022",
   "classification": "SPEC_AMBIGUITY",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -12,7 +12,8 @@
     "build-spec/baselines/BS-P1-003/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md :: F07-DATA-001 Common Evidence Event Envelope",
     "build-spec/baselines/BS-P1-003/registries/evidence-event-registry.json :: allowed_properties",
     "src/platform/evidence/evidence-validator.ts :: independent envelope/properties validation with no equality/precedence rule",
-    "A0 machine audit: 104/112 events collide; error_code=99, trace_id=78, intent_id=58, schema_version=36, share_id=21, blueprint_hash=19, capability_id=18."
+    "A0 machine audit: 104/112 events collide; error_code=99, trace_id=78, intent_id=58, schema_version=36, share_id=21, blueprint_hash=19, capability_id=18.",
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
   ],
   "attempts": [
     {
@@ -20,6 +21,12 @@
       "strategy": "A0_ASSUME_ENVELOPE_PRECEDENCE_OR_EQUALITY",
       "result": "FAILED",
       "evidence": "Neither precedence nor equality is locked, and at least schema_version can plausibly denote different semantics. Cursor cannot choose without changing contract meaning."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
+      "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
+      "evidence": "Working F07 + Evidence Registry v3 now define reserved envelope fields as canonical event-level truth; properties cannot duplicate reserved names and target schema uses blueprint_schema_version."
     }
   ],
   "affected_contracts": [
@@ -34,5 +41,5 @@
     "F02-AC-022"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-004"
 }
