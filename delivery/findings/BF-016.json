@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-016",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T006",
@@ -12,7 +12,8 @@
     "F01 section 31 Evidence / Economics",
     "F07-POL-003 Evidence Source Precedence",
     "DATA-MODEL-DETAILED compiler_run usage/cost fields",
-    "Evidence Registry F01 allowed_properties"
+    "Evidence Registry F01 allowed_properties",
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
   ],
   "attempts": [
     {
@@ -20,6 +21,12 @@
       "strategy": "A0_F01_EVIDENCE_OWNER_RECONCILIATION",
       "result": "FAILED",
       "evidence": "Documented event dimensions include values owned by other canonical evidence sources and absent from F01 event property contracts."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
+      "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
+      "evidence": "Working F01 now separates product_event dimensions from compiler_run token/cost truth and clarification-policy triggered_rule_ids; Evidence Registry v3 uses blueprint_schema_version for target schema semantics."
     }
   ],
   "affected_contracts": [
@@ -29,5 +36,5 @@
   ],
   "affected_acceptance": [],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": "BD-004"
 }
