@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-023",
   "classification": "IMPLEMENTATION_BUG",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -28,6 +28,12 @@
       "strategy": "A0_HUMAN_APPROVED_EXISTING_CONTRACT_ENFORCEMENT",
       "result": "READY_FOR_IMPLEMENTATION_AFTER_REACTIVATION",
       "evidence": "Human approved UUID v4 alignment direction. Working Evidence Registry v3 explicitly locks event_id/anonymous_id/session_id/share_id envelope schemas to UUID v4. Production evidence-validator remains to be corrected under T001 after replacement baseline + activation."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "BS_P1_004_T001_FIELD_SPECIFIC_UUID_V4_ENFORCEMENT",
+      "result": "PASSED",
+      "evidence": "PR #126 merged as 0ed5a02a971fc14a3085e38c7157f621176f641d. TEST-F07-008 on canonical main proves event_id / anonymous_id / session_id / share_id reject valid non-v4 UUIDs while intent_id remains generic UUID; Registry v3 envelope schemas drive enforcement. Merge-to-main CI, Governance, Attack, Repository lint, Product CI and CodeQL passed."
     }
   ],
   "affected_contracts": [
