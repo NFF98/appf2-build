@@ -7,12 +7,13 @@
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
   "expected": "F04 capability_id has one canonical machine meaning across Capability Registry generation, F04 contract, Evidence Registry, and F07 validation. Valid IDs such as data.chart_basic and media.audio_playback must be accepted, while IDs outside canonical namespace.name grammar must be rejected.",
-  "actual": "Evidence Registry 2.0.1 uses capability_id pattern ^[a-z0-9]+(?:\\.[a-z0-9]+)+$, while the Capability Registry generator uses ^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$. The Evidence pattern rejects valid underscore IDs and accepts invalid numeric-leading or multi-segment IDs. BF-014 fixed escaping but did not close this grammar drift.",
+  "actual": "Locked BS-P1-003 Evidence Registry uses capability_id pattern ^[a-z0-9]+(?:\\\\.[a-z0-9]+)+$, while the Capability Registry generator uses ^[a-z][a-z0-9_]*\\\\.[a-z][a-z0-9_]*$. The locked Evidence pattern rejects valid underscore IDs and accepts invalid numeric-leading or multi-segment IDs. A0 corrected Working Current Truth in appf2-design PR #6 / Evidence Registry 2.0.2, but BS-P1-003 remains affected until a clean replacement baseline is frozen.",
   "evidence": [
-    "appf2-design working/detailed-design/registries/evidence-event-registry.json@main :: property_schemas.capability_id",
+    "build-spec/baselines/BS-P1-003/registries/evidence-event-registry.json :: property_schemas.capability_id",
     "appf2-build src/platform/capabilities/generate-registry.ts@main :: CAPABILITY_ID_PATTERN",
     "appf2-design working/detailed-design/functions/F04-CAPABILITY-REGISTRY.md@main :: optional IDs include data.chart_basic / media.audio_playback / media.video_playback",
-    "A0 probe: layout.container accepted; data.chart_basic and media.audio_playback rejected; 1layout.container and layout.container.extra accepted."
+    "A0 probe: layout.container accepted; data.chart_basic and media.audio_playback rejected; 1layout.container and layout.container.extra accepted.",
+    "appf2-design PR #6 merged as 7d6de8253f09be56e8ff4b877c05a27c1e5d7a70: Working capability_id grammar corrected; Evidence Registry 2.0.2."
   ],
   "attempts": [
     {
@@ -20,6 +21,12 @@
       "strategy": "A0_CANONICAL_CAPABILITY_ID_REGEX_CROSS_CHECK",
       "result": "FAILED",
       "evidence": "Evidence Registry capability_id grammar is both narrower and broader than canonical F04/Build generator grammar."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_FIX_WORKING_CAPABILITY_ID_GRAMMAR",
+      "result": "PASSED",
+      "evidence": "Working now uses the canonical F04 / Registry generator grammar and smoke-checks underscore IDs; Build baseline still requires replacement freeze."
     }
   ],
   "downstream_risk": [
