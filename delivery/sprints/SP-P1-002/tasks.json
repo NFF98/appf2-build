@@ -137,7 +137,7 @@
         "BL-P1-005"
       ],
       "title": "Implement Blueprint validation core and admitted-content persistence",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-004",
       "scope": [
         "Implement Candidate Blueprint top-level/schema/reference/graph validation for F02-AC-004 through F02-AC-008.",
@@ -197,7 +197,10 @@
       ],
       "parallel_safe": false,
       "product_decision_allowed": false,
-      "blocked_by": [],
+      "blocked_by": [
+        "BF-030",
+        "BF-031"
+      ],
       "completion_evidence": []
     },
     {
