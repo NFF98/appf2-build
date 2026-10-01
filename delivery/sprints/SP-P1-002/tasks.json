@@ -197,10 +197,7 @@
       ],
       "parallel_safe": false,
       "product_decision_allowed": false,
-      "blocked_by": [
-        "BF-030",
-        "BF-031"
-      ],
+      "blocked_by": [],
       "completion_evidence": []
     },
     {
