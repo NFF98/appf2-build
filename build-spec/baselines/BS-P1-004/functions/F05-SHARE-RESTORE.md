@@ -819,7 +819,7 @@ share_mode
 recipient_session_id when available
 error_code
 runtime_version
-schema_version
+blueprint_schema_version
 registry_version
 trace_id
 ~~~
