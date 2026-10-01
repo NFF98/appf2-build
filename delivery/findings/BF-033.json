@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-033",
   "classification": "BUILD_BLOCKER",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-005",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -13,7 +13,8 @@
     "BS-P1-005 manifest approved_delta_ids = [BD-003, BD-004, BD-005].",
     "BD-003/BD-004 describe the earlier BS-P1-003→BS-P1-004 remediation; BD-005 is the only new delta affecting BS-P1-004.",
     "harness/scripts/validate-activation.mjs currently applies affected_build_spec/source provenance checks indiscriminately to every activation delta.",
-    "Historical baseline manifests are non-cumulative: BS-P1-002=[BD-001], BS-P1-003=[BD-002], BS-P1-004=[BD-003,BD-004]; therefore predecessor delta omission is valid repository history."
+    "Historical baseline manifests are non-cumulative: BS-P1-002=[BD-001], BS-P1-003=[BD-002], BS-P1-004=[BD-003,BD-004]; therefore predecessor delta omission is valid repository history.",
+    "PR #135 attack result: cumulative inherited+introduced PASS; non-cumulative replacement PASS; forged old-delta injection FAIL as expected."
   ],
   "attempts": [
     {
@@ -21,6 +22,12 @@
       "strategy": "DROP_INHERITED_DELTA_PROVENANCE_OR_REWRITE_BD_003_BD_004_TO_BS_P1_004",
       "result": "REJECTED_FALSE_PROVENANCE",
       "evidence": "Dropping or rewriting inherited deltas would falsify the lineage of semantics already incorporated in BS-P1-004."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "INTERSECTION_BASED_INHERITED_DELTA_CLASSIFICATION",
+      "result": "PASSED",
+      "evidence": "PR #135 head b75b65c3... Governance/CI/Attack direct gates PASS. Attack dry-run accepts cumulative and non-cumulative lineage, while rejecting an old delta injected as a newly listed delta without current rebaseline provenance."
     }
   ],
   "requested_planning_action": [
