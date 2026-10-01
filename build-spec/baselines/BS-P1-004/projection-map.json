@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "baseline_id": "BS-P1-003",
+  "baseline_id": "BS-P1-004",
   "phase": "PHASE_1",
   "source_repo": "NFF98/appf2-design",
-  "source_commit": "3818926b82ae2c5edaf9d6115fda3d1505757781",
+  "source_commit": "91894ae8bd6241bb5ee1897180db72e9e578d1bf",
   "freeze_audit": {
     "status": "PASS",
     "version_lock": true,
-    "source_commit": "3818926b82ae2c5edaf9d6115fda3d1505757781"
+    "source_commit": "91894ae8bd6241bb5ee1897180db72e9e578d1bf"
   },
   "projection_engine": {
     "version": "MARKDOWN_EXACT_HEADING_V1",
@@ -54,48 +54,48 @@
     },
     {
       "source_path": "working/detailed-design/functions/F01-INTENT-COMPILATION.md",
-      "source_blob_sha": "2ff7cc07621ef2f89e720428f482cae9c7ed617b",
+      "source_blob_sha": "30645a6199c6108157fcf0cf2d8e89f9ecb2a904",
       "mode": "FULL_COPY",
       "target_path": "functions/F01-INTENT-COMPILATION.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "2a5695acbc2a526f5e87bbc3016d9598279d4037e5b4dbd25f6a5c276663ef56"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/functions/F02-BLUEPRINT-VALIDATION.md",
-      "source_blob_sha": "9b4c0444558e73eb57f07709aac742abe3d9dde0",
+      "source_blob_sha": "4798c88de60e40b194ed592ce3c1f34a66f6a928",
       "mode": "FULL_COPY",
       "target_path": "functions/F02-BLUEPRINT-VALIDATION.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "b5a4ee2df8c2fff68cfaaa6f9ace93bd89241bf03c2d899718b61c181cd2a92c"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/functions/F03-RUNTIME-EXECUTION.md",
-      "source_blob_sha": "f13e78a00223478b31268ac6c5e7579788d09075",
+      "source_blob_sha": "5eed2b2ec356f4065b3de123f0914cc5c0040b04",
       "mode": "FULL_COPY",
       "target_path": "functions/F03-RUNTIME-EXECUTION.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "51764ee16372f5008e99ba141abadb60662fe3736cf64ae8b415549bb74cf535"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/functions/F04-CAPABILITY-REGISTRY.md",
-      "source_blob_sha": "ae6b60cb39ab4b8bef510f29505e056087defe60",
+      "source_blob_sha": "c95c63cf61eb39c31d0417c61f8a55c5e042c368",
       "mode": "FULL_COPY",
       "target_path": "functions/F04-CAPABILITY-REGISTRY.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "26d95802f63e8c5f9f198d3930fb183d8716dd8f0796aaa7ed58b8a333e7bfeb"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/functions/F05-SHARE-RESTORE.md",
-      "source_blob_sha": "aaaacfcd5658f68f5e02e5d10f47fafae7f90335",
+      "source_blob_sha": "49e4068a7cb887f017bac2e43b747e4bb4ec39fe",
       "mode": "FULL_COPY",
       "target_path": "functions/F05-SHARE-RESTORE.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "ac0cd6318b98504217be467cabb80286d1ec416ca6ba30af79ff8559dc6518d7"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/functions/F06-REMIX-REFINE.md",
@@ -108,12 +108,12 @@
     },
     {
       "source_path": "working/detailed-design/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
-      "source_blob_sha": "accfe45a52c2fb672f345c5fbe2ee9fce40f6f9f",
+      "source_blob_sha": "562205f6d51122362baedefd0a63483ca53c960b",
       "mode": "FULL_COPY",
       "target_path": "functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "e2567029cdfb50c4306b2afd506f2e9fd84758323fed5397bbf0e9b2be657b94"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/functions/F12-HUMANIZED-RECOVERY.md",
@@ -351,21 +351,21 @@
     },
     {
       "source_path": "working/detailed-design/registries/acceptance-test-registry.json",
-      "source_blob_sha": "5e3ae133c46cfd5f95c096434822d55fa893d580",
+      "source_blob_sha": "a6357e19b6b9d29b44362285265b5f574f925dd1",
       "mode": "FULL_COPY",
       "target_path": "registries/acceptance-test-registry.json",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "d281a04ddf0e0923a6dc34a3f7160243e3d0194bf8537ddb6291f08df01965eb"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/registries/evidence-event-registry.json",
-      "source_blob_sha": "3b6d813b262473b49706df24ad00a6bbb43ed9c1",
+      "source_blob_sha": "bc72f962ecd97832af2f2c5ac6f5d90c60e41bec",
       "mode": "FULL_COPY",
       "target_path": "registries/evidence-event-registry.json",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
       "freeze_audit_verification": "SELF_MARKER",
-      "output_sha256": "42f1ed8a2f47b2f335fbd65774be6d0edb215fc11d611f54b5f87986eb214e5c"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/registries/recovery-registry.json",
@@ -448,7 +448,7 @@
     },
     {
       "source_path": "working/common-core/INFRA-ARCHITECTURE.md",
-      "source_blob_sha": "ae897eb210029283b3c92db181247caffb5f1eb6",
+      "source_blob_sha": "b498e739335963c04114226ecaa0a26af8c89065",
       "mode": "SECTION_FILTERED",
       "target_path": "shared/INFRA-ARCHITECTURE.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
@@ -473,7 +473,7 @@
           }
         }
       ],
-      "output_sha256": "05d4e3514204afe01515485e9eeb7d6e2bd14c33eac2f188d191d9d4f8fad219"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/APP-DETAILED-DESIGN-OVERVIEW.md",
@@ -506,7 +506,7 @@
     },
     {
       "source_path": "working/detailed-design/data-model/DATA-MODEL-DETAILED.md",
-      "source_blob_sha": "9ca3840aa81ea2f717db5562a5bcc0c01023dae5",
+      "source_blob_sha": "adaf55b65d6fb88867e15190b0f8721cf92f752d",
       "mode": "SECTION_FILTERED",
       "target_path": "shared/data-model/DATA-MODEL-DETAILED.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
@@ -522,11 +522,11 @@
           }
         }
       ],
-      "output_sha256": "c3e8260274366a42975edb66ec808085bf9b56a229d99a5b0145bc8d3d642667"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/detailed-design/infrastructure/INFRASTRUCTURE-DETAILED.md",
-      "source_blob_sha": "23fdcea9ebcccce98d9a93625ca14be050c71bf3",
+      "source_blob_sha": "9e7ec7c1a9444dc957083fbdd39e777ed457c0e5",
       "mode": "SECTION_FILTERED",
       "target_path": "shared/infrastructure/INFRASTRUCTURE-DETAILED.md",
       "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
@@ -542,7 +542,7 @@
           }
         }
       ],
-      "output_sha256": "e2973620e93092daf46ad483f70e1fa0844b91edfc56dd12e2aa644cfb23be33"
+      "output_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     {
       "source_path": "working/README.md",
