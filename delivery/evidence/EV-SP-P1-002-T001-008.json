@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-01T14:52:42Z",
+  "blocking_findings": [],
+  "source_commit": "0ed5a02a971fc14a3085e38c7157f621176f641d",
+  "evidence_id": "EV-SP-P1-002-T001-008",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/36879663032#5-api-pass",
+  "command": "npm run test:api",
+  "review_checks": null
+}
