@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "build_spec_id": "BS-P1-003",
+  "build_spec_id": "BS-P1-004",
   "status": "OPEN",
   "generation": {
     "method": "IMPLEMENTATION_CAPABILITY_CLUSTER",
@@ -113,9 +113,9 @@
       "backlog_item_id": "BL-P1-003",
       "title": "Registry evidence & traceability",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F04",
-      "contract_scope": "BS-P1-003/F04",
+      "contract_scope": "BS-P1-004/F04",
       "implementation_scope": "Registry evidence & traceability",
       "acceptance_links": [
         {
@@ -180,9 +180,9 @@
       "backlog_item_id": "BL-P1-005",
       "title": "Validation pipeline, trust admission & hard ceilings",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F02",
-      "contract_scope": "BS-P1-003/F02",
+      "contract_scope": "BS-P1-004/F02",
       "implementation_scope": "Validation pipeline, trust admission & hard ceilings",
       "acceptance_links": [
         {
@@ -237,9 +237,9 @@
       "backlog_item_id": "BL-P1-006",
       "title": "Validation failure, degradation & explicit result contract",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F02",
-      "contract_scope": "BS-P1-003/F02",
+      "contract_scope": "BS-P1-004/F02",
       "implementation_scope": "Validation failure, degradation & explicit result contract",
       "acceptance_links": [
         {
@@ -276,9 +276,9 @@
       "backlog_item_id": "BL-P1-007",
       "title": "Validation evidence & admission trace",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F02",
-      "contract_scope": "BS-P1-003/F02",
+      "contract_scope": "BS-P1-004/F02",
       "implementation_scope": "Validation evidence & admission trace",
       "acceptance_links": [
         {
@@ -311,9 +311,9 @@
       "backlog_item_id": "BL-P1-008",
       "title": "Intent envelope, clarification & visible assumptions",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F01",
-      "contract_scope": "BS-P1-003/F01",
+      "contract_scope": "BS-P1-004/F01",
       "implementation_scope": "Intent envelope, clarification & visible assumptions",
       "acceptance_links": [
         {
@@ -358,9 +358,9 @@
       "backlog_item_id": "BL-P1-009",
       "title": "Compiler gating, capability coverage & validation loop",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F01",
-      "contract_scope": "BS-P1-003/F01",
+      "contract_scope": "BS-P1-004/F01",
       "implementation_scope": "Compiler gating, capability coverage & validation loop",
       "acceptance_links": [
         {
@@ -402,9 +402,9 @@
       "backlog_item_id": "BL-P1-010",
       "title": "Compiler APIs, idempotency, timeout & version trace",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F01",
-      "contract_scope": "BS-P1-003/F01",
+      "contract_scope": "BS-P1-004/F01",
       "implementation_scope": "Compiler APIs, idempotency, timeout & version trace",
       "acceptance_links": [
         {
@@ -457,9 +457,9 @@
       "backlog_item_id": "BL-P1-011",
       "title": "Compiler evidence & CREATE checkpoint progress",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F01",
-      "contract_scope": "BS-P1-003/F01",
+      "contract_scope": "BS-P1-004/F01",
       "implementation_scope": "Compiler evidence & CREATE checkpoint progress",
       "acceptance_links": [
         {
@@ -504,9 +504,9 @@
       "backlog_item_id": "BL-P1-012",
       "title": "Runtime hydration, state, expression, RNG & time semantics",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F03",
-      "contract_scope": "BS-P1-003/F03",
+      "contract_scope": "BS-P1-004/F03",
       "implementation_scope": "Runtime hydration, state, expression, RNG & time semantics",
       "acceptance_links": [
         {
@@ -567,9 +567,9 @@
       "backlog_item_id": "BL-P1-013",
       "title": "Event queue & atomic action transaction semantics",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F03",
-      "contract_scope": "BS-P1-003/F03",
+      "contract_scope": "BS-P1-004/F03",
       "implementation_scope": "Event queue & atomic action transaction semantics",
       "acceptance_links": [
         {
@@ -609,9 +609,9 @@
       "backlog_item_id": "BL-P1-014",
       "title": "Runtime trust, isolation, lifecycle & resource enforcement",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F03",
-      "contract_scope": "BS-P1-003/F03",
+      "contract_scope": "BS-P1-004/F03",
       "implementation_scope": "Runtime trust, isolation, lifecycle & resource enforcement",
       "acceptance_links": [
         {
@@ -670,9 +670,9 @@
       "backlog_item_id": "BL-P1-015",
       "title": "Result evaluation & correction replay support",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F03",
-      "contract_scope": "BS-P1-003/F03",
+      "contract_scope": "BS-P1-004/F03",
       "implementation_scope": "Result evaluation & correction replay support",
       "acceptance_links": [
         {
@@ -697,9 +697,9 @@
       "backlog_item_id": "BL-P1-016",
       "title": "Runtime operation identity, truthful progress & hard timeout",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F03",
-      "contract_scope": "BS-P1-003/F03",
+      "contract_scope": "BS-P1-004/F03",
       "implementation_scope": "Runtime operation identity, truthful progress & hard timeout",
       "acceptance_links": [
         {
@@ -752,9 +752,9 @@
       "backlog_item_id": "BL-P1-017",
       "title": "Discover/Create, Capsule, clarification & assumption UX",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F00",
-      "contract_scope": "BS-P1-003/F00",
+      "contract_scope": "BS-P1-004/F00",
       "implementation_scope": "Discover/Create, Capsule, clarification & assumption UX",
       "acceptance_links": [
         {
@@ -800,9 +800,9 @@
       "backlog_item_id": "BL-P1-018",
       "title": "APP surface navigation, compare & inspection continuity",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F00",
-      "contract_scope": "BS-P1-003/F00",
+      "contract_scope": "BS-P1-004/F00",
       "implementation_scope": "APP surface navigation, compare & inspection continuity",
       "acceptance_links": [
         {
@@ -848,9 +848,9 @@
       "backlog_item_id": "BL-P1-019",
       "title": "Degraded/recovery presentation & safe exit",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F00",
-      "contract_scope": "BS-P1-003/F00",
+      "contract_scope": "BS-P1-004/F00",
       "implementation_scope": "Degraded/recovery presentation & safe exit",
       "acceptance_links": [
         {
@@ -891,9 +891,9 @@
       "backlog_item_id": "BL-P1-020",
       "title": "Shell persistence, idempotency & authority boundaries",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F00",
-      "contract_scope": "BS-P1-003/F00",
+      "contract_scope": "BS-P1-004/F00",
       "implementation_scope": "Shell persistence, idempotency & authority boundaries",
       "acceptance_links": [
         {
@@ -926,9 +926,9 @@
       "backlog_item_id": "BL-P1-021",
       "title": "Accessibility, responsive behavior & shell telemetry semantics",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F00",
-      "contract_scope": "BS-P1-003/F00",
+      "contract_scope": "BS-P1-004/F00",
       "implementation_scope": "Accessibility, responsive behavior & shell telemetry semantics",
       "acceptance_links": [
         {
@@ -973,9 +973,9 @@
       "backlog_item_id": "BL-P1-022",
       "title": "Runtime/Create processing presentation & checkpoint progress",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F00",
-      "contract_scope": "BS-P1-003/F00",
+      "contract_scope": "BS-P1-004/F00",
       "implementation_scope": "Runtime/Create processing presentation & checkpoint progress",
       "acceptance_links": [
         {
@@ -1017,9 +1017,9 @@
       "backlog_item_id": "BL-P1-023",
       "title": "Durable Share creation, privacy & idempotency",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F05",
-      "contract_scope": "BS-P1-003/F05",
+      "contract_scope": "BS-P1-004/F05",
       "implementation_scope": "Durable Share creation, privacy & idempotency",
       "acceptance_links": [
         {
@@ -1061,9 +1061,9 @@
       "backlog_item_id": "BL-P1-024",
       "title": "Public restore, trust gate, cache & fresh runtime",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F05",
-      "contract_scope": "BS-P1-003/F05",
+      "contract_scope": "BS-P1-004/F05",
       "implementation_scope": "Public restore, trust gate, cache & fresh runtime",
       "acceptance_links": [
         {
@@ -1126,9 +1126,9 @@
       "backlog_item_id": "BL-P1-025",
       "title": "Shared App use-as-is & explicit Remix transition",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F05",
-      "contract_scope": "BS-P1-003/F05",
+      "contract_scope": "BS-P1-004/F05",
       "implementation_scope": "Shared App use-as-is & explicit Remix transition",
       "acceptance_links": [
         {
@@ -1153,9 +1153,9 @@
       "backlog_item_id": "BL-P1-026",
       "title": "Share/restore evidence semantics",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F05",
-      "contract_scope": "BS-P1-003/F05",
+      "contract_scope": "BS-P1-004/F05",
       "implementation_scope": "Share/restore evidence semantics",
       "acceptance_links": [
         {
@@ -1185,9 +1185,9 @@
       "backlog_item_id": "BL-P1-027",
       "title": "Refine/Remix mode, source authority & inspection session boundary",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F06",
-      "contract_scope": "BS-P1-003/F06",
+      "contract_scope": "BS-P1-004/F06",
       "implementation_scope": "Refine/Remix mode, source authority & inspection session boundary",
       "acceptance_links": [
         {
@@ -1242,9 +1242,9 @@
       "backlog_item_id": "BL-P1-028",
       "title": "Child compilation, validation, preservation & lineage",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F06",
-      "contract_scope": "BS-P1-003/F06",
+      "contract_scope": "BS-P1-004/F06",
       "implementation_scope": "Child compilation, validation, preservation & lineage",
       "acceptance_links": [
         {
@@ -1282,9 +1282,9 @@
       "backlog_item_id": "BL-P1-029",
       "title": "Preview decisions, retry, carryover & sensitive input handling",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F06",
-      "contract_scope": "BS-P1-003/F06",
+      "contract_scope": "BS-P1-004/F06",
       "implementation_scope": "Preview decisions, retry, carryover & sensitive input handling",
       "acceptance_links": [
         {
@@ -1334,9 +1334,9 @@
       "backlog_item_id": "BL-P1-030",
       "title": "Refine/Remix evidence & acceptance distinction",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F06",
-      "contract_scope": "BS-P1-003/F06",
+      "contract_scope": "BS-P1-004/F06",
       "implementation_scope": "Refine/Remix evidence & acceptance distinction",
       "acceptance_links": [
         {
@@ -1468,15 +1468,24 @@
       "status": "DONE",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure.",
-      "sprint_id": "SP-P1-001"
+      "sprint_id": "SP-P1-001",
+      "revalidation": {
+        "target_build_spec_id": "BS-P1-004",
+        "status": "IN_PROGRESS",
+        "sprint_id": "SP-P1-002",
+        "task_id": "T001",
+        "acceptance_ids": [
+          "F07-AC-008"
+        ]
+      }
     },
     {
       "backlog_item_id": "BL-P1-033",
       "title": "Client evidence buffering, expiry, retention & observability",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F07",
-      "contract_scope": "BS-P1-003/F07",
+      "contract_scope": "BS-P1-004/F07",
       "implementation_scope": "Client evidence buffering, expiry, retention & observability",
       "acceptance_links": [
         {
@@ -1522,9 +1531,9 @@
       "backlog_item_id": "BL-P1-034",
       "title": "Canonical outcome metrics & cross-function evidence links",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F07",
-      "contract_scope": "BS-P1-003/F07",
+      "contract_scope": "BS-P1-004/F07",
       "implementation_scope": "Canonical outcome metrics & cross-function evidence links",
       "acceptance_links": [
         {
@@ -1569,9 +1578,9 @@
       "backlog_item_id": "BL-P1-035",
       "title": "Recovery classification, policy, retry budget & next actions",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F12",
-      "contract_scope": "BS-P1-003/F12",
+      "contract_scope": "BS-P1-004/F12",
       "implementation_scope": "Recovery classification, policy, retry budget & next actions",
       "acceptance_links": [
         {
@@ -1628,9 +1637,9 @@
       "backlog_item_id": "BL-P1-036",
       "title": "Context preservation, humanized presentation & accessibility",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F12",
-      "contract_scope": "BS-P1-003/F12",
+      "contract_scope": "BS-P1-004/F12",
       "implementation_scope": "Context preservation, humanized presentation & accessibility",
       "acceptance_links": [
         {
@@ -1684,9 +1693,9 @@
       "backlog_item_id": "BL-P1-037",
       "title": "Recovery episodes, evidence, backend boundary & trust preservation",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F12",
-      "contract_scope": "BS-P1-003/F12",
+      "contract_scope": "BS-P1-004/F12",
       "implementation_scope": "Recovery episodes, evidence, backend boundary & trust preservation",
       "acceptance_links": [
         {
@@ -1740,9 +1749,9 @@
       "backlog_item_id": "BL-P1-038",
       "title": "Runtime timeout recovery & safe continuation",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F12",
-      "contract_scope": "BS-P1-003/F12",
+      "contract_scope": "BS-P1-004/F12",
       "implementation_scope": "Runtime timeout recovery & safe continuation",
       "acceptance_links": [
         {
@@ -1772,9 +1781,9 @@
       "backlog_item_id": "BL-P1-039",
       "title": "Correction classification, semantic delta, child validation & lineage",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F16",
-      "contract_scope": "BS-P1-003/F16",
+      "contract_scope": "BS-P1-004/F16",
       "implementation_scope": "Correction classification, semantic delta, child validation & lineage",
       "acceptance_links": [
         {
@@ -1821,9 +1830,9 @@
       "backlog_item_id": "BL-P1-040",
       "title": "Replay input selection, snapshot privacy & compatibility",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F16",
-      "contract_scope": "BS-P1-003/F16",
+      "contract_scope": "BS-P1-004/F16",
       "implementation_scope": "Replay input selection, snapshot privacy & compatibility",
       "acceptance_links": [
         {
@@ -1885,9 +1894,9 @@
       "backlog_item_id": "BL-P1-041",
       "title": "Correction compare & user decision flow",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F16",
-      "contract_scope": "BS-P1-003/F16",
+      "contract_scope": "BS-P1-004/F16",
       "implementation_scope": "Correction compare & user decision flow",
       "acceptance_links": [
         {
@@ -1933,9 +1942,9 @@
       "backlog_item_id": "BL-P1-042",
       "title": "Correction idempotency, consistency & revert security",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F16",
-      "contract_scope": "BS-P1-003/F16",
+      "contract_scope": "BS-P1-004/F16",
       "implementation_scope": "Correction idempotency, consistency & revert security",
       "acceptance_links": [
         {
@@ -1969,9 +1978,9 @@
       "backlog_item_id": "BL-P1-043",
       "title": "Correction evidence, outcome semantics & technical recovery",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "function_id": "F16",
-      "contract_scope": "BS-P1-003/F16",
+      "contract_scope": "BS-P1-004/F16",
       "implementation_scope": "Correction evidence, outcome semantics & technical recovery",
       "acceptance_links": [
         {
