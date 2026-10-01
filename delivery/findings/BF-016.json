@@ -12,7 +12,9 @@
     "F01 section 31 Evidence / Economics",
     "F07-POL-003 Evidence Source Precedence",
     "DATA-MODEL-DETAILED compiler_run usage/cost fields",
-    "Evidence Registry F01 allowed_properties"
+    "Evidence Registry F01 allowed_properties",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: F01 evidence ownership now separates product_event envelope/properties, compiler_run token/cost truth, and triggered_rule_ids policy/API truth.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b contains only A0/BF14-23 projected changes."
   ],
   "attempts": [
     {
@@ -20,6 +22,12 @@
       "strategy": "A0_F01_EVIDENCE_OWNER_RECONCILIATION",
       "result": "FAILED",
       "evidence": "Documented event dimensions include values owned by other canonical evidence sources and absent from F01 event property contracts."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "PASSED_WORKING_BASELINE_PENDING",
+      "evidence": "F01 evidence ownership now separates product_event envelope/properties, compiler_run token/cost truth, and triggered_rule_ids policy/API truth."
     }
   ],
   "affected_contracts": [
@@ -29,5 +37,12 @@
   ],
   "affected_acceptance": [],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": null,
+  "resolution": {
+    "status": "WORKING_REMEDIATED_BASELINE_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN until replacement BS-P1-004 is Human-approved/frozen; no Cursor implementation is authorized."
+  }
 }
