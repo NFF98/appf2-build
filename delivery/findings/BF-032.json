@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-032",
+  "classification": "BUILD_BLOCKER",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-005",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "A CLOSED historical revalidation against an ancestor Build Spec must remain valid for a later replacement baseline when the revalidated Acceptance semantics are byte-for-byte/semantically unchanged from that revalidation target to the new baseline. The system must preserve T001 history rather than require reopening or rebinding a CLOSED Task solely to restate identical evidence.",
+  "actual": "validate-backlog.mjs only recognizes either direct completed-work semantic identity from the original backlog baseline to CURRENT, or a revalidation whose target_build_spec_id equals CURRENT. BL-P1-032 legitimately closed F07-AC-008 revalidation at BS-P1-004/T001, while BS-P1-005 carries the identical Acceptance Registry; the validator cannot carry that completed revalidation forward and would force historical T001 mutation.",
+  "evidence": [
+    "BL-P1-032 is DONE under BS-P1-003 with CLOSED revalidation target BS-P1-004 / SP-P1-002 / T001 / F07-AC-008.",
+    "BS-P1-004 and BS-P1-005 acceptance-test-registry.json use the same Git blob and contain 289/289 identical entries.",
+    "harness/scripts/validate-backlog.mjs requires revalidation.target_build_spec_id === currentBaseline whenever original→current semantic drift exists.",
+    "T001 is CLOSED under BS-P1-004 and must not be reopened or rewritten merely because BS-P1-005 changes unrelated F02/F04 machine truth."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "REBIND_CLOSED_T001_AND_REWRITE_REVALIDATION_TARGET_TO_BS_P1_005",
+      "result": "REJECTED_GOVERNANCE_HISTORY_REWRITE",
+      "evidence": "Would make a previously completed BS-P1-004 proof appear to have been executed under BS-P1-005 and violates historical evidence provenance."
+    }
+  ],
+  "requested_planning_action": [
+    "Extend backlog lineage validation to accept a CLOSED ancestor revalidation when it exactly covered original→revalidation-target semantic drift and the revalidated Acceptance has no further semantic drift from that target to CURRENT.",
+    "Add positive and negative attack cases proving semantic-identity carry-forward and rejecting carry-forward when the Acceptance changes again."
+  ],
+  "affected_contracts": [
+    "Build governance completed-Acceptance revalidation lineage"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}
