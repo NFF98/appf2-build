@@ -337,6 +337,7 @@ blueprint_content
 blueprint_lineage
 share
 product_event
+evidence_daily_aggregate
 semantic_feedback
 ~~~
 
@@ -367,6 +368,7 @@ Phase 1 PostgreSQL 主要做：
 - share reference；
 - compiler evidence；
 - product evidence；
+- bounded non-identifying Evidence daily aggregates；
 - API idempotency operations（24h bounded durable control record）。
 
 不做：
@@ -380,6 +382,37 @@ Phase 1 PostgreSQL 主要做：
 原則：
 
 > **Database 保存 durable truth，不保存每個瞬間。**
+
+## 11.1 Evidence Retention Maintenance
+
+Phase 1 需要一個 appf2-owned maintenance boundary：
+
+~~~text
+EvidenceRetentionMaintenance
+├─ materializeEligibleAggregates(cutoff_received_at)
+├─ verifyAggregateWatermark(cutoff_received_at)
+└─ deleteEligibleRawEvents(cutoff_received_at)
+~~~
+
+Canonical trigger：
+
+- default cadence = once per UTC day；
+- trigger 可由 Cloudflare scheduled trigger、Postgres-compatible scheduler 或其他 deployment adapter 提供；
+- provider scheduler 只負責「何時叫」，不得擁有 retention semantics；
+- semantic owner 永遠是 appf2 `EvidenceRetentionMaintenance`；
+- Phase 1 不因此建立 generic queue / workflow worker plane。
+
+Run semantics：
+
+1. `maintenance_now` 由 server UTC clock 取得。
+2. `cutoff_received_at = maintenance_now - 90 days`。
+3. 先依 F07 / DATA-MODEL materialize eligible raw rows的 bounded non-identifying daily aggregates。
+4. aggregate watermark未安全涵蓋 cutoff → fail closed，不刪 raw row。
+5. watermark verified 後才刪 `received_at < cutoff_received_at` 的 raw `product_event`。
+6. 重跑同一 window 必須 idempotent；duplicate trigger不得 double count。
+7. maintenance failure 不阻斷 Consumer product flow，但必須進 operational alert / retry path。
+
+Deployment 在 Release 前必須接上一個 scheduled trigger；trigger implementation 可替換，不得把 provider-specific cron semantics寫進 Product contract。
 
 ---
 
