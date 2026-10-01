@@ -20,33 +20,50 @@ const validateSprintBinding=(item,id)=>{
     errors.push(id+" "+item.status+" sprint_id does not include item in Sprint manifest");
   }
 };
-const validateRevalidation=(item,id,currentBaseline,driftIds)=>{
-  const r=item.revalidation;
-  if(!r || r.target_build_spec_id!==currentBaseline){
-    errors.push(id+" semantic drift requires revalidation.target_build_spec_id="+currentBaseline);
-    return new Set();
-  }
-  if(!["PLANNED","IN_PROGRESS","VERIFIED","CLOSED"].includes(r.status)){
-    errors.push(id+" revalidation status invalid");
-  }
-  if(!/^SP-P\d+-\d{3}$/.test(r.sprint_id||"") || !exists("delivery/sprints/"+r.sprint_id+"/manifest.json")){
+const revalidationStates=new Set(["PLANNED","IN_PROGRESS","VERIFIED","CLOSED"]);
+const allowedRevalidationTaskStatuses={
+  PLANNED:new Set(["PLANNED"]),
+  IN_PROGRESS:new Set(["IN_PROGRESS","REVIEW"]),
+  VERIFIED:new Set(["REVIEW","VERIFIED","CLOSED"]),
+  CLOSED:new Set(["CLOSED"])
+};
+const validateRevalidationSprint=(r,id,currentBaseline)=>{
+  if(!/^SP-P\d+-\d{3}$/.test(r.sprint_id||"")){
     errors.push(id+" revalidation requires existing sprint_id");
-    return new Set();
+    return false;
   }
-  if(!/^T\d{3}$/.test(r.task_id||"")){
-    errors.push(id+" revalidation requires task_id");
-    return new Set();
+  const mp="delivery/sprints/"+r.sprint_id+"/manifest.json";
+  if(!exists(mp)){
+    errors.push(id+" revalidation requires existing sprint_id");
+    return false;
   }
-  const sm=read("delivery/sprints/"+r.sprint_id+"/manifest.json");
+  const sm=read(mp);
   if(sm.build_spec_id!==currentBaseline) errors.push(id+" revalidation Sprint Build Spec mismatch");
   if(!Array.isArray(sm.revalidation_item_ids) || !sm.revalidation_item_ids.includes(id)){
     errors.push(id+" revalidation Sprint manifest must list item in revalidation_item_ids");
   }
+  return true;
+};
+const resolveRevalidationTask=(r,id,currentBaseline)=>{
+  if(!/^T\d{3}$/.test(r.task_id||"")){
+    errors.push(id+" revalidation requires task_id");
+    return null;
+  }
   const tp="delivery/sprints/"+r.sprint_id+"/tasks.json";
-  if(!exists(tp)){ errors.push(id+" revalidation Sprint tasks missing"); return new Set(); }
-  const td=read(tp), task=(td.tasks||[]).find(t=>t.task_id===r.task_id);
-  if(!task){ errors.push(id+" revalidation task not found: "+r.task_id); return new Set(); }
+  if(!exists(tp)){
+    errors.push(id+" revalidation Sprint tasks missing");
+    return null;
+  }
+  const td=read(tp);
+  const task=(td.tasks||[]).find(t=>t.task_id===r.task_id);
+  if(!task){
+    errors.push(id+" revalidation task not found: "+r.task_id);
+    return null;
+  }
   if(task.build_spec_id!==currentBaseline) errors.push(id+" revalidation Task Build Spec mismatch");
+  return task;
+};
+const validateRevalidationAcceptances=(r,task,id,driftIds)=>{
   const ids=new Set(Array.isArray(r.acceptance_ids)?r.acceptance_ids:[]);
   const drift=new Set(driftIds);
   if(ids.size!==drift.size || [...drift].some(x=>!ids.has(x))){
@@ -56,16 +73,55 @@ const validateRevalidation=(item,id,currentBaseline,driftIds)=>{
     const link=(task.acceptance_links||[]).find(x=>x.acceptance_id===aid);
     if(!link) errors.push(id+" revalidation Task "+r.task_id+" does not claim "+aid);
   }
-  const allowedByStatus={
-    PLANNED:new Set(["PLANNED"]),
-    IN_PROGRESS:new Set(["IN_PROGRESS","REVIEW"]),
-    VERIFIED:new Set(["REVIEW","VERIFIED","CLOSED"]),
-    CLOSED:new Set(["CLOSED"])
-  };
-  if(allowedByStatus[r.status] && !allowedByStatus[r.status].has(task.status)){
+  return ids;
+};
+const validateRevalidationTaskStatus=(r,task,id)=>{
+  const allowed=allowedRevalidationTaskStatuses[r.status];
+  if(allowed && !allowed.has(task.status)){
     errors.push(id+" revalidation status "+r.status+" incompatible with Task "+r.task_id+" status "+task.status);
   }
+};
+const validateRevalidation=(item,id,currentBaseline,driftIds)=>{
+  const r=item.revalidation;
+  if(!r || r.target_build_spec_id!==currentBaseline){
+    errors.push(id+" semantic drift requires revalidation.target_build_spec_id="+currentBaseline);
+    return new Set();
+  }
+  if(!revalidationStates.has(r.status)) errors.push(id+" revalidation status invalid");
+  if(!validateRevalidationSprint(r,id,currentBaseline)) return new Set();
+  const task=resolveRevalidationTask(r,id,currentBaseline);
+  if(!task) return new Set();
+  const ids=validateRevalidationAcceptances(r,task,id,driftIds);
+  validateRevalidationTaskStatus(r,task,id);
   return ids;
+};
+
+const validateAcceptanceLinks=(item,id,ac,claimed,revalidationIds)=>{
+  for(const link of item.acceptance_links||[]){
+    const e=ac.get(link.acceptance_id);
+    if(!e){
+      errors.push(id+" unknown/inactive Acceptance "+link.acceptance_id);
+      continue;
+    }
+    if(e.function_id && e.function_id!==item.function_id) errors.push(id+" Acceptance "+link.acceptance_id+" belongs to "+e.function_id+", not "+item.function_id);
+    if(e.test_id!==link.test_id) errors.push(id+" Test mismatch for "+link.acceptance_id);
+    if(revalidationIds.has(link.acceptance_id)) continue;
+    const previous=claimed.get(link.acceptance_id);
+    if(previous) errors.push("Acceptance "+link.acceptance_id+" claimed by multiple backlog items: "+previous+", "+id);
+    else claimed.set(link.acceptance_id,id);
+  }
+};
+const validateRevalidationClaims=(id,revalidationIds,ac,claimed)=>{
+  for(const aid of revalidationIds){
+    const e=ac.get(aid);
+    if(!e){
+      errors.push(id+" revalidation unknown/inactive Acceptance "+aid);
+      continue;
+    }
+    const previous=claimed.get(aid);
+    if(previous) errors.push("Acceptance "+aid+" claimed by multiple backlog items/revalidations: "+previous+", "+id+"::revalidation");
+    else claimed.set(aid,id+"::revalidation");
+  }
 };
 
 if(queue.schema_version!==1) errors.push("Backlog schema_version must be 1.");
@@ -109,28 +165,8 @@ if(current.active_baseline===null){
     if(!Array.isArray(item.dependencies)) errors.push(id+" dependencies must be an array");
     if(!Array.isArray(item.acceptance_links)||!item.acceptance_links.length) errors.push(id+" requires Acceptance/Test mapping");
 
-    for(const link of item.acceptance_links||[]){
-      const e=ac.get(link.acceptance_id);
-      if(!e){
-        errors.push(id+" unknown/inactive Acceptance "+link.acceptance_id);
-        continue;
-      }
-      if(e.function_id && e.function_id!==item.function_id) errors.push(id+" Acceptance "+link.acceptance_id+" belongs to "+e.function_id+", not "+item.function_id);
-      if(e.test_id!==link.test_id) errors.push(id+" Test mismatch for "+link.acceptance_id);
-
-      if(revalidationIds.has(link.acceptance_id)) continue;
-      const previous=claimed.get(link.acceptance_id);
-      if(previous) errors.push("Acceptance "+link.acceptance_id+" claimed by multiple backlog items: "+previous+", "+id);
-      else claimed.set(link.acceptance_id,id);
-    }
-
-    for(const aid of revalidationIds){
-      const e=ac.get(aid);
-      if(!e){ errors.push(id+" revalidation unknown/inactive Acceptance "+aid); continue; }
-      const previous=claimed.get(aid);
-      if(previous) errors.push("Acceptance "+aid+" claimed by multiple backlog items/revalidations: "+previous+", "+id+"::revalidation");
-      else claimed.set(aid,id+"::revalidation");
-    }
+    validateAcceptanceLinks(item,id,ac,claimed,revalidationIds);
+    validateRevalidationClaims(id,revalidationIds,ac,claimed);
     if(["QUEUED","READY"].includes(item.status) && item.sprint_id) errors.push(id+" "+item.status+" must not have sprint_id before activation");
     validateSprintBinding(item,id);
   }

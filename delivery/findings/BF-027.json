@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-027",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "T001 required command npm run check:lint (eslint .) passes on the activated main baseline before Product implementation starts, and product:ci (which runs check:lint on every implementation change) can pass for T001 PRs.",
+  "actual": "npm run check:lint fails on main 24d37a43be8b79bafceaf96c45c60d2599e5bcb8 with 7 ESLint errors, all in governance-only harness scripts that Cursor must not edit during an ACTIVE Sprint. Any T001 implementation PR will therefore fail check:lint and product:ci regardless of the Product change.",
+  "evidence": [
+    "harness/scripts/validate-backlog.mjs 23:62 complexity 24 > 15 (complexity); 101:9 max-depth 5 > 4",
+    "harness/scripts/validate-findings.mjs 75:9, 76:9, 77:9, 78:9, 79:9 max-depth 5 > 4",
+    "Reproduced with no Cursor change applied (git stash -u, then npx eslint harness/scripts/validate-backlog.mjs harness/scripts/validate-findings.mjs -> 7 problems (7 errors, 0 warnings)).",
+    "Latest commit touching both files: bc874a8bb5e400f49f12d844bf756cacc0c0e700 (governance: SP2 Rebind BS-P1-004 + Activation Review PASS), which changed validate-backlog.mjs (+64) and validate-findings.mjs (+8).",
+    "ci/policy.json required_on_every_implementation_change includes check:lint; delivery/sprints/SP-P1-002/tasks.json T001 required_commands includes npm run check:lint.",
+    ".cursor/rules/40-write-scope.mdc :: harness/ is governance-only during ACTIVE Sprint; harness/ is not in T001 allowed_write_paths."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "RUN_T001_REQUIRED_COMMANDS_ON_ACTIVATED_MAIN",
+      "result": "FAILED",
+      "evidence": "check:lint exit 1 with 7 errors in harness/scripts; gate, check:types, test:contract (23), test:behavior (12), test:regression (9) PASS."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "EDIT_HARNESS_SCRIPTS_OR_ESLINT_CONFIG_FROM_T001",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "harness/ and lint configuration are outside T001 allowed_write_paths; harness/ is governance-only during an ACTIVE Sprint; disabling rules would be a blanket lint suppression."
+    }
+  ],
+  "requested_planning_action": [
+    "Human governance fixes the 7 lint errors in harness/scripts/validate-backlog.mjs and harness/scripts/validate-findings.mjs through a governance change (behavior-preserving refactor), before or alongside the BF-026 T001 re-plan."
+  ],
+  "affected_contracts": [
+    "SP-P1-002 T001 required_commands (npm run check:lint)",
+    "ci/policy.json required_on_every_implementation_change"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}

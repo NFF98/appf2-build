@@ -27,6 +27,22 @@ const validateClosedDelta=d=>{
   if(!fs.existsSync(mp)) errors.push(d.delta_id+' replacement Build Spec missing');
   else if(readJson(mp).supersedes!==d.affected_build_spec) errors.push(d.delta_id+' replacement baseline does not supersede affected baseline');
 };
+const validateFreezeSource=d=>{
+  const f=d.freeze_source;
+  if(f===undefined) return;
+  if(!f || f.type!=='SCOPE_CLEAN_DERIVED') errors.push(d.delta_id+' freeze_source.type must be SCOPE_CLEAN_DERIVED');
+  if(!/^[0-9a-f]{40}$/.test(f?.commit||'')) errors.push(d.delta_id+' freeze_source.commit must be a Git commit SHA');
+  if(!/^[0-9a-f]{40}$/.test(f?.base_commit||'')) errors.push(d.delta_id+' freeze_source.base_commit must be a Git commit SHA');
+  if(f?.commit===d.upstream_working_commit) errors.push(d.delta_id+' derived freeze source must preserve a distinct upstream Working commit');
+  if(typeof f?.provenance_audit!=='string' || !f.provenance_audit.startsWith('delivery/audits/') || !fs.existsSync(path.join(root,f.provenance_audit))) errors.push(d.delta_id+' freeze_source requires an existing delivery/audits provenance record');
+};
+const validateApprovedDesignDelta=d=>{
+  if(!['APPROVED','IMPLEMENTING','VERIFIED','CLOSED'].includes(d.status)) return;
+  if(d.user_decision?.status!=='APPROVED' || !d.user_decision?.decision_ref) errors.push(d.delta_id+' approved lifecycle requires explicit User approval reference');
+  if(!/^[0-9a-f]{40}$/.test(d.upstream_working_commit||'')) errors.push(d.delta_id+' approved lifecycle requires upstream Working commit');
+  validateFreezeSource(d);
+  if(d.replacement_build_spec_required!==true) errors.push(d.delta_id+' approved DESIGN_DELTA must require replacement Build Spec');
+};
 loadSprintTasks();
 
 const findings=new Map();
@@ -67,19 +83,7 @@ for(const file of jsonFiles('delivery/deltas')){
   if(d.type==='DESIGN_DELTA'){
     if(d.owner!=='HUMAN_GOVERNANCE') errors.push(d.delta_id+' DESIGN_DELTA owner invalid');
     if(d.user_decision_required!==true) errors.push(d.delta_id+' requires User decision');
-    if(['APPROVED','IMPLEMENTING','VERIFIED','CLOSED'].includes(d.status)){
-      if(d.user_decision?.status!=='APPROVED' || !d.user_decision?.decision_ref) errors.push(d.delta_id+' approved lifecycle requires explicit User approval reference');
-      if(!/^[0-9a-f]{40}$/.test(d.upstream_working_commit||'')) errors.push(d.delta_id+' approved lifecycle requires upstream Working commit');
-      if(d.freeze_source!==undefined){
-        const f=d.freeze_source;
-        if(!f || f.type!=='SCOPE_CLEAN_DERIVED') errors.push(d.delta_id+' freeze_source.type must be SCOPE_CLEAN_DERIVED');
-        if(!/^[0-9a-f]{40}$/.test(f?.commit||'')) errors.push(d.delta_id+' freeze_source.commit must be a Git commit SHA');
-        if(!/^[0-9a-f]{40}$/.test(f?.base_commit||'')) errors.push(d.delta_id+' freeze_source.base_commit must be a Git commit SHA');
-        if(f?.commit===d.upstream_working_commit) errors.push(d.delta_id+' derived freeze source must preserve a distinct upstream Working commit');
-        if(typeof f?.provenance_audit!=='string' || !f.provenance_audit.startsWith('delivery/audits/') || !fs.existsSync(path.join(root,f.provenance_audit))) errors.push(d.delta_id+' freeze_source requires an existing delivery/audits provenance record');
-      }
-      if(d.replacement_build_spec_required!==true) errors.push(d.delta_id+' approved DESIGN_DELTA must require replacement Build Spec');
-    }
+    validateApprovedDesignDelta(d);
     validateClosedDelta(d);
   }
   if(d.status==='CLOSED' && (!Array.isArray(d.verification)||!d.verification.length)) errors.push(d.delta_id+' CLOSED requires verification evidence');
