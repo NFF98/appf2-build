@@ -52,44 +52,62 @@ const validateActiveTask=td=>{
   if(!allowed[cs.status]?.has(active.status)) errors.push("active_task status "+active.status+" incompatible with Sprint "+cs.status);
   validateActiveTaskDependencies(active,taskById);
 };
-const validateTestMaintenanceAuthorizations=(t,sid,activeAcceptance)=>{
-  const auths=t.test_maintenance_authorizations;
-  if(auths===undefined) return;
-  if(!Array.isArray(auths)){
-    errors.push(sid+"/"+t.task_id+" test_maintenance_authorizations must be array");
+const maintenanceLabel=ctx=>ctx.sid+"/"+ctx.task.task_id;
+const validMaintenanceFile=file=>typeof file==="string" && /^tests\/.+\.(?:test|spec)\.(?:ts|tsx)$/.test(file) && !file.includes("..") && !file.includes("*");
+const validBuildSpecId=id=>/^BS-P\d+-\d{3}$/.test(id||"");
+const validateMaintenanceIdentity=(a,ctx)=>{
+  const label=maintenanceLabel(ctx);
+  const key=(a.test_id||"")+"::"+(a.file||"");
+  if(ctx.seen.has(key)) errors.push(label+" duplicate test maintenance authorization "+key);
+  ctx.seen.add(key);
+  if(!/^TEST-[A-Z0-9-]+$/.test(a.test_id||"")) errors.push(label+" invalid maintenance test_id "+a.test_id);
+  if(!testMaintenanceModes.has(a.mode)) errors.push(label+" invalid test maintenance mode "+a.mode);
+};
+const validateMaintenanceFile=(a,ctx)=>{
+  const label=maintenanceLabel(ctx);
+  if(!validMaintenanceFile(a.file)){
+    errors.push(label+" invalid maintenance test file "+a.file);
     return;
   }
-  const seen=new Set();
-  const ownedTestIds=new Set((t.acceptance_links||[]).map(x=>x.test_id));
-  const targetManifestPath="build-spec/baselines/"+t.build_spec_id+"/manifest.json";
-  const targetManifest=exists(targetManifestPath)?read(targetManifestPath):null;
-  const activeByTestId=new Map([...activeAcceptance.values()].map(x=>[x.test_id,x]));
-  for(const a of auths){
-    if(!a || typeof a!=="object"){
-      errors.push(sid+"/"+t.task_id+" invalid test maintenance authorization");
-      continue;
-    }
-    const key=(a.test_id||"")+"::"+(a.file||"");
-    if(seen.has(key)) errors.push(sid+"/"+t.task_id+" duplicate test maintenance authorization "+key);
-    seen.add(key);
-    if(!/^TEST-[A-Z0-9-]+$/.test(a.test_id||"")) errors.push(sid+"/"+t.task_id+" invalid maintenance test_id "+a.test_id);
-    if(typeof a.file!=="string" || !/^tests\/.+\.(?:test|spec)\.(?:ts|tsx)$/.test(a.file) || a.file.includes("..") || a.file.includes("*")){
-      errors.push(sid+"/"+t.task_id+" invalid maintenance test file "+a.file);
-    }else if(!pathAllowed(a.file,t.allowed_write_paths||[])){
-      errors.push(sid+"/"+t.task_id+" maintenance test file outside allowed_write_paths: "+a.file);
-    }
-    if(!testMaintenanceModes.has(a.mode)) errors.push(sid+"/"+t.task_id+" invalid test maintenance mode "+a.mode);
-    if(!/^BS-P\d+-\d{3}$/.test(a.from_build_spec||"") || !/^BS-P\d+-\d{3}$/.test(a.to_build_spec||"")){
-      errors.push(sid+"/"+t.task_id+" maintenance authorization requires valid from/to Build Spec");
-    }
-    if(a.to_build_spec!==t.build_spec_id) errors.push(sid+"/"+t.task_id+" maintenance to_build_spec must equal Task Build Spec");
-    if(a.from_build_spec===a.to_build_spec) errors.push(sid+"/"+t.task_id+" maintenance from/to Build Spec must differ");
-    if(targetManifest && targetManifest.supersedes!==a.from_build_spec){
-      errors.push(sid+"/"+t.task_id+" maintenance from_build_spec must be the direct superseded baseline");
-    }
-    if(ownedTestIds.has(a.test_id)) errors.push(sid+"/"+t.task_id+" maintenance authorization may not duplicate Task-owned Test ID "+a.test_id);
-    if(!activeByTestId.has(a.test_id)) errors.push(sid+"/"+t.task_id+" maintenance authorization references unknown/inactive Test ID "+a.test_id);
+  if(!pathAllowed(a.file,ctx.task.allowed_write_paths||[])) errors.push(label+" maintenance test file outside allowed_write_paths: "+a.file);
+};
+const validateMaintenanceBaseline=(a,ctx)=>{
+  const label=maintenanceLabel(ctx);
+  if(!validBuildSpecId(a.from_build_spec) || !validBuildSpecId(a.to_build_spec)) errors.push(label+" maintenance authorization requires valid from/to Build Spec");
+  if(a.to_build_spec!==ctx.task.build_spec_id) errors.push(label+" maintenance to_build_spec must equal Task Build Spec");
+  if(a.from_build_spec===a.to_build_spec) errors.push(label+" maintenance from/to Build Spec must differ");
+  if(ctx.targetManifest && ctx.targetManifest.supersedes!==a.from_build_spec) errors.push(label+" maintenance from_build_spec must be the direct superseded baseline");
+};
+const validateMaintenanceOwnership=(a,ctx)=>{
+  const label=maintenanceLabel(ctx);
+  if(ctx.ownedTestIds.has(a.test_id)) errors.push(label+" maintenance authorization may not duplicate Task-owned Test ID "+a.test_id);
+  if(!ctx.activeByTestId.has(a.test_id)) errors.push(label+" maintenance authorization references unknown/inactive Test ID "+a.test_id);
+};
+const validateMaintenanceAuthorization=(a,ctx)=>{
+  if(!a || typeof a!=="object"){
+    errors.push(maintenanceLabel(ctx)+" invalid test maintenance authorization");
+    return;
   }
+  validateMaintenanceIdentity(a,ctx);
+  validateMaintenanceFile(a,ctx);
+  validateMaintenanceBaseline(a,ctx);
+  validateMaintenanceOwnership(a,ctx);
+};
+const validateTestMaintenanceAuthorizations=(task,sid,activeAcceptance)=>{
+  const auths=task.test_maintenance_authorizations;
+  if(auths===undefined) return;
+  if(!Array.isArray(auths)){
+    errors.push(sid+"/"+task.task_id+" test_maintenance_authorizations must be array");
+    return;
+  }
+  const targetManifestPath="build-spec/baselines/"+task.build_spec_id+"/manifest.json";
+  const ctx={
+    task,sid,seen:new Set(),
+    ownedTestIds:new Set((task.acceptance_links||[]).map(x=>x.test_id)),
+    targetManifest:exists(targetManifestPath)?read(targetManifestPath):null,
+    activeByTestId:new Map([...activeAcceptance.values()].map(x=>[x.test_id,x]))
+  };
+  for(const a of auths) validateMaintenanceAuthorization(a,ctx);
 };
 
 const validateActiveSprint=v=>{
