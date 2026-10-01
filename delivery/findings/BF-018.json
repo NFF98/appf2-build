@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-018",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T008",
+  "expected": "F07-AC-026 requires executable 90-day raw product_event retention with a defined Phase 1 execution owner, while preserving non-identifying aggregates.",
+  "actual": "F07 defines the 90-day deletion rule, but the current Phase 1 handoff does not define what periodically starts that maintenance operation. T008 therefore lacks a complete production-like execution boundary.",
+  "evidence": [
+    "F07-POL-009 and F07-AC-026",
+    "Phase 1 Infrastructure baseline",
+    "SP-P1-002 T008 scope",
+    "Build repository has no periodic-maintenance configuration"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_RETENTION_EXECUTION_OWNER_AUDIT",
+      "result": "FAILED",
+      "evidence": "The retention outcome is defined but its periodic execution owner is not."
+    }
+  ],
+  "affected_contracts": [
+    "F07-POL-009",
+    "F07-AC-026",
+    "Phase 1 Infrastructure boundary",
+    "T008 scope"
+  ],
+  "affected_acceptance": [
+    "F07-AC-026",
+    "F07-AC-027"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}
