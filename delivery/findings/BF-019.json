@@ -12,7 +12,9 @@
     "F02 V01 Intake / JSON Parse",
     "F02 Validation Report Contract",
     "DATA-MODEL-DETAILED validation_run.candidate_digest",
-    "A0 found no exact candidate_digest representation rule"
+    "A0 found no exact candidate_digest representation rule",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: F02 now defines candidate_digest = SHA-256 of exact pre-parse UTF-8 candidate_payload_bytes with sha256:<64 lowercase hex> representation.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b contains only A0/BF14-23 projected changes."
   ],
   "attempts": [
     {
@@ -20,6 +22,12 @@
       "strategy": "A0_CANDIDATE_DIGEST_CONTRACT_AUDIT",
       "result": "FAILED",
       "evidence": "A deterministic candidate identity is required by V01 and persistence but its representation is undefined."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "PASSED_WORKING_BASELINE_PENDING",
+      "evidence": "F02 now defines candidate_digest = SHA-256 of exact pre-parse UTF-8 candidate_payload_bytes with sha256:<64 lowercase hex> representation."
     }
   ],
   "affected_contracts": [
@@ -33,5 +41,12 @@
     "F02-AC-019"
   ],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": null,
+  "resolution": {
+    "status": "WORKING_REMEDIATED_BASELINE_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN until replacement BS-P1-004 is Human-approved/frozen; no Cursor implementation is authorized."
+  }
 }
