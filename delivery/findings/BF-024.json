@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-024",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -13,7 +13,8 @@
     "delivery/deltas/BD-003.json :: upstream_working_commit=8ca4625ab71cd8884120ad1fe86d78f97cb19523",
     "delivery/deltas/BD-004.json :: upstream_working_commit=c8325c60b1ee9e901e94af38825fd860f0852cd2",
     "harness/scripts/validate-activation.mjs :: legacy exact equality check d.upstream_working_commit === activation source",
-    "A0 scope-clean Freeze provenance audit proves 91894ae8... is the Human-approved derived freeze source."
+    "A0 scope-clean Freeze provenance audit proves 91894ae8... is the Human-approved derived freeze source.",
+    "PR #114 machine validation proved scope-clean derived freeze provenance: CI/Governance/CodeQL PASS; attack dry-run 81/81 with valid derived provenance PASS and mismatched derived source FAIL."
   ],
   "attempts": [
     {
@@ -21,6 +22,12 @@
       "strategy": "REWRITE_DELTA_UPSTREAM_WORKING_COMMIT_TO_DERIVED_FREEZE_SOURCE",
       "result": "NOT_EXECUTED_FORBIDDEN",
       "evidence": "Would falsify historical Working provenance and violate governance truthfulness."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "MACHINE_VALIDATE_SCOPE_CLEAN_DERIVED_PROVENANCE",
+      "result": "PASSED",
+      "evidence": "PR #114 machine validation proved scope-clean derived freeze provenance: CI/Governance/CodeQL PASS; attack dry-run 81/81 with valid derived provenance PASS and mismatched derived source FAIL."
     }
   ],
   "affected_contracts": [
