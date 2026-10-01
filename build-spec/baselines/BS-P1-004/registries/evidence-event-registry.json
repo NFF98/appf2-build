@@ -1,5 +1,5 @@
 {
-  "registry_version": "2.0.0",
+  "registry_version": "3.0.0",
   "phase_1_freeze_audit": {
     "status": "PASS",
     "scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
@@ -8,8 +8,8 @@
       "PHASE_2_PLUS",
       "DEFERRED_CONTENT"
     ],
-    "audited_on": "2026-09-28",
-    "change_ref": "BF-007"
+    "audited_on": "2026-10-01",
+    "change_ref": "A0-BF-016-BF-023-PENDING-REAUDIT"
   },
   "owner": "working/detailed-design/registries/evidence-event-registry.json",
   "source_of_truth": "Fxx event contracts + F07 evidence policy",
@@ -18,16 +18,14 @@
       "event_type": "F00-EVT-001",
       "event_name": "shell_opened",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -39,16 +37,14 @@
       "event_type": "F00-EVT-002",
       "event_name": "capsule_viewed",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -60,16 +56,14 @@
       "event_type": "F00-EVT-003",
       "event_name": "capsule_forked",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -81,16 +75,14 @@
       "event_type": "F00-EVT-004",
       "event_name": "prompt_submitted",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -102,16 +94,14 @@
       "event_type": "F00-EVT-005",
       "event_name": "clarification_shown",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -123,16 +113,14 @@
       "event_type": "F00-EVT-006",
       "event_name": "clarification_submitted",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -144,16 +132,14 @@
       "event_type": "F00-EVT-007",
       "event_name": "assumption_review_shown",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -165,16 +151,14 @@
       "event_type": "F00-EVT-008",
       "event_name": "assumption_accepted",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -186,16 +170,14 @@
       "event_type": "F00-EVT-009",
       "event_name": "assumption_edited",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -207,16 +189,14 @@
       "event_type": "F00-EVT-010",
       "event_name": "app_ready",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -228,16 +208,14 @@
       "event_type": "F00-EVT-011",
       "event_name": "share_opened",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -250,16 +228,14 @@
       "event_type": "F00-EVT-012",
       "event_name": "remix_opened",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -272,16 +248,14 @@
       "event_type": "F00-EVT-013",
       "event_name": "correction_opened",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -294,16 +268,14 @@
       "event_type": "F00-EVT-014",
       "event_name": "recovery_shown",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -316,16 +288,14 @@
       "event_type": "F00-EVT-015",
       "event_name": "recovery_action_selected",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -338,16 +308,14 @@
       "event_type": "F00-EVT-016",
       "event_name": "compare_shown",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -359,16 +327,14 @@
       "event_type": "F00-EVT-017",
       "event_name": "compare_accept_new",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -380,16 +346,14 @@
       "event_type": "F00-EVT-018",
       "event_name": "compare_keep_previous",
       "function_id": "F00",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "surface",
-        "source_capsule_id",
-        "intent_id",
-        "error_code"
+        "source_capsule_id"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -401,24 +365,21 @@
       "event_type": "F01-EVT-001",
       "event_name": "intent_received",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -430,24 +391,21 @@
       "event_type": "F01-EVT-002",
       "event_name": "intent_analysis_completed",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -459,24 +417,21 @@
       "event_type": "F01-EVT-003",
       "event_name": "clarification_required",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -488,24 +443,21 @@
       "event_type": "F01-EVT-004",
       "event_name": "clarification_answered",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -517,24 +469,21 @@
       "event_type": "F01-EVT-005",
       "event_name": "visible_assumption_shown",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -546,24 +495,21 @@
       "event_type": "F01-EVT-006",
       "event_name": "visible_assumption_accepted",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -575,24 +521,21 @@
       "event_type": "F01-EVT-007",
       "event_name": "resolved_intent_ready",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -604,24 +547,21 @@
       "event_type": "F01-EVT-008",
       "event_name": "capability_coverage_resolved",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -633,24 +573,21 @@
       "event_type": "F01-EVT-009",
       "event_name": "composition_started",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -662,24 +599,21 @@
       "event_type": "F01-EVT-010",
       "event_name": "composition_succeeded",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -691,24 +625,21 @@
       "event_type": "F01-EVT-011",
       "event_name": "composition_failed",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -720,24 +651,21 @@
       "event_type": "F01-EVT-012",
       "event_name": "validation_recompose",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -750,24 +678,21 @@
       "event_type": "F01-EVT-013",
       "event_name": "intent_validated",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -779,24 +704,21 @@
       "event_type": "F01-EVT-014",
       "event_name": "provider_failure",
       "function_id": "F01",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "intent_id",
         "intent_kind",
         "policy_version",
         "prompt_version",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "model_adapter",
         "attempt_no",
         "latency_ms",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -808,18 +730,16 @@
       "event_type": "F02-EVT-001",
       "event_name": "validation_started",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -832,18 +752,16 @@
       "event_type": "F02-EVT-002",
       "event_name": "validation_passed",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -856,18 +774,16 @@
       "event_type": "F02-EVT-003",
       "event_name": "validation_rejected",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -880,18 +796,16 @@
       "event_type": "F02-EVT-004",
       "event_name": "validation_incompatible",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -904,18 +818,16 @@
       "event_type": "F02-EVT-005",
       "event_name": "resource_rejected",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -927,18 +839,16 @@
       "event_type": "F02-EVT-006",
       "event_name": "security_rejected",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -950,18 +860,16 @@
       "event_type": "F02-EVT-007",
       "event_name": "blueprint_admitted",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -973,18 +881,16 @@
       "event_type": "F02-EVT-008",
       "event_name": "trust_revoked",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -996,18 +902,16 @@
       "event_type": "F02-EVT-009",
       "event_name": "hash_integrity_failure",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
-        "validation_stage",
-        "error_code",
-        "trace_id"
+        "validation_stage"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1019,7 +923,7 @@
       "event_type": "F02-EVT-010",
       "event_name": "execution_admission_requested",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id",
@@ -1027,12 +931,10 @@
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "registry_digest",
-        "runtime_version",
-        "error_code",
-        "trace_id"
+        "runtime_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1045,7 +947,7 @@
       "event_type": "F02-EVT-011",
       "event_name": "execution_admission_allowed",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id",
@@ -1053,12 +955,10 @@
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "registry_digest",
-        "runtime_version",
-        "error_code",
-        "trace_id"
+        "runtime_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1071,7 +971,7 @@
       "event_type": "F02-EVT-012",
       "event_name": "execution_admission_denied",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id",
@@ -1079,12 +979,10 @@
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "registry_digest",
-        "runtime_version",
-        "error_code",
-        "trace_id"
+        "runtime_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1097,7 +995,7 @@
       "event_type": "F02-EVT-013",
       "event_name": "execution_admission_failed",
       "function_id": "F02",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id",
@@ -1105,12 +1003,10 @@
       ],
       "allowed_properties": [
         "content_hash",
-        "schema_version",
+        "blueprint_schema_version",
         "registry_version",
         "registry_digest",
-        "runtime_version",
-        "error_code",
-        "trace_id"
+        "runtime_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1123,18 +1019,14 @@
       "event_type": "F03-EVT-001",
       "event_name": "runtime_hydration_started",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1149,18 +1041,14 @@
       "event_type": "F03-EVT-002",
       "event_name": "runtime_ready",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1175,18 +1063,14 @@
       "event_type": "F03-EVT-003",
       "event_name": "runtime_hydration_failed",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1201,18 +1085,14 @@
       "event_type": "F03-EVT-004",
       "event_name": "action_committed",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1226,18 +1106,14 @@
       "event_type": "F03-EVT-005",
       "event_name": "action_rolled_back",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1251,18 +1127,14 @@
       "event_type": "F03-EVT-006",
       "event_name": "capability_runtime_failed",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1277,18 +1149,14 @@
       "event_type": "F03-EVT-007",
       "event_name": "node_isolated",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1302,18 +1170,14 @@
       "event_type": "F03-EVT-008",
       "event_name": "loop_guard_triggered",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1327,18 +1191,14 @@
       "event_type": "F03-EVT-009",
       "event_name": "result_evaluated",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1352,18 +1212,14 @@
       "event_type": "F03-EVT-010",
       "event_name": "runtime_fatal",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "blueprint_hash",
         "runtime_version",
         "registry_version",
-        "capability_id",
-        "error_code",
-        "trace_id",
         "runtime_status",
         "operation_status",
         "integrity_status"
@@ -1379,7 +1235,7 @@
       "event_type": "F03-EVT-011",
       "event_name": "runtime_operation_started",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
@@ -1389,7 +1245,6 @@
         "instance_session_id",
         "instance_epoch",
         "planned_checkpoint_count",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1405,7 +1260,7 @@
       "event_type": "F03-EVT-012",
       "event_name": "runtime_checkpoint_completed",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
@@ -1418,7 +1273,6 @@
         "completed_checkpoint_count",
         "planned_checkpoint_count",
         "progress_percent",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1434,7 +1288,7 @@
       "event_type": "F03-EVT-013",
       "event_name": "runtime_soft_timeout_observed",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
@@ -1445,7 +1299,6 @@
         "instance_epoch",
         "last_completed_checkpoint_id",
         "progress_percent",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1461,7 +1314,7 @@
       "event_type": "F03-EVT-014",
       "event_name": "runtime_action_timed_out",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
@@ -1470,9 +1323,7 @@
         "operation_token",
         "instance_session_id",
         "instance_epoch",
-        "error_code",
         "integrity_status",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1488,7 +1339,7 @@
       "event_type": "F03-EVT-015",
       "event_name": "stale_completion_discarded",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
@@ -1498,7 +1349,6 @@
         "instance_session_id",
         "instance_epoch",
         "discard_reason",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1514,7 +1364,7 @@
       "event_type": "F03-EVT-016",
       "event_name": "runtime_safe_state_restored",
       "function_id": "F03",
-      "schema_version": "2.0.0",
+      "schema_version": "3.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -1525,7 +1375,6 @@
         "instance_epoch",
         "safe_surface",
         "recovery_episode_id",
-        "trace_id",
         "runtime_status",
         "operation_status"
       ],
@@ -1541,18 +1390,16 @@
       "event_type": "F04-EVT-001",
       "event_name": "capability_selected",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1564,18 +1411,16 @@
       "event_type": "F04-EVT-002",
       "event_name": "capability_rejected",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1587,18 +1432,16 @@
       "event_type": "F04-EVT-003",
       "event_name": "coverage_full",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1610,18 +1453,16 @@
       "event_type": "F04-EVT-004",
       "event_name": "coverage_partial",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1633,18 +1474,16 @@
       "event_type": "F04-EVT-005",
       "event_name": "coverage_unsupported",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1656,18 +1495,16 @@
       "event_type": "F04-EVT-006",
       "event_name": "capability_gap",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1679,18 +1516,16 @@
       "event_type": "F04-EVT-007",
       "event_name": "registry_mismatch",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1702,18 +1537,16 @@
       "event_type": "F04-EVT-008",
       "event_name": "capability_runtime_failure",
       "function_id": "F04",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "capability_id",
         "capability_version",
         "coverage_status",
         "registry_version",
-        "registry_digest",
-        "error_code"
+        "registry_digest"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1726,20 +1559,16 @@
       "event_type": "F05-EVT-001",
       "event_name": "share_create_started",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1752,20 +1581,16 @@
       "event_type": "F05-EVT-002",
       "event_name": "share_created",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1778,20 +1603,16 @@
       "event_type": "F05-EVT-003",
       "event_name": "share_create_failed",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1804,20 +1625,16 @@
       "event_type": "F05-EVT-004",
       "event_name": "share_link_copied",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1830,20 +1647,16 @@
       "event_type": "F05-EVT-005",
       "event_name": "share_opened",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1856,20 +1669,16 @@
       "event_type": "F05-EVT-006",
       "event_name": "share_resolved",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1882,20 +1691,16 @@
       "event_type": "F05-EVT-007",
       "event_name": "share_restore_ready",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1908,20 +1713,16 @@
       "event_type": "F05-EVT-008",
       "event_name": "share_restore_failed",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1934,20 +1735,16 @@
       "event_type": "F05-EVT-009",
       "event_name": "shared_app_remix_opened",
       "function_id": "F05",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
-        "share_id",
-        "blueprint_hash",
         "share_mode",
         "runtime_version",
-        "schema_version",
-        "registry_version",
-        "error_code",
-        "trace_id"
+        "blueprint_schema_version",
+        "registry_version"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1961,7 +1758,7 @@
       "event_type": "F06-EVT-001",
       "event_name": "refine_opened",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
@@ -1970,11 +1767,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -1987,7 +1780,7 @@
       "event_type": "F06-EVT-002",
       "event_name": "remix_opened",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -1996,11 +1789,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2013,7 +1802,7 @@
       "event_type": "F06-EVT-003",
       "event_name": "change_submitted",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2022,11 +1811,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2038,7 +1823,7 @@
       "event_type": "F06-EVT-004",
       "event_name": "change_clarification_required",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2047,11 +1832,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2063,7 +1844,7 @@
       "event_type": "F06-EVT-005",
       "event_name": "semantic_delta_resolved",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2072,11 +1853,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2088,7 +1865,7 @@
       "event_type": "F06-EVT-006",
       "event_name": "child_blueprint_validated",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2097,11 +1874,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2113,7 +1886,7 @@
       "event_type": "F06-EVT-007",
       "event_name": "child_preview_ready",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2122,11 +1895,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2138,7 +1907,7 @@
       "event_type": "F06-EVT-008",
       "event_name": "child_accepted",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2147,11 +1916,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2163,7 +1928,7 @@
       "event_type": "F06-EVT-009",
       "event_name": "child_kept_previous",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2172,11 +1937,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2188,7 +1949,7 @@
       "event_type": "F06-EVT-010",
       "event_name": "adjust_again",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2197,11 +1958,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2213,7 +1970,7 @@
       "event_type": "F06-EVT-011",
       "event_name": "no_effective_change",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
@@ -2222,11 +1979,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2238,7 +1991,7 @@
       "event_type": "F06-EVT-012",
       "event_name": "change_failed",
       "function_id": "F06",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
@@ -2247,11 +2000,7 @@
         "relation_type",
         "source_blueprint_hash",
         "child_blueprint_hash",
-        "intent_id",
-        "share_id",
-        "coverage_status",
-        "error_code",
-        "trace_id"
+        "coverage_status"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2486,21 +2235,18 @@
       "event_type": "F16-EVT-001",
       "event_name": "semantic_mismatch_opened",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "PRODUCT_SAMPLE",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2513,21 +2259,18 @@
       "event_type": "F16-EVT-002",
       "event_name": "correction_submitted",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2540,21 +2283,18 @@
       "event_type": "F16-EVT-003",
       "event_name": "correction_clarification_required",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2567,21 +2307,18 @@
       "event_type": "F16-EVT-004",
       "event_name": "correction_delta_resolved",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2594,21 +2331,18 @@
       "event_type": "F16-EVT-005",
       "event_name": "corrected_blueprint_validated",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2620,21 +2354,18 @@
       "event_type": "F16-EVT-006",
       "event_name": "correction_replay_started",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2647,21 +2378,18 @@
       "event_type": "F16-EVT-007",
       "event_name": "correction_compare_ready",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2674,21 +2402,18 @@
       "event_type": "F16-EVT-008",
       "event_name": "correction_accepted",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2701,21 +2426,18 @@
       "event_type": "F16-EVT-009",
       "event_name": "correction_rejected",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2728,21 +2450,18 @@
       "event_type": "F16-EVT-010",
       "event_name": "correction_adjust_again",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2755,21 +2474,18 @@
       "event_type": "F16-EVT-011",
       "event_name": "correction_reverted",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2782,21 +2498,18 @@
       "event_type": "F16-EVT-012",
       "event_name": "correction_failed",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "RELIABILITY",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2809,21 +2522,18 @@
       "event_type": "F16-EVT-013",
       "event_name": "no_effective_correction",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2836,21 +2546,18 @@
       "event_type": "F16-EVT-014",
       "event_name": "comparison_limited",
       "function_id": "F16",
-      "schema_version": "1.0.0",
+      "schema_version": "2.0.0",
       "collection_class": "CORE_OUTCOME",
       "required_context": [
         "function_id"
       ],
       "allowed_properties": [
         "correction_id",
-        "intent_id",
         "base_blueprint_hash",
         "new_blueprint_hash",
         "comparison_mode",
         "correction_scope",
-        "outcome",
-        "error_code",
-        "trace_id"
+        "outcome"
       ],
       "retention_class": "RAW_90D",
       "metric_tags": [
@@ -2890,19 +2597,9 @@
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"
     },
-    "blueprint_hash": {
-      "type": "string",
-      "pattern": "^sha256:[0-9a-f]{64}$"
-    },
-    "capability_id": {
-      "type": "string",
-      "minLength": 3,
-      "maxLength": 256,
-      "pattern": "^[a-z0-9]+(?:\\\\.[a-z0-9]+)+$"
-    },
     "capability_version": {
       "type": "string",
-      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
     },
     "checkpoint_id": {
       "type": "string",
@@ -2967,13 +2664,6 @@
         "HARD_DEADLINE_ELAPSED"
       ]
     },
-    "error_code": {
-      "type": "string",
-      "minLength": 3,
-      "maxLength": 64,
-      "pattern": "^(?:F\\\\d{2}-ERR-\\\\d{3}|[A-Z][A-Z0-9_-]{2,63})$",
-      "x-semantic-rule": "must be a canonical source Function error ID or registered shared API error ID"
-    },
     "instance_epoch": {
       "type": "integer",
       "minimum": 0,
@@ -2993,10 +2683,6 @@
         "ASSURANCE_DEGRADED",
         "CORRUPTED"
       ]
-    },
-    "intent_id": {
-      "type": "string",
-      "format": "uuid"
     },
     "intent_kind": {
       "type": "string",
@@ -3089,7 +2775,7 @@
     },
     "policy_id": {
       "type": "string",
-      "pattern": "^F12-POL-\\\\d{3}$"
+      "pattern": "^F12-POL-\\d{3}$"
     },
     "policy_version": {
       "type": "string",
@@ -3139,7 +2825,7 @@
     },
     "registry_version": {
       "type": "string",
-      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
     },
     "relation_type": {
       "type": "string",
@@ -3161,7 +2847,7 @@
     },
     "runtime_version": {
       "type": "string",
-      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
     },
     "safe_surface": {
       "type": "string",
@@ -3175,10 +2861,6 @@
         "NONE_FATAL"
       ]
     },
-    "schema_version": {
-      "type": "string",
-      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?(?:\\\\+[0-9A-Za-z-]+(?:\\\\.[0-9A-Za-z-]+)*)?$"
-    },
     "severity": {
       "type": "string",
       "enum": [
@@ -3188,11 +2870,6 @@
         "TERMINAL",
         "CRITICAL"
       ]
-    },
-    "share_id": {
-      "type": "string",
-      "format": "uuid",
-      "x-uuid-version": 4
     },
     "share_mode": {
       "type": "string",
@@ -3212,11 +2889,11 @@
     },
     "source_error_code": {
       "type": "string",
-      "pattern": "^F\\\\d{2}-ERR-\\\\d{3}$"
+      "pattern": "^F\\d{2}-ERR-\\d{3}$"
     },
     "source_function_id": {
       "type": "string",
-      "pattern": "^F\\\\d{2}$"
+      "pattern": "^F\\d{2}$"
     },
     "surface": {
       "type": "string",
@@ -3226,10 +2903,6 @@
         "APP",
         "COMPARE"
       ]
-    },
-    "trace_id": {
-      "type": "string",
-      "pattern": "^(?!0{32}$)[0-9a-f]{32}$"
     },
     "validation_stage": {
       "type": "string",
@@ -3248,6 +2921,10 @@
         "V12",
         "TRUST"
       ]
+    },
+    "blueprint_schema_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
     }
   },
   "event_property_constraints": {
@@ -3258,7 +2935,7 @@
           "ASSURANCE_DEGRADED",
           "CORRUPTED"
         ],
-        "x-required-when": "error_code = F03-ERR-018"
+        "x-required-when-envelope": "error_code = F03-ERR-018"
       }
     },
     "F03-EVT-011": {
@@ -3304,6 +2981,97 @@
         ]
       },
       "x-invariant": "integrity failure is not encoded as discard_reason; non-PROVEN integrity routes to F03-ERR-018"
+    }
+  },
+  "reserved_envelope_fields": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "received_at",
+    "anonymous_id",
+    "session_id",
+    "function_id",
+    "intent_id",
+    "blueprint_hash",
+    "share_id",
+    "capability_id",
+    "error_code",
+    "policy_rule_id",
+    "trace_id"
+  ],
+  "envelope_field_schemas": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "x-uuid-version": 4
+    },
+    "event_type": {
+      "type": "string",
+      "pattern": "^F[0-9]{2}-EVT-[0-9]{3}$"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time",
+      "x-server-added": true
+    },
+    "anonymous_id": {
+      "type": "string",
+      "format": "uuid",
+      "x-uuid-version": 4
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "x-uuid-version": 4
+    },
+    "function_id": {
+      "type": "string",
+      "pattern": "^F[0-9]{2}$"
+    },
+    "intent_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "blueprint_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "share_id": {
+      "type": "string",
+      "format": "uuid",
+      "x-uuid-version": 4
+    },
+    "capability_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 256,
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+    },
+    "error_code": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 64,
+      "pattern": "^(?:F\\d{2}-ERR-\\d{3}|[A-Z][A-Z0-9_-]{2,63})$",
+      "x-semantic-rule": "must be a canonical source Function error ID or registered shared API error ID"
+    },
+    "policy_rule_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^(?!0{32}$)[0-9a-f]{32}$"
     }
   }
 }
