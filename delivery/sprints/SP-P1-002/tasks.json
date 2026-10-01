@@ -61,9 +61,7 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": [
-        "BF-023 regression evidence proves canonical Evidence intake accepts UUID v4 and rejects UUID v1/v3/v5 for identity/share envelope fields."
-      ]
+      "completion_evidence": []
     },
     {
       "task_id": "T002",
@@ -132,9 +130,7 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": [
-        "Contract/regression evidence covers candidate_digest for valid and invalid candidate payloads and staged nullable compiler_run_id persistence."
-      ]
+      "completion_evidence": []
     },
     {
       "task_id": "T003",
@@ -387,9 +383,7 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": [
-        "Evidence tests prove F01 product_event emission uses only the BS-P1-004 allowed bounded dimensions and does not duplicate compiler economics/policy semantic truth."
-      ]
+      "completion_evidence": []
     },
     {
       "task_id": "T007",
@@ -511,9 +505,7 @@
       "blocked_by": [
         "T007"
       ],
-      "completion_evidence": [
-        "Retention tests prove received_at cutoff, aggregate survival after raw deletion, idempotent maintenance, and watermark-guarded fail-closed deletion."
-      ]
+      "completion_evidence": []
     },
     {
       "task_id": "T009",
