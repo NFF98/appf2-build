@@ -11,7 +11,9 @@
   "evidence": [
     "F07-RQ-008 event time semantics",
     "F07-POL-009 90-day retention",
-    "A0 found no cutoff-anchor rule"
+    "A0 found no cutoff-anchor rule",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: F07 raw retention cutoff is now first durable received_at; occurred_at and duplicate retries cannot shift the 90-day privacy cutoff.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b: exact 11-file A0/BF14-23 allowlist, zero unexpected projected files."
   ],
   "attempts": [
     {
@@ -19,6 +21,12 @@
       "strategy": "A0_RETENTION_CUTOFF_AUDIT",
       "result": "FAILED",
       "evidence": "No canonical cutoff timestamp is defined."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "PASSED_WORKING_BASELINE_PENDING",
+      "evidence": "F07 raw retention cutoff is now first durable received_at; occurred_at and duplicate retries cannot shift the 90-day privacy cutoff."
     }
   ],
   "affected_contracts": [
@@ -31,5 +39,12 @@
     "F07-AC-027"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-004",
+  "resolution": {
+    "status": "WORKING_REMEDIATED_BASELINE_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN until Human-approved replacement BS-P1-004 freezes the remediated contract."
+  }
 }
