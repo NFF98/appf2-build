@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-004",
-  "implementation_enabled": false,
-  "reason": "Human-approved T001 closure complete; pause execution before any separate T002 activation decision."
+  "implementation_enabled": true,
+  "reason": "T002 Activation Review PASS under locked BS-P1-004; resume SP-P1-002 execution for Blueprint validation core and admitted-content persistence. T002 is the sole active implementation Task."
 }
