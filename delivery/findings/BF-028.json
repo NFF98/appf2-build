@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-028",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -35,6 +35,12 @@
       "strategy": "KEEP_STALE_FIXTURES_GREEN_BY_ACCEPTING_BS_P1_003_SHAPES",
       "result": "NOT_EXECUTED_FORBIDDEN",
       "evidence": "Would loosen the locked BS-P1-004 Registry v3 contract (dual schema_version compatibility path is explicitly forbidden)."
+    },
+    {
+      "attempt_id": "A4",
+      "strategy": "EXACT_TASK_LEVEL_BASELINE_FIXTURE_REBIND_AUTHORIZATION_WITH_FUTURE_DIFF_PROOF",
+      "result": "PASSED",
+      "evidence": "PR #122 merged as ff2d49e4538ca6c9a6e36e41d13cf204ccd4df7f. Sprint/Test Integrity gates now validate exact BASELINE_FIXTURE_REBIND authorizations by Test ID + exact test file + direct from/to Build Spec without changing Acceptance ownership. Governance Attack Dry-run positive/negative cases passed. Temporary draft PR #123 then changed the actual tests/contract/evidence-intake.contract.test.ts, tests/api/evidence-batch.api.test.ts, and tests/regression/evidence-clock-invalid.regression.test.ts from a temporary T001-reactivated BASE_SHA; dedicated `T001 future-diff test-integrity proof` passed. PR #123 was closed NEVER MERGE and its branch reset to main."
     }
   ],
   "requested_planning_action": [
