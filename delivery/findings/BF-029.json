@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-029",
   "classification": "BUILD_BLOCKER",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -29,6 +29,12 @@
       "strategy": "EDIT_HARNESS_OR_LINT_CONFIG_FROM_T001",
       "result": "NOT_EXECUTED_FORBIDDEN",
       "evidence": "harness/ and lint configuration are outside T001 allowed_write_paths and governance-only during an ACTIVE Sprint; suppression would be a blanket lint disable."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "DIRECT_REPOSITORY_LINT_PROOF_AND_UNCONDITIONAL_CI_LINT",
+      "result": "PASSED",
+      "evidence": "PR #122 merged as ff2d49e4538ca6c9a6e36e41d13cf204ccd4df7f after completing behavior-preserving lint refactors and adding unconditional `Repository lint` to CI after npm ci. On merge-to-main CI job 110399011697, `npm run check:lint` executed `eslint .` and completed successfully before Product CI reported HOLD. This is direct lint proof, not an indirect Product CI result."
     }
   ],
   "requested_planning_action": [
