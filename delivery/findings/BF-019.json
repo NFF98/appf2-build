@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-019",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "F02 candidate_digest must have one deterministic representation so V01 can identify malformed or untrusted candidates consistently and validation_run can persist that identity without implementation guesswork.",
+  "actual": "F02 requires candidate_digest before schema validation and Data Model requires validation_run.candidate_digest, but neither owner defines the source bytes, digest algorithm, or canonical string representation. Invalid JSON cannot safely reuse admitted Blueprint canonicalization.",
+  "evidence": [
+    "F02 V01 Intake / JSON Parse",
+    "F02 Validation Report Contract",
+    "DATA-MODEL-DETAILED validation_run.candidate_digest",
+    "A0 found no exact candidate_digest representation rule"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_CANDIDATE_DIGEST_CONTRACT_AUDIT",
+      "result": "FAILED",
+      "evidence": "A deterministic candidate identity is required by V01 and persistence but its representation is undefined."
+    }
+  ],
+  "affected_contracts": [
+    "F02 V01",
+    "F02 ValidationReport candidate_digest",
+    "validation_run.candidate_digest"
+  ],
+  "affected_acceptance": [
+    "F02-AC-004",
+    "F02-AC-008",
+    "F02-AC-019"
+  ],
+  "contract_affecting": false,
+  "delta_id": null
+}
