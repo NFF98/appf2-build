@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-024",
+  "classification": "BUILD_BLOCKER",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T001",
+  "expected": "Activation Gate must preserve truthful Design Delta Working provenance while also validating a Human-approved scope-clean derived freeze source used by the locked replacement baseline.",
+  "actual": "BS-P1-004 correctly freezes derived Design commit 91894ae8..., while BD-003 and BD-004 truthfully retain their original upstream Working commits 8ca4625... and c8325c60.... The current activation validator requires every Delta upstream_working_commit to equal the baseline source commit, so a future BS-P1-004 Activation would fail unless provenance were falsified.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-004/manifest.json :: source_working_commit=91894ae8bd6241bb5ee1897180db72e9e578d1bf",
+    "delivery/deltas/BD-003.json :: upstream_working_commit=8ca4625ab71cd8884120ad1fe86d78f97cb19523",
+    "delivery/deltas/BD-004.json :: upstream_working_commit=c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "harness/scripts/validate-activation.mjs :: legacy exact equality check d.upstream_working_commit === activation source",
+    "A0 scope-clean Freeze provenance audit proves 91894ae8... is the Human-approved derived freeze source."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "REWRITE_DELTA_UPSTREAM_WORKING_COMMIT_TO_DERIVED_FREEZE_SOURCE",
+      "result": "NOT_EXECUTED_FORBIDDEN",
+      "evidence": "Would falsify historical Working provenance and violate governance truthfulness."
+    }
+  ],
+  "affected_contracts": [
+    "Build activation provenance governance"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}
