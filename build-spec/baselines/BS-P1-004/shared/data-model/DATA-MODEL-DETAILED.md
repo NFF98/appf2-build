@@ -205,8 +205,8 @@ erDiagram
 | Field | Type | Required | Rule |
 |---|---|---:|---|
 | validation_run_id | uuid | YES | PK |
-| compiler_run_id | uuid | NO | FK；restore/import validation 可無 compiler run |
-| candidate_digest | text | YES | candidate identity / digest |
+| compiler_run_id | uuid | NO | logical ref → compiler_run；SP2 staged migration 在 compiler_run table 尚未落地前只建 nullable uuid column、不先加 physical FK；restore/import validation 可為 NULL |
+| candidate_digest | text | YES | `sha256:<64 lowercase hex>`；SHA-256 of exact F02 candidate_payload_bytes before parse |
 | blueprint_hash | text | NO | 只有成功 admission 才可指向 durable validated content |
 | schema_version | text | YES | |
 | registry_version | text | YES | |
@@ -221,6 +221,9 @@ erDiagram
 - `PASSED` 才能形成 / 引用 `blueprint_content`。
 - REJECTED candidate body 不預設 durable 保存；只留必要 digest / error evidence。
 - validation report 的正式 shape 由 F02 定義。
+- **SP2 staged FK rule**：若 `compiler_run` physical table 尚未存在，`validation_run.compiler_run_id` 先建立為 nullable uuid column，值只在有可信 upstream compiler_run identity 時寫入；不得建立假 row / placeholder compiler_run。
+- 當 F01 compiler persistence（BL-P1-010 / BL-P1-011 所屬實作）落地後，必須用後續 migration 對既有非 NULL 值完成 integrity validation，再加 `validation_run.compiler_run_id → compiler_run.compiler_run_id` physical FK。
+- RESTORE / IMPORT 等合法無 compiler run 路徑維持 NULL；staged FK 不改變 logical ownership，只解開 migration ordering。
 
 ---
 
@@ -385,36 +388,71 @@ F08 / F10 若需要 Blueprint family / ownership，可新增 metadata layer，�
 
 | Field | Type | Required | Rule |
 |---|---|---:|---|
-| event_id | uuid | YES | PK |
+| event_id | uuid | YES | PK；canonical UUID v4 |
 | event_type | text | YES | Fxx-EVT-* catalog 定義 |
 | occurred_at | timestamptz | YES | client occurrence time |
-| received_at | timestamptz | YES | server intake time |
-| anonymous_id | uuid | NO | |
-| session_id | text | NO | client session opaque ID |
+| received_at | timestamptz | YES | server intake time；first durable ingest time |
+| anonymous_id | uuid | NO | canonical UUID v4 |
+| session_id | text | NO | canonical UUID v4 string；browser-session evidence context |
 | function_id | text | YES | F00 / F01 / ... |
-| intent_id | uuid | NO | |
-| blueprint_hash | text | NO | |
-| share_id | uuid | NO | |
-| capability_id | text | NO | |
-| error_code | text | NO | |
-| policy_rule_id | text | NO | |
-| trace_id | text | NO | |
-| properties | jsonb | NO | bounded, allowlisted properties |
-| schema_version | text | YES | event schema version |
+| intent_id | uuid | NO | opaque Intent identity |
+| blueprint_hash | text | NO | `sha256:<64 lowercase hex>` |
+| share_id | uuid | NO | canonical UUID v4 |
+| capability_id | text | NO | canonical F04 capability ID grammar |
+| error_code | text | NO | canonical source/shared API error ID |
+| policy_rule_id | text | NO | bounded policy rule ID |
+| trace_id | text | NO | canonical trace ID |
+| properties | jsonb | NO | bounded, allowlisted properties；不得重複 reserved envelope field names |
+| schema_version | text | YES | Evidence event schema version |
 
 規則：
 
 - 不記每次 render / click / timer tick。
-- `properties` 不得成為任意 user-content dump。
+- `properties` 不得成為任意 user-content dump，也不得包含 F07 `reserved_envelope_fields[]`；event-level identity / error / trace 只保存 envelope column 一份。
 - F07 定義 batching、retry、dedupe、event catalog、retention。
 - Function-specific evidence 必須用 stable Event ID / event_type。
 - `occurred_at` 與 `received_at` 是 durable immutable time pair；第一次成功 INSERT 的 `received_at` 是該 event canonical ingest time，duplicate event_id retry不得改寫。
 - BF-011 canonical aggregate time不新增 DB column：`effective_event_at = received_at` when `occurred_at > received_at + 10 minutes`；otherwise `effective_event_at = occurred_at`。Exactly +10 minutes仍使用 `occurred_at`。
+- **Raw retention cutoff 只使用 first durable `received_at`**：eligible when `received_at < maintenance_now - 90 days`；client `occurred_at`、clock-invalid classification、duplicate retry 都不得延長或縮短 raw retention。
+- 90-day deletion前，F07 `EvidenceRetentionMaintenance` 必須先把需要保留的 bounded non-identifying counts/rates materialize 到 §6.11 `evidence_daily_aggregate`，再依 aggregate watermark fail-closed deletion。
 - `F07-ERR-013 EVENT_CLOCK_INVALID` 是 ingestion diagnostic，不得覆蓋 `product_event.error_code`；該欄仍保留 source Function / event本身的 canonical error semantics。
 
 ---
 
-## 6.11 idempotency_operation
+## 6.11 evidence_daily_aggregate
+
+目的：
+
+> 保存 raw `product_event` 90-day deletion 後仍需保留的 **non-identifying bounded aggregate truth**；不是第二個 raw event store，也不是 BL-P1-034 final cross-function Product metrics model。
+
+| Field | Type | Required | Rule |
+|---|---|---:|---|
+| aggregate_id | uuid | YES | PK；aggregate row identity，非 User / session identity |
+| bucket_date | date | YES | UTC day bucket；以 F07 `effective_event_at` 歸桶 |
+| metric_key | text | YES | F07 allowlisted aggregate key；不得任意 free-form |
+| function_id | text | NO | coarse Function dimension |
+| event_type | text | NO | registered Fxx-EVT-*；需要 event-level count 時使用 |
+| collection_class | text | NO | CORE_OUTCOME / RELIABILITY / PRODUCT_SAMPLE / DEBUG_ONLY |
+| numerator_count | bigint | YES | >= 0 |
+| denominator_count | bigint | NO | >= 0；rate 類 metric 才使用 |
+| policy_version | text | YES | aggregate policy version |
+| materialized_through_received_at | timestamptz | YES | 此 aggregate 已涵蓋的 raw ingest watermark |
+| updated_at | timestamptz | YES | maintenance metadata |
+
+Canonical rules：
+
+1. 不得包含 `event_id / anonymous_id / session_id / intent_id / share_id / trace_id`。
+2. 不得保存 free-form content、raw properties dump、raw Prompt / Result / Runtime state。
+3. aggregate key / dimensions 必須是 F07 明確 allowlist；Phase 1 最低支援 event count 與 Evidence pipeline quality counters/rates。
+4. rate = `numerator_count / denominator_count`；denominator 為 0 時不得假造 percentage。
+5. logical unique key = `bucket_date + metric_key + normalized(function_id?) + normalized(event_type?) + normalized(collection_class?) + policy_version`；nullable dimension 必須用 DB-level deterministic normalization / unique index表達，不能靠 application best effort。
+6. materialization 必須 idempotent；相同 logical unique key 重跑以 deterministic upsert / recompute 寫入，不得累加造成 double count。
+7. raw row deletion前必須先 materialize / verify 對應 aggregate watermark；aggregate failure 時 fail closed，不刪除尚未安全聚合的 eligible raw rows。
+8. 本表是 F07 retention/evidence quality owner；不得藉此提前定義 BL-P1-034 final cross-function Product metric semantics。
+
+---
+
+## 6.12 idempotency_operation
 
 目的：
 
@@ -593,7 +631,7 @@ compiler_run.intent_id
 → intent_record.intent_id
 
 validation_run.compiler_run_id
-→ compiler_run.compiler_run_id (nullable)
+→ compiler_run.compiler_run_id (nullable logical ref；SP2 可 staged physical FK，見 §6.4)
 
 blueprint_content.admitted_by_validation_run_id
 → validation_run.validation_run_id
@@ -658,6 +696,10 @@ product_event(anonymous_id, occurred_at)
 product_event(blueprint_hash, occurred_at)
 product_event(event_type, occurred_at)
 product_event(trace_id)
+
+evidence_daily_aggregate(bucket_date, metric_key)
+evidence_daily_aggregate(function_id, bucket_date)
+evidence_daily_aggregate(event_type, bucket_date)
 ~~~
 
 不要 Phase 1 為未證明 access pattern 建大量 indexes。
@@ -846,7 +888,7 @@ Future deferred：
 
 Shared decisions已閉合：
 - Intent durable lifecycle + `intent_version`：本文 §6.2。
-- Mutation idempotency persistence：本文 §6.11，PostgreSQL，24h。
+- Mutation idempotency persistence：本文 §6.12，PostgreSQL，24h。
 - raw_intent / result_snapshot / Browser draft retention：本文 §13 + F07 privacy matrix。
 
 > Function-owned detail若改變跨 Function durable invariant，仍必須回本文 Review；不得由 appf2-build自行發明。
