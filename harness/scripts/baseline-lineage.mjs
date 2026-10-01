@@ -37,16 +37,20 @@ export const acceptanceRegistryMap=(root,baselineId)=>{
 export const acceptanceSemanticsEqual=(a,b)=>
   JSON.stringify(stable(a))===JSON.stringify(stable(b));
 
-export const canPreserveCompletedBaseline=(root,legacyBaselineId,currentBaselineId,acceptanceLinks)=>{
-  if(legacyBaselineId===currentBaselineId) return true;
-  if(!isBaselineAncestor(root,legacyBaselineId,currentBaselineId)) return false;
+export const acceptanceSemanticDriftIds=(root,legacyBaselineId,currentBaselineId,acceptanceLinks)=>{
+  if(legacyBaselineId===currentBaselineId) return [];
+  if(!isBaselineAncestor(root,legacyBaselineId,currentBaselineId)) return (acceptanceLinks||[]).map(x=>x.acceptance_id);
   const oldMap=acceptanceRegistryMap(root,legacyBaselineId);
   const newMap=acceptanceRegistryMap(root,currentBaselineId);
+  const drift=[];
   for(const link of acceptanceLinks||[]){
     const oldEntry=oldMap.get(link.acceptance_id), newEntry=newMap.get(link.acceptance_id);
-    if(!oldEntry || !newEntry) return false;
-    if(oldEntry.test_id!==link.test_id || newEntry.test_id!==link.test_id) return false;
-    if(!acceptanceSemanticsEqual(oldEntry,newEntry)) return false;
+    if(!oldEntry || !newEntry || oldEntry.test_id!==link.test_id || newEntry.test_id!==link.test_id || !acceptanceSemanticsEqual(oldEntry,newEntry)){
+      drift.push(link.acceptance_id);
+    }
   }
-  return true;
+  return drift;
 };
+
+export const canPreserveCompletedBaseline=(root,legacyBaselineId,currentBaselineId,acceptanceLinks)=>
+  acceptanceSemanticDriftIds(root,legacyBaselineId,currentBaselineId,acceptanceLinks).length===0;

@@ -23,6 +23,15 @@ const getDelta=id=>{
   const rel="delivery/deltas/"+id+".json";
   return exists(rel)?readJson(rel):null;
 };
+const deltaMatchesActivationSource=(d,sourceCommit)=>{
+  if(d.upstream_working_commit===sourceCommit) return true;
+  const f=d.freeze_source;
+  if(!f || f.type!=="SCOPE_CLEAN_DERIVED") return false;
+  if(f.commit!==sourceCommit) return false;
+  if(!/^[0-9a-f]{40}$/.test(f.base_commit||"")) return false;
+  if(typeof f.provenance_audit!=="string" || !f.provenance_audit.startsWith("delivery/audits/") || !exists(f.provenance_audit)) return false;
+  return /^[0-9a-f]{40}$/.test(d.upstream_working_commit||"") && d.upstream_working_commit!==sourceCommit;
+};
 const showJsonAt=(base,rel)=>{
   try{return JSON.parse(execFileSync("git",["show",base+":"+rel],{encoding:"utf8"}));}
   catch{return null;}
@@ -97,7 +106,7 @@ for(const file of activationFiles){
       if(!["APPROVED","IMPLEMENTING","VERIFIED","CLOSED"].includes(d.status)) errors.push(id+" activation Delta "+did+" is not approved");
       if(d.user_decision?.status!=="APPROVED" || !d.user_decision?.decision_ref) errors.push(id+" activation Delta "+did+" lacks explicit User approval");
       if(d.affected_build_spec!==a.previous_baseline) errors.push(id+" activation Delta "+did+" affected_build_spec mismatch");
-      if(d.upstream_working_commit!==a.source_working_commit) errors.push(id+" activation Delta "+did+" upstream Working commit mismatch");
+      if(!deltaMatchesActivationSource(d,a.source_working_commit)) errors.push(id+" activation Delta "+did+" source provenance does not match activation source");
       if(d.replacement_build_spec_required!==true) errors.push(id+" activation Delta "+did+" must require replacement Build Spec");
       if(d.replacement_build_spec && d.replacement_build_spec!==id) errors.push(id+" activation Delta "+did+" replacement_build_spec mismatch");
     }

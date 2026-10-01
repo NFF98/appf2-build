@@ -38,5 +38,11 @@
     "F04-AC-017/018/019 semantics and Acceptance/Test mapping unchanged.",
     "Replacement projection-scope audit BLOCKED: 11 projected outputs differ from BS-P1-003; only F04, F07, and evidence-event-registry are owned by BF-014. Eight additional projected outputs belong to PFR/F19/future-compatibility work and must not be silently frozen under BD-003.",
     "Human approved BS-P1-004 Build Freeze on 2026-10-01; PR #113 freezes scope-clean Design source 91894ae8bd6241bb5ee1897180db72e9e578d1bf, supersedes BS-P1-003, and keeps CURRENT on BS-P1-003/HOLD until separate activation."
-  ]
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "91894ae8bd6241bb5ee1897180db72e9e578d1bf",
+    "base_commit": "3818926b82ae2c5edaf9d6115fda3d1505757781",
+    "provenance_audit": "delivery/audits/SP-P1-002-A0-PHASE2-REMEDIATION.md"
+  }
 }

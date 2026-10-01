@@ -13,7 +13,8 @@
     "F05-RQ-001",
     "src/platform/identity/browser-identity.ts UUID_V4_PATTERN",
     "src/platform/evidence/evidence-validator.ts UUID_PATTERN",
-    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2 and scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf both lock the Evidence envelope UUID v4 contract."
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2 and scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf both lock the Evidence envelope UUID v4 contract.",
+    "BS-P1-004 F07-AC-008 now explicitly covers canonical envelope identifier / UUID-v4 and reserved-envelope separation, so BF-023 must be revalidated under this Acceptance during T001."
   ],
   "attempts": [
     {
@@ -36,7 +37,8 @@
   ],
   "affected_acceptance": [
     "F07-AC-002",
-    "F07-AC-003"
+    "F07-AC-003",
+    "F07-AC-008"
   ],
   "contract_affecting": false,
   "delta_id": null
