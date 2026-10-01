@@ -48,7 +48,11 @@
     "appf2-design PR #8 merged the approved F02/F04 machine-contract remediation; Working main was normalized at 3633198a22a4393be0b803c313085faefa873dc8.",
     "Scope-clean freeze source abd91f50fa520a4ecd047207da7e2a804762e415 is derived directly from BS-P1-004 source 91894ae8bd6241bb5ee1897180db72e9e578d1bf.",
     "Compare 91894ae...→abd91f50... changes exactly F02-BLUEPRINT-VALIDATION.md and F04-CAPABILITY-REGISTRY.md; Shame Book and unrelated Working drift are excluded.",
-    "T002 remains BLOCKED and implementation remains HOLD. BS-P1-005 requires a separate Human Build Freeze approval before it can become LOCKED."
+    "T002 remains BLOCKED and implementation remains HOLD. BS-P1-005 requires a separate Human Build Freeze approval before it can become LOCKED.",
+    "Human-approved BS-P1-005 Build Freeze merged as a8ab9bd7c59a769bb61f1e03965b6a34942d3cf8; immutable baseline is LOCKED and supersedes BS-P1-004.",
+    "SHAME-017 future-diff direct proof PR #134 head 8646dab058c146a6f089d1393e3ac41b25c3a82e: change-scope, active-task test-integrity and full T002 Product CI PASS; proof PR closed without merge.",
+    "BF-032/BF-033 shared activation-lineage remediation merged as 436f7a35bc63451cfe9d7ad12bf6cbb4c4bae75c; Governance/CI/Attack/CodeQL PASS and attack dry-run observed 90/90 expected outcomes.",
+    "SP-P1-002 BS-P1-005 Rebind + T002 Activation Review recorded at delivery/audits/SP-P1-002-BS-P1-005-REBIND-ACTIVATION-REVIEW.md with result PASS / READY FOR HUMAN ACTIVATION; CURRENT remains HOLD pending explicit Human Activation."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
