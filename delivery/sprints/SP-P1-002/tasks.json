@@ -437,7 +437,7 @@
         "BL-P1-033"
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
-      "status": "PLANNED",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
