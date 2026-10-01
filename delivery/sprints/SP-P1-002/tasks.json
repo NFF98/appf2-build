@@ -63,7 +63,7 @@
         "BL-P1-005"
       ],
       "title": "Implement Blueprint validation core and admitted-content persistence",
-      "status": "PLANNED",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Implement Candidate Blueprint top-level/schema/reference/graph validation for F02-AC-004 through F02-AC-008.",
@@ -316,7 +316,7 @@
         "BL-P1-008"
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
-      "status": "PLANNED",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-003",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
