@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-017",
   "classification": "BUILD_BLOCKER",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -14,7 +14,8 @@
     "SP-P1-002 T006 scope/write paths",
     "Backlog BL-P1-010 and BL-P1-011 are later queued work",
     "Current migration creates only anonymous_identity and product_event",
-    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf.",
+    "Human approved BS-P1-004 Build Freeze on 2026-10-01; PR #113 locks scope-clean Design source 91894ae8bd6241bb5ee1897180db72e9e578d1bf and supersedes BS-P1-003."
   ],
   "attempts": [
     {
@@ -28,6 +29,12 @@
       "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
       "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
       "evidence": "Working Data Model now defines staged nullable compiler_run_id semantics so validation_run can exist before compiler persistence, with FK added only when compiler_run exists."
+    },
+    {
+      "attempt_id": "FREEZE-BF-017",
+      "strategy": "HUMAN_APPROVED_BS_P1_004_REPLACEMENT_FREEZE",
+      "result": "PASSED",
+      "evidence": "BS-P1-004 immutable candidate contains the verified A0 remediation and canonical hashes; replacement Freeze resolves the stale BS-P1-003 contract blocker."
     }
   ],
   "affected_contracts": [
