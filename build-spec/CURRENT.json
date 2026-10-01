@@ -2,5 +2,5 @@
   "schema_version": 1,
   "active_baseline": "BS-P1-004",
   "implementation_enabled": false,
-  "reason": "SP-P1-002 execution paused for BF-028 / BF-029 governance remediation. BS-P1-004 remains the active locked baseline; Product implementation is disabled until direct-proof remediation and T001 reactivation review pass."
+  "reason": "BF-028 / BF-029 governance remediation is directly verified on main. BS-P1-004 remains locked and implementation stays disabled pending SP-P1-002 / T001 Reactivation Review."
 }
