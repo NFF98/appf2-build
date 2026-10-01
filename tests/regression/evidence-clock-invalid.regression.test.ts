@@ -87,7 +87,7 @@ function envelope(index: number, occurredAt: string): Record<string, unknown> {
   return {
     event_id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
     event_type: "F05-EVT-007",
-    schema_version: "1.0.0",
+    schema_version: "2.0.0",
     occurred_at: occurredAt,
     anonymous_id: "423e4567-e89b-42d3-a456-426614174000",
     session_id: "623e4567-e89b-42d3-a456-426614174000",

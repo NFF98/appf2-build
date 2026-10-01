@@ -82,7 +82,7 @@ export function shareOpenEvent(index: number): EvidenceEventInput {
   return {
     event_id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
     event_type: "F05-EVT-007",
-    schema_version: "1.0.0",
+    schema_version: "2.0.0",
     occurred_at: "2026-09-27T01:23:45.000Z",
     anonymous_id: ANONYMOUS_ID,
     session_id: SESSION_ID,
