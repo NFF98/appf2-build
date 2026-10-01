@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-033",
+  "classification": "BUILD_BLOCKER",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-005",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "A replacement Build Spec may retain inherited approved Design Delta provenance from its predecessor while adding a new delta for the current rebaseline. Activation validation must require previous-baseline ownership/provenance only for deltas newly introduced by the replacement baseline, while verifying inherited delta IDs are genuinely inherited from the predecessor.",
+  "actual": "validate-activation.mjs requires every approved_delta_id in the new manifest/activation to have affected_build_spec equal the immediate previous baseline and to match the new activation source. BS-P1-005 correctly retains inherited BD-003/BD-004 provenance from BS-P1-004 and adds BD-005 for the BS-P1-004→005 change, so the current validator would falsely reject the inherited deltas.",
+  "evidence": [
+    "BS-P1-004 manifest approved_delta_ids = [BD-003, BD-004].",
+    "BS-P1-005 manifest approved_delta_ids = [BD-003, BD-004, BD-005].",
+    "BD-003/BD-004 describe the earlier BS-P1-003→BS-P1-004 remediation; BD-005 is the only new delta affecting BS-P1-004.",
+    "harness/scripts/validate-activation.mjs currently applies affected_build_spec/source provenance checks indiscriminately to every activation delta."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "DROP_INHERITED_DELTA_PROVENANCE_OR_REWRITE_BD_003_BD_004_TO_BS_P1_004",
+      "result": "REJECTED_FALSE_PROVENANCE",
+      "evidence": "Dropping or rewriting inherited deltas would falsify the lineage of semantics already incorporated in BS-P1-004."
+    }
+  ],
+  "requested_planning_action": [
+    "Validate inherited delta IDs against the immediate predecessor manifest and require them to remain a subset carried forward unchanged.",
+    "Apply immediate previous-baseline affected_build_spec and current-source provenance checks only to delta IDs newly introduced in the replacement baseline.",
+    "Add attack cases for valid cumulative-delta rebaseline and forged inherited delta injection."
+  ],
+  "affected_contracts": [
+    "Build governance rebaseline activation delta provenance"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": false,
+  "delta_id": null
+}
