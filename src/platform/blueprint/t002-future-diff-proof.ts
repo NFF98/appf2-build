@@ -1,1 +1,1 @@
-export const t002BlueprintFutureDiffProof = true;
+export const t002BlueprintFutureDiffProof = "blueprint-scope" as const;
