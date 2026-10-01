@@ -8,11 +8,13 @@
         "BL-P1-003"
       ],
       "title": "Implement Registry evidence and traceability",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-003",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Emit traceable Registry evidence for capability selected/rejected/gap/mismatch outcomes.",
-        "Carry capability_version and registry_version in Registry evidence without requiring raw user intent."
+        "Carry capability_version and registry_version in Registry evidence without requiring raw user intent.",
+        "Adopt BS-P1-004 Evidence Registry v3 envelope/property ownership rules and canonical Capability ID/version/digest representation.",
+        "Close BF-023 by making canonical Evidence intake reject non-UUID-v4 event_id / anonymous_id / session_id / share_id values."
       ],
       "non_scope": [
         "Do not change Capability Coverage product semantics.",
@@ -55,7 +57,9 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "BF-023 regression evidence proves canonical Evidence intake accepts UUID v4 and rejects UUID v1/v3/v5 for identity/share envelope fields."
+      ]
     },
     {
       "task_id": "T002",
@@ -63,12 +67,14 @@
         "BL-P1-005"
       ],
       "title": "Implement Blueprint validation core and admitted-content persistence",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-003",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Implement Candidate Blueprint top-level/schema/reference/graph validation for F02-AC-004 through F02-AC-008.",
         "Admit only valid candidates and persist immutable blueprint_content linked to the successful validation run.",
-        "Add the Phase 1 database migration required for validation_run / blueprint_content persistence under the locked BS-P1-003 data contract."
+        "Add the Phase 1 database migration required for validation_run / blueprint_content persistence under the locked BS-P1-003 data contract.",
+        "Implement BS-P1-004 candidate_digest exactly as SHA-256 of the exact UTF-8 candidate payload bytes before parse, encoded sha256:<64 lowercase hex>.",
+        "Implement staged nullable validation_run.compiler_run_id semantics; do not create a compiler_run FK until compiler persistence exists."
       ],
       "non_scope": [
         "Do not implement arbitrary Compiler behavior.",
@@ -122,7 +128,9 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "Contract/regression evidence covers candidate_digest for valid and invalid candidate payloads and staged nullable compiler_run_id persistence."
+      ]
     },
     {
       "task_id": "T003",
@@ -131,7 +139,7 @@
       ],
       "title": "Enforce Blueprint execution safety, hard ceilings and trust anti-bypass",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Reject arbitrary executable code, eval/dynamic import paths and hard-ceiling violations before Runtime.",
         "Enforce disabled/revoked/incompatible Blueprint denial and prevent client trust flags from bypassing validation."
@@ -194,7 +202,7 @@
       ],
       "title": "Implement validation failure and degradation semantics",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Ensure validation failure never corrupts an existing validated Blueprint and rejected candidate bodies do not become executable durable artifacts.",
         "Enforce explicit PARTIALLY_SUPPORTED degradation metadata and semantic-core preservation."
@@ -254,7 +262,7 @@
       ],
       "title": "Implement validation evidence and admission traceability",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Make validation stage/error/trace evidence observable without raw Blueprint telemetry.",
         "Trace admitted Blueprint content to validation_run and trace revoke/incompatible outcomes without mutating immutable Blueprint body."
@@ -316,11 +324,12 @@
         "BL-P1-008"
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-003",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
-        "Require explicit clarification for money/permission/cost assumptions, expose material proposals, avoid re-asking answered questions unless upstream facts change, and prevent client resolved_intent bypass."
+        "Require explicit clarification for money/permission/cost assumptions, expose material proposals, avoid re-asking answered questions unless upstream facts change, and prevent client resolved_intent bypass.",
+        "Honor BS-P1-004 F01 Evidence source ownership: product_event carries bounded event dimensions; compiler economics remain compiler_run truth; clarification-policy triggered-rule truth is not invented in product_event."
       ],
       "non_scope": [
         "Do not implement LLM provider integration or full Compiler composition.",
@@ -374,7 +383,9 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "Evidence tests prove F01 product_event emission uses only the BS-P1-004 allowed bounded dimensions and does not duplicate compiler economics/policy semantic truth."
+      ]
     },
     {
       "task_id": "T007",
@@ -383,7 +394,7 @@
       ],
       "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",
         "On overflow, preferentially retain CORE_OUTCOME / RELIABILITY over DEBUG / PRODUCT_SAMPLE.",
@@ -437,11 +448,13 @@
         "BL-P1-033"
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-003",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
-        "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default."
+        "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default.",
+        "Implement appf2-owned EvidenceRetentionMaintenance semantics with received_at as the 90-day raw-retention cutoff.",
+        "Persist bounded non-identifying evidence_daily_aggregate data before raw deletion and fail closed unless aggregate watermark coverage is verified."
       ],
       "non_scope": [
         "Do not define final cross-function Product metrics from BL-P1-034.",
@@ -494,7 +507,9 @@
       "blocked_by": [
         "T007"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "Retention tests prove received_at cutoff, aggregate survival after raw deletion, idempotent maintenance, and watermark-guarded fail-closed deletion."
+      ]
     },
     {
       "task_id": "T009",
@@ -504,7 +519,7 @@
       ],
       "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-003",
+      "build_spec_id": "BS-P1-004",
       "scope": [
         "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
         "Prove F01-AC-002 by showing NEEDS_CLARIFICATION when required intent data is missing and no safe default exists.",
