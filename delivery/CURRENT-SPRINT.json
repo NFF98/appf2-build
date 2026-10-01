@@ -5,5 +5,5 @@
   "active_task": null,
   "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-002 / T001 execution paused for BF-028 / BF-029 governance remediation. T001 history remains IN_PROGRESS but no Product execution is authorized while HOLD."
+  "reason": "BF-028 / BF-029 remediation is directly verified, including T001 future-diff test-integrity proof and main repository lint. Execution remains HOLD pending explicit SP-P1-002 / T001 Reactivation Review."
 }
