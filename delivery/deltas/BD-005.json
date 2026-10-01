@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-005",
   "type": "DESIGN_DELTA",
-  "status": "ASSESSING",
+  "status": "APPROVED",
   "source_finding_ids": [
     "BF-030",
     "BF-031"
@@ -41,12 +41,19 @@
     "decision_ref": "Human approval in ChatGPT on 2026-10-02: 批准 BF-030 / BF-031 resolution direction，然後做 governance remediation，再讓 Cursor 回 T002。"
   },
   "replacement_build_spec_required": true,
-  "upstream_working_commit": null,
-  "replacement_build_spec": null,
+  "upstream_working_commit": "3633198a22a4393be0b803c313085faefa873dc8",
+  "replacement_build_spec": "BS-P1-005",
   "verification": [
-    "Resolution direction approved; executable machine truth must be canonicalized upstream before implementation resumes.",
-    "T002 candidate d8f1b17d... is review-blocked and must not be merged as Product truth.",
-    "Class-level F02/F04 contract audit required before BD-005 may advance to APPROVED/IMPLEMENTING.",
-    "appf2-design remediation candidate commit b3f2fdb14dd0fe7a10a44fbd0c9e98ff96c5e3b7 on branch governance/BF-030-031-f02-f04-contract; not yet merged/approved as Working truth."
-  ]
+    "Human approved BF-030/BF-031 resolution direction on 2026-10-02 and instructed governance remediation before T002 resumes.",
+    "appf2-design PR #8 merged the approved F02/F04 machine-contract remediation; Working main was normalized at 3633198a22a4393be0b803c313085faefa873dc8.",
+    "Scope-clean freeze source abd91f50fa520a4ecd047207da7e2a804762e415 is derived directly from BS-P1-004 source 91894ae8bd6241bb5ee1897180db72e9e578d1bf.",
+    "Compare 91894ae...→abd91f50... changes exactly F02-BLUEPRINT-VALIDATION.md and F04-CAPABILITY-REGISTRY.md; Shame Book and unrelated Working drift are excluded.",
+    "T002 remains BLOCKED and implementation remains HOLD. BS-P1-005 requires a separate Human Build Freeze approval before it can become LOCKED."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "abd91f50fa520a4ecd047207da7e2a804762e415",
+    "base_commit": "91894ae8bd6241bb5ee1897180db72e9e578d1bf",
+    "provenance_audit": "delivery/audits/SP-P1-002-BD-005-FREEZE-CANDIDATE.md"
+  }
 }
