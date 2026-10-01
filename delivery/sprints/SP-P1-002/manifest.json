@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "sprint_id": "SP-P1-002",
-  "status": "REVIEW",
+  "status": "ACTIVE",
   "build_spec_id": "BS-P1-004",
   "goal": "完成 Validation + Intent foundation 與 evidence client reliability，並以最小 test-only browser harness 誠實驗證兩個 END_TO_END Acceptance；不提前實作正式 App surface。",
   "scope": [
