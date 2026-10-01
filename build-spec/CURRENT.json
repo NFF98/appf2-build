@@ -2,5 +2,5 @@
   "schema_version": 1,
   "active_baseline": "BS-P1-003",
   "implementation_enabled": false,
-  "reason": "BS-P1-004 is frozen and SP-P1-002 has been rebound for Activation Review. Keep BS-P1-003 as the active baseline and implementation disabled until separate Human Activation approval switches CURRENT to BS-P1-004."
+  "reason": "SP-P1-002 / T001 blocked by BF-014; execution paused to HOLD pending Human-governed contract resolution. BS-P1-003 remains the active locked baseline."
 }
