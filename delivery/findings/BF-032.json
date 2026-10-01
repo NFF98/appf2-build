@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-032",
   "classification": "BUILD_BLOCKER",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-005",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -12,7 +12,8 @@
     "BL-P1-032 is DONE under BS-P1-003 with CLOSED revalidation target BS-P1-004 / SP-P1-002 / T001 / F07-AC-008.",
     "BS-P1-004 and BS-P1-005 acceptance-test-registry.json use the same Git blob and contain 289/289 identical entries.",
     "harness/scripts/validate-backlog.mjs requires revalidation.target_build_spec_id === currentBaseline whenever original→current semantic drift exists.",
-    "T001 is CLOSED under BS-P1-004 and must not be reopened or rewritten merely because BS-P1-005 changes unrelated F02/F04 machine truth."
+    "T001 is CLOSED under BS-P1-004 and must not be reopened or rewritten merely because BS-P1-005 changes unrelated F02/F04 machine truth.",
+    "PR #135 attack result: 90/90; positive CLOSED ancestor revalidation carry-forward PASS and later-drift negative case FAIL as expected."
   ],
   "attempts": [
     {
@@ -20,6 +21,12 @@
       "strategy": "REBIND_CLOSED_T001_AND_REWRITE_REVALIDATION_TARGET_TO_BS_P1_005",
       "result": "REJECTED_GOVERNANCE_HISTORY_REWRITE",
       "evidence": "Would make a previously completed BS-P1-004 proof appear to have been executed under BS-P1-005 and violates historical evidence provenance."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HISTORICAL_REVALIDATION_SEMANTIC_CARRY_FORWARD_WITH_LATER_DRIFT_GUARD",
+      "result": "PASSED",
+      "evidence": "PR #135 head b75b65c3... Governance/CI/Attack direct gates PASS. Attack dry-run 90/90: CLOSED ancestor revalidation carry-forward PASS when semantics remain unchanged; later semantic drift is rejected."
     }
   ],
   "requested_planning_action": [
