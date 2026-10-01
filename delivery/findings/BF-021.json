@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-021",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-003",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T008",
+  "expected": "F07-AC-027 must have a canonical Phase 1 durable owner for non-identifying aggregate counts/rates that survive deletion of raw product_event rows.",
+  "actual": "F07 states that aggregate counts/rates may remain after 90-day raw deletion and AC-027 requires that survival, but the Phase 1 Data Model and current database define only raw product_event storage. No aggregate table/materialization/snapshot owner or persistence lifecycle is defined, so T008 would have to invent durable aggregate semantics.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-003/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md :: section 28 raw retention + F07-AC-027",
+    "build-spec/baselines/BS-P1-003/shared/data-model/DATA-MODEL-DETAILED.md :: Phase 1 product_event model; no aggregate durable owner",
+    "supabase/migrations/20260927123000_t006_evidence_intake.sql :: product_event only",
+    "A0 audit: a SQL query/view over deleted raw rows cannot preserve historical aggregate values."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "A0_AGGREGATE_SURVIVAL_OWNER_AUDIT",
+      "result": "FAILED",
+      "evidence": "No canonical durable aggregate owner exists; implementing one requires a Data/retention contract rather than an implementation guess."
+    }
+  ],
+  "affected_contracts": [
+    "F07-POL-009",
+    "F07-AC-027",
+    "Phase 1 DATA-MODEL evidence persistence"
+  ],
+  "affected_acceptance": [
+    "F07-AC-027"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
