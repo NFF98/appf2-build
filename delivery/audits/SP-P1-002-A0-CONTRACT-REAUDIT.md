@@ -19,8 +19,13 @@ F01/F02/F04/F07; T001–T009; Acceptance/Test; machine registries; canonical exa
 - Blueprint identity references are consistent.
 
 ## Open
-BF-014, BF-015, BF-016, BF-017, BF-018, BF-019, BF-020.
-T001 and T008 are BLOCKED. Build remains HOLD.
+BF-014, BF-015, BF-016, BF-017, BF-018, BF-019, BF-020, BF-021, BF-022, BF-023.
+T001, T002, T006 and T008 are BLOCKED. Build remains HOLD.
+
+## Additional A0 Findings
+- BF-021 — F07 aggregate survival after raw deletion has no canonical Phase 1 durable owner.
+- BF-022 — Evidence envelope and properties duplicate common field names without canonical equality / precedence semantics.
+- BF-023 — Evidence intake UUID validation is weaker than the existing UUID v4 identity contracts.
 
 ## Projection
 Replacement Freeze is blocked until SP2 projection is scope-clean and does not pull unapproved PFR/F19/future work into BS-P1-004.
