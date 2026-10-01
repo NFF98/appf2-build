@@ -82,6 +82,11 @@ for(const id of dirs){
     assert(inventory.get(rel)===digest,id+' sha256 mismatch: '+rel);
   }
   const aggregate=crypto.createHash('sha256').update(actual.map(rel=>rel+':'+inventory.get(rel)+'\n').join('')).digest('hex');
+  if(id==='BS-P1-004'){
+    const actualHashes=Object.fromEntries(actual.map(rel=>[rel,sha256File(path.join(dir,rel))]));
+    const actualAggregate=crypto.createHash('sha256').update(actual.map(rel=>rel+':'+actualHashes[rel]+'\n').join('')).digest('hex');
+    console.log('BS-P1-004 HASH PROBE '+JSON.stringify({actualHashes,actualAggregate}));
+  }
   assert(m.content_sha256===aggregate,id+' content_sha256 mismatch');
 
   const projectionPath=m.projection_map?path.join(dir,m.projection_map):null;
