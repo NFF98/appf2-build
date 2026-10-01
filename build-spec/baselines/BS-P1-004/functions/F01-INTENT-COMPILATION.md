@@ -1023,28 +1023,43 @@ F01-EVT-013 intent_validated
 F01-EVT-014 provider_failure
 ~~~
 
-Minimum dimensions：
+Evidence source ownership：
 
 ~~~text
-intent_id
-intent_kind
-policy_version
-triggered_rule_ids
-prompt_version
-schema_version
-registry_version
-model_adapter
-attempt_no
-latency_ms
-token_usage / estimated_cost
-coverage_status
-error_code
-trace_id
+product_event common envelope
+├─ function_id = F01
+├─ intent_id when applicable
+├─ error_code when applicable
+└─ trace_id when applicable
+
+F01 event properties
+├─ intent_kind
+├─ policy_version
+├─ prompt_version
+├─ blueprint_schema_version
+├─ registry_version
+├─ model_adapter
+├─ attempt_no
+├─ latency_ms
+└─ coverage_status
+
+compiler_run
+├─ input_tokens
+├─ output_tokens
+└─ estimated_cost
+
+F01 policy semantic / API truth
+└─ triggered_rule_ids[]
 ~~~
 
-Raw Intent / raw model response 不進 telemetry by default。
+Rules：
 
-compiler_run 支援 cost_per_successful_intent 的計算。
+- `triggered_rule_ids[]` 是 clarification / policy diagnostic truth，不複製成 product_event property。
+- token usage / estimated_cost 的 canonical durable owner 是 `compiler_run`；product_event 不建立第二份 economics truth。
+- event `schema_version` 只代表 Evidence event schema；Blueprint / Composer target schema 必須使用 `blueprint_schema_version`。
+- Raw Intent / raw model response 不進 telemetry by default。
+
+`compiler_run` 支援 cost_per_successful_intent 的計算。
 
 # 32. Acceptance Criteria
 
