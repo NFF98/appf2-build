@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-030",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-004",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "BS-P1-004 must define the executable Blueprint machine contract precisely enough that T002 can implement F02-AC-004 through F02-AC-008 without inventing JSON keys, constraint object shapes, type relations, coercion rules, or other Product semantics. product_decision_allowed=false means any missing executable syntax must block implementation rather than be filled by Cursor or ChatGPT.",
+  "actual": "F02 defines semantic requirements for Phase 1 state/value/rule/node/action validation, but several executable machine shapes are not frozen. The reviewed T002 implementation therefore invented state constraint syntax such as constraints.allowed, constraints.item_type, constraints.max_length and constraints.fields. The same class of ambiguity may exist in adjacent typed Value Source, Rule result typing, binding/action argument typing, repeat/template and capability schema boundaries, so a class-level F02/F04 audit is required before T002 may resume.",
+  "evidence": [
+    "build-spec/baselines/BS-P1-004/functions/F02-BLUEPRINT-VALIDATION.md §8.1 requires bounded STRING/ENUM/LIST/RECORD semantics but does not define exact JSON constraint keys/shapes for those types.",
+    "T002 candidate commit d8f1b17d1d05e276e0ed9d007abb4153f3774fbf :: src/platform/blueprint/state-schema.ts introduces constraints.allowed, item_type, max_length and fields without canonical Build Spec authority.",
+    "T002 candidate commit d8f1b17d1d05e276e0ed9d007abb4153f3774fbf :: STRING rejects constraints entirely even though locked F02 says STRING has a length bound, demonstrating that semantic prose is insufficient as executable machine truth.",
+    ".cursor/rules/20-finding-delta.mdc :: SPEC_AMBIGUITY requires affected Task BLOCKED and Product/design change path Finding → Human governance → Working → User approval → new Build Spec → Activation → rebind.",
+    "delivery/sprints/SP-P1-002/tasks.json :: T002 product_decision_allowed=false."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "IMPLEMENT_UNFROZEN_EXECUTABLE_SHAPE_AS_FAIL_CLOSED_T002_DETAIL",
+      "result": "FAILED_REVIEW",
+      "evidence": "Independent review of d8f1b17d... found that fail-closed behavior does not authorize inventing canonical executable JSON syntax; the implementation must not become Product truth by precedent."
+    }
+  ],
+  "requested_planning_action": [
+    "Run a class-level F02 executable-schema audit covering state constraints, Value Sources, operator signatures, Rule result typing, Node props/bindings/events, Action args/when/value, Repeat/template scope, result outputs and serialization boundaries.",
+    "Canonicalize every implementation-relevant machine shape in appf2-design Working before replacement Build Freeze; no implementation default may substitute for missing truth.",
+    "Rebind T002 only after the replacement Build Spec contains the audited executable contract."
+  ],
+  "affected_contracts": [
+    "F02-RQ-004 State Contract",
+    "F02-RQ-005 Pure Operator Allowlist / typed signatures",
+    "F02 V02/V05/V07/V08 executable validation contract",
+    "F02 Node/Repeat/Action/Result machine shapes"
+  ],
+  "affected_acceptance": [
+    "F02-AC-004",
+    "F02-AC-006",
+    "F02-AC-007",
+    "F02-AC-008"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-005"
+}
