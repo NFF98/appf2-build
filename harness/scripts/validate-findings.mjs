@@ -70,6 +70,14 @@ for(const file of jsonFiles('delivery/deltas')){
     if(['APPROVED','IMPLEMENTING','VERIFIED','CLOSED'].includes(d.status)){
       if(d.user_decision?.status!=='APPROVED' || !d.user_decision?.decision_ref) errors.push(d.delta_id+' approved lifecycle requires explicit User approval reference');
       if(!/^[0-9a-f]{40}$/.test(d.upstream_working_commit||'')) errors.push(d.delta_id+' approved lifecycle requires upstream Working commit');
+      if(d.freeze_source!==undefined){
+        const f=d.freeze_source;
+        if(!f || f.type!=='SCOPE_CLEAN_DERIVED') errors.push(d.delta_id+' freeze_source.type must be SCOPE_CLEAN_DERIVED');
+        if(!/^[0-9a-f]{40}$/.test(f?.commit||'')) errors.push(d.delta_id+' freeze_source.commit must be a Git commit SHA');
+        if(!/^[0-9a-f]{40}$/.test(f?.base_commit||'')) errors.push(d.delta_id+' freeze_source.base_commit must be a Git commit SHA');
+        if(f?.commit===d.upstream_working_commit) errors.push(d.delta_id+' derived freeze source must preserve a distinct upstream Working commit');
+        if(typeof f?.provenance_audit!=='string' || !f.provenance_audit.startsWith('delivery/audits/') || !fs.existsSync(path.join(root,f.provenance_audit))) errors.push(d.delta_id+' freeze_source requires an existing delivery/audits provenance record');
+      }
       if(d.replacement_build_spec_required!==true) errors.push(d.delta_id+' approved DESIGN_DELTA must require replacement Build Spec');
     }
     validateClosedDelta(d);
