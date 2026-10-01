@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-004",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-016",
+    "BF-017",
+    "BF-018",
+    "BF-019",
+    "BF-020",
+    "BF-021",
+    "BF-022"
+  ],
+  "affected_build_spec": "BS-P1-003",
+  "affected_tasks": [
+    "T001",
+    "T002",
+    "T006",
+    "T008"
+  ],
+  "affected_contracts": [
+    "F01 evidence source ownership",
+    "F02 candidate_digest representation",
+    "validation_run staged compiler_run_id relationship",
+    "F07 retention execution owner",
+    "F07 90-day retention cutoff",
+    "F07 durable non-identifying aggregate owner",
+    "F07 envelope/properties canonical ownership",
+    "Evidence Registry v3 envelope/property model"
+  ],
+  "affected_acceptance": [
+    "F04-AC-017",
+    "F04-AC-018",
+    "F02-AC-004",
+    "F02-AC-008",
+    "F02-AC-019",
+    "F02-AC-021",
+    "F02-AC-022",
+    "F07-AC-026",
+    "F07-AC-027"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-01: 批准上面 BF-016～BF-023 的 resolution direction；開始第二階段 A0 remediation。"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+  "replacement_build_spec": "BS-P1-004",
+  "verification": [
+    "appf2-design c8325c60b1ee9e901e94af38825fd860f0852cd2 applies Human-approved A0 Phase 2 contract remediation.",
+    "Evidence Registry is 3.0.0 with reserved envelope fields, explicit envelope schemas, UUID v4 identity boundaries, and zero envelope/property name collisions.",
+    "Second machine audit PASS: 112 events, 35/35 SP2 Acceptance/Test mappings, canonical Capability IDs accepted, invalid Capability samples rejected, zero registry regex warnings.",
+    "Scope-clean freeze source created at appf2-design commit 91894ae8bd6241bb5ee1897180db72e9e578d1bf from BS-P1-003 source 3818926b82ae2c5edaf9d6115fda3d1505757781.",
+    "Scope-clean source changes exactly 11 approved remediation paths and excludes F18/F19/F20, Phase 4 UI, Business Plan, and other future Product work.",
+    "No BS-P1-004 baseline has been created; Build execution remains HOLD pending Human Build Freeze approval."
+  ]
+}
