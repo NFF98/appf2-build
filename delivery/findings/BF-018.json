@@ -12,7 +12,9 @@
     "F07-POL-009 and F07-AC-026",
     "Phase 1 Infrastructure baseline",
     "SP-P1-002 T008 scope",
-    "Build repository has no periodic-maintenance configuration"
+    "Build repository has no periodic-maintenance configuration",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: Infra/F07 now define appf2-owned EvidenceRetentionMaintenance with default daily replaceable trigger and fail-closed aggregate-before-delete ordering.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b contains only A0/BF14-23 projected changes."
   ],
   "attempts": [
     {
@@ -20,6 +22,12 @@
       "strategy": "A0_RETENTION_EXECUTION_OWNER_AUDIT",
       "result": "FAILED",
       "evidence": "The retention outcome is defined but its periodic execution owner is not."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "PASSED_WORKING_BASELINE_PENDING",
+      "evidence": "Infra/F07 now define appf2-owned EvidenceRetentionMaintenance with default daily replaceable trigger and fail-closed aggregate-before-delete ordering."
     }
   ],
   "affected_contracts": [
@@ -33,5 +41,12 @@
     "F07-AC-027"
   ],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": null,
+  "resolution": {
+    "status": "WORKING_REMEDIATED_BASELINE_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN until replacement BS-P1-004 is Human-approved/frozen; no Cursor implementation is authorized."
+  }
 }
