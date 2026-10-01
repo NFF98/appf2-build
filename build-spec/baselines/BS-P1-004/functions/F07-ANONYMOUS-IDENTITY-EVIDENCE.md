@@ -261,6 +261,14 @@ received_at
 
 Persistent mapping符合 DATA-MODEL product_event。
 
+A0 / BF-022 canonical ownership：
+
+- Common envelope 是 `event_id / event_type / schema_version / occurred_at / anonymous_id / session_id / function_id / intent_id / blueprint_hash / share_id / capability_id / error_code / policy_rule_id / trace_id` 的唯一 event-level truth。
+- Server-added `received_at` 也是 reserved envelope field。
+- `properties` **不得再次使用任何 reserved envelope field name**；同一 event 不可同時有 envelope `error_code` 與 properties `error_code` 等雙重真相。
+- 若 Function 需要不同語意的同類值，必須使用不同名稱，例如 Blueprint contract version = `blueprint_schema_version`；event `schema_version` 永遠只表示 Evidence event schema。
+- Registry / server intake 必須 fail closed 拒絕 reserved-envelope property collision。
+
 # 11. Stable Event Type
 
 ## F07-RQ-004
@@ -311,6 +319,8 @@ Logical registry structure：
 
 ~~~text
 registry_version
+reserved_envelope_fields[]
+envelope_field_schemas{}
 property_schemas{}
 event_property_constraints{}
 entries[]:
@@ -328,10 +338,12 @@ entries[]:
 
 Rules：
 
-1. 每個 `allowed_properties[]`名稱必須能解析到唯一 `property_schemas{}` contract。
-2. `event_property_constraints{}`只能收窄 base property schema，不得放寬。
-3. Registry必須完整表達 server intake所需的 type / enum / format / bounds，不得要求 Cursor / collector自行發明。
-4. Generated registry不手改，不是第二份人工 SSOT；Working registry是 approved Fxx / F07 truth 的 machine-readable projection。
+1. 每個 common envelope field 必須能解析到唯一 `envelope_field_schemas{}` contract。
+2. `reserved_envelope_fields[]` 不得出現在任何 `entries[].allowed_properties[]`。
+3. 每個 `allowed_properties[]`名稱必須能解析到唯一 `property_schemas{}` contract。
+4. `event_property_constraints{}`只能收窄 base property schema，不得放寬；若 property requirement 依賴 envelope field，必須使用 explicit envelope-aware constraint，不得假設同名 property。
+5. Registry必須完整表達 server intake所需的 envelope/property type / enum / format / bounds，不得要求 Cursor / collector自行發明。
+6. Generated registry不手改，不是第二份人工 SSOT；Working registry是 approved Fxx / F07 truth 的 machine-readable projection。
 
 # 13. Collection Classes
 
@@ -420,7 +432,14 @@ F03 action_committed這類高頻 seed，Phase 1 production預設不 durable，�
 
 properties必須 event-type allowlisted，且每個 allowlisted property都必須在 Working Evidence Registry的 `property_schemas` 有 machine-readable type / enum / format / bound contract；不得只列名稱而把合法值留給 implementation猜。
 
-同名 property的共用 schema由 registry單一定義；若同名 property因 Function owner具有不同 enum，可用 function-scoped constraint收窄，但不得放寬 base schema。Event-specific constraint可再收窄合法值。
+`properties` namespace 與 common envelope namespace 必須分離：
+
+- reserved envelope field name 一律禁止出現在 properties；
+- common correlation / identity / error / trace 值只放 envelope；
+- Function-specific version若不是 event schema，使用明確名稱，例如 `blueprint_schema_version`；
+- 任何 collector / server 發現 reserved collision 必須拒絕該 event，而不是挑一份當 truth。
+
+同名非-reserved property的共用 schema由 registry單一定義；若同名 property因 Function owner具有不同 enum，可用 function-scoped constraint收窄，但不得放寬 base schema。Event-specific constraint可再收窄合法值。
 
 Allowed categories：
 
@@ -711,17 +730,19 @@ Partial acceptance允許。
 Server validate：
 
 1. request / event size
-2. event_id UUID
+2. envelope against `envelope_field_schemas{}`，包括 event_id / anonymous_id / session_id / share_id 的 canonical UUID v4要求
 3. schema_version supported
 4. event_type registered
 5. function_id matches registry
 6. context identifier format
-7. allowed_properties only
-8. property schema type / enum / format / bounds + event/function-specific narrowing constraints
-9. forbidden user-content fields
-10. occurred_at parseability + clock sanity；parse failure拒絕，future skew >10m依 F07-RQ-008 accepted + diagnostic，不得混成 rejection
-11. collection class production policy
-12. anonymous identity ensure when present
+7. properties不得包含任何 `reserved_envelope_fields[]`
+8. allowed_properties only
+9. property schema type / enum / format / bounds + event/function-specific narrowing constraints
+10. envelope-aware cross-field constraints（例如 envelope error_code 觸發 property requirement）
+11. forbidden user-content fields
+12. occurred_at parseability + clock sanity；parse failure拒絕，future skew >10m依 F07-RQ-008 accepted + diagnostic，不得混成 rejection
+13. collection class production policy
+14. anonymous identity ensure when present
 
 Invalid event不使整 batch rollback。
 
@@ -730,7 +751,7 @@ Invalid event不使整 batch rollback。
 有 anonymous_id：
 
 ~~~text
-validate UUID
+validate canonical UUID v4
 → ensure anonymous_identity
 → bounded last_seen
 → insert product_event
@@ -783,14 +804,22 @@ Infra security logs若依法/安全需要短期IP，不得自動複製到 produc
 Phase 1 raw product_event：
 
 ~~~text
-90 days
+retention = 90 days from first durable received_at
+eligible_for_deletion =
+  received_at < maintenance_now_utc - 90 days
 ~~~
 
-After 90 days：
+Rules：
 
-- delete raw event rows
-- 可保留非識別 aggregate counts / rates
-- aggregate不保留 event_id / anonymous_id / session_id / free-form content
+1. retention anchor = **first durable `received_at` only**；client `occurred_at` 不控制 privacy retention。
+2. duplicate `event_id` retry 不得改寫 `received_at`，因此也不得延長 90-day retention。
+3. clock-invalid event 的 analytics bucket仍依 `effective_event_at`，但 deletion cutoff仍只看 `received_at`。
+4. raw deletion前必須先 materialize / verify §DATA-MODEL `evidence_daily_aggregate` 所需的 bounded non-identifying counts/rates。
+5. aggregate watermark未涵蓋 cutoff時 fail closed：不刪除尚未安全聚合的 eligible raw rows。
+6. aggregate不保留 event_id / anonymous_id / session_id / intent_id / share_id / trace_id / free-form content。
+7. `EvidenceRetentionMaintenance` 是 semantic owner；default once per UTC day，由可替換 scheduled trigger 呼叫。
+8. provider-specific cron只決定「何時呼叫」，不得擁有 retention / aggregation semantics。
+9. maintenance 重跑必須 idempotent；失敗可 retry，不阻斷 Consumer workflow。
 
 Local unsent queue：
 
@@ -811,7 +840,7 @@ F07與 DATA-MODEL共同固定 Phase 1 privacy retention：
 | Browser prompt / clarification / correction / recovery draft | 7 days | delete local record |
 | raw_intent | 30 days after terminal intent state | set raw_intent = NULL |
 | result_snapshot input/output values | 30 days | redact values, keep bounded metadata row |
-| product_event raw row | 90 days | delete row; aggregate may remain |
+| product_event raw row | 90 days from first durable received_at | EvidenceRetentionMaintenance先 materialize/verify bounded aggregate，再 delete eligible row |
 | local unsent event queue | 24 hours | delete unsent event |
 | idempotency_operation | 24 hours | delete expired operation row |
 | raw provider/request debug payload when explicitly enabled | max 7 days | delete payload |
@@ -840,19 +869,29 @@ Continuity metric：
 
 ## F07-RQ-010
 
-Phase 1 default：
+Phase 1 original default：
 
 ~~~text
 schema_version = 1.0.0
 ~~~
 
-BF-007 material delta後，F03 event family因 `runtime_stage` breaking split為 `runtime_status + operation_status`，使用：
+BF-007 material delta曾使 F03 family進入 v2。A0 / BF-022 將 common envelope 與 properties ownership徹底分離，屬 breaking event schema change，因此 clean replacement baseline 使用：
 
 ~~~text
-F03-EVT-* schema_version = 2.0.0
+F00-EVT-* = 2.0.0
+F01-EVT-* = 2.0.0
+F02-EVT-* = 2.0.0
+F03-EVT-* = 3.0.0
+F04-EVT-* = 2.0.0
+F05-EVT-* = 2.0.0
+F06-EVT-* = 2.0.0
+F16-EVT-* = 2.0.0
+F12-EVT-* = 1.0.0  // 無 reserved-envelope property collision，維持原 shape
 ~~~
 
-其他未改 event meaning / shape的 Phase 1 event維持各自 registry所列 schema_version。
+Working Evidence Registry因此升為 `registry_version = 3.0.0`。
+
+任何未列 family若未改 event meaning / shape，維持 registry所列 schema_version。
 
 SemVer：
 
@@ -876,8 +915,14 @@ CI rules：
 
 - duplicate event_type → fail
 - prefix / function mismatch → fail
+- reserved envelope field缺 envelope_field_schemas contract → fail
+- reserved envelope field出現在 allowed_properties → fail
 - allowed property缺 property_schemas contract → fail
 - event_property_constraints放寬 base schema → fail
+- envelope-aware constraint引用不存在 / 不允許的 envelope field → fail
+- `property_schemas.*.pattern` 採 JSON string encoding，但 JSON parse 後必須直接是可交給 RegExp engine 的 logical pattern；不得多保留一層 backslash escaping；canonical Capability ID smoke set 必須包含帶 underscore 的既有 ID（至少 `data.table_basic`）
+- canonical regex smoke examples（例如 `layout.container`、`1.0.0`、`F04-ERR-001`、`F12-POL-001`、`F04`）必須在 Freeze Audit / CI 通過
+- hash 類 Evidence property 採 `sha256:<64 lowercase hex>` canonical string representation
 - CORE_OUTCOME缺 trigger / metric mapping → fail
 - DEBUG_ONLY不得被 production collector默認 durable
 - generated registry不得手改
@@ -1220,7 +1265,7 @@ Evidence Envelope：
 
 - F07-AC-006 unknown event_type被拒絕。
 - F07-AC-007 function_id / event_type prefix mismatch被拒絕。
-- F07-AC-008 forbidden property，或不符合 registry property type / enum / format / bounds / narrowing constraint 的 property value，不能進 product_event。
+- F07-AC-008 envelope identifier / UUID version、reserved-envelope separation、property allowlist，以及 registry type / enum / format / bounds / narrowing constraint 任一不合法，該 event不能進 product_event。
 - F07-AC-009 raw Intent / raw Result不需要進 Evidence。
 - F07-AC-010 event retry使用同 event_id且不 duplicate durable row。
 - F07-AC-011 one invalid event不 rollback整個 valid batch。
@@ -1247,8 +1292,8 @@ Metrics：
 
 Retention / Quality：
 
-- F07-AC-026 raw product_event 90-day retention可執行。
-- F07-AC-027 non-identifying aggregate可在 raw deletion後保留。
+- F07-AC-026 raw product_event 以 first durable received_at 為 cutoff anchor，透過 appf2-owned EvidenceRetentionMaintenance 可執行 90-day retention。
+- F07-AC-027 bounded non-identifying evidence_daily_aggregate 可在 raw deletion後保留，且不含 event/user/session/intent/share/trace identity。
 - F07-AC-028 evidence rejection/drop/queue expiry本身可觀測。
 - F07-AC-029 DEBUG_ONLY不默認 durable到 production product_event。
 - F07-AC-030 parseable occurred_at > received_at + 10m 的 event仍 accepted；保留兩個原始時間，response以 diagnostics[]回 F07-ERR-013 / occurred_at / USE_RECEIVED_AT，且不得增加 rejected。
