@@ -22,5 +22,7 @@ npm run dry-run:attack
 11. Sprint Activation 不得夾帶無關 governance path 變更。
 12. scope-clean derived freeze source 必須保留真實 upstream Working provenance，合法 derived provenance 可 PASS。
 13. derived freeze source commit mismatch 必須被 Activation Gate 拒絕。
+14. DONE semantic drift + explicit revalidation 必須 PASS。
+15. DONE semantic drift 沒有 revalidation 必須 FAIL。
 
 此 suite 使用 temp Git repo，不污染真實 appf2-build working tree。
