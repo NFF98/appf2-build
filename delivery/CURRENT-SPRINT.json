@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-004",
+  "active_task": "T002",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved T001 closure. T001 is CLOSED; SP-P1-002 remains open with T002–T009 PLANNED. Execution is HOLD until a separate Human-approved T002 activation."
+  "reason": "T002 Activation Review PASS. T001 remains CLOSED; T002 is the sole active Task for F02-AC-004 through F02-AC-008. T003–T009 remain PLANNED."
 }
