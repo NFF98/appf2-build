@@ -23,8 +23,9 @@ Phase 1 建議實作組合：
 | Blueprint Cache | Content-hash URL + CDN immutable cache |
 | Identity | First-party anonymous ID |
 | Telemetry | Batched meaningful events → Postgres |
+| Scheduled Maintenance | bounded appf2-owned retention trigger；Phase 1 default daily，trigger mechanism 可替換 |
 | Auth / Realtime / Storage | 先不啟用；需要時沿用 Supabase 能力 |
-| Queue / Worker / Vector DB | Phase 1 不建立 |
+| Queue / Worker / Vector DB | Phase 1 不建立 long-lived queue/worker plane；bounded scheduled maintenance 不算 workflow worker |
 
 這不是因為 Cloudflare 或 Supabase 是產品核心，而是目前這個組合最符合：
 
@@ -245,6 +246,7 @@ PaymentProvider
 WorkflowEngineAdapter
 ProviderRegistry
 TelemetrySink
+MaintenanceTriggerAdapter
 ~~~
 
 所以 Phase 1 可以選成本最低、開發最快的 Vendor，中長期需要更換時不用重寫 Blueprint / Runtime。
