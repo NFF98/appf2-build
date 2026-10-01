@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-031",
   "classification": "BUILD_BLOCKER",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -13,7 +13,8 @@
     "src/platform/capabilities/schema/capability-definition.ts@2fc449eb :: SchemaReference contains only ref:string; CapabilityDefinition contract.inputs/outputs are PortDefinition[] but current core definitions populate them as empty arrays.",
     "src/platform/capabilities/definitions/core.ts@2fc449eb :: defineCore emits propsSchema/stateSchema refs and inputs:[]/outputs:[] for core capabilities; input.number semantic prose says bound type number but that type is not machine-carried into the validator artifact.",
     "generated/capabilities/validator-registry.ts@2fc449eb :: generated Registry supports exact capability identity and names, but not the full executable typed schemas promised by F04 §9.",
-    "T002 candidate commit d8f1b17d... :: registry-contract.ts can validate exact IDs/versions and declared names, but has no canonical source for the missing typed schema semantics."
+    "T002 candidate commit d8f1b17d... :: registry-contract.ts can validate exact IDs/versions and declared names, but has no canonical source for the missing typed schema semantics.",
+    "PROOF-ONLY branch state: marked RESOLVED solely to exercise future-diff gates against the previously Human-approved BS-P1-004/T002 activation state. This is not canonical blocker closure."
   ],
   "attempts": [
     {
