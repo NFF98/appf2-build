@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-004",
   "active_task": "T001",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-002 / T001 Reactivation Review PASS after direct-proof BF-028 / BF-029 remediation. BF-023 remains OPEN for implementation within T001."
+  "reason": "T001 implementation merged; BF-023 is RESOLVED; final BS-P1-004 Evidence EV-SP-P1-002-T001-001..012 is normalized. Hold T002 while independent T001 closure audit completes."
 }
