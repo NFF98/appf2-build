@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-021",
   "classification": "SPEC_AMBIGUITY",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T008",
@@ -12,7 +12,8 @@
     "build-spec/baselines/BS-P1-003/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md :: section 28 raw retention + F07-AC-027",
     "build-spec/baselines/BS-P1-003/shared/data-model/DATA-MODEL-DETAILED.md :: Phase 1 product_event model; no aggregate durable owner",
     "supabase/migrations/20260927123000_t006_evidence_intake.sql :: product_event only",
-    "A0 audit: a SQL query/view over deleted raw rows cannot preserve historical aggregate values."
+    "A0 audit: a SQL query/view over deleted raw rows cannot preserve historical aggregate values.",
+    "appf2-design Working remediation commit c8325c60b1ee9e901e94af38825fd860f0852cd2; scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf."
   ],
   "attempts": [
     {
@@ -20,6 +21,12 @@
       "strategy": "A0_AGGREGATE_SURVIVAL_OWNER_AUDIT",
       "result": "FAILED",
       "evidence": "No canonical durable aggregate owner exists; implementing one requires a Data/retention contract rather than an implementation guess."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "A0_PHASE2_HUMAN_APPROVED_WORKING_REMEDIATION",
+      "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
+      "evidence": "Working Data Model now defines evidence_daily_aggregate as the bounded non-identifying durable aggregate owner with idempotent materialization and watermark-guarded raw deletion."
     }
   ],
   "affected_contracts": [
@@ -31,5 +38,5 @@
     "F07-AC-027"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-004"
 }
