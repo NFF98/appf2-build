@@ -12,7 +12,9 @@
     "F07-RQ-001 and F07-RQ-003",
     "F05-RQ-001",
     "src/platform/identity/browser-identity.ts UUID_V4_PATTERN",
-    "src/platform/evidence/evidence-validator.ts UUID_PATTERN"
+    "src/platform/evidence/evidence-validator.ts UUID_PATTERN",
+    "appf2-design PR #7 / c8325c60b1ee9e901e94af38825fd860f0852cd2 :: Working machine contract now requires UUID v4 for event_id, anonymous_id, session_id and share_id; production evidence-validator remains to be changed under the replacement baseline.",
+    "Clean candidate 2e05725c706dfa37306ccf9df5b8b29f2f09368b: exact 11-file A0/BF14-23 allowlist, zero unexpected projected files."
   ],
   "attempts": [
     {
@@ -20,6 +22,12 @@
       "strategy": "A0_UUID_BOUNDARY_COMPARE",
       "result": "FAILED",
       "evidence": "Evidence intake validation is weaker than the existing canonical UUID v4 contracts."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_A0_PHASE2_WORKING_REMEDIATION",
+      "result": "CONTRACT_LOCKED_IMPLEMENTATION_PENDING",
+      "evidence": "Working machine contract now requires UUID v4 for event_id, anonymous_id, session_id and share_id; production evidence-validator remains to be changed under the replacement baseline."
     }
   ],
   "affected_contracts": [
@@ -32,5 +40,12 @@
     "F07-AC-003"
   ],
   "contract_affecting": false,
-  "delta_id": null
+  "delta_id": null,
+  "resolution": {
+    "status": "WORKING_CONTRACT_LOCKED_IMPLEMENTATION_PENDING",
+    "human_approval_ref": "2026-10-01 Human approved BF-016～BF-023 resolution directions",
+    "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+    "clean_rebaseline_candidate": "2e05725c706dfa37306ccf9df5b8b29f2f09368b",
+    "note": "Finding remains OPEN because current production validator still accepts UUID v1-v5. Replacement baseline must plan/authorize the implementation fix."
+  }
 }
