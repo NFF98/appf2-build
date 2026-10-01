@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-004",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-020",
+    "BF-021",
+    "BF-022"
+  ],
+  "affected_build_spec": "BS-P1-003",
+  "affected_tasks": [
+    "T001",
+    "T008"
+  ],
+  "affected_contracts": [
+    "F07 raw product_event retention cutoff anchor",
+    "F07 / DATA-MODEL bounded non-identifying aggregate persistence",
+    "F07 Common Evidence Envelope canonical ownership",
+    "Evidence Registry reserved_envelope_fields / envelope_field_schemas",
+    "Evidence event schema versioning for affected Function families"
+  ],
+  "affected_acceptance": [
+    "F07-AC-008",
+    "F07-AC-026",
+    "F07-AC-027",
+    "F04-AC-017",
+    "F04-AC-018",
+    "F02-AC-019",
+    "F02-AC-022"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-01: 批准上面 BF-016～BF-023 的 resolution direction；開始第二階段 A0 remediation。"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "c8325c60b1ee9e901e94af38825fd860f0852cd2",
+  "replacement_build_spec": "BS-P1-004",
+  "verification": [
+    "appf2-design PR #7 merged as c8325c60b1ee9e901e94af38825fd860f0852cd2.",
+    "Working Evidence Registry v3.0.0: 112 events, zero reserved-envelope collisions, zero missing property/envelope schemas, canonical regex smoke PASS.",
+    "Working Acceptance Registry v2.3.0 retains 289 entries; SP-P1-002 selected mapping remains 35/35 with no test-ID drift.",
+    "Clean rebaseline source candidate branch freeze/BS-P1-004-a0-candidate is pinned at 2e05725c706dfa37306ccf9df5b8b29f2f09368b, derived from BS-P1-003 source 3818926b82ae2c5edaf9d6115fda3d1505757781.",
+    "Candidate differs from the old pinned source in exactly 11 A0/BF14-23 allowlisted projected files and contains zero unexpected projected file changes.",
+    "No BS-P1-004 baseline has been created or activated; Build remains HOLD pending Human Build Freeze approval."
+  ]
+}
