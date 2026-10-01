@@ -108,11 +108,15 @@ function conforming(value: string | undefined, schema: EvidenceFieldSchema | und
     : undefined;
 }
 
-function sanitizedContext(context: RegistryEvidenceContext): RegistryEvidenceContext {
+function sanitizedContext(
+  context: RegistryEvidenceContext,
+  registry: EvidenceRegistry
+): RegistryEvidenceContext {
   const sanitized: Partial<Record<ContextField, string>> = {};
   for (const field of CONTEXT_FIELDS) {
     const value = context[field];
-    if (typeof value === "string") {
+    const schema = registry.clientEnvelopeSchemas.get(field);
+    if (typeof value === "string" && schema !== undefined && evidenceFieldFault(value, schema) === null) {
       sanitized[field] = value;
     }
   }
@@ -188,11 +192,12 @@ export function buildRegistryEvidence(
   dependencies: RegistryEvidenceDependencies,
   context: RegistryEvidenceContext = {}
 ): readonly EvidenceEventInput[] {
+  const registry = dependencies.registry ?? lockedEvidenceRegistry;
   const frame: EvidenceFrame = {
-    registry: dependencies.registry ?? lockedEvidenceRegistry,
+    registry,
     createEventId: dependencies.createEventId,
     occurredAt: dependencies.now().toISOString(),
-    context: sanitizedContext(context),
+    context: sanitizedContext(context, registry),
     snapshot: snapshotProperties(outcome.result)
   };
   return evidenceSpecs(outcome).map((spec) => evidenceEvent(spec, frame));

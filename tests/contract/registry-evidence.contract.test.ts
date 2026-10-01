@@ -186,6 +186,54 @@ function expectDisguisedRawContentRejected(): void {
   }
 }
 
+const CONTEXT_FIELD_NAMES = [
+  "anonymous_id",
+  "session_id",
+  "intent_id",
+  "blueprint_hash",
+  "trace_id"
+] as const;
+
+function expectContextSchemaSanitized(outcome: CoverageResolutionOutcome): void {
+  const rawUnderAllowedNames = Object.fromEntries(
+    CONTEXT_FIELD_NAMES.map((field) => [field, field === "blueprint_hash" ? `sha256:${RAW_INTENT}` : RAW_INTENT])
+  );
+  const nonConforming = {
+    anonymous_id: INTENT_ID_V1,
+    session_id: "123e4567-e89b-52d3-a456-426614174000",
+    intent_id: "not-a-uuid",
+    blueprint_hash: `sha256:${"A".repeat(64)}`,
+    trace_id: "0".repeat(32)
+  };
+  for (const context of [rawUnderAllowedNames, nonConforming]) {
+    const events = evidenceFor(outcome, context);
+    expectAllAccepted(events);
+    expect(JSON.stringify(events)).not.toContain(RAW_INTENT);
+    for (const event of events) {
+      for (const field of CONTEXT_FIELD_NAMES) {
+        expect(event).not.toHaveProperty(field);
+      }
+    }
+  }
+
+  const valid = {
+    anonymous_id: "323e4567-e89b-42d3-a456-426614174000",
+    session_id: "423e4567-e89b-42d3-a456-426614174000",
+    intent_id: INTENT_ID_V1,
+    blueprint_hash: `sha256:${"b".repeat(64)}`,
+    trace_id: "4bf92f3577b34da6a3ce929d0e0e4736"
+  };
+  const validEvents = evidenceFor(outcome, valid);
+  expectAllAccepted(validEvents);
+  for (const event of validEvents) {
+    expect(event).toMatchObject(valid);
+  }
+  for (const event of evidenceFor(outcome, { anonymous_id: null, intent_id: undefined })) {
+    expect(event).not.toHaveProperty("anonymous_id");
+    expect(event).not.toHaveProperty("intent_id");
+  }
+}
+
 describe("F04 registry evidence contract", () => {
   test("TEST-F04-AC-017 makes capability selected, rejected, gap and mismatch outcomes traceable", () => {
     const mixed = resolveCapabilityCoverageOutcome(mixedRequest(), contextFor([disabledRichText()]));
@@ -302,5 +350,6 @@ describe("F04 registry evidence contract", () => {
     expect(unknownSuggestion).not.toHaveProperty("capability_id");
     expect(unknownSuggestion?.properties).not.toHaveProperty("capability_version");
     expectDisguisedRawContentRejected();
+    expectContextSchemaSanitized(outcome);
   });
 });
