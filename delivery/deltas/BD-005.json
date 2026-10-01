@@ -46,6 +46,7 @@
   "verification": [
     "Resolution direction approved; executable machine truth must be canonicalized upstream before implementation resumes.",
     "T002 candidate d8f1b17d... is review-blocked and must not be merged as Product truth.",
-    "Class-level F02/F04 contract audit required before BD-005 may advance to APPROVED/IMPLEMENTING."
+    "Class-level F02/F04 contract audit required before BD-005 may advance to APPROVED/IMPLEMENTING.",
+    "appf2-design remediation candidate commit 1f4957bb6c53903306d3b0280e7542764e1547de on branch governance/BF-030-031-f02-f04-contract; not yet merged/approved as Working truth."
   ]
 }
