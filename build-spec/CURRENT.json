@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-004",
-  "implementation_enabled": false,
-  "reason": "BF-028 / BF-029 governance remediation is directly verified on main. BS-P1-004 remains locked and implementation stays disabled pending SP-P1-002 / T001 Reactivation Review."
+  "implementation_enabled": true,
+  "reason": "SP-P1-002 / T001 Reactivation Review PASS after direct-proof BF-028 / BF-029 remediation. BS-P1-004 remains the active locked baseline and T001 is the sole active implementation Task."
 }
