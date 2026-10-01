@@ -77,6 +77,16 @@ export interface CoverageResult {
   readonly gaps: readonly CoverageGap[];
 }
 
+export interface CapabilityRejection {
+  readonly capabilityRef: CapabilityRef;
+  readonly code: CapabilityAdmissionError["code"];
+}
+
+export interface CoverageResolutionOutcome {
+  readonly result: CoverageResult;
+  readonly rejections: readonly CapabilityRejection[];
+}
+
 export class CoverageResolutionError extends Error {
   public constructor(
     public readonly code: "DUPLICATE_REQUIREMENT_ID",
@@ -90,6 +100,8 @@ export class CoverageResolutionError extends Error {
 interface ResolutionState {
   readonly definitionsByRef: ReadonlyMap<string, CapabilityDefinition>;
   readonly definitionsBySemanticNeed: ReadonlyMap<string, readonly CapabilityDefinition[]>;
+  readonly knownCapabilityIds: ReadonlySet<string>;
+  readonly rejections: Map<string, CapabilityRejection>;
   readonly admit: (ref: CapabilityRef) => CapabilityAdmission | undefined;
 }
 
@@ -132,9 +144,12 @@ function createResolutionState(context: CoverageResolutionContext): ResolutionSt
     compatibilityOutcomes: context.compatibilityOutcomes,
     allowExperimental: context.mode === "EXPERIMENT"
   });
+  const rejections = new Map<string, CapabilityRejection>();
   return {
     definitionsByRef,
     definitionsBySemanticNeed: buildSemanticIndex(context.source),
+    knownCapabilityIds: new Set(context.source.capabilities.map(({ id }) => id)),
+    rejections,
     admit(ref): CapabilityAdmission | undefined {
       try {
         return resolver.admit({
@@ -150,12 +165,30 @@ function createResolutionState(context: CoverageResolutionContext): ResolutionSt
         });
       } catch (error: unknown) {
         if (error instanceof CapabilityAdmissionError) {
+          rejections.set(refKey(ref), { capabilityRef: ref, code: error.code });
           return undefined;
         }
         throw error;
       }
     }
   };
+}
+
+function recordUnregisteredSuggestions(
+  suggestedRefs: readonly CapabilityRef[],
+  state: ResolutionState
+): void {
+  for (const ref of suggestedRefs) {
+    if (state.definitionsByRef.has(refKey(ref))) {
+      continue;
+    }
+    state.rejections.set(refKey(ref), {
+      capabilityRef: ref,
+      code: state.knownCapabilityIds.has(ref.id)
+        ? "UNKNOWN_CAPABILITY_VERSION"
+        : "UNKNOWN_CAPABILITY"
+    });
+  }
 }
 
 function orderedCandidates(
@@ -165,7 +198,9 @@ function orderedCandidates(
 ): readonly CapabilityDefinition[] {
   const semanticMatches = state.definitionsBySemanticNeed.get(requirement.semantic_need) ?? [];
   const matchingRefs = new Set(semanticMatches.map((definition) => refKey(toRef(definition))));
-  const suggested = (request.suggestedCapabilities?.[requirement.requirement_id] ?? [])
+  const suggestedRefs = request.suggestedCapabilities?.[requirement.requirement_id] ?? [];
+  recordUnregisteredSuggestions(suggestedRefs, state);
+  const suggested = suggestedRefs
     .map((ref) => state.definitionsByRef.get(refKey(ref)))
     .filter(
       (definition): definition is CapabilityDefinition =>
@@ -333,6 +368,13 @@ export function resolveCapabilityCoverage(
   request: CoverageResolutionRequest,
   context: CoverageResolutionContext = canonicalCoverageContext()
 ): CoverageResult {
+  return resolveCapabilityCoverageOutcome(request, context).result;
+}
+
+export function resolveCapabilityCoverageOutcome(
+  request: CoverageResolutionRequest,
+  context: CoverageResolutionContext = canonicalCoverageContext()
+): CoverageResolutionOutcome {
   assertUniqueRequirements(request.requirements);
   const state = createResolutionState(context);
   const requirements = request.requirements.map((requirement) =>
@@ -345,11 +387,14 @@ export function resolveCapabilityCoverage(
     }
   }
   return {
-    registryVersion: context.source.registryVersion,
-    registryDigest: computeRegistryDigest(context.source),
-    status: aggregateStatus(request.requirements, requirements),
-    selected: [...selected.values()],
-    requirements,
-    gaps: requirements.map(gapFor).filter((gap): gap is CoverageGap => gap !== undefined)
+    result: {
+      registryVersion: context.source.registryVersion,
+      registryDigest: computeRegistryDigest(context.source),
+      status: aggregateStatus(request.requirements, requirements),
+      selected: [...selected.values()],
+      requirements,
+      gaps: requirements.map(gapFor).filter((gap): gap is CoverageGap => gap !== undefined)
+    },
+    rejections: [...state.rejections.values()]
   };
 }

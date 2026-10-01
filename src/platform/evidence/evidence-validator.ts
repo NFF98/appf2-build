@@ -7,9 +7,16 @@ import type {
 import {
   lockedEvidenceRegistry,
   type EvidenceRegistry,
-  type EvidenceRegistryEntry,
-  type EvidencePropertySchema
+  type EvidenceRegistryEntry
 } from "./evidence-registry.js";
+import {
+  evidenceFieldFault,
+  isRecord,
+  isUuid,
+  type EvidenceFieldSchema
+} from "./evidence-field-schema.js";
+
+export { isUuid };
 
 export const EVIDENCE_LIMITS = Object.freeze({
   eventBytes: 8 * 1024,
@@ -20,46 +27,23 @@ export const EVIDENCE_LIMITS = Object.freeze({
   propertyStringCharacters: 256
 });
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const BLUEPRINT_HASH_PATTERN = /^sha256:[0-9a-f]{64}$/;
-const FUNCTION_ID_PATTERN = /^F[0-9]{2}$/;
-const BOUNDED_IDENTIFIER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
-const ENVELOPE_FIELDS = new Set([
+const MANDATORY_ENVELOPE_FIELDS = [
   "event_id",
   "event_type",
   "schema_version",
   "occurred_at",
-  "anonymous_id",
-  "session_id",
-  "function_id",
-  "intent_id",
-  "blueprint_hash",
-  "share_id",
-  "capability_id",
-  "error_code",
-  "policy_rule_id",
-  "trace_id",
-  "properties"
+  "function_id"
+] as const;
+const FIELD_LABELLED_ENVELOPE_FIELDS = new Set([
+  "event_type",
+  "schema_version",
+  "occurred_at",
+  "function_id"
 ]);
-const UUID_CONTEXT_FIELDS = [
-  "event_id",
-  "session_id",
-  "intent_id",
-  "share_id"
-] as const;
-const BOUNDED_CONTEXT_FIELDS = [
-  "capability_id",
-  "error_code",
-  "policy_rule_id",
-  "trace_id"
-] as const;
 const FORBIDDEN_PROPERTY_KEYS =
   /^(?:raw_?intent|intent|prompt|raw_?result|result|model_?response|runtime_?state|blueprint_?json|user_?agent|provider_?(?:secret|token)|secret|token|authorization|cookie|email|phone|ip_?address)$/i;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+type RejectionDetail = Pick<EvidenceRejection, "code" | "field">;
 
 function byteLength(value: string): number {
   return new TextEncoder().encode(value).byteLength;
@@ -81,14 +65,54 @@ function rejection(
   };
 }
 
-function validOptionalString(
+function isAbsent(value: unknown): boolean {
+  return value === undefined || value === null;
+}
+
+function envelopeFieldRejection(field: string): RejectionDetail {
+  if (field === "anonymous_id") {
+    return { code: "F07-ERR-001", field: "anonymous_id" };
+  }
+  return {
+    code: "F07-ERR-003",
+    field: FIELD_LABELLED_ENVELOPE_FIELDS.has(field) ? field : "context"
+  };
+}
+
+function envelopeRejection(
   source: Record<string, unknown>,
-  field: string,
-  pattern: RegExp
-): boolean {
-  const value = source[field];
-  return value === undefined || value === null ||
-    (typeof value === "string" && pattern.test(value));
+  registry: EvidenceRegistry
+): RejectionDetail | null {
+  for (const field of MANDATORY_ENVELOPE_FIELDS) {
+    if (isAbsent(source[field])) {
+      return envelopeFieldRejection(field);
+    }
+  }
+  for (const [field, schema] of registry.clientEnvelopeSchemas) {
+    const value = source[field];
+    if (!isAbsent(value) && evidenceFieldFault(value, schema) !== null) {
+      return envelopeFieldRejection(field);
+    }
+  }
+  return null;
+}
+
+function registeredEntryRejection(
+  source: Record<string, unknown>,
+  entry: EvidenceRegistryEntry
+): RejectionDetail | null {
+  if (source.function_id !== entry.functionId) {
+    return { code: "F07-ERR-014", field: "function_id" };
+  }
+  if (source.schema_version !== entry.schemaVersion) {
+    return { code: "F07-ERR-003", field: "schema_version" };
+  }
+  for (const requiredField of entry.requiredContext) {
+    if (isAbsent(source[requiredField])) {
+      return { code: "F07-ERR-003", field: "context" };
+    }
+  }
+  return null;
 }
 
 function inspectPropertyStructure(
@@ -101,19 +125,11 @@ function inspectPropertyStructure(
   if (depth > EVIDENCE_LIMITS.propertyDepth) {
     return "depth";
   }
-  if (Array.isArray(value)) {
-    for (const nestedValue of value) {
-      const invalid = inspectPropertyStructure(nestedValue, depth + 1);
-      if (invalid !== null) {
-        return invalid;
-      }
-    }
-    return null;
+  const nested = Array.isArray(value) ? value : Object.values(value);
+  if (!Array.isArray(value) && Object.keys(value).some(key => FORBIDDEN_PROPERTY_KEYS.test(key))) {
+    return "forbidden";
   }
-  for (const [key, nestedValue] of Object.entries(value)) {
-    if (FORBIDDEN_PROPERTY_KEYS.test(key)) {
-      return "forbidden";
-    }
+  for (const nestedValue of nested) {
     const invalid = inspectPropertyStructure(nestedValue, depth + 1);
     if (invalid !== null) {
       return invalid;
@@ -122,66 +138,9 @@ function inspectPropertyStructure(
   return null;
 }
 
-function validString(
-  value: string,
-  schema: EvidencePropertySchema
-): "string" | "type" | null {
-  const length = [...value].length;
-  if (
-    length > EVIDENCE_LIMITS.propertyStringCharacters ||
-    (schema.maxLength !== undefined && length > schema.maxLength)
-  ) {
-    return "string";
-  }
-  if (schema.minLength !== undefined && length < schema.minLength) {
-    return "type";
-  }
-  if (schema.enumValues !== undefined && !schema.enumValues.has(value)) {
-    return "type";
-  }
-  if (schema.pattern !== undefined && !schema.pattern.test(value)) {
-    return "type";
-  }
-  if (schema.format === "uuid" && !UUID_PATTERN.test(value)) {
-    return "type";
-  }
-  if (schema.uuidVersion !== undefined) {
-    const version = Number.parseInt(value[14] ?? "", 16);
-    if (version !== schema.uuidVersion) {
-      return "type";
-    }
-  }
-  return null;
-}
-
-function validatePropertyValue(
-  value: unknown,
-  schema: EvidencePropertySchema
-): "string" | "type" | null {
-  if (schema.type === "string") {
-    return typeof value === "string" ? validString(value, schema) : "type";
-  }
-  if (schema.type === "boolean") {
-    return typeof value === "boolean" ? null : "type";
-  }
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return "type";
-  }
-  if (schema.type === "integer" && !Number.isInteger(value)) {
-    return "type";
-  }
-  if (schema.minimum !== undefined && value < schema.minimum) {
-    return "type";
-  }
-  if (schema.maximum !== undefined && value > schema.maximum) {
-    return "type";
-  }
-  return null;
-}
-
 function crossFieldValid(
   properties: Record<string, unknown>,
-  schema: EvidencePropertySchema
+  schema: EvidenceFieldSchema
 ): boolean {
   if (schema.crossFieldRule === undefined) {
     return true;
@@ -195,13 +154,12 @@ function crossFieldValid(
       completed <= planned);
 }
 
-function requiredConditionMet(
-  properties: Record<string, unknown>,
-  schema: EvidencePropertySchema
+function requiredByEnvelope(
+  source: Record<string, unknown>,
+  schema: EvidenceFieldSchema
 ): boolean {
-  const condition = schema.requiredWhen;
-  return condition === undefined ||
-    properties[condition.property] !== condition.equals;
+  const condition = schema.requiredWhenEnvelope;
+  return condition !== undefined && source[condition.field] === condition.equals;
 }
 
 function propertyError(
@@ -216,7 +174,7 @@ function propertyValueError(
   source: Record<string, unknown>,
   key: string,
   value: unknown,
-  schema: EvidencePropertySchema
+  schema: EvidenceFieldSchema
 ): EvidenceRejection | null {
   const structural = inspectPropertyStructure(value, 1);
   if (structural === "forbidden") {
@@ -225,14 +183,14 @@ function propertyValueError(
   if (structural === "depth") {
     return propertyError(source, "F07-ERR-006", key);
   }
-  const invalid = validatePropertyValue(value, schema);
-  if (invalid === "string") {
+  if (typeof value === "string" && [...value].length > EVIDENCE_LIMITS.propertyStringCharacters) {
     return propertyError(source, "F07-ERR-006", key);
   }
-  if (invalid === "type") {
-    return propertyError(source, "F07-ERR-003", key);
+  const fault = evidenceFieldFault(value, schema);
+  if (fault === null) {
+    return null;
   }
-  return null;
+  return propertyError(source, fault === "too_long" ? "F07-ERR-006" : "F07-ERR-003", key);
 }
 
 function validateRequiredProperties(
@@ -241,10 +199,7 @@ function validateRequiredProperties(
   entry: EvidenceRegistryEntry
 ): EvidenceRejection | null {
   for (const [key, schema] of entry.propertySchemas) {
-    if (
-      properties[key] === undefined &&
-      !requiredConditionMet(properties, schema)
-    ) {
+    if (properties[key] === undefined && requiredByEnvelope(source, schema)) {
       return propertyError(source, "F07-ERR-003", key);
     }
     if (!crossFieldValid(properties, schema)) {
@@ -254,66 +209,46 @@ function validateRequiredProperties(
   return null;
 }
 
+function propertyKeyError(
+  source: Record<string, unknown>,
+  keys: readonly string[],
+  entry: EvidenceRegistryEntry,
+  registry: EvidenceRegistry
+): EvidenceRejection | null {
+  const reserved = keys.find(key => registry.reservedEnvelopeFields.has(key));
+  const forbidden = reserved ?? keys.find(key =>
+    !entry.allowedProperties.has(key) || FORBIDDEN_PROPERTY_KEYS.test(key)
+  );
+  return forbidden === undefined ? null : propertyError(source, "F07-ERR-005", forbidden);
+}
+
 function validateProperties(
   source: Record<string, unknown>,
   entry: EvidenceRegistryEntry,
-  serializedProperties: string
+  registry: EvidenceRegistry
 ): EvidenceRejection | null {
-  const properties = source.properties;
-  if (byteLength(serializedProperties) > EVIDENCE_LIMITS.propertiesBytes) {
-    return { event_id: String(source.event_id), code: "F07-ERR-006", field: "properties" };
+  const rawProperties = source.properties;
+  if (byteLength(JSON.stringify(rawProperties ?? {})) > EVIDENCE_LIMITS.propertiesBytes) {
+    return propertyError(source, "F07-ERR-006", "properties");
   }
-  if (properties === undefined || properties === null) {
-    return null;
-  }
+  const properties = isAbsent(rawProperties) ? {} : rawProperties;
   if (!isRecord(properties)) {
-    return { event_id: String(source.event_id), code: "F07-ERR-003", field: "properties" };
+    return propertyError(source, "F07-ERR-003", "properties");
+  }
+  const invalidKey = propertyKeyError(source, Object.keys(properties), entry, registry);
+  if (invalidKey !== null) {
+    return invalidKey;
   }
   for (const [key, value] of Object.entries(properties)) {
-    if (!entry.allowedProperties.has(key) || FORBIDDEN_PROPERTY_KEYS.test(key)) {
-      return propertyError(source, "F07-ERR-005", key);
-    }
     const schema = entry.propertySchemas.get(key);
-    if (schema === undefined) {
-      return propertyError(source, "F07-ERR-014", key);
-    }
-    const invalid = propertyValueError(source, key, value, schema);
+    const invalid = schema === undefined
+      ? propertyError(source, "F07-ERR-014", key)
+      : propertyValueError(source, key, value, schema);
     if (invalid !== null) {
       return invalid;
     }
   }
   return validateRequiredProperties(source, properties, entry);
-}
-
-function contextRejection(
-  source: Record<string, unknown>,
-  entry: EvidenceRegistryEntry
-): Pick<EvidenceRejection, "code" | "field"> | null {
-  for (const requiredField of entry.requiredContext) {
-    if (source[requiredField] === undefined || source[requiredField] === null) {
-      return { code: "F07-ERR-003", field: "context" };
-    }
-  }
-  if (malformedAnonymousId(source.anonymous_id)) {
-    return { code: "F07-ERR-001", field: "anonymous_id" };
-  }
-  for (const field of UUID_CONTEXT_FIELDS) {
-    if (!validOptionalString(source, field, UUID_PATTERN)) {
-      return { code: "F07-ERR-003", field: "context" };
-    }
-  }
-  if (!validOptionalString(source, "blueprint_hash", BLUEPRINT_HASH_PATTERN)) {
-    return { code: "F07-ERR-003", field: "context" };
-  }
-  return BOUNDED_CONTEXT_FIELDS.every(field =>
-    validOptionalString(source, field, BOUNDED_IDENTIFIER_PATTERN)
-  )
-    ? null
-    : { code: "F07-ERR-003", field: "context" };
-}
-
-function malformedAnonymousId(value: unknown): boolean {
-  return value !== undefined && value !== null && !isUuid(value);
 }
 
 function asEvidenceEvent(source: Record<string, unknown>): EvidenceEventInput {
@@ -331,37 +266,24 @@ export function validateEvidenceEvent(
   if (byteLength(serializedEvent) > EVIDENCE_LIMITS.eventBytes) {
     return rejection(input, "F07-ERR-006", null);
   }
-  if (Object.keys(input).some(field => !ENVELOPE_FIELDS.has(field))) {
+  if (Object.keys(input).some(field => field !== "properties" && !registry.clientEnvelopeSchemas.has(field))) {
     return rejection(input, "F07-ERR-003", null);
   }
-  if (typeof input.event_type !== "string") {
-    return rejection(input, "F07-ERR-003", "event_type");
+  const invalidEnvelope = envelopeRejection(input, registry);
+  if (invalidEnvelope !== null) {
+    return rejection(input, invalidEnvelope.code, invalidEnvelope.field);
   }
-  const entry = registry.find(input.event_type);
+  const entry = registry.find(String(input.event_type));
   if (entry === undefined) {
     return rejection(input, "F07-ERR-004", "event_type");
   }
-  if (input.function_id !== entry.functionId || !FUNCTION_ID_PATTERN.test(entry.functionId)) {
-    return rejection(input, "F07-ERR-014", "function_id");
+  const invalidEntry = registeredEntryRejection(input, entry);
+  if (invalidEntry !== null) {
+    return rejection(input, invalidEntry.code, invalidEntry.field);
   }
-  if (input.schema_version !== entry.schemaVersion) {
-    return rejection(input, "F07-ERR-003", "schema_version");
-  }
-  if (typeof input.occurred_at !== "string" || !Number.isFinite(Date.parse(input.occurred_at))) {
-    return rejection(input, "F07-ERR-003", "occurred_at");
-  }
-  const invalidContext = contextRejection(input, entry);
-  if (invalidContext !== null) {
-    return rejection(input, invalidContext.code, invalidContext.field);
-  }
-  const serializedProperties = JSON.stringify(input.properties ?? {});
-  const propertyRejection = validateProperties(input, entry, serializedProperties);
+  const propertyRejection = validateProperties(input, entry, registry);
   if (propertyRejection !== null) {
     return { accepted: false, rejection: propertyRejection };
   }
   return { accepted: true, event: asEvidenceEvent(input) };
-}
-
-export function isUuid(value: unknown): value is string {
-  return typeof value === "string" && UUID_PATTERN.test(value);
 }
