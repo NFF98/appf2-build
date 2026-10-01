@@ -15,7 +15,9 @@ const planningSkills=new Set((skillRegistry.skills||[]).filter(x=>x.actor==="PLA
 const sprintStates=new Set(["PLANNED","ACTIVE","BLOCKED","REVIEW","CLOSED"]);
 const taskStates=new Set(["PLANNED","IN_PROGRESS","BLOCKED","REVIEW","VERIFIED","CLOSED"]);
 const protectedPrefixes=["build-spec/","harness/","ci/","deploy/","releases/","skills/",".cursor/",".github/","delivery/backlog/","delivery/sprints/","delivery/CURRENT-SPRINT.json","delivery/templates/","delivery/deltas/","package.json","tsconfig.build.json"];
+const testMaintenanceModes=new Set(["BASELINE_FIXTURE_REBIND"]);
 const backlogById=new Map((backlog.items||[]).map(x=>[x.backlog_item_id,x]));
+const pathAllowed=(p,allowed)=>allowed.some(a=>a.endsWith("/")?p.startsWith(a):p===a);
 
 const registryFor=baselineId=>{
   const mp="build-spec/baselines/"+baselineId+"/manifest.json";
@@ -50,6 +52,46 @@ const validateActiveTask=td=>{
   if(!allowed[cs.status]?.has(active.status)) errors.push("active_task status "+active.status+" incompatible with Sprint "+cs.status);
   validateActiveTaskDependencies(active,taskById);
 };
+const validateTestMaintenanceAuthorizations=(t,sid,activeAcceptance)=>{
+  const auths=t.test_maintenance_authorizations;
+  if(auths===undefined) return;
+  if(!Array.isArray(auths)){
+    errors.push(sid+"/"+t.task_id+" test_maintenance_authorizations must be array");
+    return;
+  }
+  const seen=new Set();
+  const ownedTestIds=new Set((t.acceptance_links||[]).map(x=>x.test_id));
+  const targetManifestPath="build-spec/baselines/"+t.build_spec_id+"/manifest.json";
+  const targetManifest=exists(targetManifestPath)?read(targetManifestPath):null;
+  const activeByTestId=new Map([...activeAcceptance.values()].map(x=>[x.test_id,x]));
+  for(const a of auths){
+    if(!a || typeof a!=="object"){
+      errors.push(sid+"/"+t.task_id+" invalid test maintenance authorization");
+      continue;
+    }
+    const key=(a.test_id||"")+"::"+(a.file||"");
+    if(seen.has(key)) errors.push(sid+"/"+t.task_id+" duplicate test maintenance authorization "+key);
+    seen.add(key);
+    if(!/^TEST-[A-Z0-9-]+$/.test(a.test_id||"")) errors.push(sid+"/"+t.task_id+" invalid maintenance test_id "+a.test_id);
+    if(typeof a.file!=="string" || !/^tests\/.+\.(?:test|spec)\.(?:ts|tsx)$/.test(a.file) || a.file.includes("..") || a.file.includes("*")){
+      errors.push(sid+"/"+t.task_id+" invalid maintenance test file "+a.file);
+    }else if(!pathAllowed(a.file,t.allowed_write_paths||[])){
+      errors.push(sid+"/"+t.task_id+" maintenance test file outside allowed_write_paths: "+a.file);
+    }
+    if(!testMaintenanceModes.has(a.mode)) errors.push(sid+"/"+t.task_id+" invalid test maintenance mode "+a.mode);
+    if(!/^BS-P\d+-\d{3}$/.test(a.from_build_spec||"") || !/^BS-P\d+-\d{3}$/.test(a.to_build_spec||"")){
+      errors.push(sid+"/"+t.task_id+" maintenance authorization requires valid from/to Build Spec");
+    }
+    if(a.to_build_spec!==t.build_spec_id) errors.push(sid+"/"+t.task_id+" maintenance to_build_spec must equal Task Build Spec");
+    if(a.from_build_spec===a.to_build_spec) errors.push(sid+"/"+t.task_id+" maintenance from/to Build Spec must differ");
+    if(targetManifest && targetManifest.supersedes!==a.from_build_spec){
+      errors.push(sid+"/"+t.task_id+" maintenance from_build_spec must be the direct superseded baseline");
+    }
+    if(ownedTestIds.has(a.test_id)) errors.push(sid+"/"+t.task_id+" maintenance authorization may not duplicate Task-owned Test ID "+a.test_id);
+    if(!activeByTestId.has(a.test_id)) errors.push(sid+"/"+t.task_id+" maintenance authorization references unknown/inactive Test ID "+a.test_id);
+  }
+};
+
 const validateActiveSprint=v=>{
   const {m,td}=v;
   if(!cb.implementation_enabled) errors.push("Active Sprint requires implementation_enabled=true");
@@ -158,6 +200,7 @@ for(const sid of sprintDirs){
       if(typeof p!=="string" || !p || p.startsWith("/") || p.includes("..")) errors.push(sid+"/"+t.task_id+" invalid allowed_write_path: "+p);
       if(protectedPrefixes.some(x=>p.startsWith(x)) || p==="AGENTS.md") errors.push(sid+"/"+t.task_id+" may not write governance path: "+p);
     }
+    validateTestMaintenanceAuthorizations(t,sid,activeAcceptance);
     if(!Array.isArray(t.required_commands)||!t.required_commands.length) errors.push(sid+"/"+t.task_id+" missing required_commands");
     if(Array.isArray(t.required_commands) && !t.required_commands.includes("npm run gate")) errors.push(sid+"/"+t.task_id+" must require npm run gate");
     for(const cmd of t.required_commands||[]){
