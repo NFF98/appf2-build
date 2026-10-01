@@ -1,5 +1,5 @@
 {
-  "registry_version": "2.2.0",
+  "registry_version": "2.3.0",
   "phase_1_freeze_audit": {
     "status": "PASS",
     "scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
@@ -8,8 +8,8 @@
       "PHASE_2_PLUS",
       "DEFERRED_CONTENT"
     ],
-    "audited_on": "2026-09-28",
-    "change_ref": "BF-011"
+    "audited_on": "2026-10-01",
+    "change_ref": "A0-BF-016-BF-023-PENDING-REAUDIT"
   },
   "owner": "working/detailed-design/registries/acceptance-test-registry.json",
   "conventions": "working/common-core/ACCEPTANCE-CONVENTIONS.md",
@@ -764,9 +764,9 @@
     {
       "acceptance_id": "F02-AC-019",
       "function_id": "F02",
-      "criterion": "每次 validation 可追蹤 stage / error / trace。",
+      "criterion": "每次 validation 可追蹤 deterministic candidate_digest / stage / error / trace。",
       "test_id": "TEST-F02-AC-019",
-      "expected_observable": "每次 validation 可追蹤 stage / error / trace。",
+      "expected_observable": "同一 exact candidate payload bytes 產生相同 sha256:<hex> candidate_digest；invalid candidate 仍可用 digest + stage + error + trace 追蹤，且不保存 raw Blueprint body。",
       "contract_status": "ACTIVE",
       "proof_scope": "RUNTIME_EVIDENCE",
       "required_for_build_freeze": true
@@ -1884,9 +1884,9 @@
     {
       "acceptance_id": "F07-AC-008",
       "function_id": "F07",
-      "criterion": "forbidden property，或不符合 registry property type / enum / format / bounds / narrowing constraint 的 property value，不能進 product_event。",
+      "criterion": "Envelope identifier / UUID version、reserved-envelope separation、property allowlist，以及 registry type / enum / format / bounds / narrowing constraint 任一不合法，該 event不能進 product_event。",
       "test_id": "TEST-F07-008",
-      "expected_observable": "不在 allowlist的 property，以及 type / enum / format / bounds / narrowing constraint 不合法的 property value 均被該 event獨立拒絕，且不寫入 product_event。",
+      "expected_observable": "非 canonical envelope identifier（含要求 UUID v4 卻非 v4）、properties 重複 reserved envelope field、或 property type / enum / format / bounds / narrowing constraint 不合法時，該 event獨立拒絕且不寫入 product_event。",
       "contract_status": "ACTIVE",
       "proof_scope": "RUNTIME_EVIDENCE",
       "required_for_build_freeze": true
@@ -2064,9 +2064,9 @@
     {
       "acceptance_id": "F07-AC-026",
       "function_id": "F07",
-      "criterion": "raw product_event 90-day retention可執行。",
+      "criterion": "raw product_event 以 first durable received_at 為 cutoff anchor，透過 appf2-owned EvidenceRetentionMaintenance 可執行 90-day retention。",
       "test_id": "TEST-F07-026",
-      "expected_observable": "raw product_event 90-day retention可執行。",
+      "expected_observable": "maintenance_now - 90 days 之前的 first durable received_at row，只有在 required aggregate watermark verified 後才被刪除；duplicate retry / occurred_at 不改變 cutoff；maintenance 可重跑且不 double count。",
       "contract_status": "ACTIVE",
       "proof_scope": "RUNTIME_EVIDENCE",
       "required_for_build_freeze": true
@@ -2074,9 +2074,9 @@
     {
       "acceptance_id": "F07-AC-027",
       "function_id": "F07",
-      "criterion": "non-identifying aggregate可在 raw deletion後保留。",
+      "criterion": "bounded non-identifying evidence_daily_aggregate 可在 raw deletion後保留，且不含 event/user/session/intent/share/trace identity。",
       "test_id": "TEST-F07-AC-027",
-      "expected_observable": "non-identifying aggregate可在 raw deletion後保留。",
+      "expected_observable": "eligible raw rows完成 aggregate materialization並刪除後，evidence_daily_aggregate 仍保留對應 bounded count/rate；schema 不含 event_id / anonymous_id / session_id / intent_id / share_id / trace_id 或 raw content。",
       "contract_status": "ACTIVE",
       "proof_scope": "BEHAVIOR",
       "required_for_build_freeze": true
