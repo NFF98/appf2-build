@@ -108,7 +108,7 @@ Review remediation:
 
 Governance attack suite includes both valid and missing-revalidation cases.
 
-BF-025 remains OPEN until PR validation proves the new governance path.
+BF-025 = **RESOLVED**. PR #114 machine validation proved the explicit revalidation path and rejected the missing-revalidation attack case.
 
 ## 6. BF-024 — Scope-clean Derived Freeze Provenance
 
@@ -129,7 +129,7 @@ Review remediation:
 
 Governance attack suite includes positive and negative derived-provenance cases.
 
-BF-024 remains OPEN until PR validation proves the new governance path.
+BF-024 = **RESOLVED**. PR #114 machine validation proved truthful derived provenance and rejected mismatched derived-source provenance.
 
 ## 7. Open PR / Open Item Review
 
@@ -178,9 +178,12 @@ No Product implementation is included in that control transition.
 
 ## 9. Current Review Result
 
-Activation Review = **PENDING PR #114 VALIDATION**  
-BF-024 = OPEN  
-BF-025 = OPEN  
+Activation Review = **PASS / READY FOR HUMAN ACTIVATION**  
+PR #114 required checks = **PASS**  
+Governance Attack Dry-run = **81 / 81 expected outcomes observed**  
+BF-024 = RESOLVED  
+BF-025 = RESOLVED  
+BF-023 = OPEN IMPLEMENTATION BUG, bound to T001 activation plan  
 Human Activation = NOT YET GRANTED  
 Build = HOLD  
 Cursor Product Implementation = NOT AUTHORIZED
