@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-015",
   "classification": "BUILD_BLOCKER",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-003",
   "sprint_id": "SP-P1-002",
   "task_id": "T001",
@@ -14,7 +14,8 @@
     "appf2-design working/detailed-design/functions/F04-CAPABILITY-REGISTRY.md@main :: optional IDs include data.chart_basic / media.audio_playback / media.video_playback",
     "A0 probe: layout.container accepted; data.chart_basic and media.audio_playback rejected; 1layout.container and layout.container.extra accepted.",
     "appf2-design PR #6 merged as 7d6de8253f09be56e8ff4b877c05a27c1e5d7a70: Working capability_id grammar corrected; Evidence Registry 2.0.2.",
-    "Second A0 machine audit on scope-clean freeze source: canonical underscore Capability IDs pass; numeric-leading, multi-segment, and hyphen-invalid samples fail."
+    "Second A0 machine audit on scope-clean freeze source: canonical underscore Capability IDs pass; numeric-leading, multi-segment, and hyphen-invalid samples fail.",
+    "Human approved BS-P1-004 Build Freeze on 2026-10-01; PR #113 locks scope-clean Design source 91894ae8bd6241bb5ee1897180db72e9e578d1bf and supersedes BS-P1-003."
   ],
   "attempts": [
     {
@@ -34,6 +35,12 @@
       "strategy": "A0_SCOPE_CLEAN_FREEZE_SOURCE_VERIFICATION",
       "result": "PASSED_UPSTREAM_BLOCKED_ON_REBASELINE",
       "evidence": "Canonical Capability ID grammar is fixed in Working and preserved in scope-clean freeze source 91894ae8bd6241bb5ee1897180db72e9e578d1bf; BS-P1-003 remains stale until replacement freeze."
+    },
+    {
+      "attempt_id": "FREEZE-BF-015",
+      "strategy": "HUMAN_APPROVED_BS_P1_004_REPLACEMENT_FREEZE",
+      "result": "PASSED",
+      "evidence": "BS-P1-004 immutable candidate contains the verified A0 remediation and canonical hashes; replacement Freeze resolves the stale BS-P1-003 contract blocker."
     }
   ],
   "downstream_risk": [
