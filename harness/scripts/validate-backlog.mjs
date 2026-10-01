@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds } from "./baseline-lineage.mjs";
+import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor } from "./baseline-lineage.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -96,12 +96,50 @@ const validateRevalidation=(item,id,currentBaseline,driftIds)=>{
   return ids;
 };
 
+const sameIdSet=(values,expected)=>{
+  const ids=new Set(Array.isArray(values)?values:[]);
+  const wanted=new Set(expected);
+  return ids.size===wanted.size && [...wanted].every(x=>ids.has(x));
+};
+const resolveHistoricalRevalidationTask=(r,id)=>{
+  if(!/^SP-P\d+-\d{3}$/.test(r?.sprint_id||"") || !/^T\d{3}$/.test(r?.task_id||"")) return null;
+  const tp="delivery/sprints/"+r.sprint_id+"/tasks.json";
+  if(!exists(tp)) return null;
+  const task=(read(tp).tasks||[]).find(t=>t.task_id===r.task_id)||null;
+  if(!task || task.status!=="CLOSED" || task.build_spec_id!==r.target_build_spec_id){
+    errors.push(id+" historical revalidation must reference the CLOSED Task at its target Build Spec");
+    return null;
+  }
+  return task;
+};
+const historicalRevalidationCarryForwardIds=(item,id,currentBaseline)=>{
+  const r=item.revalidation;
+  if(!r || r.status!=="CLOSED" || r.target_build_spec_id===currentBaseline) return null;
+  if(!isBaselineAncestor(root,item.build_spec_id,r.target_build_spec_id) || !isBaselineAncestor(root,r.target_build_spec_id,currentBaseline)) return null;
+  const targetDrift=acceptanceSemanticDriftIds(root,item.build_spec_id,r.target_build_spec_id,item.acceptance_links);
+  if(!targetDrift.length || !sameIdSet(r.acceptance_ids,targetDrift)) return null;
+  const laterDrift=acceptanceSemanticDriftIds(root,r.target_build_spec_id,currentBaseline,item.acceptance_links);
+  if(laterDrift.length) return null;
+  const task=resolveHistoricalRevalidationTask(r,id);
+  if(!task) return null;
+  for(const aid of targetDrift){
+    if(!(task.acceptance_links||[]).some(x=>x.acceptance_id===aid)){
+      errors.push(id+" historical revalidation Task "+r.task_id+" does not claim "+aid);
+      return null;
+    }
+  }
+  return new Set(targetDrift);
+};
 const resolveItemRevalidationIds=(item,id,currentBaseline)=>{
   if(item.build_spec_id===currentBaseline) return new Set();
   const legacyDone=item.status==="DONE" && canPreserveCompletedBaseline(root,item.build_spec_id,currentBaseline,item.acceptance_links);
   if(legacyDone) return new Set();
-  const drift=item.status==="DONE" ? acceptanceSemanticDriftIds(root,item.build_spec_id,currentBaseline,item.acceptance_links) : [];
-  if(item.status==="DONE" && drift.length) return validateRevalidation(item,id,currentBaseline,drift);
+  if(item.status==="DONE"){
+    const carried=historicalRevalidationCarryForwardIds(item,id,currentBaseline);
+    if(carried) return carried;
+    const drift=acceptanceSemanticDriftIds(root,item.build_spec_id,currentBaseline,item.acceptance_links);
+    if(drift.length) return validateRevalidation(item,id,currentBaseline,drift);
+  }
   errors.push(id+" baseline mismatch");
   return new Set();
 };
