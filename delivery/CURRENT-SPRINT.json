@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-004",
+  "active_task": "T001",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BF-026 / BF-027 remediation is verified; execution remains HOLD pending explicit SP-P1-002 / T001 Reactivation Review. No Product implementation is authorized yet."
+  "reason": "SP-P1-002 / T001 Reactivation Review PASS after BF-026 / BF-027 remediation; T001 resumes as the sole active Task under BS-P1-004. BF-023 remains OPEN for implementation within T001."
 }
