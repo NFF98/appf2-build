@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-004",
-  "active_task": "T001",
-  "status": "ACTIVE",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved BS-P1-004 / SP-P1-002 Activation; T001 is the sole active Task. T001 includes BF-023 UUID-v4 correction and F07-AC-008 revalidation."
+  "reason": "SP-P1-002 is governance-blocked by BF-026 / BF-027; execution context cleared for governance remediation. T001 implementation history remains IN_PROGRESS but is not authorized to execute while HOLD."
 }
