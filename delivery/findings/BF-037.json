@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-037",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-008",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "BS-P1-008 must make every T002 admission/persistence behavior mechanically implementable and durable: accepted Blueprint values must be representable in the canonical PostgreSQL jsonb store, INVOKE_CAPABILITY must have deterministic runtime target identity even when structural repeats create multiple instances, validation_run must satisfy its append/finalize-only audit-truth contract, and authorized baseline fixture maintenance must pass the executable test-integrity gate without broadening Product semantics.",
+  "actual": "Post-implementation audit of candidate 286deb4680c95fb06f548eecd046c284b40bb0b3 found two contract-visible gaps, one implementation persistence defect, and one governance harness mismatch. C1: F02 accepts standard JSON strings including escaped U+0000 and lone surrogate code units, while canonical_blueprint is required to persist as PostgreSQL jsonb, which cannot represent all such values; no admission rule defines rejection/canonical handling. C2: INVOKE_CAPABILITY identifies a target_node_id, but if that node is inside a repeat subtree Runtime may have multiple live instances and F02/F03 do not define which instance is invoked. P1: migration protects blueprint_content immutable columns but leaves validation_run freely UPDATE-able despite the shared data model declaring validation_run APPEND / finalize only and T002 scope requiring immutable validation_run / blueprint_content persistence. G1: TEST-F04-AC-006 is explicitly authorized for baseline rebind, but validate-test-integrity.mjs treats any changed test file as rewriting every pre-existing Test ID in that file, so untouched TEST-F04-AC-001/002/003/007 are falsely blocked.",
+  "evidence": [
+    "Implementation candidate is one commit ahead of canonical main: base 66c298a6e457de6d0019fa63d6070fbe4a429d12 -> head 286deb4680c95fb06f548eecd046c284b40bb0b3, 36 files, all under T002 allowed paths.",
+    "Cursor RESULT comment 5969251362 reports local gate PASS without BASE_SHA, types/lint/contract/behavior/regression/security PASS, and CI-style gate FAIL only at TEST INTEGRITY because the changed capability-registry.contract.test.ts also contains untouched TEST-F04-AC-001/002/003/007.",
+    "Independent diff confirms capability-registry.contract.test.ts changed only TEST-F04-AC-006 assertions: added sha256 digest assertion and changed validator artifact key assertions from registryVersion/registryDigest to registry_version/registry_digest; the four other pre-existing tests are textually unchanged.",
+    "harness/scripts/validate-test-integrity.mjs enumerates every Test ID present in a changed test file at BASE_SHA and rejects each non-active/non-authorized ID; therefore current maintenance authorization by individual TEST-F04-AC-006 cannot pass when its shared file changes.",
+    "BS-P1-008 F02 V01 rejects invalid JSON/duplicate keys/oversize/non-object/prohibited binary-executable payload, but does not restrict escaped U+0000 or lone surrogate strings; F02 canonical JSON uses standard JSON escaping and measures strings in Unicode code points.",
+    "T002 candidate StrictJsonParser decodes any syntactically valid \\uXXXX escape via String.fromCharCode, so escaped U+0000/lone surrogate can reach canonical content; repository inserts canonical_blueprint as $12::jsonb.",
+    "Shared DATA-MODEL-DETAILED §6.5 fixes canonical_blueprint storage as jsonb, creating an admission/persistence boundary that must be total for every PASSED Blueprint.",
+    "BS-P1-008 F02 INVOKE_CAPABILITY defines target_node_id and validates action/args, while F03 defines repeated structural runtime instances and lexical scope envelopes but no target-instance selection rule for INVOKE_CAPABILITY into a repeated target node.",
+    "Shared DATA-MODEL-DETAILED mutable/immutable matrix declares validation_run APPEND / finalize only. T002 scope explicitly says Persist immutable validation_run / blueprint_content. Candidate migration creates an immutable-column trigger only for blueprint_content and no UPDATE protection for validation_run."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "POST_IMPLEMENTATION_FINAL_CONTRACT_PERSISTENCE_AUDIT",
+      "result": "BLOCKED_FINAL_CLOSURE_GAPS",
+      "evidence": "ChatGPT independently compared BS-P1-008 F02/F03/Data Model, T002 candidate migration/repository/action typing, test-integrity harness, and the exact modified shared test file after Cursor produced candidate 286deb4680c95fb06f548eecd046c284b40bb0b3."
+    }
+  ],
+  "requested_planning_action": [
+    "Freeze one explicit Blueprint string persistence rule so every PASSED canonical Blueprint is PostgreSQL-jsonb representable; define exact V01/V02 rejection semantics for non-representable Unicode scalar/code-unit cases rather than letting DB insertion discover them.",
+    "Freeze INVOKE_CAPABILITY repeated-target semantics. Preferred bounded Phase 1 direction should either forbid invoking a target node whose runtime identity is multiplicative under repeat, or define an explicit admitted instance selector; do not let Runtime choose implicitly.",
+    "Require validation_run database persistence to enforce append/finalize-only semantics at the storage boundary, consistent with DATA-MODEL-DETAILED and T002 scope.",
+    "Repair test-maintenance governance so the authorized TEST-F04-AC-006 rebind can modify its shared file without falsely authorizing or flagging unchanged neighboring Test IDs; preserve exact per-Test integrity rather than broad file-level waiver.",
+    "Run a same-class final sweep across F02 JSON canonicalization/persistence, repeated runtime identity references, durable audit-table mutability, and shared-test maintenance authorization before replacement Build Freeze/Activation."
+  ],
+  "affected_contracts": [
+    "F02 V01/V02 intake and canonical JSON/persistence boundary",
+    "F02 INVOKE_CAPABILITY target semantics",
+    "F03 repeated runtime instance identity / action dispatch",
+    "Shared DATA-MODEL-DETAILED §6.4 validation_run and §6.5 blueprint_content",
+    "SP-P1-002 T002 test_maintenance_authorizations / test-integrity harness"
+  ],
+  "affected_acceptance": [
+    "F02-AC-004",
+    "F02-AC-006",
+    "F02-AC-008",
+    "F04-AC-006"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
