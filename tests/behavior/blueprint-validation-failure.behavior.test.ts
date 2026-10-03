@@ -11,7 +11,7 @@ import {
 } from "../../src/platform/blueprint/execution-admission.js";
 import { PostgresBlueprintAdmissionRepository } from "../../src/platform/blueprint/postgres-blueprint-repository.js";
 import { validateBlueprintCandidate } from "../../src/platform/blueprint/validate-blueprint.js";
-import type { BlueprintValidationResult } from "../../src/platform/blueprint/validation-types.js";
+import { BLUEPRINT_SCHEMA_VERSION, type BlueprintValidationResult } from "../../src/platform/blueprint/validation-types.js";
 import { CURRENT_BUNDLED_RELEASE, createBundledReleaseSource } from "../../src/platform/capabilities/bundled-release.js";
 import type { ValidatorRegistry } from "../../src/platform/capabilities/schema/validator-contract.js";
 import { FakeBlueprintPostgres } from "../contract/blueprint-postgres-fake.js";
@@ -29,6 +29,7 @@ const TEXT = { id: "content.text", version: "1.0.0" };
 const NOW = (): Date => new Date("2026-10-04T00:00:00.000Z");
 const EXISTING_RUN = "00000000-0000-4000-8000-0000000000e0";
 const REJECTED_BODY_MARKER = "rejected-candidate-body-marker-7f3a";
+const POST_SEAL_MARKER = "post-seal-mutation-marker-c91d";
 
 function runId(index: number): string {
   return `00000000-0000-4000-8000-${(index + 1).toString(16).padStart(12, "0")}`;
@@ -202,6 +203,68 @@ async function expectForgedResultsNeverPersist(store: Durable): Promise<void> {
   expectDenied(await store.admission.admit(rejectedHash), { step: "E01", http: 404 }, "forged rejected body hash");
 }
 
+function unfrozenPaths(value: unknown, path = "$"): string[] {
+  if (typeof value !== "object" || value === null) {
+    return [];
+  }
+  const own = Object.isFrozen(value) ? [] : [path];
+  return own.concat(Object.entries(value).flatMap(([key, child]) => unfrozenPaths(child, `${path}.${key}`)));
+}
+
+async function expectSealedSnapshotSurvivesNestedMutation(): Promise<void> {
+  const store = durable();
+  const validationRunId = runId(102);
+  const genuine = validateText(EXISTING_JSON, validationRunId);
+  expect(genuine.admissible).toBeDefined();
+  const { report } = genuine;
+  const admissible = genuine.admissible!;
+  const { blueprint } = admissible;
+  const validated = { canonicalJson: admissible.canonicalJson, contentHash: admissible.contentHash, byteSize: admissible.byteSize };
+  expect({ report: unfrozenPaths(report), admissible: unfrozenPaths(admissible) }).toEqual({ report: [], admissible: [] });
+
+  const mutations: readonly [string, () => unknown][] = [
+    ["blueprint.schema_version", () => Object.assign(blueprint, { schema_version: "9.9.9" })],
+    ["blueprint.registry_version", () => Object.assign(blueprint, { registry_version: "6.0.0" })],
+    ["blueprint.meta.title", () => Object.assign(blueprint.meta, { title: POST_SEAL_MARKER })],
+    ["blueprint node capability version", () => Object.assign(blueprint.nodes[nodeIndex("node_title")]!.capability, { version: "9.9.9" })],
+    ["blueprint state initial", () => Object.assign(blueprint.state["people"]!, { initial: 99 })],
+    ["blueprint result outputs", () => (blueprint.result.outputs as unknown[]).push({ id: POST_SEAL_MARKER })],
+    ["blueprint degradations", () => (blueprint.support.degradations as unknown[]).push({ requirement_id: POST_SEAL_MARKER })],
+    ["report issues", () => (report.issues as unknown[]).push({ error_code: "F02-ERR-015", stage: "V12", json_path: "$" })],
+    ["report resource_usage", () => Object.assign(report.resource_usage!, { node_count: 0 })]
+  ];
+  for (const [label, mutate] of mutations) {
+    expect(mutate, label).toThrow(TypeError);
+  }
+  expect(blueprint.schema_version).toBe(BLUEPRINT_SCHEMA_VERSION);
+  expect(blueprint.registry_version).toBe(VALIDATOR_REGISTRY.registry_version);
+  expect(canonicalizeJson(blueprint)).toBe(validated.canonicalJson);
+
+  expect(await admitBlueprint(genuine, store.repository, { now: NOW })).toMatchObject({
+    status: "ADMITTED",
+    contentHash: validated.contentHash,
+    reused: false
+  });
+  const row = store.database.contents.get(validated.contentHash);
+  expect(row).toMatchObject({
+    schema_version: BLUEPRINT_SCHEMA_VERSION,
+    registry_version: VALIDATOR_REGISTRY.registry_version,
+    byte_size: validated.byteSize,
+    admitted_by_validation_run_id: validationRunId
+  });
+  expect(canonicalizeJson(row?.canonical_blueprint)).toBe(validated.canonicalJson);
+  expect(hashBlueprint(row?.canonical_blueprint)).toBe(report.content_hash);
+  expect(store.database.runs.get(validationRunId)).toMatchObject({
+    status: "PASSED",
+    blueprint_hash: validated.contentHash,
+    schema_version: BLUEPRINT_SCHEMA_VERSION,
+    registry_version: VALIDATOR_REGISTRY.registry_version,
+    error_codes: []
+  });
+  expect(JSON.stringify([...store.database.contents.values(), ...store.database.runs.values()])).not.toContain(POST_SEAL_MARKER);
+  await expectExecutable(store, validated.contentHash, "sealed snapshot after nested mutation attempts");
+}
+
 describe("F02 validation failure isolation", () => {
   test("TEST-F02-AC-013 validation failure at any stage never corrupts an existing validated Blueprint", async () => {
     const store = durable();
@@ -254,5 +317,7 @@ describe("F02 validation failure isolation", () => {
 
     await expectForgedResultsNeverPersist(store);
     expect(store.database.contents.size).toBe(0);
+
+    await expectSealedSnapshotSurvivesNestedMutation();
   });
 });
