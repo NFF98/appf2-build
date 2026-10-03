@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-006",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-034"
   ],
@@ -38,7 +38,8 @@
     "Cross-contract precision audit PASS: BF-034 G1-G10 all have canonical resolution; CapabilityDefinition.contract.validator -> generated validator-registry -> F02 consumer is uniquely defined.",
     "Acceptance Registry is byte-identical across the BF-034 Working remediation; no Acceptance/Test ID remap is required.",
     "Scope-clean freeze source 438b2e0dcd3f9a029e961656e9a4fe6ffa0be6f3 is derived from BS-P1-005 source abd91f50fa520a4ecd047207da7e2a804762e415 and changes exactly F02, F03 and F04.",
-    "Human approved BF-034 Freeze Audit and Build Freeze on 2026-10-03. T002 remains BLOCKED and CURRENT remains HOLD; Activation requires a separate Human gate."
+    "Human approved BF-034 Freeze Audit and Build Freeze on 2026-10-03. T002 remains BLOCKED and CURRENT remains HOLD; Activation requires a separate Human gate.",
+    "Human approved BS-P1-006 / SP-P1-002 / T002 Activation on 2026-10-03; atomic rebaseline transition binds unfinished Sprint 2 work to BS-P1-006, resolves BF-034 as a spec blocker, and returns T002 to IN_PROGRESS without approving any prior implementation candidate."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
