@@ -19,7 +19,11 @@
     "Shared EXECUTION-ADMISSION server flow says re-check every CapabilityRef and E07 says any referenced Capability; candidate directRefs() collects only nodes[].capability, while Blueprint also contains support.degradations[].capability_refs.",
     "Candidate dependency evaluator runs solely against current Registry and does not compare current-vs-pinned execution_contract_digest for dependency candidates. BF-039 only explicitly froze the comparison for direct refs, leaving dependency same-ref drift underspecified.",
     "F04 requires Runtime to use the trusted runtime-registry mapping matching its Registry snapshot; ENABLED capability missing runtime handler is a build/deployment failure. Candidate fresh admission validates only validator snapshots and execution_class, so executable=true does not prove the pinned matching handler mapping is available.",
-    "Cursor candidate 0be0f7111466ae7f6e27ed5f668a33c37272548d remains unmerged; prior candidate 9740045a82765cf7e4bc629eb06be5010d81f0be also remains unmerged evidence."
+    "Cursor candidate 0be0f7111466ae7f6e27ed5f668a33c37272548d remains unmerged; prior candidate 9740045a82765cf7e4bc629eb06be5010d81f0be also remains unmerged evidence.",
+    "Design PR #16 merged BF-040 Product truth remediation as ca2946925052ae2a8a0903884f63bcfa4672d51f.",
+    "Scope-clean Design freeze source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f is derived from prior BS-P1-011 source e6b28ef5e3f0d3925961b347bf0744025b509dfc and changes exactly F02, F03, F04 and EXECUTION-ADMISSION.",
+    "BS-P1-012 Freeze Audit PASS and replacement baseline merged via PR #175 as 0735cd6f666d9592d8f9f8c6f9650783d819cc7e; content_sha256 f623c7efc8232eaaded21326fbd21f07506cb05feb1df4363d11a7dca81a108e.",
+    "BD-012 is the canonical Design Delta for BF-040. Finding remains BLOCKED until atomic BS-P1-012 / SP-P1-002 / T003 activation."
   ],
   "attempts": [
     {
@@ -59,5 +63,5 @@
     "F02-AC-012"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-012"
 }
