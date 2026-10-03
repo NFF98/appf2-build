@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-011",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-039"
   ],
@@ -43,7 +43,8 @@
     "Fresh execution separates Blueprint pinned historical Registry snapshot from deployment current execution Registry snapshot; policy-only revoke/disable requires a new Registry PATCH version/digest.",
     "Direct current CapabilityRef requires execution_contract_digest equality with pinned same ref; required dependencies are recursively eligible only if availability/status/class/schema/runtime/transitive checks pass.",
     "Phase 1 V10 rejects permission classes outside NONE/USER_GESTURE and rejects both networkAccessAllowed=true and mediaAutoplayAllowed=true.",
-    "Cursor candidate 9740045a82765cf7e4bc629eb06be5010d81f0be remains unmerged evidence and is not part of this Freeze."
+    "Cursor candidate 9740045a82765cf7e4bc629eb06be5010d81f0be remains unmerged evidence and is not part of this Freeze.",
+    "Human-preapproved atomic BS-P1-011 / SP-P1-002 / T003 activation resolves BF-039 as the contract blocker and restores T003 to IN_PROGRESS; fresh Cursor re-execution remains a separate Human-controlled command."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",

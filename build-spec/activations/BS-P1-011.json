@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-011",
+  "previous_baseline": "BS-P1-010",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "HUMAN-ACTIVATION-BS-P1-011-SP-P1-002-T003-20261004-BLANKET-PRECURSOR",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011"
+  ],
+  "source_working_commit": "e6b28ef5e3f0d3925961b347bf0744025b509dfc",
+  "activated_at": "2026-10-03T17:25:00Z"
+}

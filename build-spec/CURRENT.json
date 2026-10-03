@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-010",
-  "implementation_enabled": false,
-  "reason": "T003 implementation review found BF-039 contract/eligibility defects in BS-P1-010: unresolved Registry usage naming, current dependency compatibility/revocation snapshot semantics, and V10 media policy completeness. Product implementation is HOLD pending same-class remediation and replacement Build Spec activation."
+  "active_baseline": "BS-P1-011",
+  "implementation_enabled": true,
+  "reason": "Human-approved BF-039 remediation complete; BS-P1-011 / SP-P1-002 / T003 re-activated. Cursor re-execution remains a separate Human-controlled command and has not been issued."
 }
