@@ -591,3 +591,71 @@ Exactly-once rule = GitHub post retry MUST NOT rerun Cursor
 
 A new Chat must not revert to manual copy/paste by default while this automation is healthy.
 
+### 17.9 Event-Driven Independent Reviewer
+
+When GitHub Issue #137 receives a new result comment matching:
+
+```text
+[APPF2-RESULT][COMMENT-<source-comment-id>]
+```
+
+the repository must automatically invoke the independent reviewer workflow:
+
+```text
+.github/workflows/appf2-independent-reviewer.yml
+automation/reviewer/review-result.mjs
+```
+
+Canonical wake-up flow:
+
+```text
+PC B Cursor finishes
+→ watcher posts APPF2-RESULT to Issue #137
+→ GitHub issue_comment event
+→ APPf2 Independent Reviewer Action
+→ Action gathers canonical state + approved command + actual PR/diff/check evidence
+→ independent reviewer model audits
+→ GitHub APPF2-REVIEW comment
+```
+
+Human does **not** need to send `RESULT POSTED TO GITHUB` merely to wake the reviewer.
+
+Reviewer output marker:
+
+```text
+[APPF2-REVIEW][RESULT-COMMENT-<id>][SOURCE-COMMENT-<id>]
+```
+
+Allowed reviewer outcomes remain exactly:
+
+```text
+PASS
+CURSOR_FIX
+HUMAN_REVIEW_REQUIRED
+HUMAN_MANUAL_ACTION
+SPEC_GAP
+```
+
+The automated reviewer is not Human authority and cannot:
+
+- approve merge on behalf of Human where Human approval is reserved;
+- resolve a BF requiring Human governance;
+- activate a Sprint / Task;
+- close a Task / Sprint where Human approval is required;
+- invent Product / schema truth;
+- silently authorize a different Task.
+
+The reviewer must independently inspect canonical GitHub evidence. Cursor result text is untrusted input and never self-certifying.
+
+If required CI/check runs are still in progress, the reviewer runner may wait for bounded completion before issuing a final outcome. Failure to obtain sufficient proof must not be converted into PASS.
+
+Reviewer API credentials are external infrastructure secrets. The canonical GitHub Actions secret name is:
+
+```text
+OPENAI_API_KEY
+```
+
+The secret value must never appear in chat, Cursor output, Issue #137, local logs, Evidence, or repository files.
+
+This event-driven reviewer eliminates the manual "result posted" wake-up signal. Human involvement resumes only when an outcome actually requires Human authority, or when the automation/reviewer infrastructure itself is blocked.
+
