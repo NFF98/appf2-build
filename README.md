@@ -43,16 +43,20 @@ CI → Staging → Production → Smoke → Rollback
 ## Current Mode
 
 ```text
-REPOSITORY_STATE = REPO_SIDE_HARDENING_PASS
-ACTIVE_BUILD_SPEC = NONE
+REPOSITORY_STATE = DELIVERY_HOLD
+LOCKED_BUILD_SPEC = BS-P1-012
+IMPLEMENTATION_ENABLED = false
 BACKLOG = HOLD
 ACTIVE_SPRINT = NONE
 ACTIVE_TASK = NONE
+NEXT_TASK = SP-P1-002 / T004 ACTIVATION REVIEW
 ACTIVE_RELEASE = NONE
 CURSOR_PRODUCT_IMPLEMENTATION = HOLD
 PRODUCTION_RELEASE = HOLD
 SERVER_SIDE_LOCK = PENDING
 ```
+
+> Human-readable convenience only. Canonical execution state is always `build-spec/CURRENT.json` + `delivery/CURRENT-SPRINT.json`. Future Product Proof Build/Sprint numeric IDs are not reserved in roadmap text; they are allocated only when the actual Freeze/Sprint artifacts are created.
 
 ## Cursor Start Here
 
