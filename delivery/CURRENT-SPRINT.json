@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-009",
   "active_task": "T002",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BS-P1-009 activated after BF-037 remediation; T002 restored to IN_PROGRESS. Fresh Cursor execution remains a separate explicit handoff."
+  "reason": "T002 implementation merged at 7b0a640334b4f6d33f7f39e09aa9666667765ef2; BS-P1-009 Evidence EV-SP-P1-002-T002-001..011 is normalized. T002 is in closure REVIEW; T003 is not activated."
 }
