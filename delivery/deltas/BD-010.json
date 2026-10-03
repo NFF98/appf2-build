@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-010",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-038"
+  ],
+  "affected_build_spec": "BS-P1-009",
+  "affected_tasks": [
+    "T003"
+  ],
+  "affected_contracts": [
+    "F02 §19 / V09 deterministic static resource measurement and ValidationReport resource_usage",
+    "F02 V04 Registry Admission current capability execution eligibility",
+    "F02 V10 structural no-code and trust anti-bypass boundary",
+    "F02 assertExecutable / issueExecutionAdmission trusted runtime context",
+    "F03 dynamic capability-local resource defense-in-depth",
+    "F04 Registry v5 execution eligibility and ResourceUsageProfile machine projection",
+    "Shared EXECUTION-ADMISSION trusted context and denial precedence"
+  ],
+  "affected_acceptance": [
+    "F02-AC-009",
+    "F02-AC-010",
+    "F02-AC-011",
+    "F02-AC-012"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-04: same-class T003 gaps fully audit/remediate and proceed through pre-Cursor re-execution."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "f3f2ac0d2f22f3b966c8e4699d42604b0b8bc44a",
+  "replacement_build_spec": "BS-P1-010",
+  "verification": [
+    "BF-038 governance block merged via Build PR #165 as c54648cf19264591db7f387a30873dd63472daf4.",
+    "Design Product truth remediation merged via Design PR #13 as f3f2ac0d2f22f3b966c8e4699d42604b0b8bc44a.",
+    "Direct Design main is not a valid freeze source because it contains unrelated PFR/F18-F20 and other divergence from the BS-P1-009 freeze lineage.",
+    "Scope-clean source e54941e9f127bc3ec5f80f8091884e4a3aeb2767 is derived from prior BS-P1-009 source 728049049dad4e43146265bfe142d4195e7fac6d and changes exactly F02, F03, F04 and EXECUTION-ADMISSION.",
+    "BS-P1-010 is a byte-preserving copy of BS-P1-009 for every other projected artifact; only the four BF-038 target files plus projection/manifest metadata differ.",
+    "Registry machine contract is bumped 4.0.0 -> 5.0.0; current Core Capability semantic versions remain unchanged.",
+    "Fresh Cursor execution is explicitly excluded until BS-P1-010 freeze passes and atomic T003 activation completes."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "e54941e9f127bc3ec5f80f8091884e4a3aeb2767",
+    "base_commit": "728049049dad4e43146265bfe142d4195e7fac6d",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-038-FREEZE-CANDIDATE.md"
+  }
+}
