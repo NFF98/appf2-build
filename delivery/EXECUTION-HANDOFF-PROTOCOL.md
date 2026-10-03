@@ -438,3 +438,156 @@ next governance gate
 不要求每次重讀整個專案歷史。完整歷史 review 固定在 Sprint Close / Phase Close 執行。
 
 Handoff 不得只靠 Chat transcript 或 model memory；任何仍需 carry-forward 的 project-level item 必須先進 GitHub canonical ledger。
+
+## 17. Local Cursor Automation Transport Constitution
+
+本節是 Human / ChatGPT / PC B Local Cursor 之間的 canonical execution-transport rule。它只自動化「搬運已批准指令與回傳執行結果」，**不得改變任何既有 Product / Build Spec / Sprint / Task / Human authority boundary**。
+
+### 17.1 Canonical Flow
+
+```text
+Human explicit approval
+→ ChatGPT independently derives the authorized Cursor instruction from GitHub SSOT
+→ GitHub Issue #137: APPf2 Local Execution Queue
+→ PC B local watcher polls the queue
+→ local Cursor CLI executes on PC B
+→ watcher persists the raw result locally
+→ watcher posts APPF2-RESULT back to Issue #137
+→ ChatGPT independently re-reads GitHub / PR / diff / tests / evidence
+→ Human merge / BF resolution / Task closure / Sprint activation approval when required
+```
+
+The automation removes manual copy/paste only. It does not collapse Reviewer and Implementer into one authority.
+
+### 17.2 Queue Authority
+
+Canonical transport queue:
+
+```text
+NFF98/appf2-build
+GitHub Issue #137
+APPf2 Local Execution Queue
+```
+
+Issue #137 is a **transport ledger**, not Product truth, Build Spec truth, Acceptance truth, Task truth, or completion Evidence by itself.
+
+A watcher-executable command must satisfy all of the following:
+
+- comment author is the authorized Human account `NFF98`;
+- body contains exactly the execution authorization marker `[APPF2-EXECUTE][APPROVED]`;
+- Product implementation commands identify the intended `TASK=Txxx`;
+- the Task and Build Spec named by the instruction must agree with canonical `build-spec/CURRENT.json` and `delivery/CURRENT-SPRINT.json`;
+- Human authorization required by the governance state must already exist.
+
+Discussion comments, audit notes, Cursor summaries, or unapproved instructions must never trigger execution.
+
+### 17.3 PC B Local Execution Boundary
+
+The default implementation executor remains **PC B local Cursor CLI** unless Human governance explicitly authorizes another executor.
+
+Operational preconditions:
+
+- PC B is powered on;
+- PC B has network access;
+- the watcher process is running;
+- Cursor CLI authentication is valid;
+- the repository checkout and required local toolchain are available.
+
+The Cursor browser login-success page is not required after CLI authentication succeeds.
+
+The automation must use PC B local CPU / RAM / filesystem / Node toolchain. A future move to Cursor Cloud, another VM, or another executor is a governance change and must not happen silently.
+
+### 17.4 Exactly-Once Execution Safety
+
+The watcher must implement **at-most-once Cursor execution per approved GitHub command**.
+
+Required behavior:
+
+1. persist the command/comment ID as consumed **before** starting Cursor;
+2. execute Cursor at most once for that command ID;
+3. persist the raw Cursor result to local disk before attempting GitHub result posting;
+4. if GitHub result posting fails, retry **posting only**;
+5. never rerun Cursor merely because GitHub posting failed;
+6. watcher restart must preserve the consumed-command state;
+7. a historical command must never be replayed after watcher restart;
+8. Cursor must never auto-select or auto-start the next Task.
+
+Transport failure is not permission to repeat Product implementation.
+
+### 17.5 Result and Local Log Contract
+
+GitHub result marker:
+
+```text
+[APPF2-RESULT][COMMENT-<source-comment-id>]
+```
+
+The result must retain at minimum:
+
+- Cursor CLI exit code;
+- Task ID when applicable;
+- execution summary;
+- branch / HEAD when applicable;
+- changed files when implementation occurred;
+- required command / gate outcomes;
+- Findings / blockers / manual dependencies surfaced by Cursor.
+
+Detailed raw execution logs are local operational records and are partitioned by Task:
+
+```text
+C:\appf2-automation\logs\T002\<comment-id>.txt
+C:\appf2-automation\logs\T003\<comment-id>.txt
+...
+```
+
+Non-Task automation checks may use a separate general bucket.
+
+Local automation logs must never contain secret values. They are operational trace, not Product truth and not a substitute for canonical Evidence.
+
+### 17.6 Independent Review Remains Mandatory
+
+Cursor output is never self-certifying.
+
+After an automated execution result arrives:
+
+- ChatGPT must independently inspect GitHub canonical state, actual diff, tests, PR, Evidence, and Findings;
+- a green Cursor summary or `CURSOR_EXIT_CODE=0` is not sufficient for PASS;
+- Human retains merge approval, BF resolution approval, Task closure approval, Sprint activation approval, and other reserved governance decisions.
+
+The canonical separation remains:
+
+```text
+Human   = decision / approval authority
+ChatGPT = planning / independent audit / instruction generation
+Cursor  = implementation executor
+GitHub  = SSOT + execution transport ledger
+```
+
+### 17.7 Transport Failure Rule
+
+Failures of the watcher, GitHub Issue API, local Cursor CLI invocation, authentication, encoding, or result-posting are **automation transport failures** unless evidence shows a Product implementation failure.
+
+On transport failure:
+
+- do not invent Product conclusions;
+- do not silently rerun implementation;
+- preserve any completed Cursor result locally;
+- repair the transport;
+- resume from the preserved execution state.
+
+### 17.8 New Chat Continuity
+
+Every new Chat handoff while this operating model is active must explicitly carry:
+
+```text
+Execution transport = GitHub Issue #137
+Executor = PC B Local Cursor CLI
+Watcher = C:\appf2-automation\watcher.ps1
+Command marker = [APPF2-EXECUTE][APPROVED]
+Result marker = [APPF2-RESULT][COMMENT-<id>]
+Raw logs = C:\appf2-automation\logs\<TASK>\
+Exactly-once rule = GitHub post retry MUST NOT rerun Cursor
+```
+
+A new Chat must not revert to manual copy/paste by default while this automation is healthy.
+
