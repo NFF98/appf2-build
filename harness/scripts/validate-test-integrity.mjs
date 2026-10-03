@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import ts from "typescript";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -19,15 +20,33 @@ const walk=dir=>{
 for(const d of testRoots) walk(path.join(root,d));
 
 const declared=new Map();
-const idsIn=text=>{
-  const ids=[];
-  const re=/(?:test|it)\s*\(\s*["'`]([^"'`]*(TEST-[A-Z0-9-]+)[^"'`]*)["'`]/g;
-  let m; while((m=re.exec(text))) ids.push(m[2]);
-  return ids;
+const testDeclarationsIn=(text,fileName="test.ts")=>{
+  const sf=ts.createSourceFile(fileName,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+  const out=new Map();
+  const visit=node=>{
+    if(ts.isCallExpression(node) && ts.isIdentifier(node.expression) && (node.expression.text==="test" || node.expression.text==="it")){
+      const first=node.arguments[0];
+      const title=first && (ts.isStringLiteral(first) || ts.isNoSubstitutionTemplateLiteral(first)) ? first.text : "";
+      const m=title.match(/TEST-[A-Z0-9-]+/);
+      if(m){
+        const arr=out.get(m[0])||[];
+        arr.push(node.getText(sf));
+        out.set(m[0],arr);
+      }
+    }
+    ts.forEachChild(node,visit);
+  };
+  visit(sf);
+  return out;
 };
-const idsAtRef=(base,rel)=>{
-  try{return idsIn(execFileSync("git",["show",base+":"+rel],{encoding:"utf8"}));}
-  catch{return [];}
+const idsIn=text=>[...testDeclarationsIn(text).keys()];
+const declarationsAtRef=(ref,rel)=>{
+  try{return testDeclarationsIn(execFileSync("git",["show",ref+":"+rel],{encoding:"utf8"}),rel);}
+  catch{return new Map();}
+};
+const declarationsAtHead=rel=>{
+  try{return testDeclarationsIn(fs.readFileSync(path.join(root,rel),"utf8"),rel);}
+  catch{return new Map();}
 };
 const changedFilesFrom=(base,head)=>{
   try{return execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
@@ -66,7 +85,12 @@ if(activeTask && base && !/^0+$/.test(base)){
     .filter(a=>a?.mode==="BASELINE_FIXTURE_REBIND" && a?.to_build_spec===activeTask.build_spec_id)
     .map(a=>a.test_id+"::"+a.file));
   for(const rel of changed.filter(p=>p.startsWith("tests/") && /\.(?:test|spec)\.(?:ts|tsx)$/.test(p))){
-    for(const id of idsAtRef(base,rel)){
+    const before=declarationsAtRef(base,rel);
+    const after=declarationsAtHead(rel);
+    for(const [id,beforeDecls] of before){
+      const afterDecls=after.get(id)||[];
+      const declarationChanged=JSON.stringify(beforeDecls)!==JSON.stringify(afterDecls);
+      if(!declarationChanged) continue;
       const maintenanceAuthorized=maintenanceKeys.has(id+"::"+rel);
       if(!activeIds.has(id) && !maintenanceAuthorized) errors.push("Active Task may not modify previously existing mapped Test "+id+" in "+rel);
     }
