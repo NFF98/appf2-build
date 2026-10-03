@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-007",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-035"
+  ],
+  "affected_build_spec": "BS-P1-006",
+  "affected_tasks": [
+    "T002"
+  ],
+  "affected_contracts": [
+    "F04 explicit action-arg source_kinds and invariant enforcement split",
+    "F04 input.select STRING-only contract / input.select@2.0.0",
+    "F04 EventPayloadDescriptorResolver exact machine contract",
+    "F02 node-local event payload resolution",
+    "F03 Runtime action-invariant revalidation",
+    "F04 Registry version 3.0.0"
+  ],
+  "affected_acceptance": [
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-008",
+    "F04-AC-006"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-03: 批准 BF-035 B2–B4 resolution direction；批准一直到cursor再開始前"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "2e129175904d880e7f672f644efd606acba7b4b8",
+  "replacement_build_spec": "BS-P1-007",
+  "verification": [
+    "Design PR #10 merged as 2e129175904d880e7f672f644efd606acba7b4b8.",
+    "Precision audit PASS: concrete payload-root resolver; no second F02 type system.",
+    "SemVer PASS: input.select 1.0.0→2.0.0 and Registry 2.0.0→3.0.0.",
+    "Acceptance Registry byte-identical; B1 remains governed by explicit T002 TEST-F04-AC-006 maintenance authorization.",
+    "Scope-clean source 75da33333d80ce362f8a10046c5462271e98fcec changes exactly F02/F03/F04 from prior freeze source.",
+    "Human pre-approved governance through re-activation; fresh Cursor execution is excluded."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "75da33333d80ce362f8a10046c5462271e98fcec",
+    "base_commit": "438b2e0dcd3f9a029e961656e9a4fe6ffa0be6f3",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-035-FREEZE-CANDIDATE.md"
+  }
+}
