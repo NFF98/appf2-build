@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-011",
-  "active_task": "T003",
-  "status": "ACTIVE",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BS-P1-011 activated after BF-039 same-class remediation; T003 restored to IN_PROGRESS. Cursor re-execution comment remains intentionally not issued."
+  "reason": "SP-P1-002 / T003 is BLOCKED by BF-040 after independent review of Cursor HEAD 0be0f7111466ae7f6e27ed5f668a33c37272548d. Same-class integrity, versioning, admission-precedence and V09 ownership remediation is required before re-execution."
 }
