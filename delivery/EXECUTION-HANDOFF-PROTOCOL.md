@@ -591,3 +591,29 @@ Exactly-once rule = GitHub post retry MUST NOT rerun Cursor
 
 A new Chat must not revert to manual copy/paste by default while this automation is healthy.
 
+### 17.9 Exact Human Gate and GitHub Rebuild Fallback
+
+Every new execution action requires **exact Human approval for that exact next action**. Prior approval, workflow continuity, an earlier Activation decision, or automation availability must never be expanded into authorization for a later command.
+
+The following always require a fresh exact Human approval before ChatGPT performs or dispatches them:
+
+- a new `[APPF2-EXECUTE][APPROVED]` command;
+- merge;
+- Activation;
+- Task start;
+- governance write;
+- branch history rewrite / force-update.
+
+Automation transports approval; it never creates or extends approval.
+
+When a rebased or reconstructed commit exists only on PC B and is not present in GitHub's object database, GitHub cannot move a remote branch directly to that local-only SHA. If the local executor cannot push it, the canonical fallback is:
+
+1. Human explicitly approves **ChatGPT GitHub rebuild of that exact already-reviewed patch**;
+2. ChatGPT starts from the current canonical `main` commit;
+3. ChatGPT reuses the exact approved file blobs / patch semantics only, with no scope expansion;
+4. ChatGPT creates a new GitHub commit whose parent is canonical `main`;
+5. ChatGPT independently verifies the resulting diff matches the approved path set and semantics;
+6. only then may ChatGPT update the target PR branch;
+7. the replaced remote HEAD is marked **SUPERSEDED / ARCHIVED** in the PR history and is no longer canonical.
+
+The old commit object is historical evidence and must not be falsely described as deleted. No merge, Task start, or next execution is implied by a branch rebuild.
