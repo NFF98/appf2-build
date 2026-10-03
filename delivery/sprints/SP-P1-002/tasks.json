@@ -232,7 +232,7 @@
         "BL-P1-005"
       ],
       "title": "Enforce Blueprint execution safety, hard ceilings and trust anti-bypass",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-012",
       "scope": [
         "Reject arbitrary executable code, executable escape paths and hard-ceiling violations before Runtime under the BS-P1-012 structural allowlist and deterministic V05/V09 resource-owner rules.",

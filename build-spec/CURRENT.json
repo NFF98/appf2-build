@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-012",
-  "implementation_enabled": true,
-  "reason": "Human-approved BF-040 exhaustive remediation complete; BS-P1-012 / SP-P1-002 / T003 re-activated. Cursor re-execution remains a separate Human-controlled command and has not been issued."
+  "implementation_enabled": false,
+  "reason": "Human-approved T003 closure complete under BS-P1-012; execution is HOLD before separate T004 activation. POI-005 production-wiring debt will be recorded immediately after closure while HOLD."
 }
