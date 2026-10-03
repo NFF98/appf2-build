@@ -378,7 +378,7 @@
       ],
       "non_scope": [
         "Do not implement the browser proof for F02-AC-017; that proof is isolated in T009.",
-        "Do not invent new degradation policy beyond BS-P1-003."
+        "Do not invent new degradation policy beyond locked BS-P1-012."
       ],
       "acceptance_links": [
         {
