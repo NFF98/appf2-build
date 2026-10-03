@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-012",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-040"
   ],
@@ -48,7 +48,9 @@
     "F02 hard-ceiling owner matrix assigns initial LIST/STRING value-domain maxima to V05 and all remaining static §19 maxima/budgets to V09; TEST-F02-010 must direct-proof the full matrix.",
     "Fresh execution reference set includes Node capability refs and degradation capability refs; same-ref direct/dependency identity drift fails closed.",
     "Durable body/hash/schema/registry mismatch maps to F02-ERR-015; temporary read/load/integrity infrastructure failures map to E08 503.",
-    "Cursor candidates 9740045a82765cf7e4bc629eb06be5010d81f0be and 0be0f7111466ae7f6e27ed5f668a33c37272548d remain unmerged evidence and are not part of this Freeze."
+    "Cursor candidates 9740045a82765cf7e4bc629eb06be5010d81f0be and 0be0f7111466ae7f6e27ed5f668a33c37272548d remain unmerged evidence and are not part of this Freeze.",
+    "Human-preapproved atomic BS-P1-012 / SP-P1-002 / T003 activation resolves BF-040 as the contract blocker and restores T003 to IN_PROGRESS; fresh Cursor re-execution remains a separate Human-controlled command.",
+    "T003 activation includes six precise BASELINE_FIXTURE_REBIND authorizations: prior three affected old Tests plus TEST-F04-AC-001 / TEST-F04-002 / TEST-F04-AC-006 for Registry v7 artifact/release identity maintenance."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
