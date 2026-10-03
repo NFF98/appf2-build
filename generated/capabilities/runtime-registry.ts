@@ -122,6 +122,6 @@ export const RUNTIME_REGISTRY = {
       "version": "1.0.0"
     }
   ],
-  "registryDigest": "sha256:0a633311ee253bf6424c2201292710f6cd8f0943ece35584513410e614705ea0",
-  "registryVersion": "4.0.0"
+  "registryDigest": "sha256:e7687f169a75cb814fd792ae5c213f02c9f74351723ef565e0024847dc5efcb6",
+  "registryVersion": "5.0.0"
 } as const;

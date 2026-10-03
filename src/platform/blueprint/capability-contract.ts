@@ -7,6 +7,7 @@ import type {
   TypeDescriptor,
   ValidatorRegistry
 } from "../capabilities/schema/validator-contract.js";
+import { createCapabilityEligibilityEvaluator } from "./capability-eligibility.js";
 import { concreteMatcherDescriptor, isAssignable, isJsonObject, matchesTarget } from "./type-descriptor.js";
 import { inferValueSource, type TypingContext } from "./value-source-typing.js";
 import {
@@ -70,14 +71,26 @@ function assertRequiredKeys(
 
 export function admitNodeCapabilities(
   blueprint: Blueprint,
-  registry: ValidatorRegistry
+  registry: ValidatorRegistry,
+  runtimeVersion: string
 ): ReadonlyMap<string, GeneratedCapabilityValidator> {
   const admitted = new Map<string, GeneratedCapabilityValidator>();
+  const ineligibility = createCapabilityEligibilityEvaluator(registry, {
+    schemaVersion: blueprint.schema_version,
+    runtimeVersion
+  });
   blueprint.nodes.forEach((node, index) => {
     const path = `$.nodes[${index}]`;
     const capability = lookupCapability(registry, node.capability);
     if (capability === undefined) {
       capabilityError(`${path}.capability`, "Unknown capability ID/version.", node.capability);
+    }
+    const reason = ineligibility(capability);
+    if (reason === "CAPABILITY_INCOMPATIBLE") {
+      fail("F02-ERR-004", "V04", `${path}.capability`, "Capability is incompatible with the Blueprint schema or trusted runtime.", node.capability);
+    }
+    if (reason !== undefined) {
+      capabilityError(`${path}.capability`, `Capability is not execution-eligible: ${reason}.`, node.capability);
     }
     const { validator } = capability;
     assertDeclaredKeys(node.props, validator.props, `${path}.props`, node.capability);

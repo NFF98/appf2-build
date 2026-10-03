@@ -5,11 +5,18 @@ import { resolve } from "node:path";
 import {
   assertResourceBudgetWithinGlobalCeilings,
   CapabilityAdmissionError,
-  matchesCapabilityVersionRange
+  matchesCapabilityVersionRange,
+  matchesRuntimeVersionBounds
 } from "./admission.js";
 import { compareCodePoints } from "../blueprint/type-descriptor.js";
 import { CAPABILITY_REGISTRY_SOURCE } from "./registry.js";
-import type { CapabilityDefinition, RegistrySource } from "./schema/capability-definition.js";
+import {
+  AVAILABILITY_LEVELS,
+  EXECUTION_CLASSES,
+  EXECUTION_STATUSES,
+  type CapabilityDefinition,
+  type RegistrySource
+} from "./schema/capability-definition.js";
 import {
   CAPABILITY_ID_PATTERN,
   SEMVER_PATTERN,
@@ -196,6 +203,47 @@ function assertSafetyContracts(definitions: readonly CapabilityDefinition[]): vo
   }
 }
 
+function includes<T extends string>(values: readonly T[], value: unknown): value is T {
+  return (values as readonly unknown[]).includes(value);
+}
+
+function assertExecutionProjection(definitions: readonly CapabilityDefinition[]): void {
+  for (const definition of definitions) {
+    const ref = capabilityRef(definition);
+    const slots = (definition.runtime.resourceUsage as { timerSlotsPerInstance?: unknown } | undefined)
+      ?.timerSlotsPerInstance;
+    if (!Number.isSafeInteger(slots) || (slots as number) < 0) {
+      throw new RegistryGenerationError(
+        "REGISTRY_GENERATION_INVALID",
+        `${ref} must declare resourceUsage.timerSlotsPerInstance as a non-negative safe integer.`
+      );
+    }
+    if (
+      !includes(AVAILABILITY_LEVELS, definition.lifecycle.availability) ||
+      !includes(EXECUTION_STATUSES, definition.lifecycle.executionStatus) ||
+      !includes(EXECUTION_CLASSES, definition.runtime.execution)
+    ) {
+      throw new RegistryGenerationError(
+        "REGISTRY_GENERATION_INVALID",
+        `${ref} must declare a closed availability, execution status, and execution class.`
+      );
+    }
+    try {
+      matchesRuntimeVersionBounds(
+        "0.0.0",
+        definition.compatibility.minRuntimeVersion,
+        definition.compatibility.maxRuntimeVersion
+      );
+      matchesCapabilityVersionRange("0.0.0", definition.compatibility.blueprintSchemaRange);
+    } catch (error: unknown) {
+      if (error instanceof CapabilityAdmissionError) {
+        throw new RegistryGenerationError("REGISTRY_GENERATION_INVALID", `${ref}: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+}
+
 function assertValidatorContracts(definitions: readonly CapabilityDefinition[]): void {
   for (const definition of definitions) {
     try {
@@ -218,6 +266,7 @@ export function validateRegistrySource(source: RegistrySource): void {
   assertUniqueRefs(definitions);
   assertAcyclicDependencies(definitions);
   assertSafetyContracts(definitions);
+  assertExecutionProjection(definitions);
   assertValidatorContracts(definitions);
 }
 
@@ -257,6 +306,7 @@ function validatorRegistryArtifact(value: ValidatorRegistry): string {
 
 function buildValidatorRegistry(
   identity: RegistryIdentity,
+  runtimeVersion: string,
   definitions: readonly CapabilityDefinition[]
 ): ValidatorRegistry {
   const capabilities: Record<string, Record<string, GeneratedCapabilityValidator>> = {};
@@ -268,6 +318,10 @@ function buildValidatorRegistry(
       validator: definition.contract.validator,
       permission_class: definition.runtime.permissionClass,
       resource_budget: definition.runtime.resourceBudget,
+      resource_usage: definition.runtime.resourceUsage,
+      availability: definition.lifecycle.availability,
+      execution_status: definition.lifecycle.executionStatus,
+      execution_class: definition.runtime.execution,
       compatibility: definition.compatibility,
       degradation: definition.degradation
     };
@@ -276,6 +330,7 @@ function buildValidatorRegistry(
   return {
     registry_version: identity.registryVersion,
     registry_digest: identity.registryDigest,
+    runtime_version: runtimeVersion,
     capabilities
   };
 }
@@ -314,7 +369,7 @@ export function generateRegistryArtifacts(
       events: definition.contract.events
     }))
   };
-  const validatorRegistry = buildValidatorRegistry(identity, definitions);
+  const validatorRegistry = buildValidatorRegistry(identity, source.runtimeVersion, definitions);
   const runtimeRegistry = {
     registryVersion: identity.registryVersion,
     registryDigest: identity.registryDigest,
@@ -336,6 +391,8 @@ export function generateRegistryArtifacts(
       id: definition.id,
       version: definition.version,
       availability: definition.lifecycle.availability,
+      execution_status: definition.lifecycle.executionStatus,
+      execution_class: definition.runtime.execution,
       min_runtime_version: definition.compatibility.minRuntimeVersion,
       max_runtime_version: definition.compatibility.maxRuntimeVersion,
       blueprint_schema_range: definition.compatibility.blueprintSchemaRange,

@@ -5,6 +5,7 @@ import type {
   ContentAdmissionOutcome,
   ValidationRunRecord
 } from "./blueprint-admission.js";
+import type { BlueprintTrustReader, BlueprintTrustRecord } from "./execution-admission.js";
 
 export interface PostgresQueryResult<Row> {
   readonly rows: readonly Row[];
@@ -92,6 +93,17 @@ SELECT
 FROM content
 `.trim();
 
+export const POSTGRES_READ_BLUEPRINT_TRUST_SQL = `
+SELECT
+  content_hash,
+  canonical_blueprint,
+  schema_version,
+  registry_version,
+  trust_status
+FROM public.blueprint_content
+WHERE content_hash = $1::text
+`.trim();
+
 interface AdmissionRow {
   readonly inserted: boolean;
   readonly body_matches: boolean;
@@ -115,8 +127,13 @@ function validationRunParameters(run: ValidationRunRecord): unknown[] {
   ];
 }
 
-export class PostgresBlueprintAdmissionRepository implements BlueprintAdmissionRepository {
+export class PostgresBlueprintAdmissionRepository implements BlueprintAdmissionRepository, BlueprintTrustReader {
   public constructor(private readonly executor: PostgresExecutor) {}
+
+  public async getBlueprintTrust(contentHash: string): Promise<BlueprintTrustRecord | undefined> {
+    const result = await this.executor.query<BlueprintTrustRecord>(POSTGRES_READ_BLUEPRINT_TRUST_SQL, [contentHash]);
+    return result.rows[0];
+  }
 
   public async recordValidationRun(run: ValidationRunRecord): Promise<void> {
     await this.executor.query(POSTGRES_INSERT_VALIDATION_RUN_SQL, validationRunParameters(run));

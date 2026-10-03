@@ -95,15 +95,12 @@ describe("capability trust admission contract", () => {
       () => admitCapability(request(), context(disabledSource)),
       "CAPABILITY_DISABLED"
     );
+    const revoked: CapabilityDefinition = {
+      ...original!,
+      lifecycle: { ...original!.lifecycle, executionStatus: "REVOKED" }
+    };
     expectAdmissionError(
-      () =>
-        admitCapability(
-          request(),
-          context(
-            CAPABILITY_REGISTRY_SOURCE,
-            new Map([["content.text@1.0.0", "REVOKED"]])
-          )
-        ),
+      () => admitCapability(request(), context(sourceReplacing(original!, revoked))),
       "CAPABILITY_REVOKED"
     );
   });

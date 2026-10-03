@@ -175,6 +175,23 @@ export interface Blueprint {
   readonly result: { readonly outputs: readonly ResultOutput[] };
 }
 
+export interface BlueprintResourceUsage {
+  readonly blueprint_bytes: number;
+  readonly node_count: number;
+  readonly state_count: number;
+  readonly rule_count: number;
+  readonly action_count: number;
+  readonly initial_state_bytes: number;
+  readonly event_binding_count: number;
+  readonly timer_count: number;
+  readonly max_expression_ast_nodes: number;
+  readonly max_expression_depth: number;
+  readonly max_type_descriptor_depth: number;
+  readonly max_composite_literal_depth: number;
+  readonly max_ui_child_depth: number;
+  readonly max_repeat_depth: number;
+}
+
 export interface ValidationReport {
   readonly validation_run_id: string;
   readonly candidate_digest: string;
@@ -184,6 +201,7 @@ export interface ValidationReport {
   readonly registry_digest: string;
   readonly content_hash?: string;
   readonly issues: readonly ValidationIssue[];
+  readonly resource_usage?: BlueprintResourceUsage;
   readonly trace_id: string;
 }
 

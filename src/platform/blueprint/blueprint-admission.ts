@@ -1,3 +1,4 @@
+import { isIssuedValidationResult } from "./validate-blueprint.js";
 import type {
   BlueprintValidationResult,
   F02ErrorCode,
@@ -90,11 +91,21 @@ function integrityFailureReport(report: ValidationReport): ValidationReport {
   };
 }
 
+export class UntrustedValidationResultError extends Error {
+  public constructor() {
+    super("Only a validation result issued by validateBlueprintCandidate can be admitted.");
+    this.name = "UntrustedValidationResultError";
+  }
+}
+
 export async function admitBlueprint(
   result: BlueprintValidationResult,
   repository: BlueprintAdmissionRepository,
   options: BlueprintAdmissionOptions = {}
 ): Promise<BlueprintAdmissionResult> {
+  if (!isIssuedValidationResult(result)) {
+    throw new UntrustedValidationResultError();
+  }
   const createdAt = (options.now?.() ?? new Date()).toISOString();
   const compilerRunId = options.compilerRunId ?? null;
   if (result.admissible === undefined) {

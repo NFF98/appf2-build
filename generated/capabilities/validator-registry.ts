@@ -5,6 +5,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
   "capabilities": {
     "action.button": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -16,6 +17,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "action.button",
         "permission_class": "USER_GESTURE",
         "resource_budget": {
@@ -27,6 +30,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -95,6 +101,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "content.card": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -106,6 +113,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "content.card",
         "permission_class": "NONE",
         "resource_budget": {
@@ -117,6 +126,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -180,6 +192,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "content.list": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -191,6 +204,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "content.list",
         "permission_class": "NONE",
         "resource_budget": {
@@ -202,6 +217,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -221,6 +239,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "content.text": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -232,6 +251,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "content.text",
         "permission_class": "NONE",
         "resource_budget": {
@@ -243,6 +264,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -306,6 +330,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "data.stat": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -317,6 +342,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "data.stat",
         "permission_class": "NONE",
         "resource_budget": {
@@ -328,6 +355,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -429,6 +459,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "data.table_basic": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -440,6 +471,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "data.table_basic",
         "permission_class": "NONE",
         "resource_budget": {
@@ -451,6 +484,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -554,6 +590,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.number": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -565,6 +602,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "input.number",
         "permission_class": "NONE",
         "resource_budget": {
@@ -576,6 +615,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -700,6 +742,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.select": {
       "2.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -711,6 +754,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "input.select",
         "permission_class": "NONE",
         "resource_budget": {
@@ -722,6 +767,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -828,6 +876,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.text": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -839,6 +888,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "input.text",
         "permission_class": "NONE",
         "resource_budget": {
@@ -850,6 +901,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -959,6 +1013,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.toggle": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -970,6 +1025,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "input.toggle",
         "permission_class": "NONE",
         "resource_budget": {
@@ -981,6 +1038,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -1032,6 +1092,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "layout.container": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1043,6 +1104,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "layout.container",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1054,6 +1117,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -1136,6 +1202,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "logic.random": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1147,6 +1214,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_RULE",
+        "execution_status": "ACTIVE",
         "id": "logic.random",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1158,6 +1227,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {
@@ -1275,6 +1347,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "logic.score": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1286,6 +1359,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_RULE",
+        "execution_status": "ACTIVE",
         "id": "logic.score",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1297,6 +1372,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {
@@ -1434,6 +1512,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "logic.timer": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1445,6 +1524,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_RULE",
+        "execution_status": "ACTIVE",
         "id": "logic.timer",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1456,6 +1537,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 1
         },
         "validator": {
           "actions": {
@@ -1544,6 +1628,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "system.notice": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1555,6 +1640,8 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_status": "ACTIVE",
         "id": "system.notice",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1566,6 +1653,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -1674,6 +1764,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
       }
     }
   },
-  "registry_digest": "sha256:0a633311ee253bf6424c2201292710f6cd8f0943ece35584513410e614705ea0",
-  "registry_version": "4.0.0"
+  "registry_digest": "sha256:e7687f169a75cb814fd792ae5c213f02c9f74351723ef565e0024847dc5efcb6",
+  "registry_version": "5.0.0",
+  "runtime_version": "1.0.0"
 };

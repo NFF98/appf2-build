@@ -58,7 +58,8 @@ export class CapabilityAdmissionError extends Error {
       | "CAPABILITY_DEPENDENCY_UNAVAILABLE"
       | "REGISTRY_SNAPSHOT_MISMATCH"
       | "RESOURCE_LIMIT_EXCEEDED"
-      | "INVALID_DEPENDENCY_VERSION_RANGE",
+      | "INVALID_DEPENDENCY_VERSION_RANGE"
+      | "INVALID_COMPATIBILITY_RANGE",
     message: string
   ) {
     super(message);
@@ -200,6 +201,24 @@ export function matchesCapabilityVersionRange(version: string, range: string): b
   );
 }
 
+export function matchesRuntimeVersionBounds(version: string, minimum: string, maximum: string): boolean {
+  const lower = parseVersion(minimum);
+  const bound = /^(<=?)?(\d+\.\d+\.\d+)$/.exec(maximum);
+  const upper = bound === null ? undefined : parseVersion(bound[2]!);
+  if (lower === undefined || bound === null || upper === undefined) {
+    throw new CapabilityAdmissionError(
+      "INVALID_COMPATIBILITY_RANGE",
+      `Unsupported runtime compatibility range: ${minimum} .. ${maximum}`
+    );
+  }
+  const candidate = parseVersion(version);
+  if (candidate === undefined || compareVersions(candidate, lower) < 0) {
+    return false;
+  }
+  const comparison = compareVersions(candidate, upper);
+  return bound[1] === "<" ? comparison < 0 : comparison <= 0;
+}
+
 export function assertResourceBudgetWithinGlobalCeilings(budget: ResourceBudget): void {
   for (const resource of NUMERIC_RESOURCES) {
     if (!Number.isSafeInteger(budget[resource]) || budget[resource] < 0) {
@@ -219,7 +238,7 @@ export function assertResourceBudgetWithinGlobalCeilings(budget: ResourceBudget)
 
 function assertEligible(definition: CapabilityDefinition, context: CapabilityAdmissionContext): void {
   const outcome = context.compatibilityOutcomes?.get(refKey(definition)) ?? "COMPATIBLE";
-  if (outcome === "REVOKED") {
+  if (definition.lifecycle.executionStatus === "REVOKED" || outcome === "REVOKED") {
     throw new CapabilityAdmissionError("CAPABILITY_REVOKED", `${refKey(definition)} is revoked.`);
   }
   const unavailable =

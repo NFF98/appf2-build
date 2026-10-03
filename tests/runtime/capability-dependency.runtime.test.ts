@@ -121,13 +121,14 @@ describe("required capability dependency admission", () => {
       "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
 
+    const revokedDependency: CapabilityDefinition = {
+      ...dependency,
+      lifecycle: { ...dependency.lifecycle, executionStatus: "REVOKED" }
+    };
+    const revokedSource = source([root, revokedDependency, leaf, base]);
     expectAdmissionFailure(
-      eligibleSource,
-      context(
-        eligibleSource,
-        [],
-        new Map([[`${dependency.id}@${dependency.version}`, "REVOKED"]])
-      ),
+      revokedSource,
+      context(revokedSource),
       "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
 

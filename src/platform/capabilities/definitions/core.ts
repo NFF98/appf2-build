@@ -51,6 +51,7 @@ interface CoreDefinitionInput {
   readonly execution?: ExecutionClass;
   readonly replayClass?: ReplayClass;
   readonly permissionClass?: PermissionClass;
+  readonly timerSlotsPerInstance: number;
   readonly operators?: readonly string[];
   readonly validator: ValidatorContract;
 }
@@ -89,6 +90,9 @@ function defineCore(input: CoreDefinitionInput): CapabilityDefinition {
       permissionClass: input.permissionClass ?? "NONE",
       resourceBudget: {
         ...DEFAULT_RESOURCE_BUDGET
+      },
+      resourceUsage: {
+        timerSlotsPerInstance: input.timerSlotsPerInstance
       }
     },
     product: {
@@ -114,6 +118,7 @@ function defineCore(input: CoreDefinitionInput): CapabilityDefinition {
       targetHorizon: "CORE",
       maturity: "TESTED",
       availability: "ENABLED",
+      executionStatus: "ACTIVE",
       releaseRequirement: "RELEASE_BLOCKING"
     }
   };
@@ -127,6 +132,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "layout.container",
     displayName: "Layout Container",
+    timerSlotsPerInstance: 0,
     family: "LAYOUT",
     kind: "VIEW",
     meaning: "Compose child nodes with bounded layout configuration.",
@@ -144,6 +150,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "content.text",
     displayName: "Text",
+    timerSlotsPerInstance: 0,
     family: "CONTENT",
     kind: "VIEW",
     meaning: "Present literal or derived text.",
@@ -157,6 +164,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "content.card",
     displayName: "Content Card",
+    timerSlotsPerInstance: 0,
     family: "CONTENT",
     kind: "VIEW",
     meaning: "Present a semantically grouped content card.",
@@ -173,6 +181,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "content.list",
     displayName: "Content List",
+    timerSlotsPerInstance: 0,
     family: "CONTENT",
     kind: "VIEW",
     meaning: "Present a bounded list using a declarative item template.",
@@ -186,6 +195,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "action.button",
     displayName: "Action Button",
+    timerSlotsPerInstance: 0,
     family: "INPUT",
     kind: "INPUT",
     meaning: "Trigger an action from an explicit user gesture.",
@@ -201,6 +211,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "input.number",
     displayName: "Number Input",
+    timerSlotsPerInstance: 0,
     family: "INPUT",
     kind: "INPUT",
     meaning: "Edit a numeric value bound to typed runtime state.",
@@ -223,6 +234,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "input.text",
     displayName: "Text Input",
+    timerSlotsPerInstance: 0,
     family: "INPUT",
     kind: "INPUT",
     meaning: "Edit bounded text bound to typed runtime state.",
@@ -253,6 +265,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
     id: "input.select",
     version: "2.0.0",
     displayName: "Select Input",
+    timerSlotsPerInstance: 0,
     family: "INPUT",
     kind: "INPUT",
     meaning: "Select one STRING value from a bounded local option set.",
@@ -278,6 +291,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "input.toggle",
     displayName: "Toggle Input",
+    timerSlotsPerInstance: 0,
     family: "INPUT",
     kind: "INPUT",
     meaning: "Edit a boolean value bound to typed runtime state.",
@@ -291,6 +305,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "data.stat",
     displayName: "Statistic",
+    timerSlotsPerInstance: 0,
     family: "DATA",
     kind: "VIEW",
     meaning: "Present an important value or metric.",
@@ -316,6 +331,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "data.table_basic",
     displayName: "Basic Table",
+    timerSlotsPerInstance: 0,
     family: "DATA",
     kind: "VIEW",
     meaning: "Present bounded rows and columns without executable cell renderers.",
@@ -348,6 +364,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "logic.random",
     displayName: "Seeded Random",
+    timerSlotsPerInstance: 0,
     family: "LOGIC",
     kind: "LOGIC",
     meaning: "Produce bounded random outcomes through the Runtime RNG service.",
@@ -375,6 +392,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "logic.timer",
     displayName: "Timer",
+    timerSlotsPerInstance: 1,
     family: "LOGIC",
     kind: "LOGIC",
     meaning: "Maintain bounded timer state.",
@@ -396,6 +414,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "logic.score",
     displayName: "Score",
+    timerSlotsPerInstance: 0,
     family: "GAME",
     kind: "LOGIC",
     meaning: "Maintain bounded score state.",
@@ -421,6 +440,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "system.notice",
     displayName: "System Notice",
+    timerSlotsPerInstance: 0,
     family: "SYSTEM",
     kind: "VIEW",
     meaning: "Present a human-facing notice or recovery direction.",

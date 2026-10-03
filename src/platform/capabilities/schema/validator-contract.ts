@@ -1,4 +1,12 @@
-import type { PermissionClass, ResourceBudget, CapabilityDefinition } from "./capability-definition.js";
+import type {
+  Availability,
+  CapabilityDefinition,
+  ExecutionClass,
+  ExecutionStatus,
+  PermissionClass,
+  ResourceBudget,
+  ResourceUsageProfile
+} from "./capability-definition.js";
 
 export const CAPABILITY_ID_PATTERN = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
 export const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
@@ -148,6 +156,10 @@ export interface GeneratedCapabilityValidator {
   readonly validator: ValidatorContract;
   readonly permission_class: PermissionClass;
   readonly resource_budget: ResourceBudget;
+  readonly resource_usage: ResourceUsageProfile;
+  readonly availability: Availability;
+  readonly execution_status: ExecutionStatus;
+  readonly execution_class: ExecutionClass;
   readonly compatibility: CapabilityDefinition["compatibility"];
   readonly degradation: CapabilityDefinition["degradation"];
 }
@@ -155,6 +167,7 @@ export interface GeneratedCapabilityValidator {
 export interface ValidatorRegistry {
   readonly registry_version: string;
   readonly registry_digest: string;
+  readonly runtime_version: string;
   readonly capabilities: Readonly<
     Record<string, Readonly<Record<string, GeneratedCapabilityValidator>>>
   >;

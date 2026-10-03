@@ -38,7 +38,7 @@ describe("F02 executable Blueprint schema closure", () => {
 
     expect(result.report.issues).toEqual([]);
     expect(result.report.status).toBe("PASSED");
-    expect(result.report.registry_version).toBe("4.0.0");
+    expect(result.report.registry_version).toBe("5.0.0");
     expect(result.report.registry_digest).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(result.admissible?.contentHash).toBe(hashBlueprint(candidate));
     expect(result.report.content_hash).toBe(result.admissible?.contentHash);
