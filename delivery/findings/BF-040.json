@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-040",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-011",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T003",
+  "expected": "BS-P1-011 must make TEST-F02-009/010/011/012 implementable without inventing integrity, version-range, validation-stage or execution-reference semantics. Registry release identity must be machine-verifiable at runtime; same exact CapabilityRef executable semantics must not drift across any released snapshot; all §19 resource ceilings must have one deterministic owner/stage; fresh execution must distinguish durable-content corruption, pinned/current snapshot unavailability, current eligibility, dependency drift and temporary infrastructure failure without fail-open; every executable Blueprint capability reference and required dependency must be checked under the frozen dual-snapshot contract; trusted pinned Runtime handler binding must remain available for execution.",
+  "actual": "Cursor re-execution produced HEAD 0be0f7111466ae7f6e27ed5f668a33c37272548d and reported all required commands PASS, but independent review found eight same-class gaps. Runtime snapshot integrity only checks wrapper/inner digest-string equality plus per-entry execution_contract_digest, so same-version lifecycle mutation can remain 'intact' because availability/execution_status are deliberately excluded from execution_contract_digest. Generator only rejects same registry_version with changed registry_digest; it does not enforce historical same CapabilityRef execution_contract_digest continuity across version bumps or remove/re-add gaps. F02 §4/V02 embeds several maxima also owned by §19/V09, while §19 says all hard limit exceedances map F02-ERR-011/V09. Runtime compatibility max bound grammar is not frozen; Cursor inferred '<X exclusive / X inclusive' from current data. Fresh persisted-body hash/metadata corruption has no exact E-stage/error mapping; Cursor invented E04 CONTENT_INTEGRITY_FAILURE while F02 already defines F02-ERR-015 HASH_INTEGRITY_FAILURE. Shared Execution Admission says re-check every/any referenced Capability, while current code only rechecks nodes[].capability and not support.degradations[].capability_refs. Dependency eligibility recursively checks current semantics but does not compare same exact dependency ref execution_contract_digest against pinned truth, so same-ref dependency drift can escape E07. Finally, no fresh-admission machine proof binds the Blueprint's pinned validator snapshot to the matching trusted runtime-registry handler mapping or proves the pinned handler is still bundled/available before issuing executable=true.",
+  "evidence": [
+    "Cursor RESULT #164 comment 5971774824 reports branch feature/sp-p1-002-t003-bs-p1-011-rerun-2, final HEAD 0be0f7111466ae7f6e27ed5f668a33c37272548d, 32 changed files, all required commands/gate PASS and no merge.",
+    "Independent compare confirms 0be0f7111466ae7f6e27ed5f668a33c37272548d is exactly one commit ahead of canonical 62192deb88ef5adb8fc765ace0f146dd1a54b977, behind_by=0, with all changed files inside T003 allowed paths.",
+    "isIntactRegistrySnapshot validates registry_version/digest string equality and per-entry execution_contract_digest but does not recompute a digest over the full ValidatorRegistry artifact or validate the tuple against a trusted immutable release identity. availability/execution_status are excluded from execution_contract_digest by BS-P1-011.",
+    "BS-P1-011 F04 §9 rules 8-9 require same exact CapabilityRef execution_contract_digest stability across Registry snapshots and require policy-only lifecycle change to publish a new Registry version+digest. Candidate generator assertRegistryVersionIntegrity only rejects changed digest under the same registry_version.",
+    "BS-P1-011 F02 §4.1 fixes maxima such as nodes<=100, action steps<=16, result outputs<=50, degradations<=50 and refs/degradation<=20 in V02 schema closure, while §19/§29 says all static hard-ceiling exceedances are F02-ERR-011/V09. Candidate TEST-F02-010 does not exercise every overlapping ceiling and parser preemption remains inconsistent.",
+    "Canonical Capability source uses maxRuntimeVersion '<2.0.0', but BS-P1-011 does not freeze the compatibility-bound grammar. Candidate implements '<X' exclusive and bare X inclusive and explicitly reports this was inferred from data.",
+    "Shared EXECUTION-ADMISSION E04 only states trust_status != VALIDATED; F02 defines F02-ERR-015 HASH_INTEGRITY_FAILURE at V12. Candidate maps persisted canonical body/hash mismatch to E04 CONTENT_INTEGRITY_FAILURE without frozen precedence/error semantics.",
+    "Shared EXECUTION-ADMISSION server flow says re-check every CapabilityRef and E07 says any referenced Capability; candidate directRefs() collects only nodes[].capability, while Blueprint also contains support.degradations[].capability_refs.",
+    "Candidate dependency evaluator runs solely against current Registry and does not compare current-vs-pinned execution_contract_digest for dependency candidates. BF-039 only explicitly froze the comparison for direct refs, leaving dependency same-ref drift underspecified.",
+    "F04 requires Runtime to use the trusted runtime-registry mapping matching its Registry snapshot; ENABLED capability missing runtime handler is a build/deployment failure. Candidate fresh admission validates only validator snapshots and execution_class, so executable=true does not prove the pinned matching handler mapping is available.",
+    "Cursor candidate 0be0f7111466ae7f6e27ed5f668a33c37272548d remains unmerged; prior candidate 9740045a82765cf7e4bc629eb06be5010d81f0be also remains unmerged evidence."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T003_BS_P1_011_IMPLEMENTATION_PLUS_EXHAUSTIVE_SAME_CLASS_REVIEW",
+      "result": "IMPLEMENTED_BUT_NOT_MERGEABLE",
+      "evidence": "Implementation candidate passed its tests/gates, but independent review found contract ambiguity plus runtime-integrity holes and incomplete mapped-proof coverage. Human requested one-shot same-class remediation before any new Cursor execution."
+    }
+  ],
+  "requested_planning_action": [
+    "Define a machine-verifiable Registry release identity that binds registry_version + registry_digest to the exact generated ValidatorRegistry artifact, including availability/execution_status, and specify trusted deployment verification before E06/E08 decisions.",
+    "Define append-only historical same-CapabilityRef execution_contract_digest continuity across all released snapshots, including remove/re-add gaps; generator/CI must hard-fail exact-ref semantic reuse without Capability version bump.",
+    "Resolve F02 V02 vs V09 ownership for every §19 ceiling. Structural minima/shape may remain V02, but each canonical resource maximum must have one deterministic error stage/code and TEST-F02-010 must cover the full matrix.",
+    "Freeze CompatibilityContract runtime-bound grammar and inclusive/exclusive semantics; implementation may not infer grammar from current examples.",
+    "Freeze durable persisted-content integrity checks and exact E01-E08 precedence/error mapping, including hash/body/metadata mismatch versus temporary repository/snapshot infrastructure failure.",
+    "Define the exact Blueprint execution reference set for fresh E07 and validation: include or exclude support.degradations[].capability_refs explicitly, with deterministic stage/error semantics.",
+    "Define pinned-vs-current execution_contract_digest comparison for required dependency candidates when the same exact dependency ref exists in both snapshots; define behavior for newly introduced dependency versions.",
+    "Bind fresh execution authorization to the pinned trusted runtime-registry mapping/handler availability required by F04, without expanding T003 into general Runtime feature semantics.",
+    "Expand TEST-F02-010 proof requirements to every §19 metric/budget and boundary; include composite literal depth and all overlapping count ceilings.",
+    "Perform a final cross-contract sweep across F02/F03/F04/EXECUTION-ADMISSION for any other mutable-current truth, release identity, handler-binding, validation-stage or fail-open ambiguity before freezing the replacement baseline.",
+    "Merge Design remediation, derive a scope-clean freeze source from the BS-P1-011 source lineage, create replacement Build Spec, normalize BF-040, atomically reactivate SP-P1-002/T003, and stop before a fresh Cursor EXECUTE comment."
+  ],
+  "affected_contracts": [
+    "F02 §4.1 schema bounds / §19 / V09 stage ownership",
+    "F02 V04/V10/V11 capability-reference eligibility",
+    "F02 Trust / V12 content integrity / fresh Execution Admission",
+    "F04 Registry release identity and generated artifact integrity",
+    "F04 execution_contract_digest historical continuity",
+    "F04 CompatibilityContract runtime-bound grammar",
+    "F04 runtime-registry trusted handler binding",
+    "Shared EXECUTION-ADMISSION E04/E06/E07/E08 dual-snapshot precedence"
+  ],
+  "affected_acceptance": [
+    "F02-AC-009",
+    "F02-AC-010",
+    "F02-AC-011",
+    "F02-AC-012"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
