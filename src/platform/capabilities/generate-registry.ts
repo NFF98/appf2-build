@@ -7,11 +7,18 @@ import {
   CapabilityAdmissionError,
   matchesCapabilityVersionRange
 } from "./admission.js";
+import { compareCodePoints } from "../blueprint/type-descriptor.js";
 import { CAPABILITY_REGISTRY_SOURCE } from "./registry.js";
 import type { CapabilityDefinition, RegistrySource } from "./schema/capability-definition.js";
+import {
+  CAPABILITY_ID_PATTERN,
+  SEMVER_PATTERN,
+  type GeneratedCapabilityValidator,
+  type ValidatorRegistry
+} from "./schema/validator-contract.js";
+import { assertValidatorContract, ValidatorContractError } from "./validator-contract-check.js";
 
-const CAPABILITY_ID_PATTERN = /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/;
-const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+const BARE_DIGEST_PATTERN = /^[a-f0-9]{64}$/;
 
 export class RegistryGenerationError extends Error {
   public constructor(
@@ -23,7 +30,8 @@ export class RegistryGenerationError extends Error {
       | "INVALID_VERSION"
       | "INVALID_DEPENDENCY_VERSION_RANGE"
       | "RESOURCE_CEILING_EXCEEDED"
-      | "REGISTRY_VERSION_DIGEST_MISMATCH",
+      | "REGISTRY_VERSION_DIGEST_MISMATCH"
+      | "REGISTRY_GENERATION_INVALID",
     message: string
   ) {
     super(message);
@@ -57,7 +65,7 @@ function canonicalize(value: unknown): unknown {
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value)
-        .sort(([left], [right]) => left.localeCompare(right))
+        .sort(([left], [right]) => compareCodePoints(left, right))
         .map(([key, entry]) => [key, canonicalize(entry)])
     );
   }
@@ -73,7 +81,11 @@ function capabilityRef(definition: CapabilityDefinition): string {
 }
 
 function sortedDefinitions(source: RegistrySource): readonly CapabilityDefinition[] {
-  return [...source.capabilities].sort((left, right) => capabilityRef(left).localeCompare(capabilityRef(right)));
+  return [...source.capabilities].sort((left, right) => compareCodePoints(capabilityRef(left), capabilityRef(right)));
+}
+
+export function canonicalRegistryDigest(digest: string): string {
+  return BARE_DIGEST_PATTERN.test(digest) ? `sha256:${digest}` : digest;
 }
 
 export function computeRegistryDigest(source: RegistrySource): string {
@@ -184,6 +196,19 @@ function assertSafetyContracts(definitions: readonly CapabilityDefinition[]): vo
   }
 }
 
+function assertValidatorContracts(definitions: readonly CapabilityDefinition[]): void {
+  for (const definition of definitions) {
+    try {
+      assertValidatorContract(definition);
+    } catch (error: unknown) {
+      if (error instanceof ValidatorContractError) {
+        throw new RegistryGenerationError("REGISTRY_GENERATION_INVALID", error.message);
+      }
+      throw error;
+    }
+  }
+}
+
 export function validateRegistrySource(source: RegistrySource): void {
   if (!SEMVER_PATTERN.test(source.registryVersion) || !SEMVER_PATTERN.test(source.runtimeVersion)) {
     throw new RegistryGenerationError("INVALID_VERSION", "Registry and runtime versions must be SemVer.");
@@ -193,6 +218,7 @@ export function validateRegistrySource(source: RegistrySource): void {
   assertUniqueRefs(definitions);
   assertAcyclicDependencies(definitions);
   assertSafetyContracts(definitions);
+  assertValidatorContracts(definitions);
 }
 
 export function assertRegistryVersionIntegrity(
@@ -202,7 +228,7 @@ export function assertRegistryVersionIntegrity(
   if (
     previous !== undefined &&
     previous.registryVersion === current.registryVersion &&
-    previous.registryDigest !== current.registryDigest
+    canonicalRegistryDigest(previous.registryDigest) !== canonicalRegistryDigest(current.registryDigest)
   ) {
     throw new RegistryGenerationError(
       "REGISTRY_VERSION_DIGEST_MISMATCH",
@@ -215,12 +241,43 @@ function jsonArtifact(value: unknown): string {
   return `${JSON.stringify(canonicalize(value), null, 2)}\n`;
 }
 
+const GENERATED_HEADER = "// Generated from the canonical Capability Registry. Do not edit.\n";
+
 function typescriptArtifact(name: string, value: unknown): string {
-  return `// Generated from the canonical Capability Registry. Do not edit.\nexport const ${name} = ${JSON.stringify(
+  return `${GENERATED_HEADER}export const ${name} = ${JSON.stringify(canonicalize(value), null, 2)} as const;\n`;
+}
+
+function validatorRegistryArtifact(value: ValidatorRegistry): string {
+  return `${GENERATED_HEADER}import type { ValidatorRegistry } from "../../src/platform/capabilities/schema/validator-contract.js";\n\nexport const VALIDATOR_REGISTRY: ValidatorRegistry = ${JSON.stringify(
     canonicalize(value),
     null,
     2
-  )} as const;\n`;
+  )};\n`;
+}
+
+function buildValidatorRegistry(
+  identity: RegistryIdentity,
+  definitions: readonly CapabilityDefinition[]
+): ValidatorRegistry {
+  const capabilities: Record<string, Record<string, GeneratedCapabilityValidator>> = {};
+  for (const definition of definitions) {
+    const versions = capabilities[definition.id] ?? {};
+    versions[definition.version] = {
+      id: definition.id,
+      version: definition.version,
+      validator: definition.contract.validator,
+      permission_class: definition.runtime.permissionClass,
+      resource_budget: definition.runtime.resourceBudget,
+      compatibility: definition.compatibility,
+      degradation: definition.degradation
+    };
+    capabilities[definition.id] = versions;
+  }
+  return {
+    registry_version: identity.registryVersion,
+    registry_digest: identity.registryDigest,
+    capabilities
+  };
 }
 
 export function generateRegistryArtifacts(
@@ -231,7 +288,7 @@ export function generateRegistryArtifacts(
   const definitions = sortedDefinitions(source);
   const identity = {
     registryVersion: source.registryVersion,
-    registryDigest: computeRegistryDigest(source)
+    registryDigest: canonicalRegistryDigest(computeRegistryDigest(source))
   };
   assertRegistryVersionIntegrity(previousIdentity, identity);
 
@@ -250,30 +307,14 @@ export function generateRegistryArtifacts(
       intent_classes: definition.semantic.intentClasses,
       selection_hints: definition.semantic.selectionHints,
       rejection_hints: definition.semantic.rejectionHints,
-      public_parameters: definition.contract.bindings,
+      public_parameters: [
+        ...Object.keys(definition.contract.validator.props),
+        ...Object.keys(definition.contract.validator.bindings)
+      ],
       events: definition.contract.events
     }))
   };
-  const validatorRegistry = {
-    registryVersion: identity.registryVersion,
-    registryDigest: identity.registryDigest,
-    capabilities: definitions.map((definition) => ({
-      id: definition.id,
-      version: definition.version,
-      propsSchema: definition.contract.propsSchema,
-      stateSchema: definition.contract.stateSchema,
-      inputs: definition.contract.inputs,
-      outputs: definition.contract.outputs,
-      actions: definition.contract.actions,
-      events: definition.contract.events,
-      bindings: definition.contract.bindings,
-      operators: definition.contract.operators,
-      permissionClass: definition.runtime.permissionClass,
-      resourceBudget: definition.runtime.resourceBudget,
-      compatibility: definition.compatibility,
-      degradation: definition.degradation
-    }))
-  };
+  const validatorRegistry = buildValidatorRegistry(identity, definitions);
   const runtimeRegistry = {
     registryVersion: identity.registryVersion,
     registryDigest: identity.registryDigest,
@@ -308,7 +349,7 @@ export function generateRegistryArtifacts(
     files: {
       "registry-manifest.json": jsonArtifact(registryManifest),
       "compiler-catalog.json": jsonArtifact(compilerCatalog),
-      "validator-registry.ts": typescriptArtifact("VALIDATOR_REGISTRY", validatorRegistry),
+      "validator-registry.ts": validatorRegistryArtifact(validatorRegistry),
       "runtime-registry.ts": typescriptArtifact("RUNTIME_REGISTRY", runtimeRegistry),
       "compatibility-manifest.json": jsonArtifact(compatibilityManifest)
     }

@@ -79,7 +79,7 @@
       "max_runtime_version": "<2.0.0",
       "min_runtime_version": "1.0.0",
       "replacement": null,
-      "version": "1.0.0"
+      "version": "2.0.0"
     },
     {
       "availability": "ENABLED",
@@ -152,7 +152,7 @@
       "version": "1.0.0"
     }
   ],
-  "registry_digest": "567c227d8f0726a7a3bfa50b357ce933d48ab5aaa629b25bfcac3cab4fb6bafa",
-  "registry_version": "1.0.0",
+  "registry_digest": "sha256:0a633311ee253bf6424c2201292710f6cd8f0943ece35584513410e614705ea0",
+  "registry_version": "4.0.0",
   "runtime_version": "1.0.0"
 }
