@@ -1,0 +1,15 @@
+---
+description: appf2 approved local Cursor automation transport rules
+alwaysApply: true
+---
+
+- The canonical Human / ChatGPT / Cursor collaboration protocol is delivery/EXECUTION-HANDOFF-PROTOCOL.md, including its Local Cursor Automation Transport Constitution.
+- Automated execution does not change authority: Human approves, ChatGPT plans/audits, Cursor implements, GitHub remains SSOT.
+- Never self-authorize a Task, Sprint, Build Spec transition, BF resolution, merge, or closure.
+- Never treat GitHub Issue #137, an APPF2-RESULT, a Cursor summary, or a successful CLI exit code as Product truth or completion proof.
+- When an automation prompt contains `[APPF2-EXECUTE][APPROVED]`, execute only the explicitly authorized active Task/scope and obey canonical build-spec/CURRENT.json plus delivery/CURRENT-SPRINT.json.
+- Product implementation automation prompts must identify the intended `TASK=Txxx`; if the canonical active Task does not match, STOP and report the mismatch.
+- If Product/schema truth is ambiguous or missing, STOP and surface a Finding; do not fill the gap from chat, code precedent, tests, or convenience.
+- Do not select or start the next Task after finishing the current instruction.
+- Return concrete execution facts: Task, branch, HEAD, changed files, commands/gates, test results, Findings/blockers, manual dependencies, and remaining risks.
+- Automation transport retries must never be interpreted as authorization to repeat Product implementation.
