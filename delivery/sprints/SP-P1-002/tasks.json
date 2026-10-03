@@ -137,7 +137,7 @@
         "BL-P1-005"
       ],
       "title": "Implement Blueprint validation core and admitted-content persistence",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-006",
       "scope": [
         "Implement F02 Candidate Blueprint parsing and exact executable schema validation under BS-P1-006.",
@@ -203,7 +203,16 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [],
+      "test_maintenance_authorizations": [
+        {
+          "test_id": "TEST-F04-AC-006",
+          "file": "tests/contract/capability-registry.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-005",
+          "to_build_spec": "BS-P1-006"
+        }
+      ]
     },
     {
       "task_id": "T003",

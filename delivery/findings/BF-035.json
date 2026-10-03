@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-035",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-006",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "BS-P1-006 F02/F04 必須讓 T002 可機械實作 generated validator machine contract 與 F02 consumer，不需修改未授權既有 mapped Test，也不需 Cursor 自行選擇會改變 admission 結果的 source_kinds、composite matcher 或 node-derived event payload machine representation。",
+  "actual": "Human-approved full T002 contract sweep confirmed one governance/test-maintenance conflict plus three remaining contract gaps. B1 is remediated in this governance block by authorizing TEST-F04-AC-006 BASELINE_FIXTURE_REBIND from BS-P1-004 to BS-P1-006. B2-B4 remain contract-affecting and block Product implementation: action arg source_kinds are not fixed; input.select options cannot be represented exactly by the frozen F02 TypeDescriptor/TargetMatcher contract; input.select/input.text node-derived event payloads do not have a frozen generated-machine representation.",
+  "evidence": [
+    "B1 — BS-P1-006 F04 §9 requires validator-registry.ts top-level canonical keys registry_version / registry_digest with sha256: digest, while CLOSED T001 TEST-F04-AC-006 still asserts registryVersion / registryDigest. validate-test-integrity permits later-task maintenance only through an explicit BASELINE_FIXTURE_REBIND authorization. This governance block adds that authorization for T002; no test code is changed here.",
+    "B2 — F04 FieldContract requires explicit source_kinds in generated machine truth, but logic.random sample_number/choose_item and logic.score increment/set action args omit source_kinds; the only documented shorthand default applies to props. Choosing LITERAL-only versus broader source kinds changes admission behavior.",
+    "B3 — input.select.options is specified as LIST<RECORD{label: STRING(120), value: ONE_OF<NUMBER,STRING,BOOLEAN>}>(500), but F02 TypeDescriptor has no ONE_OF variant and F04 TargetMatcher lacks a per-record-field matcher. Because the field is LITERAL-only and composite LITERAL requires a unique concrete expected TypeDescriptor, implementation cannot select a representation without changing admission semantics.",
+    "B4 — F04 §9 requires event payload to be a resolved F02 TypeDescriptor, yet input.select.change payload derives from SELECT_ENUM_DOMAIN at node validation time and input.text.change derives from bound state + prop.max_length. The generated artifact representation for these node-derived descriptors is not frozen.",
+    "Full-sweep negative result — candidate_digest exact UTF-8 pre-parse identity, F02 TypeDescriptor assignability/Join, EVENT/SCOPE path grammar, validation_run/blueprint_content persistence and immutability, staged nullable compiler_run_id, and other T002 scope items are sufficiently fixed in BS-P1-006; no additional blocker B5 was found.",
+    "Canonical state at block decision: main=757119c64b007b3dc58acbf06af797cac0d6e66e; BS-P1-006 active; SP-P1-002 ACTIVE; T002 IN_PROGRESS; implementation_enabled=true.",
+    "Cursor provisional finding branch dea1b72787b7c18452424efaabdb553f81d139c7 is not adopted or merged because its only write was delivery/findings/BF-035.json outside the authorized Product implementation write paths. Its technical evidence was independently re-audited against canonical main."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "FULL_T002_CONTRACT_SWEEP_FROM_CANONICAL_MAIN",
+      "result": "STOPPED_SPEC_GAP",
+      "evidence": "Independent audit of BS-P1-006 F02/F03/F04, DATA-MODEL-DETAILED, generated capability artifacts, T001 capability tests, and T002 governance found B1-B4 and no additional blocker. Product implementation remains stopped."
+    }
+  ],
+  "requested_planning_action": [
+    "B1 RESOLVED DIRECTION: T002 is authorized to rebind TEST-F04-AC-006 in tests/contract/capability-registry.contract.test.ts using BASELINE_FIXTURE_REBIND from BS-P1-004 to BS-P1-006; the test must be updated to assert the canonical F04 §9 validator artifact identity without weakening cross-artifact identity coverage.",
+    "B2: appf2-design Working must explicitly fix source_kinds for every Phase 1 action arg (logic.random and logic.score) and state whether RANDOM_MIN_MAX / SCORE_BOUNDS are admission-time statically enforceable for each permitted source kind.",
+    "B3: appf2-design Working must fix one exact machine representation for input.select.options compatible with F02 composite-LITERAL rules, including the bounded STRING descriptor and heterogeneous primitive option-value semantics, without inferring schema from literal object shape.",
+    "B4: appf2-design Working must fix the exact generated-machine representation for node-derived event payload descriptors for input.select.change and input.text.change, and the deterministic F02 resolution rule at each dispatch site.",
+    "B2-B4 must be remediated together in one Working change, followed by one precision/freeze audit and one replacement Build Spec/Activation sequence if the locked contract changes."
+  ],
+  "affected_contracts": [
+    "F04 §5.1 FieldContract / ActionContract / EventContract",
+    "F04 §5.2 TargetMatcher / composite LITERAL rule",
+    "F04 §9 Generated Validator Artifact",
+    "F04 §13.1 input.select / input.text / logic.random / logic.score",
+    "F02 §9.1 Value Source contextual typing",
+    "F02 §14 INVOKE_CAPABILITY args typing",
+    "F02 §15.1 EVENT typing context",
+    "SP-P1-001/T001 TEST-F04-AC-006 maintenance boundary"
+  ],
+  "affected_acceptance": [
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-008",
+    "F04-AC-006"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
