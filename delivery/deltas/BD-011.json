@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-011",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-039"
+  ],
+  "affected_build_spec": "BS-P1-010",
+  "affected_tasks": [
+    "T003"
+  ],
+  "affected_contracts": [
+    "F02 §19.1 canonical ResourceUsageProfile token",
+    "F02 V04 deterministic recursive dependency eligibility",
+    "F02 V10 Phase 1 media/network permission policy",
+    "F02 fresh ExecutionRuntimeContext pinned/current dual Registry authority",
+    "F04 Registry v6 execution_contract_digest and policy-only snapshot versioning",
+    "Shared EXECUTION-ADMISSION E06/E07/E08 dual-snapshot precedence"
+  ],
+  "affected_acceptance": [
+    "F02-AC-009",
+    "F02-AC-010",
+    "F02-AC-011",
+    "F02-AC-012"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-04: BF-039 governance block + same-class remediation through pre-Cursor re-execution."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "dcd642778252d2cab6b37b7004dad9661aea9db5",
+  "replacement_build_spec": "BS-P1-011",
+  "verification": [
+    "BF-039 governance block merged via Build PR #170 as f6c56ed8c4ff0b8d6fb378c2644e7ebd3d661d15.",
+    "Design Product truth remediation merged via Design PR #14 as dcd642778252d2cab6b37b7004dad9661aea9db5.",
+    "Scope-clean source e6b28ef5e3f0d3925961b347bf0744025b509dfc is derived from prior BS-P1-010 source e54941e9f127bc3ec5f80f8091884e4a3aeb2767 and changes exactly F02, F04 and EXECUTION-ADMISSION.",
+    "Registry machine contract is bumped 5.0.0 -> 6.0.0; exact Core Capability semantic versions remain unchanged.",
+    "Registry v6 canonical timer token is resource_usage.timerSlotsPerInstance; snake_case alias is forbidden.",
+    "Fresh execution separates Blueprint pinned historical Registry snapshot from deployment current execution Registry snapshot; policy-only revoke/disable requires a new Registry PATCH version/digest.",
+    "Direct current CapabilityRef requires execution_contract_digest equality with pinned same ref; required dependencies are recursively eligible only if availability/status/class/schema/runtime/transitive checks pass.",
+    "Phase 1 V10 rejects permission classes outside NONE/USER_GESTURE and rejects both networkAccessAllowed=true and mediaAutoplayAllowed=true.",
+    "Cursor candidate 9740045a82765cf7e4bc629eb06be5010d81f0be remains unmerged evidence and is not part of this Freeze."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "e6b28ef5e3f0d3925961b347bf0744025b509dfc",
+    "base_commit": "e54941e9f127bc3ec5f80f8091884e4a3aeb2767",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-039-FREEZE-CANDIDATE.md"
+  }
+}
