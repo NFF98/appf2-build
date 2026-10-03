@@ -137,11 +137,11 @@
         "BL-P1-005"
       ],
       "title": "Implement Blueprint validation core and admitted-content persistence",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-006",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-007",
       "scope": [
-        "Implement F02 Candidate Blueprint parsing and exact executable schema validation under BS-P1-006.",
-        "Implement canonical state TypeDescriptor validation from BS-P1-006.",
+        "Implement F02 Candidate Blueprint parsing and exact executable schema validation under BS-P1-007.",
+        "Implement canonical state TypeDescriptor validation from BS-P1-007.",
         "Implement Value Source contextual typing.",
         "Implement Registry-backed exact capability/version/props/bindings/events/actions/composition validation.",
         "Implement the F04 generated validator machine contract required by BF-031; F02 must consume that generated truth and must not create a second hand-written capability schema.",
@@ -209,8 +209,8 @@
           "test_id": "TEST-F04-AC-006",
           "file": "tests/contract/capability-registry.contract.test.ts",
           "mode": "BASELINE_FIXTURE_REBIND",
-          "from_build_spec": "BS-P1-005",
-          "to_build_spec": "BS-P1-006"
+          "from_build_spec": "BS-P1-006",
+          "to_build_spec": "BS-P1-007"
         }
       ]
     },
@@ -221,7 +221,7 @@
       ],
       "title": "Enforce Blueprint execution safety, hard ceilings and trust anti-bypass",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-006",
+      "build_spec_id": "BS-P1-007",
       "scope": [
         "Reject arbitrary executable code, eval/dynamic import paths and hard-ceiling violations before Runtime.",
         "Enforce disabled/revoked/incompatible Blueprint denial and prevent client trust flags from bypassing validation."
@@ -284,7 +284,7 @@
       ],
       "title": "Implement validation failure and degradation semantics",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-006",
+      "build_spec_id": "BS-P1-007",
       "scope": [
         "Ensure validation failure never corrupts an existing validated Blueprint and rejected candidate bodies do not become executable durable artifacts.",
         "Enforce explicit PARTIALLY_SUPPORTED degradation metadata and semantic-core preservation."
@@ -344,7 +344,7 @@
       ],
       "title": "Implement validation evidence and admission traceability",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-006",
+      "build_spec_id": "BS-P1-007",
       "scope": [
         "Make validation stage/error/trace evidence observable without raw Blueprint telemetry.",
         "Trace admitted Blueprint content to validation_run and trace revoke/incompatible outcomes without mutating immutable Blueprint body."
@@ -407,7 +407,7 @@
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-006",
+      "build_spec_id": "BS-P1-007",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
         "Require explicit clarification for money/permission/cost assumptions, expose material proposals, avoid re-asking answered questions unless upstream facts change, and prevent client resolved_intent bypass.",
@@ -474,7 +474,7 @@
       ],
       "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-006",
+      "build_spec_id": "BS-P1-007",
       "scope": [
         "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",
         "On overflow, preferentially retain CORE_OUTCOME / RELIABILITY over DEBUG / PRODUCT_SAMPLE.",
@@ -529,7 +529,7 @@
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-006",
+      "build_spec_id": "BS-P1-007",
       "scope": [
         "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
         "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default.",
@@ -597,7 +597,7 @@
       ],
       "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-006",
+      "build_spec_id": "BS-P1-007",
       "scope": [
         "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
         "Prove F01-AC-002 by showing NEEDS_CLARIFICATION when required intent data is missing and no safe default exists.",

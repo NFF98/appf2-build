@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-007",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-035"
   ],
@@ -40,7 +40,8 @@
     "SemVer PASS: input.select 1.0.0→2.0.0 and Registry 2.0.0→3.0.0.",
     "Acceptance Registry byte-identical; B1 remains governed by explicit T002 TEST-F04-AC-006 maintenance authorization.",
     "Scope-clean source 75da33333d80ce362f8a10046c5462271e98fcec changes exactly F02/F03/F04 from prior freeze source.",
-    "Human pre-approved governance through re-activation; fresh Cursor execution is excluded."
+    "Human pre-approved governance through re-activation; fresh Cursor execution is excluded.",
+    "Human-approved BS-P1-007 / SP-P1-002 / T002 Activation on 2026-10-03 atomically rebinds unfinished Sprint 2 work to BS-P1-007, resolves BF-035 as the spec blocker, and returns T002 to IN_PROGRESS. Fresh Cursor Product implementation execution remains a separate mandatory gate."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
