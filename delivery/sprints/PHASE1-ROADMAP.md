@@ -27,7 +27,7 @@ This roadmap is a planning view. It does **not** reserve future Build Spec IDs, 
 
 Current canonical execution boundary:
 
-- Build main at naming review start: `780100c7766584abb9adc9f1caf00e886ade3406`.
+- Canonical control state is read from `build-spec/CURRENT.json` + `delivery/CURRENT-SPRINT.json`.
 - `BS-P1-012 = LOCKED`.
 - `implementation_enabled = false`.
 - `delivery/CURRENT-SPRINT.json = HOLD`.
