@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-035",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-006",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "BS-P1-006 F02/F04 必須讓 T002 scope 4-5（Registry-backed exact props/bindings/events/actions/composition validation 與 F04 generated validator machine contract）可被 Cursor 機械翻譯為 generated validator-registry.ts 與 F02 consumer，且不需改動其他 Task 擁有的既有 mapped Test、不需 Cursor 自行選擇會改變 admission 結果的 machine token。product_decision_allowed=false。",
+  "actual": "從 canonical main 757119c64b007b3dc58acbf06af797cac0d6e66e 建立 feature/sp-p1-002-t002-bs-p1-006 後，pre-implementation contract audit 發現四項 T002 implementation 無法在不做 Product/Schema 選擇或不違反 test-integrity 的前提下完成：(B1) F04 §9 exact validator-registry.ts top-level shape 與 SP-P1-001/T001 已 CLOSED 的 TEST-F04-AC-006 斷言互斥，且 T002 沒有 test_maintenance_authorizations；(B2) Core Capability action args（logic.random / logic.score）的 FieldContract.source_kinds 在 BS-P1-006 未定義；(B3) input.select props.options 的 machine contract 無法以 §5.2 TargetMatcher 表示，且依 §5.2 rule 7 其 LITERAL-only 來源將永遠被拒絕；(B4) input.select / input.text change event payload 為 node-derived，無法產生 §9 rule 4 要求的 resolved static F02 TypeDescriptor。依 [APPF2-EXECUTE] STOP 規則，T002 Product implementation 未開始，沒有任何 src/、generated/、supabase/、tests/ 變更。",
+  "evidence": [
+    "B1 test/contract 互斥：BS-P1-006 functions/F04-CAPABILITY-REGISTRY.md:533-539 規定 validator-registry.ts top-level exact logical shape 為 { registry_version, registry_digest: \"sha256:<64 lowercase hex>\", capabilities: map<id, map<version, GeneratedCapabilityValidator>> }；F04:265 規定欄位名稱與 nesting 是 canonical，不得改名。既有 tests/contract/capability-registry.contract.test.ts:175-176（TEST-F04-AC-006，SP-P1-001/T001 CLOSED）斷言 validator-registry.ts 必須包含 camelCase 字串 `\"registryVersion\": ...` 與 `\"registryDigest\": ...`。實作 F04 §9 必然使 TEST-F04-AC-006 失敗（npm run test:contract 為 T002 required command）。修改該 test 被 harness/scripts/validate-test-integrity.mjs:71（Active Task may not modify previously existing mapped Test）與 skills/test-builder/SKILL.md:49 禁止；delivery/sprints/SP-P1-002/tasks.json 的 T002 沒有 test_maintenance_authorizations。在 artifact 內另加 camelCase key 或註解以滿足字串斷言屬於違反 exact shape 的假綠燈，不可採用。",
+    "B2 action args source_kinds 未定義：F04:282-287 FieldContract 必含 source_kinds；F04:315 規定 source_kinds 在 generated machine truth 必須 explicit，且只有『§13.1 prop shorthand defaults to [LITERAL]』；F04:804 只規定『Props 預設只允許 LITERAL；Bindings 允許的 source kinds逐項列出』。ActionContract.args（F04:303-306）是 map<arg_name, FieldContract>，但 logic.random sample_number args.min/args.max（F04:1056-1057）、choose_item args.items（F04:1061）、logic.score increment args.delta（F04:1115）、set args.value（F04:1117）都沒有 source_kinds，也沒有適用於 args 的 default。F02:796 規定 INVOKE_CAPABILITY args 的 allowed keys / requiredness / TypeDescriptor 全部來自 action schema。未決案例：INVOKE_CAPABILITY logic.score set args.value = {kind:EVENT,path:\"value\"} 或 {kind:STATE,key:...} 要 admit 還是 reject；[LITERAL] 與更寬集合會改變 admission 結果，且 RANDOM_MIN_MAX（F04:412）/ SCORE_BOUNDS 是否可在 admission 時靜態判定也取決於此。",
+    "B3 input.select options 不可表示：F04:954-959 規定 options = LIST<RECORD{label: STRING(120), value: ONE_OF<NUMBER,STRING,BOOLEAN>}>(500)，source_kinds = LITERAL，且 required。F02:419-425 TypeDescriptor 沒有 ONE_OF variant，F02:420/328 STRING 必須帶 constraints.max_length，因此該型別不是 F02 TypeDescriptor，無法用 EXACT(TypeDescriptor)。F04:360-366 TargetMatcher 只有 EXACT / ONE_OF / ANY_ENUM / ANY_RECORD / LIST_OF，沒有『RECORD with per-field matchers』variant；LIST_OF(ANY_RECORD) 會失去 label/value 欄位約束，ONE_OF 三個 EXACT LIST 則需替 STRING 自選 max_length。F04:379（§5.2 rule 7）規定 matcher 若無法提供唯一 concrete expected TypeDescriptor，該位置不得接受 LITERAL；options 只接受 LITERAL，因此任何非 EXACT 表示都會使 input.select 永遠無法 admission。每種表示都會改變 admission 結果。",
+    "B4 node-derived event payload：F04:298-301 EventContract.payload 型別為 TypeDescriptor，F04:557（§9 rule 4）規定 event payload 必須是 resolved F02 TypeDescriptor。input.select change payload.value =『concrete ENUM member type/domain derived by SELECT_ENUM_DOMAIN』（F04:969），但 F02 ENUM 要求 non-empty exact allowed domain（F02:358-363），generated artifact 無法在 node 之外給出 resolved descriptor。input.text change payload.value = STRING（F04:939，無 max_length，不是合法 F02 STRING descriptor）且 effective_descriptor 依 bound state 與 prop.max_length 決定（F04:940）；input.text bind: STRING（F04:933）同樣沒有 max_length。generated payload 應寫成何種 static descriptor（placeholder、STRING(8192)、或新增 node-derived 標記）未定義，選擇會影響 F02 §15.1 all-dispatch-site EVENT typing 結果。",
+    "Canonical execution state at audit：origin/main = 757119c64b007b3dc58acbf06af797cac0d6e66e；build-spec/CURRENT.json = BS-P1-006 implementation_enabled=true；delivery/CURRENT-SPRINT.json = SP-P1-002 / BS-P1-006 / T002 / ACTIVE；T002 = IN_PROGRESS；blocked_by=[]。",
+    "Coverage check：delivery/audits/SP-P1-002-BF-034-FREEZE-CANDIDATE.md §4 列出的 BF-034 closure coverage 未涵蓋 B1-B4；BF-034 G1-G10 未涵蓋 action args source_kinds、input.select options matcher、node-derived event payload 或既有 TEST-F04-AC-006 的 maintenance authorization。",
+    "Provisional candidate d8f1b17d 只作 non-authoritative historical evidence 檢視（git diff --stat），未 cherry-pick、未重用；該 candidate 未修改 src/platform/capabilities/ 或 generated/capabilities/，不能作為 B1-B4 的依據。"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "PRE_IMPLEMENTATION_CONTRACT_AUDIT_FROM_CANONICAL_MAIN",
+      "result": "STOPPED_SPEC_GAP",
+      "evidence": "從 757119c6 建立 feature/sp-p1-002-t002-bs-p1-006，逐條比對 BS-P1-006 F02 §4-§33、F03 §12/§12.1、F04 §5-§13.1、DATA-MODEL-DETAILED §6.4-§6.5 與既有 tests/contract、tests/regression、tests/runtime 對 Registry artifact 的依賴。B1 需要修改其他 Task 擁有的 mapped Test；B2-B4 需要 Cursor 發明 machine token 或選擇 Product-visible admission 行為。依 product_decision_allowed=false 與 STOP 規則停止，未產生任何 implementation commit。"
+    }
+  ],
+  "requested_planning_action": [
+    "Human governance 將 T002 設為 BLOCKED（validate-findings 對 OPEN SPEC_AMBIGUITY 要求 affected Task BLOCKED；Cursor 不得修改 tasks.json）。",
+    "B1：由 Planning Agent 決定 TEST-F04-AC-006 的處置，例如在 T002 加入 tests/contract/capability-registry.contract.test.ts 的 test_maintenance_authorization（目前 gate 只承認 mode=BASELINE_FIXTURE_REBIND 且 to_build_spec=BS-P1-006），使該斷言可依 F04 §9 exact shape（registry_version / registry_digest 帶 sha256: prefix）重綁；或另行指定合法路徑。",
+    "B2：在 appf2-design Working 固定 Core Capability action args 的 source_kinds（逐項或明確 default），以及 RANDOM_MIN_MAX / SCORE_BOUNDS 在非 LITERAL args 時是 admission 靜態判定還是 Runtime 判定。",
+    "B3：固定 input.select props.options 的 exact TargetMatcher / TypeDescriptor 表示（包含 option value 的 STRING max_length 與 heterogeneous primitive 的處理），並確認與 §5.2 rule 7 composite LITERAL 規則一致。",
+    "B4：固定 node-derived event payload（input.select change、input.text change）與 input.text bind 在 generated validator artifact 中的 exact machine representation，以及 F02 §15.1 對其 effective descriptor 的計算方式。",
+    "經 Freeze Audit → replacement Build Spec（若 B2-B4 需改 Working）→ Activation → T002 rebind 後，再發出新的 T002 execution instruction。"
+  ],
+  "affected_contracts": [
+    "F04 §5.1 Validator Machine Contract Vocabulary（ActionContract / FieldContract.source_kinds / EventContract.payload）",
+    "F04 §5.2 TargetMatcher / named invariant",
+    "F04 §9 Generated Validator Artifact",
+    "F04 §13.1 Exact Phase 1 Core Validator Surface（input.select、input.text、logic.random、logic.score）",
+    "F02 §14 INVOKE_CAPABILITY args typing",
+    "F02 §15.1 Canonical EVENT Typing Context",
+    "SP-P1-001/T001 TEST-F04-AC-006 test maintenance boundary"
+  ],
+  "affected_acceptance": [
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-008",
+    "F04-AC-006"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
