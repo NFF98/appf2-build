@@ -19,20 +19,56 @@ if(!current.implementation_enabled){
 }
 
 const base=process.env.BASE_SHA, head=process.env.HEAD_SHA||"HEAD";
+const baseValid=Boolean(base) && !/^0+$/.test(base) && (()=>{
+  try{execFileSync("git",["rev-parse","--verify","--quiet",base+"^{commit}"],{stdio:"ignore"});return true;}
+  catch{return false;}
+})();
 let changed=[];
-if(base && !/^0+$/.test(base)){
+if(baseValid){
   try{changed=execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
   catch{changed=[];}
 }
+const activationRecordPath=current.active_baseline?"build-spec/activations/"+current.active_baseline+".json":null;
 const controlPaths=new Set([
   "build-spec/CURRENT.json",
   "delivery/CURRENT-SPRINT.json",
   "delivery/backlog/QUEUE.json",
   ...(sprint.active_sprint?["delivery/sprints/"+sprint.active_sprint+"/manifest.json","delivery/sprints/"+sprint.active_sprint+"/tasks.json"]:[]),
-  ...(current.active_baseline?["build-spec/activations/"+current.active_baseline+".json"]:[])
+  ...(activationRecordPath?[activationRecordPath]:[])
 ]);
-if(policy.activation_control_only_skip_product_ci && changed.length && changed.every(p=>controlPaths.has(p))){
+if(policy.activation_control_only_skip_product_ci===true && changed.length && changed.every(p=>controlPaths.has(p))){
   console.log("PRODUCT CI: CONTROL-ONLY — governance gates validate activation/task-state transition; no product code changed.");
+  process.exit(0);
+}
+
+// Atomic rebaseline Activation may also carry Delta/Finding lifecycle side effects. Their legality is owned
+// exclusively by validate-change-scope.mjs; Product CI only checks the diff shape and requires that gate to PASS.
+const lifecyclePathPattern=/^delivery\/(?:deltas\/BD|findings\/BF)-\d{3,}\.json$/;
+// Must match the recognition line printed by harness/scripts/validate-change-scope.mjs.
+const rebaselineRecognizedMarker="Human-approved rebaseline control transition recognized";
+const isLifecyclePath=p=>lifecyclePathPattern.test(p);
+const isAtomicActivationShape=()=>{
+  if(policy.activation_control_only_skip_product_ci!==true || !baseValid || !changed.length) return false;
+  if(!changed.some(isLifecyclePath) || !changed.every(p=>controlPaths.has(p) || isLifecyclePath(p))) return false;
+  return Boolean(activationRecordPath) && changed.includes(activationRecordPath) && changed.includes("build-spec/CURRENT.json");
+};
+const activeBaselineSwitched=()=>{
+  try{
+    const baseCurrent=JSON.parse(execFileSync("git",["show",base+":build-spec/CURRENT.json"],{encoding:"utf8"}));
+    return Boolean(baseCurrent?.active_baseline) && baseCurrent.active_baseline!==current.active_baseline;
+  }catch{return false;}
+};
+const changeScopeApprovesRebaseline=()=>{
+  console.log("\n> change scope authority for atomic rebaseline Activation");
+  const scope=spawnSync("node",["harness/scripts/validate-change-scope.mjs"],{encoding:"utf8",shell:false,env:{...process.env,BASE_SHA:base,HEAD_SHA:head}});
+  if(scope.stdout) process.stdout.write(scope.stdout);
+  if(scope.stderr) process.stderr.write(scope.stderr);
+  if(scope.status===0 && scope.stdout.includes(rebaselineRecognizedMarker)) return true;
+  console.log("PRODUCT CI: atomic rebaseline Activation not approved by change scope gate; enforcing active Task.");
+  return false;
+};
+if(isAtomicActivationShape() && activeBaselineSwitched() && changeScopeApprovesRebaseline()){
+  console.log("PRODUCT CI: CONTROL-ONLY — atomic rebaseline Activation; change scope gate approved Delta/Finding lifecycle side effects; no product code changed.");
   process.exit(0);
 }
 
