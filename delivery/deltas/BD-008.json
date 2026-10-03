@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-008",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-036"
   ],
@@ -43,7 +43,8 @@
     "Precision audit caught and corrected an intermediate JavaScript replacement-string corruption before merge; final Design diff is scope-clean.",
     "Registry SemVer decision: validator/TypeDescriptor machine contract breaking change 3.0.0→4.0.0; core capability versions unchanged except prior input.select@2.0.0.",
     "Acceptance Registry remains byte-identical; TEST-F04-AC-006 remains the only explicit closed-test maintenance rebind required.",
-    "Scope-clean freeze source 2ee3b32dafa49c1409f645f1aafd95ef024d2a0f changes exactly F01/F02/F03/F04 from prior source."
+    "Scope-clean freeze source 2ee3b32dafa49c1409f645f1aafd95ef024d2a0f changes exactly F01/F02/F03/F04 from prior source.",
+    "Human-preapproved atomic BS-P1-008 / SP-P1-002 / T002 Activation on 2026-10-03 rebinds unfinished Sprint 2/backlog work to BS-P1-008, resolves BF-036 as a spec blocker, and returns T002 to IN_PROGRESS. Fresh Cursor Product execution remains a separate final gate."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
