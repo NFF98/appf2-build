@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "build_spec_id": "BS-P1-006",
+  "build_spec_id": "BS-P1-007",
   "status": "OPEN",
   "generation": {
     "method": "IMPLEMENTATION_CAPABILITY_CLUSTER",
