@@ -375,15 +375,18 @@ expectFail("skip/todo/fake-green test patterns are rejected","harness/scripts/va
 cleanTo(fixtureBase);
 expectFail("Active mapped Test ID must exist as executable test()","harness/scripts/validate-test-integrity.mjs",{base:fixtureBase,head:"HEAD",env:{REQUIRE_ACTIVE_TASK_TESTS:"1"}});
 
-// Baseline fixture maintenance must remain exact, recorded and fail-closed.
+// Baseline fixture maintenance must remain exact, recorded, per-Test and fail-closed.
 cleanTo(fixtureBase);
 const maintenanceFile="tests/behavior/maintenance.test.ts";
 const maintenanceV1='import { test, expect } from "vitest";\n'+
   'test("TEST-F99-001 owned",()=>{expect("1.0.0").toBe("1.0.0");});\n'+
-  'test("TEST-F99-002 foreign fixture",()=>{expect("1.0.0").toBe("1.0.0");});\n';
-const maintenanceV2=maintenanceV1.replaceAll('"1.0.0"','"2.0.0"');
+  'test("TEST-F99-002 authorized foreign fixture",()=>{expect("1.0.0").toBe("1.0.0");});\n'+
+  'test("TEST-F99-003 untouched foreign fixture",()=>{expect("stable").toBe("stable");});\n';
+const maintenanceV2=maintenanceV1
+  .replace('TEST-F99-001 owned",()=>{expect("1.0.0").toBe("1.0.0")','TEST-F99-001 owned",()=>{expect("2.0.0").toBe("2.0.0")')
+  .replace('TEST-F99-002 authorized foreign fixture",()=>{expect("1.0.0").toBe("1.0.0")','TEST-F99-002 authorized foreign fixture",()=>{expect("2.0.0").toBe("2.0.0")');
 write(maintenanceFile,maintenanceV1);
-const maintenanceBase=commit("fixture: baseline test file with foreign Test ID");
+const maintenanceBase=commit("fixture: baseline test file with foreign Test IDs");
 write(maintenanceFile,maintenanceV2);
 const maintenanceUnauthorized=commit("attack: rebind foreign fixture without authorization");
 expectFail("Foreign mapped Test fixture rebind requires exact authorization","harness/scripts/validate-test-integrity.mjs",{base:maintenanceBase,head:maintenanceUnauthorized});
@@ -397,7 +400,18 @@ maintenanceTasks.tasks[0].test_maintenance_authorizations=[{
 write("delivery/sprints/SP-P9-001/tasks.json",maintenanceTasks);
 write(maintenanceFile,maintenanceV2);
 const maintenanceAuthorized=commit("positive: exact foreign fixture rebind authorization");
-expectPass("Exact Test ID + file fixture rebind authorization passes Test Integrity","node",["harness/scripts/validate-test-integrity.mjs"],{base:maintenanceBase,head:maintenanceAuthorized});
+expectPass("One authorized Test may change while untouched foreign Test in same file stays protected","node",["harness/scripts/validate-test-integrity.mjs"],{base:maintenanceBase,head:maintenanceAuthorized});
+
+cleanTo(maintenanceBase);
+const neighborTasks=read("delivery/sprints/SP-P9-001/tasks.json");
+neighborTasks.tasks[0].test_maintenance_authorizations=[{
+  test_id:"TEST-F99-002",file:maintenanceFile,mode:"BASELINE_FIXTURE_REBIND",
+  from_build_spec:"BS-P9-000",to_build_spec:"BS-P9-001"
+}];
+write("delivery/sprints/SP-P9-001/tasks.json",neighborTasks);
+write(maintenanceFile,maintenanceV2.replace('expect("stable").toBe("stable")','expect("changed").toBe("changed")'));
+const unauthorizedNeighbor=commit("attack: rewrite untouched neighboring foreign Test");
+expectFail("Authorization for one Test may not rewrite neighboring foreign Test in same file","harness/scripts/validate-test-integrity.mjs",{base:maintenanceBase,head:unauthorizedNeighbor});
 
 cleanTo(maintenanceBase);
 const wrongMaintenanceTasks=read("delivery/sprints/SP-P9-001/tasks.json");
