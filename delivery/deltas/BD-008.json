@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-008",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-036"
+  ],
+  "affected_build_spec": "BS-P1-007",
+  "affected_tasks": [
+    "T002"
+  ],
+  "affected_contracts": [
+    "F02 exact executable Blueprint nested schema closure",
+    "F02 RECORD optional_fields TypeDescriptor semantics / Assignable / Join",
+    "F02 lexical and all-dispatch-site SCOPE typing",
+    "F02 repeat/result/support/kind/intake/graph resource bounds",
+    "F03 lexical_scope_bindings and optional capability-state ABSENT semantics",
+    "F04 capability_state normalization and Registry version 4.0.0",
+    "F01 current Blueprint response registry-version alignment"
+  ],
+  "affected_acceptance": [
+    "F02-AC-004",
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-007",
+    "F02-AC-008",
+    "F04-AC-006"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-03: 把同類問題一起掃完；批准到 Cursor 再開始之前再匯報一次"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "9ec15b1ba53e59eadd39584197555fe76b97be5b",
+  "replacement_build_spec": "BS-P1-008",
+  "verification": [
+    "Design PR #11 merged BF-036 remediation as 9ec15b1ba53e59eadd39584197555fe76b97be5b.",
+    "Independent one-shot schema completeness audit covered F02 executable subshapes, F03 runtime context and F04 generated machine contract; no additional same-class blocker remains in T002 scope.",
+    "Precision audit caught and corrected an intermediate JavaScript replacement-string corruption before merge; final Design diff is scope-clean.",
+    "Registry SemVer decision: validator/TypeDescriptor machine contract breaking change 3.0.0→4.0.0; core capability versions unchanged except prior input.select@2.0.0.",
+    "Acceptance Registry remains byte-identical; TEST-F04-AC-006 remains the only explicit closed-test maintenance rebind required.",
+    "Scope-clean freeze source 2ee3b32dafa49c1409f645f1aafd95ef024d2a0f changes exactly F01/F02/F03/F04 from prior source."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "2ee3b32dafa49c1409f645f1aafd95ef024d2a0f",
+    "base_commit": "75da33333d80ce362f8a10046c5462271e98fcec",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-036-FREEZE-CANDIDATE.md"
+  }
+}
