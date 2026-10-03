@@ -120,6 +120,15 @@ function expectPass(name,cmd,args,{base,head="HEAD",env:extraEnv={}}={}){
 function expectHarnessPass(name,scripts,{base,head="HEAD"}={}){
   for(const script of scripts) expectPass(name+" :: "+path.basename(script),"node",[script],{base,head});
 }
+function expectProductCi(name,{base,head="HEAD",controlOnly}){
+  const r=run("node",["ci/run-product-ci.mjs"],{env:{BASE_SHA:base,HEAD_SHA:head}});
+  const tookControlOnly=r.status===0 && r.stdout.includes("PRODUCT CI: CONTROL-ONLY");
+  const enforced=r.status!==0 && !r.stdout.includes("PRODUCT CI: CONTROL-ONLY") && r.stdout.includes("> executable mapped Test integrity");
+  const ok=controlOnly?tookControlOnly:enforced;
+  const expected=controlOnly?"CONTROL-ONLY":"ENFORCED";
+  results.push({name,expected,actual:tookControlOnly?"CONTROL-ONLY":enforced?"ENFORCED":"OTHER",ok,detail:(r.stderr||r.stdout).trim().split("\n").slice(0,4).join(" | ")});
+  if(!ok) throw new Error("Product CI path mismatch ("+expected+"): "+name+"\n"+r.stdout+"\n"+r.stderr);
+}
 const governanceHarness=[
   "harness/scripts/validate-projection-map.mjs",
   "harness/scripts/validate-baseline.mjs",
@@ -614,7 +623,7 @@ baseWorkState("BS-P9-002","ACTIVE","IN_PROGRESS");
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",implementation_enabled:true,reason:"DRYRUN_REBASELINE_ACTIVE"});
 const holdRebaselineHead=commit("positive: HOLD to ACTIVE approved rebaseline");
 expectHarnessPass("HOLD to ACTIVE approved rebaseline",governanceHarness,{base:holdRebaselineBase,head:holdRebaselineHead});
-expectPass("HOLD rebaseline control-only Product CI skips pre-code tests","node",["ci/run-product-ci.mjs"],{base:holdRebaselineBase,head:holdRebaselineHead});
+expectProductCi("HOLD rebaseline control-only Product CI skips pre-code tests",{base:holdRebaselineBase,head:holdRebaselineHead,controlOnly:true});
 
 // Atomic rebaseline may advance only the replacement baseline's introduced Delta (APPROVED -> IMPLEMENTING)
 // and that Delta's source Finding (BLOCKED -> RESOLVED), with append-only verification/evidence.
@@ -645,6 +654,12 @@ const writeAtomicTransition=()=>{
 writeAtomicTransition();
 const atomicHead=commit("positive: atomic rebaseline advances introduced delta and source finding");
 expectHarnessPass("Atomic rebaseline advances introduced Delta and source Finding lifecycle",governanceHarness,{base:atomicBase,head:atomicHead});
+expectProductCi("Atomic rebaseline Activation Product CI skips pre-code tests",{base:atomicBase,head:atomicHead,controlOnly:true});
+
+cleanTo(atomicHead);
+write("src/demo/after-atomic-activation.ts","export const implemented=true;\n");
+const postAtomicProduct=commit("attack: active task product change after atomic activation");
+expectProductCi("Active Task Product change after atomic Activation still requires executable mapped tests",{base:atomicHead,head:postAtomicProduct,controlOnly:false});
 
 const atomicAttack=(name,mutate)=>{
   cleanTo(atomicBase);
@@ -652,6 +667,14 @@ const atomicAttack=(name,mutate)=>{
   mutate();
   const head=commit("attack: "+name);
   expectFail(name,"harness/scripts/validate-change-scope.mjs",{base:atomicBase,head});
+  expectProductCi(name+" :: Product CI enforces active Task",{base:atomicBase,head,controlOnly:false});
+};
+const atomicProductCiAttack=(name,mutate)=>{
+  cleanTo(atomicBase);
+  writeAtomicTransition();
+  mutate();
+  const head=commit("attack: "+name);
+  expectProductCi(name,{base:atomicBase,head,controlOnly:false});
 };
 const editJson=(rel,fn)=>{const doc=read(rel); fn(doc); write(rel,doc);};
 atomicAttack("Atomic rebaseline rejects introduced Delta semantic-field tampering",()=>editJson("delivery/deltas/BD-999.json",d=>{d.affected_acceptance=[];}));
@@ -666,6 +689,8 @@ atomicAttack("Atomic rebaseline rejects replacement baseline mutation",()=>write
 atomicAttack("Atomic rebaseline rejects harness smuggling",()=>write("harness/scripts/smuggled-during-activation.mjs","export const smuggled=true;\n"));
 atomicAttack("Atomic rebaseline rejects unrelated governance path",()=>write("delivery/templates/smuggled.md","# smuggled\n"));
 atomicAttack("Atomic rebaseline rejects Product path",()=>write("src/demo/smuggled.ts","export const smuggled=true;\n"));
+atomicProductCiAttack("Atomic Activation without Activation Record does not skip Product CI",()=>fs.rmSync(path.join(repo,"build-spec/activations/BS-P9-002.json")));
+atomicProductCiAttack("Atomic Activation without CURRENT baseline switch does not skip Product CI",()=>write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:true,reason:"ATTACK_NO_SWITCH"}));
 
 // Positive Sprint Activation transition: control files may cross HOLD -> ACTIVE without pretending product tests already exist.
 cleanTo(fixtureBase);
@@ -704,7 +729,7 @@ write("delivery/CURRENT-SPRINT.json",{
 });
 const activationHead=commit("positive: approved sprint activation");
 expectHarnessPass("Approved Sprint Activation transition",governanceHarness,{base:activationBase,head:activationHead});
-expectPass("Activation control-only Product CI does not require fake pre-code tests","node",["ci/run-product-ci.mjs"],{base:activationBase,head:activationHead});
+expectProductCi("Activation control-only Product CI does not require fake pre-code tests",{base:activationBase,head:activationHead,controlOnly:true});
 
 cleanTo(activationBase);
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:true,reason:"DRYRUN_APPROVED_ACTIVATION"});
