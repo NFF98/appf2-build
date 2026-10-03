@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import ts from "typescript";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -20,32 +19,50 @@ const walk=dir=>{
 for(const d of testRoots) walk(path.join(root,d));
 
 const declared=new Map();
-const testDeclarationsIn=(text,fileName="test.ts")=>{
-  const sf=ts.createSourceFile(fileName,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-  const out=new Map();
-  const visit=node=>{
-    if(ts.isCallExpression(node) && ts.isIdentifier(node.expression) && (node.expression.text==="test" || node.expression.text==="it")){
-      const first=node.arguments[0];
-      const title=first && (ts.isStringLiteral(first) || ts.isNoSubstitutionTemplateLiteral(first)) ? first.text : "";
-      const m=title.match(/TEST-[A-Z0-9-]+/);
-      if(m){
-        const arr=out.get(m[0])||[];
-        arr.push(node.getText(sf));
-        out.set(m[0],arr);
-      }
+const matchingCallEnd=(text,openIndex)=>{
+  let depth=0, quote=null, escaped=false, lineComment=false, blockComment=false;
+  for(let i=openIndex;i<text.length;i++){
+    const ch=text[i], next=text[i+1];
+    if(lineComment){ if(ch==="\n") lineComment=false; continue; }
+    if(blockComment){ if(ch==="*" && next==="/"){ blockComment=false; i++; } continue; }
+    if(quote){
+      if(escaped){ escaped=false; continue; }
+      if(ch==="\\"){ escaped=true; continue; }
+      if(ch===quote) quote=null;
+      continue;
     }
-    ts.forEachChild(node,visit);
-  };
-  visit(sf);
+    if(ch==="/" && next==="/"){ lineComment=true; i++; continue; }
+    if(ch==="/" && next==="*"){ blockComment=true; i++; continue; }
+    if(ch==='"' || ch==="'" || ch==="`"){ quote=ch; continue; }
+    if(ch==="(") depth++;
+    else if(ch===")"){
+      depth--;
+      if(depth===0) return i+1;
+    }
+  }
+  return text.length;
+};
+const testDeclarationsIn=text=>{
+  const out=new Map();
+  const re=/\b(?:test|it)\s*\(\s*(["'`])([^"'\`]*(TEST-[A-Z0-9-]+)[^"'\`]*)\1/g;
+  let m;
+  while((m=re.exec(text))){
+    const open=text.indexOf("(",m.index);
+    const end=matchingCallEnd(text,open);
+    const arr=out.get(m[3])||[];
+    arr.push(text.slice(m.index,end));
+    out.set(m[3],arr);
+    re.lastIndex=Math.max(re.lastIndex,end);
+  }
   return out;
 };
 const idsIn=text=>[...testDeclarationsIn(text).keys()];
 const declarationsAtRef=(ref,rel)=>{
-  try{return testDeclarationsIn(execFileSync("git",["show",ref+":"+rel],{encoding:"utf8"}),rel);}
+  try{return testDeclarationsIn(execFileSync("git",["show",ref+":"+rel],{encoding:"utf8"}));}
   catch{return new Map();}
 };
 const declarationsAtHead=rel=>{
-  try{return testDeclarationsIn(fs.readFileSync(path.join(root,rel),"utf8"),rel);}
+  try{return testDeclarationsIn(fs.readFileSync(path.join(root,rel),"utf8"));}
   catch{return new Map();}
 };
 const changedFilesFrom=(base,head)=>{
