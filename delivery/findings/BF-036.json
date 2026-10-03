@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-036",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-007",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -15,7 +15,8 @@
     "B4 — repeat item_alias/index_alias/max_items, ResultOutput id/label/sensitivity, degradation requirement_id/description/capability_refs element shape, top-level kind domain, and V01 candidate intake byte ceiling are not fully fixed. These are admission-visible schema choices.",
     "Independent schema completeness sweep reviewed F02 §§4–22 plus F03/F04 cross-contract consumers. Value Source variant keys, state-key grammar, Rule/Action/Node IDs, TypeDescriptor core constraints, EVENT path grammar, Registry v3 resolver, candidate_digest, persistence/immutability and existing global major resource ceilings were already sufficiently fixed and are not reopened.",
     "Cursor stopped before Product writes. Reported local branch feature/sp-p1-002-t002-bs-p1-007 remained at canonical 5471907c2be15bf9b0a0ee98dc7d7d3ff2b1f001 with clean working tree and was never pushed; GitHub has no remote branch for it.",
-    "Issue transport produced repeated APPF2-RESULT echoes after the original report. Those echoes contain no new Product evidence and are excluded from blocker counting."
+    "Issue transport produced repeated APPF2-RESULT echoes after the original report. Those echoes contain no new Product evidence and are excluded from blocker counting.",
+    "BS-P1-008 Build Freeze passed all gates and was merged as canonical main 2054d069491afddb8ff2e3c1dbe07a55b5e10273; BF-036 machine-schema completeness gaps are frozen in BS-P1-008. Product implementation has not restarted yet."
   ],
   "attempts": [
     {
@@ -48,5 +49,5 @@
     "F04-AC-006"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-008"
 }
