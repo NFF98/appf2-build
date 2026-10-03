@@ -200,6 +200,36 @@ export function matchesCapabilityVersionRange(version: string, range: string): b
   );
 }
 
+export function compareCapabilityVersions(left: string, right: string): number {
+  const leftVersion = parseVersion(left);
+  const rightVersion = parseVersion(right);
+  if (leftVersion === undefined || rightVersion === undefined) {
+    throw new CapabilityAdmissionError("INVALID_DEPENDENCY_VERSION_RANGE", `Invalid SemVer: ${left} / ${right}`);
+  }
+  return compareVersions(leftVersion, rightVersion);
+}
+
+export function isRuntimeVersionBoundSyntax(minRuntimeVersion: string, maxRuntimeVersion: string): boolean {
+  const maximum = maxRuntimeVersion.startsWith("<") ? maxRuntimeVersion.slice(1) : maxRuntimeVersion;
+  return parseVersion(minRuntimeVersion) !== undefined && parseVersion(maximum) !== undefined;
+}
+
+export function matchesRuntimeCompatibility(
+  runtimeVersion: string,
+  minRuntimeVersion: string,
+  maxRuntimeVersion: string
+): boolean {
+  const runtime = parseVersion(runtimeVersion);
+  const minimum = parseVersion(minRuntimeVersion);
+  const exclusive = maxRuntimeVersion.startsWith("<");
+  const maximum = parseVersion(exclusive ? maxRuntimeVersion.slice(1) : maxRuntimeVersion);
+  if (runtime === undefined || minimum === undefined || maximum === undefined) {
+    return false;
+  }
+  const upper = compareVersions(runtime, maximum);
+  return compareVersions(runtime, minimum) >= 0 && (exclusive ? upper < 0 : upper <= 0);
+}
+
 export function assertResourceBudgetWithinGlobalCeilings(budget: ResourceBudget): void {
   for (const resource of NUMERIC_RESOURCES) {
     if (!Number.isSafeInteger(budget[resource]) || budget[resource] < 0) {
@@ -219,7 +249,7 @@ export function assertResourceBudgetWithinGlobalCeilings(budget: ResourceBudget)
 
 function assertEligible(definition: CapabilityDefinition, context: CapabilityAdmissionContext): void {
   const outcome = context.compatibilityOutcomes?.get(refKey(definition)) ?? "COMPATIBLE";
-  if (outcome === "REVOKED") {
+  if (definition.lifecycle.executionStatus === "REVOKED" || outcome === "REVOKED") {
     throw new CapabilityAdmissionError("CAPABILITY_REVOKED", `${refKey(definition)} is revoked.`);
   }
   const unavailable =

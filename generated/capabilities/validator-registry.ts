@@ -5,6 +5,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
   "capabilities": {
     "action.button": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -16,6 +17,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:62950ed13ab6ab27c398efe494f1ee756a11dcf165419a7052c174c373251d44",
+        "execution_status": "ACTIVE",
         "id": "action.button",
         "permission_class": "USER_GESTURE",
         "resource_budget": {
@@ -27,6 +31,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -95,6 +102,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "content.card": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -106,6 +114,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:f362daa913e128f439a7d455811ba47d8fd5ec1c7b5640ae9b983e02e7048911",
+        "execution_status": "ACTIVE",
         "id": "content.card",
         "permission_class": "NONE",
         "resource_budget": {
@@ -117,6 +128,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -180,6 +194,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "content.list": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -191,6 +206,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:2b736f85a9ef5e75f665a84fd127c4b74005aa01400b9652a61f02764be5155e",
+        "execution_status": "ACTIVE",
         "id": "content.list",
         "permission_class": "NONE",
         "resource_budget": {
@@ -202,6 +220,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -221,6 +242,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "content.text": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -232,6 +254,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:0ad458afc3eab7883bb9210d427f3f3ff4bc515558731593f6d3096d0d8c91b0",
+        "execution_status": "ACTIVE",
         "id": "content.text",
         "permission_class": "NONE",
         "resource_budget": {
@@ -243,6 +268,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -306,6 +334,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "data.stat": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -317,6 +346,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:d8a650b39677b7c7d13213194f3b870bae8243d0c72857410c3672442648cf8c",
+        "execution_status": "ACTIVE",
         "id": "data.stat",
         "permission_class": "NONE",
         "resource_budget": {
@@ -328,6 +360,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -429,6 +464,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "data.table_basic": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -440,6 +476,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:7cb39280c6b6dfdddb39c18f513af367c0b2e71254251f91e0fcbcfed2509436",
+        "execution_status": "ACTIVE",
         "id": "data.table_basic",
         "permission_class": "NONE",
         "resource_budget": {
@@ -451,6 +490,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -554,6 +596,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.number": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -565,6 +608,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:48db9f29dbf62728ae5ec05de9e00ad11a3cdfe1fd0991e6302a63f3d2eac9b0",
+        "execution_status": "ACTIVE",
         "id": "input.number",
         "permission_class": "NONE",
         "resource_budget": {
@@ -576,6 +622,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -700,6 +749,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.select": {
       "2.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -711,6 +761,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:819f24fa80bca2b1a676260a7b05f03b25673ba7f446e1093446be47613db187",
+        "execution_status": "ACTIVE",
         "id": "input.select",
         "permission_class": "NONE",
         "resource_budget": {
@@ -722,6 +775,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -828,6 +884,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.text": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -839,6 +896,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:8411032472d720491ab2528c9bc2e6d6af1d8e1ee752397e0bc45b49f8ee2aa7",
+        "execution_status": "ACTIVE",
         "id": "input.text",
         "permission_class": "NONE",
         "resource_budget": {
@@ -850,6 +910,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -959,6 +1022,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "input.toggle": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -970,6 +1034,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:adc1800d5b0e690f489aaaac9f6689780b47c054d6a928fe078cfb4b01345fa3",
+        "execution_status": "ACTIVE",
         "id": "input.toggle",
         "permission_class": "NONE",
         "resource_budget": {
@@ -981,6 +1048,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -1032,6 +1102,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "layout.container": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1043,6 +1114,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:820a6c4d0f54d645f8f1496958f47556dc07e99aa3d1691546793b5462b9cf82",
+        "execution_status": "ACTIVE",
         "id": "layout.container",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1054,6 +1128,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -1136,6 +1213,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "logic.random": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1147,6 +1225,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_RULE",
+        "execution_contract_digest": "sha256:41b5143ea1a81c60ef4d457a1eeaf75b24c805db5a5ac1baf5b5d529331d63f7",
+        "execution_status": "ACTIVE",
         "id": "logic.random",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1158,6 +1239,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {
@@ -1275,6 +1359,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "logic.score": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1286,6 +1371,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_RULE",
+        "execution_contract_digest": "sha256:c50e5907fabd442f2428d8b2f3a0f352116fcba0c278201071306b6f52d2581b",
+        "execution_status": "ACTIVE",
         "id": "logic.score",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1297,6 +1385,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {
@@ -1434,6 +1525,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "logic.timer": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1445,6 +1537,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_RULE",
+        "execution_contract_digest": "sha256:a75abb4f59678981e0ee148c7bc6aa9cadb43d3dc362e365c4117cd3d7ba4800",
+        "execution_status": "ACTIVE",
         "id": "logic.timer",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1456,6 +1551,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 1
         },
         "validator": {
           "actions": {
@@ -1544,6 +1642,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
     },
     "system.notice": {
       "1.0.0": {
+        "availability": "ENABLED",
         "compatibility": {
           "blueprintSchemaRange": ">=1.0.0 <2.0.0",
           "dependencies": [],
@@ -1555,6 +1654,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "alternatives": [],
           "preservesSemanticCore": true
         },
+        "execution_class": "LOCAL_REACT",
+        "execution_contract_digest": "sha256:d3f570c6548c47bcdc146829334610bd5b47b116d99960182095cbec6a99142a",
+        "execution_status": "ACTIVE",
         "id": "system.notice",
         "permission_class": "NONE",
         "resource_budget": {
@@ -1566,6 +1668,9 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
           "maxSerializedPropsBytes": 262144,
           "mediaAutoplayAllowed": false,
           "networkAccessAllowed": false
+        },
+        "resource_usage": {
+          "timerSlotsPerInstance": 0
         },
         "validator": {
           "actions": {},
@@ -1674,6 +1779,7 @@ export const VALIDATOR_REGISTRY: ValidatorRegistry = {
       }
     }
   },
-  "registry_digest": "sha256:0a633311ee253bf6424c2201292710f6cd8f0943ece35584513410e614705ea0",
-  "registry_version": "4.0.0"
+  "registry_digest": "sha256:7ccd3c4781035bc3e6a3b77496090b13dff60a7d78731e722afa70a81b4f8802",
+  "registry_version": "6.0.0",
+  "runtime_version": "1.0.0"
 };

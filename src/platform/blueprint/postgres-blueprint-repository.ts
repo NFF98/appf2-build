@@ -5,6 +5,7 @@ import type {
   ContentAdmissionOutcome,
   ValidationRunRecord
 } from "./blueprint-admission.js";
+import type { BlueprintExecutionRecord, BlueprintExecutionRecordReader } from "./execution-admission.js";
 
 export interface PostgresQueryResult<Row> {
   readonly rows: readonly Row[];
@@ -92,6 +93,20 @@ SELECT
 FROM content
 `.trim();
 
+export const POSTGRES_LOAD_EXECUTION_RECORD_SQL = `
+SELECT
+  content.content_hash,
+  content.canonical_blueprint,
+  content.schema_version,
+  content.registry_version,
+  content.trust_status,
+  run.report ->> 'registry_digest' AS admitted_registry_digest
+FROM public.blueprint_content AS content
+LEFT JOIN public.validation_run AS run
+  ON run.validation_run_id = content.admitted_by_validation_run_id
+WHERE content.content_hash = $1::text
+`.trim();
+
 interface AdmissionRow {
   readonly inserted: boolean;
   readonly body_matches: boolean;
@@ -115,8 +130,13 @@ function validationRunParameters(run: ValidationRunRecord): unknown[] {
   ];
 }
 
-export class PostgresBlueprintAdmissionRepository implements BlueprintAdmissionRepository {
+export class PostgresBlueprintAdmissionRepository implements BlueprintAdmissionRepository, BlueprintExecutionRecordReader {
   public constructor(private readonly executor: PostgresExecutor) {}
+
+  public async loadExecutionRecord(contentHash: string): Promise<BlueprintExecutionRecord | undefined> {
+    const result = await this.executor.query<BlueprintExecutionRecord>(POSTGRES_LOAD_EXECUTION_RECORD_SQL, [contentHash]);
+    return result.rows[0];
+  }
 
   public async recordValidationRun(run: ValidationRunRecord): Promise<void> {
     await this.executor.query(POSTGRES_INSERT_VALIDATION_RUN_SQL, validationRunParameters(run));

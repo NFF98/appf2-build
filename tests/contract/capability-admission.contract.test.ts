@@ -19,14 +19,10 @@ function trustedKeys(source: RegistrySource): ReadonlySet<string> {
   return new Set(source.capabilities.map(({ runtime }) => runtime.registrationKey));
 }
 
-function context(
-  source: RegistrySource = CAPABILITY_REGISTRY_SOURCE,
-  compatibilityOutcomes?: CapabilityAdmissionContext["compatibilityOutcomes"]
-): CapabilityAdmissionContext {
+function context(source: RegistrySource = CAPABILITY_REGISTRY_SOURCE): CapabilityAdmissionContext {
   return {
     source,
-    trustedRuntimeRegistrationKeys: trustedKeys(source),
-    compatibilityOutcomes
+    trustedRuntimeRegistrationKeys: trustedKeys(source)
   };
 }
 
@@ -48,10 +44,12 @@ function expectAdmissionError(action: () => unknown, code: CapabilityAdmissionEr
 
 function sourceReplacing(
   original: CapabilityDefinition,
-  replacement: CapabilityDefinition
+  replacement: CapabilityDefinition,
+  registryVersion: string
 ): RegistrySource {
   return {
     ...CAPABILITY_REGISTRY_SOURCE,
+    registryVersion,
     capabilities: CAPABILITY_REGISTRY_SOURCE.capabilities.map((definition) =>
       definition === original ? replacement : definition
     )
@@ -82,28 +80,27 @@ describe("capability trust admission contract", () => {
     );
   });
 
-  test("TEST-F04-009 denies DISABLED lifecycle availability and REVOKED compatibility", () => {
+  test("TEST-F04-009 denies DISABLED availability and REVOKED execution status published as new Registry PATCH snapshots", () => {
     const original = CAPABILITY_REGISTRY_SOURCE.capabilities.find(({ id }) => id === "content.text");
     expect(original).toBeDefined();
     const disabled: CapabilityDefinition = {
       ...original!,
       lifecycle: { ...original!.lifecycle, availability: "DISABLED" }
     };
-    const disabledSource = sourceReplacing(original!, disabled);
+    const disabledSource = sourceReplacing(original!, disabled, "6.0.1");
+    const revoked: CapabilityDefinition = {
+      ...original!,
+      lifecycle: { ...original!.lifecycle, executionStatus: "REVOKED" }
+    };
+    const revokedSource = sourceReplacing(original!, revoked, "6.0.2");
 
+    expect(admitCapability(request(), context()).capability).toEqual({ id: "content.text", version: "1.0.0" });
     expectAdmissionError(
       () => admitCapability(request(), context(disabledSource)),
       "CAPABILITY_DISABLED"
     );
     expectAdmissionError(
-      () =>
-        admitCapability(
-          request(),
-          context(
-            CAPABILITY_REGISTRY_SOURCE,
-            new Map([["content.text@1.0.0", "REVOKED"]])
-          )
-        ),
+      () => admitCapability(request(), context(revokedSource)),
       "CAPABILITY_REVOKED"
     );
   });

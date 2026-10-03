@@ -28,6 +28,7 @@ export const PERMISSION_CLASSES = [
 ] as const;
 export const MATURITY_LEVELS = ["PROPOSED", "POC", "BUILT", "TESTED", "VALIDATED", "RELEASED"] as const;
 export const AVAILABILITY_LEVELS = ["DISABLED", "EXPERIMENTAL", "ENABLED"] as const;
+export const EXECUTION_STATUSES = ["ACTIVE", "REVOKED"] as const;
 
 export type CapabilityFamily = (typeof CAPABILITY_FAMILIES)[number];
 export type ContractKind = (typeof CONTRACT_KINDS)[number];
@@ -36,6 +37,7 @@ export type ReplayClass = (typeof REPLAY_CLASSES)[number];
 export type PermissionClass = (typeof PERMISSION_CLASSES)[number];
 export type Maturity = (typeof MATURITY_LEVELS)[number];
 export type Availability = (typeof AVAILABILITY_LEVELS)[number];
+export type ExecutionStatus = (typeof EXECUTION_STATUSES)[number];
 
 export interface CapabilityRef {
   readonly id: string;
@@ -69,6 +71,10 @@ export interface ResourceBudget {
   readonly networkAccessAllowed: boolean;
 }
 
+export interface ResourceUsageProfile {
+  readonly timerSlotsPerInstance: number;
+}
+
 export interface CapabilityDefinition {
   readonly id: string;
   readonly version: string;
@@ -99,6 +105,7 @@ export interface CapabilityDefinition {
     readonly replayClass: ReplayClass;
     readonly permissionClass: PermissionClass;
     readonly resourceBudget: ResourceBudget;
+    readonly resourceUsage: ResourceUsageProfile;
   };
   readonly product: {
     readonly shareability: "FULL" | "REDACT_SENSITIVE" | "NONE";
@@ -123,6 +130,7 @@ export interface CapabilityDefinition {
     readonly targetHorizon: "CORE" | "OPTIONAL";
     readonly maturity: Maturity;
     readonly availability: Availability;
+    readonly executionStatus: ExecutionStatus;
     readonly releaseRequirement: "RELEASE_BLOCKING" | "EVIDENCE_GATED";
   };
 }

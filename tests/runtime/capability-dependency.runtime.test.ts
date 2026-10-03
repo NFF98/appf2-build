@@ -4,8 +4,7 @@ import {
   admitCapability,
   CapabilityAdmissionError,
   GLOBAL_RESOURCE_CEILINGS,
-  type CapabilityAdmissionContext,
-  type CompatibilityOutcome
+  type CapabilityAdmissionContext
 } from "../../src/platform/capabilities/admission.js";
 import { CAPABILITY_REGISTRY_SOURCE } from "../../src/platform/capabilities/registry.js";
 import type {
@@ -33,14 +32,13 @@ function definition(
   };
 }
 
-function source(capabilities: readonly CapabilityDefinition[]): RegistrySource {
-  return { ...CAPABILITY_REGISTRY_SOURCE, capabilities };
+function source(capabilities: readonly CapabilityDefinition[], registryVersion = "6.0.0"): RegistrySource {
+  return { ...CAPABILITY_REGISTRY_SOURCE, registryVersion, capabilities };
 }
 
 function context(
   registry: RegistrySource,
-  excludedRuntimeKeys: readonly string[] = [],
-  outcomes?: ReadonlyMap<string, CompatibilityOutcome>
+  excludedRuntimeKeys: readonly string[] = []
 ): CapabilityAdmissionContext {
   const excluded = new Set(excludedRuntimeKeys);
   return {
@@ -49,8 +47,7 @@ function context(
       registry.capabilities
         .map(({ runtime }) => runtime.registrationKey)
         .filter((key) => !excluded.has(key))
-    ),
-    compatibilityOutcomes: outcomes
+    )
   };
 }
 
@@ -121,18 +118,15 @@ describe("required capability dependency admission", () => {
       "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
 
-    expectAdmissionFailure(
-      eligibleSource,
-      context(
-        eligibleSource,
-        [],
-        new Map([[`${dependency.id}@${dependency.version}`, "REVOKED"]])
-      ),
-      "CAPABILITY_DEPENDENCY_UNAVAILABLE"
-    );
+    const revokedDependency: CapabilityDefinition = {
+      ...dependency,
+      lifecycle: { ...dependency.lifecycle, executionStatus: "REVOKED" }
+    };
+    const revokedSource = source([root, revokedDependency, leaf, base], "6.0.1");
+    expectAdmissionFailure(revokedSource, context(revokedSource), "CAPABILITY_DEPENDENCY_UNAVAILABLE");
 
     const unavailableLeaf = definition(leaf.id, leaf.version, leaf.compatibility.dependencies, "DISABLED");
-    const unavailableTransitiveSource = source([root, dependency, unavailableLeaf, base]);
+    const unavailableTransitiveSource = source([root, dependency, unavailableLeaf, base], "6.0.2");
     expectAdmissionFailure(
       unavailableTransitiveSource,
       context(unavailableTransitiveSource),

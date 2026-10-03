@@ -2,6 +2,7 @@ import { canonicalizeJson } from "../../src/platform/blueprint/canonical-json.js
 import {
   POSTGRES_ADMIT_BLUEPRINT_CONTENT_SQL,
   POSTGRES_INSERT_VALIDATION_RUN_SQL,
+  POSTGRES_LOAD_EXECUTION_RECORD_SQL,
   type PostgresExecutor,
   type PostgresQueryResult
 } from "../../src/platform/blueprint/postgres-blueprint-repository.js";
@@ -47,7 +48,27 @@ export class FakeBlueprintPostgres implements PostgresExecutor {
     if (statement === POSTGRES_ADMIT_BLUEPRINT_CONTENT_SQL) {
       return { rows: [this.admit(parameters) as Row] };
     }
+    if (statement === POSTGRES_LOAD_EXECUTION_RECORD_SQL) {
+      const row = this.loadExecutionRecord(parameters[0] as string);
+      return { rows: row === undefined ? [] : [row as Row] };
+    }
     throw new Error("Unexpected SQL statement.");
+  }
+
+  private loadExecutionRecord(contentHash: string): Record<string, unknown> | undefined {
+    const content = this.contents.get(contentHash);
+    if (content === undefined) {
+      return undefined;
+    }
+    const digest = this.runs.get(content.admitted_by_validation_run_id)?.report.registry_digest;
+    return {
+      content_hash: content.content_hash,
+      canonical_blueprint: structuredClone(content.canonical_blueprint),
+      schema_version: content.schema_version,
+      registry_version: content.registry_version,
+      trust_status: content.trust_status,
+      admitted_registry_digest: typeof digest === "string" ? digest : null
+    };
   }
 
   private insertRun(parameters: readonly unknown[]): void {

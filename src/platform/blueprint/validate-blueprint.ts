@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { VALIDATOR_REGISTRY } from "../../../generated/capabilities/validator-registry.js";
+import { RUNTIME_VERSION } from "../capabilities/registry.js";
 import type {
   GeneratedCapabilityValidator,
   TypeDescriptor,
@@ -13,6 +14,8 @@ import { canonicalizeJson } from "./canonical-json.js";
 import { admitNodeCapabilities, lookupCapability, typeNodeFields } from "./capability-contract.js";
 import { hashCanonicalBlueprintBytes } from "./content-identity.js";
 import { validateNodeGraph } from "./node-graph.js";
+import { validatePermissionPolicy } from "./permission-policy.js";
+import { validateResourceBounds } from "./resource-bounds.js";
 import { inferExpressionTypes, validateStates, type ExpressionTypes } from "./state-rules.js";
 import { inferValueSource, type TypingContext } from "./value-source-typing.js";
 import {
@@ -22,12 +25,12 @@ import {
   type AdmissibleBlueprint,
   type Blueprint,
   type BlueprintValidationResult,
-  type JsonValue,
   type ValidationIssue
 } from "./validation-types.js";
 
 export interface BlueprintValidationContext {
   readonly registry?: ValidatorRegistry;
+  readonly runtimeVersion?: string;
   readonly traceId?: string;
   readonly validationRunId?: string;
 }
@@ -121,30 +124,41 @@ function validateSupport(blueprint: Blueprint, registry: ValidatorRegistry): voi
   });
 }
 
-function admissible(root: Readonly<Record<string, JsonValue>>, blueprint: Blueprint): AdmissibleBlueprint {
-  const canonicalJson = canonicalizeJson(root);
-  const canonicalBytes = new TextEncoder().encode(canonicalJson);
-  return {
-    blueprint,
-    canonicalJson,
-    byteSize: canonicalBytes.byteLength,
-    contentHash: hashCanonicalBlueprintBytes(canonicalBytes)
-  };
-}
-
-function runPipeline(candidatePayloadBytes: Uint8Array, registry: ValidatorRegistry): AdmissibleBlueprint {
+function runPipeline(
+  candidatePayloadBytes: Uint8Array,
+  registry: ValidatorRegistry,
+  runtimeVersion: string
+): AdmissibleBlueprint {
   const root = parseCandidatePayload(candidatePayloadBytes);
   const blueprint = parseBlueprintSchema(root);
   checkVersions(blueprint, registry);
-  const capabilities = admitNodeCapabilities(blueprint, registry);
+  const capabilities = admitNodeCapabilities(blueprint, registry, runtimeVersion);
   const stateAnalysis = validateStates(blueprint);
   const graph = validateNodeGraph(blueprint, capabilities);
   const types = inferExpressionTypes(blueprint, stateAnalysis);
   const typedNodes = typeNodes(graph, capabilities, types);
   typeResults(blueprint, types);
   validateActions(blueprint, typedNodes, types);
+  const canonicalJson = canonicalizeJson(root);
+  const canonicalBytes = new TextEncoder().encode(canonicalJson);
+  const resourceUsage = validateResourceBounds({
+    blueprint,
+    canonicalByteLength: canonicalBytes.byteLength,
+    mutableDescriptors: stateAnalysis.mutable,
+    order: graph.order,
+    indexById: graph.indexById,
+    parentById: graph.parentById,
+    capabilities
+  });
+  validatePermissionPolicy(blueprint, capabilities, registry);
   validateSupport(blueprint, registry);
-  return admissible(root, blueprint);
+  return {
+    blueprint,
+    canonicalJson,
+    byteSize: canonicalBytes.byteLength,
+    contentHash: hashCanonicalBlueprintBytes(canonicalBytes),
+    resourceUsage
+  };
 }
 
 export function validateBlueprintCandidate(
@@ -161,9 +175,15 @@ export function validateBlueprintCandidate(
     trace_id: context.traceId ?? randomUUID()
   };
   try {
-    const result = runPipeline(candidatePayloadBytes, registry);
+    const result = runPipeline(candidatePayloadBytes, registry, context.runtimeVersion ?? RUNTIME_VERSION);
     return {
-      report: { ...reportBase, status: "PASSED", content_hash: result.contentHash, issues: [] },
+      report: {
+        ...reportBase,
+        status: "PASSED",
+        content_hash: result.contentHash,
+        issues: [],
+        resource_usage: result.resourceUsage
+      },
       admissible: result
     };
   } catch (error: unknown) {

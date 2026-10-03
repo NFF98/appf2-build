@@ -5,11 +5,19 @@ import { resolve } from "node:path";
 import {
   assertResourceBudgetWithinGlobalCeilings,
   CapabilityAdmissionError,
+  isRuntimeVersionBoundSyntax,
   matchesCapabilityVersionRange
 } from "./admission.js";
 import { compareCodePoints } from "../blueprint/type-descriptor.js";
+import { computeExecutionContractDigest, isOneOf } from "./execution-contract.js";
 import { CAPABILITY_REGISTRY_SOURCE } from "./registry.js";
-import type { CapabilityDefinition, RegistrySource } from "./schema/capability-definition.js";
+import {
+  AVAILABILITY_LEVELS,
+  EXECUTION_CLASSES,
+  EXECUTION_STATUSES,
+  type CapabilityDefinition,
+  type RegistrySource
+} from "./schema/capability-definition.js";
 import {
   CAPABILITY_ID_PATTERN,
   SEMVER_PATTERN,
@@ -196,6 +204,43 @@ function assertSafetyContracts(definitions: readonly CapabilityDefinition[]): vo
   }
 }
 
+function invalidDefinition(definition: CapabilityDefinition, message: string): never {
+  throw new RegistryGenerationError("REGISTRY_GENERATION_INVALID", `${capabilityRef(definition)}: ${message}`);
+}
+
+function assertExecutionPolicies(definitions: readonly CapabilityDefinition[]): void {
+  for (const definition of definitions) {
+    const { availability, executionStatus } = definition.lifecycle;
+    if (!isOneOf(availability, AVAILABILITY_LEVELS) || !isOneOf(executionStatus, EXECUTION_STATUSES)) {
+      invalidDefinition(definition, "availability / executionStatus must be canonical policy values.");
+    }
+    if (!isOneOf(definition.runtime.execution, EXECUTION_CLASSES)) {
+      invalidDefinition(definition, "execution class is not a trusted local execution class.");
+    }
+    const slots = (definition.runtime.resourceUsage as { readonly timerSlotsPerInstance?: unknown } | undefined)
+      ?.timerSlotsPerInstance;
+    if (!Number.isSafeInteger(slots) || (slots as number) < 0) {
+      invalidDefinition(definition, "resourceUsage.timerSlotsPerInstance must be an explicit non-negative integer.");
+    }
+    const budget = definition.runtime.resourceBudget;
+    if (availability === "ENABLED" && (budget.mediaAutoplayAllowed || budget.networkAccessAllowed)) {
+      invalidDefinition(definition, "ENABLED capabilities must not allow media autoplay or network access.");
+    }
+    const { minRuntimeVersion, maxRuntimeVersion, blueprintSchemaRange } = definition.compatibility;
+    if (!isRuntimeVersionBoundSyntax(minRuntimeVersion, maxRuntimeVersion)) {
+      invalidDefinition(definition, "runtime compatibility bounds are not canonical SemVer bounds.");
+    }
+    try {
+      matchesCapabilityVersionRange("0.0.0", blueprintSchemaRange);
+    } catch (error: unknown) {
+      if (error instanceof CapabilityAdmissionError) {
+        invalidDefinition(definition, "blueprintSchemaRange is not a canonical SemVer range.");
+      }
+      throw error;
+    }
+  }
+}
+
 function assertValidatorContracts(definitions: readonly CapabilityDefinition[]): void {
   for (const definition of definitions) {
     try {
@@ -218,6 +263,7 @@ export function validateRegistrySource(source: RegistrySource): void {
   assertUniqueRefs(definitions);
   assertAcyclicDependencies(definitions);
   assertSafetyContracts(definitions);
+  assertExecutionPolicies(definitions);
   assertValidatorContracts(definitions);
 }
 
@@ -255,29 +301,64 @@ function validatorRegistryArtifact(value: ValidatorRegistry): string {
   )};\n`;
 }
 
+function generatedValidator(definition: CapabilityDefinition): GeneratedCapabilityValidator {
+  const contract = {
+    id: definition.id,
+    version: definition.version,
+    validator: definition.contract.validator,
+    permission_class: definition.runtime.permissionClass,
+    resource_budget: definition.runtime.resourceBudget,
+    resource_usage: { timerSlotsPerInstance: definition.runtime.resourceUsage.timerSlotsPerInstance },
+    execution_class: definition.runtime.execution,
+    compatibility: definition.compatibility,
+    degradation: definition.degradation
+  };
+  let executionContractDigest: string;
+  try {
+    executionContractDigest = computeExecutionContractDigest(contract);
+  } catch (error: unknown) {
+    throw new RegistryGenerationError(
+      "REGISTRY_GENERATION_INVALID",
+      `${capabilityRef(definition)}: executable contract is not canonical JSON (${(error as Error).message})`
+    );
+  }
+  return {
+    ...contract,
+    execution_contract_digest: executionContractDigest,
+    availability: definition.lifecycle.availability,
+    execution_status: definition.lifecycle.executionStatus
+  };
+}
+
 function buildValidatorRegistry(
   identity: RegistryIdentity,
+  runtimeVersion: string,
   definitions: readonly CapabilityDefinition[]
 ): ValidatorRegistry {
   const capabilities: Record<string, Record<string, GeneratedCapabilityValidator>> = {};
   for (const definition of definitions) {
     const versions = capabilities[definition.id] ?? {};
-    versions[definition.version] = {
-      id: definition.id,
-      version: definition.version,
-      validator: definition.contract.validator,
-      permission_class: definition.runtime.permissionClass,
-      resource_budget: definition.runtime.resourceBudget,
-      compatibility: definition.compatibility,
-      degradation: definition.degradation
-    };
+    versions[definition.version] = generatedValidator(definition);
     capabilities[definition.id] = versions;
   }
   return {
     registry_version: identity.registryVersion,
     registry_digest: identity.registryDigest,
+    runtime_version: runtimeVersion,
     capabilities
   };
+}
+
+function registryIdentity(source: RegistrySource): RegistryIdentity {
+  return {
+    registryVersion: source.registryVersion,
+    registryDigest: canonicalRegistryDigest(computeRegistryDigest(source))
+  };
+}
+
+export function buildRegistrySnapshot(source: RegistrySource): ValidatorRegistry {
+  validateRegistrySource(source);
+  return buildValidatorRegistry(registryIdentity(source), source.runtimeVersion, sortedDefinitions(source));
 }
 
 export function generateRegistryArtifacts(
@@ -286,10 +367,7 @@ export function generateRegistryArtifacts(
 ): GeneratedRegistryArtifacts {
   validateRegistrySource(source);
   const definitions = sortedDefinitions(source);
-  const identity = {
-    registryVersion: source.registryVersion,
-    registryDigest: canonicalRegistryDigest(computeRegistryDigest(source))
-  };
+  const identity = registryIdentity(source);
   assertRegistryVersionIntegrity(previousIdentity, identity);
 
   const registryManifest: RegistryManifest = {
@@ -314,7 +392,7 @@ export function generateRegistryArtifacts(
       events: definition.contract.events
     }))
   };
-  const validatorRegistry = buildValidatorRegistry(identity, definitions);
+  const validatorRegistry = buildValidatorRegistry(identity, source.runtimeVersion, definitions);
   const runtimeRegistry = {
     registryVersion: identity.registryVersion,
     registryDigest: identity.registryDigest,
@@ -336,6 +414,8 @@ export function generateRegistryArtifacts(
       id: definition.id,
       version: definition.version,
       availability: definition.lifecycle.availability,
+      execution_status: definition.lifecycle.executionStatus,
+      execution_class: definition.runtime.execution,
       min_runtime_version: definition.compatibility.minRuntimeVersion,
       max_runtime_version: definition.compatibility.maxRuntimeVersion,
       blueprint_schema_range: definition.compatibility.blueprintSchemaRange,

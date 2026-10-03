@@ -7,6 +7,11 @@ import type {
   TypeDescriptor,
   ValidatorRegistry
 } from "../capabilities/schema/validator-contract.js";
+import {
+  createCapabilityEligibilityEvaluator,
+  lookupCapability,
+  type CapabilityIneligibilityReason
+} from "./capability-eligibility.js";
 import { concreteMatcherDescriptor, isAssignable, isJsonObject, matchesTarget } from "./type-descriptor.js";
 import { inferValueSource, type TypingContext } from "./value-source-typing.js";
 import {
@@ -30,13 +35,12 @@ export interface TypedNodeFields {
   readonly bindings: ReadonlyMap<string, TypedField>;
 }
 
-export function lookupCapability(
-  registry: ValidatorRegistry,
-  ref: CapabilityRef
-): GeneratedCapabilityValidator | undefined {
-  const versions = Object.hasOwn(registry.capabilities, ref.id) ? registry.capabilities[ref.id] : undefined;
-  return versions !== undefined && Object.hasOwn(versions, ref.version) ? versions[ref.version] : undefined;
-}
+export { lookupCapability };
+
+const INCOMPATIBLE_REASONS: ReadonlySet<CapabilityIneligibilityReason> = new Set([
+  "BLUEPRINT_SCHEMA_INCOMPATIBLE",
+  "RUNTIME_INCOMPATIBLE"
+]);
 
 function capabilityError(path: string, message: string, ref: CapabilityRef): never {
   return fail("F02-ERR-005", "V04", path, message, ref);
@@ -70,15 +74,22 @@ function assertRequiredKeys(
 
 export function admitNodeCapabilities(
   blueprint: Blueprint,
-  registry: ValidatorRegistry
+  registry: ValidatorRegistry,
+  runtimeVersion: string
 ): ReadonlyMap<string, GeneratedCapabilityValidator> {
   const admitted = new Map<string, GeneratedCapabilityValidator>();
+  const eligibility = createCapabilityEligibilityEvaluator(registry, {
+    blueprintSchemaVersion: blueprint.schema_version,
+    runtimeVersion
+  });
   blueprint.nodes.forEach((node, index) => {
     const path = `$.nodes[${index}]`;
-    const capability = lookupCapability(registry, node.capability);
-    if (capability === undefined) {
-      capabilityError(`${path}.capability`, "Unknown capability ID/version.", node.capability);
+    const ineligible = eligibility.evaluate(node.capability);
+    if (ineligible !== undefined) {
+      const code = INCOMPATIBLE_REASONS.has(ineligible.reason) ? "F02-ERR-004" : "F02-ERR-005";
+      fail(code, "V04", `${path}.capability`, `Capability is not admissible: ${ineligible.reason}.`, node.capability);
     }
+    const capability = lookupCapability(registry, node.capability) as GeneratedCapabilityValidator;
     const { validator } = capability;
     assertDeclaredKeys(node.props, validator.props, `${path}.props`, node.capability);
     assertRequiredKeys(node.props, validator.props, `${path}.props`, node.capability);

@@ -1,4 +1,5 @@
 import type { TypeDescriptor } from "../capabilities/schema/validator-contract.js";
+import type { ResourceUsageReport } from "./resource-bounds.js";
 
 export const BLUEPRINT_SCHEMA_VERSION = "1.0.0";
 export const MAX_CANDIDATE_PAYLOAD_BYTES = 524_288;
@@ -184,6 +185,7 @@ export interface ValidationReport {
   readonly registry_digest: string;
   readonly content_hash?: string;
   readonly issues: readonly ValidationIssue[];
+  readonly resource_usage?: ResourceUsageReport;
   readonly trace_id: string;
 }
 
@@ -192,6 +194,7 @@ export interface AdmissibleBlueprint {
   readonly canonicalJson: string;
   readonly byteSize: number;
   readonly contentHash: string;
+  readonly resourceUsage: ResourceUsageReport;
 }
 
 export type BlueprintValidationResult =
