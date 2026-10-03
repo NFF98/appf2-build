@@ -209,7 +209,7 @@
           "test_id": "TEST-F04-AC-006",
           "file": "tests/contract/capability-registry.contract.test.ts",
           "mode": "BASELINE_FIXTURE_REBIND",
-          "from_build_spec": "BS-P1-004",
+          "from_build_spec": "BS-P1-005",
           "to_build_spec": "BS-P1-006"
         }
       ]
