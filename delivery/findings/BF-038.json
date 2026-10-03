@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-038",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-009",
   "sprint_id": "SP-P1-002",
   "task_id": "T003",
@@ -22,7 +22,13 @@
     "The public execution-admission endpoint concept takes content_hash, while implementation must not accept client-supplied trust/version/registry overrides; this boundary needs explicit machine truth for TEST-F02-012.",
     "Current admitBlueprint preserves an existing REVOKED/INCOMPATIBLE trust_status on content reuse but still reports content status ADMITTED; contract must state that content persistence admission/reuse is never execution authorization.",
     "F02 exact Blueprint schema has no trust_status/executable/module/handler/script fields and V10 forbids executable carriers. TEST-F02-009 must prove structural no-code safety, not reject inert user text merely because a string contains tokens such as eval or import.",
-    "Same-class §19 sweep found ambiguous counting/unit rules beyond timers, including 256 KB/128 KB exact bytes, expression/decriptor/tree depths, total initial state bytes, repeated-instance upper bounds and per-Capability budget dimensions. These must be closed in one remediation to avoid serial Cursor stops."
+    "Same-class §19 sweep found ambiguous counting/unit rules beyond timers, including 256 KB/128 KB exact bytes, expression/decriptor/tree depths, total initial state bytes, repeated-instance upper bounds and per-Capability budget dimensions. These must be closed in one remediation to avoid serial Cursor stops.",
+    "Design PR #13 merged BF-038 Product truth remediation as f3f2ac0d2f22f3b966c8e4699d42604b0b8bc44a.",
+    "Scope-clean Design freeze source e54941e9f127bc3ec5f80f8091884e4a3aeb2767 changes exactly F02/F03/F04/EXECUTION-ADMISSION from prior BS-P1-009 source; unrelated PFR/F18-F20 Design main drift is excluded.",
+    "BS-P1-010 Freeze Audit PASS and replacement baseline merged via PR #166 as d92e7bb2a211ad4e2dad59836186842ddd0ad36c; content_sha256 c0bf630f3d9b89531440482a370b7728342150c2904e65c4261aff8a915eb303.",
+    "Atomic activation rebinds SP-P1-002/T003 and unfinished backlog/tasks to BS-P1-010 while keeping T001/T002 CLOSED historical baselines unchanged.",
+    "T003 maintenance authorization is limited to TEST-F02-AC-008, TEST-F04-009 and TEST-F04-AC-011 baseline fixture rebinds; no whole-file or unrelated Test waiver is granted.",
+    "Fresh Cursor execution is explicitly outside this activation commit and remains the next Human-controlled execution boundary."
   ],
   "attempts": [
     {
@@ -57,5 +63,5 @@
     "F02-AC-012"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-010"
 }
