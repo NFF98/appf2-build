@@ -232,25 +232,34 @@
         "BL-P1-005"
       ],
       "title": "Enforce Blueprint execution safety, hard ceilings and trust anti-bypass",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-011",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-012",
       "scope": [
-        "Reject arbitrary executable code, executable escape paths and hard-ceiling violations before Runtime under the BS-P1-011 structural allowlist and deterministic resource rules.",
-        "Implement Registry v6 machine truth required by BF-039: canonical resource_usage.timerSlotsPerInstance, deterministic execution_contract_digest, current availability/execution_status, execution class, compatibility and explicit resource usage without capability-ID/replayClass inference.",
-        "Enforce V04 required-dependency eligibility recursively and deterministically: matching versions in SemVer-descending order; candidate must be ENABLED, ACTIVE, trusted execution class, Blueprint-schema compatible, trusted-runtime compatible and transitively dependency-eligible.",
-        "Enforce fresh execution admission with two trusted server-selected Registry snapshots: Blueprint pinned historical snapshot for immutable interpretation and deployment current execution Registry snapshot for current eligibility. Current direct CapabilityRef execution_contract_digest must match the pinned same ref; current policy update must use a new Registry version/digest.",
-        "Enforce disabled/revoked/incompatible denial and fail closed when the current execution Registry snapshot cannot be acquired or integrity-verified; temporary current-snapshot/infrastructure failure maps to E08 and never falls back to pinned policy.",
-        "Enforce Phase 1 V10 policy: permission_class only NONE/USER_GESTURE, networkAccessAllowed=false and mediaAutoplayAllowed=false; legitimate code-like user strings remain inert data and must not be lexically blacklisted.",
-        "Prevent client-supplied trust/executable/version/digest/Registry/runtime-context values from bypassing trusted validation or fresh execution admission; content persistence admission/reuse never grants execution authority."
+        "Reject arbitrary executable code, executable escape paths and hard-ceiling violations before Runtime under the BS-P1-012 structural allowlist and deterministic V05/V09 resource-owner rules.",
+        "Implement Registry v7 canonical machine truth required by BF-040: resource_usage.timerSlotsPerInstance, execution_contract_digest, validator_registry_digest, runtime_registry_digest, runtime_binding_digest, availability/execution_status, execution_class, compatibility, resource budgets/usage and deterministic generated artifacts.",
+        "Implement append-only RegistryReleaseLedger truth: immutable release tuples and historical exact CapabilityRef execution_contract_digest + runtime_binding_digest continuity, including remove/re-add history. Same exact ref drift must generation-hard-fail; policy-only lifecycle change requires a new Registry PATCH release tuple.",
+        "Implement BF-040 CompatibilityContract grammar exactly: minRuntimeVersion is inclusive bare SemVer; maxRuntimeVersion is required exclusive <SemVer; blueprintSchemaRange only exact, caret, or >=A <B canonical forms. Do not infer alternate grammar.",
+        "Enforce V04 required-dependency eligibility recursively and deterministically: matching current-release versions SemVer-descending; candidate must be ENABLED, ACTIVE, supported execution class, Blueprint-schema compatible, trusted-runtime compatible and transitively eligible.",
+        "Enforce V11 pinned validation of every support.degradations[].capability_refs[] exact ref using the frozen degradation eligibility contract.",
+        "Enforce fresh execution with server-selected trusted pinned/current RegistryReleaseBundle objects, trusted append-only release ledger and actual TrustedRuntimeHandlerCatalog. BlueprintExecutionRefSet is the unique union of Node and degradation refs.",
+        "Enforce current-vs-pinned execution_contract_digest and runtime_binding_digest equality for same exact direct/degradation refs and same exact dependency candidates; a new dependency exact version absent pinned may satisfy its declared versionRange only when fully current-eligible.",
+        "Enforce durable persisted content integrity and E01-E08 precedence: successful-read body/hash/schema/registry mismatch is F02-ERR-015; deterministic pinned incompatibility is E06/F02-ERR-017; current eligibility is E07/F02-ERR-017; temporary repository/release-ledger/current-release/handler-catalog inability is E08/503 and never fail-open.",
+        "Verify pinned RuntimeRegistry identity and pinned direct Node registration keys against server/deployment-owned TrustedRuntimeHandlerCatalog before executable=true; current release may not replace pinned handler binding.",
+        "Enforce Phase 1 V10 policy: permission_class only NONE/USER_GESTURE, networkAccessAllowed=false and mediaAutoplayAllowed=false; legitimate code-like strings remain inert data and must not be lexically blacklisted.",
+        "Prevent client-supplied trust/executable/version/digest/Registry/release-bundle/runtime-context values from bypassing trusted validation or fresh execution admission; content persistence/reuse never grants execution authority.",
+        "TEST-F02-010 must direct-proof the full BF-040 hard-ceiling matrix: V05 initial LIST/STRING value-domain maxima plus every remaining V09 global resource maximum and every static per-Capability budget."
       ],
       "non_scope": [
-        "Do not add general Runtime feature semantics beyond validation/admission safety.",
-        "Do not change locked resource ceilings, trust states, BF-038 measurement formulas, BF-039 dual-snapshot semantics or digest inputs.",
+        "Do not add general Runtime feature semantics beyond the F03 H02/H03 pinned-handler safety boundary needed by fresh execution admission.",
+        "Do not change locked resource ceiling values, BF-038 measurement formulas, BF-040 V05/V09 ownership, trust states, release identity fields, digest inputs/canonicalization, release-ledger rules or E01-E08 precedence.",
         "Do not infer timer/resource usage from capability IDs, replayClass, handler code or prose.",
         "Do not implement lexical code-keyword blacklisting of legitimate inert user strings.",
-        "Do not mutate an existing Registry version/digest in place to model revoke/disable; policy-only changes require a new Registry PATCH version/digest.",
-        "Do not implement a v5-to-v6 execution compatibility adapter or migration; BS-P1-011 explicitly leaves pre-v6 pinned content fail-closed until a future versioned adapter exists.",
-        "Do not merge or treat the prior candidate HEAD 9740045a82765cf7e4bc629eb06be5010d81f0be as authoritative; it is review evidence only."
+        "Do not mutate an existing Registry version or release digest tuple in place to model revoke/disable; policy-only changes require a new Registry PATCH release.",
+        "Do not rewrite/delete historical RegistryReleaseLedger entries or permit same exact CapabilityRef execution/runtime-binding identity drift.",
+        "Do not derive TrustedRuntimeHandlerCatalog from Registry source; it must represent the actual bundled handler map.",
+        "Do not dynamically import or substitute a current handler for an old Blueprint pinned RuntimeRegistry binding.",
+        "Do not implement a v6-to-v7 execution compatibility adapter or migration; BS-P1-012 leaves pre-v7 pinned content fail-closed until a future versioned adapter exists.",
+        "Do not merge or treat prior candidate HEADs 9740045a82765cf7e4bc629eb06be5010d81f0be or 0be0f7111466ae7f6e27ed5f668a33c37272548d as authoritative; both are review evidence only."
       ],
       "acceptance_links": [
         {
@@ -303,22 +312,43 @@
           "test_id": "TEST-F02-AC-008",
           "file": "tests/contract/blueprint-content-persistence.contract.test.ts",
           "mode": "BASELINE_FIXTURE_REBIND",
-          "from_build_spec": "BS-P1-010",
-          "to_build_spec": "BS-P1-011"
+          "from_build_spec": "BS-P1-011",
+          "to_build_spec": "BS-P1-012"
         },
         {
           "test_id": "TEST-F04-009",
           "file": "tests/contract/capability-admission.contract.test.ts",
           "mode": "BASELINE_FIXTURE_REBIND",
-          "from_build_spec": "BS-P1-010",
-          "to_build_spec": "BS-P1-011"
+          "from_build_spec": "BS-P1-011",
+          "to_build_spec": "BS-P1-012"
         },
         {
           "test_id": "TEST-F04-AC-011",
           "file": "tests/runtime/capability-dependency.runtime.test.ts",
           "mode": "BASELINE_FIXTURE_REBIND",
-          "from_build_spec": "BS-P1-010",
-          "to_build_spec": "BS-P1-011"
+          "from_build_spec": "BS-P1-011",
+          "to_build_spec": "BS-P1-012"
+        },
+        {
+          "test_id": "TEST-F04-AC-001",
+          "file": "tests/contract/capability-registry.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-011",
+          "to_build_spec": "BS-P1-012"
+        },
+        {
+          "test_id": "TEST-F04-002",
+          "file": "tests/contract/capability-registry.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-011",
+          "to_build_spec": "BS-P1-012"
+        },
+        {
+          "test_id": "TEST-F04-AC-006",
+          "file": "tests/contract/capability-registry.contract.test.ts",
+          "mode": "BASELINE_FIXTURE_REBIND",
+          "from_build_spec": "BS-P1-011",
+          "to_build_spec": "BS-P1-012"
         }
       ]
     },
@@ -329,7 +359,7 @@
       ],
       "title": "Implement validation failure and degradation semantics",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-011",
+      "build_spec_id": "BS-P1-012",
       "scope": [
         "Ensure validation failure never corrupts an existing validated Blueprint and rejected candidate bodies do not become executable durable artifacts.",
         "Enforce explicit PARTIALLY_SUPPORTED degradation metadata and semantic-core preservation."
@@ -389,7 +419,7 @@
       ],
       "title": "Implement validation evidence and admission traceability",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-011",
+      "build_spec_id": "BS-P1-012",
       "scope": [
         "Make validation stage/error/trace evidence observable without raw Blueprint telemetry.",
         "Trace admitted Blueprint content to validation_run and trace revoke/incompatible outcomes without mutating immutable Blueprint body."
@@ -452,7 +482,7 @@
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-011",
+      "build_spec_id": "BS-P1-012",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
         "Require explicit clarification for money/permission/cost assumptions, expose material proposals, avoid re-asking answered questions unless upstream facts change, and prevent client resolved_intent bypass.",
@@ -519,7 +549,7 @@
       ],
       "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-011",
+      "build_spec_id": "BS-P1-012",
       "scope": [
         "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",
         "On overflow, preferentially retain CORE_OUTCOME / RELIABILITY over DEBUG / PRODUCT_SAMPLE.",
@@ -574,7 +604,7 @@
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-011",
+      "build_spec_id": "BS-P1-012",
       "scope": [
         "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
         "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default.",
@@ -642,7 +672,7 @@
       ],
       "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-011",
+      "build_spec_id": "BS-P1-012",
       "scope": [
         "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
         "Prove F01-AC-002 by showing NEEDS_CLARIFICATION when required intent data is missing and no safe default exists.",

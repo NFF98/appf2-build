@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-040",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-011",
   "sprint_id": "SP-P1-002",
   "task_id": "T003",
@@ -23,7 +23,9 @@
     "Design PR #16 merged BF-040 Product truth remediation as ca2946925052ae2a8a0903884f63bcfa4672d51f.",
     "Scope-clean Design freeze source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f is derived from prior BS-P1-011 source e6b28ef5e3f0d3925961b347bf0744025b509dfc and changes exactly F02, F03, F04 and EXECUTION-ADMISSION.",
     "BS-P1-012 Freeze Audit PASS and replacement baseline merged via PR #175 as 0735cd6f666d9592d8f9f8c6f9650783d819cc7e; content_sha256 f623c7efc8232eaaded21326fbd21f07506cb05feb1df4363d11a7dca81a108e.",
-    "BD-012 is the canonical Design Delta for BF-040. Finding remains BLOCKED until atomic BS-P1-012 / SP-P1-002 / T003 activation."
+    "BD-012 is the canonical Design Delta for BF-040. Finding remains BLOCKED until atomic BS-P1-012 / SP-P1-002 / T003 activation.",
+    "Atomic BS-P1-012 / SP-P1-002 / T003 activation completed under Human blanket approval. T003 is re-scoped to Registry v7 release identity/ledger/runtime-binding integrity, BF-040 V05/V09 ownership, full execution-reference eligibility and exact E04-E08 precedence.",
+    "Prior Cursor candidates 9740045a82765cf7e4bc629eb06be5010d81f0be and 0be0f7111466ae7f6e27ed5f668a33c37272548d remain unmerged review evidence. Fresh Cursor re-execution is intentionally outside this activation transition and has not been issued."
   ],
   "attempts": [
     {
