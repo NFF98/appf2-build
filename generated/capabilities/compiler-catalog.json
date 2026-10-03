@@ -11,6 +11,7 @@
       ],
       "meaning": "Trigger an action from an explicit user gesture.",
       "public_parameters": [
+        "label",
         "disabled"
       ],
       "rejection_hints": [],
@@ -29,8 +30,7 @@
       "meaning": "Present a semantically grouped content card.",
       "public_parameters": [
         "title",
-        "description",
-        "children"
+        "description"
       ],
       "rejection_hints": [],
       "selection_hints": [
@@ -46,10 +46,7 @@
         "repeated_content"
       ],
       "meaning": "Present a bounded list using a declarative item template.",
-      "public_parameters": [
-        "items",
-        "item_template"
-      ],
+      "public_parameters": [],
       "rejection_hints": [
         "Do not use arbitrary template code."
       ],
@@ -68,6 +65,7 @@
       ],
       "meaning": "Present literal or derived text.",
       "public_parameters": [
+        "role",
         "text"
       ],
       "rejection_hints": [],
@@ -86,6 +84,8 @@
       ],
       "meaning": "Present an important value or metric.",
       "public_parameters": [
+        "label",
+        "format",
         "value"
       ],
       "rejection_hints": [],
@@ -103,6 +103,8 @@
       ],
       "meaning": "Present bounded rows and columns without executable cell renderers.",
       "public_parameters": [
+        "columns",
+        "max_rows",
         "rows"
       ],
       "rejection_hints": [
@@ -125,6 +127,11 @@
       ],
       "meaning": "Edit a numeric value bound to typed runtime state.",
       "public_parameters": [
+        "label",
+        "min",
+        "max",
+        "step",
+        "required",
         "bind"
       ],
       "rejection_hints": [
@@ -145,17 +152,20 @@
         "chooser",
         "form"
       ],
-      "meaning": "Select one value from a bounded local option set.",
+      "meaning": "Select one STRING value from a bounded local option set.",
       "public_parameters": [
+        "label",
+        "options",
+        "required",
         "bind"
       ],
       "rejection_hints": [
         "Do not use a remote option loader in Phase 1."
       ],
       "selection_hints": [
-        "Use for a bounded set of local options."
+        "Use for a bounded set of local STRING options."
       ],
-      "version": "1.0.0"
+      "version": "2.0.0"
     },
     {
       "events": [
@@ -168,6 +178,10 @@
       ],
       "meaning": "Edit bounded text bound to typed runtime state.",
       "public_parameters": [
+        "label",
+        "max_length",
+        "placeholder",
+        "required",
         "bind"
       ],
       "rejection_hints": [],
@@ -205,7 +219,9 @@
       ],
       "meaning": "Compose child nodes with bounded layout configuration.",
       "public_parameters": [
-        "children"
+        "direction",
+        "gap",
+        "align"
       ],
       "rejection_hints": [],
       "selection_hints": [
@@ -240,7 +256,11 @@
         "game"
       ],
       "meaning": "Maintain bounded score state.",
-      "public_parameters": [],
+      "public_parameters": [
+        "initial",
+        "min",
+        "max"
+      ],
       "rejection_hints": [],
       "selection_hints": [
         "Use for a bounded score or counter."
@@ -257,7 +277,9 @@
         "countdown"
       ],
       "meaning": "Maintain bounded timer state.",
-      "public_parameters": [],
+      "public_parameters": [
+        "duration_ms"
+      ],
       "rejection_hints": [],
       "selection_hints": [
         "Use for bounded countdown or elapsed-time behavior."
@@ -274,6 +296,9 @@
       ],
       "meaning": "Present a human-facing notice or recovery direction.",
       "public_parameters": [
+        "severity",
+        "title",
+        "message",
         "action_refs"
       ],
       "rejection_hints": [
@@ -285,6 +310,6 @@
       "version": "1.0.0"
     }
   ],
-  "registry_digest": "567c227d8f0726a7a3bfa50b357ce933d48ab5aaa629b25bfcac3cab4fb6bafa",
-  "registry_version": "1.0.0"
+  "registry_digest": "sha256:0a633311ee253bf6424c2201292710f6cd8f0943ece35584513410e614705ea0",
+  "registry_version": "4.0.0"
 }

@@ -172,8 +172,9 @@ describe("canonical capability registry", () => {
     expect(compiler.registry_digest).toBe(generated.identity.registryDigest);
     expect(compatibility.registry_version).toBe(generated.identity.registryVersion);
     expect(compatibility.registry_digest).toBe(generated.identity.registryDigest);
-    expect(validator).toContain(`"registryVersion": "${generated.identity.registryVersion}"`);
-    expect(validator).toContain(`"registryDigest": "${generated.identity.registryDigest}"`);
+    expect(generated.identity.registryDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(validator).toContain(`"registry_version": "${generated.identity.registryVersion}"`);
+    expect(validator).toContain(`"registry_digest": "${generated.identity.registryDigest}"`);
     expect(runtime).toContain(`"registryVersion": "${generated.identity.registryVersion}"`);
     expect(runtime).toContain(`"registryDigest": "${generated.identity.registryDigest}"`);
   });
