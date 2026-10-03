@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-006",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-034"
+  ],
+  "affected_build_spec": "BS-P1-005",
+  "affected_tasks": [
+    "T002"
+  ],
+  "affected_contracts": [
+    "F02 canonical static TypeDescriptor assignability / descriptor Join",
+    "F02 EVENT / SCOPE canonical path grammar and shared-Action EVENT typing context",
+    "F03 operator static descriptor propagation",
+    "F04 canonical named invariant and TargetMatcher machine contract",
+    "F04 CapabilityDefinition.contract.validator and generated validator-registry machine shape",
+    "F04 Registry version 2.0.0"
+  ],
+  "affected_acceptance": [
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-008"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-03: 批准 BF-034 resolution direction：1-4 全部採用；批准 BF-034 Build Freeze：建立 BD-006 / BS-P1-006 replacement baseline"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "2235f785ff03393a214453e80701defe6d3e1698",
+  "replacement_build_spec": "BS-P1-006",
+  "verification": [
+    "appf2-design PR #9 merged the Human-approved BF-034 F02/F03/F04 remediation as 2235f785ff03393a214453e80701defe6d3e1698.",
+    "Cross-contract precision audit PASS: BF-034 G1-G10 all have canonical resolution; CapabilityDefinition.contract.validator -> generated validator-registry -> F02 consumer is uniquely defined.",
+    "Acceptance Registry is byte-identical across the BF-034 Working remediation; no Acceptance/Test ID remap is required.",
+    "Scope-clean freeze source 438b2e0dcd3f9a029e961656e9a4fe6ffa0be6f3 is derived from BS-P1-005 source abd91f50fa520a4ecd047207da7e2a804762e415 and changes exactly F02, F03 and F04.",
+    "Human approved BF-034 Freeze Audit and Build Freeze on 2026-10-03. T002 remains BLOCKED and CURRENT remains HOLD; Activation requires a separate Human gate."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "438b2e0dcd3f9a029e961656e9a4fe6ffa0be6f3",
+    "base_commit": "abd91f50fa520a4ecd047207da7e2a804762e415",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-034-FREEZE-CANDIDATE.md"
+  }
+}
