@@ -37,6 +37,14 @@
     "Design PR #12 merged BF-037 Product contract remediation as 1af9a51eac0a07b86c40b9405759b8412c1dea3a.",
     "Design scope is exactly F02, F03 and DATA-MODEL; Build-only G1 test-integrity remediation is not mixed into Product Design truth.",
     "G1 governance harness direction is per-Test AST declaration comparison: unchanged neighboring Test IDs in a modified shared file remain protected without requiring false authorization.",
-    "Replacement Build Spec BS-P1-009 must supersede BS-P1-008 and remain HOLD until freeze audit and activation complete."
-  ]
+    "Replacement Build Spec BS-P1-009 must supersede BS-P1-008 and remain HOLD until freeze audit and activation complete.",
+    "Scope-clean freeze source 728049049dad4e43146265bfe142d4195e7fac6d changes exactly F02/F03/DATA-MODEL from the prior BS-P1-008 source; an intermediate whole-file Data Model derivation was rejected before freeze.",
+    "BF-037 Freeze Audit PASS; BS-P1-009 content_sha256 59dd7bb8fab674dfae5da3eada4d59b4f747db972f27631452eea0ff58c4d115."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "728049049dad4e43146265bfe142d4195e7fac6d",
+    "base_commit": "2ee3b32dafa49c1409f645f1aafd95ef024d2a0f",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-037-FREEZE-CANDIDATE.md"
+  }
 }
