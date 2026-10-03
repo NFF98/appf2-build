@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-005",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-030",
     "BF-031"
@@ -52,7 +52,8 @@
     "Human-approved BS-P1-005 Build Freeze merged as a8ab9bd7c59a769bb61f1e03965b6a34942d3cf8; immutable baseline is LOCKED and supersedes BS-P1-004.",
     "SHAME-017 future-diff direct proof PR #134 head 8646dab058c146a6f089d1393e3ac41b25c3a82e: change-scope, active-task test-integrity and full T002 Product CI PASS; proof PR closed without merge.",
     "BF-032/BF-033 shared activation-lineage remediation merged as 436f7a35bc63451cfe9d7ad12bf6cbb4c4bae75c; Governance/CI/Attack/CodeQL PASS and attack dry-run observed 90/90 expected outcomes.",
-    "SP-P1-002 BS-P1-005 Rebind + T002 Activation Review recorded at delivery/audits/SP-P1-002-BS-P1-005-REBIND-ACTIVATION-REVIEW.md with result PASS / READY FOR HUMAN ACTIVATION; CURRENT remains HOLD pending explicit Human Activation."
+    "SP-P1-002 BS-P1-005 Rebind + T002 Activation Review recorded at delivery/audits/SP-P1-002-BS-P1-005-REBIND-ACTIVATION-REVIEW.md with result PASS / READY FOR HUMAN ACTIVATION; CURRENT remains HOLD pending explicit Human Activation.",
+    "Human approved BS-P1-005 / SP-P1-002 / T002 Activation on 2026-10-03; decision_ref=HUMAN-ACTIVATION-BS-P1-005-SP-P1-002-T002-20261003. Atomic Activation rebinds current execution to BS-P1-005 and returns T002 to implementation without approving the old candidate."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
