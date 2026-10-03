@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-009",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-037"
+  ],
+  "affected_build_spec": "BS-P1-008",
+  "affected_tasks": [
+    "T002"
+  ],
+  "affected_contracts": [
+    "F02 executable Blueprint string domain / PostgreSQL jsonb representability",
+    "F02 INVOKE_CAPABILITY singleton target admission",
+    "F03 repeated runtime NodeInstanceKey and concrete node identity",
+    "DATA-MODEL validation_run insert-only terminal persistence",
+    "Build test-integrity per-Test maintenance authorization enforcement"
+  ],
+  "affected_acceptance": [
+    "F02-AC-004",
+    "F02-AC-006",
+    "F02-AC-008",
+    "F04-AC-006"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-03: BF-037 resolution C1/C2/P1/G1 approved; continue governance through pre-Cursor execution."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "1af9a51eac0a07b86c40b9405759b8412c1dea3a",
+  "replacement_build_spec": "BS-P1-009",
+  "verification": [
+    "Design PR #12 merged BF-037 Product contract remediation as 1af9a51eac0a07b86c40b9405759b8412c1dea3a.",
+    "Design scope is exactly F02, F03 and DATA-MODEL; Build-only G1 test-integrity remediation is not mixed into Product Design truth.",
+    "G1 governance harness direction is per-Test AST declaration comparison: unchanged neighboring Test IDs in a modified shared file remain protected without requiring false authorization.",
+    "Replacement Build Spec BS-P1-009 must supersede BS-P1-008 and remain HOLD until freeze audit and activation complete."
+  ]
+}
