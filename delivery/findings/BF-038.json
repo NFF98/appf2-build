@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-038",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-009",
   "sprint_id": "SP-P1-002",
   "task_id": "T003",
@@ -26,7 +26,8 @@
     "Design PR #13 merged BF-038 Product truth remediation as f3f2ac0d2f22f3b966c8e4699d42604b0b8bc44a.",
     "Scope-clean Design freeze source e54941e9f127bc3ec5f80f8091884e4a3aeb2767 changes exactly F02/F03/F04/EXECUTION-ADMISSION from prior BS-P1-009 source; unrelated PFR/F18-F20 Design main drift is excluded.",
     "BS-P1-010 Freeze Audit PASS and replacement baseline merged via PR #166 as d92e7bb2a211ad4e2dad59836186842ddd0ad36c; content_sha256 c0bf630f3d9b89531440482a370b7728342150c2904e65c4261aff8a915eb303.",
-    "BD-010 is the canonical Design Delta for BF-038. Finding remains BLOCKED until atomic BS-P1-010/T003 activation."
+    "BD-010 is the canonical Design Delta for BF-038. Finding remains BLOCKED until atomic BS-P1-010/T003 activation.",
+    "Atomic BS-P1-010 / SP-P1-002 / T003 activation completed under Human blanket approval; fresh Cursor execution remains intentionally separate and not issued by this transition."
   ],
   "attempts": [
     {
