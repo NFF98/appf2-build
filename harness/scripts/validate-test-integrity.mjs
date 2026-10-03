@@ -19,32 +19,36 @@ const walk=dir=>{
 for(const d of testRoots) walk(path.join(root,d));
 
 const declared=new Map();
+const consumeQuoted=(text,start,quote)=>{
+  for(let i=start+1;i<text.length;i++){
+    if(text[i]==="\\"){ i++; continue; }
+    if(text[i]===quote) return i;
+  }
+  return text.length-1;
+};
+const consumeLineComment=(text,start)=>{
+  const end=text.indexOf("\n",start+2);
+  return end===-1?text.length-1:end;
+};
+const consumeBlockComment=(text,start)=>{
+  const end=text.indexOf("*/",start+2);
+  return end===-1?text.length-1:end+1;
+};
 const matchingCallEnd=(text,openIndex)=>{
-  let depth=0, quote=null, escaped=false, lineComment=false, blockComment=false;
+  let depth=0;
   for(let i=openIndex;i<text.length;i++){
     const ch=text[i], next=text[i+1];
-    if(lineComment){ if(ch==="\n") lineComment=false; continue; }
-    if(blockComment){ if(ch==="*" && next==="/"){ blockComment=false; i++; } continue; }
-    if(quote){
-      if(escaped){ escaped=false; continue; }
-      if(ch==="\\"){ escaped=true; continue; }
-      if(ch===quote) quote=null;
-      continue;
-    }
-    if(ch==="/" && next==="/"){ lineComment=true; i++; continue; }
-    if(ch==="/" && next==="*"){ blockComment=true; i++; continue; }
-    if(ch==='"' || ch==="'" || ch==="`"){ quote=ch; continue; }
+    if(ch==='"' || ch==="'" || ch==="`"){ i=consumeQuoted(text,i,ch); continue; }
+    if(ch==="/" && next==="/"){ i=consumeLineComment(text,i); continue; }
+    if(ch==="/" && next==="*"){ i=consumeBlockComment(text,i); continue; }
     if(ch==="(") depth++;
-    else if(ch===")"){
-      depth--;
-      if(depth===0) return i+1;
-    }
+    if(ch===")" && --depth===0) return i+1;
   }
   return text.length;
 };
 const testDeclarationsIn=text=>{
   const out=new Map();
-  const re=/\b(?:test|it)\s*\(\s*(["'`])([^"'\`]*(TEST-[A-Z0-9-]+)[^"'\`]*)\1/g;
+  const re=/\b(?:test|it)\s*\(\s*(["'`])([^"'`]*(TEST-[A-Z0-9-]+)[^"'`]*)\1/g;
   let m;
   while((m=re.exec(text))){
     const open=text.indexOf("(",m.index);
