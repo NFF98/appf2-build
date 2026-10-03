@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-009",
   "type": "DESIGN_DELTA",
-  "status": "IMPLEMENTING",
+  "status": "CLOSED",
   "source_finding_ids": [
     "BF-037"
   ],
@@ -40,7 +40,10 @@
     "Replacement Build Spec BS-P1-009 must supersede BS-P1-008 and remain HOLD until freeze audit and activation complete.",
     "Scope-clean freeze source 728049049dad4e43146265bfe142d4195e7fac6d changes exactly F02/F03/DATA-MODEL from the prior BS-P1-008 source; an intermediate whole-file Data Model derivation was rejected before freeze.",
     "BF-037 Freeze Audit PASS; BS-P1-009 content_sha256 59dd7bb8fab674dfae5da3eada4d59b4f747db972f27631452eea0ff58c4d115.",
-    "Human-preapproved atomic BS-P1-009 / SP-P1-002 / T002 Activation resolves BF-037 as a spec blocker and returns T002 to IN_PROGRESS; fresh Cursor execution remains a separate final gate and is not included."
+    "Human-preapproved atomic BS-P1-009 / SP-P1-002 / T002 Activation resolves BF-037 as a spec blocker and returns T002 to IN_PROGRESS; fresh Cursor execution remains a separate final gate and is not included.",
+    "T002 implementation merged under BS-P1-009 via PR #159 and independently audited PASS.",
+    "T002 final Evidence EV-SP-P1-002-T002-001..011 normalized; mapped Acceptance/Test, required commands, migration integration proof, and engineering/semantic review all PASS.",
+    "Human approved T002 closure on 2026-10-03; BD-009 remediation lifecycle is complete."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",

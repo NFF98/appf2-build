@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-037",
   "classification": "SPEC_AMBIGUITY",
-  "status": "RESOLVED",
+  "status": "CLOSED",
   "build_spec_id": "BS-P1-008",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -26,7 +26,10 @@
     "Attack dry-run coverage now includes the BF-037 shape: one authorized foreign Test changes in a shared file while an untouched foreign neighboring Test remains unchanged, plus a negative case proving authorization cannot cover a changed neighbor.",
     "Build PR #156 merged G1 per-Test declaration integrity remediation as ed8e2805a2d2d7ec55db75fb2ae7d3c32102adc2 with CI/Governance/Attack/CodeQL PASS.",
     "BS-P1-009 Freeze Audit PASS and replacement baseline merged as 8be2ce1aae751223cd94278b5d78e0ae078b7255; source 728049049dad4e43146265bfe142d4195e7fac6d is scope-clean to F02/F03/DATA-MODEL only.",
-    "Atomic activation rebinds SP-P1-002/T002 and all unfinished backlog/tasks to BS-P1-009 while preserving T001 and DONE backlog historical baselines; TEST-F04-AC-006 maintenance is rebound directly BS-P1-008 -> BS-P1-009."
+    "Atomic activation rebinds SP-P1-002/T002 and all unfinished backlog/tasks to BS-P1-009 while preserving T001 and DONE backlog historical baselines; TEST-F04-AC-006 maintenance is rebound directly BS-P1-008 -> BS-P1-009.",
+    "T002 implementation merged via PR #159 as 7b0a640334b4f6d33f7f39e09aa9666667765ef2; all PR-context CI/Governance/Attack/CodeQL checks passed.",
+    "Final T002 Evidence EV-SP-P1-002-T002-001..011 normalized and merged via PR #160; T002 closure REVIEW transition merged via PR #161.",
+    "Human approved T002 closure on 2026-10-03; BF-037 remediation is implemented and verified under BS-P1-009."
   ],
   "attempts": [
     {
