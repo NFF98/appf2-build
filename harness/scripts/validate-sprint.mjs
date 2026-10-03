@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { canPreserveCompletedBaseline } from "./baseline-lineage.mjs";
+import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor } from "./baseline-lineage.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -27,6 +27,39 @@ const registryFor=baselineId=>{
   const rp="build-spec/baselines/"+baselineId+"/"+m.acceptance_registry;
   if(!exists(rp)){errors.push("Missing Acceptance registry for "+baselineId); return new Map();}
   return new Map((read(rp).entries||[]).filter(e=>e.contract_status==="ACTIVE" && e.required_for_build_freeze===true).map(e=>[e.acceptance_id,e]));
+};
+
+const sameIdSet=(values,expected)=>{
+  const ids=new Set(Array.isArray(values)?values:[]);
+  const wanted=new Set(expected);
+  return ids.size===wanted.size && [...wanted].every(x=>ids.has(x));
+};
+// A CLOSED Task kept at an ancestor Build Spec may keep a claim outside the current selected Backlog only
+// when a DONE Backlog item holds the CLOSED revalidation that Task performed, that revalidation covered exactly
+// the original→target semantic drift, and target→current introduces no further drift.
+const isTaskHistoricalRevalidation=(item,sid,task,currentBaseline)=>{
+  const r=item.revalidation;
+  return item.status==="DONE" && r?.status==="CLOSED" &&
+    r.sprint_id===sid && r.task_id===task.task_id && r.target_build_spec_id===task.build_spec_id &&
+    r.target_build_spec_id!==currentBaseline &&
+    isBaselineAncestor(root,item.build_spec_id,r.target_build_spec_id) &&
+    isBaselineAncestor(root,r.target_build_spec_id,currentBaseline);
+};
+const historicalRevalidationCarryForwardIds=(sid,task,currentBaseline)=>{
+  const carried=new Set();
+  const claimed=new Set((task.acceptance_links||[]).map(x=>x.acceptance_id));
+  for(const item of backlog.items||[]){
+    if(!isTaskHistoricalRevalidation(item,sid,task,currentBaseline)) continue;
+    const r=item.revalidation;
+    const targetDrift=acceptanceSemanticDriftIds(root,item.build_spec_id,r.target_build_spec_id,item.acceptance_links);
+    if(!targetDrift.length || !sameIdSet(r.acceptance_ids,targetDrift) || !targetDrift.every(aid=>claimed.has(aid))) continue;
+    if(acceptanceSemanticDriftIds(root,r.target_build_spec_id,currentBaseline,item.acceptance_links).length) continue;
+    for(const aid of targetDrift) carried.add(aid);
+  }
+  return carried;
+};
+const recordHistoricalCarryClaims=(carryClaims,sid,task,currentBaseline)=>{
+  for(const aid of historicalRevalidationCarryForwardIds(sid,task,currentBaseline)) carryClaims.set(aid,task.task_id);
 };
 
 const sprintRoot=path.join(root,"delivery/sprints");
@@ -187,6 +220,7 @@ for(const sid of sprintDirs){
   }
 
   const taskIds=new Set(), claims=new Map(), taskById=new Map(), taskBacklogs=new Set();
+  const historicalCarryClaims=new Map();
   for(const t of td.tasks||[]){
     taskById.set(t.task_id,t);
     if(!/^T\d{3}$/.test(t.task_id||"")) errors.push(sid+" invalid task_id "+t.task_id);
@@ -196,6 +230,7 @@ for(const sid of sprintDirs){
     if(t.build_spec_id!==m.build_spec_id){
       const legacyClosed=t.status==="CLOSED" && canPreserveCompletedBaseline(root,t.build_spec_id,m.build_spec_id,t.acceptance_links);
       if(!legacyClosed) errors.push(sid+"/"+t.task_id+" baseline mismatch");
+      else recordHistoricalCarryClaims(historicalCarryClaims,sid,t,m.build_spec_id);
     }
     if(t.product_decision_allowed!==false) errors.push(sid+"/"+t.task_id+" product_decision_allowed must be false");
     if(!Array.isArray(t.scope)||!t.scope.length || !Array.isArray(t.non_scope)||!t.non_scope.length) errors.push(sid+"/"+t.task_id+" requires scope and non_scope");
@@ -242,8 +277,13 @@ for(const sid of sprintDirs){
     if(!claim) errors.push(sid+" missing Task coverage for "+aid);
     else if(claim.test_id!==tid) errors.push(sid+" Task coverage Test mismatch for "+aid);
   }
-  for(const aid of claims.keys()) if(!expectedPairs.has(aid)) errors.push(sid+" Task claims Acceptance outside selected Backlog/revalidation: "+aid);
-  if(claims.size!==expectedPairs.size) errors.push(sid+" Acceptance coverage mismatch: "+claims.size+" / "+expectedPairs.size);
+  let carriedClaimCount=0;
+  for(const [aid,claim] of claims){
+    if(expectedPairs.has(aid)) continue;
+    if(historicalCarryClaims.get(aid)===claim.task_id){ carriedClaimCount++; continue; }
+    errors.push(sid+" Task claims Acceptance outside selected Backlog/revalidation: "+aid);
+  }
+  if(claims.size-carriedClaimCount!==expectedPairs.size) errors.push(sid+" Acceptance coverage mismatch: "+(claims.size-carriedClaimCount)+" / "+expectedPairs.size);
   for(const [aid,r] of revalidationByAcceptance){
     const claim=claims.get(aid);
     if(claim && claim.task_id!==r.task_id) errors.push(sid+" revalidation "+aid+" must be owned by Task "+r.task_id+", not "+claim.task_id);

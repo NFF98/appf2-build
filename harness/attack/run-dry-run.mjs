@@ -299,16 +299,33 @@ carryTasks.tasks[0].status="CLOSED";
 write("delivery/sprints/SP-P9-002/tasks.json",carryTasks);
 write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"REVALIDATION_CARRY_FORWARD"});
 makeBaseline("BS-P9-003",{sourceCommit:sourceC,supersedes:"BS-P9-002",decisionRef:"DRYRUN-CARRY-FREEZE",acceptanceEntries:[newAc,stableAc]});
+const carryManifest=read("delivery/sprints/SP-P9-002/manifest.json");
+carryManifest.build_spec_id="BS-P9-003";
+delete carryManifest.revalidation_item_ids;
+write("delivery/sprints/SP-P9-002/manifest.json",carryManifest);
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-003",implementation_enabled:false,reason:"REVALIDATION_CARRY_FORWARD"});
 const carryForward=commit("positive: closed revalidation carries across unchanged Acceptance");
 expectPass("CLOSED ancestor revalidation carries forward across unchanged semantics","node",["harness/scripts/validate-backlog.mjs"],{base:validRevalidation,head:carryForward});
+expectPass("Sprint keeps CLOSED historical revalidation claim after current revalidation manifest entry is removed","node",["harness/scripts/validate-sprint.mjs"],{base:validRevalidation,head:carryForward});
 
 const changedAgain={...newAc,criterion:"changed again"};
 makeBaseline("BS-P9-004",{sourceCommit:"d".repeat(40),supersedes:"BS-P9-003",decisionRef:"DRYRUN-CARRY-CHANGED",acceptanceEntries:[changedAgain,stableAc]});
 const changedAgainQueue=read("delivery/backlog/QUEUE.json"); changedAgainQueue.build_spec_id="BS-P9-004"; write("delivery/backlog/QUEUE.json",changedAgainQueue);
+const staleManifest=read("delivery/sprints/SP-P9-002/manifest.json"); staleManifest.build_spec_id="BS-P9-004"; write("delivery/sprints/SP-P9-002/manifest.json",staleManifest);
 write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-004",implementation_enabled:false,reason:"REVALIDATION_CARRY_CHANGED"});
 const staleCarry=commit("attack: historical revalidation reused after later semantic drift");
 expectFail("Historical revalidation cannot cover later semantic drift","harness/scripts/validate-backlog.mjs",{base:carryForward,head:staleCarry});
+expectFail("Sprint cannot carry historical revalidation claim across later semantic drift","harness/scripts/validate-sprint.mjs",{base:carryForward,head:staleCarry});
+
+cleanTo(carryForward);
+const foreignCarryQueue=read("delivery/backlog/QUEUE.json"); foreignCarryQueue.items[0].revalidation.task_id="T002"; write("delivery/backlog/QUEUE.json",foreignCarryQueue);
+const foreignCarry=commit("attack: CLOSED Task claim without its own historical revalidation");
+expectFail("Sprint rejects CLOSED Task claim not backed by that Task's historical revalidation","harness/scripts/validate-sprint.mjs",{base:carryForward,head:foreignCarry});
+
+cleanTo(carryForward);
+const partialCarryQueue=read("delivery/backlog/QUEUE.json"); partialCarryQueue.items[0].revalidation.status="VERIFIED"; write("delivery/backlog/QUEUE.json",partialCarryQueue);
+const partialCarry=commit("attack: non-CLOSED historical revalidation carried forward");
+expectFail("Sprint rejects carry-forward from a revalidation that is not CLOSED","harness/scripts/validate-sprint.mjs",{base:carryForward,head:partialCarry});
 cleanTo(fixtureBase);
 
 // Active Task cannot bypass an unfinished blocked_by dependency.
@@ -598,6 +615,57 @@ write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-002",im
 const holdRebaselineHead=commit("positive: HOLD to ACTIVE approved rebaseline");
 expectHarnessPass("HOLD to ACTIVE approved rebaseline",governanceHarness,{base:holdRebaselineBase,head:holdRebaselineHead});
 expectPass("HOLD rebaseline control-only Product CI skips pre-code tests","node",["ci/run-product-ci.mjs"],{base:holdRebaselineBase,head:holdRebaselineHead});
+
+// Atomic rebaseline may advance only the replacement baseline's introduced Delta (APPROVED -> IMPLEMENTING)
+// and that Delta's source Finding (BLOCKED -> RESOLVED), with append-only verification/evidence.
+cleanTo(blockedBase);
+makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-ATOMIC-FREEZE"});
+const atomicDeltaBase=read("delivery/deltas/BD-999.json"); atomicDeltaBase.verification=["DRYRUN replacement baseline frozen"]; write("delivery/deltas/BD-999.json",atomicDeltaBase);
+write("delivery/findings/BF-998.json",{
+  schema_version:1,finding_id:"BF-998",classification:"IMPLEMENTATION_BUG",status:"OPEN",
+  build_spec_id:"BS-P9-001",sprint_id:"SP-P9-001",task_id:"T001",expected:"unrelated",actual:"unrelated",
+  evidence:["dry-run unrelated"],attempts:[],contract_affecting:false,delta_id:"BD-996"
+});
+write("delivery/deltas/BD-996.json",{
+  schema_version:1,delta_id:"BD-996",type:"DESIGN_DELTA",status:"APPROVED",source_finding_ids:["BF-998"],
+  affected_build_spec:"BS-P9-001",affected_tasks:["T001"],affected_contracts:["functions/demo.md"],affected_acceptance:["F99-AC-001"],
+  changes_contract_semantics:true,owner:"HUMAN_GOVERNANCE",user_decision_required:true,
+  user_decision:{status:"APPROVED",decision_ref:"DRYRUN-UNRELATED-DELTA"},replacement_build_spec_required:true,
+  upstream_working_commit:sourceC,replacement_build_spec:null,verification:[]
+});
+write("build-spec/CURRENT.json",{schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"DRYRUN_ATOMIC_HOLD"});
+write("delivery/CURRENT-SPRINT.json",{schema_version:1,active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD",automation_mode:"SAFE_AUTOMATION",reason:"DRYRUN_ATOMIC_HOLD"});
+const atomicBase=commit("fixture: frozen replacement baseline with BLOCKED source Finding awaiting atomic activation");
+const writeAtomicTransition=()=>{
+  makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceB,deltas:["BD-999"],decisionRef:"DRYRUN-ATOMIC-ACTIVATION"});
+  baseWorkState("BS-P9-002","ACTIVE","IN_PROGRESS");
+  const delta=read("delivery/deltas/BD-999.json"); delta.status="IMPLEMENTING"; delta.verification.push("DRYRUN atomic activation"); write("delivery/deltas/BD-999.json",delta);
+  const finding=read("delivery/findings/BF-999.json"); finding.status="RESOLVED"; finding.evidence.push("DRYRUN atomic activation"); write("delivery/findings/BF-999.json",finding);
+};
+writeAtomicTransition();
+const atomicHead=commit("positive: atomic rebaseline advances introduced delta and source finding");
+expectHarnessPass("Atomic rebaseline advances introduced Delta and source Finding lifecycle",governanceHarness,{base:atomicBase,head:atomicHead});
+
+const atomicAttack=(name,mutate)=>{
+  cleanTo(atomicBase);
+  writeAtomicTransition();
+  mutate();
+  const head=commit("attack: "+name);
+  expectFail(name,"harness/scripts/validate-change-scope.mjs",{base:atomicBase,head});
+};
+const editJson=(rel,fn)=>{const doc=read(rel); fn(doc); write(rel,doc);};
+atomicAttack("Atomic rebaseline rejects introduced Delta semantic-field tampering",()=>editJson("delivery/deltas/BD-999.json",d=>{d.affected_acceptance=[];}));
+atomicAttack("Atomic rebaseline rejects introduced Delta verification rewrite",()=>editJson("delivery/deltas/BD-999.json",d=>{d.verification=["rewritten history"];}));
+atomicAttack("Atomic rebaseline rejects introduced Delta status other than IMPLEMENTING",()=>editJson("delivery/deltas/BD-999.json",d=>{d.status="CLOSED";}));
+atomicAttack("Atomic rebaseline rejects source Finding semantic-field tampering",()=>editJson("delivery/findings/BF-999.json",f=>{f.expected="reinterpreted";}));
+atomicAttack("Atomic rebaseline rejects source Finding evidence rewrite",()=>editJson("delivery/findings/BF-999.json",f=>{f.evidence=["rewritten evidence"];}));
+atomicAttack("Atomic rebaseline rejects source Finding status other than RESOLVED",()=>editJson("delivery/findings/BF-999.json",f=>{f.status="CLOSED";}));
+atomicAttack("Atomic rebaseline rejects unrelated Finding lifecycle change",()=>editJson("delivery/findings/BF-998.json",f=>{f.status="RESOLVED";}));
+atomicAttack("Atomic rebaseline rejects unrelated Delta lifecycle change",()=>editJson("delivery/deltas/BD-996.json",d=>{d.status="IMPLEMENTING";}));
+atomicAttack("Atomic rebaseline rejects replacement baseline mutation",()=>write("build-spec/baselines/BS-P9-002/functions/demo.md","# smuggled contract change\n"));
+atomicAttack("Atomic rebaseline rejects harness smuggling",()=>write("harness/scripts/smuggled-during-activation.mjs","export const smuggled=true;\n"));
+atomicAttack("Atomic rebaseline rejects unrelated governance path",()=>write("delivery/templates/smuggled.md","# smuggled\n"));
+atomicAttack("Atomic rebaseline rejects Product path",()=>write("src/demo/smuggled.ts","export const smuggled=true;\n"));
 
 // Positive Sprint Activation transition: control files may cross HOLD -> ACTIVE without pretending product tests already exist.
 cleanTo(fixtureBase);
