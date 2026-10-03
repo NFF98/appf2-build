@@ -104,17 +104,69 @@ const previousExecutionPaused=
    baseCurrentSprint?.active_sprint===null &&
    baseCurrentSprint?.active_build_spec===null &&
    baseCurrentSprint?.active_task===null);
-const approvedRebaselineTransition=
+const rebaselineTransitionShape=
   baseCurrentBuild?.active_baseline &&
   currentBuild.active_baseline &&
   baseCurrentBuild.active_baseline!==currentBuild.active_baseline &&
   previousExecutionPaused &&
   ["BLOCKED","ACTIVE"].includes(cs.status) &&
   rebaselineActivationPath &&
-  changed.includes(rebaselineActivationPath) &&
-  changed.every(p=>rebaselineControlAllowed.has(p));
+  changed.includes(rebaselineActivationPath);
+
+const canonical=value=>{
+  if(Array.isArray(value)) return value.map(canonical);
+  if(value && typeof value==="object") return Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])]));
+  return value;
+};
+const sameJson=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+const appendOnly=(before,after)=>
+  Array.isArray(before) && Array.isArray(after) && after.length>=before.length &&
+  before.every((entry,i)=>sameJson(entry,after[i]));
+const readHeadJson=rel=>{
+  try{return JSON.parse(fs.readFileSync(path.join(root,rel),"utf8"));}
+  catch{return null;}
+};
+// Only the replacement baseline's newly introduced Delta(s) and their exact source Finding(s) may advance
+// lifecycle inside the atomic rebaseline transition; every other field must stay identical.
+const governedLifecycleRules=[
+  {pattern:/^delivery\/deltas\/(BD-\d{3,})\.json$/,kind:"Delta",from:"APPROVED",to:"IMPLEMENTING",appendField:"verification"},
+  {pattern:/^delivery\/findings\/(BF-\d{3,})\.json$/,kind:"Finding",from:"BLOCKED",to:"RESOLVED",appendField:"evidence"}
+];
+const lifecycleViolation=(rel,rule,allowedIds,id)=>{
+  if(!allowedIds.has(id)) return rule.kind+" "+id+" is not introduced by the replacement baseline";
+  const before=showBaseJson(rel), after=readHeadJson(rel);
+  if(!before || !after) return rule.kind+" "+id+" must exist before and after the transition";
+  if(before.status!==rule.from || after.status!==rule.to) return rule.kind+" "+id+" may only move "+rule.from+" -> "+rule.to;
+  if(!appendOnly(before[rule.appendField],after[rule.appendField])) return rule.kind+" "+id+" "+rule.appendField+" must be append-only";
+  if(!sameJson(omit(before,["status",rule.appendField]),omit(after,["status",rule.appendField]))) return rule.kind+" "+id+" semantic fields must remain identical";
+  return null;
+};
+const rebaselineLifecyclePaths=()=>{
+  const allowed=new Set();
+  const replacement=showBaseJson("build-spec/baselines/"+currentBuild.active_baseline+"/manifest.json");
+  const predecessor=showBaseJson("build-spec/baselines/"+baseCurrentBuild.active_baseline+"/manifest.json");
+  const lineageOk=replacement && predecessor && replacement.supersedes===baseCurrentBuild.active_baseline;
+  const inherited=new Set(lineageOk?predecessor.approved_delta_ids||[]:[]);
+  const introducedDeltas=new Set(lineageOk?(replacement.approved_delta_ids||[]).filter(id=>!inherited.has(id)):[]);
+  const sourceFindings=new Set();
+  for(const did of introducedDeltas) for(const fid of showBaseJson("delivery/deltas/"+did+".json")?.source_finding_ids||[]) sourceFindings.add(fid);
+  const allowedIds={Delta:introducedDeltas,Finding:sourceFindings};
+  for(const rel of changed){
+    const rule=governedLifecycleRules.find(r=>r.pattern.test(rel));
+    if(!rule) continue;
+    const violation=lifecycleViolation(rel,rule,allowedIds[rule.kind],rel.match(rule.pattern)[1]);
+    if(violation) errors.push("Rebaseline transition governance side effect rejected: "+violation);
+    else allowed.add(rel);
+  }
+  return allowed;
+};
+const rebaselineLifecycleAllowed=rebaselineTransitionShape?rebaselineLifecyclePaths():new Set();
+const approvedRebaselineTransition=
+  rebaselineTransitionShape &&
+  changed.every(p=>rebaselineControlAllowed.has(p) || rebaselineLifecycleAllowed.has(p));
 
 if(approvedRebaselineTransition) console.log("- Human-approved rebaseline control transition recognized; Activation/Baseline/Sprint gates must independently approve it.");
+if(approvedRebaselineTransition && rebaselineLifecycleAllowed.size) console.log("- Introduced Delta/source Finding lifecycle side effects: "+[...rebaselineLifecycleAllowed].sort().join(", "));
 
 if(cs.active_sprint===null){
   for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
