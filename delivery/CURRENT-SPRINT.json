@@ -5,5 +5,5 @@
   "active_task": "T002",
   "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved BF-037 remediation and BS-P1-009 Activation; T002 is governance-active but Cursor/Product implementation may start only after a fresh exact Human execution instruction."
+  "reason": "BS-P1-009 activated after BF-037 remediation; T002 restored to IN_PROGRESS. Fresh Cursor execution remains a separate explicit handoff."
 }
