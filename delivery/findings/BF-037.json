@@ -20,7 +20,10 @@
     "Shared DATA-MODEL-DETAILED mutable/immutable matrix declares validation_run APPEND / finalize only. T002 scope explicitly says Persist immutable validation_run / blueprint_content. Candidate migration creates an immutable-column trigger only for blueprint_content and no UPDATE protection for validation_run.",
     "Final same-class repeat sweep: F03 RuntimeInstance has one instance_id for the whole App, but no NodeInstanceKey. capability_state_by_node[node_id] is ambiguous for repeated descendants; event envelope source_node_id cannot by itself distinguish repeated clones; timer replay/evidence/error isolation also refer to node_id. F03 rendering semantics do not freeze a repeat-instance identity model.",
     "Final same-class persistence sweep found no additional T002 blocker in content hashing, staged compiler_run FK, blueprint_content immutable-field trigger, or candidate_digest semantics. The remaining database gap is validation_run mutation protection plus lack of explicit jsonb-representable Blueprint string domain.",
-    "Final same-class reference sweep found no second Blueprint action field that selects a runtime node instance besides INVOKE_CAPABILITY.target_node_id; structural children are definition references, not runtime instance selectors."
+    "Final same-class reference sweep found no second Blueprint action field that selects a runtime node instance besides INVOKE_CAPABILITY.target_node_id; structural children are definition references, not runtime instance selectors.",
+    "Design PR #12 merged C1/C2/P1 Product truth remediation as 1af9a51eac0a07b86c40b9405759b8412c1dea3a.",
+    "G1 governance harness remediation branch changes validate-test-integrity.mjs from whole-file ownership inference to TypeScript-AST per-Test declaration comparison while preserving exact Test ID + file maintenance authorization.",
+    "Attack dry-run coverage now includes the BF-037 shape: one authorized foreign Test changes in a shared file while an untouched foreign neighboring Test remains unchanged, plus a negative case proving authorization cannot cover a changed neighbor."
   ],
   "attempts": [
     {
@@ -28,6 +31,12 @@
       "strategy": "POST_IMPLEMENTATION_FINAL_CONTRACT_PERSISTENCE_AUDIT",
       "result": "BLOCKED_FINAL_CLOSURE_GAPS",
       "evidence": "ChatGPT independently compared BS-P1-008 F02/F03/Data Model, T002 candidate migration/repository/action typing, test-integrity harness, and the exact modified shared test file after Cursor produced candidate 286deb4680c95fb06f548eecd046c284b40bb0b3."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_DESIGN_AND_G1_GOVERNANCE_REMEDIATION",
+      "result": "REMEDIATION_PREPARED",
+      "evidence": "Design Product truth merged in PR #12; Build G1 harness remediation prepared under BD-009. BF-037 remains BLOCKED until replacement Build Freeze and activation."
     }
   ],
   "requested_planning_action": [
@@ -52,5 +61,5 @@
     "F04-AC-006"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-009"
 }
