@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-034",
   "classification": "SPEC_AMBIGUITY",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-005",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -20,7 +20,8 @@
     "G9 registry_version：F04-RQ-004 rule 6（F04:180）要求 Registry source material change 必須 version bump；TEST-F04-002（tests/contract/capability-registry.contract.test.ts:127-147）以 git HEAD/BASE_SHA 的 registry-manifest identity 強制此規則。加入 BF-031 machine contract 並移除 children/items/item_template binding 必然改變 registry_digest，但 §29（F04:1366-1370）的 PATCH/MINOR/MAJOR 分類未涵蓋『ref-only invalid generation 修正為 resolved contract、capability version 仍為 1.0.0（F04 §12.1/§13.1）』；版本號同時影響 Blueprint registry_version 與 V03『Registry snapshot known』判定。",
     "G10 locked text defect：build-spec/baselines/BS-P1-005/functions/F02-BLUEPRINT-VALIDATION.md:405 的 RECORD field key grammar 在 `^[a-z][a-z0-9_]{0,63}` 之後被插入該檔前 4,900 字元的逐字複本（:405-673），再接回『。- initial object keys...』。git hash-object = 43f8f56e588ea8bf85e052bbbfa87b2474fdb157 = projection-map source_blob_sha，output_sha256 0013ed58... 相符，故缺陷存在於 appf2-design source abd91f50 本身。此形態符合 JavaScript String.replace 將 `$` + backtick 解讀為 `$\\`` prefix substitution；機械可還原為 `^[a-z][a-z0-9_]{0,63}$`，但 locked baseline 文字本身需 Human 修復。",
     "Canonical execution state at audit：main = cb2274f908576b5580a8238b8ccdc9011be25ff9；build-spec/CURRENT.json = BS-P1-005 implementation_enabled=true；delivery/CURRENT-SPRINT.json = SP-P1-002 / BS-P1-005 / T002 / ACTIVE；T002 = IN_PROGRESS；blocked_by=[]。",
-    "No prior audit covers G1-G10：delivery/audits/SP-P1-002-BD-005-FREEZE-CANDIDATE.md、SP-P1-002-BF-030-031-CONTRACT-AUDIT.md、SP-P1-002-BS-P1-005-REBIND-ACTIVATION-REVIEW.md 未處理上述任一項。"
+    "No prior audit covers G1-G10：delivery/audits/SP-P1-002-BD-005-FREEZE-CANDIDATE.md、SP-P1-002-BF-030-031-CONTRACT-AUDIT.md、SP-P1-002-BS-P1-005-REBIND-ACTIVATION-REVIEW.md 未處理上述任一項。",
+    "Governance normalization approved by Human on 2026-10-03: BF-034 status aligned from OPEN to BLOCKED because SP-P1-002/T002 is already BLOCKED; no Product implementation or Activation authorized."
   ],
   "attempts": [
     {
