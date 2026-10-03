@@ -18,7 +18,11 @@
     "TEST-F02-011 covers dependency missing/disabled/revoked/version/transitive missing but does not cover dependency schema/runtime incompatibility.",
     "Fresh-revocation tests construct registry variants by mutating capability state while preserving the parent ValidatorRegistry registry_version/registry_digest; canonical F04 forbids changed machine truth under the same registry version/digest.",
     "BS-P1-010 F02 §19.2 and F04 §7 say mediaAutoplayAllowed/networkAccessAllowed are V10 permission/security policy. validatePermissions currently enforces permission_class and networkAccessAllowed only.",
-    "No Product truth, Build Spec, governance or canonical main was modified by Cursor; the defect is contained in an unmerged implementation branch."
+    "No Product truth, Build Spec, governance or canonical main was modified by Cursor; the defect is contained in an unmerged implementation branch.",
+    "Design PR #14 merged BF-039 Product truth remediation as dcd642778252d2cab6b37b7004dad9661aea9db5.",
+    "Scope-clean Design freeze source e6b28ef5e3f0d3925961b347bf0744025b509dfc is derived from prior BS-P1-010 source e54941e9f127bc3ec5f80f8091884e4a3aeb2767 and changes exactly F02, F04 and EXECUTION-ADMISSION.",
+    "BS-P1-011 Freeze Audit PASS and replacement baseline merged via PR #171 as a52e6cbe062f67f760dd3577f73ee0917bdd7206; content_sha256 92f85258b0c61a0928dd06f7998abc55626ca6a73095602aa4a12c8ac9e4afb8.",
+    "BD-011 is the canonical Design Delta for BF-039. Finding remains BLOCKED until atomic BS-P1-011/T003 activation."
   ],
   "attempts": [
     {
@@ -53,5 +57,5 @@
     "F02-AC-012"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-011"
 }
