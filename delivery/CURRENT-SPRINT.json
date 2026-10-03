@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-012",
   "active_task": "T003",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BS-P1-012 activated after BF-040 exhaustive same-class remediation; T003 restored to IN_PROGRESS. Cursor re-execution comment remains intentionally not issued."
+  "reason": "T003 implementation merged at c05db89ac83845cca7368bb12459788683b3d2b3; BS-P1-012 Evidence EV-SP-P1-002-T003-001..011 normalized at 2351d92e15eea99cab0ac170cf090e95540280cf. T003 is in closure REVIEW; T004 is not activated."
 }
