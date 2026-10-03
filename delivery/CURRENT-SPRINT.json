@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-009",
-  "active_task": "T002",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T002 implementation merged at 7b0a640334b4f6d33f7f39e09aa9666667765ef2; BS-P1-009 Evidence EV-SP-P1-002-T002-001..011 is normalized. T002 is in closure REVIEW; T003 is not activated."
+  "reason": "Human approved T002 closure. T002 is CLOSED; SP-P1-002 remains open with T003-T009 not yet executed. Execution is HOLD until separate T003 activation."
 }
