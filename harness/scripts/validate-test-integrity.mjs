@@ -19,15 +19,55 @@ const walk=dir=>{
 for(const d of testRoots) walk(path.join(root,d));
 
 const declared=new Map();
-const idsIn=text=>{
-  const ids=[];
-  const re=/(?:test|it)\s*\(\s*["'`]([^"'`]*(TEST-[A-Z0-9-]+)[^"'`]*)["'`]/g;
-  let m; while((m=re.exec(text))) ids.push(m[2]);
-  return ids;
+const consumeQuoted=(text,start,quote)=>{
+  for(let i=start+1;i<text.length;i++){
+    if(text[i]==="\\"){ i++; continue; }
+    if(text[i]===quote) return i;
+  }
+  return text.length-1;
 };
-const idsAtRef=(base,rel)=>{
-  try{return idsIn(execFileSync("git",["show",base+":"+rel],{encoding:"utf8"}));}
-  catch{return [];}
+const consumeLineComment=(text,start)=>{
+  const end=text.indexOf("\n",start+2);
+  return end===-1?text.length-1:end;
+};
+const consumeBlockComment=(text,start)=>{
+  const end=text.indexOf("*/",start+2);
+  return end===-1?text.length-1:end+1;
+};
+const matchingCallEnd=(text,openIndex)=>{
+  let depth=0;
+  for(let i=openIndex;i<text.length;i++){
+    const ch=text[i], next=text[i+1];
+    if(ch==='"' || ch==="'" || ch==="`"){ i=consumeQuoted(text,i,ch); continue; }
+    if(ch==="/" && next==="/"){ i=consumeLineComment(text,i); continue; }
+    if(ch==="/" && next==="*"){ i=consumeBlockComment(text,i); continue; }
+    if(ch==="(") depth++;
+    if(ch===")" && --depth===0) return i+1;
+  }
+  return text.length;
+};
+const testDeclarationsIn=text=>{
+  const out=new Map();
+  const re=/\b(?:test|it)\s*\(\s*(["'`])([^"'`]*(TEST-[A-Z0-9-]+)[^"'`]*)\1/g;
+  let m;
+  while((m=re.exec(text))){
+    const open=text.indexOf("(",m.index);
+    const end=matchingCallEnd(text,open);
+    const arr=out.get(m[3])||[];
+    arr.push(text.slice(m.index,end));
+    out.set(m[3],arr);
+    re.lastIndex=Math.max(re.lastIndex,end);
+  }
+  return out;
+};
+const idsIn=text=>[...testDeclarationsIn(text).keys()];
+const declarationsAtRef=(ref,rel)=>{
+  try{return testDeclarationsIn(execFileSync("git",["show",ref+":"+rel],{encoding:"utf8"}));}
+  catch{return new Map();}
+};
+const declarationsAtHead=rel=>{
+  try{return testDeclarationsIn(fs.readFileSync(path.join(root,rel),"utf8"));}
+  catch{return new Map();}
 };
 const changedFilesFrom=(base,head)=>{
   try{return execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
@@ -66,7 +106,12 @@ if(activeTask && base && !/^0+$/.test(base)){
     .filter(a=>a?.mode==="BASELINE_FIXTURE_REBIND" && a?.to_build_spec===activeTask.build_spec_id)
     .map(a=>a.test_id+"::"+a.file));
   for(const rel of changed.filter(p=>p.startsWith("tests/") && /\.(?:test|spec)\.(?:ts|tsx)$/.test(p))){
-    for(const id of idsAtRef(base,rel)){
+    const before=declarationsAtRef(base,rel);
+    const after=declarationsAtHead(rel);
+    for(const [id,beforeDecls] of before){
+      const afterDecls=after.get(id)||[];
+      const declarationChanged=JSON.stringify(beforeDecls)!==JSON.stringify(afterDecls);
+      if(!declarationChanged) continue;
       const maintenanceAuthorized=maintenanceKeys.has(id+"::"+rel);
       if(!activeIds.has(id) && !maintenanceAuthorized) errors.push("Active Task may not modify previously existing mapped Test "+id+" in "+rel);
     }
