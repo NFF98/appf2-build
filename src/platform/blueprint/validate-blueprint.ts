@@ -9,10 +9,12 @@ import type {
 import { validateActions, type TypedNode } from "./action-typing.js";
 import { parseBlueprintSchema } from "./blueprint-schema.js";
 import { computeCandidateDigest, parseCandidatePayload } from "./candidate-intake.js";
-import { canonicalizeJson } from "./canonical-json.js";
+import { createEligibilityEvaluator, type EligibilityEvaluator } from "../capabilities/execution-eligibility.js";
 import { admitNodeCapabilities, lookupCapability, typeNodeFields } from "./capability-contract.js";
 import { hashCanonicalBlueprintBytes } from "./content-identity.js";
 import { validateNodeGraph } from "./node-graph.js";
+import { validateResources, type ResourceValidation } from "./resource-bounds.js";
+import { validatePermissions } from "./security-policy.js";
 import { inferExpressionTypes, validateStates, type ExpressionTypes } from "./state-rules.js";
 import { inferValueSource, type TypingContext } from "./value-source-typing.js";
 import {
@@ -22,12 +24,14 @@ import {
   type AdmissibleBlueprint,
   type Blueprint,
   type BlueprintValidationResult,
-  type JsonValue,
+  type ResourceUsageReport,
   type ValidationIssue
 } from "./validation-types.js";
 
 export interface BlueprintValidationContext {
   readonly registry?: ValidatorRegistry;
+  /** Server-owned trusted Runtime version; defaults to the Registry snapshot runtime_version. */
+  readonly runtimeVersion?: string;
   readonly traceId?: string;
   readonly validationRunId?: string;
 }
@@ -100,7 +104,7 @@ function typeResults(blueprint: Blueprint, types: ExpressionTypes): void {
   });
 }
 
-function validateSupport(blueprint: Blueprint, registry: ValidatorRegistry): void {
+function validateSupport(blueprint: Blueprint, registry: ValidatorRegistry, eligibility: EligibilityEvaluator): void {
   const { coverage_status: status, degradations } = blueprint.support;
   if (status === "FULLY_SUPPORTED" && degradations.length > 0) {
     fail("F02-ERR-014", "V11", "$.support.degradations", "FULLY_SUPPORTED requires no degradations.");
@@ -114,37 +118,57 @@ function validateSupport(blueprint: Blueprint, registry: ValidatorRegistry): voi
       fail("F02-ERR-014", "V11", `${path}.preserves_semantic_core`, "Degradation must preserve the semantic core.");
     }
     degradation.capability_refs.forEach((ref, refIndex) => {
+      const refPath = `${path}.capability_refs[${refIndex}]`;
       if (lookupCapability(registry, ref) === undefined) {
-        fail("F02-ERR-014", "V11", `${path}.capability_refs[${refIndex}]`, "Degradation references an unknown capability.", ref);
+        fail("F02-ERR-014", "V11", refPath, "Degradation references an unknown capability.", ref);
+      }
+      const failure = eligibility(ref);
+      if (failure !== undefined) {
+        fail("F02-ERR-014", "V11", refPath, `Degradation capability is not eligible: ${failure.reason}.`, ref);
       }
     });
   });
 }
 
-function admissible(root: Readonly<Record<string, JsonValue>>, blueprint: Blueprint): AdmissibleBlueprint {
-  const canonicalJson = canonicalizeJson(root);
-  const canonicalBytes = new TextEncoder().encode(canonicalJson);
+function admissible(resources: ResourceValidation, blueprint: Blueprint): AdmissibleBlueprint {
   return {
     blueprint,
-    canonicalJson,
-    byteSize: canonicalBytes.byteLength,
-    contentHash: hashCanonicalBlueprintBytes(canonicalBytes)
+    canonicalJson: resources.canonicalJson,
+    byteSize: resources.canonicalBytes.byteLength,
+    contentHash: hashCanonicalBlueprintBytes(resources.canonicalBytes)
   };
 }
 
-function runPipeline(candidatePayloadBytes: Uint8Array, registry: ValidatorRegistry): AdmissibleBlueprint {
+interface PipelineProgress {
+  resourceUsage?: ResourceUsageReport;
+}
+
+function runPipeline(
+  candidatePayloadBytes: Uint8Array,
+  registry: ValidatorRegistry,
+  runtimeVersion: string,
+  progress: PipelineProgress
+): AdmissibleBlueprint {
   const root = parseCandidatePayload(candidatePayloadBytes);
   const blueprint = parseBlueprintSchema(root);
   checkVersions(blueprint, registry);
-  const capabilities = admitNodeCapabilities(blueprint, registry);
+  const eligibility = createEligibilityEvaluator({
+    registry,
+    blueprintSchemaVersion: blueprint.schema_version,
+    runtimeVersion
+  });
+  const capabilities = admitNodeCapabilities(blueprint, registry, eligibility);
   const stateAnalysis = validateStates(blueprint);
   const graph = validateNodeGraph(blueprint, capabilities);
   const types = inferExpressionTypes(blueprint, stateAnalysis);
   const typedNodes = typeNodes(graph, capabilities, types);
   typeResults(blueprint, types);
   validateActions(blueprint, typedNodes, types);
-  validateSupport(blueprint, registry);
-  return admissible(root, blueprint);
+  const resources = validateResources({ root, blueprint, mutable: stateAnalysis.mutable, graph, capabilities });
+  progress.resourceUsage = resources.usage;
+  validatePermissions(blueprint, registry, capabilities);
+  validateSupport(blueprint, registry, eligibility);
+  return admissible(resources, blueprint);
 }
 
 export function validateBlueprintCandidate(
@@ -152,6 +176,7 @@ export function validateBlueprintCandidate(
   context: BlueprintValidationContext = {}
 ): BlueprintValidationResult {
   const registry = context.registry ?? VALIDATOR_REGISTRY;
+  const progress: PipelineProgress = {};
   const reportBase = {
     validation_run_id: context.validationRunId ?? randomUUID(),
     candidate_digest: computeCandidateDigest(candidatePayloadBytes),
@@ -161,9 +186,15 @@ export function validateBlueprintCandidate(
     trace_id: context.traceId ?? randomUUID()
   };
   try {
-    const result = runPipeline(candidatePayloadBytes, registry);
+    const result = runPipeline(candidatePayloadBytes, registry, context.runtimeVersion ?? registry.runtime_version, progress);
     return {
-      report: { ...reportBase, status: "PASSED", content_hash: result.contentHash, issues: [] },
+      report: {
+        ...reportBase,
+        status: "PASSED",
+        content_hash: result.contentHash,
+        issues: [],
+        resource_usage: progress.resourceUsage as ResourceUsageReport
+      },
       admissible: result
     };
   } catch (error: unknown) {
@@ -172,6 +203,7 @@ export function validateBlueprintCandidate(
     }
     const issue: ValidationIssue = error.issue;
     const status = INCOMPATIBLE_CODES.has(issue.error_code) ? "INCOMPATIBLE" : "REJECTED";
-    return { report: { ...reportBase, status, issues: [issue] } };
+    const usage = progress.resourceUsage === undefined ? {} : { resource_usage: progress.resourceUsage };
+    return { report: { ...reportBase, status, issues: [issue], ...usage } };
   }
 }

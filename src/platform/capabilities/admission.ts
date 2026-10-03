@@ -1,3 +1,4 @@
+import { compareSemVer, parseSemVer, parseVersionRange, versionInRange } from "./compatibility-grammar.js";
 import type {
   CapabilityDefinition,
   CapabilityRef,
@@ -80,7 +81,6 @@ interface DependencyState {
 }
 
 const NUMERIC_RESOURCES = Object.keys(GLOBAL_RESOURCE_CEILINGS) as NumericResource[];
-const SEMVER_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 function refKey(ref: CapabilityRef): string {
   return `${ref.id}@${ref.version}`;
@@ -142,62 +142,16 @@ function parseAdmissionRequest(value: unknown): ParsedAdmissionRequest {
   };
 }
 
-function parseVersion(version: string): readonly [number, number, number] | undefined {
-  const match = SEMVER_PATTERN.exec(version);
-  return match === null
-    ? undefined
-    : [Number(match[1]), Number(match[2]), Number(match[3])];
-}
-
-function compareVersions(left: readonly number[], right: readonly number[]): number {
-  for (let index = 0; index < 3; index += 1) {
-    const difference = left[index]! - right[index]!;
-    if (difference !== 0) {
-      return difference;
-    }
-  }
-  return 0;
-}
-
-function caretUpperBound(version: readonly [number, number, number]): readonly [number, number, number] {
-  if (version[0] > 0) {
-    return [version[0] + 1, 0, 0];
-  }
-  return version[1] > 0 ? [0, version[1] + 1, 0] : [0, 0, version[2] + 1];
-}
-
 export function matchesCapabilityVersionRange(version: string, range: string): boolean {
-  const candidate = parseVersion(version);
-  if (candidate === undefined) {
-    return false;
-  }
-  const exact = parseVersion(range);
-  if (exact !== undefined) {
-    return compareVersions(candidate, exact) === 0;
-  }
-  if (range.startsWith("^")) {
-    const minimum = parseVersion(range.slice(1));
-    return (
-      minimum !== undefined &&
-      compareVersions(candidate, minimum) >= 0 &&
-      compareVersions(candidate, caretUpperBound(minimum)) < 0
+  const parsedRange = parseVersionRange(range);
+  if (parsedRange === undefined) {
+    throw new CapabilityAdmissionError(
+      "INVALID_DEPENDENCY_VERSION_RANGE",
+      `Unsupported dependency version range: ${range}`
     );
   }
-  const bounded = /^>=(\d+\.\d+\.\d+) <(\d+\.\d+\.\d+)$/.exec(range);
-  if (bounded !== null) {
-    const minimum = parseVersion(bounded[1]!);
-    const maximum = parseVersion(bounded[2]!);
-    return (
-      minimum !== undefined &&
-      maximum !== undefined &&
-      compareVersions(candidate, minimum) >= 0 &&
-      compareVersions(candidate, maximum) < 0
-    );
-  }
-  throw new CapabilityAdmissionError(
-    "INVALID_DEPENDENCY_VERSION_RANGE",
-    `Unsupported dependency version range: ${range}`
-  );
+  const candidate = parseSemVer(version);
+  return candidate !== undefined && versionInRange(candidate, parsedRange);
 }
 
 export function assertResourceBudgetWithinGlobalCeilings(budget: ResourceBudget): void {
@@ -219,7 +173,7 @@ export function assertResourceBudgetWithinGlobalCeilings(budget: ResourceBudget)
 
 function assertEligible(definition: CapabilityDefinition, context: CapabilityAdmissionContext): void {
   const outcome = context.compatibilityOutcomes?.get(refKey(definition)) ?? "COMPATIBLE";
-  if (outcome === "REVOKED") {
+  if (outcome === "REVOKED" || definition.lifecycle.executionStatus === "REVOKED") {
     throw new CapabilityAdmissionError("CAPABILITY_REVOKED", `${refKey(definition)} is revoked.`);
   }
   const unavailable =
@@ -251,11 +205,11 @@ function buildVersionIndex(source: RegistrySource): ReadonlyMap<string, readonly
   }
   for (const definitions of byId.values()) {
     definitions.sort((left, right) => {
-      const leftVersion = parseVersion(left.version);
-      const rightVersion = parseVersion(right.version);
+      const leftVersion = parseSemVer(left.version);
+      const rightVersion = parseSemVer(right.version);
       return leftVersion === undefined || rightVersion === undefined
         ? right.version.localeCompare(left.version)
-        : compareVersions(rightVersion, leftVersion);
+        : compareSemVer(rightVersion, leftVersion);
     });
   }
   return byId;

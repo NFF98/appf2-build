@@ -4,7 +4,7 @@ import {
   SEMVER_PATTERN,
   type DescriptorType
 } from "../capabilities/schema/validator-contract.js";
-import { codePointLength, isJsonObject, NESTING_DEPTH_GUARD } from "./type-descriptor.js";
+import { BLUEPRINT_STACK_DEPTH_GUARD, codePointLength, isJsonObject } from "./type-descriptor.js";
 import {
   fail,
   type ActionStep,
@@ -121,13 +121,14 @@ function readEnum<T extends string>(value: JsonValue | undefined, path: string, 
   return match;
 }
 
-function readArray(value: JsonValue | undefined, path: string, min: number, max: number): readonly JsonValue[] {
+/** V02 checks container shape and minimum only; §19 maxima are owned by V09. */
+function readArray(value: JsonValue | undefined, path: string, min: number): readonly JsonValue[] {
   if (!Array.isArray(value)) {
     schemaError(path, "Expected an array.");
   }
   const array = value as readonly JsonValue[];
-  if (array.length < min || array.length > max) {
-    schemaError(path, `Expected ${min}..${max} items.`);
+  if (array.length < min) {
+    schemaError(path, `Expected at least ${min} items.`);
   }
   return array;
 }
@@ -163,8 +164,8 @@ function isValueSourceKind(kind: JsonValue | undefined): kind is ValueSource["ki
 }
 
 export function parseValueSource(raw: JsonValue | undefined, path: string, depth = 1): ValueSource {
-  if (depth > NESTING_DEPTH_GUARD) {
-    fail("F02-ERR-011", "V09", path, "Value Source nesting exceeds the depth guard.");
+  if (depth > BLUEPRINT_STACK_DEPTH_GUARD) {
+    fail("F02-ERR-011", "V09", path, "Value Source nesting exceeds the recursion safety bound.");
   }
   const kind = isJsonObject(raw) ? (raw as JsonObject).kind : undefined;
   if (!isValueSourceKind(kind)) {
@@ -193,7 +194,7 @@ export function parseValueSource(raw: JsonValue | undefined, path: string, depth
       return {
         kind,
         op: readString(source.op, `${path}.op`),
-        args: readArray(source.args, `${path}.args`, 0, Number.MAX_SAFE_INTEGER).map((arg, index) =>
+        args: readArray(source.args, `${path}.args`, 0).map((arg, index) =>
           parseValueSource(arg, `${path}.args[${index}]`, depth + 1)
         )
       };
@@ -215,7 +216,7 @@ function parseDegradation(raw: JsonValue | undefined, path: string): Degradation
     "capability_refs",
     "preserves_semantic_core"
   ]);
-  const refs = readArray(degradation.capability_refs, `${path}.capability_refs`, 1, 20).map((ref, index) =>
+  const refs = readArray(degradation.capability_refs, `${path}.capability_refs`, 1).map((ref, index) =>
     parseCapabilityRef(ref, `${path}.capability_refs[${index}]`)
   );
   assertUnique(
@@ -236,7 +237,7 @@ function parseDegradation(raw: JsonValue | undefined, path: string): Degradation
 
 function parseSupport(raw: JsonValue | undefined, path: string): Blueprint["support"] {
   const support = exactObject(raw, path, ["coverage_status", "degradations"]);
-  const degradations = readArray(support.degradations, `${path}.degradations`, 0, 50).map((entry, index) =>
+  const degradations = readArray(support.degradations, `${path}.degradations`, 0).map((entry, index) =>
     parseDegradation(entry, `${path}.degradations[${index}]`)
   );
   assertUnique(
@@ -341,7 +342,7 @@ function parseAction(raw: JsonValue | undefined, path: string): BlueprintAction 
   const action = exactObject(raw, path, ["id", "steps"]);
   return {
     id: readString(action.id, `${path}.id`, ACTION_ID_PATTERN),
-    steps: readArray(action.steps, `${path}.steps`, 1, 16).map((step, index) =>
+    steps: readArray(action.steps, `${path}.steps`, 1).map((step, index) =>
       parseStep(step, `${path}.steps[${index}]`)
     )
   };
@@ -365,7 +366,7 @@ function parseRepeat(raw: JsonValue | undefined, path: string): Repeat {
 
 function parseNode(raw: JsonValue | undefined, path: string): BlueprintNode {
   const node = exactObject(raw, path, ["id", "capability", "props", "bindings", "events", "children"], ["repeat"]);
-  const children = readArray(node.children, `${path}.children`, 0, Number.MAX_SAFE_INTEGER).map((child, index) =>
+  const children = readArray(node.children, `${path}.children`, 0).map((child, index) =>
     readString(child, `${path}.children[${index}]`, NODE_ID_PATTERN)
   );
   assertUnique(children, `${path}.children`, "child node reference");
@@ -393,10 +394,10 @@ function parseResultOutput(raw: JsonValue | undefined, path: string): ResultOutp
 function parseIdentifiedArray<T extends { readonly id: string }>(
   raw: JsonValue | undefined,
   path: string,
-  bounds: readonly [number, number],
+  minimum: number,
   parseItem: (item: JsonValue, itemPath: string) => T
 ): readonly T[] {
-  const items = readArray(raw, path, bounds[0], bounds[1]).map((item, index) => parseItem(item, `${path}[${index}]`));
+  const items = readArray(raw, path, minimum).map((item, index) => parseItem(item, `${path}[${index}]`));
   assertUnique(
     items.map((item) => item.id),
     path,
@@ -418,12 +419,12 @@ export function parseBlueprintSchema(root: JsonObject): Blueprint {
       readString(key, entryPath, CANONICAL_IDENTIFIER_PATTERN);
       return parseStateEntry(entry, entryPath);
     }),
-    rules: parseIdentifiedArray(blueprint.rules, "$.rules", [0, Number.MAX_SAFE_INTEGER], parseRule),
-    actions: parseIdentifiedArray(blueprint.actions, "$.actions", [0, Number.MAX_SAFE_INTEGER], parseAction),
-    nodes: parseIdentifiedArray(blueprint.nodes, "$.nodes", [1, 100], parseNode),
+    rules: parseIdentifiedArray(blueprint.rules, "$.rules", 0, parseRule),
+    actions: parseIdentifiedArray(blueprint.actions, "$.actions", 0, parseAction),
+    nodes: parseIdentifiedArray(blueprint.nodes, "$.nodes", 1, parseNode),
     root_node_id: readString(blueprint.root_node_id, "$.root_node_id", NODE_ID_PATTERN),
     result: {
-      outputs: parseIdentifiedArray(result.outputs, "$.result.outputs", [0, 50], parseResultOutput)
+      outputs: parseIdentifiedArray(result.outputs, "$.result.outputs", 0, parseResultOutput)
     }
   };
 }

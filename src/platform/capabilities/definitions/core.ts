@@ -51,6 +51,7 @@ interface CoreDefinitionInput {
   readonly execution?: ExecutionClass;
   readonly replayClass?: ReplayClass;
   readonly permissionClass?: PermissionClass;
+  readonly timerSlotsPerInstance: number;
   readonly operators?: readonly string[];
   readonly validator: ValidatorContract;
 }
@@ -89,7 +90,8 @@ function defineCore(input: CoreDefinitionInput): CapabilityDefinition {
       permissionClass: input.permissionClass ?? "NONE",
       resourceBudget: {
         ...DEFAULT_RESOURCE_BUDGET
-      }
+      },
+      resourceUsage: { timerSlotsPerInstance: input.timerSlotsPerInstance }
     },
     product: {
       shareability: "FULL",
@@ -114,6 +116,7 @@ function defineCore(input: CoreDefinitionInput): CapabilityDefinition {
       targetHorizon: "CORE",
       maturity: "TESTED",
       availability: "ENABLED",
+      executionStatus: "ACTIVE",
       releaseRequirement: "RELEASE_BLOCKING"
     }
   };
@@ -126,6 +129,7 @@ const OPTIONAL_NUMBER_PROP = prop(NUMBER, { required: false });
 export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   defineCore({
     id: "layout.container",
+    timerSlotsPerInstance: 0,
     displayName: "Layout Container",
     family: "LAYOUT",
     kind: "VIEW",
@@ -143,6 +147,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "content.text",
+    timerSlotsPerInstance: 0,
     displayName: "Text",
     family: "CONTENT",
     kind: "VIEW",
@@ -156,6 +161,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "content.card",
+    timerSlotsPerInstance: 0,
     displayName: "Content Card",
     family: "CONTENT",
     kind: "VIEW",
@@ -172,6 +178,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "content.list",
+    timerSlotsPerInstance: 0,
     displayName: "Content List",
     family: "CONTENT",
     kind: "VIEW",
@@ -185,6 +192,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "action.button",
+    timerSlotsPerInstance: 0,
     displayName: "Action Button",
     family: "INPUT",
     kind: "INPUT",
@@ -200,6 +208,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "input.number",
+    timerSlotsPerInstance: 0,
     displayName: "Number Input",
     family: "INPUT",
     kind: "INPUT",
@@ -222,6 +231,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "input.text",
+    timerSlotsPerInstance: 0,
     displayName: "Text Input",
     family: "INPUT",
     kind: "INPUT",
@@ -251,6 +261,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "input.select",
+    timerSlotsPerInstance: 0,
     version: "2.0.0",
     displayName: "Select Input",
     family: "INPUT",
@@ -277,6 +288,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "input.toggle",
+    timerSlotsPerInstance: 0,
     displayName: "Toggle Input",
     family: "INPUT",
     kind: "INPUT",
@@ -290,6 +302,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "data.stat",
+    timerSlotsPerInstance: 0,
     displayName: "Statistic",
     family: "DATA",
     kind: "VIEW",
@@ -315,6 +328,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "data.table_basic",
+    timerSlotsPerInstance: 0,
     displayName: "Basic Table",
     family: "DATA",
     kind: "VIEW",
@@ -347,6 +361,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "logic.random",
+    timerSlotsPerInstance: 0,
     displayName: "Seeded Random",
     family: "LOGIC",
     kind: "LOGIC",
@@ -374,6 +389,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "logic.timer",
+    timerSlotsPerInstance: 1,
     displayName: "Timer",
     family: "LOGIC",
     kind: "LOGIC",
@@ -395,6 +411,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "logic.score",
+    timerSlotsPerInstance: 0,
     displayName: "Score",
     family: "GAME",
     kind: "LOGIC",
@@ -420,6 +437,7 @@ export const CORE_CAPABILITY_DEFINITIONS: readonly CapabilityDefinition[] = [
   }),
   defineCore({
     id: "system.notice",
+    timerSlotsPerInstance: 0,
     displayName: "System Notice",
     family: "SYSTEM",
     kind: "VIEW",

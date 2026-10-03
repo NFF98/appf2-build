@@ -7,6 +7,11 @@ import type {
   TypeDescriptor,
   ValidatorRegistry
 } from "../capabilities/schema/validator-contract.js";
+import {
+  lookupVersioned,
+  type EligibilityEvaluator,
+  type EligibilityFailureReason
+} from "../capabilities/execution-eligibility.js";
 import { concreteMatcherDescriptor, isAssignable, isJsonObject, matchesTarget } from "./type-descriptor.js";
 import { inferValueSource, type TypingContext } from "./value-source-typing.js";
 import {
@@ -34,12 +39,27 @@ export function lookupCapability(
   registry: ValidatorRegistry,
   ref: CapabilityRef
 ): GeneratedCapabilityValidator | undefined {
-  const versions = Object.hasOwn(registry.capabilities, ref.id) ? registry.capabilities[ref.id] : undefined;
-  return versions !== undefined && Object.hasOwn(versions, ref.version) ? versions[ref.version] : undefined;
+  return lookupVersioned(registry.capabilities, ref);
 }
 
 function capabilityError(path: string, message: string, ref: CapabilityRef): never {
   return fail("F02-ERR-005", "V04", path, message, ref);
+}
+
+const INCOMPATIBLE_REASONS: ReadonlySet<EligibilityFailureReason> = new Set([
+  "BLUEPRINT_SCHEMA_INCOMPATIBLE",
+  "RUNTIME_INCOMPATIBLE"
+]);
+
+function assertEligible(eligibility: EligibilityEvaluator, ref: CapabilityRef, path: string): void {
+  const failure = eligibility(ref);
+  if (failure === undefined) {
+    return;
+  }
+  if (INCOMPATIBLE_REASONS.has(failure.reason)) {
+    fail("F02-ERR-004", "V04", path, `Capability is incompatible: ${failure.reason}.`, ref);
+  }
+  capabilityError(path, `Capability is not eligible: ${failure.reason}.`, ref);
 }
 
 function assertDeclaredKeys(
@@ -68,9 +88,11 @@ function assertRequiredKeys(
   }
 }
 
+/** V04: exact-ref eligibility in F02 §24 order, then generated validator key contracts. */
 export function admitNodeCapabilities(
   blueprint: Blueprint,
-  registry: ValidatorRegistry
+  registry: ValidatorRegistry,
+  eligibility: EligibilityEvaluator
 ): ReadonlyMap<string, GeneratedCapabilityValidator> {
   const admitted = new Map<string, GeneratedCapabilityValidator>();
   blueprint.nodes.forEach((node, index) => {
@@ -79,6 +101,7 @@ export function admitNodeCapabilities(
     if (capability === undefined) {
       capabilityError(`${path}.capability`, "Unknown capability ID/version.", node.capability);
     }
+    assertEligible(eligibility, node.capability, `${path}.capability`);
     const { validator } = capability;
     assertDeclaredKeys(node.props, validator.props, `${path}.props`, node.capability);
     assertRequiredKeys(node.props, validator.props, `${path}.props`, node.capability);

@@ -36,9 +36,9 @@ function generationErrorCode(source: RegistrySource): string | undefined {
 }
 
 describe("F04 generated validator machine contract", () => {
-  test("publishes Registry 4.0.0 with exactly one validator entry per capability ref", () => {
+  test("publishes Registry 7.0.0 with exactly one validator entry per capability ref", () => {
     const generated = generateRegistryArtifacts(CAPABILITY_REGISTRY_SOURCE);
-    expect(VALIDATOR_REGISTRY.registry_version).toBe("4.0.0");
+    expect(VALIDATOR_REGISTRY.registry_version).toBe("7.0.0");
     expect(VALIDATOR_REGISTRY.registry_digest).toBe(generated.identity.registryDigest);
     const refs = Object.entries(VALIDATOR_REGISTRY.capabilities).flatMap(([id, versions]) =>
       Object.keys(versions).map((version) => `${id}@${version}`)

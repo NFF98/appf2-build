@@ -106,5 +106,13 @@ describe("capability trust admission contract", () => {
         ),
       "CAPABILITY_REVOKED"
     );
+    const revokedStatus: CapabilityDefinition = {
+      ...original!,
+      lifecycle: { ...original!.lifecycle, executionStatus: "REVOKED" }
+    };
+    expectAdmissionError(
+      () => admitCapability(request(), context(sourceReplacing(original!, revokedStatus))),
+      "CAPABILITY_REVOKED"
+    );
   });
 });

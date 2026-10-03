@@ -61,6 +61,9 @@
       "version": "1.0.0"
     }
   ],
-  "registry_digest": "sha256:0a633311ee253bf6424c2201292710f6cd8f0943ece35584513410e614705ea0",
-  "registry_version": "4.0.0"
+  "registry_digest": "sha256:946e851b6a78e81f6f7dc42c00659af6cc9ddfedbd21d05e4c4e12b96054c52b",
+  "registry_version": "7.0.0",
+  "runtime_registry_digest": "sha256:76a5c63706b135e9ff2090012fad9642205cc963251d790fc5ebe8114ff06faf",
+  "runtime_version": "1.0.0",
+  "validator_registry_digest": "sha256:d1cc3614eb8defe5c5e66abac79a4b3446ecc220c00703655002225922220188"
 }

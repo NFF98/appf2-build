@@ -1,6 +1,11 @@
 import type { TypeDescriptor } from "../capabilities/schema/validator-contract.js";
 import { hasReservedPrefix } from "./blueprint-schema.js";
-import { parseTypeDescriptor, TypeDescriptorError, valueConforms } from "./type-descriptor.js";
+import {
+  BLUEPRINT_STACK_DEPTH_GUARD,
+  parseTypeDescriptor,
+  TypeDescriptorError,
+  valueConforms
+} from "./type-descriptor.js";
 import {
   collectReferences,
   inferValueSource,
@@ -34,7 +39,7 @@ function parseMutableDescriptor(key: string, entry: MutableStateEntry): TypeDesc
     raw.constraints = entry.constraints;
   }
   try {
-    return parseTypeDescriptor(raw, path, { allowOptionalFields: false });
+    return parseTypeDescriptor(raw, path, { allowOptionalFields: false, depthGuard: BLUEPRINT_STACK_DEPTH_GUARD });
   } catch (error: unknown) {
     if (error instanceof TypeDescriptorError) {
       if (error.kind === "DEPTH_GUARD") {
