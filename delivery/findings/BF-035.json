@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-035",
   "classification": "SPEC_AMBIGUITY",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-006",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
