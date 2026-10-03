@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-036",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-007",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "BS-P1-007 F02/F03/F04 must provide a closed, exact machine schema for every executable Blueprint substructure consumed by T002, including requiredness, exact key sets, identity grammar, finite bounds, Value Source lexical context, and capability-local optional state representation, so implementation cannot change admission semantics by choosing defaults.",
+  "actual": "Fresh T002 pre-write audit and an independent same-class schema completeness sweep found four blocker groups. B1: capability_state RECORD optional fields are semantically required but TypeDescriptor has no optional-field machine token. B2: F04 action args allow SCOPE while F02 has no action dispatch-site repeat-scope typing context. B3: top-level and nested Blueprint executable substructures are not closed as exact required/optional key sets, most visibly Node. B4: repeat/result/support/kind/intake and related bounded schema details lack canonical grammar or numeric limits. The independent sweep extends B3/B4 to the full T002 executable schema surface so remediation is one-shot rather than issue-by-issue.",
+  "evidence": [
+    "B1 — F04 logic.random capability_state uses last_number?/last_index?/last_item? and F04 rule 7 says capability_state RECORD fields may be optional; F02 TypeDescriptor RECORD only has constraints.fields and Blueprint RECORD initial keys are exact. F03 ABSENT depends on optional declared fields. No exact optional-field representation exists.",
+    "B2 — F04 logic.random and logic.score action args explicitly allow SCOPE. F02 only defines SCOPE root as current repeat item descriptor and says SCOPE only in repeat scope; Blueprint actions are top-level. EVENT has all-dispatch-site typing, but SCOPE has no corresponding action dispatch-site lexical environment.",
+    "B3 — V02 says required keys / allowed keys only, but F02 does not freeze exact requiredness/key sets for every nested executable structure. Node is only exemplified, leaving empty props/bindings/events/children omission ambiguous and therefore content_hash/admission-sensitive. Same-class sweep includes Meta, Support, Degradation, Mutable/Derived State entry variants, Rule, CapabilityRef, Node, Repeat, Action, ActionStep variants and Result/ResultOutput.",
+    "B4 — repeat item_alias/index_alias/max_items, ResultOutput id/label/sensitivity, degradation requirement_id/description/capability_refs element shape, top-level kind domain, and V01 candidate intake byte ceiling are not fully fixed. These are admission-visible schema choices.",
+    "Independent schema completeness sweep reviewed F02 §§4–22 plus F03/F04 cross-contract consumers. Value Source variant keys, state-key grammar, Rule/Action/Node IDs, TypeDescriptor core constraints, EVENT path grammar, Registry v3 resolver, candidate_digest, persistence/immutability and existing global major resource ceilings were already sufficiently fixed and are not reopened.",
+    "Cursor stopped before Product writes. Reported local branch feature/sp-p1-002-t002-bs-p1-007 remained at canonical 5471907c2be15bf9b0a0ee98dc7d7d3ff2b1f001 with clean working tree and was never pushed; GitHub has no remote branch for it.",
+    "Issue transport produced repeated APPF2-RESULT echoes after the original report. Those echoes contain no new Product evidence and are excluded from blocker counting."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "PRE_WRITE_T002_SCHEMA_COMPLETENESS_AUDIT",
+      "result": "STOPPED_SPEC_GAP",
+      "evidence": "Cursor read BS-P1-007 contracts and stopped before src/generated/supabase/tests writes. ChatGPT independently verified B1-B4 and expanded the audit to all same-class executable schema closure points."
+    }
+  ],
+  "requested_planning_action": [
+    "Close the entire F02 executable Blueprint schema as one exact machine contract: top-level required keys, kind domain, Meta, Support/Degradation, state-entry variants, Rule, CapabilityRef, Node, Repeat, Action/ActionStep variants, Result/ResultOutput, unknown-key rejection and finite collection/string bounds.",
+    "Add one canonical optional-field representation to RECORD TypeDescriptor, with explicit Phase 1 context restrictions and F03 ABSENT initialization semantics; generated F04 capability_state must use it mechanically.",
+    "Define deterministic lexical SCOPE environments for node-local Value Sources and all-dispatch-site Action SCOPE typing, including nested repeat alias rules.",
+    "Freeze exact repeat alias grammar/index typing/max_items bounds, result output identity/label/sensitivity rules, degradation reference shape/bounds, kind=APP, and V01 exact intake byte ceiling.",
+    "Perform a cross-contract precision audit, scope-clean Design freeze, replacement Build Spec, BF-036 resolution normalization and atomic SP-P1-002/T002 re-activation before any fresh Cursor Product execution."
+  ],
+  "affected_contracts": [
+    "F02 §§4-22 executable Blueprint schema and V02 closure",
+    "F02 TypeDescriptor RECORD semantics / Assignable / Join",
+    "F02 Value Source SCOPE lexical and Action dispatch typing",
+    "F03 ABSENT / capability-local state initialization",
+    "F04 capability_state generated machine contract / Registry version"
+  ],
+  "affected_acceptance": [
+    "F02-AC-004",
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-007",
+    "F02-AC-008",
+    "F04-AC-006"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
