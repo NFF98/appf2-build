@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-037",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-008",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -23,7 +23,10 @@
     "Final same-class reference sweep found no second Blueprint action field that selects a runtime node instance besides INVOKE_CAPABILITY.target_node_id; structural children are definition references, not runtime instance selectors.",
     "Design PR #12 merged C1/C2/P1 Product truth remediation as 1af9a51eac0a07b86c40b9405759b8412c1dea3a.",
     "G1 governance harness remediation branch changes validate-test-integrity.mjs from whole-file ownership inference to TypeScript-AST per-Test declaration comparison while preserving exact Test ID + file maintenance authorization.",
-    "Attack dry-run coverage now includes the BF-037 shape: one authorized foreign Test changes in a shared file while an untouched foreign neighboring Test remains unchanged, plus a negative case proving authorization cannot cover a changed neighbor."
+    "Attack dry-run coverage now includes the BF-037 shape: one authorized foreign Test changes in a shared file while an untouched foreign neighboring Test remains unchanged, plus a negative case proving authorization cannot cover a changed neighbor.",
+    "Build PR #156 merged G1 per-Test declaration integrity remediation as ed8e2805a2d2d7ec55db75fb2ae7d3c32102adc2 with CI/Governance/Attack/CodeQL PASS.",
+    "BS-P1-009 Freeze Audit PASS and replacement baseline merged as 8be2ce1aae751223cd94278b5d78e0ae078b7255; source 728049049dad4e43146265bfe142d4195e7fac6d is scope-clean to F02/F03/DATA-MODEL only.",
+    "Atomic activation rebinds SP-P1-002/T002 and all unfinished backlog/tasks to BS-P1-009 while preserving T001 and DONE backlog historical baselines; TEST-F04-AC-006 maintenance is rebound directly BS-P1-008 -> BS-P1-009."
   ],
   "attempts": [
     {
