@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-010",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-038"
   ],
@@ -42,7 +42,8 @@
     "Scope-clean source e54941e9f127bc3ec5f80f8091884e4a3aeb2767 is derived from prior BS-P1-009 source 728049049dad4e43146265bfe142d4195e7fac6d and changes exactly F02, F03, F04 and EXECUTION-ADMISSION.",
     "BS-P1-010 is a byte-preserving copy of BS-P1-009 for every other projected artifact; only the four BF-038 target files plus projection/manifest metadata differ.",
     "Registry machine contract is bumped 4.0.0 -> 5.0.0; current Core Capability semantic versions remain unchanged.",
-    "Fresh Cursor execution is explicitly excluded until BS-P1-010 freeze passes and atomic T003 activation completes."
+    "Fresh Cursor execution is explicitly excluded until BS-P1-010 freeze passes and atomic T003 activation completes.",
+    "Human-preapproved atomic BS-P1-010 / SP-P1-002 / T003 activation resolves BF-038 as a spec blocker and restores T003 to IN_PROGRESS; fresh Cursor execution remains a separate final command."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
