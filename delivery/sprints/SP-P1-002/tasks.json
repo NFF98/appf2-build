@@ -137,7 +137,7 @@
         "BL-P1-005"
       ],
       "title": "Implement Blueprint validation core and admitted-content persistence",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-005",
       "scope": [
         "Implement F02 Candidate Blueprint parsing and exact executable schema validation under BS-P1-005.",

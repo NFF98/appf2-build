@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-034",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-005",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T002",
+  "expected": "BS-P1-005 F02/F04 必須把 T002 scope 3-5（Value Source contextual typing、Registry-backed typed props/bindings/events/actions/composition validation、F04 generated validator machine contract）所需的 executable machine truth 完整固定，使 Cursor 可以機械翻譯成 generated validator-registry.ts 與 F02 validator，而不需自行決定 type 相容關係、invariant ID、refinement 表示法、event payload typing context 或 Registry version 演進。product_decision_allowed=false。",
+  "actual": "Pre-implementation contract audit（從 canonical main cb2274f9 重新推導，未使用 d8f1b17d）發現 BS-P1-005 仍有多個 implementation-relevant machine semantics 未固定；任何實作都必須自行選擇其中一種會改變 admission 結果的行為：(G1) static type 相容關係未定義；(G2) F04 §13.1 使用 F02 TypeDescriptor 無法表示的 refinement；(G3) 未命名 cross-field invariant 與 F04 §5.1 rule 6 衝突；(G4) unbounded STRING 與 F02 STRING 必須 max_length 衝突；(G5) parametric / open type 無 canonical machine 表示且 data.table_basic LITERAL rows 與 F02 §9.1 互相排斥；(G6) 共用 Action 的 EVENT Value Source typing context 未定義；(G7) EVENT / SCOPE path 語法未定義；(G8) 多張 core card 未顯式宣告 composition/events/actions/capability_state，而 F04 §18 要求 explicit composition metadata；(G9) Registry source 加入 machine contract 後必須 bump registry_version，但 PATCH/MINOR/MAJOR 等級未定；(G10) locked F02 §8.1.1 RECORD field key grammar 文字在 Design source 本身損毀。依 EXECUTION-HANDOFF-PROTOCOL SPEC_GAP 規則與本次 [APPF2-EXECUTE] 指示（real spec gap → STOP），T002 implementation 未開始，沒有任何 src/、generated/、supabase/、tests/ 變更。",
+  "evidence": [
+    "G1 static type 相容：F02 §12 rule 4（functions/F02-BLUEPRINT-VALIDATION.md:922）只說 prop/binding Value Source static type『必須符合』F04 machine contract；F02 §14（:1010）與 §9.1（:776-793）亦未定義 source TypeDescriptor 與 expected TypeDescriptor 在 constraints 不同時的關係。未決案例：STATE STRING(max_length 500) → content.card title STRING(120)；DERIVED STRING（F02:692 規定 Derived state 不攜帶 constraints，因此無 max_length）→ content.text STRING(8192)；EVENT NUMBER（無 bounds）→ SET_STATE 目標 NUMBER{min,max}（F03-RQ-003 只說 runtime constraint-check）；ENUM domain A → 目標 ENUM domain B（equal / subset?）；EQ(T,T) 與 IF(BOOLEAN,T,T)/COALESCE 兩側 descriptor 僅 constraints 不同時的結果 descriptor（F03 §12 只給 base type）。每一種選擇都會改變哪些 Blueprint 被 admission。",
+    "G2 refinement 不可表示：F04 §5.1（functions/F04-CAPABILITY-REGISTRY.md:241-254）聲明 F04 與 F02 共用同一 typed vocabulary、不建立第二套 type system，且 NUMBER descriptor 只有 inclusive min?/max?（F02:680-688）。但 F04 §13.1 使用 `max_length: NUMBER integer 0..8192`（input.text, :808）、`max_rows: NUMBER integer 0..500`（data.table_basic, :898）、`duration_ms: NUMBER integer >= 0`（logic.timer, :942）、`step?: NUMBER where step > 0`（input.number, exclusive bound）。integer 與 exclusive bound 沒有 canonical machine representation，也沒有 named invariant ID。",
+    "G3 未命名 invariant：F04 §5.1 rule 6（:313）要求 capability-specific cross-field relation 必須是 Working 固定的 canonical named invariant，implementation 不得自創 ID。但 input.number『cross-field invariant:』（:797-801，含『Capability props可更嚴格，不可放寬 state constraint』其 static 比較方向未定義）、logic.random `invariant min <= max`（:921，args 為 Value Source，static 或 runtime 未定義）、input.text `bind: STRING(max_length <= bound state's max_length)`（:813）、data.table_basic `rows ... (max_length <= max_rows)`（:901）都沒有 invariant ID。",
+    "G4 unbounded STRING：logic.random `choose_item args.items = LIST<STRING>(500)`（F04:924）與 capability_state `last_item?: STRING`（F04:932）沒有 max_length；F02 §8.1.1 STRING TypeDescriptor 規定 `constraints` required 且唯一 key 為 max_length（F02:322-324），因此不是合法 TypeDescriptor。",
+    "G5 parametric / open types：`ENUM_LITERAL`（input.select options[].value, F04:830）、`ENUM<E>`（F04:837）、`ONE_OF<NUMBER,STRING,BOOLEAN,ENUM>` 其中 ENUM 無 domain（data.stat, F04:875；F02 ENUM 規定 allowed non-empty）、`LIST<RECORD<declared row fields>>`（data.table_basic rows, F04:901）都沒有 canonical machine representation。另 data.table_basic rows source_kinds 含 LITERAL，但 F02 §9.1（F02:779-783）規定 composite literal 必須有 explicit expected TypeDescriptor 且 Validator 不得從 object shape 自創 RECORD contract；expected row RECORD 無 declared fields，故 LITERAL rows 只能永遠 reject（使 LITERAL 宣告失效）或由 Validator 自創 shape（被禁止），且 TABLE_COLUMNS『column.key must exist in row descriptor』對 LITERAL rows 無 descriptor 可比對。",
+    "G6 EVENT typing context：F02 §14/§15（F02:964-975, :1040）規定 EVENT Value Source 依 F04 event payload schema type-check，§27 規定 EVENT only in action context（F02:1296）。但同一 Action 可被多個 node event 引用（例：input.number change payload.value=NUMBER 與 action.button press payload={}），也可被 system.notice action_refs（無 event payload）引用或完全未被引用；EVENT 的 static type 應取自哪個 event、是否必須對所有 dispatch 來源成立、action_refs 引用的 Action 能否含 EVENT，均未定義。",
+    "G7 path 語法：EVENT `path`（F02:740, F04:794『payload.value』vs F02 範例『value』）與 SCOPE `path`（F02:746, §13 F02:955『scope path 必須存在於 T；若 T 是 scalar，非空 path 一律 reject』）沒有 path grammar（single segment / dot-separated nested RECORD path / empty string 是否合法 / 是否含 `payload.` prefix）。",
+    "G8 omitted sections：F04 §18 build hard fail 包含『missing explicit composition metadata』（F04:1162），§5.1 rule 3（F04:310）要求 ENABLED capability 的 props/bindings/events/actions/composition/capability_state 都是 resolved machine contract；但 §13.1 對 input.number / input.text / input.select / data.table_basic 未寫 composition，對 content.list / input.number / input.text / input.select / data.stat / data.table_basic 未寫 capability_state 與部分 events/actions，content.card 未寫 props，logic.score 未寫 bindings。Default-deny（{} / false / NONE）符合 F02 allowlist 規則，但 Working 未明示，F04 也要求 explicit。",
+    "G9 registry_version：F04-RQ-004 rule 6（F04:180）要求 Registry source material change 必須 version bump；TEST-F04-002（tests/contract/capability-registry.contract.test.ts:127-147）以 git HEAD/BASE_SHA 的 registry-manifest identity 強制此規則。加入 BF-031 machine contract 並移除 children/items/item_template binding 必然改變 registry_digest，但 §29（F04:1366-1370）的 PATCH/MINOR/MAJOR 分類未涵蓋『ref-only invalid generation 修正為 resolved contract、capability version 仍為 1.0.0（F04 §12.1/§13.1）』；版本號同時影響 Blueprint registry_version 與 V03『Registry snapshot known』判定。",
+    "G10 locked text defect：build-spec/baselines/BS-P1-005/functions/F02-BLUEPRINT-VALIDATION.md:405 的 RECORD field key grammar 在 `^[a-z][a-z0-9_]{0,63}` 之後被插入該檔前 4,900 字元的逐字複本（:405-673），再接回『。- initial object keys...』。git hash-object = 43f8f56e588ea8bf85e052bbbfa87b2474fdb157 = projection-map source_blob_sha，output_sha256 0013ed58... 相符，故缺陷存在於 appf2-design source abd91f50 本身。此形態符合 JavaScript String.replace 將 `$` + backtick 解讀為 `$\\`` prefix substitution；機械可還原為 `^[a-z][a-z0-9_]{0,63}$`，但 locked baseline 文字本身需 Human 修復。",
+    "Canonical execution state at audit：main = cb2274f908576b5580a8238b8ccdc9011be25ff9；build-spec/CURRENT.json = BS-P1-005 implementation_enabled=true；delivery/CURRENT-SPRINT.json = SP-P1-002 / BS-P1-005 / T002 / ACTIVE；T002 = IN_PROGRESS；blocked_by=[]。",
+    "No prior audit covers G1-G10：delivery/audits/SP-P1-002-BD-005-FREEZE-CANDIDATE.md、SP-P1-002-BF-030-031-CONTRACT-AUDIT.md、SP-P1-002-BS-P1-005-REBIND-ACTIVATION-REVIEW.md 未處理上述任一項。"
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "PRE_IMPLEMENTATION_CONTRACT_AUDIT_FROM_CANONICAL_MAIN",
+      "result": "STOPPED_SPEC_GAP",
+      "evidence": "從 cb2274f9 建立 feature/sp-p1-002-t002-bs-p1-005，逐條比對 BS-P1-005 F02 §4-§33、F03 §10-§12、F04 §5-§18 與 DATA-MODEL-DETAILED §6.4-§6.5；G1-G9 每項都需要 Cursor 選擇 Product-visible admission 行為或發明 canonical machine token，依 product_decision_allowed=false 與 [APPF2-EXECUTE] STOP 規則停止。未產生任何 implementation commit。"
+    }
+  ],
+  "requested_planning_action": [
+    "Human governance 將 T002 設為 BLOCKED（Findings gate 對 OPEN SPEC_AMBIGUITY 要求 affected Task BLOCKED；Cursor 不得修改 tasks.json）。",
+    "在 appf2-design Working 固定 F02 static type assignability / subsumption 規則（STRING max_length、NUMBER bounds、ENUM domain、LIST/RECORD nested descriptor、DERIVED/OP 推導結果的 constraints），以及 IF/COALESCE/EQ 的結果 descriptor 規則。",
+    "為 integer 與 exclusive-bound refinement 決定 canonical 表示（擴充 shared TypeDescriptor 或 named invariant），並為 input.number、logic.random、input.text bind、data.table_basic rows 的 cross-field relation 指定 canonical invariant ID + static/runtime 判定時點。",
+    "修正 logic.random 的 unbounded STRING、定義 ENUM_LITERAL / ENUM<E> / domainless ENUM in ONE_OF / open row RECORD 的 machine representation，並決定 data.table_basic LITERAL rows 的合法性。",
+    "定義共用 Action 與 action_refs 情境下 EVENT Value Source 的 typing context，以及 EVENT/SCOPE path grammar。",
+    "明示 §13.1 未列 composition/events/actions/capability_state/props/bindings 的 card 為 explicit empty / false / NONE（或其他值）。",
+    "決定 BF-031 machine contract 進入 canonical source 時的 registry_version 新值。",
+    "修復 F02 §8.1.1 RECORD field key grammar 的損毀文字，經 Freeze Audit → replacement Build Spec → Activation → T002 rebind 後再恢復 T002。"
+  ],
+  "affected_contracts": [
+    "F02-RQ-004 State Contract / §8.1.1 TypeDescriptor",
+    "F02 §9.1 Value Source contextual typing",
+    "F02 §12-§15 Node / Repeat / Action / Event typing",
+    "F03 §12 operator result descriptor propagation",
+    "F04 §5.1 Validator Machine Contract Vocabulary",
+    "F04 §13.1 Exact Phase 1 Core Validator Surface",
+    "F04-RQ-004 registry_version / §29 Registry update classification"
+  ],
+  "affected_acceptance": [
+    "F02-AC-005",
+    "F02-AC-006",
+    "F02-AC-008"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-005",
-  "active_task": "T002",
-  "status": "ACTIVE",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved BS-P1-005 / SP-P1-002 / T002 Activation. T001 remains CLOSED under BS-P1-004; T002 is the sole active Task under BS-P1-005; T003-T009 remain PLANNED."
+  "reason": "SP-P1-002 / T002 is BLOCKED by BF-034; execution context cleared pending Human-governed F02/F04 contract remediation and replacement Build Spec rebaseline."
 }

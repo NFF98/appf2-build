@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-005",
-  "implementation_enabled": true,
-  "reason": "Human-approved BS-P1-005 / SP-P1-002 / T002 Activation. BS-P1-005 is the active locked replacement baseline and T002 is the sole active Product implementation Task."
+  "implementation_enabled": false,
+  "reason": "T002 blocked by BF-034. BS-P1-005 remains the active locked baseline, but Product implementation is HOLD pending Human-governed F02/F04 contract remediation and replacement Build Spec rebaseline."
 }
