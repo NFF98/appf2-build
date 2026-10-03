@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-039",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-010",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T003",
+  "expected": "BS-P1-010 must make F02-AC-009/010/011/012 implementable without Cursor selecting between conflicting machine names or inventing current-eligibility semantics. Fresh execution E07 must reject every required dependency that is unavailable, revoked or incompatible under current trusted truth; Registry snapshot identity and current revocation authority must coexist without mutating a pinned snapshot; V10 must have complete policy semantics for every ResourceBudget permission flag named by the frozen contract.",
+  "actual": "Cursor re-execution produced HEAD 9740045a82765cf7e4bc629eb06be5010d81f0be and reported all mapped tests PASS, but independent review found same-class contract gaps and one concrete safety miss. F02 §19.1 names resource_usage.timer_slots_per_instance while F04 canonical Validator machine shape owns resource_usage.timerSlotsPerInstance; Cursor selected F04 camelCase despite STOP-on-ambiguity. The shared E07 contract requires required dependency unavailable/revoked/incompatible to deny fresh execution, while the implemented eligibility recursion only checks dependency availability=ENABLED, execution_status=ACTIVE and version/transitive presence, not the dependency's own schema/runtime compatibility. Tests model fresh revocation by patching a validator snapshot while retaining the same registry_version/digest, which conflicts with Registry immutability and leaves the authority split between pinned snapshot identity and current execution status underspecified. F02 §19.2/F04 §7 state mediaAutoplayAllowed and networkAccessAllowed are V10 policy; implementation enforces network access but not media autoplay.",
+  "evidence": [
+    "Cursor RESULT #164 comment 5971294173 reports branch feature/sp-p1-002-t003-bs-p1-010, final HEAD 9740045a82765cf7e4bc629eb06be5010d81f0be, 32 changed files, all required commands PASS and no merge.",
+    "Independent compare confirms 9740045a82765cf7e4bc629eb06be5010d81f0be is exactly one commit ahead of canonical 2b02a985e3fdeff12d5f9fc3e7775e3e23c0e675, behind_by=0, and all changed files are inside T003 authorized write paths.",
+    "BS-P1-010 F02 §19.1 item 15 spells resource_usage.timer_slots_per_instance, while F04 §7 and §9 canonical ResourceUsageProfile/GeneratedCapabilityValidator spell timerSlotsPerInstance.",
+    "Cursor RESULT explicitly notes this naming inconsistency and states implementation chose F04 camelCase, although the execution instruction required STOP on remaining Product/Schema ambiguity.",
+    "BS-P1-010 EXECUTION-ADMISSION E07 requires denial when any required dependency is unavailable/revoked/incompatible.",
+    "Cursor implementation createCapabilityEligibilityEvaluator recursively checks dependency availability/execution_status/version and transitive dependencies but does not apply dependency schema/runtime compatibility before declaring it available.",
+    "TEST-F02-011 covers dependency missing/disabled/revoked/version/transitive missing but does not cover dependency schema/runtime incompatibility.",
+    "Fresh-revocation tests construct registry variants by mutating capability state while preserving the parent ValidatorRegistry registry_version/registry_digest; canonical F04 forbids changed machine truth under the same registry version/digest.",
+    "BS-P1-010 F02 §19.2 and F04 §7 say mediaAutoplayAllowed/networkAccessAllowed are V10 permission/security policy. validatePermissions currently enforces permission_class and networkAccessAllowed only.",
+    "No Product truth, Build Spec, governance or canonical main was modified by Cursor; the defect is contained in an unmerged implementation branch."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T003_BS_P1_010_IMPLEMENTATION_PLUS_INDEPENDENT_CONTRACT_REVIEW",
+      "result": "IMPLEMENTED_BUT_NOT_MERGEABLE",
+      "evidence": "Cursor completed an implementation candidate and tests; independent review rejected merge because same-class contract ambiguity remained and E07 dependency compatibility was not enforced."
+    }
+  ],
+  "requested_planning_action": [
+    "Normalize the canonical Registry v5 usage-field spelling to one owner-defined machine token and update every F02 reference to that exact token; no alias or dual spelling.",
+    "Separate immutable historical Registry snapshot identity from current execution-eligibility overlay/authority so fresh admission can recheck availability/revocation without falsifying the pinned registry_version/digest.",
+    "Define current required-dependency eligibility recursively to include availability, execution_status, version range, execution_class if relevant, schema compatibility, runtime compatibility and transitive required dependencies; freeze exact diagnostic classification.",
+    "Define whether current execution-status overlays are digest-addressed, separately versioned, or otherwise trusted, and how E06 snapshot integrity and E07 current eligibility consume them without contradiction.",
+    "Freeze V10 semantics for mediaAutoplayAllowed as well as networkAccessAllowed and permission_class, including Phase 1 allow/deny rule and error classification.",
+    "Perform a same-class audit for any other places where immutable Registry snapshot data is being used as if it were mutable current execution state.",
+    "Merge Design remediation, derive a scope-clean freeze source from the BS-P1-010 lineage, create replacement Build Spec, normalize BF-039, and atomically reactivate SP-P1-002/T003.",
+    "Stop before any fresh Cursor EXECUTE comment; the existing 9740045a implementation branch must remain unmerged evidence until re-execution."
+  ],
+  "affected_contracts": [
+    "F02 §19.1 timer resource_usage naming",
+    "F02 V04 current capability/dependency eligibility",
+    "F02 V10 permission/security policy",
+    "F02 Trust / assertExecutable / fresh execution admission",
+    "F04 Registry v5 ResourceUsageProfile and lifecycle/current execution state",
+    "Shared EXECUTION-ADMISSION E06/E07 snapshot/current-eligibility boundary"
+  ],
+  "affected_acceptance": [
+    "F02-AC-009",
+    "F02-AC-010",
+    "F02-AC-011",
+    "F02-AC-012"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
