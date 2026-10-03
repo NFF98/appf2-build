@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-009",
-  "implementation_enabled": true,
-  "reason": "Human-approved T003 activation under locked BS-P1-009; resume SP-P1-002 execution for Blueprint execution safety, hard ceilings and trust anti-bypass. T003 is the sole active implementation Task."
+  "implementation_enabled": false,
+  "reason": "T003 blocked by BF-038 machine-contract completeness gaps across F02 V09 resource measurement, F04 execution eligibility projection, and fresh Execution Admission. BS-P1-009 remains LOCKED; Product implementation is HOLD pending Human-approved remediation."
 }

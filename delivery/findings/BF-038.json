@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-038",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-009",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T003",
+  "expected": "BS-P1-009 must make F02-AC-009/010/011/012 mechanically implementable without Cursor inventing Product semantics: every hard-ceiling metric must have one deterministic pre-Runtime measurement rule; V04 must receive machine-readable current capability execution eligibility; fresh execution admission must use an exact trusted server context and denial precedence; V10/trust-spoof safety must be structurally testable without lexical code-string heuristics.",
+  "actual": "T003 pre-write execution stopped at the concurrent-timer ceiling because F02 §19 requires timer_count <= 10 before Runtime but neither F02/F04 nor generated artifacts define static timer consumption. A same-class audit expanded the gap into four closure groups. R1: V09 names aggregate/per-Capability budgets but leaves several §19 metrics and every ResourceBudget measurement/stage undefined. R2: F02 V04 requires availability=ENABLED, not REVOKED, compatible dependencies and Phase-1 execution class, while GeneratedCapabilityValidator omits availability, revocation/execution status and execution class, and canonical source has no machine revocation field. R3: assertExecutable(contentHash,runtimeContext) and Execution Admission are conceptual but runtimeContext, trusted snapshot selection and exact denial precedence are not frozen. R4: no-code and trust-spoof intent is clear, but the contract does not explicitly prevent an implementation from using lexical source-code string scanning or treating content admission/reuse as execution permission.",
+  "evidence": [
+    "Cursor RESULT #164 comment 5970372887 stopped before Product writes; local branch remained at canonical 46ea49f32066f487728c7ec02e76ff278202683f with no commit, no pushed branch and no changed files.",
+    "BS-P1-009 F02 §19 sets concurrent timers=10 and says any hard-ceiling excess must be rejected before Runtime; V09 only says aggregate Blueprint + per-Capability resource budget and does not define timer_count.",
+    "F02 ValidationReport requires resource_usage.timer_count, so timer_count is an externally observable validation result, not an implementation-private detail.",
+    "F04 ResourceBudget lists maxInstancesPerBlueprint, maxSerializedPropsBytes, maxLocalStateBytes, maxEventBindings, maxActionBindings and maxConcurrentTimers but does not define how any is measured or which validation/runtime stage owns enforcement.",
+    "Current generated validator registry gives maxConcurrentTimers=10 to every Phase-1 Core Capability because all definitions clone DEFAULT_RESOURCE_BUDGET; it therefore cannot identify timer consumers.",
+    "F04 logic.timer is TIME_DEPENDENT and has timer semantics, but no contract authorizes F02 to infer timer resource consumption from capability id, replayClass or prose.",
+    "F02 V04 explicitly requires availability=ENABLED, not REVOKED, dependencies available and Phase-1 execution class. GeneratedCapabilityValidator currently contains only validator, permission_class, resource_budget, compatibility and degradation.",
+    "Canonical CapabilityDefinition lifecycle has availability DISABLED|EXPERIMENTAL|ENABLED but no machine field for current REVOKED state; compatibility prose lists REVOKED as an outcome without a canonical source token.",
+    "generated/capabilities/compatibility-manifest.json carries availability and version ranges but no current revocation state; validator-registry.ts lacks availability/execution-class/revocation fields.",
+    "F02 service boundary names assertExecutable(contentHash,runtimeContext), but runtimeContext exact shape is absent. EXECUTION-ADMISSION defines a conceptual server flow but not trusted context shape, exact snapshot selection or deterministic denial precedence.",
+    "The public execution-admission endpoint concept takes content_hash, while implementation must not accept client-supplied trust/version/registry overrides; this boundary needs explicit machine truth for TEST-F02-012.",
+    "Current admitBlueprint preserves an existing REVOKED/INCOMPATIBLE trust_status on content reuse but still reports content status ADMITTED; contract must state that content persistence admission/reuse is never execution authorization.",
+    "F02 exact Blueprint schema has no trust_status/executable/module/handler/script fields and V10 forbids executable carriers. TEST-F02-009 must prove structural no-code safety, not reject inert user text merely because a string contains tokens such as eval or import.",
+    "Same-class §19 sweep found ambiguous counting/unit rules beyond timers, including 256 KB/128 KB exact bytes, expression/decriptor/tree depths, total initial state bytes, repeated-instance upper bounds and per-Capability budget dimensions. These must be closed in one remediation to avoid serial Cursor stops."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T003_PRE_WRITE_PLUS_SAME_CLASS_MACHINE_CONTRACT_COMPLETENESS_AUDIT",
+      "result": "BLOCKED_BEFORE_PRODUCT_WRITE",
+      "evidence": "Cursor stopped on the first V09 ambiguity. ChatGPT independently audited BS-P1-009 F02/F03/F04/Execution Admission, generated Registry artifacts and current Blueprint implementation and expanded the blocker to the full same-class T003 machine surface."
+    }
+  ],
+  "requested_planning_action": [
+    "Freeze deterministic measurement semantics for every F02 §19 metric and every F04 ResourceBudget field, distinguishing pre-Runtime static admission metrics from later Runtime dynamic guards.",
+    "Add canonical capability resource-usage metadata sufficient to compute worst-case timer slots without hard-coding capability IDs or inferring from replayClass.",
+    "Add machine-readable availability, current execution/revocation status and execution class to the Validator projection; bind V04 error/status classification to exact conditions.",
+    "Freeze trusted ExecutionRuntimeContext, exact Registry snapshot/digest selection and fresh execution-admission denial precedence; capability eligibility must be rechecked against current trusted truth before a fresh Runtime instance.",
+    "Explicitly separate content persistence admission/reuse from execution authorization and prohibit client-supplied trust/version/registry context from influencing trusted decisions.",
+    "Freeze V10 structural no-code semantics: unknown executable carriers fail closed, trusted handlers are Registry-only, and code-like strings in legitimate data fields remain inert data rather than triggering lexical source scanning.",
+    "Perform a scope-clean Design remediation, replacement Build Spec, BF-038 resolution normalization and atomic SP-P1-002/T003 re-activation before any fresh Cursor execution comment.",
+    "Expand T003 implementation allowed paths only as narrowly required for the newly frozen F04 machine projection/generation; do not open Runtime feature implementation beyond validation/admission safety."
+  ],
+  "affected_contracts": [
+    "F02 §19 / V09 resource bounds and ValidationReport resource_usage",
+    "F02 V04 Registry Admission",
+    "F02 V10 Permission/Security and F02-AC-009/012",
+    "F02 Trust / assertExecutable / issueExecutionAdmission",
+    "F04 CapabilityDefinition lifecycle/resource metadata and generated Validator/Compatibility projections",
+    "Shared EXECUTION-ADMISSION fresh execution gate"
+  ],
+  "affected_acceptance": [
+    "F02-AC-009",
+    "F02-AC-010",
+    "F02-AC-011",
+    "F02-AC-012"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
