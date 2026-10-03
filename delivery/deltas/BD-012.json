@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-012",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-040"
+  ],
+  "affected_build_spec": "BS-P1-011",
+  "affected_tasks": [
+    "T003"
+  ],
+  "affected_contracts": [
+    "F02 V05/V09 hard-ceiling stage ownership and exhaustive TEST-F02-010 proof matrix",
+    "F02 V11 degradation CapabilityRef eligibility and fresh BlueprintExecutionRefSet",
+    "F02 durable content integrity / F02-ERR-015 fresh-admission mapping",
+    "F03 H02/H03 pinned RuntimeRegistry handler-binding safety boundary",
+    "F04 Registry v7 full release identity and artifact digests",
+    "F04 append-only RegistryReleaseLedger historical exact-ref identity",
+    "F04 runtime_binding_digest and TrustedRuntimeHandlerCatalog",
+    "F04 CompatibilityContract runtime-bound grammar",
+    "Shared EXECUTION-ADMISSION E04/E06/E07/E08 dual-release precedence"
+  ],
+  "affected_acceptance": [
+    "F02-AC-009",
+    "F02-AC-010",
+    "F02-AC-011",
+    "F02-AC-012"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT on 2026-10-04: BF-040 governance block + exhaustive same-class remediation through pre-Cursor re-execution."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "ca2946925052ae2a8a0903884f63bcfa4672d51f",
+  "replacement_build_spec": "BS-P1-012",
+  "verification": [
+    "BF-040 governance block merged via Build PR #174 as f45dfe5c600664c8572978c089df451c4258db66.",
+    "Design Product truth remediation merged via Design PR #16 as ca2946925052ae2a8a0903884f63bcfa4672d51f.",
+    "Scope-clean source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f is derived from prior BS-P1-011 source e6b28ef5e3f0d3925961b347bf0744025b509dfc and changes exactly F02, F03, F04 and EXECUTION-ADMISSION.",
+    "Registry machine contract is bumped 6.0.0 -> 7.0.0; exact Core Capability semantic versions remain unchanged.",
+    "Registry v7 binds source identity to validator_registry_digest + runtime_registry_digest and an append-only RegistryReleaseLedger.",
+    "Historical exact CapabilityRef reuse requires stable execution_contract_digest and runtime_binding_digest even across remove/re-add gaps.",
+    "TrustedRuntimeHandlerCatalog is derived from the actual bundled handler map and fresh admission verifies pinned direct Node registration keys against it.",
+    "F02 hard-ceiling owner matrix assigns initial LIST/STRING value-domain maxima to V05 and all remaining static §19 maxima/budgets to V09; TEST-F02-010 must direct-proof the full matrix.",
+    "Fresh execution reference set includes Node capability refs and degradation capability refs; same-ref direct/dependency identity drift fails closed.",
+    "Durable body/hash/schema/registry mismatch maps to F02-ERR-015; temporary read/load/integrity infrastructure failures map to E08 503.",
+    "Cursor candidates 9740045a82765cf7e4bc629eb06be5010d81f0be and 0be0f7111466ae7f6e27ed5f668a33c37272548d remain unmerged evidence and are not part of this Freeze."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f",
+    "base_commit": "e6b28ef5e3f0d3925961b347bf0744025b509dfc",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-040-FREEZE-CANDIDATE.md"
+  }
+}
