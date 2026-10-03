@@ -40,12 +40,6 @@
       "strategy": "HUMAN_APPROVED_DESIGN_AND_G1_GOVERNANCE_REMEDIATION",
       "result": "REMEDIATION_PREPARED",
       "evidence": "Design Product truth merged in PR #12; Build G1 harness remediation prepared under BD-009. BF-037 remains BLOCKED until replacement Build Freeze and activation."
-    },
-    {
-      "attempt_id": "A3",
-      "strategy": "BS_P1_009_FREEZE_AND_ATOMIC_ACTIVATION",
-      "result": "RESOLVED",
-      "evidence": "BF-037 Product truth, persistence boundary and G1 governance tooling are frozen in BS-P1-009; T002 can resume under the replacement baseline."
     }
   ],
   "requested_planning_action": [
