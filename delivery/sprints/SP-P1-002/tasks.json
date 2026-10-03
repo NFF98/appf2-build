@@ -232,7 +232,7 @@
         "BL-P1-005"
       ],
       "title": "Enforce Blueprint execution safety, hard ceilings and trust anti-bypass",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-009",
       "scope": [
         "Reject arbitrary executable code, eval/dynamic import paths and hard-ceiling violations before Runtime.",
