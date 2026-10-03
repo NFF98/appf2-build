@@ -419,9 +419,7 @@
       ],
       "parallel_safe": false,
       "product_decision_allowed": false,
-      "blocked_by": [
-        "T003"
-      ],
+      "blocked_by": [],
       "completion_evidence": []
     },
     {
