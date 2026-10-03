@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-039",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-010",
   "sprint_id": "SP-P1-002",
   "task_id": "T003",
@@ -22,7 +22,9 @@
     "Design PR #14 merged BF-039 Product truth remediation as dcd642778252d2cab6b37b7004dad9661aea9db5.",
     "Scope-clean Design freeze source e6b28ef5e3f0d3925961b347bf0744025b509dfc is derived from prior BS-P1-010 source e54941e9f127bc3ec5f80f8091884e4a3aeb2767 and changes exactly F02, F04 and EXECUTION-ADMISSION.",
     "BS-P1-011 Freeze Audit PASS and replacement baseline merged via PR #171 as a52e6cbe062f67f760dd3577f73ee0917bdd7206; content_sha256 92f85258b0c61a0928dd06f7998abc55626ca6a73095602aa4a12c8ac9e4afb8.",
-    "BD-011 is the canonical Design Delta for BF-039. Finding remains BLOCKED until atomic BS-P1-011/T003 activation."
+    "BD-011 is the canonical Design Delta for BF-039. Finding remains BLOCKED until atomic BS-P1-011/T003 activation.",
+    "Atomic BS-P1-011 / SP-P1-002 / T003 activation completed under Human blanket approval. T003 is re-scoped to Registry v6 dual-snapshot execution authority, recursive dependency compatibility, execution_contract_digest and complete Phase 1 V10 media/network policy.",
+    "Prior Cursor candidate 9740045a82765cf7e4bc629eb06be5010d81f0be remains unmerged review evidence. Fresh Cursor re-execution is intentionally outside this activation transition and has not been issued."
   ],
   "attempts": [
     {
