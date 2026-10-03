@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-012",
-  "implementation_enabled": false,
-  "reason": "Human-approved T003 closure complete under BS-P1-012; execution is HOLD before separate T004 activation. POI-005 production-wiring debt will be recorded immediately after closure while HOLD."
+  "implementation_enabled": true,
+  "reason": "Human-approved SP-P1-002 / T004 Activation Review PASS under locked BS-P1-012; T004 is the sole active Product implementation Task. POI-005 remains DEFERRED_REVIEW and outside T004 scope."
 }
