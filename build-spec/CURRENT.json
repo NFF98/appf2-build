@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-011",
-  "implementation_enabled": true,
-  "reason": "Human-approved BF-039 remediation complete; BS-P1-011 / SP-P1-002 / T003 re-activated. Cursor re-execution remains a separate Human-controlled command and has not been issued."
+  "implementation_enabled": false,
+  "reason": "T003 independent review found BF-040 same-class execution-integrity and stage-ownership defects under BS-P1-011. Product implementation is HOLD pending one-shot remediation and replacement Build Spec activation."
 }
