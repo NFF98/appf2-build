@@ -11,6 +11,11 @@ export const STRING_MAX_LENGTH_CEILING = 8192;
 export const LIST_MAX_LENGTH_CEILING = 500;
 export const ENUM_MAX_ITEMS = 500;
 export const NESTING_DEPTH_GUARD = 13;
+/**
+ * Recursion safety bound for Blueprint-authored descriptors and Value Sources. It sits far above the
+ * §19 depth ceiling of 12 so that V09 stays the only stage that decides the 12/13 boundary.
+ */
+export const BLUEPRINT_STACK_DEPTH_GUARD = 64;
 
 export type DescriptorErrorKind = "INVALID" | "DEPTH_GUARD";
 
@@ -27,6 +32,7 @@ export class TypeDescriptorError extends Error {
 
 export interface DescriptorParseOptions {
   readonly allowOptionalFields: boolean;
+  readonly depthGuard?: number;
 }
 
 export function isJsonObject(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -262,7 +268,7 @@ function expandComposite(
 }
 
 function parseOne(item: PendingDescriptor, options: DescriptorParseOptions, stack: PendingDescriptor[]): void {
-  if (item.depth > NESTING_DEPTH_GUARD) {
+  if (item.depth > (options.depthGuard ?? NESTING_DEPTH_GUARD)) {
     throw new TypeDescriptorError("DEPTH_GUARD", item.path, "TypeDescriptor nesting exceeds the depth guard.");
   }
   if (!isJsonObject(item.raw)) {

@@ -66,7 +66,7 @@ describe("F02 immutable blueprint_content persistence", () => {
     expect(stored).toMatchObject({
       content_hash: contentHash,
       schema_version: "1.0.0",
-      registry_version: "4.0.0",
+      registry_version: "7.0.0",
       trust_status: "VALIDATED",
       admitted_by_validation_run_id: RUN_A,
       byte_size: new TextEncoder().encode(first.admissible?.canonicalJson ?? "").byteLength,

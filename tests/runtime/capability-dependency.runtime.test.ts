@@ -131,6 +131,12 @@ describe("required capability dependency admission", () => {
       "CAPABILITY_DEPENDENCY_UNAVAILABLE"
     );
 
+    const revokedDependency: CapabilityDefinition = {
+      ...dependency,
+      lifecycle: { ...dependency.lifecycle, executionStatus: "REVOKED" }
+    };
+    expectDependencyFailure(source([root, revokedDependency, leaf, base]));
+
     const unavailableLeaf = definition(leaf.id, leaf.version, leaf.compatibility.dependencies, "DISABLED");
     const unavailableTransitiveSource = source([root, dependency, unavailableLeaf, base]);
     expectAdmissionFailure(

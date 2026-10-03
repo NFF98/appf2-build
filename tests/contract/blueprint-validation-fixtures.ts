@@ -62,7 +62,7 @@ function fixtureState(): JsonRecord {
 export function validBlueprint(): JsonRecord {
   return {
     schema_version: "1.0.0",
-    registry_version: "4.0.0",
+    registry_version: "7.0.0",
     kind: "APP",
     meta: { title: "聚餐分帳", description: "依人數計算每人金額" },
     support: { coverage_status: "FULLY_SUPPORTED", degradations: [] },
