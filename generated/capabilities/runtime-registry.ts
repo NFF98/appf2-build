@@ -63,7 +63,7 @@ export const RUNTIME_REGISTRY = {
       "id": "input.select",
       "registrationKey": "input/select",
       "replayClass": "DETERMINISTIC",
-      "version": "1.0.0"
+      "version": "2.0.0"
     },
     {
       "deterministic": true,
@@ -122,6 +122,6 @@ export const RUNTIME_REGISTRY = {
       "version": "1.0.0"
     }
   ],
-  "registryDigest": "567c227d8f0726a7a3bfa50b357ce933d48ab5aaa629b25bfcac3cab4fb6bafa",
-  "registryVersion": "1.0.0"
+  "registryDigest": "sha256:0a633311ee253bf6424c2201292710f6cd8f0943ece35584513410e614705ea0",
+  "registryVersion": "4.0.0"
 } as const;

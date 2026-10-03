@@ -1,3 +1,5 @@
+import type { ValidatorContract } from "./validator-contract.js";
+
 export const CAPABILITY_FAMILIES = [
   "LAYOUT",
   "CONTENT",
@@ -88,6 +90,7 @@ export interface CapabilityDefinition {
     readonly events: readonly string[];
     readonly bindings: readonly string[];
     readonly operators: readonly string[];
+    readonly validator: ValidatorContract;
   };
   readonly runtime: {
     readonly execution: ExecutionClass;
