@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-007",
-  "implementation_enabled": false,
-  "reason": "T002 blocked by BF-036 Blueprint machine-schema completeness gaps. BS-P1-007 remains locked but Product implementation is HOLD pending Human-approved one-shot schema closure remediation."
+  "active_baseline": "BS-P1-008",
+  "implementation_enabled": true,
+  "reason": "Human-approved BF-036 one-shot remediation complete; BS-P1-008 / SP-P1-002 / T002 re-activated. Fresh Cursor Product implementation authorization remains a separate final gate."
 }
