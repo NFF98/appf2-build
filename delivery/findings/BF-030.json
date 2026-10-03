@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-030",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-004",
   "sprint_id": "SP-P1-002",
   "task_id": "T002",
@@ -13,7 +13,10 @@
     "T002 candidate commit d8f1b17d1d05e276e0ed9d007abb4153f3774fbf :: src/platform/blueprint/state-schema.ts introduces constraints.allowed, item_type, max_length and fields without canonical Build Spec authority.",
     "T002 candidate commit d8f1b17d1d05e276e0ed9d007abb4153f3774fbf :: STRING rejects constraints entirely even though locked F02 says STRING has a length bound, demonstrating that semantic prose is insufficient as executable machine truth.",
     ".cursor/rules/20-finding-delta.mdc :: SPEC_AMBIGUITY requires affected Task BLOCKED and Product/design change path Finding → Human governance → Working → User approval → new Build Spec → Activation → rebind.",
-    "delivery/sprints/SP-P1-002/tasks.json :: T002 product_decision_allowed=false."
+    "delivery/sprints/SP-P1-002/tasks.json :: T002 product_decision_allowed=false.",
+    "BS-P1-005 is LOCKED with the Human-approved F02/F04 remediation required by BD-005.",
+    "delivery/audits/SP-P1-002-BS-P1-005-REBIND-ACTIVATION-REVIEW.md = PASS / READY FOR HUMAN ACTIVATION and authorizes resolution at the atomic Activation transition.",
+    "Human Activation decision HUMAN-ACTIVATION-BS-P1-005-SP-P1-002-T002-20261003 authorizes SP-P1-002/T002 execution under BS-P1-005 with the reviewed expanded write scope; production implementation remains T002 work."
   ],
   "attempts": [
     {
