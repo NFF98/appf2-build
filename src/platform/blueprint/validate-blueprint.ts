@@ -7,6 +7,7 @@ import type {
   ValidatorRegistry
 } from "../capabilities/schema/validator-contract.js";
 import { validateActions, type TypedNode } from "./action-typing.js";
+import { sealPassedResult } from "./admissible-provenance.js";
 import { parseBlueprintSchema } from "./blueprint-schema.js";
 import { computeCandidateDigest, parseCandidatePayload } from "./candidate-intake.js";
 import { createEligibilityEvaluator, type EligibilityEvaluator } from "../capabilities/execution-eligibility.js";
@@ -187,7 +188,7 @@ export function validateBlueprintCandidate(
   };
   try {
     const result = runPipeline(candidatePayloadBytes, registry, context.runtimeVersion ?? registry.runtime_version, progress);
-    return {
+    return sealPassedResult({
       report: {
         ...reportBase,
         status: "PASSED",
@@ -196,7 +197,7 @@ export function validateBlueprintCandidate(
         resource_usage: progress.resourceUsage as ResourceUsageReport
       },
       admissible: result
-    };
+    });
   } catch (error: unknown) {
     if (!(error instanceof BlueprintValidationFailure)) {
       throw error;

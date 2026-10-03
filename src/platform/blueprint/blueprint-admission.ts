@@ -1,3 +1,4 @@
+import { isSealedPassedResult } from "./admissible-provenance.js";
 import type {
   BlueprintValidationResult,
   F02ErrorCode,
@@ -100,6 +101,9 @@ export async function admitBlueprint(
   if (result.admissible === undefined) {
     await repository.recordValidationRun(runRecord(result.report, createdAt, compilerRunId));
     return { status: "NOT_ADMITTED", report: result.report };
+  }
+  if (!isSealedPassedResult(result.report, result.admissible)) {
+    throw new Error("Only a validator-issued PASSED result can admit Blueprint content.");
   }
   const run = runRecord(result.report, createdAt, compilerRunId);
   const { admissible } = result;
