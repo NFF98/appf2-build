@@ -232,7 +232,7 @@
         "BL-P1-005"
       ],
       "title": "Enforce Blueprint execution safety, hard ceilings and trust anti-bypass",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-012",
       "scope": [
         "Reject arbitrary executable code, executable escape paths and hard-ceiling violations before Runtime under the BS-P1-012 structural allowlist and deterministic V05/V09 resource-owner rules.",
@@ -306,7 +306,19 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": [],
+      "completion_evidence": [
+        "EV-SP-P1-002-T003-001",
+        "EV-SP-P1-002-T003-002",
+        "EV-SP-P1-002-T003-003",
+        "EV-SP-P1-002-T003-004",
+        "EV-SP-P1-002-T003-005",
+        "EV-SP-P1-002-T003-006",
+        "EV-SP-P1-002-T003-007",
+        "EV-SP-P1-002-T003-008",
+        "EV-SP-P1-002-T003-009",
+        "EV-SP-P1-002-T003-010",
+        "EV-SP-P1-002-T003-011"
+      ],
       "test_maintenance_authorizations": [
         {
           "test_id": "TEST-F02-AC-008",
