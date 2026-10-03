@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-008",
+  "status": "LOCKED",
+  "source_repo": "NFF98/appf2-design",
+  "source_working_commit": "2ee3b32dafa49c1409f645f1aafd95ef024d2a0f",
+  "created_at": "2026-10-03T10:22:00Z",
+  "supersedes": "BS-P1-007",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008"
+  ],
+  "approval": {
+    "status": "USER_APPROVED",
+    "decision_ref": "HUMAN-BUILD-FREEZE-BS-P1-008-BF-036-20261003"
+  },
+  "projection_map": "projection-map.json",
+  "acceptance_registry": "registries/acceptance-test-registry.json",
+  "acceptance_count": 289,
+  "file_inventory": [
+    {
+      "path": "functions/F00-EXPERIENCE-SHELL.md",
+      "sha256": "f23d4771caae4a47c0d504e5002dc985570209d41526350051b6a5de9ddf615d"
+    },
+    {
+      "path": "functions/F01-INTENT-COMPILATION.md",
+      "sha256": "6f45efac835766c3377ff79e88c85cf9b498ce5dd14a59859b93177249189a24"
+    },
+    {
+      "path": "functions/F02-BLUEPRINT-VALIDATION.md",
+      "sha256": "ff29ee701de34557ba0ef18009f9968fb0c352267bd6dac5db2b95b4bd303195"
+    },
+    {
+      "path": "functions/F03-RUNTIME-EXECUTION.md",
+      "sha256": "f28d8c52f14a526b065b9f11655bbbdce9931e863a01791095bdcb0a6b06a21d"
+    },
+    {
+      "path": "functions/F04-CAPABILITY-REGISTRY.md",
+      "sha256": "e1dcebe28994b5a2ca54547946edb1dd7305f2212fe4cc6de67e3619ca6342f6"
+    },
+    {
+      "path": "functions/F05-SHARE-RESTORE.md",
+      "sha256": "d68299d98e490a58f69e48273f808107122bf8fce014de6593a058f9f0b76783"
+    },
+    {
+      "path": "functions/F06-REMIX-REFINE.md",
+      "sha256": "23f747fdab5d6db5c4d7121d11ed7666c9e2c8d7cd342ec3ef636d8d094ab05e"
+    },
+    {
+      "path": "functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
+      "sha256": "ad1fef1262511e2427e7e68d61890046ddc9d1024a43a78fbf678d6de906f6ae"
+    },
+    {
+      "path": "functions/F12-HUMANIZED-RECOVERY.md",
+      "sha256": "fd9a21037e766ac2beff219f897d1c57e680344ba7b0946ed6a395f12c7f26be"
+    },
+    {
+      "path": "functions/F16-RESULT-CORRECTION.md",
+      "sha256": "9749cbd0d6d8300ebd64b0fd0482b05339b5bf6fd6f36fc6105e59f9ec132a58"
+    },
+    {
+      "path": "projection-map.json",
+      "sha256": "931a492fe95697bbedddd75385dbd6760f680c05c17e1f260a5d204c6177dc42"
+    },
+    {
+      "path": "registries/acceptance-test-registry.json",
+      "sha256": "4342d363fc2717e066cc87bdcadcc8c1c8bd1e6430ea94790fba86e958f7a360"
+    },
+    {
+      "path": "registries/evidence-event-registry.json",
+      "sha256": "f30c8e60509a50415204753d7f36756f9448e5a506038403ba5381f83e17283c"
+    },
+    {
+      "path": "registries/recovery-registry.json",
+      "sha256": "07db536eb0032317ce4fba123abf9d66393f9031185508a9b903d616ad3ca65e"
+    },
+    {
+      "path": "shared/ACCEPTANCE-CONVENTIONS.md",
+      "sha256": "4d38d92ef68dbd93447c5103c14ce365eeda7510212b2a560dc86287db294521"
+    },
+    {
+      "path": "shared/API-CONVENTIONS.md",
+      "sha256": "743eb13b638f8a771ecfa1b9006338ce3238a294427a17bcab0f53e20470f26c"
+    },
+    {
+      "path": "shared/APP-ARCHITECTURE.md",
+      "sha256": "3e7187557ff7856bf1c1d24e5ad2547c047a81045316fe523cbb72d2edd2537f"
+    },
+    {
+      "path": "shared/APP-DETAILED-DESIGN-OVERVIEW.md",
+      "sha256": "e857f2f160ec56e7d2fa0feb724ccd1fcc582580d8918e3326f675dfbc72a8c2"
+    },
+    {
+      "path": "shared/CAPABILITY-FABRIC.md",
+      "sha256": "9e302bc405e9ee7b436c55fef642af6e209330b301f9bcb74213600c986029d2"
+    },
+    {
+      "path": "shared/DATA-MODEL.md",
+      "sha256": "eef7cf54cbb10038538298954492dec6f2e3adb5aa81e46d3eb05f9b49a5f93e"
+    },
+    {
+      "path": "shared/data-model/DATA-MODEL-DETAILED.md",
+      "sha256": "d7b70feabb8338562883c89509b290e15de8ff722acf99afa2ae22d1cf3415bd"
+    },
+    {
+      "path": "shared/EXECUTION-ADMISSION.md",
+      "sha256": "1968723c3433ed0aa6f036f2ebef4df7bca552a0cc094507efdc31a5864dbf5c"
+    },
+    {
+      "path": "shared/INFRA-ARCHITECTURE.md",
+      "sha256": "a124fc53302817ba5f38d96588f5e24858dbcb3f86c33d8cee7d555b03b9b4aa"
+    },
+    {
+      "path": "shared/infrastructure/INFRASTRUCTURE-DETAILED.md",
+      "sha256": "75bd4b6be704507217ef18da04105f3883610464e16838a2c92c66715bbea05e"
+    },
+    {
+      "path": "UI-UX/DESIGN-SYSTEM.md",
+      "sha256": "7d6bb65fc6ad73a70b1e45ec5ee7a7891913615e7e6813c244dec1c27c22dcff"
+    },
+    {
+      "path": "UI-UX/overlays/O01-SHARE.md",
+      "sha256": "42ac5df713bbd223024bae7f5099c719fc9930d5a7b0b886b7ce401b0d0d2e53"
+    },
+    {
+      "path": "UI-UX/overlays/O02-CORRECTION-COMPOSER.md",
+      "sha256": "75ae72efdfc7e8ad3629340d44b74d5d20b99bf183f56bbc346cf6563b4f625b"
+    },
+    {
+      "path": "UI-UX/overlays/O03-RECOVERY.md",
+      "sha256": "1c7528fc7f7eccf9584d9bba7a7b72fdd7fa193a65b7aee860f3fd4322a26bfe"
+    },
+    {
+      "path": "UI-UX/overlays/O04-REVERT-CONFIRMATION.md",
+      "sha256": "60910bd308dfd5b18cce6a2917b2b8bbfb48ac1f5e801a6846dcf0a940684d8a"
+    },
+    {
+      "path": "UI-UX/overlays/O05-LOADING-BUILDING-HYDRATION.md",
+      "sha256": "5afd423fc0bcc3053ad0777e883322b44fae2d38ef0be9a901eadebe4b239f45"
+    },
+    {
+      "path": "UI-UX/PHASE1-SCREEN-INVENTORY.md",
+      "sha256": "28e16d716fff3ad441332b4f7b6b0450ebd87056d4798a8ae3b97b05c09a9844"
+    },
+    {
+      "path": "UI-UX/references/O01-Hi-FI-v1.png",
+      "sha256": "bc4cdb698a1bbf2a837e0ca2f16519ea86e84c6c7c315832d471de884aaad0b4"
+    },
+    {
+      "path": "UI-UX/references/O02-Hi-FI-v1.png",
+      "sha256": "89b9fef70d87fdfbfee53e8c6731f553d247f7b19e356a8f0ed046e914b04832"
+    },
+    {
+      "path": "UI-UX/references/O03-Hi-FI-v1.png",
+      "sha256": "f443bac48c4cced06efcc376f6822df7863c3d411d8543a2a97ce8d4f2440eac"
+    },
+    {
+      "path": "UI-UX/references/O04-Hi-FI-v1.png",
+      "sha256": "2e9fcbe3024303f17bf8874d23cb35e72f5bb9d178d3797fcec50990f3a9be1e"
+    },
+    {
+      "path": "UI-UX/references/O05-Hi-FI-v1.png",
+      "sha256": "186706953a0b345f29b090879dfa77328a2308e431fe689e5f0d7ad159fffbc3"
+    },
+    {
+      "path": "UI-UX/references/S01-Discover-Start-Highfi-v1.png",
+      "sha256": "fc61595575f133d2fc18b368c7eddf61719a3fcdc172727663c37395db898c19"
+    },
+    {
+      "path": "UI-UX/references/S02-Create-Workspace-Highfi-v1.png",
+      "sha256": "5ad74da9c7c3ad80895bb60a9e7c03bfba9656666d0766479e554b45e8225945"
+    },
+    {
+      "path": "UI-UX/references/S03-App-Runtime-Highfi-v2.png",
+      "sha256": "9911669d61ae5338ba309931de54f669cc092632933f1c4a29930cc32e8f4bd0"
+    },
+    {
+      "path": "UI-UX/references/S04-Highfi-v1.png",
+      "sha256": "6a3d1509ee262457813f127bbb5033d19cbbf8af565fd4f7ca371cb12c74bfd9"
+    },
+    {
+      "path": "UI-UX/references/S05-Highfi-v1.png",
+      "sha256": "82395a73adaf2dfd4011492ce530b9bb7fac00d898270e0446e671b8a8d1d83f"
+    },
+    {
+      "path": "UI-UX/references/S06-Hi-FI-Debug-v1.png",
+      "sha256": "69db3e29b3000b26f234209761bc2b505ad308204429b8130f7b098030d888c4"
+    },
+    {
+      "path": "UI-UX/screens/S01-DISCOVER-START.md",
+      "sha256": "b563e59c0de623a30ceaca83ae07a56e700597af64cfa53d1d5ce557ca6346ba"
+    },
+    {
+      "path": "UI-UX/screens/S02-CREATE-WORKSPACE.md",
+      "sha256": "b477c7401a63fcc32ca453af37da60e9df2bcf6cb9105260a67bf3dff401aee4"
+    },
+    {
+      "path": "UI-UX/screens/S03-APP-RUNTIME.md",
+      "sha256": "801781efc57520090b89fdef139db8ef1d0809ea11d622790fb862fcb60fa09b"
+    },
+    {
+      "path": "UI-UX/screens/S04-SHARED-APP-ENTRY.md",
+      "sha256": "b9e599c663c21a228ce837c39317321f36c5607723d6db684a39f3fa08810063"
+    },
+    {
+      "path": "UI-UX/screens/S05-REFINE-REMIX.md",
+      "sha256": "f2b9d289b031b15b120ecd2aad5ed0430f133dac9ba9cbf1aa44e9d59838faae"
+    },
+    {
+      "path": "UI-UX/screens/S06-CORRECTION-COMPARE.md",
+      "sha256": "6709eabe3b86589b92f82f4f2dda809e44daca1dd283b9553c6331cc297ccb6f"
+    }
+  ],
+  "content_sha256": "d695e05d5080c3ccba952d10e1e430293d0aad1cf6539b0f75adfa6dc48a2c25"
+}
