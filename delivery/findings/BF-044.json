@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-044",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-014",
   "sprint_id": "SP-P1-002",
   "task_id": "T006",
@@ -19,7 +19,9 @@
     "F00 Clarification UX expects F01-selected 1-3 questions for clarification flow, so a persistent NEEDS_CLARIFICATION state with no eligible question has no frozen user-resolvable path.",
     "Acceptance Registry does not add a fallback rule beyond the F01-AC-004/005/006 observable criteria.",
     "Design Working F01 current truth matches the same BS-P1-014 policy structure; there is no already-landed Design fix to project.",
-    "The local unstaged UI-UX reference PNG deletions reported by Cursor are independent workspace pollution: a clean worktree at the canonical base passed npm run gate 14/14 and they are not evidence for BF-044."
+    "The local unstaged UI-UX reference PNG deletions reported by Cursor are independent workspace pollution: a clean worktree at the canonical base passed npm run gate 14/14 and they are not evidence for BF-044.",
+    "BS-P1-015 Freeze merged canonical via PR #229 as 7e63df59265bb144013fcc8706f8b2d4a0afa5bd.",
+    "Human-approved BS-P1-015 / SP-P1-002 / T006 rebaseline activation resolves the BF-044 implementation blocker; Cursor EXECUTE remains outside this transition and has not been issued."
   ],
   "attempts": [
     {
