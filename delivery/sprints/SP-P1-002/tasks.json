@@ -370,7 +370,7 @@
         "BL-P1-006"
       ],
       "title": "Implement validation failure and degradation semantics",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-012",
       "scope": [
         "Ensure validation failure never corrupts an existing validated Blueprint and rejected candidate bodies do not become executable durable artifacts.",
@@ -420,7 +420,18 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-002-T004-011",
+        "EV-SP-P1-002-T004-012",
+        "EV-SP-P1-002-T004-013",
+        "EV-SP-P1-002-T004-014",
+        "EV-SP-P1-002-T004-015",
+        "EV-SP-P1-002-T004-016",
+        "EV-SP-P1-002-T004-017",
+        "EV-SP-P1-002-T004-018",
+        "EV-SP-P1-002-T004-019",
+        "EV-SP-P1-002-T004-023"
+      ]
     },
     {
       "task_id": "T005",
