@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-043",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-013",
   "sprint_id": "SP-P1-002",
   "task_id": "T006",
@@ -16,7 +16,11 @@
     "BS-P1-013 F01-POL-CP-004/005 and F01-AC-004 distinguish material vs cosmetic/presentation, but the frozen F01 schema has no canonical materiality field and does not define a deterministic impact_level threshold.",
     "BS-P1-013 F01-RQ-002/003 says answered questions are not re-asked unless an upstream fact changed and that changed facts may reopen downstream ambiguity, but there is no canonical dependency representation connecting semantic items/questions to upstream facts.",
     "BS-P1-013 says NFF_DEFAULT must carry policy ID/version; KnownInput has source_ref?, while the shared missing/ambiguity/assumption item schema does not.",
-    "Design working F01 on current main still has the same gaps, so this is not merely an unprojected already-resolved Working Truth change."
+    "Design working F01 on current main still has the same gaps, so this is not merely an unprojected already-resolved Working Truth change.",
+    "Design BF-043 machine-contract remediation merged canonical as f6e72ea29a0332ba37a4017415f2fe69a661dce2.",
+    "Scope-clean freeze source 5deb371234bce8864b1fc6847474c6d31bddd332 is exactly one F01-only commit ahead of BS-P1-013 source.",
+    "BS-P1-014 Freeze merged canonical via PR #226 as 9085b3e15b9c436d47c9efa1634bafa04348217b.",
+    "Human-approved BS-P1-014 / SP-P1-002 / T006 activation resolves the BF-043 implementation blocker; Cursor EXECUTE remains outside this transition and has not been issued."
   ],
   "attempts": [
     {
@@ -49,5 +53,5 @@
     "F01-AC-017"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-014"
 }
