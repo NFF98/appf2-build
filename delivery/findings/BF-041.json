@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-041",
   "classification": "IMPLEMENTATION_BUG",
-  "status": "RESOLVED",
+  "status": "CLOSED",
   "build_spec_id": "BS-P1-012",
   "sprint_id": "SP-P1-002",
   "task_id": "T004",
@@ -39,7 +39,8 @@
     "PR #200 current-base verification on head 33b370b9596a5497e93d769f0842438d043a2364: Governance Gate, Governance Attack Dry-run, CI Gate/Product CI and CodeQL all PASS; Test Integrity and Change Scope PASS.",
     "Cursor RESULT issue #164 comment 5975364419 proves the hostile outer-result and direct-mint regressions fail against the pre-fix implementation and pass on final implementation; all T004 required commands and additional security/build checks exit 0.",
     "Fresh append-only T004 Evidence EV-SP-P1-002-T004-011..019 and EV-SP-P1-002-T004-023 normalized via PR #201 as 38845c125398290a91da938f3684baca0a3fdc95. Historical EV-SP-P1-002-T004-001..010 were not overwritten or reused as final proof.",
-    "Independent ChatGPT post-fix audit re-read the final four-file diff, validator issuance/provenance boundary, admission persistence, same-hash integrity, degradation semantics and all four T004 Acceptance criteria; no third T004 blocker or Product/Schema ambiguity remains."
+    "Independent ChatGPT post-fix audit re-read the final four-file diff, validator issuance/provenance boundary, admission persistence, same-hash integrity, degradation semantics and all four T004 Acceptance criteria; no third T004 blocker or Product/Schema ambiguity remains.",
+    "Human approved T004 closure after final BF-041 remediation, fresh Evidence binding and closure audit; T004 closed via PR #204. BF-041 lifecycle is complete."
   ],
   "attempts": [
     {
