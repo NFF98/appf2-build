@@ -66,7 +66,9 @@
     "Do not touch F02-AC-017/T009, POI-005 production wiring, T005 evidence semantics, Product truth, Build Spec, Registry semantics, or unrelated tests.",
     "Run every T004 required command from tasks.json: npm run gate; npm run check:types; npm run check:lint; npm run test:contract; npm run test:behavior; npm run test:regression. Also run npm run security:audit, npm run build, npm run gate:test-integrity, npm run gate:scope, and npm run product:ci with the canonical base SHA so the implementation-change global gates are directly proven.",
     "Report exact changed files, base SHA, final HEAD, mapped Test IDs, each command exit/result, and explicitly state whether the hostile Proxy regression fails on the pre-fix implementation and passes on the final implementation.",
-    "After implementation merge, create fresh append-only T004 Evidence IDs after EV-SP-P1-002-T004-010. Do not overwrite or re-bind EV-SP-P1-002-T004-001..010 as final proof. Final closure requires independent ChatGPT re-audit of BF-041 plus all four T004 ACs before completion_evidence is rebound."
+    "After implementation merge, create fresh append-only T004 Evidence IDs after EV-SP-P1-002-T004-010. Do not overwrite or re-bind EV-SP-P1-002-T004-001..010 as final proof. Final closure requires independent ChatGPT re-audit of BF-041 plus all four T004 ACs before completion_evidence is rebound.",
+    "Keep the new hostile Proxy/getter and direct-mint assertions inside the existing T004-owned TEST-F02-AC-014 proof (tests/behavior/blueprint-validation-failure.behavior.test.ts) or helper functions called by it. Do not invent a new Acceptance/Test ID and do not modify foreign pre-existing Test IDs such as TEST-F02-012; this avoids test-integrity ownership drift.",
+    "A bounded implementation may move the WeakMap/private sealing primitive into validate-blueprint.ts (or an equivalent validator-owned closure), expose only a verifier to blueprint-admission, and keep/remove admissible-provenance.ts as appropriate. The security property is mandatory; exact file organization is not Product truth."
   ],
   "affected_contracts": [
     "F02 V12 / durable admission boundary",
