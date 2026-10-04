@@ -91,6 +91,18 @@
       "next_action": "During the next appropriate planning/rebaseline window, create an explicitly scoped future Task for production wiring of the BS-P1-012 fresh-admission contract to the real HTTP route, Postgres-backed Blueprint/release lookup, and bundled Runtime handler map. Do not silently absorb this work into T004; T004 retains its current validation-failure/degradation scope.",
       "completion_criterion": "A future Human-approved Task implements and verifies the real production HTTP + Postgres + Runtime wiring for fresh execution admission, including repository/release lookup failure behavior, pinned/current RegistryReleaseBundle loading, TrustedRuntimeHandlerCatalog from the actual bundled handler map, and end-to-end proof that the production route enforces the existing E01-E08 contract without changing Product semantics.",
       "resolution_ref": null
+    },
+    {
+      "id": "POI-006",
+      "title": "T005 production trust/evidence integration and real Postgres verification debt",
+      "status": "DEFERRED_REVIEW",
+      "owner": "CHATGPT_PLANNING + HUMAN_APPROVAL + CURSOR_IMPLEMENTATION",
+      "source": "T005 closure audit after PR #215 / Evidence PR #217; candidate 770149e9096965437992bd326a82f5e32c48e7ea; implementation merge 3fd91f77326a93663f643db9fdd741f3ac14d3c8",
+      "blocking_scope": [],
+      "blocks_activation": false,
+      "next_action": "At the next explicit production-wiring / integration-verification window, plan this together with POI-005 without silently expanding an unrelated active Task. Verify the trust-transition CAS against real PostgreSQL including concurrent VALIDATED→terminal races; decide and test any database-level defense-in-depth for trust_status transition direction and immutable byte_size; wire T005 validation Evidence options and the trusted trust-transition service into the real server boundary; and verify production execution-admission Evidence F02-EVT-010..013 at the route that owns it.",
+      "completion_criterion": "Human-approved future Task(s) prove real PostgreSQL concurrency and repository failure behavior, production server entrypoints/wiring for T005 Evidence and trust transitions, any approved DB hardening, and the production execution-admission Evidence path, while preserving POI-005 ownership of HTTP/Postgres/Runtime fresh-admission wiring and without changing locked Product semantics.",
+      "resolution_ref": null
     }
   ],
   "last_full_pr_audit": {
