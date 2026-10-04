@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-015",
-  "implementation_enabled": false,
-  "reason": "Temporary governance maintenance HOLD for the Human-approved BCE constitution amendment. BS-P1-015 remains the active baseline; Product/Task semantics are unchanged. Resume SP-P1-002 / T006 only after the constitutional amendment is merged and canonical."
+  "implementation_enabled": true,
+  "reason": "BCE constitution amendment is canonical. Human-approved bounded execution envelope resumes BS-P1-015 / SP-P1-002 / T006 with Product/Task semantics unchanged; fresh Cursor execution is separately dispatched only after this control transition passes and merges."
 }
