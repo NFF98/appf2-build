@@ -439,15 +439,21 @@
         "BL-P1-007"
       ],
       "title": "Implement validation evidence and admission traceability",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-012",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-013",
       "scope": [
-        "Make validation stage/error/trace evidence observable without raw Blueprint telemetry.",
-        "Trace admitted Blueprint content to validation_run and trace revoke/incompatible outcomes without mutating immutable Blueprint body."
+        "Make every F02 validation mechanically traceable by deterministic candidate_digest, terminal status, stage/error and canonical trace_id; missing or malformed upstream trace must be replaced at the trusted F02 boundary with a server-generated F07-canonical trace before validation_run/evidence construction.",
+        "Emit validation/admission Evidence through the locked F02/F07 event contracts without raw Blueprint body or raw Intent telemetry; preserve non-blocking Evidence delivery semantics and existing fresh execution-admission events F02-EVT-010..013 where applicable.",
+        "Make admitted Blueprint content mechanically traceable to its immutable admitting validation_run and reject broken/tampered lineage.",
+        "Implement trusted server-only compare-and-set Blueprint trust transitions VALIDATED→REVOKED|INCOMPATIBLE; successful transitions emit F02-EVT-008 / F02-EVT-014 with canonical trace and must not mutate immutable Blueprint body or admitting lineage.",
+        "Preserve validator-private issuance authenticity for PASSED, REJECTED and INCOMPATIBLE terminal validation reports; fabricated/copy/relabel/proxy/accessor results must not create durable validation_run evidence."
       ],
       "non_scope": [
-        "Do not change validation Product semantics.",
-        "Do not store raw Blueprint or raw Intent in evidence events."
+        "Do not change Product validation/trust semantics, Build Spec, Evidence Registry semantics or governance truth.",
+        "Do not store raw Blueprint body or raw Intent in telemetry Evidence.",
+        "Do not implement terminal trust recovery REVOKED/INCOMPATIBLE→VALIDATED, admin UX, or new trust policy beyond the locked trusted transition boundary.",
+        "Do not absorb POI-005 production HTTP / Runtime / Postgres boundary wiring; testable repository/service ports are allowed only as required by T005.",
+        "Do not implement T009 / F02-AC-017 browser proof or activate T006-T009."
       ],
       "acceptance_links": [
         {
@@ -503,7 +509,7 @@
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-012",
+      "build_spec_id": "BS-P1-013",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
         "Require explicit clarification for money/permission/cost assumptions, expose material proposals, avoid re-asking answered questions unless upstream facts change, and prevent client resolved_intent bypass.",
@@ -570,7 +576,7 @@
       ],
       "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-012",
+      "build_spec_id": "BS-P1-013",
       "scope": [
         "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",
         "On overflow, preferentially retain CORE_OUTCOME / RELIABILITY over DEBUG / PRODUCT_SAMPLE.",
@@ -625,7 +631,7 @@
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-012",
+      "build_spec_id": "BS-P1-013",
       "scope": [
         "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
         "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default.",
@@ -693,7 +699,7 @@
       ],
       "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-012",
+      "build_spec_id": "BS-P1-013",
       "scope": [
         "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
         "Prove F01-AC-002 by showing NEEDS_CLARIFICATION when required intent data is missing and no safe default exists.",
