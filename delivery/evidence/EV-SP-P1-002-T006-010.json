@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-016",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T006",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-04T21:59:23Z",
+  "blocking_findings": [],
+  "source_commit": "7b9ce1a2807c3c937e64d07c491af7c8f206f993",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "review_checks": null,
+  "evidence_id": "EV-SP-P1-002-T006-010",
+  "kind": "COMMAND_RESULT",
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37238177551#product-ci-build-pass",
+  "command": "npm run build"
+}
