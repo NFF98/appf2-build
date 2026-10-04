@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-015",
-  "implementation_enabled": true,
-  "reason": "BCE constitution amendment is canonical. Human-approved bounded execution envelope resumes BS-P1-015 / SP-P1-002 / T006 with Product/Task semantics unchanged; fresh Cursor execution is separately dispatched only after this control transition passes and merges."
+  "implementation_enabled": false,
+  "reason": "BF-045 SPEC_AMBIGUITY blocks T006 under BS-P1-015 after BCE full-audit of candidate e3ca711c8126fbf5d090571a007840b8e51306e9. Implementation is disabled pending bounded F01 semantic remediation and replacement Build Spec."
 }
