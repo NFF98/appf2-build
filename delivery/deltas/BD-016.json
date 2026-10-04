@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-016",
   "type": "DESIGN_DELTA",
-  "status": "IMPLEMENTING",
+  "status": "CLOSED",
   "source_finding_ids": [
     "BF-045"
   ],
@@ -40,7 +40,10 @@
     "F01 now defines recursive fixpoint invalidation for dependent PROPOSED defaults/proposals after trusted upstream semantic changes.",
     "F01 state/value/source invariants close UNRESOLVED+can_default=true and DOMAIN_KNOWN+PROPOSED before policy evaluation.",
     "No Acceptance Registry, Evidence Registry, database column, other Function, T007-T009, or Product outcome change is introduced.",
-    "BS-P1-016 / SP-P1-002 / T006 activated under Human-authorized BCE envelope; implementation must use a fresh base and may not treat candidate e3ca711 as canonical truth."
+    "BS-P1-016 / SP-P1-002 / T006 activated under Human-authorized BCE envelope; implementation must use a fresh base and may not treat candidate e3ca711 as canonical truth.",
+    "T006 implementation merged via PR #238 as 7b9ce1a2807c3c937e64d07c491af7c8f206f993 from independently audited candidate ea88bc871ecfc9084e62de865d9d63042f5a48c2.",
+    "Final T006 Evidence normalized via PR #239 and closure-required command Evidence completed via PR #241; T006 entered REVIEW via PR #242.",
+    "Human approved T006 closure. BD-016 remediation lifecycle is complete under BS-P1-016; T007 remains separately gated."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",

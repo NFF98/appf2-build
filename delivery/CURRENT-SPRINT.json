@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-016",
-  "active_task": "T006",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T006 implementation merged via PR #238 as 7b9ce1a2807c3c937e64d07c491af7c8f206f993; final Evidence normalized via PR #239 as 9136e9c21e5dcdf49ddb90b617ea8623cbe1a0f4 and closure-required command Evidence completed via PR #241 as 4f3ba0ab5b9fdf50464e9ca073a2a15ad6d034ee. T006 is in closure REVIEW; T007-T009 remain not activated."
+  "reason": "Human approved T006 closure after implementation merge #238, Evidence normalization #239/#241 and REVIEW #242. T006 is CLOSED; T007-T009 remain not activated until separate control transition."
 }
