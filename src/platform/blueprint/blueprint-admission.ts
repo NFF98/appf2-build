@@ -1,4 +1,5 @@
-import { isSealedPassedResult } from "./validate-blueprint.js";
+import { isIssuedFailedReport, isSealedPassedResult } from "./validate-blueprint.js";
+import { contentEvent, emitF02Evidence, validationOutcomeEvent, type F02EvidenceOptions } from "./validation-evidence.js";
 import type {
   BlueprintValidationResult,
   F02ErrorCode,
@@ -46,6 +47,8 @@ export interface BlueprintAdmissionRepository {
 export interface BlueprintAdmissionOptions {
   readonly compilerRunId?: string | null;
   readonly now?: () => Date;
+  /** Server-side F02 validation Evidence, attempted only after the durable validation_run write. */
+  readonly evidence?: F02EvidenceOptions;
 }
 
 export type BlueprintAdmissionResult =
@@ -79,16 +82,16 @@ function runRecord(
 }
 
 function integrityFailureReport(report: ValidationReport): ValidationReport {
-  return {
+  return Object.freeze({
     validation_run_id: report.validation_run_id,
     candidate_digest: report.candidate_digest,
     status: "REJECTED",
     schema_version: report.schema_version,
     registry_version: report.registry_version,
     registry_digest: report.registry_digest,
-    issues: [{ error_code: "F02-ERR-015", stage: "V12", json_path: "$" }],
+    issues: Object.freeze([Object.freeze({ error_code: "F02-ERR-015", stage: "V12", json_path: "$" } as const)]),
     trace_id: report.trace_id
-  };
+  });
 }
 
 export async function admitBlueprint(
@@ -101,7 +104,12 @@ export async function admitBlueprint(
   const createdAt = (options.now?.() ?? new Date()).toISOString();
   const compilerRunId = options.compilerRunId ?? null;
   if (admissible === undefined) {
+    // An issued failed report is deep-frozen, so its status cannot have been relabelled after issuance.
+    if (!isIssuedFailedReport(report)) {
+      throw new Error("Only a validator-issued REJECTED or INCOMPATIBLE report can record a validation_run.");
+    }
     await repository.recordValidationRun(runRecord(report, createdAt, compilerRunId));
+    await emitF02Evidence(options.evidence, [validationOutcomeEvent(report)]);
     return { status: "NOT_ADMITTED", report };
   }
   if (!isSealedPassedResult(report, admissible)) {
@@ -121,8 +129,19 @@ export async function admitBlueprint(
   if (outcome.kind === "HASH_INTEGRITY_FAILURE") {
     const failure = integrityFailureReport(report);
     await repository.recordValidationRun(runRecord(failure, createdAt, compilerRunId));
+    await emitF02Evidence(options.evidence, [
+      validationOutcomeEvent(failure),
+      contentEvent("F02-EVT-009", failure, admissible.contentHash)
+    ]);
     return { status: "NOT_ADMITTED", report: failure };
   }
+  // blueprint_admitted marks the single blueprint_content insert; same-hash reuse keeps the original admission.
+  await emitF02Evidence(
+    options.evidence,
+    outcome.kind === "INSERTED"
+      ? [validationOutcomeEvent(report), contentEvent("F02-EVT-007", report, admissible.contentHash)]
+      : [validationOutcomeEvent(report)]
+  );
   return {
     status: "ADMITTED",
     validationRunId: run.validation_run_id,

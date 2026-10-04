@@ -1,3 +1,4 @@
+import type { AdmissionLineageRecord, AdmissionLineageSource, LineageContentRow } from "./admission-lineage.js";
 import type {
   BlueprintAdmissionRepository,
   BlueprintContentRecord,
@@ -5,6 +6,12 @@ import type {
   ContentAdmissionOutcome,
   ValidationRunRecord
 } from "./blueprint-admission.js";
+import {
+  assertTrustTransitionRequest,
+  type BlueprintTrustTransitionRepository,
+  type TrustTransitionRequest,
+  type TrustTransitionWriteOutcome
+} from "./blueprint-trust-transition.js";
 
 export interface PostgresQueryResult<Row> {
   readonly rows: readonly Row[];
@@ -92,6 +99,68 @@ SELECT
 FROM content
 `.trim();
 
+/** Only trust_status changes; the row lock + WHERE re-check makes stale or replayed transitions match zero rows. */
+export const POSTGRES_COMPARE_AND_SET_TRUST_STATUS_SQL = `
+WITH transitioned AS (
+  UPDATE public.blueprint_content
+  SET trust_status = $3::text
+  WHERE content_hash = $1::text
+    AND trust_status = $2::text
+    AND $2::text = 'VALIDATED'
+    AND $3::text IN ('REVOKED', 'INCOMPATIBLE')
+  RETURNING schema_version, registry_version
+)
+SELECT
+  EXISTS (SELECT 1 FROM transitioned) AS transitioned,
+  EXISTS (SELECT 1 FROM public.blueprint_content WHERE content_hash = $1::text) AS content_exists,
+  (SELECT schema_version FROM transitioned) AS schema_version,
+  (SELECT registry_version FROM transitioned) AS registry_version
+`.trim();
+
+export const POSTGRES_READ_ADMISSION_LINEAGE_SQL = `
+SELECT
+  content.content_hash,
+  content.canonical_blueprint,
+  content.schema_version,
+  content.registry_version,
+  content.trust_status,
+  content.admitted_by_validation_run_id,
+  content.byte_size,
+  run.validation_run_id AS run_validation_run_id,
+  run.candidate_digest AS run_candidate_digest,
+  run.blueprint_hash AS run_blueprint_hash,
+  run.schema_version AS run_schema_version,
+  run.registry_version AS run_registry_version,
+  run.status AS run_status,
+  run.error_codes AS run_error_codes,
+  run.report AS run_report,
+  run.trace_id AS run_trace_id
+FROM public.blueprint_content AS content
+LEFT JOIN public.validation_run AS run
+  ON run.validation_run_id = content.admitted_by_validation_run_id
+WHERE content.content_hash = $1::text
+`.trim();
+
+interface TrustTransitionRow {
+  readonly transitioned: boolean;
+  readonly content_exists: boolean;
+  readonly schema_version: string | null;
+  readonly registry_version: string | null;
+}
+
+/** run_* columns are NULL only together with run_validation_run_id (LEFT JOIN miss); otherwise they are NOT NULL. */
+export interface AdmissionLineageRow extends LineageContentRow {
+  readonly run_validation_run_id: string | null;
+  readonly run_candidate_digest: string;
+  readonly run_blueprint_hash: string | null;
+  readonly run_schema_version: string;
+  readonly run_registry_version: string;
+  readonly run_status: string;
+  readonly run_error_codes: unknown;
+  readonly run_report: unknown;
+  readonly run_trace_id: string;
+}
+
 interface AdmissionRow {
   readonly inserted: boolean;
   readonly body_matches: boolean;
@@ -147,5 +216,69 @@ export class PostgresBlueprintAdmissionRepository implements BlueprintAdmissionR
       throw new Error("Blueprint content admission did not record its validation run.");
     }
     return row.inserted ? { kind: "INSERTED" } : { kind: "REUSED", trustStatus: row.trust_status };
+  }
+}
+
+export class PostgresBlueprintTrustTransitionRepository implements BlueprintTrustTransitionRepository {
+  public constructor(private readonly executor: PostgresExecutor) {}
+
+  public async compareAndSetTrustStatus(request: TrustTransitionRequest): Promise<TrustTransitionWriteOutcome> {
+    assertTrustTransitionRequest(request);
+    const result = await this.executor.query<TrustTransitionRow>(POSTGRES_COMPARE_AND_SET_TRUST_STATUS_SQL, [
+      request.content_hash,
+      request.previous_status,
+      request.new_status
+    ]);
+    const [row] = result.rows;
+    if (row === undefined) {
+      throw new Error("Trust transition compare-and-set returned no row.");
+    }
+    if (row.transitioned) {
+      if (row.schema_version === null || row.registry_version === null) {
+        throw new Error("Trust transition compare-and-set did not return immutable content metadata.");
+      }
+      return { kind: "TRANSITIONED", schema_version: row.schema_version, registry_version: row.registry_version };
+    }
+    return row.content_exists ? { kind: "STATUS_MISMATCH" } : { kind: "UNKNOWN_CONTENT" };
+  }
+}
+
+function lineageRecord(row: AdmissionLineageRow): AdmissionLineageRecord {
+  const content: LineageContentRow = {
+    content_hash: row.content_hash,
+    canonical_blueprint: row.canonical_blueprint,
+    schema_version: row.schema_version,
+    registry_version: row.registry_version,
+    trust_status: row.trust_status,
+    admitted_by_validation_run_id: row.admitted_by_validation_run_id,
+    byte_size: row.byte_size
+  };
+  if (row.run_validation_run_id === null) {
+    return { content, admitting_run: null };
+  }
+  return {
+    content,
+    admitting_run: {
+      validation_run_id: row.run_validation_run_id,
+      candidate_digest: row.run_candidate_digest,
+      blueprint_hash: row.run_blueprint_hash,
+      schema_version: row.run_schema_version,
+      registry_version: row.run_registry_version,
+      status: row.run_status,
+      error_codes: row.run_error_codes,
+      report: row.run_report,
+      trace_id: row.run_trace_id
+    }
+  };
+}
+
+/** Read-only lineage port: one row joins blueprint_content to its admitting validation_run. */
+export class PostgresAdmissionLineageSource implements AdmissionLineageSource {
+  public constructor(private readonly executor: PostgresExecutor) {}
+
+  public async readAdmissionLineage(contentHash: string): Promise<AdmissionLineageRecord | undefined> {
+    const result = await this.executor.query<AdmissionLineageRow>(POSTGRES_READ_ADMISSION_LINEAGE_SQL, [contentHash]);
+    const [row] = result.rows;
+    return row === undefined ? undefined : lineageRecord(row);
   }
 }
