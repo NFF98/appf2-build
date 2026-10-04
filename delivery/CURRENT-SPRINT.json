@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-012",
-  "active_task": "T004",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T004 BF-041 remediation merged via PR #200; fresh Evidence EV-SP-P1-002-T004-011..019 and 023 normalized via PR #201; BF-041 RESOLVED via PR #202. T004 is in closure REVIEW; T005 is not activated."
+  "reason": "Human approved T004 closure after BF-041 remediation and fresh Evidence review. T004 is CLOSED; SP-P1-002 remains open with T005-T009 pending. Execution is HOLD until separate T005 activation. Issue #164 remains retained for subsequent Cursor execution history."
 }
