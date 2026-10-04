@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-012",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T004",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-03T23:52:00Z",
+  "blocking_findings": [],
+  "source_commit": "89e078c2758a5f77a66bfa9d5da9a55596dc4e6f",
+  "evidence_id": "EV-SP-P1-002-T004-001",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F02-AC-013",
+    "F02-AC-014",
+    "F02-AC-015",
+    "F02-AC-016"
+  ],
+  "test_ids": [
+    "TEST-F02-AC-013",
+    "TEST-F02-AC-014",
+    "TEST-F02-015",
+    "TEST-F02-AC-016"
+  ],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37163025975#product-ci-mapped-tests-and-test-integrity-pass",
+  "command": null,
+  "review_checks": null
+}
