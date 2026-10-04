@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-043",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "OPEN",
+  "build_spec_id": "BS-P1-013",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T006",
+  "expected": "BS-P1-013 F01-AC-001/003/004/005/006/017 must make StructuredIntentEnvelope provenance, clarification-policy triggers, visible material assumptions, no-reask behavior, determinism and resolved_intent bypass prevention mechanically implementable without Cursor inventing new Product/schema truth.",
+  "actual": "Cursor T006 execution hard-stopped with zero changes because the frozen F01 contract states policy outcomes but does not fully encode the machine-readable inputs needed to evaluate them. Independent ChatGPT audit confirmed: CP-003 has no canonical semantic-item representation for money/permission/external-cost/irreversible risk; material vs cosmetic has no canonical field/rule; no-reask has no canonical dependency representation for deciding which upstream fact changes reopen which answered question; and NFF_DEFAULT requires policy id/version but the shared semantic-item schema has no source_ref field.",
+  "evidence": [
+    "Human approved T006 BLOCKED + BF-043 and governance remediation through the pre-Cursor restart boundary on 2026-10-04.",
+    "Cursor RESULT issue #223 comment 5979248873 is bound to EXECUTE comment 5979214299 and reports a HARD STOP with final HEAD equal to base 23c574c741a37adfa5e9e1681db25eb5ff053169, zero changed files, zero commits and no merge.",
+    "BS-P1-013 F01-DATA-001 shared missing/ambiguity/assumption fields contain id, semantic_role, description, source, required_for_execution, impact_level, confidence, can_default, proposed_default, alternatives, user_visible and rationale, but no canonical risk flags, materiality, dependency ids or source_ref.",
+    "BS-P1-013 F01-POL-CP-003 requires money/permission/external cost/irreversible material rules that are not USER_EXPLICIT to NEEDS_CLARIFICATION, but the frozen schema does not define how those rule classes are represented mechanically.",
+    "BS-P1-013 F01-POL-CP-004/005 and F01-AC-004 distinguish material vs cosmetic/presentation, but the frozen F01 schema has no canonical materiality field and does not define a deterministic impact_level threshold.",
+    "BS-P1-013 F01-RQ-002/003 says answered questions are not re-asked unless an upstream fact changed and that changed facts may reopen downstream ambiguity, but there is no canonical dependency representation connecting semantic items/questions to upstream facts.",
+    "BS-P1-013 says NFF_DEFAULT must carry policy ID/version; KnownInput has source_ref?, while the shared missing/ambiguity/assumption item schema does not.",
+    "Design working F01 on current main still has the same gaps, so this is not merely an unprojected already-resolved Working Truth change."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T006_CURSOR_PREFLIGHT_IMPLEMENTATION_ATTEMPT_PLUS_INDEPENDENT_CONTRACT_AUDIT",
+      "result": "BLOCKING_SPEC_AMBIGUITY_CONFIRMED_ZERO_IMPLEMENTATION_CHANGES",
+      "evidence": "Cursor stopped before implementation rather than inventing F01 schema semantics. ChatGPT independently re-read BS-P1-013 F01/F00/F06/Data Model and Design Working F01 and confirmed the missing machine-readable policy inputs."
+    }
+  ],
+  "requested_planning_action": [
+    "Pause T006 implementation and keep T007-T009 unactivated while BF-043 is unresolved.",
+    "In Design Working F01, add a bounded machine-readable representation for money/permission/external-cost/irreversible policy risk without changing the already-approved CP-003 outcome.",
+    "Add an explicit material-vs-cosmetic representation so CP-004/005 and visible-assumption behavior do not depend on an invented impact_level threshold.",
+    "Add bounded dependency metadata sufficient to determine when an upstream fact change may legitimately reopen an answered question; unrelated changes must not permit re-asking.",
+    "Add source_ref/policy provenance storage for NFF_DEFAULT semantic items, consistent with the existing KnownInput pattern.",
+    "Run Design audit, create a replacement locked Build Spec, rebaseline SP-P1-002/T006, then stop before issuing a new Cursor EXECUTE."
+  ],
+  "affected_contracts": [
+    "F01 StructuredIntentEnvelope semantic item schema",
+    "F01 Clarification Policy CP-003..CP-006 inputs",
+    "F01 Question ranking/no-reask dependency semantics",
+    "F01 NFF_DEFAULT provenance"
+  ],
+  "affected_acceptance": [
+    "F01-AC-001",
+    "F01-AC-003",
+    "F01-AC-004",
+    "F01-AC-005",
+    "F01-AC-006",
+    "F01-AC-017"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-014"
+}
