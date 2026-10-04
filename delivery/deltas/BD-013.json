@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-013",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-042"
+  ],
+  "affected_build_spec": "BS-P1-012",
+  "affected_tasks": [
+    "T005"
+  ],
+  "affected_contracts": [
+    "F02 Validation Report trace authority",
+    "F02 Trust Status transition authority",
+    "DATA-MODEL blueprint_content trust_status mutability",
+    "F02 Evidence event catalog"
+  ],
+  "affected_acceptance": [
+    "F02-AC-019",
+    "F02-AC-020",
+    "F02-AC-021",
+    "F02-AC-022"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT 2026-10-04: exhaustive audit and all bug/contract remediation through immediately before Cursor starts implementation."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "1330ea523a943ccd5aa3a4ff6727b9be71dea14e",
+  "replacement_build_spec": "BS-P1-013",
+  "verification": [
+    "Design BF-042 Product-truth remediation is commit 1330ea523a943ccd5aa3a4ff6727b9be71dea14e.",
+    "Scope-clean freeze source 08ee376d315dca5a5ff03ce7427a1856cde03795 is exactly three files ahead of BS-P1-012 source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f.",
+    "Replacement BS-P1-013 freeze candidate changes only BF-042 contract truth; activation and Cursor execution remain separate."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "08ee376d315dca5a5ff03ce7427a1856cde03795",
+    "base_commit": "41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-042-FREEZE-CANDIDATE.md"
+  }
+}

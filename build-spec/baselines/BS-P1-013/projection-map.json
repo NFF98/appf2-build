@@ -1,0 +1,652 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-013",
+  "phase": "PHASE_1",
+  "source_repo": "NFF98/appf2-design",
+  "source_commit": "08ee376d315dca5a5ff03ce7427a1856cde03795",
+  "freeze_audit": {
+    "status": "PASS",
+    "version_lock": true,
+    "source_commit": "08ee376d315dca5a5ff03ce7427a1856cde03795"
+  },
+  "projection_engine": {
+    "version": "MARKDOWN_EXACT_HEADING_V1",
+    "matching": "EXACT_ONLY",
+    "fuzzy_matching": false,
+    "llm_classification": false
+  },
+  "entries": [
+    {
+      "source_path": "working/common-core/ACCEPTANCE-CONVENTIONS.md",
+      "source_blob_sha": "39c34174569d5231d08e44397c8384ce03c112c2",
+      "mode": "FULL_COPY",
+      "target_path": "shared/ACCEPTANCE-CONVENTIONS.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "4d38d92ef68dbd93447c5103c14ce365eeda7510212b2a560dc86287db294521"
+    },
+    {
+      "source_path": "working/common-core/API-CONVENTIONS.md",
+      "source_blob_sha": "22ec0960b6fcf63dd4c1ef4d2edf9ccbd35b820d",
+      "mode": "FULL_COPY",
+      "target_path": "shared/API-CONVENTIONS.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "743eb13b638f8a771ecfa1b9006338ce3238a294427a17bcab0f53e20470f26c"
+    },
+    {
+      "source_path": "working/common-core/EXECUTION-ADMISSION.md",
+      "source_blob_sha": "ce6400904016c423b689e13b2c26df86094ea11f",
+      "mode": "FULL_COPY",
+      "target_path": "shared/EXECUTION-ADMISSION.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "eb38d65721fa3bdf4f724ec66ba2a8af21b1f3b35def858499c16b7288d3b127"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F00-EXPERIENCE-SHELL.md",
+      "source_blob_sha": "0093a9fbd8a7b58eb46e8aeafe66dc07917d5f40",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F00-EXPERIENCE-SHELL.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "f23d4771caae4a47c0d504e5002dc985570209d41526350051b6a5de9ddf615d"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F01-INTENT-COMPILATION.md",
+      "source_blob_sha": "5610ea23fa57543267509afc7b210e4325ea0882",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F01-INTENT-COMPILATION.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "6f45efac835766c3377ff79e88c85cf9b498ce5dd14a59859b93177249189a24"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F02-BLUEPRINT-VALIDATION.md",
+      "source_blob_sha": "e3d68b2263f5fe2cbb8fe7545790bf4cc2e7ad41",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F02-BLUEPRINT-VALIDATION.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "7c3845218d7d33521e4e21a34484938e7f3604bc8e3a1535bd9947ba8433b83f"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F03-RUNTIME-EXECUTION.md",
+      "source_blob_sha": "214ce131c6b1f0941a6070e762ccdb32fa61b07a",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F03-RUNTIME-EXECUTION.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "306259f2dbcacde38111ab463bc8392cf0e16da0ea347ce74c51df749ccd24bd"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F04-CAPABILITY-REGISTRY.md",
+      "source_blob_sha": "0387cf98c4da406c0b27b13af61cfbaae594cd6f",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F04-CAPABILITY-REGISTRY.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "f37ecdfb6c9b15e69d9710690ec642340525ae481b586f4ceb850075a5598568"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F05-SHARE-RESTORE.md",
+      "source_blob_sha": "49e4068a7cb887f017bac2e43b747e4bb4ec39fe",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F05-SHARE-RESTORE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "d68299d98e490a58f69e48273f808107122bf8fce014de6593a058f9f0b76783"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F06-REMIX-REFINE.md",
+      "source_blob_sha": "c9cdf4765dbac17bccfd7975c713b37a6d4b65e4",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F06-REMIX-REFINE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "23f747fdab5d6db5c4d7121d11ed7666c9e2c8d7cd342ec3ef636d8d094ab05e"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
+      "source_blob_sha": "562205f6d51122362baedefd0a63483ca53c960b",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "ad1fef1262511e2427e7e68d61890046ddc9d1024a43a78fbf678d6de906f6ae"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F12-HUMANIZED-RECOVERY.md",
+      "source_blob_sha": "48e39386dd93cf4b7e90e5215c800ef20220deb4",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F12-HUMANIZED-RECOVERY.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "fd9a21037e766ac2beff219f897d1c57e680344ba7b0946ed6a395f12c7f26be"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F16-RESULT-CORRECTION.md",
+      "source_blob_sha": "cf70cb2280cd106e0924a9b60f7624fa2ba71d8c",
+      "mode": "FULL_COPY",
+      "target_path": "functions/F16-RESULT-CORRECTION.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "9749cbd0d6d8300ebd64b0fd0482b05339b5bf6fd6f36fc6105e59f9ec132a58"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/DESIGN-SYSTEM.md",
+      "source_blob_sha": "e7db16bd23609f5137aa60ad052f5883496b7dea",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/DESIGN-SYSTEM.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "7d6bb65fc6ad73a70b1e45ec5ee7a7891913615e7e6813c244dec1c27c22dcff"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/PHASE1-SCREEN-INVENTORY.md",
+      "source_blob_sha": "b86fa9e4a058a4d7614aeee9bf71f5792abd6364",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/PHASE1-SCREEN-INVENTORY.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "28e16d716fff3ad441332b4f7b6b0450ebd87056d4798a8ae3b97b05c09a9844"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/overlays/O01-SHARE.md",
+      "source_blob_sha": "c9ad79256a07885fcdb10918d338e90197325679",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/overlays/O01-SHARE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "42ac5df713bbd223024bae7f5099c719fc9930d5a7b0b886b7ce401b0d0d2e53"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/overlays/O02-CORRECTION-COMPOSER.md",
+      "source_blob_sha": "2d4e892f8796b236ed72eb1caca5bf888f205114",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/overlays/O02-CORRECTION-COMPOSER.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "75ae72efdfc7e8ad3629340d44b74d5d20b99bf183f56bbc346cf6563b4f625b"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/overlays/O03-RECOVERY.md",
+      "source_blob_sha": "2998ab29d745ba0d62f6e509f7fe8104403d29be",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/overlays/O03-RECOVERY.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "1c7528fc7f7eccf9584d9bba7a7b72fdd7fa193a65b7aee860f3fd4322a26bfe"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/overlays/O04-REVERT-CONFIRMATION.md",
+      "source_blob_sha": "05da66c706d469125b9237a31e149ad480e8ae69",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/overlays/O04-REVERT-CONFIRMATION.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "60910bd308dfd5b18cce6a2917b2b8bbfb48ac1f5e801a6846dcf0a940684d8a"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/overlays/O05-LOADING-BUILDING-HYDRATION.md",
+      "source_blob_sha": "f8955de23ed541a791dacffaeba570169c5e888d",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/overlays/O05-LOADING-BUILDING-HYDRATION.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "5afd423fc0bcc3053ad0777e883322b44fae2d38ef0be9a901eadebe4b239f45"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/screens/S01-DISCOVER-START.md",
+      "source_blob_sha": "dd6868b6b83bb4b142662a44124d7203a0f9a0c2",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/screens/S01-DISCOVER-START.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "b563e59c0de623a30ceaca83ae07a56e700597af64cfa53d1d5ce557ca6346ba"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/screens/S02-CREATE-WORKSPACE.md",
+      "source_blob_sha": "ffff780bad0dd97319c6dcbcbc2e314e9c594b9d",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/screens/S02-CREATE-WORKSPACE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "b477c7401a63fcc32ca453af37da60e9df2bcf6cb9105260a67bf3dff401aee4"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/screens/S03-APP-RUNTIME.md",
+      "source_blob_sha": "be247268c41999987f03de963c228c86e57218eb",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/screens/S03-APP-RUNTIME.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "801781efc57520090b89fdef139db8ef1d0809ea11d622790fb862fcb60fa09b"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/screens/S04-SHARED-APP-ENTRY.md",
+      "source_blob_sha": "e4e1b6eaf53cf85168295fc89ee0964d1b8bfa50",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/screens/S04-SHARED-APP-ENTRY.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "b9e599c663c21a228ce837c39317321f36c5607723d6db684a39f3fa08810063"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/screens/S05-REFINE-REMIX.md",
+      "source_blob_sha": "0103fd3a9861b4dc0d1c296319f585f03dd7ad64",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/screens/S05-REFINE-REMIX.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "f2b9d289b031b15b120ecd2aad5ed0430f133dac9ba9cbf1aa44e9d59838faae"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/screens/S06-CORRECTION-COMPARE.md",
+      "source_blob_sha": "164dc837586bad13b3fdc1c85a6cd20b8c6c3655",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/screens/S06-CORRECTION-COMPARE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "6709eabe3b86589b92f82f4f2dda809e44daca1dd283b9553c6331cc297ccb6f"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/O01-Hi-FI-v1.png",
+      "source_blob_sha": "c7776fb726674bf43afbb25f8d8eb3a246a816aa",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/O01-Hi-FI-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "bc4cdb698a1bbf2a837e0ca2f16519ea86e84c6c7c315832d471de884aaad0b4"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/O02-Hi-FI-v1.png",
+      "source_blob_sha": "6101290c686673e192af583805c6fdde70599bf0",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/O02-Hi-FI-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "89b9fef70d87fdfbfee53e8c6731f553d247f7b19e356a8f0ed046e914b04832"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/O03-Hi-FI-v1.png",
+      "source_blob_sha": "6e9bcb1fab30430340c96f21f32a25f0053560bc",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/O03-Hi-FI-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "f443bac48c4cced06efcc376f6822df7863c3d411d8543a2a97ce8d4f2440eac"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/O04-Hi-FI-v1.png",
+      "source_blob_sha": "a8ee8cca0f39f335820dcd6436b9a6fe416729de",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/O04-Hi-FI-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "2e9fcbe3024303f17bf8874d23cb35e72f5bb9d178d3797fcec50990f3a9be1e"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/O05-Hi-FI-v1.png",
+      "source_blob_sha": "9c1476154f4f0d0d12f1b80d907b78e137731494",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/O05-Hi-FI-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "186706953a0b345f29b090879dfa77328a2308e431fe689e5f0d7ad159fffbc3"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/S01-Discover-Start-Highfi-v1.png",
+      "source_blob_sha": "e2048861c2df0c4226190b64b8bf827648470261",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/S01-Discover-Start-Highfi-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "fc61595575f133d2fc18b368c7eddf61719a3fcdc172727663c37395db898c19"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/S02-Create-Workspace-Highfi-v1.png",
+      "source_blob_sha": "2284e26770f1a15f89fecf5f7a630f76e594885e",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/S02-Create-Workspace-Highfi-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "5ad74da9c7c3ad80895bb60a9e7c03bfba9656666d0766479e554b45e8225945"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/S03-App-Runtime-Highfi-v2.png",
+      "source_blob_sha": "47d281d5d184b47855a5c406e26c11aa2801a238",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/S03-App-Runtime-Highfi-v2.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "9911669d61ae5338ba309931de54f669cc092632933f1c4a29930cc32e8f4bd0"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/S04-Highfi-v1.png",
+      "source_blob_sha": "629c7156e149ff4cc4c4d33298f5797165f7b84b",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/S04-Highfi-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "6a3d1509ee262457813f127bbb5033d19cbbf8af565fd4f7ca371cb12c74bfd9"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/S05-Highfi-v1.png",
+      "source_blob_sha": "e7b9930928f6397267526598cf213fd3110ebd20",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/S05-Highfi-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "82395a73adaf2dfd4011492ce530b9bb7fac00d898270e0446e671b8a8d1d83f"
+    },
+    {
+      "source_path": "working/detailed-design/UI-UX/references/S06-Hi-FI-Debug-v1.png",
+      "source_blob_sha": "8eece7d353eee9d58753ef665e5cf453d67451e6",
+      "mode": "FULL_COPY",
+      "target_path": "UI-UX/references/S06-Hi-FI-Debug-v1.png",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "UI_REFERENCE_INVENTORY",
+      "output_sha256": "69db3e29b3000b26f234209761bc2b505ad308204429b8130f7b098030d888c4"
+    },
+    {
+      "source_path": "working/detailed-design/registries/acceptance-test-registry.json",
+      "source_blob_sha": "a6357e19b6b9d29b44362285265b5f574f925dd1",
+      "mode": "FULL_COPY",
+      "target_path": "registries/acceptance-test-registry.json",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "4342d363fc2717e066cc87bdcadcc8c1c8bd1e6430ea94790fba86e958f7a360"
+    },
+    {
+      "source_path": "working/detailed-design/registries/evidence-event-registry.json",
+      "source_blob_sha": "923a1b0839bd97011b2e37fd7226443706c590b5",
+      "mode": "FULL_COPY",
+      "target_path": "registries/evidence-event-registry.json",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "11161a49f93c9dd16c136daf84ec2d76495b080fe7bea19bb5476eeb4e101020"
+    },
+    {
+      "source_path": "working/detailed-design/registries/recovery-registry.json",
+      "source_blob_sha": "1a097adaa2045303dcf42395c59e50c47b0517c4",
+      "mode": "FULL_COPY",
+      "target_path": "registries/recovery-registry.json",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "output_sha256": "07db536eb0032317ce4fba123abf9d66393f9031185508a9b903d616ad3ca65e"
+    },
+    {
+      "source_path": "working/common-core/APP-ARCHITECTURE.md",
+      "source_blob_sha": "9ebfea68fe9c891ec10d183585600e2fd75f823d",
+      "mode": "SECTION_FILTERED",
+      "target_path": "shared/APP-ARCHITECTURE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "include_blocks": [
+        {
+          "start": {
+            "type": "BOF"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "#### L3 / L4 中期擴張方向（不是 Phase 1 implementation scope）"
+          }
+        },
+        {
+          "start": {
+            "type": "EXACT_HEADING",
+            "value": "# 5. Model Gateway：LLM 可自由切換"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "# appf2 Architecture Evolution — Phase 2"
+          }
+        }
+      ],
+      "output_sha256": "3e7187557ff7856bf1c1d24e5ad2547c047a81045316fe523cbb72d2edd2537f"
+    },
+    {
+      "source_path": "working/common-core/CAPABILITY-FABRIC.md",
+      "source_blob_sha": "9adcbef7d5d2a9a7a42042fa0dcb9164f3fd7091",
+      "mode": "SECTION_FILTERED",
+      "target_path": "shared/CAPABILITY-FABRIC.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "include_blocks": [
+        {
+          "start": {
+            "type": "BOF"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "# appf2 Capability Roadmap — Phase 2"
+          }
+        }
+      ],
+      "output_sha256": "9e302bc405e9ee7b436c55fef642af6e209330b301f9bcb74213600c986029d2"
+    },
+    {
+      "source_path": "working/common-core/DATA-MODEL.md",
+      "source_blob_sha": "2b6910beb2480d1f44143a4ac85faf6add3cca6e",
+      "mode": "SECTION_FILTERED",
+      "target_path": "shared/DATA-MODEL.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "include_blocks": [
+        {
+          "start": {
+            "type": "BOF"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "# 4. Cross-Phase Future Execution Rule"
+          }
+        }
+      ],
+      "output_sha256": "eef7cf54cbb10038538298954492dec6f2e3adb5aa81e46d3eb05f9b49a5f93e"
+    },
+    {
+      "source_path": "working/common-core/INFRA-ARCHITECTURE.md",
+      "source_blob_sha": "b498e739335963c04114226ecaa0a26af8c89065",
+      "mode": "SECTION_FILTERED",
+      "target_path": "shared/INFRA-ARCHITECTURE.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "include_blocks": [
+        {
+          "start": {
+            "type": "BOF"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "# 7. Infrastructure Evolution Map"
+          }
+        },
+        {
+          "start": {
+            "type": "EXACT_HEADING",
+            "value": "# 8. 最終 Architecture Thesis"
+          },
+          "end_before": {
+            "type": "EOF"
+          }
+        }
+      ],
+      "output_sha256": "a124fc53302817ba5f38d96588f5e24858dbcb3f86c33d8cee7d555b03b9b4aa"
+    },
+    {
+      "source_path": "working/detailed-design/APP-DETAILED-DESIGN-OVERVIEW.md",
+      "source_blob_sha": "9cc6e9fee3b319e42f8079d49176ceda1e19fcaa",
+      "mode": "SECTION_FILTERED",
+      "target_path": "shared/APP-DETAILED-DESIGN-OVERVIEW.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "include_blocks": [
+        {
+          "start": {
+            "type": "BOF"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "## Release 2 — Durable Value / Phase 2"
+          }
+        },
+        {
+          "start": {
+            "type": "EXACT_HEADING",
+            "value": "# 6. Cross-Function Contract Index"
+          },
+          "end_before": {
+            "type": "EOF"
+          }
+        }
+      ],
+      "output_sha256": "e857f2f160ec56e7d2fa0feb724ccd1fcc582580d8918e3326f675dfbc72a8c2"
+    },
+    {
+      "source_path": "working/detailed-design/data-model/DATA-MODEL-DETAILED.md",
+      "source_blob_sha": "dbade6d2ee3e8ca9f9d8c2f43f717bcd52472057",
+      "mode": "SECTION_FILTERED",
+      "target_path": "shared/data-model/DATA-MODEL-DETAILED.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "include_blocks": [
+        {
+          "start": {
+            "type": "BOF"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "# appf2 Data Model — Phase 2 Extensions"
+          }
+        }
+      ],
+      "output_sha256": "a69ff9dfc2825f10434286737ac9d636d871725e8c28ab4072a015586580a26b"
+    },
+    {
+      "source_path": "working/detailed-design/infrastructure/INFRASTRUCTURE-DETAILED.md",
+      "source_blob_sha": "9e7ec7c1a9444dc957083fbdd39e777ed457c0e5",
+      "mode": "SECTION_FILTERED",
+      "target_path": "shared/infrastructure/INFRASTRUCTURE-DETAILED.md",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "SELF_MARKER",
+      "include_blocks": [
+        {
+          "start": {
+            "type": "BOF"
+          },
+          "end_before": {
+            "type": "EXACT_HEADING",
+            "value": "# appf2 Infrastructure — Phase 2"
+          }
+        }
+      ],
+      "output_sha256": "75bd4b6be704507217ef18da04105f3883610464e16838a2c92c66715bbea05e"
+    },
+    {
+      "source_path": "working/README.md",
+      "source_blob_sha": "90605a1003d0309742d6441929c2d032b3d2067b",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Working structure / governance index; not executable Build Spec truth"
+    },
+    {
+      "source_path": "working/DESIGN-WORKBENCH.md",
+      "source_blob_sha": "7a70582604b958663602e09a4191e385bc5bbbde",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Design decision workbench; governance/history reference only"
+    },
+    {
+      "source_path": "working/common-core/BUSINESS-PLAN.md",
+      "source_blob_sha": "c7ca45205eb644b31696af68b4ac5042414e498d",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Business/product strategy context; not executable Phase 1 Build Spec truth"
+    },
+    {
+      "source_path": "working/common-core/TECHNICAL-MOAT.md",
+      "source_blob_sha": "94ffb047d81421629980793d7c5a67e3c4b1419e",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Long-term strategic/technical context; not executable Phase 1 Build Spec truth"
+    },
+    {
+      "source_path": "working/common-core/DESIGN-TO-DELIVERY.md",
+      "source_blob_sha": "2ec711a737fb60a9012c743b8f122d1a255fd68c",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Design-to-delivery governance process; not product implementation truth"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F08-DURABLE-IDENTITY-OWNERSHIP.md",
+      "source_blob_sha": "27d5a0593add1c54ec9a3f55dea76ec4caeb27c7",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F09-REALTIME-ROOM.md",
+      "source_blob_sha": "26c813c74210caef209ba8b520628bc495678945",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F10-BLUEPRINT-REUSE-RETRIEVAL.md",
+      "source_blob_sha": "c23bb55bf6de37958cdae38ee8ebbfd4b7f0bdca",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F11-EXTERNAL-CAPABILITY-EXECUTION.md",
+      "source_blob_sha": "eb45e0931020cd272836ef04aeb35a0441060493",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F13-ENTITLEMENT-METERING.md",
+      "source_blob_sha": "e8759e6d89c18163a1c2eb58769ea659049f76d9",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F14-PROVIDER-REGISTRY-CERTIFICATION.md",
+      "source_blob_sha": "04675722b8634b9ae44f838e403d6ae40aa86031",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F15-TRANSACTION-SETTLEMENT.md",
+      "source_blob_sha": "1a639c87344f655353616d254a9cc0e4cb0092a9",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    },
+    {
+      "source_path": "working/detailed-design/functions/F17-WORKFLOW-ORCHESTRATION.md",
+      "source_blob_sha": "f86df1d6b3402716a158ff6f8e0d784abc8a96fa",
+      "mode": "REFERENCE_ONLY",
+      "phase_scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+      "freeze_audit_verification": "REFERENCE_ONLY_DECLARATION",
+      "exclusion_reason": "Deferred function; outside Phase 1 Build Freeze scope"
+    }
+  ]
+}
