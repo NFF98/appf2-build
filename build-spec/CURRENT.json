@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-013",
-  "implementation_enabled": true,
-  "reason": "Human-approved BF-042 contract remediation and BS-P1-013/T005 re-activation through the pre-Cursor boundary. T005 remains the sole active Product implementation Task; Cursor execution has not been issued; T006-T009 remain not activated; POI-005 remains DEFERRED_REVIEW."
+  "active_baseline": "BS-P1-012",
+  "implementation_enabled": false,
+  "reason": "SP-P1-002 / T005 independent exhaustive audit found BF-042 contract blockers under BS-P1-012. Product implementation is HOLD pending the already-approved BF-042 replacement baseline and re-activation; Cursor execution is not authorized."
 }
