@@ -25,7 +25,16 @@
     "POI-005 production HTTP/Runtime/Postgres wiring remains DEFERRED_REVIEW with blocks_activation=false and is explicitly outside T004. T004 closure must not absorb or silently resolve POI-005.",
     "Final seal-authority audit on canonical main found src/platform/blueprint/admissible-provenance.ts exports sealPassedResult(result), while repository-wide production-source scan shows validate-blueprint.ts is the only legitimate issuance caller and blueprint-admission.ts only needs verification.",
     "Direct-mint counterexample: an in-repo caller can construct report.status=PASSED with content_hash matching an arbitrary canonical body, construct matching AdmissibleBlueprint, call exported sealPassedResult(), then pass that returned pair to admitBlueprint(); the current WeakMap provenance check succeeds because the public sealer itself registered the forged pair.",
-    "This is still an implementation-only T004 defect under existing BS-P1-012 truth: 'validator-issued PASSED' must mean issuance authority is owned by the validator pipeline, not merely that any caller invoked a helper named sealPassedResult."
+    "This is still an implementation-only T004 defect under existing BS-P1-012 truth: 'validator-issued PASSED' must mean issuance authority is owned by the validator pipeline, not merely that any caller invoked a helper named sealPassedResult.",
+    "Final closure-simulation audit covered F02-AC-013..016 end-to-end after hypothetically applying both BF-041 fixes (stable outer-result snapshot + validator-private provenance issuance). No third T004 blocker was found.",
+    "Module export/call-graph audit: current provenance module exports both issuer and verifier; validator exports the only legitimate issuance entrypoint; blueprint-admission is the only production source consumer of provenance verification; Postgres repository is a trusted persistence adapter and has no parallel src call path that bypasses admitBlueprint.",
+    "Canonical/hash audit: canonical-json rejects accessor properties, symbol keys, unsupported prototypes, sparse/extra-property arrays, cycles and non-finite numbers. Validator-produced admitted Blueprint data is plain parsed data and deep-frozen before admission; no remaining nested accessor/mutation path was found once provenance issuance is private and outer result reads are snapshotted once.",
+    "AC-013 closure simulation: V01-V11 failures write only validation_run, existing blueprint_content is immutable, same-hash integrity mismatch leaves existing content unchanged and records F02-ERR-015. No candidate-failure path was found that mutates an existing validated Blueprint.",
+    "AC-014 closure simulation: once only validateBlueprintCandidate can mint provenance and admitBlueprint uses one report/admissible snapshot, forged/copy/splice/Proxy/getter/direct-mint paths all fail before blueprint_content. Fresh execution still independently requires ExecutionAdmission; content reuse is not execution authorization.",
+    "AC-015/016 closure simulation: PARTIALLY_SUPPORTED metadata is exact-schema, canonical, hashed and durable; missing/hidden/duplicate/unknown degradation metadata fails; preserves_semantic_core=false fails V11 before admission. Natural-language semantic correctness remains intentionally outside F02 and is not a T004 implementation gap.",
+    "Validator context registry/runtimeVersion injection remains a trusted-internal dependency-injection surface, not a T004 public-client boundary. No production HTTP caller exists yet; POI-005 must later prove client input cannot populate trusted validation/execution context. T004 must not expand into that deferred wiring.",
+    "Rejected/INCOMPATIBLE report authenticity remains a T005 evidence/traceability hardening concern because hostile internal callers could fabricate validation evidence without obtaining durable content. This does not bypass F02-AC-014 after the two BF-041 fixes and must not be silently pulled into T004.",
+    "One-shot closure rule: after Cursor fixes both BF-041 blockers, if the required hostile regressions fail on the pre-fix implementation, pass on the final HEAD, all pre-existing T004 proofs remain green, all required/global gates pass, and independent post-fix audit finds no new blocker, T004 is eligible for immediate fresh Evidence normalization and closure without another implementation round."
   ],
   "attempts": [
     {
@@ -33,6 +42,12 @@
       "strategy": "POST_CLOSURE_EXHAUSTIVE_ADMISSION_BOUNDARY_AUDIT",
       "result": "BLOCKING_IMPLEMENTATION_BUG_FOUND",
       "evidence": "Independent audit re-read the complete T004 diff and its adjacent validator/repository/execution boundaries and constructed a caller-owned accessor/Proxy counterexample that crosses the provenance check with a genuine pair then substitutes forged persistence inputs."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "PRE_REEXECUTION_ONE_SHOT_CLASS_LEVEL_CLOSURE_SIMULATION",
+      "result": "REPAIR_MATRIX_COMPLETE_NO_THIRD_T004_BLOCKER",
+      "evidence": "ChatGPT audited validator issuance, provenance identity, caller-owned wrapper TOCTOU, repository persistence, same-hash collision/integrity, immutable DB rows, fresh execution separation, degradation metadata, semantic-core rejection, module exports and production call graph. Two implementation blockers remain in BF-041 and both fit the existing T004 write scope; no Product/Schema ambiguity or third T004 blocker was found."
     }
   ],
   "requested_planning_action": [
