@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-012",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T004",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-04T01:44:15Z",
+  "blocking_findings": [],
+  "source_commit": "d859ae4f64e240b7c9aae563981411b229bb84cb",
+  "evidence_id": "EV-SP-P1-002-T004-014",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37168851299#check-lint-pass",
+  "command": "npm run check:lint",
+  "review_checks": null
+}
