@@ -7,56 +7,64 @@ import {
   createBrowserEvidenceCollector,
   type EvidenceCollector
 } from "../../src/platform/evidence/evidence-collector.js";
+import type { EvidenceQueueEntry } from "../../src/platform/evidence/evidence-queue-policy.js";
 import {
-  createWebStorageEvidenceQueueStore,
-  EVIDENCE_QUEUE_STORAGE_KEY_PREFIX,
-  evidenceQueueStorageKey,
-  type EvidenceQueueEntry,
-  type EvidenceQueueStorage
+  createIndexedDbEvidenceQueueStore,
+  EVIDENCE_QUEUE_DATABASE
 } from "../../src/platform/evidence/evidence-queue-store.js";
 import type { EvidenceEventInput } from "../../src/platform/evidence/evidence-types.js";
 import { ManualScheduler } from "./evidence-collector-test-support.js";
+import { FakeIndexedDbFactory } from "./evidence-fake-indexeddb.js";
 
 export const QUEUE_T0 = Date.parse("2026-10-05T00:00:00.000Z");
 export const HOUR_MS = 60 * 60 * 1000;
 
-export class MemoryWebStorage implements EvidenceQueueStorage {
-  private readonly items = new Map<string, string>();
-
-  public get length(): number {
-    return this.items.size;
-  }
-
-  public key(index: number): string | null {
-    return [...this.items.keys()][index] ?? null;
-  }
-
-  public getItem(key: string): string | null {
-    return this.items.get(key) ?? null;
-  }
-
-  public setItem(key: string, value: string): void {
-    this.items.set(key, value);
-  }
-
-  public removeItem(key: string): void {
-    this.items.delete(key);
-  }
-
-  public queuedEventIds(): string[] {
-    return [...this.items.keys()]
-      .filter(key => key.startsWith(EVIDENCE_QUEUE_STORAGE_KEY_PREFIX))
-      .map(key => key.slice(key.lastIndexOf(":") + 1))
-      .sort();
-  }
+function queueDatabaseRecords(factory: FakeIndexedDbFactory, storeName: string): Map<string, unknown> {
+  const database = factory.database(EVIDENCE_QUEUE_DATABASE.name);
+  return database.stores.has(storeName) ? database.records(storeName) : new Map();
 }
 
-export function persistQueuedEvent(
-  storage: EvidenceQueueStorage,
+export function durableEntries(factory: FakeIndexedDbFactory): EvidenceQueueEntry[] {
+  return [...queueDatabaseRecords(factory, EVIDENCE_QUEUE_DATABASE.entryStore).values()]
+    .map(value => value as EvidenceQueueEntry);
+}
+
+export function durableQueueIds(factory: FakeIndexedDbFactory): string[] {
+  return durableEntries(factory).map(entry => entry.eventId).sort();
+}
+
+export function durablePayload(factory: FakeIndexedDbFactory, eventId: string): unknown {
+  return queueDatabaseRecords(factory, EVIDENCE_QUEUE_DATABASE.payloadStore).get(eventId);
+}
+
+export interface DurablePeak {
+  count: number;
+  bytes: number;
+}
+
+// Observes the shared durable queue after every committed readwrite transaction from any
+// connection, which is the state every other collector can observe.
+export function trackDurablePeak(factory: FakeIndexedDbFactory): DurablePeak {
+  const peak: DurablePeak = { count: 0, bytes: 0 };
+  factory.commitListeners.push(() => {
+    const entries = durableEntries(factory);
+    peak.count = Math.max(peak.count, entries.length);
+    peak.bytes = Math.max(peak.bytes, entries.reduce((sum, entry) => sum + entry.bytes, 0));
+  });
+  return peak;
+}
+
+export async function ensureQueueDatabase(factory: FakeIndexedDbFactory): Promise<void> {
+  await createIndexedDbEvidenceQueueStore(factory).liveIds(QUEUE_T0);
+}
+
+export async function persistQueuedEvent(
+  factory: FakeIndexedDbFactory,
   event: { readonly event_id: string },
   enqueuedAt: number,
   overrides: Partial<EvidenceQueueEntry> = {}
-): void {
+): Promise<void> {
+  await ensureQueueDatabase(factory);
   const serialized = JSON.stringify(event);
   const entry: EvidenceQueueEntry = {
     eventId: event.event_id,
@@ -65,7 +73,9 @@ export function persistQueuedEvent(
     bytes: new TextEncoder().encode(serialized).byteLength,
     ...overrides
   };
-  storage.setItem(evidenceQueueStorageKey(entry), serialized);
+  queueDatabaseRecords(factory, EVIDENCE_QUEUE_DATABASE.entryStore).set(entry.eventId, entry);
+  queueDatabaseRecords(factory, EVIDENCE_QUEUE_DATABASE.payloadStore)
+    .set(entry.eventId, { eventId: entry.eventId, serialized });
 }
 
 export class ManualClock {
@@ -107,9 +117,14 @@ export async function beaconPayload(beacon: RecordedBeacon): Promise<{
   };
 }
 
+export async function beaconedEventIds(beacons: readonly RecordedBeacon[]): Promise<string[]> {
+  const payloads = await Promise.all(beacons.map(beaconPayload));
+  return payloads.flatMap(payload => eventIds(payload.events));
+}
+
 export function createDurableTestCollector(input: {
   readonly fetch: typeof fetch;
-  readonly storage: MemoryWebStorage;
+  readonly factory: FakeIndexedDbFactory;
   readonly clock: ManualClock;
   readonly navigator?: EvidenceBeaconNavigator;
   readonly scheduler?: ManualScheduler;
@@ -118,7 +133,7 @@ export function createDurableTestCollector(input: {
   let uuidIndex = 0;
   return createBrowserEvidenceCollector({
     fetch: input.fetch,
-    queueStore: createWebStorageEvidenceQueueStore(input.storage),
+    queueStore: createIndexedDbEvidenceQueueStore(input.factory),
     beaconTransport: createBrowserEvidenceBeaconTransport(input.navigator ?? {}),
     now: input.clock.now,
     scheduler: input.scheduler ?? new ManualScheduler(),
@@ -145,6 +160,12 @@ export function settle(): Promise<void> {
   return new Promise(resolve => {
     setTimeout(resolve, 0);
   });
+}
+
+export async function drain(rounds = 10): Promise<void> {
+  for (let round = 0; round < rounds; round += 1) {
+    await settle();
+  }
 }
 
 function fixtureEventId(kind: number, index: number): string {

@@ -11,20 +11,22 @@ import {
   type AdmittedEvidenceEvent,
   type EvidenceCollectionClass
 } from "../../src/platform/evidence/evidence-client-queue.js";
+import { planQueueAdmission, type EvidenceQueueEntry } from "../../src/platform/evidence/evidence-queue-policy.js";
 import {
-  createWebStorageEvidenceQueueStore,
-  EVIDENCE_QUEUE_STORAGE_KEY_PREFIX,
-  NON_DURABLE_EVIDENCE_QUEUE_STORE,
+  createIndexedDbEvidenceQueueStore,
+  EVIDENCE_QUEUE_DATABASE,
   resolveBrowserEvidenceQueueStore
 } from "../../src/platform/evidence/evidence-queue-store.js";
 import { EVIDENCE_LIMITS } from "../../src/platform/evidence/evidence-validator.js";
 import { createScriptedFetch } from "./evidence-collector-test-support.js";
+import { FakeIndexedDbFactory } from "./evidence-fake-indexeddb.js";
 import {
   coreOutcomeEvent,
   createDurableTestCollector,
+  durableQueueIds,
+  ensureQueueDatabase,
   eventIds,
   ManualClock,
-  MemoryWebStorage,
   productSampleEvent,
   QUEUE_T0,
   reliabilityEvent
@@ -51,12 +53,8 @@ function syntheticEvent(
   };
 }
 
-function createQueue(clock = new ManualClock(QUEUE_T0), storage = new MemoryWebStorage()) {
-  return {
-    queue: new EvidenceClientQueue(createWebStorageEvidenceQueueStore(storage), clock.now),
-    clock,
-    storage
-  };
+function createQueue(clock = new ManualClock(QUEUE_T0)) {
+  return { queue: new EvidenceClientQueue(null, clock.now), clock };
 }
 
 function admitted(input: unknown): AdmittedEvidenceEvent {
@@ -69,6 +67,10 @@ function admitted(input: unknown): AdmittedEvidenceEvent {
 
 function byteLength(value: string): number {
   return new TextEncoder().encode(value).byteLength;
+}
+
+function entry(eventId: string, enqueuedAt: number): EvidenceQueueEntry {
+  return { eventId, enqueuedAt, collectionClass: "CORE_OUTCOME", bytes: 1 };
 }
 
 describe("EvidenceClientQueue bounds", () => {
@@ -107,17 +109,21 @@ describe("EvidenceClientQueue bounds", () => {
     expect(eventIds(queue.events())).toEqual(["DEBUG_ONLY-1", "RELIABILITY-1"]);
   });
 
-  test("expired records are purged before any live record is evicted", () => {
-    const { queue, clock, storage } = createQueue();
+  test("expired records are purged in memory and durable storage before any live record is evicted", async () => {
+    const factory = new FakeIndexedDbFactory();
+    const clock = new ManualClock(QUEUE_T0);
+    const queue = new EvidenceClientQueue(createIndexedDbEvidenceQueueStore(factory), clock.now);
     for (let index = 1; index <= EVIDENCE_QUEUE_LIMITS.maxEvents; index += 1) {
       queue.enqueue(admitted(coreOutcomeEvent(index)));
     }
-    expect(storage.queuedEventIds()).toHaveLength(200);
+    await queue.settled();
+    expect(durableQueueIds(factory)).toHaveLength(200);
 
     clock.set(QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs + 1);
     expect(queue.enqueue(admitted(productSampleEvent(1)))).toBe("QUEUED");
+    await queue.settled();
     expect(eventIds(queue.events())).toEqual([productSampleEvent(1).event_id]);
-    expect(storage.queuedEventIds()).toEqual([productSampleEvent(1).event_id]);
+    expect(durableQueueIds(factory)).toEqual([productSampleEvent(1).event_id]);
   });
 
   test("the same event_id is queued once and first enqueue wins", () => {
@@ -126,6 +132,30 @@ describe("EvidenceClientQueue bounds", () => {
     clock.set(QUEUE_T0 + 1000);
     expect(queue.enqueue(admitted(coreOutcomeEvent(1)))).toBe("DUPLICATE");
     expect(queue.size()).toBe(1);
+  });
+});
+
+describe("planQueueAdmission TTL", () => {
+  test("an entry exactly 24h old is live and one millisecond older is expired even far below the bounds", () => {
+    const boundary = entry("boundary", QUEUE_T0);
+    const incoming = entry("incoming", QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs);
+    expect(planQueueAdmission([boundary], incoming, QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs)).toEqual({
+      outcome: "QUEUED",
+      expired: [],
+      evicted: []
+    });
+    expect(planQueueAdmission([boundary], incoming, QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs + 1)).toEqual({
+      outcome: "QUEUED",
+      expired: [boundary],
+      evicted: []
+    });
+  });
+
+  test("an expired holder of the same event_id does not block a fresh enqueue", () => {
+    const now = QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs + 1;
+    const stale = entry("same", QUEUE_T0);
+    expect(planQueueAdmission([stale], entry("same", now), now).outcome).toBe("QUEUED");
+    expect(planQueueAdmission([entry("same", now)], entry("same", now), now).outcome).toBe("DUPLICATE");
   });
 });
 
@@ -169,7 +199,7 @@ describe("admitEvidenceEvent", () => {
     expect(admitted(reliabilityEvent(1)).collectionClass).toBe("RELIABILITY");
   });
 
-  test("queues a detached validated snapshot so later caller mutation cannot change it", () => {
+  test("queues a detached, deep-frozen validated snapshot so later mutation cannot change it", () => {
     const original = {
       ...coreOutcomeEvent(1),
       properties: { surface: "CREATE", source_capsule_id: "capsule-1" }
@@ -179,6 +209,9 @@ describe("admitEvidenceEvent", () => {
     expect(result.event).not.toBe(original);
     expect(result.event.properties).toEqual({ surface: "CREATE", source_capsule_id: "capsule-1" });
     expect(JSON.parse(result.serialized)).toEqual(result.event);
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result.event)).toBe(true);
+    expect(Object.isFrozen(result.event.properties)).toBe(true);
   });
 
   test("rejects privacy-invalid, unknown and unserializable events without throwing", () => {
@@ -193,95 +226,115 @@ describe("admitEvidenceEvent", () => {
   });
 });
 
-describe("Evidence queue browser storage", () => {
-  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+describe("Evidence queue IndexedDB store", () => {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "indexedDB");
 
   afterEach(() => {
     if (originalDescriptor === undefined) {
-      Reflect.deleteProperty(globalThis, "localStorage");
+      Reflect.deleteProperty(globalThis, "indexedDB");
     } else {
-      Object.defineProperty(globalThis, "localStorage", originalDescriptor);
+      Object.defineProperty(globalThis, "indexedDB", originalDescriptor);
     }
   });
 
-  test("load drops malformed queue entries and leaves unrelated storage keys untouched", () => {
-    const storage = new MemoryWebStorage();
-    storage.setItem("unrelated", "keep");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}no-metadata`, "{}");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:7:`, "{}");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:UNKNOWN_CLASS:7:bad-class`, "{}");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:-7:negative-bytes`, "{}");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}01:CORE_OUTCOME:7:non-canonical-time`, "{}");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:7:bad-json`, "{");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:7:ok`, '{"a":1}');
+  test("load deletes malformed entries, entries without payloads and orphan payloads", async () => {
+    const factory = new FakeIndexedDbFactory();
+    await ensureQueueDatabase(factory);
+    const database = factory.database(EVIDENCE_QUEUE_DATABASE.name);
+    const entries = database.records(EVIDENCE_QUEUE_DATABASE.entryStore);
+    const payloads = database.records(EVIDENCE_QUEUE_DATABASE.payloadStore);
+    const valid = { eventId: "ok", enqueuedAt: QUEUE_T0, collectionClass: "CORE_OUTCOME", bytes: 7 };
+    entries.set("ok", valid);
+    payloads.set("ok", { eventId: "ok", serialized: '{"a":1}' });
+    entries.set("bad-class", { ...valid, eventId: "bad-class", collectionClass: "UNKNOWN" });
+    entries.set("negative-bytes", { ...valid, eventId: "negative-bytes", bytes: -7 });
+    entries.set("bad-time", { ...valid, eventId: "bad-time", enqueuedAt: "yesterday" });
+    entries.set("no-payload", { ...valid, eventId: "no-payload" });
+    payloads.set("bad-payload", { eventId: "bad-payload", serialized: 42 });
+    entries.set("bad-payload", { ...valid, eventId: "bad-payload" });
+    payloads.set("orphan", { eventId: "orphan", serialized: "{}" });
 
-    const records = createWebStorageEvidenceQueueStore(storage).load();
+    const records = await createIndexedDbEvidenceQueueStore(factory).load(QUEUE_T0);
 
-    expect(records).toEqual([{
-      entry: { eventId: "ok", enqueuedAt: 1, collectionClass: "CORE_OUTCOME", bytes: 7 },
-      event: { a: 1 }
-    }]);
-    expect(storage.getItem("unrelated")).toBe("keep");
-    expect(storage.queuedEventIds()).toEqual(["ok"]);
-  });
-
-  test("entries lists durable admission metadata from storage keys without reading payloads", () => {
-    const storage = new MemoryWebStorage();
-    const store = createWebStorageEvidenceQueueStore(storage);
-    const entry = {
-      eventId: "event-1",
-      enqueuedAt: QUEUE_T0,
-      collectionClass: "RELIABILITY" as const,
-      bytes: 42
-    };
-    store.put(entry, '{"x":1}');
-    storage.getItem = () => {
-      throw new Error("payload read");
-    };
-
-    expect(store.entries()).toEqual([entry]);
-    store.remove(entry);
-    expect(store.entries()).toEqual([]);
+    expect(records).toEqual([{ entry: valid, serialized: '{"a":1}' }]);
+    expect([...database.records(EVIDENCE_QUEUE_DATABASE.entryStore).keys()]).toEqual(["ok"]);
+    expect([...database.records(EVIDENCE_QUEUE_DATABASE.payloadStore).keys()].sort()).toEqual(["ok", "orphan"]);
   });
 
   test("storage write failure never blocks emit and the event stays queued in memory", async () => {
-    const storage = new MemoryWebStorage();
-    storage.setItem = () => {
-      throw new DOMException("quota", "QuotaExceededError");
-    };
+    const factory = new FakeIndexedDbFactory();
+    factory.failWrites = true;
     const fetch = createScriptedFetch([200]);
-    const collector = createDurableTestCollector({
-      fetch: fetch.fetchImpl,
-      storage,
-      clock: new ManualClock(QUEUE_T0)
-    });
+    const collector = createDurableTestCollector({ fetch: fetch.fetchImpl, factory, clock: new ManualClock(QUEUE_T0) });
 
     expect(() => collector.emit(coreOutcomeEvent(1))).not.toThrow();
+    await collector.settled();
     expect(collector.queuedCount()).toBe(1);
+    expect(durableQueueIds(factory)).toEqual([]);
     await collector.flush();
     expect(eventIds(fetch.requests[0]?.events ?? [])).toEqual([coreOutcomeEvent(1).event_id]);
   });
 
-  test("browser store resolution uses localStorage when reachable and degrades to non-durable", () => {
-    const storage = new MemoryWebStorage();
-    Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
-    const durable = resolveBrowserEvidenceQueueStore();
-    durable.put(
-      { eventId: "event-1", enqueuedAt: QUEUE_T0, collectionClass: "CORE_OUTCOME", bytes: 7 },
-      '{"x":1}'
-    );
-    expect(storage.queuedEventIds()).toEqual(["event-1"]);
+  test("a failed database open degrades to memory-only and the next admission retries durably", async () => {
+    const factory = new FakeIndexedDbFactory();
+    factory.failOpen = true;
+    const collector = createDurableTestCollector({
+      fetch: createScriptedFetch([]).fetchImpl,
+      factory,
+      clock: new ManualClock(QUEUE_T0)
+    });
+    collector.emit(coreOutcomeEvent(1));
+    await collector.settled();
+    expect(collector.queuedCount()).toBe(1);
+    expect(durableQueueIds(factory)).toEqual([]);
 
-    Object.defineProperty(globalThis, "localStorage", {
+    factory.failOpen = false;
+    collector.emit(coreOutcomeEvent(2));
+    await collector.settled();
+    expect(collector.queuedCount()).toBe(2);
+    expect(durableQueueIds(factory)).toEqual([coreOutcomeEvent(2).event_id]);
+  });
+
+  test("durable records are not sent while the shared queue cannot be read, and are sent once it can", async () => {
+    const factory = new FakeIndexedDbFactory();
+    const fetch = createScriptedFetch([200]);
+    const collector = createDurableTestCollector({ fetch: fetch.fetchImpl, factory, clock: new ManualClock(QUEUE_T0) });
+    collector.emit(coreOutcomeEvent(1));
+    await collector.settled();
+
+    factory.failReads = true;
+    await collector.flush();
+    expect(fetch.requests).toHaveLength(0);
+    expect(collector.queuedCount()).toBe(1);
+
+    factory.failReads = false;
+    await collector.flush();
+    await collector.settled();
+    expect(eventIds(fetch.requests[0]?.events ?? [])).toEqual([coreOutcomeEvent(1).event_id]);
+    expect(durableQueueIds(factory)).toEqual([]);
+  });
+
+  test("browser store resolution uses indexedDB when reachable and degrades to memory-only", async () => {
+    const factory = new FakeIndexedDbFactory();
+    Object.defineProperty(globalThis, "indexedDB", { configurable: true, value: factory });
+    const store = resolveBrowserEvidenceQueueStore();
+    expect(store).not.toBeNull();
+    await store?.admit({
+      entry: { eventId: "event-1", enqueuedAt: QUEUE_T0, collectionClass: "CORE_OUTCOME", bytes: 7 },
+      serialized: '{"x":1}'
+    }, QUEUE_T0);
+    expect(durableQueueIds(factory)).toEqual(["event-1"]);
+
+    Object.defineProperty(globalThis, "indexedDB", {
       configurable: true,
       get() {
         throw new DOMException("denied", "SecurityError");
       }
     });
-    expect(resolveBrowserEvidenceQueueStore()).toBe(NON_DURABLE_EVIDENCE_QUEUE_STORE);
+    expect(resolveBrowserEvidenceQueueStore()).toBeNull();
 
-    Reflect.deleteProperty(globalThis, "localStorage");
-    expect(resolveBrowserEvidenceQueueStore()).toBe(NON_DURABLE_EVIDENCE_QUEUE_STORE);
+    Reflect.deleteProperty(globalThis, "indexedDB");
+    expect(resolveBrowserEvidenceQueueStore()).toBeNull();
   });
 });
 

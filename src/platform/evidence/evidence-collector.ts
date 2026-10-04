@@ -9,6 +9,7 @@ import {
 import {
   admitEvidenceEvent,
   EvidenceClientQueue,
+  requestBoundedBatches,
   type QueuedEvidenceRecord
 } from "./evidence-client-queue.js";
 import {
@@ -31,7 +32,7 @@ export interface EvidenceCollectorScheduler {
 export interface EvidenceCollectorDependencies {
   readonly transport: EvidenceBatchTransport;
   readonly beaconTransport: EvidenceBeaconTransport;
-  readonly queueStore: EvidenceQueueStore;
+  readonly queueStore: EvidenceQueueStore | null;
   readonly randomUUID: () => string;
   readonly now: () => number;
   readonly sleep: (ms: number) => Promise<void>;
@@ -43,7 +44,7 @@ export interface BrowserEvidenceCollectorOptions {
   readonly fetch?: typeof fetch;
   readonly transport?: EvidenceBatchTransport;
   readonly beaconTransport?: EvidenceBeaconTransport;
-  readonly queueStore?: EvidenceQueueStore;
+  readonly queueStore?: EvidenceQueueStore | null;
   readonly randomUUID?: () => string;
   readonly now?: () => number;
   readonly sleep?: (ms: number) => Promise<void>;
@@ -104,9 +105,13 @@ async function deliverChunk(
   batch: readonly QueuedEvidenceRecord[]
 ): Promise<"dequeue" | "retain"> {
   const batchId = dependencies.randomUUID();
-  let pending = batch;
+  let pending: readonly QueuedEvidenceRecord[] = batch;
   for (let attempt = 1; attempt <= EVIDENCE_MAX_SEND_ATTEMPTS; attempt += 1) {
-    pending = queue.retainLive(pending);
+    const sendable = await queue.sendable(pending);
+    if (sendable === null) {
+      return "retain";
+    }
+    pending = sendable;
     if (pending.length === 0) {
       return "dequeue";
     }
@@ -129,11 +134,11 @@ export class EvidenceCollector {
   private readonly queue: EvidenceClientQueue;
   private timer: unknown = null;
   private tail: Promise<void> = Promise.resolve();
+  private pageHideHandoff: Promise<void> = Promise.resolve();
 
   public constructor(private readonly dependencies: EvidenceCollectorDependencies) {
     this.queue = new EvidenceClientQueue(dependencies.queueStore, dependencies.now);
-    this.queue.restore();
-    this.ensureTimer();
+    void this.queue.restore().then(() => this.ensureTimer());
   }
 
   public queuedCount(): number {
@@ -142,6 +147,13 @@ export class EvidenceCollector {
 
   public queuedEvents(): readonly EvidenceEventInput[] {
     return this.queue.events();
+  }
+
+  // Resolves once durable queue work issued so far (restore, admissions, removals and the
+  // verified pagehide handoff) has settled. Network delivery is not awaited.
+  public async settled(): Promise<void> {
+    await this.pageHideHandoff;
+    await this.queue.settled();
   }
 
   public emit(event: EvidenceEventInput): void {
@@ -161,23 +173,41 @@ export class EvidenceCollector {
     return this.tail;
   }
 
-  // Runs synchronously inside pagehide: no awaiting, no retries. Batches the user agent refuses
-  // stay in the durable queue for the next session.
+  // Best-effort, no retries. Records no other collector can evict are handed to sendBeacon
+  // synchronously inside pagehide; records in the shared durable queue are handed off only after
+  // one durable transaction confirms another collector has not evicted them. Batches the user agent
+  // refuses stay queued for the next session.
   public flushOnPageHide(): void {
     try {
-      for (const batch of this.queue.batches()) {
-        const handedOff = this.dependencies.beaconTransport.dispatch({
-          batch_id: this.dependencies.randomUUID(),
-          events: batchEvents(batch)
-        });
-        if (!handedOff) {
-          return;
-        }
-        this.queue.remove(batch);
+      const { unshared, shared } = this.queue.pageHideCandidates();
+      if (!this.handOffToBeacon(unshared) || shared.length === 0) {
+        return;
       }
+      const handoff = this.queue.sendable(shared)
+        .then(verified => {
+          if (verified !== null) {
+            this.handOffToBeacon(verified);
+          }
+        })
+        .catch(() => undefined);
+      this.pageHideHandoff = this.pageHideHandoff.then(() => handoff);
     } catch {
       return;
     }
+  }
+
+  private handOffToBeacon(records: readonly QueuedEvidenceRecord[]): boolean {
+    for (const batch of requestBoundedBatches(records)) {
+      const handedOff = this.dependencies.beaconTransport.dispatch({
+        batch_id: this.dependencies.randomUUID(),
+        events: batchEvents(batch)
+      });
+      if (!handedOff) {
+        return false;
+      }
+      this.queue.remove(batch);
+    }
+    return true;
   }
 
   private ensureTimer(): void {
@@ -203,6 +233,7 @@ export class EvidenceCollector {
 
   private async flushOwnedQueue(): Promise<void> {
     this.clearTimer();
+    await this.queue.settled();
     for (let batch = this.queue.nextBatch(); batch.length > 0; batch = this.queue.nextBatch()) {
       const result = await deliverChunk(this.dependencies, this.queue, batch);
       if (result === "retain") {
@@ -220,7 +251,7 @@ export function createBrowserEvidenceCollector(
   return new EvidenceCollector({
     transport: options.transport ?? createBrowserEvidenceBatchTransport(options.fetch),
     beaconTransport: options.beaconTransport ?? createBrowserEvidenceBeaconTransport(),
-    queueStore: options.queueStore ?? resolveBrowserEvidenceQueueStore(),
+    queueStore: options.queueStore === undefined ? resolveBrowserEvidenceQueueStore() : options.queueStore,
     randomUUID: options.randomUUID ?? (() => globalThis.crypto.randomUUID()),
     now: options.now ?? (() => Date.now()),
     sleep: options.sleep ?? defaultSleep,
