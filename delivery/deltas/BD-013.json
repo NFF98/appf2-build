@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-013",
   "type": "DESIGN_DELTA",
-  "status": "CLOSED",
+  "status": "APPROVED",
   "source_finding_ids": [
     "BF-042"
   ],
@@ -30,12 +30,12 @@
     "decision_ref": "Human approval in ChatGPT 2026-10-04: exhaustive audit and all bug/contract remediation through immediately before Cursor starts implementation."
   },
   "replacement_build_spec_required": true,
-  "upstream_working_commit": "08ee376d315dca5a5ff03ce7427a1856cde03795",
+  "upstream_working_commit": "1330ea523a943ccd5aa3a4ff6727b9be71dea14e",
   "replacement_build_spec": "BS-P1-013",
   "verification": [
-    "Scope-clean source is exactly three files ahead of BS-P1-012 source.",
-    "No UI/Product flow, POI-005 or T009 semantics changed.",
-    "BS-P1-013 rebinds T005 only; Cursor execution remains unissued."
+    "Design BF-042 Product-truth remediation is commit 1330ea523a943ccd5aa3a4ff6727b9be71dea14e.",
+    "Scope-clean freeze source 08ee376d315dca5a5ff03ce7427a1856cde03795 is exactly three files ahead of BS-P1-012 source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f.",
+    "Replacement BS-P1-013 freeze candidate changes only BF-042 contract truth; activation and Cursor execution remain separate."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
