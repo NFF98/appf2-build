@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-014",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-043"
   ],
@@ -38,7 +38,8 @@
     "Design BF-043 machine-contract remediation is canonical commit f6e72ea29a0332ba37a4017415f2fe69a661dce2.",
     "Scope-clean freeze source 5deb371234bce8864b1fc6847474c6d31bddd332 is exactly one commit ahead of BS-P1-013 source 08ee376d315dca5a5ff03ce7427a1856cde03795 and changes exactly F01-INTENT-COMPILATION.md.",
     "Replacement BS-P1-014 preserves existing F01 Product outcomes and adds only bounded deterministic policy inputs/state required by BF-043.",
-    "Freeze does not activate T006, does not issue Cursor execution, and does not absorb POI-005/POI-006 or T007-T009."
+    "Freeze does not activate T006, does not issue Cursor execution, and does not absorb POI-005/POI-006 or T007-T009.",
+    "BS-P1-014 activation rebinds remaining SP-P1-002 implementation work to the replacement baseline while preserving closed-task history; Cursor execution remains separately gated."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
