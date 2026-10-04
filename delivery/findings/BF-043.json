@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-043",
   "classification": "SPEC_AMBIGUITY",
-  "status": "OPEN",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-013",
   "sprint_id": "SP-P1-002",
   "task_id": "T006",
@@ -49,5 +49,5 @@
     "F01-AC-017"
   ],
   "contract_affecting": true,
-  "delta_id": "BD-014"
+  "delta_id": null
 }
