@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-014",
+  "active_task": "T006",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-002 / T006 is BLOCKED by BF-043 after Cursor hard-stop and independent audit. Replacement baseline rebaseline/activation is required before any fresh Cursor execution."
+  "reason": "BS-P1-014 activated after BF-043 deterministic F01 policy remediation; T006 restored to IN_PROGRESS. Cursor execution remains intentionally unissued and Issue #223 requires a fresh explicit EXECUTE."
 }
