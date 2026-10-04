@@ -1,3 +1,5 @@
+import { readdirSync } from "node:fs";
+
 import { describe, expect, test } from "vitest";
 
 import { VALIDATOR_REGISTRY } from "../../generated/capabilities/validator-registry.js";
@@ -30,6 +32,7 @@ const NOW = (): Date => new Date("2026-10-04T00:00:00.000Z");
 const EXISTING_RUN = "00000000-0000-4000-8000-0000000000e0";
 const REJECTED_BODY_MARKER = "rejected-candidate-body-marker-7f3a";
 const POST_SEAL_MARKER = "post-seal-mutation-marker-c91d";
+const BLUEPRINT_MODULES = new URL("../../src/platform/blueprint/", import.meta.url);
 
 function runId(index: number): string {
   return `00000000-0000-4000-8000-${(index + 1).toString(16).padStart(12, "0")}`;
@@ -265,6 +268,151 @@ async function expectSealedSnapshotSurvivesNestedMutation(): Promise<void> {
   await expectExecutable(store, validated.contentHash, "sealed snapshot after nested mutation attempts");
 }
 
+function durableJson(store: Durable): string {
+  return JSON.stringify([...store.database.contents.values(), ...store.database.runs.values()]);
+}
+
+interface RejectedBody {
+  readonly candidate: JsonRecord;
+  readonly admissible: { readonly blueprint: JsonRecord; readonly canonicalJson: string; readonly byteSize: number; readonly contentHash: string };
+}
+
+function rejectedBody(): RejectedBody {
+  const candidate = withMarker(nonPreserving());
+  const canonicalJson = canonicalizeJson(candidate);
+  const contentHash = hashBlueprint(candidate);
+  const byteSize = new TextEncoder().encode(canonicalJson).byteLength;
+  return { candidate, admissible: { blueprint: candidate, canonicalJson, byteSize, contentHash } };
+}
+
+/** Caller-owned outer result that returns the next scripted value on every property read and counts all traps. */
+function switchingResult(reports: readonly unknown[], admissibles: readonly unknown[], reads: Record<string, number>): BlueprintValidationResult {
+  const scripts: Readonly<Record<string, readonly unknown[]>> = { report: reports, admissible: admissibles };
+  const count = (trap: string): number => (reads[trap] = (reads[trap] ?? 0) + 1);
+  return new Proxy<object>(
+    {},
+    {
+      get: (_target, key) => {
+        const name = String(key);
+        const read = count(name);
+        const script = scripts[name];
+        return script?.[Math.min(read, script.length) - 1];
+      },
+      ownKeys: (target) => {
+        count("[[OwnPropertyKeys]]");
+        return Reflect.ownKeys(target);
+      }
+    }
+  ) as BlueprintValidationResult;
+}
+
+async function expectSwitchingWrapperAdmitsOnlyIssuedSnapshot(): Promise<void> {
+  const store = durable();
+  const validationRunId = runId(103);
+  const genuine = validateText(EXISTING_JSON, validationRunId);
+  const genuineHash = genuine.report.content_hash;
+  expect(genuine.admissible).toBeDefined();
+  const rejected = rejectedBody();
+  const forgedReport = { ...genuine.report, content_hash: rejected.admissible.contentHash };
+  const reads: Record<string, number> = {};
+  const hostile = switchingResult([genuine.report, forgedReport], [genuine.admissible, genuine.admissible, rejected.admissible], reads);
+
+  const outcome = await admitBlueprint(hostile, store.repository, { now: NOW });
+
+  expect(store.database.contents.has(rejected.admissible.contentHash), "switched rejected body content").toBe(false);
+  expect(durableJson(store), "switched rejected body marker").not.toContain(REJECTED_BODY_MARKER);
+  expectDenied(await store.admission.admit(rejected.admissible.contentHash), { step: "E01", http: 404 }, "switched rejected body hash");
+  expect(outcome).toEqual({ status: "ADMITTED", validationRunId, contentHash: genuineHash, reused: false, trustStatus: "VALIDATED" });
+  expect([...store.database.contents.keys()]).toEqual([genuineHash]);
+  expect(store.database.contents.get(genuineHash ?? "")?.byte_size).toBe(genuine.admissible?.byteSize);
+  expect(store.database.runs.get(validationRunId)).toMatchObject({ status: "PASSED", blueprint_hash: genuineHash, error_codes: [] });
+  expect(reads).toEqual({ report: 1, admissible: 1 });
+}
+
+async function expectSwitchingRejectedWrapperRecordsOneReport(): Promise<void> {
+  const store = durable();
+  const validationRunId = runId(104);
+  const incompatibleCandidate = withMarker(withValue(["registry_version"], "6.0.0"));
+  const incompatible = validateText(JSON.stringify(incompatibleCandidate), validationRunId);
+  const genuine = validateText(EXISTING_JSON, runId(105));
+  expect(incompatible.report.status).toBe("INCOMPATIBLE");
+  expect(genuine.admissible).toBeDefined();
+  const reads: Record<string, number> = {};
+  const hostile = switchingResult([incompatible.report, genuine.report], [undefined, genuine.admissible], reads);
+
+  const outcome = await admitBlueprint(hostile, store.repository, { now: NOW });
+
+  expect(outcome).toEqual({ status: "NOT_ADMITTED", report: incompatible.report });
+  expect(outcome.status === "NOT_ADMITTED" ? outcome.report : undefined).toBe(incompatible.report);
+  expect(store.database.statements).toHaveLength(1);
+  expect(store.database.statements[0]).toMatch(/^INSERT INTO public\.validation_run/);
+  expect(store.database.statements.join("\n")).not.toContain("public.blueprint_content");
+  expect(store.database.contents.size).toBe(0);
+  expect(store.database.runs.get(validationRunId)).toMatchObject({
+    status: "INCOMPATIBLE",
+    blueprint_hash: null,
+    error_codes: ["F02-ERR-004"],
+    report: { status: "INCOMPATIBLE", candidate_digest: incompatible.report.candidate_digest }
+  });
+  expect(durableJson(store)).not.toContain(REJECTED_BODY_MARKER);
+  expectDenied(await store.admission.admit(hashBlueprint(incompatibleCandidate)), { step: "E01", http: 404 }, "switched incompatible body hash");
+  expectDenied(await store.admission.admit(genuine.report.content_hash ?? ""), { step: "E01", http: 404 }, "switched-in genuine hash");
+  expect(reads).toEqual({ report: 1, admissible: 1 });
+}
+
+async function invokeQuietly(candidate: unknown, args: readonly unknown[]): Promise<unknown> {
+  try {
+    return await Promise.resolve((candidate as (...values: readonly unknown[]) => unknown)(...args));
+  } catch {
+    return undefined;
+  }
+}
+
+function isResultShaped(value: unknown): value is BlueprintValidationResult {
+  return typeof value === "object" && value !== null && "report" in value && "admissible" in value;
+}
+
+/** Every runtime export of the blueprint package is offered a forged PASSED pair; none may mint admissible provenance. */
+async function expectNoExportCanMintProvenance(): Promise<void> {
+  const store = durable();
+  const genuine = validateText(EXISTING_JSON, runId(106));
+  const rejected = rejectedBody();
+  const forged = { report: { ...genuine.report, content_hash: rejected.admissible.contentHash }, admissible: rejected.admissible };
+  const swept: string[] = [];
+  const minted: [string, BlueprintValidationResult][] = [];
+  for (const file of readdirSync(BLUEPRINT_MODULES).filter((name) => name.endsWith(".ts"))) {
+    const exports = (await import(new URL(file, BLUEPRINT_MODULES).href)) as Record<string, unknown>;
+    for (const [name, value] of Object.entries(exports)) {
+      if (typeof value !== "function") {
+        continue;
+      }
+      swept.push(`${file}#${name}`);
+      for (const args of [[forged], [forged.report, forged.admissible]]) {
+        const returned = await invokeQuietly(value, args);
+        if (isResultShaped(returned)) {
+          minted.push([`${file}#${name}`, returned]);
+        }
+      }
+    }
+  }
+  expect(swept).toEqual(expect.arrayContaining(["validate-blueprint.ts#validateBlueprintCandidate", "blueprint-admission.ts#admitBlueprint"]));
+
+  const minters: string[] = [];
+  for (const [source, candidate] of [["caller-built forged pair", forged] as const, ...minted]) {
+    const admitted = await admitBlueprint(candidate as BlueprintValidationResult, store.repository, { now: NOW }).then(
+      () => true,
+      () => false
+    );
+    if (admitted) {
+      minters.push(source);
+    }
+  }
+  expect(minters).toEqual([]);
+  expect(store.database.statements).toEqual([]);
+  expect(store.database.contents.has(rejected.admissible.contentHash)).toBe(false);
+  expectDenied(await store.admission.admit(rejected.admissible.contentHash), { step: "E01", http: 404 }, "direct-mint rejected body hash");
+}
+
 describe("F02 validation failure isolation", () => {
   test("TEST-F02-AC-013 validation failure at any stage never corrupts an existing validated Blueprint", async () => {
     const store = durable();
@@ -319,5 +467,8 @@ describe("F02 validation failure isolation", () => {
     expect(store.database.contents.size).toBe(0);
 
     await expectSealedSnapshotSurvivesNestedMutation();
+    await expectSwitchingWrapperAdmitsOnlyIssuedSnapshot();
+    await expectSwitchingRejectedWrapperRecordsOneReport();
+    await expectNoExportCanMintProvenance();
   });
 });

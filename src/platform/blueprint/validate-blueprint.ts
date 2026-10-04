@@ -7,7 +7,6 @@ import type {
   ValidatorRegistry
 } from "../capabilities/schema/validator-contract.js";
 import { validateActions, type TypedNode } from "./action-typing.js";
-import { sealPassedResult } from "./admissible-provenance.js";
 import { parseBlueprintSchema } from "./blueprint-schema.js";
 import { computeCandidateDigest, parseCandidatePayload } from "./candidate-intake.js";
 import { createEligibilityEvaluator, type EligibilityEvaluator } from "../capabilities/execution-eligibility.js";
@@ -26,7 +25,8 @@ import {
   type Blueprint,
   type BlueprintValidationResult,
   type ResourceUsageReport,
-  type ValidationIssue
+  type ValidationIssue,
+  type ValidationReport
 } from "./validation-types.js";
 
 export interface BlueprintValidationContext {
@@ -37,8 +37,44 @@ export interface BlueprintValidationContext {
   readonly validationRunId?: string;
 }
 
+type PassedValidationResult = Extract<BlueprintValidationResult, { readonly admissible: AdmissibleBlueprint }>;
+
 const INDEX_DESCRIPTOR: TypeDescriptor = { type: "NUMBER", constraints: { min: 0 } };
 const INCOMPATIBLE_CODES: ReadonlySet<string> = new Set(["F02-ERR-003", "F02-ERR-004"]);
+/** Issuance must stay module-private: only validateBlueprintCandidate may enrol a PASSED pair. */
+const issuedReports = new WeakMap<AdmissibleBlueprint, ValidationReport>();
+
+function deepFreeze<T extends object>(root: T): T {
+  const visited = new WeakSet<object>();
+  const pending: unknown[] = [root];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (typeof current !== "object" || current === null || visited.has(current)) {
+      continue;
+    }
+    visited.add(current);
+    Object.freeze(current);
+    for (const child of Object.values(current)) {
+      pending.push(child);
+    }
+  }
+  return root;
+}
+
+/**
+ * Only results sealed by the F02 pipeline may cross into durable blueprint_content admission.
+ * The whole issued snapshot is deep-frozen so no durable admission input can drift from what was validated.
+ */
+function sealPassedResult(result: PassedValidationResult): PassedValidationResult {
+  const report = deepFreeze({ ...result.report });
+  const admissible = deepFreeze({ ...result.admissible });
+  issuedReports.set(admissible, report);
+  return Object.freeze({ report, admissible });
+}
+
+export function isSealedPassedResult(report: ValidationReport, admissible: AdmissibleBlueprint): boolean {
+  return issuedReports.get(admissible) === report;
+}
 
 function checkVersions(blueprint: Blueprint, registry: ValidatorRegistry): void {
   if (blueprint.schema_version !== BLUEPRINT_SCHEMA_VERSION) {
