@@ -439,13 +439,11 @@
         "BL-P1-007"
       ],
       "title": "Implement validation evidence and admission traceability",
-      "status": "IN_PROGRESS",
-      "build_spec_id": "BS-P1-013",
+      "status": "BLOCKED",
+      "build_spec_id": "BS-P1-012",
       "scope": [
-        "Make every validation traceable with canonical candidate_digest / stage / error / trace evidence without raw Blueprint telemetry; invalid/missing upstream trace must be replaced by server-generated canonical trace rather than silently losing Evidence.",
-        "Trace admitted Blueprint content to its admitting validation_run.",
-        "Implement trusted server-only compare-and-set trust transitions VALIDATED → REVOKED | INCOMPATIBLE; emit F02-EVT-008 / F02-EVT-014 for successful transitions without mutating immutable Blueprint body/admission lineage.",
-        "Preserve validator-issued authenticity for PASSED, REJECTED and INCOMPATIBLE validation evidence."
+        "Make validation stage/error/trace evidence observable without raw Blueprint telemetry.",
+        "Trace admitted Blueprint content to validation_run and trace revoke/incompatible outcomes without mutating immutable Blueprint body."
       ],
       "non_scope": [
         "Do not change validation Product semantics.",
