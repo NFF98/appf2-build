@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-042",
   "classification": "SPEC_AMBIGUITY",
-  "status": "RESOLVED",
+  "status": "CLOSED",
   "build_spec_id": "BS-P1-012",
   "sprint_id": "SP-P1-002",
   "task_id": "T005",
@@ -18,7 +18,10 @@
     "BF-042 resolution freezes canonical trace fallback/generation, trusted server-only VALIDATED→REVOKED|INCOMPATIBLE compare-and-set transition authority, immutable body/admission lineage, F02-EVT-008 for revoke and new F02-EVT-014 trust_incompatible for durable incompatibility transition.",
     "BF-042 Build governance is formally BLOCKED on BS-P1-012 before replacement rebaseline; Cursor execution is not authorized.",
     "BS-P1-013 Freeze merged canonical via PR #209 at 22be8b85ff1fb970e2509a5ccc4208562f15b3fc; BF-042 remains BLOCKED until the separate Activation transition.",
-    "Atomic BS-P1-013 / SP-P1-002 / T005 activation is prepared under the Human pre-Cursor approval; Cursor EXECUTE remains outside this transition and is not issued."
+    "Atomic BS-P1-013 / SP-P1-002 / T005 activation is prepared under the Human pre-Cursor approval; Cursor EXECUTE remains outside this transition and is not issued.",
+    "T005 BS-P1-013 implementation merged via PR #215 as 3fd91f77326a93663f643db9fdd741f3ac14d3c8 after independent ChatGPT implementation audit PASS and all required PR checks PASS.",
+    "Final T005 Evidence EV-SP-P1-002-T005-001..010 and 014 normalized via PR #217 as 1a4ea07f44d3156bee1b876f3021ed680d1f64ba and bound into closure REVIEW via PR #218 as a9373b2fc77cebb7ba0d6caba4b581788147d727.",
+    "Human approved T005 closure through completion. BF-042 remediation is implemented and verified under BS-P1-013; remaining real-Postgres / production-integration verification debt is non-blocking and will be carried forward separately while execution is HOLD."
   ],
   "attempts": [
     {
