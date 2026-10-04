@@ -16,7 +16,8 @@
     "Human approved exhaustive remediation through the Cursor-start stop boundary in ChatGPT on 2026-10-04.",
     "Design Product truth remediation merged via Design PR #19; scope-clean freeze source 08ee376d315dca5a5ff03ce7427a1856cde03795 is derived directly from BS-P1-012 source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f and changes exactly F02, DATA-MODEL-DETAILED and Evidence Registry.",
     "BF-042 resolution freezes canonical trace fallback/generation, trusted server-only VALIDATED→REVOKED|INCOMPATIBLE compare-and-set transition authority, immutable body/admission lineage, F02-EVT-008 for revoke and new F02-EVT-014 trust_incompatible for durable incompatibility transition.",
-    "BF-042 Build governance is formally BLOCKED on BS-P1-012 before replacement rebaseline; Cursor execution is not authorized."
+    "BF-042 Build governance is formally BLOCKED on BS-P1-012 before replacement rebaseline; Cursor execution is not authorized.",
+    "BS-P1-013 Freeze merged canonical via PR #209 at 22be8b85ff1fb970e2509a5ccc4208562f15b3fc; BF-042 remains BLOCKED until the separate Activation transition."
   ],
   "attempts": [
     {
@@ -49,5 +50,5 @@
     "F02-AC-022"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-013"
 }
