@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-042",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-012",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T005",
+  "expected": "BS-P1-012 F02-AC-019..022 must make validation trace evidence and durable trust revoke/incompatible traceability mechanically implementable without Cursor inventing trace grammar authority, trust transition authority, or an incompatible-transition Evidence event.",
+  "actual": "Exhaustive audit of closed/unmerged T005 candidate PR #208 found two blocking same-class gaps. Caller-supplied malformed trace_id could be persisted in validation_run while F07 rejected the matching product_event, violating AC-019 runtime evidence traceability. AC-022 named trust revoke/incompatible traceability and the Registry contained F02-EVT-008 trust_revoked, but the locked contract did not define who may mutate blueprint_content.trust_status, transition/CAS semantics, or a distinct durable INCOMPATIBLE transition event; candidate tests only mutated a fake row then observed later execution denial.",
+  "evidence": [
+    "PR #208 was closed unmerged; canonical main remained 6eadcb1d30f552118144940d258c7c77e90fd070.",
+    "Candidate 8b72c9af76a5ead3799314523dcce2d5254e8188 demonstrated the gap: validateBlueprintCandidate accepted arbitrary context.traceId while F07 canonical envelope requires 32 lowercase hex nonzero trace_id.",
+    "BS-P1-012 F02 §34 only said trust_status may update; DATA-MODEL only said security/compatibility revocation may change it. Neither froze update authority/CAS/recovery semantics.",
+    "BS-P1-012 Evidence Registry had F02-EVT-008 trust_revoked but no event representing durable trust_status→INCOMPATIBLE transition; F02-EVT-004 is candidate validation_incompatible and is not the same lifecycle transition.",
+    "Human approved exhaustive remediation through the Cursor-start stop boundary in ChatGPT on 2026-10-04.",
+    "Design Product truth remediation merged via Design PR #19; scope-clean freeze source 08ee376d315dca5a5ff03ce7427a1856cde03795 is derived directly from BS-P1-012 source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f and changes exactly F02, DATA-MODEL-DETAILED and Evidence Registry.",
+    "BF-042 resolution freezes canonical trace fallback/generation, trusted server-only VALIDATED→REVOKED|INCOMPATIBLE compare-and-set transition authority, immutable body/admission lineage, F02-EVT-008 for revoke and new F02-EVT-014 trust_incompatible for durable incompatibility transition.",
+    "BF-042 Build governance is formally BLOCKED on BS-P1-012 before replacement rebaseline; Cursor execution is not authorized."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T005_CANDIDATE_EXHAUSTIVE_SAME_CLASS_AUDIT",
+      "result": "BLOCKING_CONTRACT_GAPS_FOUND_DESIGN_REMEDIATED_BUILD_REBASELINE_PENDING",
+      "evidence": "Audit rejected the earlier no-blocker conclusion, closed #208 unmerged, identified AC-019/022 gaps, and confirmed Design BF-042 remediation plus a scope-clean source. Build remains blocked until replacement baseline activation."
+    }
+  ],
+  "requested_planning_action": [
+    "Cursor must start from canonical main after BS-P1-013 activation; do not reuse PR #208 as merge candidate.",
+    "Canonicalize validation trace at F02 trusted boundary: accept only F07 canonical trace grammar; invalid/missing value gets server-generated canonical trace before report/validation_run/evidence construction.",
+    "Keep REJECTED/INCOMPATIBLE validator-private issuance authenticity from the candidate hardening; hostile copies/proxies/fabricated terminal reports must not create validation_run evidence.",
+    "Add a trusted trust-transition service/repository boundary with compare-and-set VALIDATED→REVOKED|INCOMPATIBLE only; public/client cannot choose trust status.",
+    "Successful REVOKED emits F02-EVT-008; successful INCOMPATIBLE emits F02-EVT-014; evidence failures remain non-blocking diagnostics and do not roll back the safety terminal status.",
+    "Prove transition leaves canonical body, content_hash, schema/registry metadata, created_at and admitted_by_validation_run_id unchanged.",
+    "Preserve AC-020 raw Blueprint/Intent exclusion and AC-021 admitting validation lineage.",
+    "Do not absorb POI-005 production wiring or T009 browser proof."
+  ],
+  "affected_contracts": [
+    "F02 Validation Report trace authority",
+    "F02 Trust Status transition authority",
+    "DATA-MODEL blueprint_content trust_status mutability",
+    "F02 Evidence event catalog"
+  ],
+  "affected_acceptance": [
+    "F02-AC-019",
+    "F02-AC-020",
+    "F02-AC-021",
+    "F02-AC-022"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
