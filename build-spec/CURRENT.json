@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-013",
-  "implementation_enabled": true,
-  "reason": "Human-approved SP-P1-002 / T006 activation under locked BS-P1-013. T006 is the sole active implementation Task; Cursor execution remains a separate authority issued only after this canonical activation is merged."
+  "implementation_enabled": false,
+  "reason": "BF-043 SPEC_AMBIGUITY blocks T006 implementation under BS-P1-013. Human approved T006 BLOCKED + BF-043 and governance remediation through the pre-Cursor restart boundary; implementation remains disabled until replacement baseline rebaseline/activation."
 }
