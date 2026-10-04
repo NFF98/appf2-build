@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-016",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-045"
   ],
@@ -39,7 +39,8 @@
     "F01 now stores accepted/confirmed policy-item values in canonical resolved_value inside StructuredIntentEnvelope and forbids a parallel durable answer-value sidecar.",
     "F01 now defines recursive fixpoint invalidation for dependent PROPOSED defaults/proposals after trusted upstream semantic changes.",
     "F01 state/value/source invariants close UNRESOLVED+can_default=true and DOMAIN_KNOWN+PROPOSED before policy evaluation.",
-    "No Acceptance Registry, Evidence Registry, database column, other Function, T007-T009, or Product outcome change is introduced."
+    "No Acceptance Registry, Evidence Registry, database column, other Function, T007-T009, or Product outcome change is introduced.",
+    "BS-P1-016 / SP-P1-002 / T006 activated under Human-authorized BCE envelope; implementation must use a fresh base and may not treat candidate e3ca711 as canonical truth."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
