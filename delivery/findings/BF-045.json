@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-045",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-015",
   "sprint_id": "SP-P1-002",
   "task_id": "T006",
@@ -18,7 +18,10 @@
     "BS-P1-015 F01-RQ-003 explicitly requires invalidate stale proposals before re-running policy, but the contract does not freeze which dependent items are invalidated or the exact state transition.",
     "Candidate answer-merge.ts updates direct targets only and does not invalidate dependent PROPOSED NFF_DEFAULT/LLM_PROPOSED items through depends_on_ids.",
     "Candidate regression sweep found schema-valid MATERIAL+UNRESOLVED+can_default=true and DOMAIN_KNOWN+PROPOSED+can_default=true states that fail closed as F01-ERR-014.",
-    "Existing semantic definitions imply UNRESOLVED means no usable decision while can_default=true requires a concrete proposed_default; and DOMAIN_KNOWN is domain fact truth rather than a proposal source, so these combinations should be closed as Envelope invariants instead of runtime policy holes."
+    "Existing semantic definitions imply UNRESOLVED means no usable decision while can_default=true requires a concrete proposed_default; and DOMAIN_KNOWN is domain fact truth rather than a proposal source, so these combinations should be closed as Envelope invariants instead of runtime policy holes.",
+    "Design PR #22 merged canonical as b665370eb43b1eadaa0a24c14ae60e8ad024fac3.",
+    "Scope-clean Design freeze source 336cc979e8645af6dfb04f72e07d4daf741d22c4 and BS-P1-016 Freeze merged through PR #235 as 5305f0c0fa9b4c1946006170abb2ececce867125.",
+    "Human-authorized BCE activation of BS-P1-016 resolves BF-045 implementation blocker; fresh Cursor execution remains bound to a new Issue #223 command."
   ],
   "attempts": [
     {
