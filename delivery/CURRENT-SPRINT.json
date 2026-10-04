@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-013",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved T006 Activation after independent ChatGPT preflight PASS. T006 is IN_PROGRESS under BS-P1-013; T007-T009 remain PLANNED. Cursor execution authority is issued separately through #223 only after this activation becomes canonical."
+  "reason": "T006 hard-stopped with zero implementation changes after Cursor RESULT #223 comment 5979248873. Independent ChatGPT audit confirmed BF-043 SPEC_AMBIGUITY in F01 machine-readable clarification-policy inputs. No Cursor execution is authorized while blocked."
 }
