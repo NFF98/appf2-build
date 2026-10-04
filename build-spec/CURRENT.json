@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-014",
-  "implementation_enabled": true,
-  "reason": "Human-approved BF-043 remediation complete; BS-P1-014 / SP-P1-002 / T006 re-activated. Cursor execution remains a separate Human-controlled command and has not been issued."
+  "implementation_enabled": false,
+  "reason": "BF-044 SPEC_AMBIGUITY blocks T006 implementation under BS-P1-014. Human approved T006 BLOCKED + BF-044 after independent precision audit confirmed Clarification Policy is not total for all valid MATERIAL states. Implementation remains disabled pending contract remediation and a separately approved rebaseline/reactivation."
 }

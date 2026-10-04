@@ -518,7 +518,7 @@
         "BL-P1-008"
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-014",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
