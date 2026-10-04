@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-012",
+  "active_task": "T004",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T004 closure audit PASS and standing Human approval applied. T004 is CLOSED; SP-P1-002 remains open with T005-T009 pending. Execution is HOLD until separate T005 activation. Issue #164 remains retained as execution history."
+  "reason": "Post-closure exhaustive audit found BF-041 in T004. Human blanket approval reopens T004 for the implementation-only TOCTOU remediation. T005-T009 remain not activated. Cursor execution has not been issued."
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-012",
-  "implementation_enabled": false,
-  "reason": "T004 closure audit PASS under locked BS-P1-012. T004 implementation/evidence lifecycle is complete; execution is HOLD before separate T005 activation. POI-005 remains DEFERRED_REVIEW and outside T004/T005 unless explicitly scoped later."
+  "implementation_enabled": true,
+  "reason": "Human blanket approval reactivates SP-P1-002 / T004 under locked BS-P1-012 to remediate BF-041. No Product/Schema rebaseline is required. Cursor execution remains a separate stop boundary and has not been issued."
 }
