@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-014",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-043"
+  ],
+  "affected_build_spec": "BS-P1-013",
+  "affected_tasks": [
+    "T006"
+  ],
+  "affected_contracts": [
+    "F01 StructuredIntentEnvelope policy-visible semantic item schema",
+    "F01 Clarification Policy CP-003..CP-006 machine inputs",
+    "F01 Question identity and no-reask dependency semantics",
+    "F01 NFF_DEFAULT policy provenance"
+  ],
+  "affected_acceptance": [
+    "F01-AC-001",
+    "F01-AC-003",
+    "F01-AC-004",
+    "F01-AC-005",
+    "F01-AC-006",
+    "F01-AC-017"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT 2026-10-04: T006 BLOCKED + BF-043 and continuous governance remediation through immediately before Cursor restarts."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "f6e72ea29a0332ba37a4017415f2fe69a661dce2",
+  "replacement_build_spec": "BS-P1-014",
+  "verification": [
+    "Design BF-043 machine-contract remediation is canonical commit f6e72ea29a0332ba37a4017415f2fe69a661dce2.",
+    "Scope-clean freeze source 5deb371234bce8864b1fc6847474c6d31bddd332 is exactly one commit ahead of BS-P1-013 source 08ee376d315dca5a5ff03ce7427a1856cde03795 and changes exactly F01-INTENT-COMPILATION.md.",
+    "Replacement BS-P1-014 preserves existing F01 Product outcomes and adds only bounded deterministic policy inputs/state required by BF-043.",
+    "Freeze does not activate T006, does not issue Cursor execution, and does not absorb POI-005/POI-006 or T007-T009."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "5deb371234bce8864b1fc6847474c6d31bddd332",
+    "base_commit": "08ee376d315dca5a5ff03ce7427a1856cde03795",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-043-FREEZE-CANDIDATE.md"
+  }
+}
