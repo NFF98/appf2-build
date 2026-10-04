@@ -4,6 +4,7 @@ import {
   POLICY_ITEM_COLLECTIONS,
   policyItemsOf,
   type IndexedPolicyItem,
+  type KnownInput,
   type PolicyItemCollection,
   type PolicyVisibleItem,
   type StructuredIntentEnvelope
@@ -18,12 +19,16 @@ export type ReanalysisMergeResult = {
 
 /**
  * Source precedence for one stable ID present in both the trusted state and fresh Prompt A output.
- * CONFIRMED trusted truth (USER_EXPLICIT, USER_ACCEPTED_PROPOSAL, DOMAIN_KNOWN, accepted NFF_DEFAULT and
- * its resolved_value) is never replaced by analysis, and an analysis candidate resolved_value can never
- * overwrite trusted state. Only pending trusted analysis (UNRESOLVED / PROPOSED) may be refreshed by a
- * pending incoming item.
+ * User-decided truth (USER_EXPLICIT, USER_ACCEPTED_PROPOSAL, accepted NFF_DEFAULT and its resolved_value)
+ * is never replaced by analysis. A DOMAIN_KNOWN item is analysis-owned upstream truth, so a fresh
+ * CONFIRMED DOMAIN_KNOWN fact under the same stable ID refreshes it; analysis can never retract a trusted
+ * fact to UNRESOLVED or replace it with another source. Otherwise only pending trusted analysis
+ * (UNRESOLVED / PROPOSED) may be refreshed by a pending incoming item.
  */
 function refreshableBy(trusted: PolicyVisibleItem, incoming: PolicyVisibleItem): boolean {
+  if (trusted.source === "DOMAIN_KNOWN" && incoming.source === "DOMAIN_KNOWN" && incoming.resolution_state === "CONFIRMED") {
+    return true;
+  }
   return trusted.resolution_state !== "CONFIRMED" && incoming.resolution_state !== "CONFIRMED";
 }
 
@@ -45,15 +50,28 @@ function mergeItems(trusted: StructuredIntentEnvelope, incoming: StructuredInten
 }
 
 /**
- * KnownInput IDs are stable semantic facts (F01-DATA-002); an existing trusted fact keeps its trusted value
- * and provenance, so analysis may only contribute facts under new IDs. Trusted items or inputs omitted by
- * the new analysis are retained: Prompt A output cannot delete server-trusted truth or a pending blocker.
+ * KnownInput IDs are stable semantic facts (F01-DATA-002). A trusted DOMAIN_KNOWN fact is refreshed in
+ * place by a fresh DOMAIN_KNOWN fact under the same ID; any other trusted fact (User truth included) keeps
+ * its trusted value and provenance. Analysis may add facts under new IDs.
+ */
+function mergeKnownInputs(trusted: readonly KnownInput[], incoming: readonly KnownInput[]): KnownInput[] {
+  const incomingById = new Map(incoming.map((input) => [input.id, input]));
+  const merged = trusted.map((current) => {
+    const fresh = incomingById.get(current.id);
+    incomingById.delete(current.id);
+    return fresh !== undefined && current.source === "DOMAIN_KNOWN" && fresh.source === "DOMAIN_KNOWN" ? fresh : current;
+  });
+  return [...merged, ...incomingById.values()];
+}
+
+/**
+ * Trusted items or inputs omitted by the new analysis are retained: Prompt A output cannot delete
+ * server-trusted truth or a pending blocker.
  */
 function applySourcePrecedence(trusted: StructuredIntentEnvelope, incoming: StructuredIntentEnvelope): StructuredIntentEnvelope {
-  const trustedInputIds = new Set(trusted.known_inputs.map((input) => input.id));
   return {
     ...incoming,
-    known_inputs: [...trusted.known_inputs, ...incoming.known_inputs.filter((input) => !trustedInputIds.has(input.id))],
+    known_inputs: mergeKnownInputs(trusted.known_inputs, incoming.known_inputs),
     ...mergeItems(trusted, incoming)
   };
 }

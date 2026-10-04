@@ -194,26 +194,27 @@ describe("F01-AC-004 material proposals and defaults are visible", () => {
   });
 });
 
+const tipPolicy = item({
+  id: "tip_policy",
+  impact_level: "HIGH",
+  question_type: "SINGLE_CHOICE",
+  expected_value_type: "ENUM",
+  alternatives: ["none", "10%"],
+  depends_on_ids: ["region"]
+});
+const blockers: EnvelopeSpec = {
+  known_inputs: [knownInput({ id: "venue", value: "Taipei" })],
+  constraints: [item({ id: "region", resolution_state: "CONFIRMED", resolved_value: "TW", depends_on_ids: ["venue"] })],
+  ambiguities: [tipPolicy],
+  missing_fields: [item({ id: "x_field", required_for_execution: true }), item({ id: "y_field", required_for_execution: true })],
+  assumptions: [confirmed({ id: "theme", materiality: "COSMETIC", resolved_value: "dark" })]
+};
+const tipQuestionId = questionIdFor("F01-POL-CP-002", ["tip_policy"]);
+const askedItems = (state: TrustedIntentState) => evaluateClarificationPolicy(state).questions.map((question) => question.semantic_item_ids[0]);
+
 describe("F01-AC-005 answered questions are not re-asked unless an upstream condition changed", () => {
-  const tipPolicy = item({
-    id: "tip_policy",
-    impact_level: "HIGH",
-    question_type: "SINGLE_CHOICE",
-    expected_value_type: "ENUM",
-    alternatives: ["none", "10%"],
-    depends_on_ids: ["region"]
-  });
-  const blockers: EnvelopeSpec = {
-    known_inputs: [knownInput({ id: "venue", value: "Taipei" })],
-    constraints: [item({ id: "region", resolution_state: "CONFIRMED", resolved_value: "TW", depends_on_ids: ["venue"] })],
-    ambiguities: [tipPolicy],
-    missing_fields: [item({ id: "x_field", required_for_execution: true }), item({ id: "y_field", required_for_execution: true })],
-    assumptions: [confirmed({ id: "theme", materiality: "COSMETIC", resolved_value: "dark" })]
-  };
-  const tipQuestionId = questionIdFor("F01-POL-CP-002", ["tip_policy"]);
   const restored = (changed: string[]) =>
     restoreTrustedIntentState(persisted(blockers, { answered_question_ids: [tipQuestionId], changed_semantic_item_ids: changed }));
-  const askedItems = (state: TrustedIntentState) => evaluateClarificationPolicy(state).questions.map((question) => question.semantic_item_ids[0]);
 
   test("TEST-F01-005 an answered question stays suppressed when nothing or only an unrelated item changed", () => {
     expect(askedItems(restored([]))).toEqual(["x_field", "y_field"]);
@@ -264,6 +265,86 @@ describe("F01-AC-005 answered questions are not re-asked unless an upstream cond
       persisted({ ...blockers, missing_fields: [] }, { answered_question_ids: [tipQuestionId], changed_semantic_item_ids: [] })
     );
     expect(() => evaluateClarificationPolicy(onlyTip)).toThrowError(contractError("F01-ERR-014", "SUPPRESSED_BLOCKER_UNRESOLVED"));
+  });
+});
+
+describe("F01-AC-005 a real re-analysis of a same-ID DOMAIN_KNOWN upstream fact reopens only dependent answered questions", () => {
+  const domainVenue = (value: string) => knownInput({ id: "venue", value, source: "DOMAIN_KNOWN" });
+  const domainSpec = (venue: string, overrides: EnvelopeSpec = {}, note = "n1"): EnvelopeSpec => ({
+    ...blockers,
+    known_inputs: [domainVenue(venue), knownInput({ id: "payer", value: "Alice" }), knownInput({ id: "note", value: note, source: "DOMAIN_KNOWN" })],
+    ...overrides
+  });
+  const changedIds = (state: TrustedIntentState) => state.envelope.analysis_metadata.clarification_policy_state.changed_semantic_item_ids;
+  const inputOf = (state: TrustedIntentState, id: string) => state.envelope.known_inputs.find((input) => input.id === id);
+
+  test("TEST-F01-005 a real re-analysis refreshes a same-ID DOMAIN_KNOWN fact into canonical truth and the changed set without touching User truth", () => {
+    const state = startIntentClarification(analysis(domainSpec("Taipei")));
+    const answered = submitClarificationAnswers(state, answersBody([{ question_id: tipQuestionId, value: "10%" }]));
+
+    const moved = mergeReanalysis(answered.state, analysis(domainSpec("Tokyo")));
+    expect(inputOf(moved.state, "venue")).toEqual(domainVenue("Tokyo"));
+    expect(changedIds(moved.state)).toEqual(["venue"]);
+    expect(moved.state.envelope.analysis_metadata.clarification_policy_state.answered_question_ids).toEqual([tipQuestionId]);
+    expect(findItem(moved.state.envelope, "tip_policy")).toMatchObject({ source: "USER_EXPLICIT", resolved_value: "10%" });
+    expect(moved.evaluation.questions.map((question) => question.semantic_item_ids[0])).toEqual(["x_field", "y_field"]);
+
+    expect(changedIds(mergeReanalysis(answered.state, analysis(domainSpec("Taipei"))).state)).toEqual([]);
+    expect(changedIds(mergeReanalysis(answered.state, analysis(domainSpec("Taipei", {}, "n2"))).state)).toEqual(["note"]);
+
+    const conflicting = mergeReanalysis(
+      answered.state,
+      analysis(
+        domainSpec("Taipei", {
+          known_inputs: [domainVenue("Taipei"), knownInput({ id: "payer", value: "Bob", source: "DOMAIN_KNOWN" })],
+          ambiguities: [{ ...tipPolicy, resolution_state: "CONFIRMED", resolved_value: "none" }]
+        })
+      )
+    );
+    expect(inputOf(conflicting.state, "payer")).toEqual(knownInput({ id: "payer", value: "Alice" }));
+    expect(findItem(conflicting.state.envelope, "tip_policy")).toMatchObject({ source: "USER_EXPLICIT", resolved_value: "10%" });
+    expect(changedIds(conflicting.state)).toEqual([]);
+  });
+
+  test("TEST-F01-005 a real DOMAIN_KNOWN upstream re-analysis change reopens the answered downstream question; same value or unrelated change does not", () => {
+    const trusted = restoreTrustedIntentState(persisted(domainSpec("Taipei"), { answered_question_ids: [tipQuestionId] }));
+    expect(askedItems(trusted)).toEqual(["x_field", "y_field"]);
+
+    const moved = mergeReanalysis(trusted, analysis(domainSpec("Tokyo")));
+    expect(inputOf(moved.state, "venue")).toEqual(domainVenue("Tokyo"));
+    expect(changedIds(moved.state)).toEqual(["venue"]);
+    expect(moved.evaluation.questions.map((question) => question.semantic_item_ids[0])).toEqual(["x_field", "y_field", "tip_policy"]);
+    expect(moved.evaluation.questions[2]).toMatchObject({ question_id: tipQuestionId, policy_rule_id: "F01-POL-CP-002" });
+
+    const settled = mergeReanalysis(moved.state, analysis(domainSpec("Tokyo")));
+    expect(changedIds(settled.state)).toEqual([]);
+    expect(settled.evaluation.questions.map((question) => question.semantic_item_ids[0])).toEqual(["x_field", "y_field"]);
+
+    for (const [spec, changed] of [
+      [domainSpec("Taipei"), []],
+      [domainSpec("Taipei", {}, "n2"), ["note"]],
+      [domainSpec("Taipei", { known_inputs: [domainVenue("Taipei"), knownInput({ id: "payer", value: "Bob", source: "DOMAIN_KNOWN" })] }), []]
+    ] as const) {
+      const merged = mergeReanalysis(trusted, analysis(spec));
+      expect(changedIds(merged.state)).toEqual(changed);
+      expect(inputOf(merged.state, "payer")).toEqual(knownInput({ id: "payer", value: "Alice" }));
+      expect(merged.evaluation.questions.map((question) => question.semantic_item_ids[0])).toEqual(["x_field", "y_field"]);
+    }
+  });
+
+  test("TEST-F01-005 a refreshed policy-visible DOMAIN_KNOWN fact reopens its dependents, while analysis cannot retract it", () => {
+    const region = (resolved_value: string) => item({ id: "region", resolution_state: "CONFIRMED", resolved_value, depends_on_ids: ["venue"] });
+    const trusted = restoreTrustedIntentState(persisted(domainSpec("Taipei"), { answered_question_ids: [tipQuestionId] }));
+
+    const moved = mergeReanalysis(trusted, analysis(domainSpec("Taipei", { constraints: [region("JP")] })));
+    expect(findItem(moved.state.envelope, "region")).toEqual(region("JP"));
+    expect(changedIds(moved.state)).toEqual(["region"]);
+    expect(moved.evaluation.questions.map((question) => question.question_id)).toContain(tipQuestionId);
+
+    const retracted = mergeReanalysis(trusted, analysis(domainSpec("Taipei", { constraints: [item({ id: "region", depends_on_ids: ["venue"] })] })));
+    expect(findItem(retracted.state.envelope, "region")).toEqual(region("TW"));
+    expect(changedIds(retracted.state)).toEqual([]);
+    expect(retracted.evaluation.questions.map((question) => question.question_id)).not.toContain(tipQuestionId);
   });
 });
 
