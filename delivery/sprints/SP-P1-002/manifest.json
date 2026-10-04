@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "sprint_id": "SP-P1-002",
-  "status": "BLOCKED",
-  "build_spec_id": "BS-P1-014",
+  "status": "ACTIVE",
+  "build_spec_id": "BS-P1-015",
   "goal": "完成 Validation + Intent foundation 與 evidence client reliability，並以最小 test-only browser harness 誠實驗證兩個 END_TO_END Acceptance；不提前實作正式 App surface。",
   "scope": [
     "BL-P1-003 Registry evidence & traceability",
@@ -26,7 +26,7 @@
     "baseline_gate_passed": true,
     "acceptance_mapped": true,
     "user_approved": true,
-    "approval_ref": "HUMAN-BF-043-T006-REMEDIATION-THROUGH-PRECURSOR-20261004"
+    "approval_ref": "HUMAN-BF-044-T006-REBASELINE-ACTIVATION-20261004"
   },
   "backlog_item_ids": [
     "BL-P1-003",
