@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-045",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-015",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T006",
+  "expected": "F01 answer merge and policy-state semantics must define one canonical owner for accepted answer values, deterministic stale-dependent proposal/default invalidation, and envelope invariants that exclude machine states which otherwise fall through to defensive F01-ERR-014 despite carrying contradictory resolution/default/source semantics.",
+  "actual": "BCE independent audit of candidate e3ca711c8126fbf5d090571a007840b8e51306e9 found that BS-P1-015 does not define where a clarification answer value is stored after the target policy item becomes USER_EXPLICIT/CONFIRMED. Cursor introduced a server-persisted user_explicit_values sidecar that is not part of StructuredIntentEnvelope or intent_record canonical semantic fields. The same audit found that F01-RQ-003 requires stale proposals to be invalidated after trusted answer merge, but the contract does not freeze the deterministic dependency invalidation transition. A same-class sweep also exposed contradictory but schema-valid states UNRESOLVED+can_default=true and DOMAIN_KNOWN+PROPOSED, both currently reaching defensive F01-ERR-014 instead of being rejected as invalid Envelope states.",
+  "evidence": [
+    "Human requested BCE same-class full audit and remediation on 2026-10-04.",
+    "Issue #223 RESULT comment 5980722096 is bound to EXECUTE comment 5980542488 and reports candidate branch impl/sp-p1-002-t006-bs-p1-015 at HEAD e3ca711c8126fbf5d090571a007840b8e51306e9.",
+    "Candidate changed 19 files, all within T006 allowed_write_paths, and Cursor reported all required commands PASS; independent audit therefore treats scope/test quality separately from the contract gap.",
+    "BS-P1-015 F01-DATA-001 policy-visible items contain provenance/resolution/question/default metadata but no canonical accepted/resolved value field.",
+    "BS-P1-015 F01-API-002 accepts answers[].value and requires answer provenance=USER_EXPLICIT, while DATA MODEL intent_record persists structured_intent/resolved_intent and defines no separate user_explicit_values semantic store.",
+    "Candidate intent-state.ts introduced TrustedIntentState.user_explicit_values and restoreTrustedIntentState() treats it as server-persisted truth; this invents a durable semantic owner not frozen by BS-P1-015.",
+    "BS-P1-015 F01-RQ-003 explicitly requires invalidate stale proposals before re-running policy, but the contract does not freeze which dependent items are invalidated or the exact state transition.",
+    "Candidate answer-merge.ts updates direct targets only and does not invalidate dependent PROPOSED NFF_DEFAULT/LLM_PROPOSED items through depends_on_ids.",
+    "Candidate regression sweep found schema-valid MATERIAL+UNRESOLVED+can_default=true and DOMAIN_KNOWN+PROPOSED+can_default=true states that fail closed as F01-ERR-014.",
+    "Existing semantic definitions imply UNRESOLVED means no usable decision while can_default=true requires a concrete proposed_default; and DOMAIN_KNOWN is domain fact truth rather than a proposal source, so these combinations should be closed as Envelope invariants instead of runtime policy holes."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "BS_P1_015_CURSOR_IMPLEMENTATION_PLUS_BCE_CHUNKED_FULL_AUDIT",
+      "result": "IMPLEMENTATION_CANDIDATE_CREATED_BUT_CONTRACT_GAPS_CONFIRMED",
+      "evidence": "Candidate e3ca711 implemented the mapped policy and tests, but independent audit found an invented answer-value sidecar owner and missing deterministic stale-dependent invalidation semantics; same-class sweep identified two contradictory schema-valid edge states."
+    }
+  ],
+  "requested_planning_action": [
+    "Pause T006 and keep T007-T009 unactivated.",
+    "In Design Working F01 add a canonical policy-visible resolved_value field (or an equivalent single canonical field inside StructuredIntentEnvelope) for accepted clarification/assumption values; forbid a parallel durable answer-value truth store.",
+    "Freeze exact transitions: clarification answer/edit writes resolved_value with USER_EXPLICIT+CONFIRMED; accepted LLM proposal/default writes the accepted concrete value into canonical resolved truth while preserving source provenance required by Product semantics.",
+    "Freeze deterministic stale-dependent invalidation over depends_on_ids: when a trusted upstream semantic ID changes, recursively invalidate downstream PROPOSED defaults/proposals whose truth depends on it before policy re-evaluation; define changed_semantic_item_ids propagation.",
+    "Add Envelope invariants closing UNRESOLVED+can_default=true and DOMAIN_KNOWN+PROPOSED contradictory states.",
+    "Run a same-class audit for answer-value ownership, dependency invalidation, source/resolution/default invariants, and reachable no-reask paths before the next freeze.",
+    "Create replacement locked Build Spec, rebind T006, activate, then issue a fresh Cursor execution; do not reuse e3ca711 as canonical truth."
+  ],
+  "affected_contracts": [
+    "F01-DATA-001 StructuredIntentEnvelope policy-visible item value ownership",
+    "F01-RQ-003 Answer Merge / stale proposal invalidation",
+    "F01-DATA-003A changed-semantic dependency semantics",
+    "F01-DATA-004 visible assumption accepted-value semantics",
+    "F01 Envelope source/resolution/default invariants"
+  ],
+  "affected_acceptance": [
+    "F01-AC-001",
+    "F01-AC-004",
+    "F01-AC-005",
+    "F01-AC-006"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
