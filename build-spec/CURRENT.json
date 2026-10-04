@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-012",
-  "implementation_enabled": false,
-  "reason": "Human-approved T004 closure complete under locked BS-P1-012 after BF-041 remediation and fresh Evidence. Execution is HOLD before separate T005 activation; POI-005 remains DEFERRED_REVIEW."
+  "implementation_enabled": true,
+  "reason": "Human-approved T005 Activation Review PASS under locked BS-P1-012. T005 is the sole active Product implementation Task; T006-T009 remain not activated; POI-005 remains DEFERRED_REVIEW."
 }
