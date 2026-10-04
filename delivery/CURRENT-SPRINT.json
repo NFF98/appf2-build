@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-012",
   "active_task": "T004",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved T004 Activation Review PASS. T003 remains CLOSED; T004 is the sole active Task for F02-AC-013 through F02-AC-016. T005-T009 remain PLANNED. Issue #164 remains T003 execution history."
+  "reason": "T004 implementation merged via PR #188 as 1918980b269fb11c11e386dd72d83bc7c5029003; BS-P1-012 Evidence EV-SP-P1-002-T004-001..010 normalized via PR #189 as 2f117ef440ae033171f0b7ce37092ccc87db8b2a. T004 is in closure REVIEW; T005 is not activated."
 }
