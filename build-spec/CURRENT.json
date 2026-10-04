@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-012",
+  "active_baseline": "BS-P1-013",
   "implementation_enabled": true,
-  "reason": "Human-approved T005 Activation Review PASS under locked BS-P1-012. T005 is the sole active Product implementation Task; T006-T009 remain not activated; POI-005 remains DEFERRED_REVIEW."
+  "reason": "Human-approved BF-042 contract remediation and BS-P1-013/T005 re-activation through the pre-Cursor boundary. T005 remains the sole active Product implementation Task; Cursor execution has not been issued; T006-T009 remain not activated; POI-005 remains DEFERRED_REVIEW."
 }
