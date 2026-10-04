@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-044",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-014",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T006",
+  "expected": "BS-P1-014 F01-AC-004/005/006 must make Clarification Policy a total, deterministic function over every valid policy-visible Envelope state, while preserving visible material decisions and no-reask semantics without Cursor inventing a new clarification outcome or policy rule.",
+  "actual": "Cursor T006 execution hard-stopped with zero implementation changes because BS-P1-014 still permits valid MATERIAL policy-visible states for which CP-001..CP-006 do not yield a contract-faithful outcome. In particular, MATERIAL + can_default=false + no CP-003 risk + no CP-001 required-missing condition + no CP-002 HIGH/CRITICAL multi-interpretation condition falls outside CP-004, CP-005 and CP-006. Independent ChatGPT precision audit confirmed that mapping such a state to NEEDS_CLARIFICATION, READY_WITH_VISIBLE_ASSUMPTIONS or READY would each require violating or inventing locked semantics. A related consistency gap remains when an answered question is suppressed while an NC rule would otherwise remain triggered, because the contract does not freeze the resulting overall decision/question availability invariant.",
+  "evidence": [
+    "Human explicitly approved T006 BLOCKED + BF-044 after requesting one final precision audit on 2026-10-04.",
+    "Cursor RESULT issue #223 comment 5979848022 is bound to EXECUTE comment 5979808113 and reports a HARD STOP with base SHA = final HEAD = 94e8d56879348c593f412ccdc521983cb7d64802, zero changed files, zero commits, no push and no merge.",
+    "BS-P1-014 F01-DATA-001 permits policy-visible items with materiality=MATERIAL and can_default=false; the contract does not impose an invariant forcing every such item into CP-001, CP-002 or CP-003.",
+    "BS-P1-014 CP-004 applies only when materiality=MATERIAL and can_default=true; CP-005 applies only to COSMETIC; CP-006 requires complete information with no material ambiguity.",
+    "A valid counterexample therefore exists: MATERIAL, can_default=false, policy_risk_flags=[], not a required missing execution value, and not a HIGH/CRITICAL multi-interpretation ambiguity. No CP-001..CP-006 branch uniquely owns that state.",
+    "Mapping that counterexample to READY_WITH_VISIBLE_ASSUMPTIONS violates CP-004's can_default=true condition; mapping it to READY risks hidden/unresolved material truth and conflicts with visible-material/resolved-intent constraints; mapping it to NEEDS_CLARIFICATION would require inventing a policy_rule_id/outcome rule not frozen in BS-P1-014.",
+    "BS-P1-014 F01-DATA-003A suppresses an answered question when no relevant changed semantic ID intersects its re-ask basis, but the contract does not explicitly freeze the overall decision when an NC rule would otherwise remain matched and all corresponding questions are suppressed.",
+    "F00 Clarification UX expects F01-selected 1-3 questions for clarification flow, so a persistent NEEDS_CLARIFICATION state with no eligible question has no frozen user-resolvable path.",
+    "Acceptance Registry does not add a fallback rule beyond the F01-AC-004/005/006 observable criteria.",
+    "Design Working F01 current truth matches the same BS-P1-014 policy structure; there is no already-landed Design fix to project.",
+    "The local unstaged UI-UX reference PNG deletions reported by Cursor are independent workspace pollution: a clean worktree at the canonical base passed npm run gate 14/14 and they are not evidence for BF-044."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T006_BS_P1_014_CURSOR_PREFLIGHT_PLUS_CHUNKED_FULL_AUDIT",
+      "result": "BLOCKING_POLICY_TOTALITY_AMBIGUITY_CONFIRMED_ZERO_IMPLEMENTATION_CHANGES",
+      "evidence": "Cursor stopped before implementation. ChatGPT independently cross-checked BS-P1-014 F01 DATA/POLICY, ClarificationPolicyState, F00 clarification UX and Acceptance Registry and confirmed a legal policy state with no uniquely authorized outcome."
+    }
+  ],
+  "requested_planning_action": [
+    "Pause T006 implementation and keep T007-T009 unactivated while BF-044 is unresolved.",
+    "In Design Working F01, freeze a deterministic outcome for every unresolved MATERIAL state that has no safe default and does not already match CP-001/002/003; do not leave CP-004/005/006 with an uncovered valid state.",
+    "Freeze the invariant between rule matching, answered-question suppression and overall NEEDS_CLARIFICATION so the system cannot enter a clarification state with no contract-authorized user action.",
+    "Perform a same-class totality audit across CP-001..CP-006 and deterministic question eligibility before the next freeze; only add extra question-shape/ranking semantics where the audit proves they are required.",
+    "Run Design audit, create a replacement locked Build Spec, rebind SP-P1-002/T006, then stop before issuing any fresh Cursor EXECUTE."
+  ],
+  "affected_contracts": [
+    "F01 Clarification Policy CP-001..CP-006 totality",
+    "F01 material visible-assumption/clarification outcome semantics",
+    "F01 answered-question suppression and clarification-state consistency"
+  ],
+  "affected_acceptance": [
+    "F01-AC-004",
+    "F01-AC-005",
+    "F01-AC-006"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
