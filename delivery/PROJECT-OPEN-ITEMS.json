@@ -91,6 +91,18 @@
       "next_action": "During the next appropriate planning/rebaseline window, create an explicitly scoped future Task for production wiring of the BS-P1-012 fresh-admission contract to the real HTTP route, Postgres-backed Blueprint/release lookup, and bundled Runtime handler map. Do not silently absorb this work into T004; T004 retains its current validation-failure/degradation scope.",
       "completion_criterion": "A future Human-approved Task implements and verifies the real production HTTP + Postgres + Runtime wiring for fresh execution admission, including repository/release lookup failure behavior, pinned/current RegistryReleaseBundle loading, TrustedRuntimeHandlerCatalog from the actual bundled handler map, and end-to-end proof that the production route enforces the existing E01-E08 contract without changing Product semantics.",
       "resolution_ref": null
+    },
+    {
+      "id": "POI-006",
+      "title": "T005 trust-transition real Postgres / production integration verification debt",
+      "status": "DEFERRED_REVIEW",
+      "owner": "CHATGPT_PLANNING + HUMAN_APPROVAL + CURSOR_IMPLEMENTATION",
+      "source": "T005 closure audit after implementation PR #215 and final closure PR #219 / merge a0ba743df80a69bc91cf0a88896ca8ced27ed38c",
+      "blocking_scope": [],
+      "blocks_activation": false,
+      "next_action": "At the next project-wide verification / integration cleanup window, run the T005 Postgres trust-transition CAS and admission-lineage adapters against real PostgreSQL, including concurrent VALIDATED→REVOKED|INCOMPATIBLE races, stale/replay behavior, immutable-column checks and Evidence-failure ordering. Revisit whether DB-level constraints should additionally enforce trust_status transition direction and byte_size immutability. Coordinate production route/service wiring with POI-005 instead of duplicating it; include the still-unwired F02 validation/trust Evidence and execution-admission EVT010..013 production path only in an explicitly Human-approved future scope.",
+      "completion_criterion": "Real PostgreSQL integration proves one-winner CAS semantics, replay/stale no-op behavior, terminal-status durability under Evidence failure and immutable admission lineage; any DB-level hardening decision is explicitly recorded and implemented if approved; production wiring responsibility is either completed under POI-005 or explicitly re-scoped without changing Product semantics.",
+      "resolution_ref": null
     }
   ],
   "last_full_pr_audit": {
