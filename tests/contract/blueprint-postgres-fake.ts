@@ -2,6 +2,8 @@ import { canonicalizeJson } from "../../src/platform/blueprint/canonical-json.js
 import {
   POSTGRES_ADMIT_BLUEPRINT_CONTENT_SQL,
   POSTGRES_INSERT_VALIDATION_RUN_SQL,
+  POSTGRES_READ_ADMISSION_LINEAGE_SQL,
+  type AdmissionLineageRow,
   type PostgresExecutor,
   type PostgresQueryResult
 } from "../../src/platform/blueprint/postgres-blueprint-repository.js";
@@ -33,6 +35,34 @@ export interface StoredBlueprintContent {
 
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
+type JoinedRunColumns = Omit<AdmissionLineageRow, keyof StoredBlueprintContent>;
+
+const NULL_RUN_COLUMNS: JoinedRunColumns = {
+  run_validation_run_id: null,
+  run_candidate_digest: null,
+  run_blueprint_hash: null,
+  run_schema_version: null,
+  run_registry_version: null,
+  run_status: null,
+  run_error_codes: null,
+  run_report: null,
+  run_trace_id: null
+};
+
+function runColumns(run: StoredValidationRun): JoinedRunColumns {
+  return {
+    run_validation_run_id: run.validation_run_id,
+    run_candidate_digest: run.candidate_digest,
+    run_blueprint_hash: run.blueprint_hash,
+    run_schema_version: run.schema_version,
+    run_registry_version: run.registry_version,
+    run_status: run.status,
+    run_error_codes: run.error_codes,
+    run_report: run.report,
+    run_trace_id: run.trace_id
+  };
+}
+
 export class FakeBlueprintPostgres implements PostgresExecutor {
   public readonly runs = new Map<string, StoredValidationRun>();
   public readonly contents = new Map<string, StoredBlueprintContent>();
@@ -47,7 +77,31 @@ export class FakeBlueprintPostgres implements PostgresExecutor {
     if (statement === POSTGRES_ADMIT_BLUEPRINT_CONTENT_SQL) {
       return { rows: [this.admit(parameters) as Row] };
     }
+    if (statement === POSTGRES_READ_ADMISSION_LINEAGE_SQL) {
+      const row = this.lineage(parameters[0] as string);
+      return { rows: row === undefined ? [] : [row as Row] };
+    }
     throw new Error("Unexpected SQL statement.");
+  }
+
+  /** LEFT JOIN blueprint_content → validation_run ON admitted_by_validation_run_id; JSON round-trip mimics jsonb reads. */
+  private lineage(contentHash: string): AdmissionLineageRow | undefined {
+    const content = this.contents.get(contentHash);
+    if (content === undefined) {
+      return undefined;
+    }
+    const run = this.runs.get(content.admitted_by_validation_run_id);
+    const joined = run === undefined ? NULL_RUN_COLUMNS : runColumns(run);
+    return structuredClone({
+      content_hash: content.content_hash,
+      canonical_blueprint: content.canonical_blueprint,
+      schema_version: content.schema_version,
+      registry_version: content.registry_version,
+      trust_status: content.trust_status,
+      admitted_by_validation_run_id: content.admitted_by_validation_run_id,
+      byte_size: content.byte_size,
+      ...joined
+    });
   }
 
   private insertRun(parameters: readonly unknown[]): void {

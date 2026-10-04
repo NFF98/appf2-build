@@ -16,6 +16,7 @@ import { validateNodeGraph } from "./node-graph.js";
 import { validateResources, type ResourceValidation } from "./resource-bounds.js";
 import { validatePermissions } from "./security-policy.js";
 import { inferExpressionTypes, validateStates, type ExpressionTypes } from "./state-rules.js";
+import { newTraceId } from "./validation-evidence.js";
 import { inferValueSource, type TypingContext } from "./value-source-typing.js";
 import {
   BLUEPRINT_SCHEMA_VERSION,
@@ -38,11 +39,14 @@ export interface BlueprintValidationContext {
 }
 
 type PassedValidationResult = Extract<BlueprintValidationResult, { readonly admissible: AdmissibleBlueprint }>;
+type FailedValidationResult = Exclude<BlueprintValidationResult, PassedValidationResult>;
 
 const INDEX_DESCRIPTOR: TypeDescriptor = { type: "NUMBER", constraints: { min: 0 } };
 const INCOMPATIBLE_CODES: ReadonlySet<string> = new Set(["F02-ERR-003", "F02-ERR-004"]);
 /** Issuance must stay module-private: only validateBlueprintCandidate may enrol a PASSED pair. */
 const issuedReports = new WeakMap<AdmissibleBlueprint, ValidationReport>();
+/** Every terminal report (PASSED / REJECTED / INCOMPATIBLE) issued by validateBlueprintCandidate; same issuance rule. */
+const issuedTerminalReports = new WeakSet<ValidationReport>();
 
 function deepFreeze<T extends object>(root: T): T {
   const visited = new WeakSet<object>();
@@ -69,11 +73,24 @@ function sealPassedResult(result: PassedValidationResult): PassedValidationResul
   const report = deepFreeze({ ...result.report });
   const admissible = deepFreeze({ ...result.admissible });
   issuedReports.set(admissible, report);
+  issuedTerminalReports.add(report);
   return Object.freeze({ report, admissible });
+}
+
+/** REJECTED / INCOMPATIBLE reports get the same deep-frozen, validator-private issuance as PASSED reports. */
+function sealFailedResult(report: FailedValidationResult["report"]): FailedValidationResult {
+  const sealed = deepFreeze({ ...report });
+  issuedTerminalReports.add(sealed);
+  return Object.freeze({ report: sealed });
 }
 
 export function isSealedPassedResult(report: ValidationReport, admissible: AdmissibleBlueprint): boolean {
   return issuedReports.get(admissible) === report;
+}
+
+/** True only for the exact report object issued by validateBlueprintCandidate (copies / Proxies never match). */
+export function isIssuedValidationReport(report: ValidationReport): boolean {
+  return issuedTerminalReports.has(report);
 }
 
 function checkVersions(blueprint: Blueprint, registry: ValidatorRegistry): void {
@@ -220,7 +237,7 @@ export function validateBlueprintCandidate(
     schema_version: BLUEPRINT_SCHEMA_VERSION,
     registry_version: registry.registry_version,
     registry_digest: registry.registry_digest,
-    trace_id: context.traceId ?? randomUUID()
+    trace_id: context.traceId ?? newTraceId()
   };
   try {
     const result = runPipeline(candidatePayloadBytes, registry, context.runtimeVersion ?? registry.runtime_version, progress);
@@ -241,6 +258,6 @@ export function validateBlueprintCandidate(
     const issue: ValidationIssue = error.issue;
     const status = INCOMPATIBLE_CODES.has(issue.error_code) ? "INCOMPATIBLE" : "REJECTED";
     const usage = progress.resourceUsage === undefined ? {} : { resource_usage: progress.resourceUsage };
-    return { report: { ...reportBase, status, issues: [issue], ...usage } };
+    return sealFailedResult({ ...reportBase, status, issues: [issue], ...usage });
   }
 }

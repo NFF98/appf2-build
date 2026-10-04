@@ -1,3 +1,4 @@
+import type { AdmissionLineageRecord, AdmissionLineageSource, LineageContentRow } from "./admission-lineage.js";
 import type {
   BlueprintAdmissionRepository,
   BlueprintContentRecord,
@@ -92,6 +93,42 @@ SELECT
 FROM content
 `.trim();
 
+export const POSTGRES_READ_ADMISSION_LINEAGE_SQL = `
+SELECT
+  content.content_hash,
+  content.canonical_blueprint,
+  content.schema_version,
+  content.registry_version,
+  content.trust_status,
+  content.admitted_by_validation_run_id,
+  content.byte_size,
+  run.validation_run_id AS run_validation_run_id,
+  run.candidate_digest AS run_candidate_digest,
+  run.blueprint_hash AS run_blueprint_hash,
+  run.schema_version AS run_schema_version,
+  run.registry_version AS run_registry_version,
+  run.status AS run_status,
+  run.error_codes AS run_error_codes,
+  run.report AS run_report,
+  run.trace_id AS run_trace_id
+FROM public.blueprint_content AS content
+LEFT JOIN public.validation_run AS run
+  ON run.validation_run_id = content.admitted_by_validation_run_id
+WHERE content.content_hash = $1::text
+`.trim();
+
+export interface AdmissionLineageRow extends LineageContentRow {
+  readonly run_validation_run_id: string | null;
+  readonly run_candidate_digest: string | null;
+  readonly run_blueprint_hash: string | null;
+  readonly run_schema_version: string | null;
+  readonly run_registry_version: string | null;
+  readonly run_status: string | null;
+  readonly run_error_codes: unknown;
+  readonly run_report: unknown;
+  readonly run_trace_id: string | null;
+}
+
 interface AdmissionRow {
   readonly inserted: boolean;
   readonly body_matches: boolean;
@@ -147,5 +184,45 @@ export class PostgresBlueprintAdmissionRepository implements BlueprintAdmissionR
       throw new Error("Blueprint content admission did not record its validation run.");
     }
     return row.inserted ? { kind: "INSERTED" } : { kind: "REUSED", trustStatus: row.trust_status };
+  }
+}
+
+function lineageRecord(row: AdmissionLineageRow): AdmissionLineageRecord {
+  const content: LineageContentRow = {
+    content_hash: row.content_hash,
+    canonical_blueprint: row.canonical_blueprint,
+    schema_version: row.schema_version,
+    registry_version: row.registry_version,
+    trust_status: row.trust_status,
+    admitted_by_validation_run_id: row.admitted_by_validation_run_id,
+    byte_size: row.byte_size
+  };
+  if (row.run_validation_run_id === null) {
+    return { content, admitting_run: null };
+  }
+  return {
+    content,
+    admitting_run: {
+      validation_run_id: row.run_validation_run_id,
+      candidate_digest: row.run_candidate_digest ?? "",
+      blueprint_hash: row.run_blueprint_hash,
+      schema_version: row.run_schema_version ?? "",
+      registry_version: row.run_registry_version ?? "",
+      status: row.run_status ?? "",
+      error_codes: row.run_error_codes,
+      report: row.run_report,
+      trace_id: row.run_trace_id ?? ""
+    }
+  };
+}
+
+/** Read-only lineage port: one row joins blueprint_content to its admitting validation_run. */
+export class PostgresAdmissionLineageSource implements AdmissionLineageSource {
+  public constructor(private readonly executor: PostgresExecutor) {}
+
+  public async readAdmissionLineage(contentHash: string): Promise<AdmissionLineageRecord | undefined> {
+    const result = await this.executor.query<AdmissionLineageRow>(POSTGRES_READ_ADMISSION_LINEAGE_SQL, [contentHash]);
+    const [row] = result.rows;
+    return row === undefined ? undefined : lineageRecord(row);
   }
 }

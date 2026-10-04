@@ -27,6 +27,7 @@ import type {
 } from "../capabilities/schema/registry-release.js";
 import { canonicalBlueprintBytes } from "./canonical-json.js";
 import { hashCanonicalBlueprintBytes } from "./content-identity.js";
+import { emitF02Evidence, newTraceId, type F02EvidenceEvent, type F02EvidenceOptions } from "./validation-evidence.js";
 import type { F02ErrorCode } from "./validation-types.js";
 
 export const EXECUTION_ADMISSION_VERSION = "1.0.0";
@@ -86,6 +87,9 @@ export interface ExecutionAdmissionConfig {
   readonly supportedBlueprintSchemaRange: string;
   readonly now?: () => Date;
   readonly newAdmissionId?: () => string;
+  /** Server-side F02-EVT-010..013 evidence; omitted means no evidence emission. */
+  readonly evidence?: F02EvidenceOptions;
+  readonly newTraceId?: () => string;
 }
 
 export interface ExecutionAdmissionService {
@@ -294,6 +298,49 @@ function checkDurableTrust(stored: StoredBlueprintContent): void {
   }
 }
 
+/** EXECUTION-ADMISSION §10: requested + exactly one terminal allowed / denied (E01–E07) / failed (E08) event. */
+function admissionEvents(
+  contentHash: string,
+  decision: ExecutionAdmissionDecision,
+  runtimeVersion: string,
+  traceId: string
+): readonly F02EvidenceEvent[] {
+  const requested: F02EvidenceEvent = {
+    event_type: "F02-EVT-010",
+    trace_id: traceId,
+    blueprint_hash: contentHash,
+    properties: { content_hash: contentHash, runtime_version: runtimeVersion }
+  };
+  if (decision.executable) {
+    const { admission } = decision;
+    return [
+      requested,
+      {
+        event_type: "F02-EVT-011",
+        trace_id: traceId,
+        blueprint_hash: contentHash,
+        properties: {
+          content_hash: contentHash,
+          blueprint_schema_version: admission.schema_version,
+          registry_version: admission.registry_version,
+          registry_digest: admission.registry_digest,
+          runtime_version: admission.runtime_version
+        }
+      }
+    ];
+  }
+  return [
+    requested,
+    {
+      event_type: decision.step === "E08" ? "F02-EVT-013" : "F02-EVT-012",
+      trace_id: traceId,
+      blueprint_hash: contentHash,
+      ...(decision.error_code === undefined ? {} : { error_code: decision.error_code }),
+      properties: { content_hash: contentHash, runtime_version: runtimeVersion }
+    }
+  ];
+}
+
 function checkSchema(body: VerifiedBody, supportedRange: VersionRange): void {
   const schemaVersion = parseSemVer(body.schemaVersion);
   if (schemaVersion === undefined || !versionInRange(schemaVersion, supportedRange)) {
@@ -343,16 +390,25 @@ export function createExecutionAdmissionService(config: ExecutionAdmissionConfig
     };
   };
 
+  const decideOrDeny = async (contentHash: string): Promise<ExecutionAdmissionDecision> => {
+    try {
+      return { executable: true, admission: await decide(contentHash) };
+    } catch (error: unknown) {
+      if (error instanceof AdmissionStop) {
+        return error.denial;
+      }
+      throw error;
+    }
+  };
+
   return {
     admit: async (contentHash) => {
-      try {
-        return { executable: true, admission: await decide(contentHash) };
-      } catch (error: unknown) {
-        if (error instanceof AdmissionStop) {
-          return error.denial;
-        }
-        throw error;
+      const decision = await decideOrDeny(contentHash);
+      if (config.evidence !== undefined) {
+        const traceId = (config.newTraceId ?? newTraceId)();
+        await emitF02Evidence(config.evidence, admissionEvents(contentHash, decision, config.runtimeVersion, traceId));
       }
+      return decision;
     }
   };
 }

@@ -1,4 +1,5 @@
-import { isSealedPassedResult } from "./validate-blueprint.js";
+import { emitF02Evidence, type F02EvidenceEvent, type F02EvidenceOptions } from "./validation-evidence.js";
+import { isIssuedValidationReport, isSealedPassedResult } from "./validate-blueprint.js";
 import type {
   BlueprintValidationResult,
   F02ErrorCode,
@@ -46,6 +47,8 @@ export interface BlueprintAdmissionRepository {
 export interface BlueprintAdmissionOptions {
   readonly compilerRunId?: string | null;
   readonly now?: () => Date;
+  /** Server-side F02 validation evidence; omitted means no evidence emission. */
+  readonly evidence?: F02EvidenceOptions;
 }
 
 export type BlueprintAdmissionResult =
@@ -79,15 +82,49 @@ function runRecord(
 }
 
 function integrityFailureReport(report: ValidationReport): ValidationReport {
-  return {
+  return Object.freeze({
     validation_run_id: report.validation_run_id,
     candidate_digest: report.candidate_digest,
     status: "REJECTED",
     schema_version: report.schema_version,
     registry_version: report.registry_version,
     registry_digest: report.registry_digest,
-    issues: [{ error_code: "F02-ERR-015", stage: "V12", json_path: "$" }],
+    issues: Object.freeze([Object.freeze({ error_code: "F02-ERR-015", stage: "V12", json_path: "$" } as const)]),
     trace_id: report.trace_id
+  });
+}
+
+/** One terminal validation event per durable validation_run row, derived only from that row's trusted report. */
+function validationOutcomeEvent(report: ValidationReport): F02EvidenceEvent {
+  const versions = { blueprint_schema_version: report.schema_version, registry_version: report.registry_version };
+  if (report.status === "PASSED") {
+    return {
+      event_type: "F02-EVT-002",
+      trace_id: report.trace_id,
+      properties: { ...versions, content_hash: report.content_hash, validation_stage: "V12" }
+    };
+  }
+  const [issue] = report.issues;
+  return {
+    event_type: report.status === "REJECTED" ? "F02-EVT-003" : "F02-EVT-004",
+    trace_id: report.trace_id,
+    ...(issue === undefined ? {} : { error_code: issue.error_code }),
+    properties: { ...versions, ...(issue === undefined ? {} : { validation_stage: issue.stage }) }
+  };
+}
+
+function contentEvent(eventType: "F02-EVT-007" | "F02-EVT-009", report: ValidationReport, contentHash: string): F02EvidenceEvent {
+  const admitted = eventType === "F02-EVT-007";
+  return {
+    event_type: eventType,
+    trace_id: report.trace_id,
+    ...(admitted ? { blueprint_hash: contentHash } : { error_code: "F02-ERR-015" }),
+    properties: {
+      content_hash: contentHash,
+      blueprint_schema_version: report.schema_version,
+      registry_version: report.registry_version,
+      validation_stage: "V12"
+    }
   };
 }
 
@@ -101,7 +138,13 @@ export async function admitBlueprint(
   const createdAt = (options.now?.() ?? new Date()).toISOString();
   const compilerRunId = options.compilerRunId ?? null;
   if (admissible === undefined) {
+    // Identity check first: a Proxy/copy never matches, and an issued report is deep-frozen so status cannot drift.
+    // The static union says non-PASSED here, but the caller-owned value is untrusted at runtime.
+    if (!isIssuedValidationReport(report) || (report as ValidationReport).status === "PASSED") {
+      throw new Error("Only a validator-issued REJECTED or INCOMPATIBLE result can record validation_run evidence.");
+    }
     await repository.recordValidationRun(runRecord(report, createdAt, compilerRunId));
+    await emitF02Evidence(options.evidence, [validationOutcomeEvent(report)]);
     return { status: "NOT_ADMITTED", report };
   }
   if (!isSealedPassedResult(report, admissible)) {
@@ -121,8 +164,19 @@ export async function admitBlueprint(
   if (outcome.kind === "HASH_INTEGRITY_FAILURE") {
     const failure = integrityFailureReport(report);
     await repository.recordValidationRun(runRecord(failure, createdAt, compilerRunId));
+    await emitF02Evidence(options.evidence, [
+      validationOutcomeEvent(failure),
+      contentEvent("F02-EVT-009", failure, admissible.contentHash)
+    ]);
     return { status: "NOT_ADMITTED", report: failure };
   }
+  // blueprint_admitted marks the one insert of a blueprint_content row; same-hash reuse keeps the existing trust_status.
+  await emitF02Evidence(
+    options.evidence,
+    outcome.kind === "INSERTED"
+      ? [validationOutcomeEvent(report), contentEvent("F02-EVT-007", report, admissible.contentHash)]
+      : [validationOutcomeEvent(report)]
+  );
   return {
     status: "ADMITTED",
     validationRunId: run.validation_run_id,
