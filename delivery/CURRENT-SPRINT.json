@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-016",
+  "active_task": "T007",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved T006 closure after implementation merge #238, Evidence normalization #239/#241 and REVIEW #242. T006 is CLOSED; T007-T009 remain not activated until separate control transition."
+  "reason": "Human-approved transition after T006 closure: T007 is activated under BS-P1-016. T008-T009 remain PLANNED. No Cursor execution authority has been issued."
 }
