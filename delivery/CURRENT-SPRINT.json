@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-012",
-  "active_task": "T004",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T004 implementation merged via PR #188 as 1918980b269fb11c11e386dd72d83bc7c5029003; BS-P1-012 Evidence EV-SP-P1-002-T004-001..010 normalized via PR #189 as 2f117ef440ae033171f0b7ce37092ccc87db8b2a. T004 is in closure REVIEW; T005 is not activated."
+  "reason": "T004 closure audit PASS and standing Human approval applied. T004 is CLOSED; SP-P1-002 remains open with T005-T009 pending. Execution is HOLD until separate T005 activation. Issue #164 remains retained as execution history."
 }
