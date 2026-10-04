@@ -72,7 +72,7 @@
     },
     {
       "path": "projection-map.json",
-      "sha256": "69eba0fd6f9a72e759cd17d7eee10561a3abd8d66a356400c24f05e61bda80e7"
+      "sha256": "c48341f7b06a2cdf5e2623f3ed8fe4ca36889e00fb7282768a769f06bcc3ada5"
     },
     {
       "path": "registries/acceptance-test-registry.json",
@@ -223,5 +223,5 @@
       "sha256": "6709eabe3b86589b92f82f4f2dda809e44daca1dd283b9553c6331cc297ccb6f"
     }
   ],
-  "content_sha256": "0237f5f07d1d5e9bd59c0957ff7b2d8002cbc17f8158c9230a4778563caa50f0"
+  "content_sha256": "9ae563c7a67c3eeb57c07591d1af76c6ce4c69e73c3ac1b89f47b378702a6cb6"
 }
