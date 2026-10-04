@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-016",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BS-P1-016 activated after BF-045 clarification value/dependency remediation; T006 restored to IN_PROGRESS. T007-T009 remain PLANNED."
+  "reason": "T006 implementation merged via PR #238 as 7b9ce1a2807c3c937e64d07c491af7c8f206f993; final Evidence normalized via PR #239 as 9136e9c21e5dcdf49ddb90b617ea8623cbe1a0f4. T006 is in closure REVIEW; T007-T009 remain not activated."
 }
