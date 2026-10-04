@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-041",
   "classification": "IMPLEMENTATION_BUG",
-  "status": "OPEN",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-012",
   "sprint_id": "SP-P1-002",
   "task_id": "T004",
@@ -34,7 +34,12 @@
     "AC-015/016 closure simulation: PARTIALLY_SUPPORTED metadata is exact-schema, canonical, hashed and durable; missing/hidden/duplicate/unknown degradation metadata fails; preserves_semantic_core=false fails V11 before admission. Natural-language semantic correctness remains intentionally outside F02 and is not a T004 implementation gap.",
     "Validator context registry/runtimeVersion injection remains a trusted-internal dependency-injection surface, not a T004 public-client boundary. No production HTTP caller exists yet; POI-005 must later prove client input cannot populate trusted validation/execution context. T004 must not expand into that deferred wiring.",
     "Rejected/INCOMPATIBLE report authenticity remains a T005 evidence/traceability hardening concern because hostile internal callers could fabricate validation evidence without obtaining durable content. This does not bypass F02-AC-014 after the two BF-041 fixes and must not be silently pulled into T004.",
-    "One-shot closure rule: after Cursor fixes both BF-041 blockers, if the required hostile regressions fail on the pre-fix implementation, pass on the final HEAD, all pre-existing T004 proofs remain green, all required/global gates pass, and independent post-fix audit finds no new blocker, T004 is eligible for immediate fresh Evidence normalization and closure without another implementation round."
+    "One-shot closure rule: after Cursor fixes both BF-041 blockers, if the required hostile regressions fail on the pre-fix implementation, pass on the final HEAD, all pre-existing T004 proofs remain green, all required/global gates pass, and independent post-fix audit finds no new blocker, T004 is eligible for immediate fresh Evidence normalization and closure without another implementation round.",
+    "BF-041 remediation merged via PR #200 as d859ae4f64e240b7c9aae563981411b229bb84cb after the repair branch was rebased onto canonical main dc28e01e45efef109eb3adb0a541e1a30c9b3400 without changing the four audited T004 implementation files.",
+    "PR #200 current-base verification on head 33b370b9596a5497e93d769f0842438d043a2364: Governance Gate, Governance Attack Dry-run, CI Gate/Product CI and CodeQL all PASS; Test Integrity and Change Scope PASS.",
+    "Cursor RESULT issue #164 comment 5975364419 proves the hostile outer-result and direct-mint regressions fail against the pre-fix implementation and pass on final implementation; all T004 required commands and additional security/build checks exit 0.",
+    "Fresh append-only T004 Evidence EV-SP-P1-002-T004-011..019 and EV-SP-P1-002-T004-023 normalized via PR #201 as 38845c125398290a91da938f3684baca0a3fdc95. Historical EV-SP-P1-002-T004-001..010 were not overwritten or reused as final proof.",
+    "Independent ChatGPT post-fix audit re-read the final four-file diff, validator issuance/provenance boundary, admission persistence, same-hash integrity, degradation semantics and all four T004 Acceptance criteria; no third T004 blocker or Product/Schema ambiguity remains."
   ],
   "attempts": [
     {
@@ -48,6 +53,12 @@
       "strategy": "PRE_REEXECUTION_ONE_SHOT_CLASS_LEVEL_CLOSURE_SIMULATION",
       "result": "REPAIR_MATRIX_COMPLETE_NO_THIRD_T004_BLOCKER",
       "evidence": "ChatGPT audited validator issuance, provenance identity, caller-owned wrapper TOCTOU, repository persistence, same-hash collision/integrity, immutable DB rows, fresh execution separation, degradation metadata, semantic-core rejection, module exports and production call graph. Two implementation blockers remain in BF-041 and both fit the existing T004 write scope; no Product/Schema ambiguity or third T004 blocker was found."
+    },
+    {
+      "attempt_id": "A3",
+      "strategy": "POST_FIX_INDEPENDENT_AUDIT_AND_FRESH_EVIDENCE_NORMALIZATION",
+      "result": "PASS_RESOLVED",
+      "evidence": "Canonical implementation merge d859ae4f64e240b7c9aae563981411b229bb84cb plus current-base PR #200 checks and fresh Evidence PR #201 satisfy the BF-041 one-shot closure matrix. T004 may enter closure REVIEW; Finding remains RESOLVED until final Task closure."
     }
   ],
   "requested_planning_action": [
