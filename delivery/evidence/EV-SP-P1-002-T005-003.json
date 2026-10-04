@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-013",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T005",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-04T08:25:30Z",
+  "blocking_findings": [],
+  "source_commit": "3fd91f77326a93663f643db9fdd741f3ac14d3c8",
+  "evidence_id": "EV-SP-P1-002-T005-003",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37188741666#product-ci-check-types-pass",
+  "command": "npm run check:types",
+  "review_checks": null
+}
