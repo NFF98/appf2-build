@@ -1,4 +1,4 @@
-import { isSealedPassedResult } from "./admissible-provenance.js";
+import { isSealedPassedResult } from "./validate-blueprint.js";
 import type {
   BlueprintValidationResult,
   F02ErrorCode,
@@ -96,17 +96,18 @@ export async function admitBlueprint(
   repository: BlueprintAdmissionRepository,
   options: BlueprintAdmissionOptions = {}
 ): Promise<BlueprintAdmissionResult> {
+  // The caller-owned result may be an accessor/Proxy: read it exactly once and never touch it again.
+  const { report, admissible } = result;
   const createdAt = (options.now?.() ?? new Date()).toISOString();
   const compilerRunId = options.compilerRunId ?? null;
-  if (result.admissible === undefined) {
-    await repository.recordValidationRun(runRecord(result.report, createdAt, compilerRunId));
-    return { status: "NOT_ADMITTED", report: result.report };
+  if (admissible === undefined) {
+    await repository.recordValidationRun(runRecord(report, createdAt, compilerRunId));
+    return { status: "NOT_ADMITTED", report };
   }
-  if (!isSealedPassedResult(result.report, result.admissible)) {
+  if (!isSealedPassedResult(report, admissible)) {
     throw new Error("Only a validator-issued PASSED result can admit Blueprint content.");
   }
-  const run = runRecord(result.report, createdAt, compilerRunId);
-  const { admissible } = result;
+  const run = runRecord(report, createdAt, compilerRunId);
   const outcome = await repository.admitValidatedContent(run, {
     content_hash: admissible.contentHash,
     canonical_blueprint: admissible.canonicalJson,
@@ -118,9 +119,9 @@ export async function admitBlueprint(
     byte_size: admissible.byteSize
   });
   if (outcome.kind === "HASH_INTEGRITY_FAILURE") {
-    const report = integrityFailureReport(result.report);
-    await repository.recordValidationRun(runRecord(report, createdAt, compilerRunId));
-    return { status: "NOT_ADMITTED", report };
+    const failure = integrityFailureReport(report);
+    await repository.recordValidationRun(runRecord(failure, createdAt, compilerRunId));
+    return { status: "NOT_ADMITTED", report: failure };
   }
   return {
     status: "ADMITTED",
