@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-013",
   "active_task": "T005",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BS-P1-013 activated after BF-042 exhaustive remediation; T005 restored to IN_PROGRESS. Cursor execution remains intentionally unissued and Issue #164 is retained only for a later explicit Human-approved EXECUTE."
+  "reason": "T005 implementation merged via PR #215 as 3fd91f77326a93663f643db9fdd741f3ac14d3c8; final Evidence normalized via PR #217 as 1a4ea07f44d3156bee1b876f3021ed680d1f64ba. T005 is in closure REVIEW; T006-T009 remain not activated."
 }
