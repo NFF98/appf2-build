@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-015",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-044"
+  ],
+  "affected_build_spec": "BS-P1-014",
+  "affected_tasks": [
+    "T006"
+  ],
+  "affected_contracts": [
+    "F01 Clarification Policy CP-001..CP-006 totality",
+    "F01 policy-visible item resolution / answer-shape machine contract",
+    "F01 deterministic question ranking / grouping / projection",
+    "F01 answered-question suppression and zero-question invariant",
+    "F01 visible assumption classification and acceptance semantics"
+  ],
+  "affected_acceptance": [
+    "F01-AC-004",
+    "F01-AC-005",
+    "F01-AC-006"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human approval in ChatGPT 2026-10-04: BF-044 remediation and governance through immediately before Cursor restarts."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "aa861b3fd3f81c52cf7f3bdc852482910856b630",
+  "replacement_build_spec": "BS-P1-015",
+  "verification": [
+    "Design BF-044 F01-only remediation is canonical commit aa861b3fd3f81c52cf7f3bdc852482910856b630.",
+    "Scope-clean freeze source 4527b4ae9b622d6961685bbdad889b045fabf815 is exactly one commit ahead of BS-P1-014 source 5deb371234bce8864b1fc6847474c6d31bddd332 and changes exactly F01-INTENT-COMPILATION.md.",
+    "Replacement BS-P1-015 makes Clarification Policy total over valid policy-visible states, freezes deterministic question eligibility/shape/ranking, and prevents zero-question NEEDS_CLARIFICATION without changing Evidence Registry or other Functions.",
+    "Freeze does not activate T006, does not issue Cursor execution, and does not absorb POI-005/POI-006 or T007-T009."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "4527b4ae9b622d6961685bbdad889b045fabf815",
+    "base_commit": "5deb371234bce8864b1fc6847474c6d31bddd332",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-044-FREEZE-CANDIDATE.md"
+  }
+}
