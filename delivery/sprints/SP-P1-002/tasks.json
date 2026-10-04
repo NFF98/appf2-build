@@ -439,7 +439,7 @@
         "BL-P1-007"
       ],
       "title": "Implement validation evidence and admission traceability",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-013",
       "scope": [
         "Make every F02 validation mechanically traceable by deterministic candidate_digest, terminal status, stage/error and canonical trace_id; missing or malformed upstream trace must be replaced at the trusted F02 boundary with a server-generated F07-canonical trace before validation_run/evidence construction.",
@@ -497,9 +497,7 @@
       ],
       "parallel_safe": false,
       "product_decision_allowed": false,
-      "blocked_by": [
-        "T003"
-      ],
+      "blocked_by": [],
       "completion_evidence": [
         "EV-SP-P1-002-T005-001",
         "EV-SP-P1-002-T005-002",

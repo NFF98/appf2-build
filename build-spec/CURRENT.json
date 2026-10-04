@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-013",
-  "implementation_enabled": true,
-  "reason": "Human-approved BF-042 remediation complete; BS-P1-013 / SP-P1-002 / T005 re-activated. Cursor implementation remains a separate Human-controlled command and has not been issued."
+  "implementation_enabled": false,
+  "reason": "Human-approved T005 closure complete under locked BS-P1-013 after implementation, independent audit and final Evidence. Execution is HOLD before any separate T006 activation; non-blocking T005 verification debt will be recorded in the project open-item ledger while HOLD."
 }
