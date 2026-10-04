@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-016",
+  "previous_baseline": "BS-P1-015",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "HUMAN-BF-045-BCE-FULL-REMEDIATION-20261004",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011",
+    "BD-012",
+    "BD-013",
+    "BD-014",
+    "BD-015",
+    "BD-016"
+  ],
+  "source_working_commit": "336cc979e8645af6dfb04f72e07d4daf741d22c4",
+  "activated_at": "2026-10-04T14:30:00Z"
+}
