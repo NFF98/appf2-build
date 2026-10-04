@@ -1,11 +1,21 @@
 import {
   createBrowserEvidenceBatchTransport,
+  createBrowserEvidenceBeaconTransport,
   type EvidenceBatchPayload,
   type EvidenceBatchTransport,
-  type EvidenceBatchTransportResult
+  type EvidenceBatchTransportResult,
+  type EvidenceBeaconTransport
 } from "./evidence-batch-transport.js";
+import {
+  admitEvidenceEvent,
+  EvidenceClientQueue,
+  type QueuedEvidenceRecord
+} from "./evidence-client-queue.js";
+import {
+  resolveBrowserEvidenceQueueStore,
+  type EvidenceQueueStore
+} from "./evidence-queue-store.js";
 import type { EvidenceEventInput } from "./evidence-types.js";
-import { EVIDENCE_LIMITS, validateEvidenceEvent } from "./evidence-validator.js";
 
 export const EVIDENCE_QUEUE_FLUSH_THRESHOLD = 20;
 export const EVIDENCE_TIMER_FLUSH_MS = 10_000;
@@ -20,7 +30,10 @@ export interface EvidenceCollectorScheduler {
 
 export interface EvidenceCollectorDependencies {
   readonly transport: EvidenceBatchTransport;
+  readonly beaconTransport: EvidenceBeaconTransport;
+  readonly queueStore: EvidenceQueueStore;
   readonly randomUUID: () => string;
+  readonly now: () => number;
   readonly sleep: (ms: number) => Promise<void>;
   readonly jitter: () => number;
   readonly scheduler: EvidenceCollectorScheduler;
@@ -29,7 +42,10 @@ export interface EvidenceCollectorDependencies {
 export interface BrowserEvidenceCollectorOptions {
   readonly fetch?: typeof fetch;
   readonly transport?: EvidenceBatchTransport;
+  readonly beaconTransport?: EvidenceBeaconTransport;
+  readonly queueStore?: EvidenceQueueStore;
   readonly randomUUID?: () => string;
+  readonly now?: () => number;
   readonly sleep?: (ms: number) => Promise<void>;
   readonly jitter?: () => number;
   readonly scheduler?: EvidenceCollectorScheduler;
@@ -57,15 +73,6 @@ function defaultSleep(ms: number): Promise<void> {
   });
 }
 
-function acceptedEvent(event: EvidenceEventInput): EvidenceEventInput | null {
-  try {
-    const result = validateEvidenceEvent(event, JSON.stringify(event));
-    return result.accepted ? result.event : null;
-  } catch {
-    return null;
-  }
-}
-
 async function sendSafely(
   transport: EvidenceBatchTransport,
   payload: EvidenceBatchPayload
@@ -85,6 +92,10 @@ function retryDelayForAttempt(
     ? EVIDENCE_FIRST_RETRY_DELAY_MS
     : EVIDENCE_SECOND_RETRY_DELAY_MS;
   return retryDelayMs(baseMs, jitter);
+}
+
+function batchEvents(batch: readonly QueuedEvidenceRecord[]): EvidenceEventInput[] {
+  return batch.map(record => record.event);
 }
 
 async function deliverChunk(
@@ -112,28 +123,31 @@ async function deliverChunk(
 }
 
 export class EvidenceCollector {
-  private readonly queue: EvidenceEventInput[] = [];
+  private readonly queue: EvidenceClientQueue;
   private timer: unknown = null;
   private tail: Promise<void> = Promise.resolve();
 
-  public constructor(private readonly dependencies: EvidenceCollectorDependencies) {}
+  public constructor(private readonly dependencies: EvidenceCollectorDependencies) {
+    this.queue = new EvidenceClientQueue(dependencies.queueStore, dependencies.now);
+    this.queue.restore();
+    this.ensureTimer();
+  }
 
   public queuedCount(): number {
-    return this.queue.length;
+    return this.queue.size();
   }
 
   public queuedEvents(): readonly EvidenceEventInput[] {
-    return this.queue;
+    return this.queue.events();
   }
 
   public emit(event: EvidenceEventInput): void {
-    const accepted = acceptedEvent(event);
-    if (accepted === null) {
+    const admitted = admitEvidenceEvent(event);
+    if (admitted === null || this.queue.enqueue(admitted) !== "QUEUED") {
       return;
     }
-    this.queue.push(accepted);
     this.ensureTimer();
-    if (this.queue.length >= EVIDENCE_QUEUE_FLUSH_THRESHOLD) {
+    if (this.queue.size() >= EVIDENCE_QUEUE_FLUSH_THRESHOLD) {
       void this.flush();
     }
   }
@@ -144,8 +158,27 @@ export class EvidenceCollector {
     return this.tail;
   }
 
+  // Runs synchronously inside pagehide: no awaiting, no retries. Batches the user agent refuses
+  // stay in the durable queue for the next session.
+  public flushOnPageHide(): void {
+    try {
+      for (const batch of this.queue.batches()) {
+        const handedOff = this.dependencies.beaconTransport.dispatch({
+          batch_id: this.dependencies.randomUUID(),
+          events: batchEvents(batch)
+        });
+        if (!handedOff) {
+          return;
+        }
+        this.queue.remove(batch);
+      }
+    } catch {
+      return;
+    }
+  }
+
   private ensureTimer(): void {
-    if (this.timer !== null || this.queue.length === 0) {
+    if (this.timer !== null || this.queue.size() === 0) {
       return;
     }
     this.timer = this.dependencies.scheduler.schedule(
@@ -167,14 +200,13 @@ export class EvidenceCollector {
 
   private async flushOwnedQueue(): Promise<void> {
     this.clearTimer();
-    while (this.queue.length > 0) {
-      const chunk = this.queue.slice(0, EVIDENCE_LIMITS.batchEvents);
-      const result = await deliverChunk(this.dependencies, chunk);
+    for (let batch = this.queue.nextBatch(); batch.length > 0; batch = this.queue.nextBatch()) {
+      const result = await deliverChunk(this.dependencies, batchEvents(batch));
       if (result === "retain") {
         this.ensureTimer();
         return;
       }
-      this.queue.splice(0, chunk.length);
+      this.queue.remove(batch);
     }
   }
 }
@@ -184,7 +216,10 @@ export function createBrowserEvidenceCollector(
 ): EvidenceCollector {
   return new EvidenceCollector({
     transport: options.transport ?? createBrowserEvidenceBatchTransport(options.fetch),
+    beaconTransport: options.beaconTransport ?? createBrowserEvidenceBeaconTransport(),
+    queueStore: options.queueStore ?? resolveBrowserEvidenceQueueStore(),
     randomUUID: options.randomUUID ?? (() => globalThis.crypto.randomUUID()),
+    now: options.now ?? (() => Date.now()),
     sleep: options.sleep ?? defaultSleep,
     jitter: options.jitter ?? (() => Math.random()),
     scheduler: options.scheduler ?? createBrowserEvidenceCollectorScheduler()

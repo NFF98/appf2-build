@@ -21,8 +21,21 @@ export interface EvidenceBatchTransport {
   send(payload: EvidenceBatchPayload): Promise<EvidenceBatchTransportResult>;
 }
 
+export interface EvidenceBeaconTransport {
+  dispatch(payload: EvidenceBatchPayload): boolean;
+}
+
+export type EvidenceBeaconNavigator = Partial<Pick<Navigator, "sendBeacon">>;
+
 export function isRetryableHttpStatus(status: number): boolean {
   return status === 429 || status >= 500;
+}
+
+export function serializeEvidenceBatch(payload: EvidenceBatchPayload): string {
+  return JSON.stringify({
+    batch_id: payload.batch_id,
+    events: payload.events
+  });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -92,14 +105,31 @@ export function createBrowserEvidenceBatchTransport(
         const response = await fetchImpl(EVIDENCE_EVENTS_BATCH_PATH, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            batch_id: payload.batch_id,
-            events: payload.events
-          })
+          body: serializeEvidenceBatch(payload)
         });
         return await outcomeFromResponse(response);
       } catch {
         return { ok: false, retryable: true };
+      }
+    }
+  };
+}
+
+// sendBeacon only reports whether the user agent accepted the request for delivery; it is the
+// single page-unload handoff signal and never yields a server response.
+export function createBrowserEvidenceBeaconTransport(
+  navigatorImpl: EvidenceBeaconNavigator | undefined = globalThis.navigator
+): EvidenceBeaconTransport {
+  return {
+    dispatch(payload) {
+      if (typeof navigatorImpl?.sendBeacon !== "function") {
+        return false;
+      }
+      try {
+        const body = new Blob([serializeEvidenceBatch(payload)], { type: "application/json" });
+        return navigatorImpl.sendBeacon(EVIDENCE_EVENTS_BATCH_PATH, body);
+      } catch {
+        return false;
       }
     }
   };
