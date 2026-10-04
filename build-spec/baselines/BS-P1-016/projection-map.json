@@ -4,7 +4,11 @@
   "phase": "PHASE_1",
   "source_repo": "NFF98/appf2-design",
   "source_commit": "336cc979e8645af6dfb04f72e07d4daf741d22c4",
-  "freeze_audit": "delivery/audits/SP-P1-002-BF-045-FREEZE-CANDIDATE.md",
+  "freeze_audit": {
+    "status": "PASS",
+    "version_lock": true,
+    "source_commit": "336cc979e8645af6dfb04f72e07d4daf741d22c4"
+  },
   "projection_engine": {
     "version": "MARKDOWN_EXACT_HEADING_V1",
     "matching": "EXACT_ONLY",
