@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "baseline_id": "BS-P1-015",
-  "previous_baseline": "BS-P1-015",
+  "previous_baseline": "BS-P1-014",
   "type": "REBASELINE",
-  "status": "ACTIVE",
+  "status": "USER_APPROVED",
   "decision_ref": "HUMAN-BF-044-T006-REBASELINE-ACTIVATION-20261004",
   "approved_delta_ids": [
     "BD-003",
@@ -17,8 +17,9 @@
     "BD-011",
     "BD-012",
     "BD-013",
+    "BD-014",
     "BD-015"
   ],
   "source_working_commit": "4527b4ae9b622d6961685bbdad889b045fabf815",
-  "activated_at": "2026-10-04T11:50:00Z"
+  "activated_at": "2026-10-04T13:00:00Z"
 }
