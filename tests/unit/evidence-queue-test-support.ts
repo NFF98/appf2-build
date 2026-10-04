@@ -2,6 +2,7 @@ import {
   createBrowserEvidenceBeaconTransport,
   type EvidenceBeaconNavigator
 } from "../../src/platform/evidence/evidence-batch-transport.js";
+import { admitEvidenceEvent } from "../../src/platform/evidence/evidence-client-queue.js";
 import {
   createBrowserEvidenceCollector,
   type EvidenceCollector
@@ -9,6 +10,8 @@ import {
 import {
   createWebStorageEvidenceQueueStore,
   EVIDENCE_QUEUE_STORAGE_KEY_PREFIX,
+  evidenceQueueStorageKey,
+  type EvidenceQueueEntry,
   type EvidenceQueueStorage
 } from "../../src/platform/evidence/evidence-queue-store.js";
 import type { EvidenceEventInput } from "../../src/platform/evidence/evidence-types.js";
@@ -43,9 +46,26 @@ export class MemoryWebStorage implements EvidenceQueueStorage {
   public queuedEventIds(): string[] {
     return [...this.items.keys()]
       .filter(key => key.startsWith(EVIDENCE_QUEUE_STORAGE_KEY_PREFIX))
-      .map(key => key.slice(EVIDENCE_QUEUE_STORAGE_KEY_PREFIX.length))
+      .map(key => key.slice(key.lastIndexOf(":") + 1))
       .sort();
   }
+}
+
+export function persistQueuedEvent(
+  storage: EvidenceQueueStorage,
+  event: { readonly event_id: string },
+  enqueuedAt: number,
+  overrides: Partial<EvidenceQueueEntry> = {}
+): void {
+  const serialized = JSON.stringify(event);
+  const entry: EvidenceQueueEntry = {
+    eventId: event.event_id,
+    enqueuedAt,
+    collectionClass: admitEvidenceEvent(event)?.collectionClass ?? "CORE_OUTCOME",
+    bytes: new TextEncoder().encode(serialized).byteLength,
+    ...overrides
+  };
+  storage.setItem(evidenceQueueStorageKey(entry), serialized);
 }
 
 export class ManualClock {
@@ -93,6 +113,7 @@ export function createDurableTestCollector(input: {
   readonly clock: ManualClock;
   readonly navigator?: EvidenceBeaconNavigator;
   readonly scheduler?: ManualScheduler;
+  readonly sleep?: (ms: number) => Promise<void>;
 }): EvidenceCollector {
   let uuidIndex = 0;
   return createBrowserEvidenceCollector({
@@ -102,7 +123,7 @@ export function createDurableTestCollector(input: {
     now: input.clock.now,
     scheduler: input.scheduler ?? new ManualScheduler(),
     jitter: () => 0.5,
-    sleep: async () => undefined,
+    sleep: input.sleep ?? (async () => undefined),
     randomUUID: () => {
       uuidIndex += 1;
       return `bbbbbbbb-cccc-4ddd-8eee-${String(uuidIndex).padStart(12, "0")}`;

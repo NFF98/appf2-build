@@ -1,5 +1,5 @@
 import type { EvidenceEventInput } from "./evidence-types.js";
-import type { EvidenceQueueStore } from "./evidence-queue-store.js";
+import type { EvidenceQueueEntry, EvidenceQueueStore } from "./evidence-queue-store.js";
 import { lockedEvidenceRegistry, type EvidenceRegistryEntry } from "./evidence-registry.js";
 import { EVIDENCE_LIMITS, validateEvidenceEvent } from "./evidence-validator.js";
 
@@ -20,12 +20,8 @@ export interface AdmittedEvidenceEvent {
   readonly bytes: number;
 }
 
-export interface QueuedEvidenceRecord {
+export interface QueuedEvidenceRecord extends EvidenceQueueEntry {
   readonly event: EvidenceEventInput;
-  readonly collectionClass: EvidenceCollectionClass;
-  readonly bytes: number;
-  readonly enqueuedAt: number;
-  readonly expiresAt: number;
 }
 
 const byteEncoder = new TextEncoder();
@@ -65,20 +61,55 @@ export function admitEvidenceEvent(input: unknown): AdmittedEvidenceEvent | null
 
 function toQueuedRecord(admitted: AdmittedEvidenceEvent, enqueuedAt: number): QueuedEvidenceRecord {
   return {
+    eventId: admitted.event.event_id,
     event: admitted.event,
     collectionClass: admitted.collectionClass,
     bytes: admitted.bytes,
-    enqueuedAt,
-    expiresAt: enqueuedAt + EVIDENCE_QUEUE_LIMITS.ttlMs
+    enqueuedAt
   };
 }
 
-function isExpired(record: QueuedEvidenceRecord, now: number): boolean {
-  return now > record.expiresAt;
+function matchesPersistedEntry(admitted: AdmittedEvidenceEvent, entry: EvidenceQueueEntry): boolean {
+  return admitted.event.event_id === entry.eventId &&
+    admitted.collectionClass === entry.collectionClass &&
+    admitted.bytes === entry.bytes;
+}
+
+function isExpired(entry: EvidenceQueueEntry, now: number): boolean {
+  return now > entry.enqueuedAt + EVIDENCE_QUEUE_LIMITS.ttlMs;
 }
 
 function withinQueueLimits(count: number, bytes: number): boolean {
   return count <= EVIDENCE_QUEUE_LIMITS.maxEvents && bytes <= EVIDENCE_QUEUE_LIMITS.maxBytes;
+}
+
+function totalEntryBytes(entries: readonly EvidenceQueueEntry[]): number {
+  return entries.reduce((sum, entry) => sum + entry.bytes, 0);
+}
+
+// Victims are taken oldest-first from DEBUG_ONLY / PRODUCT_SAMPLE; CORE_OUTCOME / RELIABILITY are
+// only displaced to admit another CORE_OUTCOME / RELIABILITY record.
+function overflowVictims(
+  held: readonly EvidenceQueueEntry[],
+  incoming: EvidenceQueueEntry
+): EvidenceQueueEntry[] | null {
+  const oldestFirst = [...held].sort((left, right) => left.enqueuedAt - right.enqueuedAt);
+  const lowPriority = oldestFirst.filter(entry => !isRetainedOnOverflow(entry.collectionClass));
+  const candidates = isRetainedOnOverflow(incoming.collectionClass)
+    ? lowPriority.concat(oldestFirst.filter(entry => isRetainedOnOverflow(entry.collectionClass)))
+    : lowPriority;
+  let count = held.length + 1;
+  let bytes = totalEntryBytes(held) + incoming.bytes;
+  const victims: EvidenceQueueEntry[] = [];
+  for (const candidate of candidates) {
+    if (withinQueueLimits(count, bytes)) {
+      break;
+    }
+    victims.push(candidate);
+    count -= 1;
+    bytes -= candidate.bytes;
+  }
+  return withinQueueLimits(count, bytes) ? victims : null;
 }
 
 function* requestBoundedBatches(
@@ -104,6 +135,9 @@ function* requestBoundedBatches(
   }
 }
 
+// The queue bounds apply to everything this collector holds plus every durable entry other
+// collectors on the same origin storage have written, so concurrent tabs cannot each fill the
+// shared store to the limit.
 export class EvidenceClientQueue {
   private readonly records = new Map<string, QueuedEvidenceRecord>();
   private totalBytes = 0;
@@ -126,10 +160,10 @@ export class EvidenceClientQueue {
   }
 
   public enqueue(admitted: AdmittedEvidenceEvent): EvidenceEnqueueOutcome {
-    const enqueuedAt = this.now();
-    const outcome = this.admitRecord(toQueuedRecord(admitted, enqueuedAt));
+    const record = toQueuedRecord(admitted, this.now());
+    const outcome = this.admitRecord(record, this.sharedPeerEntries());
     if (outcome === "QUEUED") {
-      this.store.put(admitted.event.event_id, enqueuedAt, admitted.serialized);
+      this.store.put(record, admitted.serialized);
     }
     return outcome;
   }
@@ -138,17 +172,16 @@ export class EvidenceClientQueue {
     const restorable: QueuedEvidenceRecord[] = [];
     for (const persisted of this.store.load()) {
       const admitted = admitEvidenceEvent(persisted.event);
-      if (admitted === null || admitted.event.event_id !== persisted.eventId) {
-        this.store.remove(persisted.eventId);
+      if (admitted === null || !matchesPersistedEntry(admitted, persisted.entry)) {
+        this.store.remove(persisted.entry);
         continue;
       }
-      restorable.push(toQueuedRecord(admitted, persisted.enqueuedAt));
+      restorable.push(toQueuedRecord(admitted, persisted.entry.enqueuedAt));
     }
     restorable.sort((left, right) => left.enqueuedAt - right.enqueuedAt);
     for (const record of restorable) {
-      const outcome = this.admitRecord(record);
-      if (outcome === "EXPIRED" || outcome === "QUEUE_FULL") {
-        this.store.remove(record.event.event_id);
+      if (this.admitRecord(record, []) !== "QUEUED") {
+        this.store.remove(record);
       }
     }
   }
@@ -162,69 +195,86 @@ export class EvidenceClientQueue {
     return Array.from(requestBoundedBatches(this.liveRecords(this.now())));
   }
 
+  // Re-checked before every send attempt: a record that crossed the TTL while a batch waited on
+  // retry backoff is discarded instead of transmitted.
+  public retainLive(records: readonly QueuedEvidenceRecord[]): QueuedEvidenceRecord[] {
+    const now = this.now();
+    const live: QueuedEvidenceRecord[] = [];
+    for (const record of records) {
+      if (isExpired(record, now)) {
+        this.discard(record);
+      } else {
+        live.push(record);
+      }
+    }
+    return live;
+  }
+
   public remove(records: readonly QueuedEvidenceRecord[]): void {
     for (const record of records) {
-      if (this.records.get(record.event.event_id) === record) {
+      if (this.records.get(record.eventId) === record) {
         this.drop(record);
       }
     }
   }
 
-  private admitRecord(record: QueuedEvidenceRecord): EvidenceEnqueueOutcome {
+  private sharedPeerEntries(): EvidenceQueueEntry[] {
+    return this.store.entries().filter(entry => !this.records.has(entry.eventId));
+  }
+
+  private admitRecord(
+    record: QueuedEvidenceRecord,
+    peers: readonly EvidenceQueueEntry[]
+  ): EvidenceEnqueueOutcome {
     const now = this.now();
-    if (this.records.has(record.event.event_id)) {
+    if (this.records.has(record.eventId) || peers.some(peer => peer.eventId === record.eventId)) {
       return "DUPLICATE";
     }
     if (isExpired(record, now)) {
       return "EXPIRED";
     }
-    if (!this.fits(record)) {
+    let livePeers = peers;
+    if (!this.fits(record, livePeers)) {
       this.purgeExpired(now);
+      livePeers = this.discardExpiredPeers(livePeers, now);
     }
-    if (!this.fits(record) && !this.evictFor(record)) {
+    if (!this.fits(record, livePeers) && !this.evictFor(record, livePeers)) {
       return "QUEUE_FULL";
     }
-    this.records.set(record.event.event_id, record);
+    this.records.set(record.eventId, record);
     this.totalBytes += record.bytes;
     return "QUEUED";
   }
 
-  private fits(record: QueuedEvidenceRecord): boolean {
-    return withinQueueLimits(this.records.size + 1, this.totalBytes + record.bytes);
+  private fits(record: QueuedEvidenceRecord, peers: readonly EvidenceQueueEntry[]): boolean {
+    return withinQueueLimits(
+      this.records.size + peers.length + 1,
+      this.totalBytes + totalEntryBytes(peers) + record.bytes
+    );
   }
 
-  private evictFor(incoming: QueuedEvidenceRecord): boolean {
-    const victims = this.evictionPlan(incoming);
+  private evictFor(incoming: QueuedEvidenceRecord, peers: readonly EvidenceQueueEntry[]): boolean {
+    const victims = overflowVictims([...this.records.values(), ...peers], incoming);
     if (victims === null) {
       return false;
     }
-    for (const victim of victims) {
-      this.drop(victim);
-    }
+    victims.forEach(victim => this.discard(victim));
     return true;
   }
 
-  private evictionPlan(incoming: QueuedEvidenceRecord): QueuedEvidenceRecord[] | null {
-    const lowPriority: QueuedEvidenceRecord[] = [];
-    const highPriority: QueuedEvidenceRecord[] = [];
-    for (const record of this.records.values()) {
-      (isRetainedOnOverflow(record.collectionClass) ? highPriority : lowPriority).push(record);
-    }
-    const candidates = isRetainedOnOverflow(incoming.collectionClass)
-      ? lowPriority.concat(highPriority)
-      : lowPriority;
-    let count = this.records.size + 1;
-    let bytes = this.totalBytes + incoming.bytes;
-    const victims: QueuedEvidenceRecord[] = [];
-    for (const candidate of candidates) {
-      if (withinQueueLimits(count, bytes)) {
-        break;
+  private discardExpiredPeers(
+    peers: readonly EvidenceQueueEntry[],
+    now: number
+  ): EvidenceQueueEntry[] {
+    const live: EvidenceQueueEntry[] = [];
+    for (const peer of peers) {
+      if (isExpired(peer, now)) {
+        this.store.remove(peer);
+      } else {
+        live.push(peer);
       }
-      victims.push(candidate);
-      count -= 1;
-      bytes -= candidate.bytes;
     }
-    return withinQueueLimits(count, bytes) ? victims : null;
+    return live;
   }
 
   private *liveRecords(now: number): Generator<QueuedEvidenceRecord> {
@@ -245,9 +295,18 @@ export class EvidenceClientQueue {
     }
   }
 
+  private discard(entry: EvidenceQueueEntry): void {
+    const held = this.records.get(entry.eventId);
+    if (held === entry) {
+      this.drop(held);
+    } else {
+      this.store.remove(entry);
+    }
+  }
+
   private drop(record: QueuedEvidenceRecord): void {
-    this.records.delete(record.event.event_id);
+    this.records.delete(record.eventId);
     this.totalBytes -= record.bytes;
-    this.store.remove(record.event.event_id);
+    this.store.remove(record);
   }
 }

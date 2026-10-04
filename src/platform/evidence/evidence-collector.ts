@@ -100,19 +100,22 @@ function batchEvents(batch: readonly QueuedEvidenceRecord[]): EvidenceEventInput
 
 async function deliverChunk(
   dependencies: EvidenceCollectorDependencies,
-  events: readonly EvidenceEventInput[]
-): Promise<"delivered" | "retain"> {
-  const payload: EvidenceBatchPayload = {
-    batch_id: dependencies.randomUUID(),
-    events
-  };
+  queue: EvidenceClientQueue,
+  batch: readonly QueuedEvidenceRecord[]
+): Promise<"dequeue" | "retain"> {
+  const batchId = dependencies.randomUUID();
+  let pending = batch;
   for (let attempt = 1; attempt <= EVIDENCE_MAX_SEND_ATTEMPTS; attempt += 1) {
-    const outcome = await sendSafely(dependencies.transport, payload);
-    if (outcome.ok) {
-      return "delivered";
+    pending = queue.retainLive(pending);
+    if (pending.length === 0) {
+      return "dequeue";
     }
-    if (!outcome.retryable) {
-      return "delivered";
+    const outcome = await sendSafely(dependencies.transport, {
+      batch_id: batchId,
+      events: batchEvents(pending)
+    });
+    if (outcome.ok || !outcome.retryable) {
+      return "dequeue";
     }
     if (attempt === EVIDENCE_MAX_SEND_ATTEMPTS) {
       return "retain";
@@ -201,7 +204,7 @@ export class EvidenceCollector {
   private async flushOwnedQueue(): Promise<void> {
     this.clearTimer();
     for (let batch = this.queue.nextBatch(); batch.length > 0; batch = this.queue.nextBatch()) {
-      const result = await deliverChunk(this.dependencies, batchEvents(batch));
+      const result = await deliverChunk(this.dependencies, this.queue, batch);
       if (result === "retain") {
         this.ensureTimer();
         return;

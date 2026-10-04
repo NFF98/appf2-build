@@ -207,15 +207,41 @@ describe("Evidence queue browser storage", () => {
   test("load drops malformed queue entries and leaves unrelated storage keys untouched", () => {
     const storage = new MemoryWebStorage();
     storage.setItem("unrelated", "keep");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}bad-json`, "{");
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}no-time`, '{"event":{}}');
-    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}ok`, '{"enqueued_at":1,"event":{"a":1}}');
+    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}no-metadata`, "{}");
+    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:7:`, "{}");
+    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:UNKNOWN_CLASS:7:bad-class`, "{}");
+    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:-7:negative-bytes`, "{}");
+    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}01:CORE_OUTCOME:7:non-canonical-time`, "{}");
+    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:7:bad-json`, "{");
+    storage.setItem(`${EVIDENCE_QUEUE_STORAGE_KEY_PREFIX}1:CORE_OUTCOME:7:ok`, '{"a":1}');
 
     const records = createWebStorageEvidenceQueueStore(storage).load();
 
-    expect(records).toEqual([{ eventId: "ok", enqueuedAt: 1, event: { a: 1 } }]);
+    expect(records).toEqual([{
+      entry: { eventId: "ok", enqueuedAt: 1, collectionClass: "CORE_OUTCOME", bytes: 7 },
+      event: { a: 1 }
+    }]);
     expect(storage.getItem("unrelated")).toBe("keep");
     expect(storage.queuedEventIds()).toEqual(["ok"]);
+  });
+
+  test("entries lists durable admission metadata from storage keys without reading payloads", () => {
+    const storage = new MemoryWebStorage();
+    const store = createWebStorageEvidenceQueueStore(storage);
+    const entry = {
+      eventId: "event-1",
+      enqueuedAt: QUEUE_T0,
+      collectionClass: "RELIABILITY" as const,
+      bytes: 42
+    };
+    store.put(entry, '{"x":1}');
+    storage.getItem = () => {
+      throw new Error("payload read");
+    };
+
+    expect(store.entries()).toEqual([entry]);
+    store.remove(entry);
+    expect(store.entries()).toEqual([]);
   });
 
   test("storage write failure never blocks emit and the event stays queued in memory", async () => {
@@ -240,7 +266,10 @@ describe("Evidence queue browser storage", () => {
     const storage = new MemoryWebStorage();
     Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
     const durable = resolveBrowserEvidenceQueueStore();
-    durable.put("event-1", QUEUE_T0, '{"x":1}');
+    durable.put(
+      { eventId: "event-1", enqueuedAt: QUEUE_T0, collectionClass: "CORE_OUTCOME", bytes: 7 },
+      '{"x":1}'
+    );
     expect(storage.queuedEventIds()).toEqual(["event-1"]);
 
     Object.defineProperty(globalThis, "localStorage", {
