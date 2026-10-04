@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-013",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-042"
   ],
@@ -35,7 +35,8 @@
   "verification": [
     "Design BF-042 Product-truth remediation is commit 1330ea523a943ccd5aa3a4ff6727b9be71dea14e.",
     "Scope-clean freeze source 08ee376d315dca5a5ff03ce7427a1856cde03795 is exactly three files ahead of BS-P1-012 source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f.",
-    "Replacement BS-P1-013 freeze candidate changes only BF-042 contract truth; activation and Cursor execution remain separate."
+    "Replacement BS-P1-013 freeze candidate changes only BF-042 contract truth; activation and Cursor execution remain separate.",
+    "BS-P1-013 activation rebinds remaining implementation work to the replacement baseline while preserving closed-task history; Cursor execution remains separately gated."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
