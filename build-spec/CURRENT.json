@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-013",
-  "implementation_enabled": false,
-  "reason": "Human-approved T005 closure complete under locked BS-P1-013 after implementation, independent audit and final Evidence. Execution is HOLD before any separate T006 activation; non-blocking T005 verification debt will be recorded in the project open-item ledger while HOLD."
+  "implementation_enabled": true,
+  "reason": "Human-approved SP-P1-002 / T006 activation under locked BS-P1-013. T006 is the sole active implementation Task; Cursor execution remains a separate authority issued only after this canonical activation is merged."
 }
