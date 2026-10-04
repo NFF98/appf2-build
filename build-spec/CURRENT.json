@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-016",
-  "implementation_enabled": true,
-  "reason": "Human-authorized BCE remediation complete through BS-P1-016 Freeze; SP-P1-002 / T006 re-activated after BF-045. Cursor execution remains a fresh separately dispatched command."
+  "implementation_enabled": false,
+  "reason": "Human-approved T006 closure complete under locked BS-P1-016 after implementation PR #238, normalized Evidence PR #239/#241 and closure REVIEW #242. Execution is HOLD before separate T007 activation."
 }
