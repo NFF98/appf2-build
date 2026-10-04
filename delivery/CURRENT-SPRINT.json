@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-012",
   "active_task": "T004",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Post-closure exhaustive audit found BF-041 in T004. Human blanket approval reopens T004 for the implementation-only TOCTOU remediation. T005-T009 remain not activated. Cursor execution has not been issued."
+  "reason": "T004 BF-041 remediation merged via PR #200; fresh Evidence EV-SP-P1-002-T004-011..019 and 023 normalized via PR #201; BF-041 RESOLVED via PR #202. T004 is in closure REVIEW; T005 is not activated."
 }
