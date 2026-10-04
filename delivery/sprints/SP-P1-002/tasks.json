@@ -518,7 +518,7 @@
         "BL-P1-008"
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-016",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
@@ -577,7 +577,18 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-002-T006-001",
+        "EV-SP-P1-002-T006-002",
+        "EV-SP-P1-002-T006-003",
+        "EV-SP-P1-002-T006-004",
+        "EV-SP-P1-002-T006-005",
+        "EV-SP-P1-002-T006-006",
+        "EV-SP-P1-002-T006-007",
+        "EV-SP-P1-002-T006-009",
+        "EV-SP-P1-002-T006-010",
+        "EV-SP-P1-002-T006-014"
+      ]
     },
     {
       "task_id": "T007",
