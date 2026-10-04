@@ -591,24 +591,43 @@ Exactly-once rule = GitHub post retry MUST NOT rerun Cursor
 
 A new Chat must not revert to manual copy/paste by default while this automation is healthy.
 
-### 17.9 Exact Human Gate and GitHub Rebuild Fallback
+### 17.9 Human Approval Envelope and GitHub Rebuild Fallback
 
-Every new execution action requires **exact Human approval for that exact next action**. Prior approval, workflow continuity, an earlier Activation decision, or automation availability must never be expanded into authorization for a later command.
+Every governance or execution action must be covered by explicit Human authority. Approval may use either of two forms:
 
-The following always require a fresh exact Human approval before ChatGPT performs or dispatches them:
+```text
+ATOMIC APPROVAL
+= approval for exactly one named next action
 
-- a new `[APPF2-EXECUTE][APPROVED]` command;
-- merge;
-- Activation;
-- Task start;
-- governance write;
-- branch history rewrite / force-update.
+BOUNDED APPROVAL ENVELOPE
+= approval for a named multi-step sequence up to an explicit stop boundary
+```
 
-Automation transports approval; it never creates or extends approval.
+Examples of valid bounded approval:
+
+```text
+批准到 PR checks 全 PASS 為止
+批准到 Activation merge 完成
+批准到 Cursor execution 前
+批准完成治理修復，完成後發 Cursor execution
+批准到 T006 closure；T007 不動
+```
+
+Rules:
+
+1. A bounded approval envelope authorizes only the intermediate actions that are necessary to reach the stated boundary and that preserve the already-approved Product / Build Spec / Sprint / Task semantics.
+2. Intermediate machine or governance corrections inside that envelope do **not** require repetitive Human `准` when they only repair formatting, lineage, traceability, gate metadata, or another non-semantic defect needed to complete the already-authorized transition.
+3. The envelope does **not** authorize Product / Design semantic invention, Task scope expansion, a new Task/Sprint, destructive external action, secret handling, or any action beyond the named boundary.
+4. Merge, Activation, governance write, branch-history rewrite, and a new `[APPF2-EXECUTE][APPROVED]` command may be included in a bounded envelope only when the Human wording clearly includes that stage. If not included, ChatGPT must stop immediately before that gate.
+5. A newly discovered Product / Spec ambiguity, contract-affecting Finding, changed Human decision, or materially expanded scope invalidates the remaining envelope for the affected path and requires a new Human decision.
+6. A tool/API parameter error, transient transport error, or machine-gate failure caused by ChatGPT's own non-semantic governance formatting does not consume or cancel the approval envelope; ChatGPT may correct and retry within the same authorized boundary.
+7. Approval scope and execution batch size are independent: **large authorization never permits large unbounded execution batches**. §17.10 BCE remains mandatory.
+
+Automation transports approval; it never creates, infers, or extends approval beyond the Human-stated envelope.
 
 When a rebased or reconstructed commit exists only on PC B and is not present in GitHub's object database, GitHub cannot move a remote branch directly to that local-only SHA. If the local executor cannot push it, the canonical fallback is:
 
-1. Human explicitly approves **ChatGPT GitHub rebuild of that exact already-reviewed patch**;
+1. Human explicitly approves **ChatGPT GitHub rebuild of that exact already-reviewed patch**, either atomically or as an explicit part of a bounded approval envelope;
 2. ChatGPT starts from the current canonical `main` commit;
 3. ChatGPT reuses the exact approved file blobs / patch semantics only, with no scope expansion;
 4. ChatGPT creates a new GitHub commit whose parent is canonical `main`;
@@ -616,4 +635,137 @@ When a rebased or reconstructed commit exists only on PC B and is not present in
 6. only then may ChatGPT update the target PR branch;
 7. the replaced remote HEAD is marked **SUPERSEDED / ARCHIVED** in the PR history and is no longer canonical.
 
-The old commit object is historical evidence and must not be falsely described as deleted. No merge, Task start, or next execution is implied by a branch rebuild.
+The old commit object is historical evidence and must not be falsely described as deleted. No merge, Task start, or next execution is implied unless it is inside the active Human approval envelope.
+
+### 17.10 Bounded Chunked Execution (BCE) Constitution
+
+**Canonical name:** `Bounded Chunked Execution (BCE)`
+
+**Human-facing name:** `大授權・小批次執行`
+
+BCE is the mandatory ChatGPT orchestration method whenever one Human approval covers multiple governance, audit, GitHub, or execution-transport steps.
+
+Core invariant:
+
+```text
+Human approval may be broad.
+Execution must stay bounded.
+Audit completeness must stay full.
+The named Human boundary must never be crossed.
+```
+
+#### A. Approval Envelope
+
+Before work starts, ChatGPT must resolve the Human-approved start state, allowed sequence, and stop boundary.
+
+The envelope may span multiple internal checkpoints and multiple Chat turns. ChatGPT must not repeatedly request approval for intermediate non-semantic steps already inside the envelope.
+
+#### B. Chunk Discipline
+
+ChatGPT must execute the envelope as small independently auditable chunks.
+
+Default discipline:
+
+- prefer 1–3 tool operations per chunk;
+- retrieve only the smallest file range, diff, log slice, or structured state needed for the current check;
+- do not fetch an entire repository, large commit payload, whole large file, or full CI log when a targeted query/range can answer the question;
+- if a tool unexpectedly returns a very large payload, switch to a narrower method before continuing;
+- separate state inspection, mutation, gate verification, merge, canonical recheck, and Cursor dispatch into distinct chunks.
+
+These are stability limits, not reductions in review rigor.
+
+#### C. Checkpoint Rule
+
+After each material chunk, ChatGPT maintains a compact checkpoint containing at least:
+
+```text
+canonical base/head when relevant
+what was verified or changed
+gate/check status
+remaining authorized steps
+current stop boundary
+new blocker, if any
+```
+
+A checkpoint may be communicated in chat and/or persisted in GitHub when governance state itself changed. Interruption must resume from canonical GitHub truth plus the surviving Human approval envelope; completed external actions must not be replayed merely because the chat disconnected.
+
+#### D. Chunked Full-Audit Invariant
+
+Chunking must never become partial audit.
+
+For audit/review work, ChatGPT must maintain an assembled audit ledger covering all applicable dimensions, including:
+
+```text
+canonical state
+RESULT / candidate identity
+scope + non-scope
+contract / semantics
+AC/Test mapping
+required commands / gates
+evidence
+security / quality / drift
+blockers
+final verdict
+```
+
+Individual dimensions may be checked in separate chunks, but the final verdict requires a completeness pass across the full ledger. Unchanged evidence may be reused by reference instead of re-fetching it.
+
+#### E. Automatic Non-Semantic Repair
+
+Inside an active approval envelope, ChatGPT may automatically repair its own non-semantic governance defects required to reach the authorized boundary, for example:
+
+- malformed activation metadata;
+- incomplete baseline/backlog rebind caused by the same approved rebaseline;
+- formatting / traceability / lineage fields required by machine gates;
+- tool-call parameter mistakes;
+- retrying CI/check inspection after the corrective commit.
+
+This authority ends immediately if the repair would change Product truth, locked contract semantics, Task scope, Acceptance meaning, or another Human-reserved decision.
+
+#### F. Stop Conditions
+
+ChatGPT must stop before the first action that is:
+
+- outside the Human approval envelope;
+- a newly required Product / Design decision;
+- a contract-affecting semantic change not already approved;
+- a newly discovered blocker that changes the authorized path;
+- an explicitly reserved Human gate not named in the envelope.
+
+At the stop point ChatGPT reports the canonical checkpoint and the exact next gate.
+
+#### G. Relationship to Cursor Execution
+
+A bounded approval that ends **before Cursor execution** must stop before posting `[APPF2-EXECUTE][APPROVED]`.
+
+A bounded approval that explicitly includes **Cursor execution** may post exactly one fresh command for the currently active Task after all preconditions have been independently rechecked.
+
+BCE never turns prior RESULT text, copied command text, historical approval, or workflow continuity into Cursor authority.
+
+#### H. Anti-Crash / Anti-Overfetch Principle
+
+Operational stability is part of governance quality.
+
+ChatGPT must prefer:
+
+```text
+targeted read
+→ bounded mutation
+→ targeted gate check
+→ checkpoint
+→ next chunk
+→ assembled final audit
+```
+
+over:
+
+```text
+broad approval
+→ giant fetch
+→ many unrelated tool calls
+→ giant output
+→ implicit state assumptions
+```
+
+The second pattern is prohibited when the first can accomplish the same governed result.
+
