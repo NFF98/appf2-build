@@ -1,0 +1,1986 @@
+{
+  "registry_version": "1.1.1",
+  "phase_1_freeze_audit": {
+    "status": "PASS",
+    "scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+    "eligibility": "HUMAN_APPROVED_BUILD_FREEZE_REQUIRED",
+    "excludes": [
+      "PHASE_2_PLUS",
+      "DEFERRED_CONTENT"
+    ],
+    "audited_on": "2026-09-26"
+  },
+  "owner": "working/detailed-design/registries/recovery-registry.json",
+  "source_of_truth": "Fxx source errors + F12 recovery policy",
+  "entries": [
+    {
+      "error_id": "F00-ERR-001",
+      "error_name": "SHELL_BOOT_FAILED",
+      "function_id": "F00",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f00.shell_boot_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F00-ERR-002",
+      "error_name": "LOCAL_DRAFT_PERSIST_FAILED",
+      "function_id": "F00",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f00.local_draft_persist_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F00-ERR-003",
+      "error_name": "INVALID_LOCAL_UI_STATE",
+      "function_id": "F00",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f00.invalid_local_ui_state",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F00-ERR-004",
+      "error_name": "DUPLICATE_SUBMIT_GUARD",
+      "function_id": "F00",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f00.duplicate_submit_guard",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F00-ERR-005",
+      "error_name": "RUNTIME_MOUNT_FAILED",
+      "function_id": "F00",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f00.runtime_mount_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F00-ERR-006",
+      "error_name": "UNSUPPORTED_VIEW_STATE",
+      "function_id": "F00",
+      "recovery_class": "UNSUPPORTED",
+      "policy_id": "F12-POL-005",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f00.unsupported_view_state",
+      "next_actions": [
+        "EDIT_REQUEST",
+        "USE_SIMPLER_VERSION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-001",
+      "error_name": "INVALID_REQUEST",
+      "function_id": "F01",
+      "recovery_class": "USER_INPUT_INVALID",
+      "policy_id": "F12-POL-007",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "USER_ACTION_REQUIRED",
+      "message_key": "recovery.f01.invalid_request",
+      "next_actions": [
+        "EDIT_REQUEST"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-002",
+      "error_name": "INTENT_ANALYSIS_SCHEMA_INVALID",
+      "function_id": "F01",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f01.intent_analysis_schema_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-003",
+      "error_name": "CLARIFICATION_ANSWER_INVALID",
+      "function_id": "F01",
+      "recovery_class": "USER_INPUT_INVALID",
+      "policy_id": "F12-POL-007",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "USER_ACTION_REQUIRED",
+      "message_key": "recovery.f01.clarification_answer_invalid",
+      "next_actions": [
+        "EDIT_REQUEST"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-004",
+      "error_name": "INTENT_VERSION_CONFLICT",
+      "function_id": "F01",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f01.intent_version_conflict",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-005",
+      "error_name": "MODEL_PROVIDER_RATE_LIMITED",
+      "function_id": "F01",
+      "recovery_class": "RATE_LIMITED",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "RETRY_LATER",
+      "message_key": "recovery.f01.model_provider_rate_limited",
+      "next_actions": [
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-006",
+      "error_name": "MODEL_PROVIDER_UNAVAILABLE",
+      "function_id": "F01",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f01.model_provider_unavailable",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-007",
+      "error_name": "MODEL_OUTPUT_INVALID",
+      "function_id": "F01",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f01.model_output_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-008",
+      "error_name": "CAPABILITY_UNSUPPORTED",
+      "function_id": "F01",
+      "recovery_class": "UNSUPPORTED",
+      "policy_id": "F12-POL-005",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f01.capability_unsupported",
+      "next_actions": [
+        "EDIT_REQUEST",
+        "USE_SIMPLER_VERSION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-009",
+      "error_name": "OPERATION_TIMEOUT",
+      "function_id": "F01",
+      "recovery_class": "TIMEOUT",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f01.operation_timeout",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-010",
+      "error_name": "BLUEPRINT_COMPOSITION_FAILED",
+      "function_id": "F01",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f01.blueprint_composition_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-011",
+      "error_name": "VALIDATION_REJECTED",
+      "function_id": "F01",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f01.validation_rejected",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-012",
+      "error_name": "SECURITY_TERMINAL",
+      "function_id": "F01",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f01.security_terminal",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-013",
+      "error_name": "IDEMPOTENCY_CONFLICT",
+      "function_id": "F01",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f01.idempotency_conflict",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F01-ERR-014",
+      "error_name": "INTERNAL_INVARIANT",
+      "function_id": "F01",
+      "recovery_class": "INTERNAL_INVARIANT",
+      "policy_id": "F12-POL-001",
+      "severity": "CRITICAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f01.internal_invariant",
+      "next_actions": [
+        "RELOAD",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-001",
+      "error_name": "INVALID_JSON",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.invalid_json",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-002",
+      "error_name": "SCHEMA_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.schema_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-003",
+      "error_name": "SCHEMA_VERSION_UNSUPPORTED",
+      "function_id": "F02",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.schema_version_unsupported",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-004",
+      "error_name": "REGISTRY_INCOMPATIBLE",
+      "function_id": "F02",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.registry_incompatible",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-005",
+      "error_name": "CAPABILITY_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.capability_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-006",
+      "error_name": "STATE_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.state_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-007",
+      "error_name": "NODE_GRAPH_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.node_graph_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-008",
+      "error_name": "BINDING_TYPE_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.binding_type_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-009",
+      "error_name": "EXPRESSION_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.expression_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-010",
+      "error_name": "ACTION_EVENT_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.action_event_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-011",
+      "error_name": "RESOURCE_LIMIT_EXCEEDED",
+      "function_id": "F02",
+      "recovery_class": "UNSUPPORTED",
+      "policy_id": "F12-POL-005",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f02.resource_limit_exceeded",
+      "next_actions": [
+        "EDIT_REQUEST",
+        "USE_SIMPLER_VERSION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-012",
+      "error_name": "PERMISSION_NOT_ALLOWED",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.permission_not_allowed",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-013",
+      "error_name": "FORBIDDEN_EXECUTABLE_CONTENT",
+      "function_id": "F02",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f02.forbidden_executable_content",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-014",
+      "error_name": "DEGRADATION_INVALID",
+      "function_id": "F02",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.degradation_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-015",
+      "error_name": "HASH_INTEGRITY_FAILURE",
+      "function_id": "F02",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f02.hash_integrity_failure",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-016",
+      "error_name": "BLUEPRINT_REVOKED",
+      "function_id": "F02",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f02.blueprint_revoked",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F02-ERR-017",
+      "error_name": "BLUEPRINT_INCOMPATIBLE",
+      "function_id": "F02",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f02.blueprint_incompatible",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-001",
+      "error_name": "HYDRATION_TRUST_FAILURE",
+      "function_id": "F03",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f03.hydration_trust_failure",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-002",
+      "error_name": "RUNTIME_VERSION_INCOMPATIBLE",
+      "function_id": "F03",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.runtime_version_incompatible",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-003",
+      "error_name": "REGISTRY_RUNTIME_MISMATCH",
+      "function_id": "F03",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.registry_runtime_mismatch",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-004",
+      "error_name": "CAPABILITY_INIT_FAILED",
+      "function_id": "F03",
+      "recovery_class": "PARTIAL_COMPONENT_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "DEGRADED",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.capability_init_failed",
+      "next_actions": [
+        "RETRY",
+        "CONTINUE"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-005",
+      "error_name": "VALUE_SOURCE_FAILED",
+      "function_id": "F03",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f03.value_source_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-006",
+      "error_name": "RULE_EVALUATION_FAILED",
+      "function_id": "F03",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f03.rule_evaluation_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-007",
+      "error_name": "ACTION_STEP_FAILED",
+      "function_id": "F03",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f03.action_step_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-008",
+      "error_name": "DIVIDE_OR_MOD_BY_ZERO",
+      "function_id": "F03",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.divide_or_mod_by_zero",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-009",
+      "error_name": "NON_FINITE_NUMBER",
+      "function_id": "F03",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.non_finite_number",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-010",
+      "error_name": "STATE_CONSTRAINT_VIOLATION",
+      "function_id": "F03",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.state_constraint_violation",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-011",
+      "error_name": "CAPABILITY_ACTION_FAILED",
+      "function_id": "F03",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f03.capability_action_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-012",
+      "error_name": "LOCAL_EFFECT_FAILED",
+      "function_id": "F03",
+      "recovery_class": "PARTIAL_COMPONENT_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "DEGRADED",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.local_effect_failed",
+      "next_actions": [
+        "RETRY",
+        "CONTINUE"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-013",
+      "error_name": "NODE_RENDER_FAILED",
+      "function_id": "F03",
+      "recovery_class": "PARTIAL_COMPONENT_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "DEGRADED",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.node_render_failed",
+      "next_actions": [
+        "RETRY",
+        "CONTINUE"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-014",
+      "error_name": "EVENT_QUEUE_LIMIT",
+      "function_id": "F03",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.event_queue_limit",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-015",
+      "error_name": "RUNTIME_LOOP_GUARD",
+      "function_id": "F03",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.runtime_loop_guard",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-016",
+      "error_name": "TIMER_SERVICE_FAILED",
+      "function_id": "F03",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f03.timer_service_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-017",
+      "error_name": "RNG_SERVICE_FAILED",
+      "function_id": "F03",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f03.rng_service_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-018",
+      "error_name": "RUNTIME_INVARIANT_BROKEN",
+      "function_id": "F03",
+      "recovery_class": "INTERNAL_INVARIANT",
+      "policy_id": "F12-POL-001",
+      "severity": "CRITICAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f03.runtime_invariant_broken",
+      "next_actions": [
+        "RELOAD",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-019",
+      "error_name": "RESULT_EVALUATION_FAILED",
+      "function_id": "F03",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f03.result_evaluation_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-020",
+      "error_name": "INSTANCE_DISPOSED",
+      "function_id": "F03",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f03.instance_disposed",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F03-ERR-021",
+      "error_name": "RUNTIME_ACTION_TIMEOUT",
+      "function_id": "F03",
+      "recovery_class": "TIMEOUT",
+      "policy_id": "F12-POL-011",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.runtime.action_timeout",
+      "preserved_context": [
+        "CURRENT_BLUEPRINT",
+        "CURRENT_RUNTIME_INSTANCE_LAST_COMMITTED",
+        "CURRENT_RESULT_WHEN_VALID"
+      ],
+      "safe_surface": "APP_CURRENT",
+      "integrity_precondition": "PROVEN",
+      "integrity_failure_error_id": "F03-ERR-018",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-001",
+      "error_name": "UNKNOWN_CAPABILITY",
+      "function_id": "F04",
+      "recovery_class": "NOT_FOUND",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f04.unknown_capability",
+      "next_actions": [
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-002",
+      "error_name": "UNKNOWN_CAPABILITY_VERSION",
+      "function_id": "F04",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f04.unknown_capability_version",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-003",
+      "error_name": "CAPABILITY_DISABLED",
+      "function_id": "F04",
+      "recovery_class": "UNSUPPORTED",
+      "policy_id": "F12-POL-005",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f04.capability_disabled",
+      "next_actions": [
+        "EDIT_REQUEST",
+        "USE_SIMPLER_VERSION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-004",
+      "error_name": "CAPABILITY_DEPENDENCY_UNAVAILABLE",
+      "function_id": "F04",
+      "recovery_class": "UNSUPPORTED",
+      "policy_id": "F12-POL-005",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f04.capability_dependency_unavailable",
+      "next_actions": [
+        "EDIT_REQUEST",
+        "USE_SIMPLER_VERSION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-005",
+      "error_name": "REGISTRY_SNAPSHOT_MISMATCH",
+      "function_id": "F04",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f04.registry_snapshot_mismatch",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-006",
+      "error_name": "RUNTIME_HANDLER_MISSING",
+      "function_id": "F04",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f04.runtime_handler_missing",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-007",
+      "error_name": "REGISTRY_GENERATION_INVALID",
+      "function_id": "F04",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f04.registry_generation_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F04-ERR-008",
+      "error_name": "SEMANTIC_CORE_NOT_PRESERVED",
+      "function_id": "F04",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f04.semantic_core_not_preserved",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-001",
+      "error_name": "SHARE_CREATE_INVALID_BLUEPRINT",
+      "function_id": "F05",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f05.share_create_invalid_blueprint",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-002",
+      "error_name": "SHARE_CREATE_FAILED",
+      "function_id": "F05",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f05.share_create_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-003",
+      "error_name": "SHARE_NOT_FOUND",
+      "function_id": "F05",
+      "recovery_class": "NOT_FOUND",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f05.share_not_found",
+      "next_actions": [
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-004",
+      "error_name": "SHARE_EXPIRED",
+      "function_id": "F05",
+      "recovery_class": "EXPIRED_OR_REVOKED",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f05.share_expired",
+      "next_actions": [
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-005",
+      "error_name": "SHARE_REVOKED",
+      "function_id": "F05",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f05.share_revoked",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-006",
+      "error_name": "BLUEPRINT_FETCH_FAILED",
+      "function_id": "F05",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f05.blueprint_fetch_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-007",
+      "error_name": "BLUEPRINT_TRUST_INVALID",
+      "function_id": "F05",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f05.blueprint_trust_invalid",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-008",
+      "error_name": "BLUEPRINT_INCOMPATIBLE",
+      "function_id": "F05",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f05.blueprint_incompatible",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-009",
+      "error_name": "RESTORE_HYDRATION_FAILED",
+      "function_id": "F05",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f05.restore_hydration_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-010",
+      "error_name": "IDEMPOTENCY_CONFLICT",
+      "function_id": "F05",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f05.idempotency_conflict",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-011",
+      "error_name": "SHARE_COPY_FAILED",
+      "function_id": "F05",
+      "recovery_class": "PARTIAL_COMPONENT_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "DEGRADED",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f05.share_copy_failed",
+      "next_actions": [
+        "RETRY",
+        "CONTINUE"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F05-ERR-012",
+      "error_name": "INTERNAL_INVARIANT",
+      "function_id": "F05",
+      "recovery_class": "INTERNAL_INVARIANT",
+      "policy_id": "F12-POL-001",
+      "severity": "CRITICAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f05.internal_invariant",
+      "next_actions": [
+        "RELOAD",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-001",
+      "error_name": "SOURCE_BLUEPRINT_NOT_FOUND",
+      "function_id": "F06",
+      "recovery_class": "NOT_FOUND",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f06.source_blueprint_not_found",
+      "next_actions": [
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-002",
+      "error_name": "SOURCE_BLUEPRINT_UNTRUSTED",
+      "function_id": "F06",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f06.source_blueprint_untrusted",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-003",
+      "error_name": "SOURCE_SHARE_MISMATCH",
+      "function_id": "F06",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f06.source_share_mismatch",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-004",
+      "error_name": "CHANGE_REQUEST_INVALID",
+      "function_id": "F06",
+      "recovery_class": "USER_INPUT_INVALID",
+      "policy_id": "F12-POL-007",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "USER_ACTION_REQUIRED",
+      "message_key": "recovery.f06.change_request_invalid",
+      "next_actions": [
+        "EDIT_REQUEST"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-005",
+      "error_name": "CHANGE_CLARIFICATION_REQUIRED",
+      "function_id": "F06",
+      "recovery_class": "USER_DECISION_REQUIRED",
+      "policy_id": "F12-POL-007",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "USER_ACTION_REQUIRED",
+      "message_key": "recovery.f06.change_clarification_required",
+      "next_actions": [
+        "ANSWER_QUESTION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-006",
+      "error_name": "CHANGE_COMPOSITION_FAILED",
+      "function_id": "F06",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f06.change_composition_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-007",
+      "error_name": "CHANGE_VALIDATION_REJECTED",
+      "function_id": "F06",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f06.change_validation_rejected",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-008",
+      "error_name": "CHANGE_UNSUPPORTED",
+      "function_id": "F06",
+      "recovery_class": "UNSUPPORTED",
+      "policy_id": "F12-POL-005",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f06.change_unsupported",
+      "next_actions": [
+        "EDIT_REQUEST",
+        "USE_SIMPLER_VERSION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-009",
+      "error_name": "CHILD_HYDRATION_FAILED",
+      "function_id": "F06",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f06.child_hydration_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-010",
+      "error_name": "LINEAGE_WRITE_FAILED",
+      "function_id": "F06",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f06.lineage_write_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-011",
+      "error_name": "IDEMPOTENCY_CONFLICT",
+      "function_id": "F06",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f06.idempotency_conflict",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-012",
+      "error_name": "NO_EFFECTIVE_CHANGE",
+      "function_id": "F06",
+      "recovery_class": "INFO",
+      "policy_id": "F12-POL-002",
+      "severity": "INFO",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f06.no_effective_change",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "EDIT_REQUEST"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F06-ERR-013",
+      "error_name": "INTERNAL_INVARIANT",
+      "function_id": "F06",
+      "recovery_class": "INTERNAL_INVARIANT",
+      "policy_id": "F12-POL-001",
+      "severity": "CRITICAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f06.internal_invariant",
+      "next_actions": [
+        "RELOAD",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-001",
+      "error_name": "ANONYMOUS_ID_INVALID",
+      "function_id": "F07",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f07.anonymous_id_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-002",
+      "error_name": "ANONYMOUS_ID_DISABLED",
+      "function_id": "F07",
+      "recovery_class": "UNSUPPORTED",
+      "policy_id": "F12-POL-005",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f07.anonymous_id_disabled",
+      "next_actions": [
+        "EDIT_REQUEST",
+        "USE_SIMPLER_VERSION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-003",
+      "error_name": "EVENT_SCHEMA_INVALID",
+      "function_id": "F07",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f07.event_schema_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-004",
+      "error_name": "EVENT_TYPE_UNKNOWN",
+      "function_id": "F07",
+      "recovery_class": "NOT_FOUND",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f07.event_type_unknown",
+      "next_actions": [
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-005",
+      "error_name": "EVENT_PROPERTY_FORBIDDEN",
+      "function_id": "F07",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f07.event_property_forbidden",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-006",
+      "error_name": "EVENT_TOO_LARGE",
+      "function_id": "F07",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f07.event_too_large",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-007",
+      "error_name": "EVENT_BATCH_TOO_LARGE",
+      "function_id": "F07",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f07.event_batch_too_large",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-008",
+      "error_name": "EVENT_RATE_LIMITED",
+      "function_id": "F07",
+      "recovery_class": "RATE_LIMITED",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "RETRY_LATER",
+      "message_key": "recovery.f07.event_rate_limited",
+      "next_actions": [
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-009",
+      "error_name": "EVENT_INGEST_UNAVAILABLE",
+      "function_id": "F07",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f07.event_ingest_unavailable",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-010",
+      "error_name": "EVENT_STORAGE_FAILED",
+      "function_id": "F07",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f07.event_storage_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-011",
+      "error_name": "LOCAL_QUEUE_FULL",
+      "function_id": "F07",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f07.local_queue_full",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-012",
+      "error_name": "LOCAL_QUEUE_EXPIRED",
+      "function_id": "F07",
+      "recovery_class": "EXPIRED_OR_REVOKED",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f07.local_queue_expired",
+      "next_actions": [
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-013",
+      "error_name": "EVENT_CLOCK_INVALID",
+      "function_id": "F07",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f07.event_clock_invalid",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-014",
+      "error_name": "EVIDENCE_REGISTRY_MISMATCH",
+      "function_id": "F07",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f07.evidence_registry_mismatch",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F07-ERR-015",
+      "error_name": "INTERNAL_INVARIANT",
+      "function_id": "F07",
+      "recovery_class": "INTERNAL_INVARIANT",
+      "policy_id": "F12-POL-001",
+      "severity": "CRITICAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f07.internal_invariant",
+      "next_actions": [
+        "RELOAD",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-001",
+      "error_name": "BASE_BLUEPRINT_NOT_FOUND",
+      "function_id": "F16",
+      "recovery_class": "NOT_FOUND",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f16.base_blueprint_not_found",
+      "next_actions": [
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-002",
+      "error_name": "BASE_BLUEPRINT_UNTRUSTED",
+      "function_id": "F16",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f16.base_blueprint_untrusted",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-003",
+      "error_name": "BEFORE_SNAPSHOT_INVALID",
+      "function_id": "F16",
+      "recovery_class": "USER_INPUT_INVALID",
+      "policy_id": "F12-POL-007",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "USER_ACTION_REQUIRED",
+      "message_key": "recovery.f16.before_snapshot_invalid",
+      "next_actions": [
+        "EDIT_REQUEST"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-004",
+      "error_name": "PROTECTED_REPLAY_CONTEXT_LOST",
+      "function_id": "F16",
+      "recovery_class": "USER_DECISION_REQUIRED",
+      "policy_id": "F12-POL-007",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "USER_ACTION_REQUIRED",
+      "message_key": "recovery.f16.protected_replay_context_lost",
+      "next_actions": [
+        "ANSWER_QUESTION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-005",
+      "error_name": "CORRECTION_CLARIFICATION_REQUIRED",
+      "function_id": "F16",
+      "recovery_class": "USER_DECISION_REQUIRED",
+      "policy_id": "F12-POL-007",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "USER_ACTION_REQUIRED",
+      "message_key": "recovery.f16.correction_clarification_required",
+      "next_actions": [
+        "ANSWER_QUESTION",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-006",
+      "error_name": "CORRECTION_COMPOSITION_FAILED",
+      "function_id": "F16",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f16.correction_composition_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-007",
+      "error_name": "CORRECTION_VALIDATION_REJECTED",
+      "function_id": "F16",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f16.correction_validation_rejected",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-008",
+      "error_name": "NO_EFFECTIVE_CORRECTION",
+      "function_id": "F16",
+      "recovery_class": "INFO",
+      "policy_id": "F12-POL-002",
+      "severity": "INFO",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f16.no_effective_correction",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "EDIT_REQUEST"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-009",
+      "error_name": "REPLAY_INPUT_INCOMPATIBLE",
+      "function_id": "F16",
+      "recovery_class": "INCOMPATIBLE",
+      "policy_id": "F12-POL-006",
+      "severity": "TERMINAL",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f16.replay_input_incompatible",
+      "next_actions": [
+        "REFRESH_COMPATIBILITY",
+        "RETURN_HOME",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-010",
+      "error_name": "CHILD_REPLAY_FAILED",
+      "function_id": "F16",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f16.child_replay_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-011",
+      "error_name": "COMPARISON_PERSIST_FAILED",
+      "function_id": "F16",
+      "recovery_class": "TRANSIENT_DEPENDENCY",
+      "policy_id": "F12-POL-003",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "IMMEDIATE_RETRY",
+      "message_key": "recovery.f16.comparison_persist_failed",
+      "next_actions": [
+        "RETRY",
+        "RETRY_LATER"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-012",
+      "error_name": "CORRECTION_INTEGRITY_MISMATCH",
+      "function_id": "F16",
+      "recovery_class": "SECURITY_TERMINAL",
+      "policy_id": "F12-POL-001",
+      "severity": "TERMINAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f16.correction_integrity_mismatch",
+      "next_actions": [
+        "KEEP_CURRENT_APP",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-013",
+      "error_name": "CORRECTION_STATE_CONFLICT",
+      "function_id": "F16",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f16.correction_state_conflict",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-014",
+      "error_name": "REVERT_TARGET_UNSAFE",
+      "function_id": "F16",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f16.revert_target_unsafe",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-015",
+      "error_name": "IDEMPOTENCY_CONFLICT",
+      "function_id": "F16",
+      "recovery_class": "STATE_OR_ACTION_FAILURE",
+      "policy_id": "F12-POL-004",
+      "severity": "BLOCKING_RECOVERABLE",
+      "retryability": "CONDITIONAL_RETRY",
+      "message_key": "recovery.f16.idempotency_conflict",
+      "next_actions": [
+        "RETRY",
+        "KEEP_CURRENT_APP"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    },
+    {
+      "error_id": "F16-ERR-016",
+      "error_name": "INTERNAL_INVARIANT",
+      "function_id": "F16",
+      "recovery_class": "INTERNAL_INVARIANT",
+      "policy_id": "F12-POL-001",
+      "severity": "CRITICAL",
+      "retryability": "NO_RETRY",
+      "message_key": "recovery.f16.internal_invariant",
+      "next_actions": [
+        "RELOAD",
+        "RETURN_HOME"
+      ],
+      "evidence_class": "RELIABILITY",
+      "deprecated": false
+    }
+  ]
+}
