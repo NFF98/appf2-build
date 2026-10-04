@@ -439,8 +439,8 @@
         "BL-P1-007"
       ],
       "title": "Implement validation evidence and admission traceability",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-012",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-013",
       "scope": [
         "Make validation stage/error/trace evidence observable without raw Blueprint telemetry.",
         "Trace admitted Blueprint content to validation_run and trace revoke/incompatible outcomes without mutating immutable Blueprint body."

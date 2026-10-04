@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-042",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-012",
   "sprint_id": "SP-P1-002",
   "task_id": "T005",
@@ -17,7 +17,11 @@
     "Design Product truth remediation merged via Design PR #19; scope-clean freeze source 08ee376d315dca5a5ff03ce7427a1856cde03795 is derived directly from BS-P1-012 source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f and changes exactly F02, DATA-MODEL-DETAILED and Evidence Registry.",
     "BF-042 resolution freezes canonical trace fallback/generation, trusted server-only VALIDATED→REVOKED|INCOMPATIBLE compare-and-set transition authority, immutable body/admission lineage, F02-EVT-008 for revoke and new F02-EVT-014 trust_incompatible for durable incompatibility transition.",
     "BF-042 Build governance is formally BLOCKED on BS-P1-012 before replacement rebaseline; Cursor execution is not authorized.",
-    "BS-P1-013 Freeze merged canonical via PR #209 at 22be8b85ff1fb970e2509a5ccc4208562f15b3fc; BF-042 remains BLOCKED until the separate Activation transition."
+    "BS-P1-013 Freeze merged canonical via PR #209 at 22be8b85ff1fb970e2509a5ccc4208562f15b3fc; BF-042 remains BLOCKED until the separate Activation transition.",
+    "Independent freeze-diff audit confirmed BS-P1-013 changes exactly three Product artifacts from BS-P1-012: F02-BLUEPRINT-VALIDATION, Evidence Registry, and DATA-MODEL-DETAILED; projection-map is the only additional metadata hash change.",
+    "BS-P1-013 contains canonical invalid/missing trace fallback, trusted server-only compare-and-set VALIDATED→REVOKED|INCOMPATIBLE authority, F02-EVT-008 revoke evidence and F02-EVT-014 incompatible evidence.",
+    "PR #209 freeze checks (Governance Gate, Governance Attack Dry-run, CI Gate, CodeQL) all PASS on head 20f056dee9894cbe7ba0760d385ac0d7f6ac249a; freeze merged as 22be8b85ff1fb970e2509a5ccc4208562f15b3fc.",
+    "Human approval covers governance/remediation through immediately before Cursor starts. Activation may proceed but no APPF2-EXECUTE comment may be issued."
   ],
   "attempts": [
     {
@@ -25,6 +29,12 @@
       "strategy": "T005_CANDIDATE_EXHAUSTIVE_SAME_CLASS_AUDIT",
       "result": "BLOCKING_CONTRACT_GAPS_FOUND_DESIGN_REMEDIATED_BUILD_REBASELINE_PENDING",
       "evidence": "Audit rejected the earlier no-blocker conclusion, closed #208 unmerged, identified AC-019/022 gaps, and confirmed Design BF-042 remediation plus a scope-clean source. Build remains blocked until replacement baseline activation."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "SCOPE_CLEAN_BS_P1_013_FREEZE_AND_ACTIVATION_REVIEW",
+      "result": "SPEC_GAP_RESOLVED_IMPLEMENTATION_REPAIR_PENDING",
+      "evidence": "Scope-clean source 08ee376d315dca5a5ff03ce7427a1856cde03795 and locked BS-P1-013 close the BF-042 contract ambiguity. T005 may re-enter IN_PROGRESS, but the old candidate remains non-mergeable until fresh implementation repair."
     }
   ],
   "requested_planning_action": [
