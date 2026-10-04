@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-042",
   "classification": "SPEC_AMBIGUITY",
-  "status": "CLOSED",
+  "status": "BLOCKED",
   "build_spec_id": "BS-P1-012",
   "sprint_id": "SP-P1-002",
   "task_id": "T005",
@@ -16,14 +16,14 @@
     "Human approved exhaustive remediation through the Cursor-start stop boundary in ChatGPT on 2026-10-04.",
     "Design Product truth remediation merged via Design PR #19; scope-clean freeze source 08ee376d315dca5a5ff03ce7427a1856cde03795 is derived directly from BS-P1-012 source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f and changes exactly F02, DATA-MODEL-DETAILED and Evidence Registry.",
     "BF-042 resolution freezes canonical trace fallback/generation, trusted server-only VALIDATED→REVOKED|INCOMPATIBLE compare-and-set transition authority, immutable body/admission lineage, F02-EVT-008 for revoke and new F02-EVT-014 trust_incompatible for durable incompatibility transition.",
-    "Replacement baseline BS-P1-013 is locked from the scope-clean source; T005 is rebound/activated but Cursor execution remains a separate unissued boundary."
+    "BF-042 Build governance is formally BLOCKED on BS-P1-012 before replacement rebaseline; Cursor execution is not authorized."
   ],
   "attempts": [
     {
       "attempt_id": "A1",
       "strategy": "T005_CANDIDATE_EXHAUSTIVE_SAME_CLASS_AUDIT",
-      "result": "BLOCKING_CONTRACT_GAPS_FOUND_AND_REMEDIATED",
-      "evidence": "Audit rejected the earlier no-blocker conclusion, closed #208 unmerged, and traced AC-019/022 from locked acceptance to evidence envelope, validation source, trust persistence and hostile paths."
+      "result": "BLOCKING_CONTRACT_GAPS_FOUND_DESIGN_REMEDIATED_BUILD_REBASELINE_PENDING",
+      "evidence": "Audit rejected the earlier no-blocker conclusion, closed #208 unmerged, identified AC-019/022 gaps, and confirmed Design BF-042 remediation plus a scope-clean source. Build remains blocked until replacement baseline activation."
     }
   ],
   "requested_planning_action": [
@@ -49,5 +49,5 @@
     "F02-AC-022"
   ],
   "contract_affecting": true,
-  "delta_id": "BD-013"
+  "delta_id": null
 }
