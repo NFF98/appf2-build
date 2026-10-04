@@ -518,8 +518,8 @@
         "BL-P1-008"
       ],
       "title": "Implement Intent Envelope, clarification policy and visible assumptions",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-013",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-014",
       "scope": [
         "Implement StructuredIntentEnvelope source precedence and deterministic clarification policy.",
         "Require explicit clarification for money/permission/cost assumptions, expose material proposals, avoid re-asking answered questions unless upstream facts change, and prevent client resolved_intent bypass.",
@@ -586,7 +586,7 @@
       ],
       "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-013",
+      "build_spec_id": "BS-P1-014",
       "scope": [
         "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",
         "On overflow, preferentially retain CORE_OUTCOME / RELIABILITY over DEBUG / PRODUCT_SAMPLE.",
@@ -641,7 +641,7 @@
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-013",
+      "build_spec_id": "BS-P1-014",
       "scope": [
         "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
         "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default.",
@@ -709,7 +709,7 @@
       ],
       "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-013",
+      "build_spec_id": "BS-P1-014",
       "scope": [
         "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
         "Prove F01-AC-002 by showing NEEDS_CLARIFICATION when required intent data is missing and no safe default exists.",

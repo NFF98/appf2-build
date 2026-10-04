@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-014",
+  "previous_baseline": "BS-P1-013",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "HUMAN-BF-043-T006-REMEDIATION-THROUGH-PRECURSOR-20261004",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011",
+    "BD-012",
+    "BD-013",
+    "BD-014"
+  ],
+  "source_working_commit": "5deb371234bce8864b1fc6847474c6d31bddd332",
+  "activated_at": "2026-10-04T11:50:00Z"
+}
