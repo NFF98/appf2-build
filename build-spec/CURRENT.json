@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-012",
-  "implementation_enabled": true,
-  "reason": "Human-approved T005 Activation Review PASS under locked BS-P1-012. T005 is the sole active Product implementation Task; T006-T009 remain not activated; POI-005 remains DEFERRED_REVIEW."
+  "implementation_enabled": false,
+  "reason": "BF-042：T005 independent re-audit confirmed BS-P1-012 contract drift for canonical trace handling and trust-status transition authority/evidence. Product implementation is HOLD pending scope-clean BF-042 rebaseline and fresh T005 repair."
 }

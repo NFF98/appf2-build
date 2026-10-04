@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-042",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-012",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T005",
+  "expected": "F02-AC-019 requires every validation to remain traceable through a canonical trace_id; invalid/missing trusted upstream trace must not be durably recorded in a form that F07 rejects. F02-AC-022 requires trusted server-authority trust transitions to REVOKED/INCOMPATIBLE to be traceable without mutating immutable Blueprint body or admission lineage.",
+  "actual": "Independent audit of T005 candidate 8b72c9af76a5ead3799314523dcce2d5254e8188 found two blockers. First, BlueprintValidationContext.traceId accepts arbitrary text; a non-canonical trace_id is written to validation_run while F07 rejects the corresponding event, breaking validation↔evidence traceability. Second, TEST-F02-AC-022 mutates the fake row trust_status directly and only proves later execution denial; there is no trusted transition service, compare-and-set repository boundary, or transition evidence emission. BS-P1-012 itself is missing the exact authority/fallback semantics and has no F02-EVT-014 trust_incompatible event, while Design BF-042 has now frozen them.",
+  "evidence": [
+    "Cursor RESULT Issue #164 comment 5976388323: branch impl/sp-p1-002-t005, candidate HEAD 8b72c9af76a5ead3799314523dcce2d5254e8188, NO MERGE.",
+    "TEST-F02-AC-019 explicitly constructs traceId='trace-not-hex', expects validation_run persistence, zero product_event rows and one F07 diagnostic; this is a deterministic healthy-intake traceability loss, not merely temporary evidence unavailability.",
+    "BS-P1-012 Evidence Registry trace_id envelope grammar is ^(?!0{32}$)[0-9a-f]{32}$.",
+    "TEST-F02-AC-022 directly assigns fake durable row trust_status='REVOKED'/'INCOMPATIBLE'; production candidate emits execution_admission_denied only when a later admission request occurs and defines no F02-EVT-008 transition path.",
+    "BS-P1-012 lists F02-EVT-008 trust_revoked but does not define a trusted transition boundary or an INCOMPATIBLE transition event.",
+    "Design commit 1330ea523a943ccd5aa3a4ff6727b9be71dea14e (BF-042) freezes: invalid/missing upstream trace => F02-generated canonical trace; trusted server-only VALIDATED→REVOKED|INCOMPATIBLE compare-and-set; no terminal→VALIDATED in-place restore; immutable body/lineage; F02-EVT-008 for revoke and new F02-EVT-014 for incompatible.",
+    "Directly freezing Design main is forbidden: the existing BS-P1-012 freeze source 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f diverges from current Design main with many unrelated Product-First changes. Replacement baseline must use a scope-clean source derived from 41a1227 containing only BF-042's three canonical artifact changes.",
+    "T005 authenticity hardening for REJECTED/INCOMPATIBLE, F02-AC-020 raw-body exclusion and F02-AC-021 lineage proof independently re-audited clean; no blocker found in those classes."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "POST_CURSOR_EXHAUSTIVE_T005_CONTRACT_SOURCE_TEST_AUDIT",
+      "result": "BLOCKING_CONTRACT_DRIFT_AND_IMPLEMENTATION_GAPS_FOUND",
+      "evidence": "Cross-checked locked BS-P1-012, candidate source/tests, Acceptance Registry, Evidence Registry and Design current truth; two same-class blockers remain and Design BF-042 supplies bounded semantics without Product invention."
+    }
+  ],
+  "requested_planning_action": [
+    "Block SP-P1-002/T005 and disable implementation before any rebaseline.",
+    "Derive a scope-clean Design freeze source from 41a1227f2669eff54ca3c2ca84ed4a90bcdedf3f containing only BF-042 changes to F02-BLUEPRINT-VALIDATION.md, DATA-MODEL-DETAILED.md and evidence-event-registry.json.",
+    "Create BD-013 and replacement locked BS-P1-013 from that scope-clean source; activate it only after governance/baseline gates pass.",
+    "T005 repair must regenerate a canonical 32-lowercase-hex nonzero trace_id when upstream trace is missing or invalid; never persist the invalid supplied value.",
+    "Implement trusted internal trust transition service/repository CAS allowing only VALIDATED→REVOKED or VALIDATED→INCOMPATIBLE; public/client input has no authority and terminal status cannot be restored to VALIDATED in place.",
+    "Successful REVOKED emits F02-EVT-008; successful INCOMPATIBLE emits F02-EVT-014. Evidence failure remains non-blocking and cannot roll back the durable terminal trust status.",
+    "Prove stale/repeated/terminal→VALIDATED/unauthorized transitions cannot mutate body, lineage or trust truth.",
+    "Preserve the already-correct T005 authenticity, raw telemetry exclusion and admission-lineage behavior; do not absorb POI-005 or T009/F02-AC-017.",
+    "After BS-P1-013 activation, stop before fresh Cursor EXECUTE and require the existing Human approval boundary to start implementation."
+  ],
+  "affected_contracts": [
+    "F02 ValidationReport trace_id / F02-AC-019 runtime evidence",
+    "F02 trust_status transition authority / F02-AC-022",
+    "F02 Evidence F02-EVT-008 and F02-EVT-014",
+    "Shared DATA-MODEL blueprint_content trust_status mutability"
+  ],
+  "affected_acceptance": [
+    "F02-AC-019",
+    "F02-AC-022"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}

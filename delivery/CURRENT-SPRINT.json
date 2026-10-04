@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-012",
-  "active_task": "T005",
-  "status": "ACTIVE",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved T005 Activation Review PASS under locked BS-P1-012 after T004 closure. T005 is the sole active Task for F02-AC-019 through F02-AC-022. Cursor execution remains a separate stop boundary and has not been issued. Issue #164 remains the execution channel."
+  "reason": "SP-P1-002 / T005 is BLOCKED by BF-042. BS-P1-012 lacks the Design-approved canonical trace fallback and trusted CAS trust-transition semantics/events required by F02-AC-019/022. No fresh Cursor execution is authorized."
 }
