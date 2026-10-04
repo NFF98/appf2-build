@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-016",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-045"
+  ],
+  "affected_build_spec": "BS-P1-015",
+  "affected_tasks": [
+    "T006"
+  ],
+  "affected_contracts": [
+    "F01-DATA-001 StructuredIntentEnvelope policy-visible resolved_value ownership",
+    "F01-RQ-003 answer merge and stale dependent proposal/default invalidation",
+    "F01-DATA-003A changed_semantic_item_ids propagation",
+    "F01-DATA-004 accepted-value semantics",
+    "F01 source/resolution/value/default Envelope invariants"
+  ],
+  "affected_acceptance": [
+    "F01-AC-001",
+    "F01-AC-004",
+    "F01-AC-005",
+    "F01-AC-006"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "HUMAN-BF-045-T006-BCE-THROUGH-PRECURSOR-20261004"
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "b665370eb43b1eadaa0a24c14ae60e8ad024fac3",
+  "replacement_build_spec": "BS-P1-016",
+  "verification": [
+    "Canonical Design BF-045 F01-only remediation is b665370eb43b1eadaa0a24c14ae60e8ad024fac3.",
+    "Scope-clean freeze source b47429e94fae3a6d32c35e3ec3b46b1be4497377 is exactly one commit ahead of BS-P1-015 source 4527b4ae9b622d6961685bbdad889b045fabf815 and changes exactly F01-INTENT-COMPILATION.md.",
+    "Replacement BS-P1-016 gives clarification answer values one canonical owner, freezes recursive stale dependent proposal/default invalidation, and closes contradictory resolution/default/source states without changing registries or other Functions.",
+    "Freeze does not activate T006 and does not issue Cursor execution."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "b47429e94fae3a6d32c35e3ec3b46b1be4497377",
+    "base_commit": "4527b4ae9b622d6961685bbdad889b045fabf815",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-045-FREEZE-CANDIDATE.md"
+  }
+}
