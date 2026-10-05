@@ -1,12 +1,15 @@
 import { isRecord, isUuid } from "./evidence-field-schema.js";
 import type { EvidenceQueueDrop, EvidenceQueueObserver } from "./evidence-observability.js";
 
-// F07-API-001 quality_report: a bounded, non-identifying queue-quality delta. It is not a Product
-// Event, never enters the Evidence Registry and never creates an F07-EVT-*.
-export interface EvidenceQualityReport {
-  readonly report_id: string;
+export interface EvidenceQualityCounts {
   readonly local_queue_drop_count: number;
   readonly offline_expired_event_count: number;
+}
+
+// F07-API-001 quality_report: a bounded, non-identifying queue-quality delta. It is not a Product
+// Event, never enters the Evidence Registry and never creates an F07-EVT-*.
+export interface EvidenceQualityReport extends EvidenceQualityCounts {
+  readonly report_id: string;
 }
 
 const QUALITY_REPORT_KEYS: ReadonlySet<string> = new Set([
@@ -58,12 +61,18 @@ export interface SealedEvidenceQualityReport {
   readonly sealedAt: number;
 }
 
-// Durable browser copy of sealed, not yet acknowledged reports, shared by every page on the origin.
-// Each operation is atomic; a rejected promise means durable storage failed. save() is idempotent
-// on report_id and bounded; load() returns valid reports in deterministic seal order.
+// Durable browser copy of not yet acknowledged quality counts, shared by every page on the origin:
+// at most one unsealed report, never transmitted, whose counts may still grow, plus a bounded set
+// of sealed reports whose report_id and counts never change. Each operation is atomic; a rejected
+// promise means durable storage failed and nothing was changed.
 export interface EvidenceQualityReportStore {
+  // Valid sealed reports in deterministic seal order.
   load(): Promise<readonly SealedEvidenceQualityReport[]>;
-  save(sealed: SealedEvidenceQualityReport): Promise<void>;
+  // Adds the counts to the unsealed report, created under newReportId() when there is none.
+  accumulate(counts: EvidenceQualityCounts, newReportId: () => string): Promise<void>;
+  // Moves the unsealed report, report_id and counts unchanged, into a sealed slot when one is free;
+  // otherwise it stays unsealed. Returns every sealed report in seal order.
+  seal(sealedAt: number): Promise<readonly SealedEvidenceQualityReport[]>;
   remove(reportId: string): Promise<void>;
 }
 
@@ -77,24 +86,38 @@ export function compareSealOrder(left: SealedEvidenceQualityReport, right: Seale
   return left.report.report_id < right.report.report_id ? -1 : 1;
 }
 
-function saturatingIncrement(count: number): number {
-  return Math.min(count + 1, Number.MAX_SAFE_INTEGER);
+export function addQualityCounts<T extends EvidenceQualityCounts>(base: T, added: EvidenceQualityCounts): T {
+  return {
+    ...base,
+    local_queue_drop_count: Math.min(base.local_queue_drop_count + added.local_queue_drop_count, Number.MAX_SAFE_INTEGER),
+    offline_expired_event_count: Math.min(
+      base.offline_expired_event_count + added.offline_expired_event_count,
+      Number.MAX_SAFE_INTEGER
+    )
+  };
 }
 
-function ignoreStorageFailure(): void {
-  return;
+function saturatingIncrement(count: number): number {
+  return Math.min(count + 1, Number.MAX_SAFE_INTEGER);
 }
 
 // Browser-side accumulation of F07-ERR-011 (local queue drop) and F07-ERR-012 (offline expiry)
 // since the last confirmed HTTP 2xx acknowledge. A sealed report keeps its report_id and counts
 // until a confirmed 2xx acknowledges it; a sendBeacon handoff or a non-2xx response never does.
-// Drops observed after sealing go into the next delta. Sealed reports are mirrored to the durable
-// store so a later page resends the same report_id and counts after this page terminates; pages
-// sharing the store may send the same report, which the server dedupes by report_id.
+// Drops observed after sealing go into the next delta.
+//
+// Durable mode (a working store): every observed drop is committed to the store's unsealed report
+// as soon as it is observed, and sealing is an atomic move inside the store during a normal flush,
+// so a terminal handoff starts no storage work and never holds the only copy of any count. Pages
+// sharing the store may send the same sealed report, which the server dedupes by report_id.
+// Memory mode (no store, or after a storage failure): counts and sealed reports live in this page.
 export class EvidenceQualityReportLedger implements EvidenceQueueObserver {
   private pending: SealedEvidenceQualityReport[] = [];
+  // Durable mode: observed but not yet committed to the store. Memory mode: not yet sealed.
   private localQueueDrops = 0;
   private offlineExpired = 0;
+  private durable: EvidenceQualityReportStore | null;
+  private commitScheduled = false;
   private storageWork: Promise<void> = Promise.resolve();
   private readonly restoration: Promise<void>;
 
@@ -103,6 +126,7 @@ export class EvidenceQualityReportLedger implements EvidenceQueueObserver {
     private readonly store: EvidenceQualityReportStore | null = null,
     private readonly now: () => number = () => Date.now()
   ) {
+    this.durable = store;
     this.restoration = store === null ? Promise.resolve() : this.serialize(() => this.restoreFrom(store));
   }
 
@@ -112,6 +136,7 @@ export class EvidenceQualityReportLedger implements EvidenceQueueObserver {
     } else {
       this.offlineExpired = saturatingIncrement(this.offlineExpired);
     }
+    this.scheduleCommit();
   }
 
   // Resolves once reports persisted by earlier pages were merged (or could not be read).
@@ -128,19 +153,37 @@ export class EvidenceQualityReportLedger implements EvidenceQueueObserver {
     } while (observed !== this.storageWork);
   }
 
-  // The oldest pending report for the next request; the accumulated delta is sealed only when
-  // nothing is pending.
+  // The oldest pending report for the next request. Memory mode seals the accumulated delta here
+  // when nothing is pending; durable mode seals only in prepare().
   public current(): EvidenceQualityReport | null {
-    if (this.pending.length === 0) {
-      this.sealDelta();
+    if (this.durable === null && this.pending.length === 0) {
+      this.sealInMemory();
     }
     return this.pending[0]?.report ?? null;
   }
 
-  // Terminal handoff: the accumulated delta is sealed (and persisted) even behind older pending
-  // reports so it does not die with the page. Every pending report, oldest first.
-  public sealForHandoff(): readonly EvidenceQualityReport[] {
-    this.sealDelta();
+  // Durable mode, before a normal flush reads current(): when nothing is pending here, committed
+  // counts are sealed in the store (if a sealed slot is free) and every report the store holds
+  // sealed, including other pages', becomes pending here. Never rejects.
+  public prepare(): Promise<void> {
+    return this.serialize(async () => {
+      const store = this.durable;
+      if (store === null || this.pending.length > 0) {
+        return;
+      }
+      await this.commit(store);
+      this.pending = [...await store.seal(this.now())];
+    });
+  }
+
+  // Terminal handoff, synchronous: every pending report, oldest first. Durable mode hands off only
+  // reports already sealed in the store and starts no storage work; counts not yet sealed are
+  // already in the store's unsealed report and are sealed by a later normal flush. Memory mode
+  // seals the delta first, since this page holds its only copy.
+  public handoffReports(): readonly EvidenceQualityReport[] {
+    if (this.durable === null) {
+      this.sealInMemory();
+    }
     return this.pending.map(sealed => sealed.report);
   }
 
@@ -151,10 +194,41 @@ export class EvidenceQualityReportLedger implements EvidenceQueueObserver {
       return;
     }
     this.pending.splice(index, 1);
-    this.persist(store => store.remove(report.report_id));
+    const store = this.store;
+    if (store !== null) {
+      void this.serialize(() => store.remove(report.report_id));
+    }
   }
 
-  private sealDelta(): void {
+  private scheduleCommit(): void {
+    if (this.durable === null || this.commitScheduled) {
+      return;
+    }
+    this.commitScheduled = true;
+    void this.serialize(async () => {
+      this.commitScheduled = false;
+      const store = this.durable;
+      if (store !== null) {
+        await this.commit(store);
+      }
+    });
+  }
+
+  // Counts leave memory only once the store has committed them.
+  private async commit(store: EvidenceQualityReportStore): Promise<void> {
+    const counts: EvidenceQualityCounts = {
+      local_queue_drop_count: this.localQueueDrops,
+      offline_expired_event_count: this.offlineExpired
+    };
+    if (counts.local_queue_drop_count === 0 && counts.offline_expired_event_count === 0) {
+      return;
+    }
+    await store.accumulate(counts, () => this.randomUUID());
+    this.localQueueDrops -= counts.local_queue_drop_count;
+    this.offlineExpired -= counts.offline_expired_event_count;
+  }
+
+  private sealInMemory(): void {
     if (this.localQueueDrops === 0 && this.offlineExpired === 0) {
       return;
     }
@@ -166,11 +240,9 @@ export class EvidenceQualityReportLedger implements EvidenceQueueObserver {
     if (report === null) {
       return;
     }
-    const sealed: SealedEvidenceQualityReport = Object.freeze({ report, sealedAt: this.now() });
-    this.pending.push(sealed);
+    this.pending.push(Object.freeze({ report, sealedAt: this.now() }));
     this.localQueueDrops = 0;
     this.offlineExpired = 0;
-    this.persist(store => store.save(sealed));
   }
 
   private async restoreFrom(store: EvidenceQualityReportStore): Promise<void> {
@@ -180,15 +252,12 @@ export class EvidenceQualityReportLedger implements EvidenceQueueObserver {
     this.pending = [...restored, ...this.pending].sort(compareSealOrder);
   }
 
-  private persist(operation: (store: EvidenceQualityReportStore) => Promise<void>): void {
-    const store = this.store;
-    if (store !== null) {
-      void this.serialize(() => operation(store));
-    }
-  }
-
+  // A storage failure switches this page to memory mode; counts the store never committed are
+  // still in memory, so nothing is lost or counted twice.
   private serialize(operation: () => Promise<void>): Promise<void> {
-    const run = this.storageWork.then(operation).then(undefined, ignoreStorageFailure);
+    const run = this.storageWork.then(operation).then(undefined, () => {
+      this.durable = null;
+    });
     this.storageWork = run;
     return run;
   }

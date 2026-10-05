@@ -23,7 +23,7 @@ import {
 } from "../../src/platform/evidence/evidence-quality-report.js";
 import {
   createIndexedDbEvidenceQualityReportStore,
-  EVIDENCE_QUALITY_REPORT_DATABASE
+  EVIDENCE_QUALITY_REPORT_STORE_LIMIT
 } from "../../src/platform/evidence/evidence-quality-report-store.js";
 import { createIndexedDbEvidenceQueueStore } from "../../src/platform/evidence/evidence-queue-store.js";
 import type { EvidenceRetentionFailure } from "../../src/platform/evidence/evidence-retention-maintenance.js";
@@ -34,6 +34,11 @@ import {
 } from "../../src/platform/evidence/postgres-evidence-quality-repository.js";
 import { ManualScheduler } from "../unit/evidence-collector-test-support.js";
 import { FakeIndexedDbFactory } from "../unit/evidence-fake-indexeddb.js";
+import {
+  PageQualityReportStore,
+  sealedQualityRecords,
+  unsealedQualityRecords
+} from "../unit/evidence-quality-report-test-support.js";
 import {
   coreOutcomeEvent,
   createRecordingNavigator,
@@ -439,89 +444,149 @@ async function proveNonAcknowledgedReportStaysPending(): Promise<void> {
   expect(network.bodies).toHaveLength(5);
 }
 
-// Page termination: sealed reports a beacon handed off (never acknowledged) and the delta sealed at
-// pagehide survive in durable storage; the next page resends each with the same report_id and
-// counts, oldest first, before its own newer delta, and each confirmed 2xx removes exactly it.
-async function proveSealedReportSurvivesPageTermination(): Promise<void> {
-  const factory = new FakeIndexedDbFactory();
-  const clock = new ManualClock(QUEUE_T0);
-  const server = createServer(clock);
-  const recording = createRecordingNavigator();
-  const firstLedger = new EvidenceQualityReportLedger(
-    uuidSequence("abababab"),
-    createIndexedDbEvidenceQualityReportStore(factory),
-    clock.now
-  );
-  const firstPage = createBrowserEvidenceCollector({
-    fetch: serverFetch(server.handler, ["network", "network", "network"]).fetchImpl,
+function durableQualityCollector(
+  ledger: EvidenceQualityReportLedger,
+  fetchImpl: typeof fetch,
+  clock: ManualClock,
+  idPrefix: string,
+  navigator: Parameters<typeof createBrowserEvidenceBeaconTransport>[0] = {}
+) {
+  return createBrowserEvidenceCollector({
+    fetch: fetchImpl,
     queueStore: null,
-    qualityReports: firstLedger,
-    beaconTransport: createBrowserEvidenceBeaconTransport(recording.navigator),
+    qualityReports: ledger,
+    beaconTransport: createBrowserEvidenceBeaconTransport(navigator),
     scheduler: new ManualScheduler(),
     now: clock.now,
     jitter: () => 0.5,
     sleep: async () => undefined,
-    randomUUID: uuidSequence("babababa")
+    randomUUID: uuidSequence(idPrefix)
   });
+}
+
+const STORED_SEALED_KEYS = "local_queue_drop_count,offline_expired_event_count,report_id,sealed_at";
+const STORED_UNSEALED_KEYS = "local_queue_drop_count,offline_expired_event_count,report_id";
+
+function hasExactKeys(records: readonly unknown[], keys: string): boolean {
+  return records.every(record => Object.keys(record as object).sort().join() === keys);
+}
+
+// Page termination: every count observed while the page was alive is already durable (sealed or
+// unsealed) when pagehide runs. pagehide starts no storage work, beacons only the sealed report and
+// acknowledges nothing; the page is then terminated without any further await. The next page
+// resends the sealed report unchanged, then seals the terminated page's unsealed report under its
+// stored report_id and counts, before its own newer delta; each confirmed 2xx removes exactly it.
+async function proveDurableStateSurvivesPageTermination(): Promise<void> {
+  const factory = new FakeIndexedDbFactory();
+  const clock = new ManualClock(QUEUE_T0);
+  const server = createServer(clock);
+  const recording = createRecordingNavigator();
+  const firstStore = new PageQualityReportStore(createIndexedDbEvidenceQualityReportStore(factory));
+  const firstPage = durableQualityCollector(
+    new EvidenceQualityReportLedger(uuidSequence("abababab"), firstStore, clock.now),
+    serverFetch(server.handler, Array.from({ length: 6 }, () => "network" as const)).fetchImpl,
+    clock,
+    "babababa",
+    recording.navigator
+  );
   await firstPage.settled();
   firstPage.emit(productSampleEvent(1));
   clock.set(QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs + 1);
+  const sealedAt = clock.current;
   await firstPage.flush();
   firstPage.emit(productSampleEvent(2));
   firstPage.emit(productSampleEvent(3));
   clock.set(clock.current + EVIDENCE_QUEUE_LIMITS.ttlMs + 1);
+  await firstPage.flush();
+
+  const sealedAtHandoff = [...sealedQualityRecords(factory).values()];
+  const unsealedAtHandoff = [...unsealedQualityRecords(factory).values()];
+  expect(firstStore.inFlight).toBe(0);
+  const storageCalls = firstStore.calls;
   firstPage.flushOnPageHide();
-  await firstLedger.settled();
+  firstStore.terminate();
+  expect(firstStore.calls).toBe(storageCalls);
 
   const beacons = await Promise.all(recording.beacons.map(async beacon => JSON.parse(await beacon.body) as SentBatch));
-  const [sealed, sealedAtPageHide] = beacons.map(body => body.quality_report);
-  expect(beacons.map(body => body.events)).toEqual([[], []]);
+  expect(beacons.map(body => body.events)).toEqual([[]]);
+  const sealed = beacons[0]?.quality_report;
   expect(sealed).toEqual({ report_id: expect.any(String), local_queue_drop_count: 0, offline_expired_event_count: 1 });
-  expect(sealedAtPageHide).toEqual({ report_id: expect.any(String), local_queue_drop_count: 0, offline_expired_event_count: 2 });
-  const stored = [...factory.database(EVIDENCE_QUALITY_REPORT_DATABASE.name).records(EVIDENCE_QUALITY_REPORT_DATABASE.reportStore).values()];
-  expect(stored).toEqual([
-    { ...sealed, sealed_at: QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs + 1 },
-    { ...sealedAtPageHide, sealed_at: clock.current }
-  ]);
-  expect(stored.every(record => Object.keys(record as object).sort().join() ===
-    "local_queue_drop_count,offline_expired_event_count,report_id,sealed_at")).toBe(true);
+  expect(sealedAtHandoff).toEqual([{ ...sealed, sealed_at: sealedAt }]);
+  const unsealed = unsealedAtHandoff[0] as EvidenceQualityReport | undefined;
+  expect(unsealedAtHandoff).toEqual([{ report_id: expect.any(String), local_queue_drop_count: 0, offline_expired_event_count: 2 }]);
+  expect(unsealed?.report_id).not.toBe(sealed?.report_id);
+  expect(hasExactKeys(sealedAtHandoff, STORED_SEALED_KEYS)).toBe(true);
+  expect(hasExactKeys(unsealedAtHandoff, STORED_UNSEALED_KEYS)).toBe(true);
+  expect([...sealedQualityRecords(factory).values()]).toEqual(sealedAtHandoff);
   const beaconReceivedAt = new Date(clock.current).toISOString();
   expect(await server.handler({ body: await recording.beacons[0]?.body ?? "" })).toMatchObject({ status: 200 });
 
   clock.set(clock.current + MINUTE_MS);
   const network = serverFetch(server.handler);
-  const laterLedger = new EvidenceQualityReportLedger(
-    uuidSequence("cdcdcdcd"),
-    createIndexedDbEvidenceQualityReportStore(factory),
-    clock.now
+  const laterPage = durableQualityCollector(
+    new EvidenceQualityReportLedger(uuidSequence("cdcdcdcd"), createIndexedDbEvidenceQualityReportStore(factory), clock.now),
+    network.fetchImpl,
+    clock,
+    "dcdcdcdc"
   );
-  const laterPage = createBrowserEvidenceCollector({
-    fetch: network.fetchImpl,
-    queueStore: null,
-    qualityReports: laterLedger,
-    beaconTransport: createBrowserEvidenceBeaconTransport({}),
-    scheduler: new ManualScheduler(),
-    now: clock.now,
-    jitter: () => 0.5,
-    sleep: async () => undefined,
-    randomUUID: uuidSequence("dcdcdcdc")
-  });
+  await laterPage.flush();
+  expect(network.bodies.map(body => [body.events, body.quality_report])).toEqual([[[], sealed], [[], unsealed]]);
+  expect(sealedQualityRecords(factory).size + unsealedQualityRecords(factory).size).toBe(0);
+  const unsealedReceivedAt = new Date(clock.current).toISOString();
+
   laterPage.emit(productSampleEvent(4));
   clock.set(clock.current + EVIDENCE_QUEUE_LIMITS.ttlMs + 1);
   await laterPage.flush();
-  await laterLedger.settled();
-
-  const resent = network.bodies.map(body => body.quality_report);
-  expect(network.bodies.map(body => body.events)).toEqual([[], [], []]);
-  expect(resent).toEqual([
-    sealed,
-    sealedAtPageHide,
-    { report_id: expect.any(String), local_queue_drop_count: 0, offline_expired_event_count: 1 }
-  ]);
-  expect(new Set(resent.map(report => report?.report_id)).size).toBe(3);
-  expect(factory.database(EVIDENCE_QUALITY_REPORT_DATABASE.name).records(EVIDENCE_QUALITY_REPORT_DATABASE.reportStore).size).toBe(0);
+  const own = network.bodies[2]?.quality_report;
+  expect(network.bodies).toHaveLength(3);
+  expect(own).toEqual({ report_id: expect.any(String), local_queue_drop_count: 0, offline_expired_event_count: 1 });
+  expect(new Set([sealed, unsealed, own].map(report => report?.report_id)).size).toBe(3);
+  expect(sealedQualityRecords(factory).size + unsealedQualityRecords(factory).size).toBe(0);
   expect(server.database.clientQualityReports.get(sealed?.report_id ?? "")).toEqual({ ...sealed, received_at: beaconReceivedAt });
+  expect(server.database.clientQualityReports.get(unsealed?.report_id ?? "")).toEqual({ ...unsealed, received_at: unsealedReceivedAt });
   expect(server.database.clientQualityReports.size).toBe(3);
+}
+
+// Sealed-report bound: with every durable slot holding an unacknowledged report, a new expiry is
+// kept durably in the single unsealed report rather than as a memory-only sealed report; once 2xx
+// acknowledgements free the slots it is sealed and delivered, so the server aggregate loses nothing.
+async function proveQualityStoreBoundLosesNoCounts(): Promise<void> {
+  const factory = new FakeIndexedDbFactory();
+  const store = createIndexedDbEvidenceQualityReportStore(factory);
+  const slotId = (index: number) => `f1f1f1f1-0000-4000-8000-${String(index).padStart(12, "0")}`;
+  for (let index = 1; index <= EVIDENCE_QUALITY_REPORT_STORE_LIMIT; index += 1) {
+    await store.accumulate({ local_queue_drop_count: 1, offline_expired_event_count: 0 }, () => slotId(index));
+    await store.seal(QUEUE_T0 + index);
+  }
+  const full = [...sealedQualityRecords(factory).values()];
+  const clock = new ManualClock(QUEUE_T0 + EVIDENCE_QUALITY_REPORT_STORE_LIMIT + 1);
+  const server = createServer(clock);
+  const network = serverFetch(server.handler, ["network", "network", "network"]);
+  const ledger = new EvidenceQualityReportLedger(uuidSequence("f2f2f2f2"), store, clock.now);
+  const collector = durableQualityCollector(ledger, network.fetchImpl, clock, "f3f3f3f3");
+  await collector.settled();
+
+  collector.emit(productSampleEvent(1));
+  clock.set(clock.current + EVIDENCE_QUEUE_LIMITS.ttlMs + 1);
+  await collector.flush();
+  expect(network.bodies.map(body => body.quality_report?.report_id)).toEqual([slotId(1), slotId(1), slotId(1)]);
+  expect([...sealedQualityRecords(factory).values()]).toEqual(full);
+  const unsealed = [...unsealedQualityRecords(factory).values()];
+  expect(unsealed).toEqual([{ report_id: expect.any(String), local_queue_drop_count: 0, offline_expired_event_count: 1 }]);
+  const handedOff = ledger.handoffReports().map(report => report.report_id);
+  expect(handedOff).toEqual(full.map((_, index) => slotId(index + 1)));
+
+  await collector.flush();
+  const delivered = network.bodies.slice(3).map(body => body.quality_report);
+  expect(delivered).toHaveLength(EVIDENCE_QUALITY_REPORT_STORE_LIMIT + 1);
+  expect(delivered.at(-1)).toEqual(unsealed[0]);
+  expect(sealedQualityRecords(factory).size + unsealedQualityRecords(factory).size).toBe(0);
+  expect(server.database.clientQualityReports.size).toBe(EVIDENCE_QUALITY_REPORT_STORE_LIMIT + 1);
+
+  clock.set(clock.current + RETENTION_MS + 1);
+  expect(await server.maintenance().run()).toMatchObject({ status: "COMPLETED" });
+  expect(sumAggregate(server, "local_queue_drop_count")).toBe(EVIDENCE_QUALITY_REPORT_STORE_LIMIT);
+  expect(sumAggregate(server, "offline_expired_event_count")).toBe(1);
 }
 function proveMemoryQueueDropAndExpiryObservation(): void {
   const clock = new ManualClock(QUEUE_T0);
@@ -603,7 +668,8 @@ describe("F07 evidence pipeline observability", () => {
     await proveServerQualityReportIdempotence();
     await proveBrowserQualityReportRoundTrip();
     await proveNonAcknowledgedReportStaysPending();
-    await proveSealedReportSurvivesPageTermination();
+    await proveDurableStateSurvivesPageTermination();
+    await proveQualityStoreBoundLosesNoCounts();
     await proveDefaultDurableStoreFeedsQualityReport();
     proveMemoryQueueDropAndExpiryObservation();
     await proveSharedQueueObservedExactlyOnce();

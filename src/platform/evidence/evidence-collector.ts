@@ -70,8 +70,8 @@ export interface BrowserEvidenceCollectorOptions {
   // The default browser queue store always reports to this ledger; an injected queueStore must be
   // created with it to contribute durable drops.
   readonly qualityReports?: EvidenceQualityReportLedger;
-  // Durable copy of sealed, unacknowledged quality reports for the default ledger; defaults to the
-  // browser IndexedDB store.
+  // Durable copy of unacknowledged quality counts and reports for the default ledger; defaults to
+  // the browser IndexedDB store.
   readonly qualityReportStore?: EvidenceQualityReportStore | null;
 }
 
@@ -144,7 +144,7 @@ function currentQualityReport(reports: EvidenceQualityReportLedger): EvidenceQua
 
 function handoffQualityReports(reports: EvidenceQualityReportLedger): readonly EvidenceQualityReport[] {
   try {
-    return reports.sealForHandoff();
+    return reports.handoffReports();
   } catch {
     return [];
   }
@@ -243,10 +243,10 @@ export class EvidenceCollector {
   // membership, so a record another collector evicted after this one last reconciled may still be
   // handed off (the server dedupes by event_id). Everything handed off in one pagehide shares the
   // 64 KiB beacon budget; records beyond it, or in a batch the user agent refuses, stay queued.
-  // The accumulated quality delta is sealed first. The oldest pending quality_report rides on the
-  // first beacon and every other pending report follows alone, all inside the same budget. No
-  // handoff acknowledges a report, so a later normal flush (of this or a later page) resends the
-  // same report_id.
+  // Quality reports are handed off as already held (see EvidenceQualityReportLedger.handoffReports);
+  // no storage work starts here. The oldest pending quality_report rides on the first beacon and
+  // every other pending report follows alone, all inside the same budget. No handoff acknowledges a
+  // report, so a later normal flush (of this or a later page) resends the same report_id.
   public flushOnPageHide(): void {
     try {
       const records = this.queue.terminalHandoffRecords();
@@ -321,8 +321,12 @@ export class EvidenceCollector {
   private async flushOwnedQueue(): Promise<void> {
     this.clearTimer();
     await this.queue.settled();
-    await this.qualityReports.restored();
-    for (let batch = this.nextChunk(); batch.length > 0; batch = this.nextChunk()) {
+    for (;;) {
+      await this.qualityReports.prepare();
+      const batch = this.nextChunk();
+      if (batch.length === 0) {
+        break;
+      }
       const result = await deliverChunk(this.dependencies, this.queue, batch, this.qualityReports);
       if (result === "retain") {
         this.ensureTimer();
@@ -335,8 +339,10 @@ export class EvidenceCollector {
 
   // Oldest first; stops at the first report left unacknowledged, which waits for a later flush.
   private async flushQualityReports(): Promise<void> {
+    await this.qualityReports.prepare();
     for (let report = currentQualityReport(this.qualityReports); report !== null;) {
       await deliverChunk(this.dependencies, this.queue, [], this.qualityReports);
+      await this.qualityReports.prepare();
       const next = currentQualityReport(this.qualityReports);
       if (next === report) {
         return;
