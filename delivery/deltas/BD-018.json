@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-018",
   "type": "DESIGN_DELTA",
-  "status": "IMPLEMENTING",
+  "status": "CLOSED",
   "source_finding_ids": [
     "BF-047"
   ],
@@ -41,7 +41,10 @@
     "Derived source compare changes exactly three files: F07, DATA-MODEL-DETAILED, Acceptance Registry.",
     "No Product implementation or Cursor execution is authorized by this delta.",
     "BS-P1-018 Freeze merged via PR #257 as 69b29c4c2f4d5b7314dc7964942d3953cf91b22d.",
-    "SP-P1-002 / T008 is re-bound to BS-P1-018 with expanded allowed paths and remains stopped before fresh Cursor execution approval."
+    "SP-P1-002 / T008 is re-bound to BS-P1-018 with expanded allowed paths and remains stopped before fresh Cursor execution approval.",
+    "T008 implementation merged via PR #259 as 20a49c1703381f4bf5667d25bd856d56ed5657b2 after independent BCE audit PASS.",
+    "Final T008 Evidence normalized via PR #260 as 64d441aa16e615ed26fbe68c07fb2ad56f537f44 and T008 entered REVIEW via PR #262 as 658a1bc1d052bb8ff129795f05e7a6eb0afe974b.",
+    "Independent closure audit PASS recorded in Issue #245 comment 6004156064; Human approved T008 normalization / closure. BD-018 remediation lifecycle is complete under BS-P1-018. T009 remains separately gated and unactivated."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
