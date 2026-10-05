@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-017",
+  "active_task": "T007",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-002 / T007 is temporarily blocked by BF-046 during BS-P1-017 replacement freeze. T008-T009 remain unauthorized."
+  "reason": "BS-P1-017 activated after Human-approved T007 pagehide precedence remediation; T007 restored to IN_PROGRESS. T008-T009 remain PLANNED and unauthorized."
 }
