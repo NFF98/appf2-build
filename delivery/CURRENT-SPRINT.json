@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-018",
-  "active_task": "T008",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T008 implementation merged via PR #259 and final Evidence normalized via PR #260. T008 final Evidence is bound for independent closure audit; T009 remains PLANNED / unauthorized."
+  "reason": "T008 is CLOSED under BS-P1-018. SP-P1-002 remains in REVIEW with T009 PLANNED / unauthorized; no active execution context exists."
 }
