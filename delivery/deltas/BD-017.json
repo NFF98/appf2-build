@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-017",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-046"
   ],
@@ -35,7 +35,8 @@
     "The stale-copy exception is terminal-lifecycle-only; normal flush/retry retains shared durable membership semantics.",
     "24h TTL, 200-event / 1 MiB bounds, priority retention and event_id dedupe remain unchanged.",
     "Centralized browser Evidence delivery coordination is a Phase 4 mandatory architecture review and Phase 5 default implementation if not promoted earlier.",
-    "No T008/T009 Product implementation is introduced."
+    "No T008/T009 Product implementation is introduced.",
+    "BS-P1-017 / SP-P1-002 / T007 activated under Human-approved BCE envelope; implementation remains separately gated before fresh Cursor execution."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-017",
+  "previous_baseline": "BS-P1-016",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "HUMAN-T007-BS-P1-017-REBASELINE-REBIND-BCE-20261005",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011",
+    "BD-012",
+    "BD-013",
+    "BD-014",
+    "BD-015",
+    "BD-016",
+    "BD-017"
+  ],
+  "source_working_commit": "6b5babe6e7ccc44b8f83731367aa8eece9c96364",
+  "activated_at": "2026-10-05T01:04:00Z"
+}

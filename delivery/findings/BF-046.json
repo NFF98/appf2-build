@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-046",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-016",
   "sprint_id": "SP-P1-002",
   "task_id": "T007",
@@ -13,7 +13,9 @@
     "Issue #245 RESULT comment 5985861303 correctly HARD STOPPED AUDIT-FIX-6 while fixing AUDIT-FIX-7/8 at candidate 867107dbc06b7a0d7f3084a5f5f8d8df9ef2707b.",
     "Human explicitly approved Option A on 2026-10-05: terminal pagehide handoff wins for the narrow race; normal flush/retry retains durable membership semantics.",
     "Human also required the stronger centralized sender design to be reviewed in Phase 4 and implemented by Phase 5 if not promoted earlier.",
-    "Design PR #24 merged as 3f006181e626c062561872e8a9dff4f47bd86740 and changes only F07 Working Current Truth."
+    "Design PR #24 merged as 3f006181e626c062561872e8a9dff4f47bd86740 and changes only F07 Working Current Truth.",
+    "BS-P1-017 Freeze merged via PR #247 as f5facac37d30d7163ca51616f6284ce67ff6409d.",
+    "Human-approved BCE activation/rebind to BS-P1-017 resolves BF-046; T007 may resume only after canonical activation checks, with Cursor execution still separately gated."
   ],
   "attempts": [
     {
