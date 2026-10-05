@@ -30,7 +30,8 @@ export type EvidenceRejectionCode =
   | "F07-ERR-006"
   | "F07-ERR-007"
   | "F07-ERR-010"
-  | "F07-ERR-014";
+  | "F07-ERR-014"
+  | "F07-ERR-016";
 
 export interface EvidenceRejection {
   readonly event_id: string | null;

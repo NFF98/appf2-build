@@ -13,6 +13,8 @@ import {
   clockInvalidDiagnostic,
   isClockInvalid
 } from "./evidence-clock.js";
+import { isProductionDeliverable } from "./evidence-queue-policy.js";
+import { lockedEvidenceRegistry, type EvidenceRegistry } from "./evidence-registry.js";
 import { validateEvidenceEvent } from "./evidence-validator.js";
 
 export interface EvidenceIngestionDependencies {
@@ -20,6 +22,7 @@ export interface EvidenceIngestionDependencies {
   readonly evidence: EvidenceRepository;
   readonly diagnostics: EvidenceIngestionDiagnostics;
   readonly now: () => Date;
+  readonly registry?: EvidenceRegistry;
 }
 
 function eventIdOf(event: unknown): string | null {
@@ -39,7 +42,11 @@ function rejected(
 }
 
 export class EvidenceIngestionService {
-  public constructor(private readonly dependencies: EvidenceIngestionDependencies) {}
+  private readonly registry: EvidenceRegistry;
+
+  public constructor(private readonly dependencies: EvidenceIngestionDependencies) {
+    this.registry = dependencies.registry ?? lockedEvidenceRegistry;
+  }
 
   private async ensureIdentity(
     anonymousId: string,
@@ -71,9 +78,16 @@ export class EvidenceIngestionService {
 
     for (const candidate of events) {
       const serialized = JSON.stringify(candidate);
-      const validation = validateEvidenceEvent(candidate, serialized ?? "");
+      const validation = validateEvidenceEvent(candidate, serialized ?? "", this.registry);
       if (!validation.accepted) {
         rejections.push(validation.rejection);
+        continue;
+      }
+      // F07-RQ-009 step 13: collection-class production policy runs before identity ensure and
+      // product_event insert, so a DEBUG_ONLY event never touches either.
+      const entry = this.registry.find(validation.event.event_type);
+      if (entry !== undefined && !isProductionDeliverable(entry.collectionClass)) {
+        rejections.push(rejected(candidate, "F07-ERR-016"));
         continue;
       }
 

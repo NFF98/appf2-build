@@ -1,6 +1,12 @@
 import type { EvidenceEventInput } from "./evidence-types.js";
 import {
+  reportQueueDrops,
+  type EvidenceQueueDropCode,
+  type EvidenceQueueObserver
+} from "./evidence-observability.js";
+import {
   isExpired,
+  isProductionDeliverable,
   planQueueAdmission,
   type EvidenceCollectionClass,
   type EvidenceEnqueueOutcome,
@@ -11,7 +17,7 @@ import type {
   DurableEvidenceRecord,
   EvidenceQueueStore
 } from "./evidence-queue-store.js";
-import { lockedEvidenceRegistry } from "./evidence-registry.js";
+import { lockedEvidenceRegistry, type EvidenceRegistry } from "./evidence-registry.js";
 import { EVIDENCE_LIMITS, validateEvidenceEvent } from "./evidence-validator.js";
 
 export {
@@ -64,19 +70,29 @@ function isShared(durability: RecordDurability): boolean {
   return durability === "ADMITTING" || durability === "DURABLE";
 }
 
+function dropCodeOf(outcome: EvidenceEnqueueOutcome): EvidenceQueueDropCode | null {
+  if (outcome === "QUEUE_FULL") {
+    return "F07-ERR-011";
+  }
+  return outcome === "EXPIRED" ? "F07-ERR-012" : null;
+}
+
 // The queued copy is a detached, deep-frozen JSON snapshot validated against the exact bytes that
 // are persisted and sent, so neither the caller's input nor anything read back out of the queue
-// can be mutated past the privacy contract.
-export function admitEvidenceEvent(input: unknown): AdmittedEvidenceEvent | null {
+// can be mutated past the privacy contract. DEBUG_ONLY events are never admitted for delivery.
+export function admitEvidenceEvent(
+  input: unknown,
+  registry: EvidenceRegistry = lockedEvidenceRegistry
+): AdmittedEvidenceEvent | null {
   try {
     const serialized = JSON.stringify(input);
     const snapshot: unknown = JSON.parse(serialized);
-    const result = validateEvidenceEvent(snapshot, serialized);
+    const result = validateEvidenceEvent(snapshot, serialized, registry);
     if (!result.accepted) {
       return null;
     }
-    const entry = lockedEvidenceRegistry.find(result.event.event_type);
-    if (entry === undefined) {
+    const entry = registry.find(result.event.event_type);
+    if (entry === undefined || !isProductionDeliverable(entry.collectionClass)) {
       return null;
     }
     return Object.freeze({
@@ -162,10 +178,12 @@ function* boundedBatches(
   }
 }
 
+// reservedBytes is request space kept free for a quality_report riding on the batch.
 export function requestBoundedBatches(
-  records: Iterable<QueuedEvidenceRecord>
+  records: Iterable<QueuedEvidenceRecord>,
+  reservedBytes = 0
 ): Generator<QueuedEvidenceRecord[]> {
-  return boundedBatches(records, EVIDENCE_LIMITS.requestBytes, Number.POSITIVE_INFINITY);
+  return boundedBatches(records, EVIDENCE_LIMITS.requestBytes - reservedBytes, Number.POSITIVE_INFINITY);
 }
 
 export function beaconBoundedBatches(
@@ -188,7 +206,8 @@ export class EvidenceClientQueue {
 
   public constructor(
     private readonly store: EvidenceQueueStore | null,
-    private readonly now: () => number
+    private readonly now: () => number,
+    private readonly observer: EvidenceQueueObserver | null = null
   ) {}
 
   public size(): number {
@@ -219,6 +238,7 @@ export class EvidenceClientQueue {
       const store = this.store;
       void this.serialize(() => this.persist(store, record));
     }
+    this.reportRefused(record, outcome);
     return outcome;
   }
 
@@ -227,8 +247,8 @@ export class EvidenceClientQueue {
     return store === null ? Promise.resolve() : this.serialize(() => this.restoreDurable(store));
   }
 
-  public nextBatch(): QueuedEvidenceRecord[] {
-    const first = requestBoundedBatches(this.liveRecords()).next();
+  public nextBatch(reservedBytes = 0): QueuedEvidenceRecord[] {
+    const first = requestBoundedBatches(this.liveRecords(), reservedBytes).next();
     return first.done === true ? [] : first.value;
   }
 
@@ -238,9 +258,24 @@ export class EvidenceClientQueue {
 
   // Synchronous: every TTL-live, privacy-validated, frozen snapshot this collector currently holds,
   // including DURABLE ones, without waiting for shared durable membership. Terminal handoff only;
-  // normal flush / retry must go through sendable().
+  // normal flush / retry must go through sendable(). An expired record whose admission is in flight
+  // or committed is excluded but left in place: its F07-ERR-012 purge and observation stay with the
+  // shared queue row, owned by a later normal flush or restore, so teardown starts no storage work
+  // that the only copy of that count would depend on. Expired records held only by this collector
+  // have no other copy and are dropped here as on any other path.
   public terminalHandoffRecords(): QueuedEvidenceRecord[] {
-    return this.liveRecords();
+    const now = this.now();
+    const live: QueuedEvidenceRecord[] = [];
+    const localExpired: QueuedEvidenceRecord[] = [];
+    for (const { record, durability } of this.held.values()) {
+      if (!isExpired(record, now)) {
+        live.push(record);
+      } else if (!isShared(durability)) {
+        localExpired.push(record);
+      }
+    }
+    this.discardAll(localExpired, "F07-ERR-012");
+    return live;
   }
 
   // Re-checked before every send attempt. Expired records are discarded; records in the shared
@@ -262,7 +297,14 @@ export class EvidenceClientQueue {
   }
 
   public remove(records: readonly QueuedEvidenceRecord[]): void {
-    this.discardAll(records.filter(record => this.holds(record)));
+    this.discardAll(records.filter(record => this.holds(record)), null);
+  }
+
+  private reportRefused(record: QueuedEvidenceRecord, outcome: EvidenceEnqueueOutcome): void {
+    const code = dropCodeOf(outcome);
+    if (code !== null) {
+      reportQueueDrops(this.observer, [{ code, collection_class: record.collectionClass }]);
+    }
   }
 
   private serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -293,11 +335,11 @@ export class EvidenceClientQueue {
       record,
       this.now()
     );
-    this.discardAll(plan.expired);
+    this.discardAll(plan.expired, "F07-ERR-012");
     if (plan.outcome !== "QUEUED") {
       return plan.outcome;
     }
-    this.discardAll(plan.evicted);
+    this.discardAll(plan.evicted, "F07-ERR-011");
     this.held.set(record.eventId, { record, durability });
     this.totalBytes += record.bytes;
     return "QUEUED";
@@ -326,6 +368,7 @@ export class EvidenceClientQueue {
       this.setDurability(record, "DURABLE");
     } else {
       this.forget(record);
+      this.reportRefused(record, admission.outcome);
     }
   }
 
@@ -347,12 +390,19 @@ export class EvidenceClientQueue {
       }
     }
     restorable.sort((left, right) => left.enqueuedAt - right.enqueuedAt);
+    const refused = new Map<EvidenceQueueDropCode, string[]>();
     for (const record of restorable) {
       const local = this.held.get(record.eventId);
       if (local !== undefined) {
         this.forget(local.record);
       }
-      if (this.admitLocally(record, "DURABLE") !== "QUEUED") {
+      const outcome = this.admitLocally(record, "DURABLE");
+      const code = dropCodeOf(outcome);
+      if (code !== null) {
+        const ids = refused.get(code) ?? [];
+        ids.push(record.eventId);
+        refused.set(code, ids);
+      } else if (outcome !== "QUEUED") {
         rejected.push(record.eventId);
       }
     }
@@ -360,6 +410,9 @@ export class EvidenceClientQueue {
       [...this.held].sort(([, left], [, right]) => left.record.enqueuedAt - right.record.enqueuedAt)
     );
     await store.remove(rejected).catch(ignoreStorageFailure);
+    for (const [code, eventIds] of refused) {
+      await store.remove(eventIds, { code, now: this.now() }).catch(ignoreStorageFailure);
+    }
   }
 
   private reconcile(liveIds: ReadonlySet<string>): void {
@@ -380,7 +433,7 @@ export class EvidenceClientQueue {
       }
       (isExpired(record, now) ? expired : live).push(record);
     }
-    this.discardAll(expired);
+    this.discardAll(expired, "F07-ERR-012");
     return live;
   }
 
@@ -395,8 +448,11 @@ export class EvidenceClientQueue {
   }
 
   // Removes records from memory and DURABLE ones from the shared queue in one durable transaction.
-  // A record whose admission is still in flight is removed by persist() once it commits.
-  private discardAll(entries: readonly EvidenceQueueEntry[]): void {
+  // A record whose admission is still in flight is removed by persist() once it commits. With a
+  // drop code, records held only by this collector are reported here; DURABLE ones are reported by
+  // the shared store only if they are still live there, so another collector's earlier removal of
+  // the same record is never reported twice.
+  private discardAll(entries: readonly EvidenceQueueEntry[], dropCode: EvidenceQueueDropCode | null): void {
     const durableIds: string[] = [];
     for (const entry of entries) {
       const holder = this.held.get(entry.eventId);
@@ -406,11 +462,14 @@ export class EvidenceClientQueue {
       this.forget(holder.record);
       if (holder.durability === "DURABLE") {
         durableIds.push(entry.eventId);
+      } else if (dropCode !== null) {
+        reportQueueDrops(this.observer, [{ code: dropCode, collection_class: holder.record.collectionClass }]);
       }
     }
     const store = this.store;
     if (store !== null && durableIds.length > 0) {
-      void this.serialize(() => store.remove(durableIds).catch(ignoreStorageFailure));
+      const drop = dropCode === null ? undefined : { code: dropCode, now: this.now() };
+      void this.serialize(() => store.remove(durableIds, drop).catch(ignoreStorageFailure));
     }
   }
 }
