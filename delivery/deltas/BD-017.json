@@ -38,9 +38,9 @@
     "No T008/T009 Product implementation is introduced."
   ],
   "freeze_source": {
-    "type": "CANONICAL_DESIGN_MAIN",
-    "commit": "3f006181e626c062561872e8a9dff4f47bd86740",
-    "base_commit": "b665370eb43b1eadaa0a24c14ae60e8ad024fac3",
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "6b5babe6e7ccc44b8f83731367aa8eece9c96364",
+    "base_commit": "336cc979e8645af6dfb04f72e07d4daf741d22c4",
     "provenance_audit": "delivery/audits/SP-P1-002-BF-046-FREEZE-CANDIDATE.md"
   }
 }
