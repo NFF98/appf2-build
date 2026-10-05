@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-017",
+  "active_task": "T008",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human approved T007 final closure after implementation merge #249, Evidence normalization #250, closure REVIEW #251 and independent closure audit comment 5986915508. T007 is CLOSED; T008/T009 remain PLANNED and unauthorized."
+  "reason": "T008 Activation Review PASS under locked BS-P1-017. T007 remains CLOSED; T008 is IN_PROGRESS; T009 remains PLANNED. Cursor execution authority has not been issued."
 }
