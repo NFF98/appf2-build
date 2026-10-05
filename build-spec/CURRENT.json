@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-016",
-  "implementation_enabled": false,
-  "reason": "BF-046 SPEC_AMBIGUITY temporarily blocks T007 under BS-P1-016 while Human-approved Option A is frozen into replacement BS-P1-017. No Cursor execution until rebaseline activation."
+  "active_baseline": "BS-P1-017",
+  "implementation_enabled": true,
+  "reason": "Human-approved BCE rebaseline complete: BS-P1-017 is active and SP-P1-002 / T007 is restored after BF-046. Fresh Cursor execution remains separately gated and has not been issued."
 }
