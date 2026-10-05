@@ -3,11 +3,11 @@
   "baseline_id": "BS-P1-017",
   "phase": "PHASE_1",
   "source_repo": "NFF98/appf2-design",
-  "source_commit": "3f006181e626c062561872e8a9dff4f47bd86740",
+  "source_commit": "6b5babe6e7ccc44b8f83731367aa8eece9c96364",
   "freeze_audit": {
     "status": "PASS",
     "version_lock": true,
-    "source_commit": "3f006181e626c062561872e8a9dff4f47bd86740"
+    "source_commit": "6b5babe6e7ccc44b8f83731367aa8eece9c96364"
   },
   "projection_engine": {
     "version": "MARKDOWN_EXACT_HEADING_V1",
