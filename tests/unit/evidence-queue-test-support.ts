@@ -11,7 +11,11 @@ import {
 import type { EvidenceQueueEntry } from "../../src/platform/evidence/evidence-queue-policy.js";
 import {
   createIndexedDbEvidenceQueueStore,
-  EVIDENCE_QUEUE_DATABASE
+  EVIDENCE_QUEUE_DATABASE,
+  type DurableEvidenceAdmission,
+  type DurableEvidenceRecord,
+  type EvidenceQueueDropRequest,
+  type EvidenceQueueStore
 } from "../../src/platform/evidence/evidence-queue-store.js";
 import type { EvidenceEventInput } from "../../src/platform/evidence/evidence-types.js";
 import { ManualScheduler } from "./evidence-collector-test-support.js";
@@ -82,6 +86,48 @@ export async function persistQueuedEvent(
   queueDatabaseRecords(factory, EVIDENCE_QUEUE_DATABASE.entryStore).set(entry.eventId, entry);
   queueDatabaseRecords(factory, EVIDENCE_QUEUE_DATABASE.payloadStore)
     .set(entry.eventId, { eventId: entry.eventId, serialized });
+}
+
+export interface RequestedQueueRemoval {
+  readonly eventIds: readonly string[];
+  readonly drop: EvidenceQueueDropRequest | undefined;
+}
+
+// One page's view of the shared durable queue. Every non-empty remove() the page requests is
+// recorded; terminate() models the page being torn down: its later calls never reach storage and
+// never settle.
+export class PageQueueStore implements EvidenceQueueStore {
+  public readonly removals: RequestedQueueRemoval[] = [];
+  private terminated = false;
+
+  public constructor(private readonly shared: EvidenceQueueStore) {}
+
+  public terminate(): void {
+    this.terminated = true;
+  }
+
+  public admit(record: DurableEvidenceRecord, now: number): Promise<DurableEvidenceAdmission> {
+    return this.track(() => this.shared.admit(record, now));
+  }
+
+  public liveIds(now: number): Promise<ReadonlySet<string>> {
+    return this.track(() => this.shared.liveIds(now));
+  }
+
+  public load(now: number): Promise<readonly DurableEvidenceRecord[]> {
+    return this.track(() => this.shared.load(now));
+  }
+
+  public remove(eventIds: readonly string[], drop?: EvidenceQueueDropRequest): Promise<void> {
+    if (eventIds.length > 0) {
+      this.removals.push({ eventIds: [...eventIds], drop });
+    }
+    return this.track(() => this.shared.remove(eventIds, drop));
+  }
+
+  private track<T>(operation: () => Promise<T>): Promise<T> {
+    return this.terminated ? new Promise<T>(() => undefined) : operation();
+  }
 }
 
 export class ManualClock {

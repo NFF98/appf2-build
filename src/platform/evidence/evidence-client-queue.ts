@@ -258,9 +258,24 @@ export class EvidenceClientQueue {
 
   // Synchronous: every TTL-live, privacy-validated, frozen snapshot this collector currently holds,
   // including DURABLE ones, without waiting for shared durable membership. Terminal handoff only;
-  // normal flush / retry must go through sendable().
+  // normal flush / retry must go through sendable(). An expired record whose admission is in flight
+  // or committed is excluded but left in place: its F07-ERR-012 purge and observation stay with the
+  // shared queue row, owned by a later normal flush or restore, so teardown starts no storage work
+  // that the only copy of that count would depend on. Expired records held only by this collector
+  // have no other copy and are dropped here as on any other path.
   public terminalHandoffRecords(): QueuedEvidenceRecord[] {
-    return this.liveRecords();
+    const now = this.now();
+    const live: QueuedEvidenceRecord[] = [];
+    const localExpired: QueuedEvidenceRecord[] = [];
+    for (const { record, durability } of this.held.values()) {
+      if (!isExpired(record, now)) {
+        live.push(record);
+      } else if (!isShared(durability)) {
+        localExpired.push(record);
+      }
+    }
+    this.discardAll(localExpired, "F07-ERR-012");
+    return live;
   }
 
   // Re-checked before every send attempt. Expired records are discarded; records in the shared

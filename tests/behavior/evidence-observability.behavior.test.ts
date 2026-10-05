@@ -40,12 +40,16 @@ import {
   unsealedQualityRecords
 } from "../unit/evidence-quality-report-test-support.js";
 import {
+  beaconedEventIds,
   coreOutcomeEvent,
   createRecordingNavigator,
   drain,
   durableQueueIds,
+  eventIds,
   hangingFetch,
+  HOUR_MS,
   ManualClock,
+  PageQueueStore,
   persistQueuedEvent,
   productSampleEvent,
   QUEUE_T0
@@ -588,6 +592,158 @@ async function proveQualityStoreBoundLosesNoCounts(): Promise<void> {
   expect(sumAggregate(server, "local_queue_drop_count")).toBe(EVIDENCE_QUALITY_REPORT_STORE_LIMIT);
   expect(sumAggregate(server, "offline_expired_event_count")).toBe(1);
 }
+// One page whose durable queue store and quality ledger share the origin's IndexedDB; the queue store
+// reports durable drops to the page's ledger, as the browser default wiring does.
+function durableQueuePage(
+  factory: FakeIndexedDbFactory,
+  clock: ManualClock,
+  fetchImpl: typeof fetch,
+  idPrefixes: readonly [reportIds: string, batchIds: string],
+  navigator: Parameters<typeof createBrowserEvidenceBeaconTransport>[0] = {}
+) {
+  const qualityStore = new PageQualityReportStore(createIndexedDbEvidenceQualityReportStore(factory));
+  const ledger = new EvidenceQualityReportLedger(uuidSequence(idPrefixes[0]), qualityStore, clock.now);
+  const queueStore = new PageQueueStore(createIndexedDbEvidenceQueueStore(factory, ledger));
+  const collector = createBrowserEvidenceCollector({
+    fetch: fetchImpl,
+    queueStore,
+    qualityReports: ledger,
+    beaconTransport: createBrowserEvidenceBeaconTransport(navigator),
+    scheduler: new ManualScheduler(),
+    now: clock.now,
+    jitter: () => 0.5,
+    sleep: async () => undefined,
+    randomUUID: uuidSequence(idPrefixes[1])
+  });
+  return { collector, ledger, queueStore, qualityStore };
+}
+
+async function settlePage(page: ReturnType<typeof durableQueuePage>): Promise<void> {
+  await page.collector.settled();
+  await page.ledger.settled();
+}
+
+const ONE_OFFLINE_EXPIRY = { report_id: expect.any(String), local_queue_drop_count: 0, offline_expired_event_count: 1 };
+
+function reportedCounts(bodies: readonly SentBatch[]): EvidenceQualityReport[] {
+  return bodies.flatMap(body => body.quality_report === undefined ? [] : [body.quality_report]);
+}
+
+function sentEventIds(bodies: readonly SentBatch[]): string[] {
+  return bodies.flatMap(body => eventIds(body.events));
+}
+
+// Terminal-first TTL expiry: a durable event is still TTL-live when last persisted, the clock then
+// crosses the 24h TTL immediately before pagehide with no normal flush or TTL scan in between, and
+// the page is terminated right after pagehide without any await. pagehide never beacons the expired
+// event and starts no purge or quality write for it, so the durable queue row survives; the next
+// page's restore purges it and durably records exactly one F07-ERR-012 count, which a normal flush
+// delivers once. No later page or flush counts it again or sends the event as a Product Event.
+async function proveTerminalFirstExpiryCountedOnceByLaterPage(): Promise<void> {
+  const factory = new FakeIndexedDbFactory();
+  const clock = new ManualClock(QUEUE_T0);
+  const server = createServer(clock);
+  const recording = createRecordingNavigator();
+  const expired = coreOutcomeEvent(1);
+  const live = coreOutcomeEvent(2);
+  const first = durableQueuePage(factory, clock, hangingFetch(), ["a1a1a1a1", "a2a2a2a2"], recording.navigator);
+  await settlePage(first);
+  first.collector.emit(expired);
+  clock.set(QUEUE_T0 + HOUR_MS);
+  first.collector.emit(live);
+  await settlePage(first);
+  expect(durableQueueIds(factory)).toEqual([expired.event_id, live.event_id].sort());
+  expect(first.queueStore.removals).toEqual([]);
+  const qualityCallsBeforePageHide = first.qualityStore.calls;
+
+  clock.set(QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs + 1);
+  first.collector.flushOnPageHide();
+  first.queueStore.terminate();
+  first.qualityStore.terminate();
+
+  expect(recording.beacons.map(beacon => beacon.accepted)).toEqual([true]);
+  expect(await beaconedEventIds(recording.beacons)).toEqual([live.event_id]);
+  await drain();
+  expect(first.queueStore.removals).toEqual([{ eventIds: [live.event_id], drop: undefined }]);
+  expect(first.qualityStore.calls).toBe(qualityCallsBeforePageHide);
+  expect(durableQueueIds(factory)).toEqual([expired.event_id, live.event_id].sort());
+  expect(sealedQualityRecords(factory).size + unsealedQualityRecords(factory).size).toBe(0);
+
+  clock.set(clock.current + MINUTE_MS);
+  const network = serverFetch(server.handler);
+  const second = durableQueuePage(factory, clock, network.fetchImpl, ["b1b1b1b1", "b2b2b2b2"]);
+  await settlePage(second);
+  expect(durableQueueIds(factory)).toEqual([live.event_id]);
+  expect([...unsealedQualityRecords(factory).values()]).toEqual([ONE_OFFLINE_EXPIRY]);
+  expect(second.collector.queuedEvents().map(event => event.event_id)).toEqual([live.event_id]);
+
+  await second.collector.flush();
+  expect(network.bodies.map(body => [eventIds(body.events), body.quality_report]))
+    .toEqual([[[live.event_id], ONE_OFFLINE_EXPIRY]]);
+  expect(durableQueueIds(factory)).toEqual([]);
+  expect(sealedQualityRecords(factory).size + unsealedQualityRecords(factory).size).toBe(0);
+
+  await second.collector.flush();
+  const third = durableQueuePage(factory, clock, network.fetchImpl, ["c1c1c1c1", "c2c2c2c2"]);
+  await settlePage(third);
+  await third.collector.flush();
+  await settlePage(second);
+  await second.collector.flush();
+  expect(network.bodies).toHaveLength(1);
+  expect(sentEventIds(network.bodies)).not.toContain(expired.event_id);
+  expect(server.database.events.has(expired.event_id)).toBe(false);
+  expect([...server.database.clientQualityReports.values()]).toEqual([
+    { ...ONE_OFFLINE_EXPIRY, received_at: new Date(clock.current).toISOString() }
+  ]);
+
+  clock.set(clock.current + RETENTION_MS + 1);
+  expect(await server.maintenance().run()).toMatchObject({ status: "COMPLETED" });
+  expect(sumAggregate(server, "offline_expired_event_count")).toBe(1);
+  expect(sumAggregate(server, "local_queue_drop_count")).toBe(0);
+}
+
+// A page that survives pagehide (for example a back/forward cache entry) still holds the excluded
+// expired record: its own next normal flush purges the durable row and counts it once, and a later
+// page restoring the same origin queue finds nothing left to count or send.
+async function proveSurvivingPageOwnsDeferredTerminalExpiry(): Promise<void> {
+  const factory = new FakeIndexedDbFactory();
+  const clock = new ManualClock(QUEUE_T0);
+  const server = createServer(clock);
+  const recording = createRecordingNavigator();
+  const network = serverFetch(server.handler);
+  const expired = coreOutcomeEvent(3);
+  const page = durableQueuePage(factory, clock, network.fetchImpl, ["d1d1d1d1", "d2d2d2d2"], recording.navigator);
+  await settlePage(page);
+  page.collector.emit(expired);
+  await settlePage(page);
+
+  clock.set(QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs + 1);
+  page.collector.flushOnPageHide();
+  expect(recording.beacons).toEqual([]);
+  await settlePage(page);
+  expect(page.queueStore.removals).toEqual([]);
+  expect(durableQueueIds(factory)).toEqual([expired.event_id]);
+
+  await page.collector.flush();
+  await settlePage(page);
+  await page.collector.flush();
+  expect(page.queueStore.removals).toEqual([
+    { eventIds: [expired.event_id], drop: { code: "F07-ERR-012", now: clock.current } }
+  ]);
+  expect(durableQueueIds(factory)).toEqual([]);
+  expect(reportedCounts(network.bodies)).toEqual([ONE_OFFLINE_EXPIRY]);
+
+  const later = durableQueuePage(factory, clock, network.fetchImpl, ["e1e1e1e1", "e2e2e2e2"]);
+  await settlePage(later);
+  await later.collector.flush();
+  page.collector.flushOnPageHide();
+  await page.collector.flush();
+  expect(reportedCounts(network.bodies)).toEqual([ONE_OFFLINE_EXPIRY]);
+  expect(sentEventIds(network.bodies)).toEqual([]);
+  expect(recording.beacons).toEqual([]);
+  expect(server.database.clientQualityReports.size).toBe(1);
+}
+
 function proveMemoryQueueDropAndExpiryObservation(): void {
   const clock = new ManualClock(QUEUE_T0);
   const observer = new RecordingDrops();
@@ -671,6 +827,8 @@ describe("F07 evidence pipeline observability", () => {
     await proveDurableStateSurvivesPageTermination();
     await proveQualityStoreBoundLosesNoCounts();
     await proveDefaultDurableStoreFeedsQualityReport();
+    await proveTerminalFirstExpiryCountedOnceByLaterPage();
+    await proveSurvivingPageOwnsDeferredTerminalExpiry();
     proveMemoryQueueDropAndExpiryObservation();
     await proveSharedQueueObservedExactlyOnce();
     await proveCollectorObserverWiring();
