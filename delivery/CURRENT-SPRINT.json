@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-002",
   "active_build_spec": "BS-P1-017",
   "active_task": "T007",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved BCE rebaseline activation: BS-P1-017 resolves BF-046 and restores SP-P1-002 / T007 to IN_PROGRESS. T008-T009 remain PLANNED; Cursor execution is not yet issued."
+  "reason": "T007 implementation merged and final Evidence normalized; Human requested closure Evidence normalization and closure audit. T007 is in REVIEW. T008/T009 remain PLANNED and unauthorized."
 }

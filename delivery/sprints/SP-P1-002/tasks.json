@@ -596,7 +596,7 @@
         "BL-P1-033"
       ],
       "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-017",
       "scope": [
         "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",
@@ -643,7 +643,18 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-002-T007-001",
+        "EV-SP-P1-002-T007-002",
+        "EV-SP-P1-002-T007-003",
+        "EV-SP-P1-002-T007-004",
+        "EV-SP-P1-002-T007-005",
+        "EV-SP-P1-002-T007-006",
+        "EV-SP-P1-002-T007-007",
+        "EV-SP-P1-002-T007-009",
+        "EV-SP-P1-002-T007-010",
+        "EV-SP-P1-002-T007-014"
+      ]
     },
     {
       "task_id": "T008",
