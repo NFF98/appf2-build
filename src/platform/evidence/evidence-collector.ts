@@ -138,7 +138,7 @@ export class EvidenceCollector {
 
   public constructor(private readonly dependencies: EvidenceCollectorDependencies) {
     this.queue = new EvidenceClientQueue(dependencies.queueStore, dependencies.now);
-    void this.queue.restore().then(() => this.ensureTimer());
+    void this.queue.restore().then(() => this.armFlushTriggers());
   }
 
   public queuedCount(): number {
@@ -160,10 +160,7 @@ export class EvidenceCollector {
     if (admitted === null || this.queue.enqueue(admitted) !== "QUEUED") {
       return;
     }
-    this.ensureTimer();
-    if (this.queue.size() >= EVIDENCE_QUEUE_FLUSH_THRESHOLD) {
-      void this.flush();
-    }
+    this.armFlushTriggers();
   }
 
   public flush(): Promise<void> {
@@ -192,6 +189,13 @@ export class EvidenceCollector {
       }
     } catch {
       return;
+    }
+  }
+
+  private armFlushTriggers(): void {
+    this.ensureTimer();
+    if (this.queue.size() >= EVIDENCE_QUEUE_FLUSH_THRESHOLD) {
+      void this.flush();
     }
   }
 

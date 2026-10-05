@@ -8,12 +8,16 @@ import {
   type EvidenceCollectionClass
 } from "../../src/platform/evidence/evidence-client-queue.js";
 import {
+  EVIDENCE_QUEUE_FLUSH_THRESHOLD,
+  EVIDENCE_TIMER_FLUSH_MS
+} from "../../src/platform/evidence/evidence-collector.js";
+import {
   createIndexedDbEvidenceQueueStore,
   EVIDENCE_QUEUE_DATABASE,
   type EvidenceIdbDatabase
 } from "../../src/platform/evidence/evidence-queue-store.js";
 import type { EvidenceEventInput } from "../../src/platform/evidence/evidence-types.js";
-import { createScriptedFetch } from "../unit/evidence-collector-test-support.js";
+import { createScriptedFetch, ManualScheduler } from "../unit/evidence-collector-test-support.js";
 import { FakeIndexedDbFactory } from "../unit/evidence-fake-indexeddb.js";
 import {
   beaconedEventIds,
@@ -505,6 +509,56 @@ describe("Shared overflow eviction is final for normal flush; only terminal page
     await owner.settled();
     expect(fetch.requests.map(request => eventIds(request.events))).toEqual([[memoryOnly.event_id]]);
     expect(owner.queuedCount()).toBe(0);
+  });
+});
+
+describe("Restored durable queues honor the queue-size flush trigger", () => {
+  async function restoreCollector(persistedCount: number) {
+    const factory = new FakeIndexedDbFactory();
+    const persisted = Array.from({ length: persistedCount }, (_, index) => coreOutcomeEvent(index + 1));
+    for (const [offset, event] of persisted.entries()) {
+      await persistQueuedEvent(factory, event, QUEUE_T0 + offset);
+    }
+    const fetch = createScriptedFetch([200]);
+    const scheduler = new ManualScheduler();
+    const collector = createDurableTestCollector({
+      fetch: fetch.fetchImpl,
+      factory,
+      clock: new ManualClock(QUEUE_T0 + 1000),
+      scheduler
+    });
+    return { factory, persisted, fetch, scheduler, collector };
+  }
+
+  test("restoring the flush threshold of durable events starts normal delivery without waiting for the 10-second timer", async () => {
+    const { factory, persisted, fetch, scheduler, collector } = await restoreCollector(EVIDENCE_QUEUE_FLUSH_THRESHOLD);
+
+    await collector.settled();
+    await drain();
+
+    expect(fetch.requests.map(request => eventIds(request.events))).toEqual([eventIds(persisted)]);
+    expect(scheduler.pending).toBeNull();
+    expect(collector.queuedCount()).toBe(0);
+    expect(durableQueueIds(factory)).toEqual([]);
+  });
+
+  test("restoring fewer durable events than the flush threshold stays timer-driven", async () => {
+    const { factory, persisted, fetch, scheduler, collector } = await restoreCollector(EVIDENCE_QUEUE_FLUSH_THRESHOLD - 1);
+
+    await collector.settled();
+    await drain();
+
+    expect(fetch.requests).toHaveLength(0);
+    expect(scheduler.pending?.delayMs).toBe(EVIDENCE_TIMER_FLUSH_MS);
+    expect(collector.queuedCount()).toBe(persisted.length);
+
+    scheduler.fire();
+    await drain();
+    await collector.settled();
+
+    expect(fetch.requests.map(request => eventIds(request.events))).toEqual([eventIds(persisted)]);
+    expect(collector.queuedCount()).toBe(0);
+    expect(durableQueueIds(factory)).toEqual([]);
   });
 });
 
