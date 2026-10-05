@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-017",
   "type": "DESIGN_DELTA",
-  "status": "IMPLEMENTING",
+  "status": "CLOSED",
   "source_finding_ids": [
     "BF-046"
   ],
@@ -36,7 +36,10 @@
     "24h TTL, 200-event / 1 MiB bounds, priority retention and event_id dedupe remain unchanged.",
     "Centralized browser Evidence delivery coordination is a Phase 4 mandatory architecture review and Phase 5 default implementation if not promoted earlier.",
     "No T008/T009 Product implementation is introduced.",
-    "BS-P1-017 / SP-P1-002 / T007 activated under Human-approved BCE envelope; implementation remains separately gated before fresh Cursor execution."
+    "BS-P1-017 / SP-P1-002 / T007 activated under Human-approved BCE envelope; implementation remains separately gated before fresh Cursor execution.",
+    "T007 implementation merged via PR #249 as e9680ea14631909a1d80a8a76799d1906695d569 after independent BCE audit PASS.",
+    "Final T007 Evidence normalized via PR #250 as 87877da9d812e88129c8aaf4031b02b585e34b13 and T007 entered REVIEW via PR #251 as 9f3fd1c24a93386930693f1165e53e461b1b0c7a.",
+    "Independent closure audit PASS recorded in Issue #245 comment 5986915508; Human approved T007 final closure. BD-017 remediation lifecycle is complete under BS-P1-017. T008/T009 remain separately gated and unactivated."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
