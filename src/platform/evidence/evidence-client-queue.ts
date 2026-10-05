@@ -178,10 +178,12 @@ function* boundedBatches(
   }
 }
 
+// reservedBytes is request space kept free for a quality_report riding on the batch.
 export function requestBoundedBatches(
-  records: Iterable<QueuedEvidenceRecord>
+  records: Iterable<QueuedEvidenceRecord>,
+  reservedBytes = 0
 ): Generator<QueuedEvidenceRecord[]> {
-  return boundedBatches(records, EVIDENCE_LIMITS.requestBytes, Number.POSITIVE_INFINITY);
+  return boundedBatches(records, EVIDENCE_LIMITS.requestBytes - reservedBytes, Number.POSITIVE_INFINITY);
 }
 
 export function beaconBoundedBatches(
@@ -245,8 +247,8 @@ export class EvidenceClientQueue {
     return store === null ? Promise.resolve() : this.serialize(() => this.restoreDurable(store));
   }
 
-  public nextBatch(): QueuedEvidenceRecord[] {
-    const first = requestBoundedBatches(this.liveRecords()).next();
+  public nextBatch(reservedBytes = 0): QueuedEvidenceRecord[] {
+    const first = requestBoundedBatches(this.liveRecords(), reservedBytes).next();
     return first.done === true ? [] : first.value;
   }
 

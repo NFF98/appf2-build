@@ -2,6 +2,13 @@ import { describe, expect, test } from "vitest";
 
 import { createEventsBatchHandler } from "../../src/edge/events-batch.js";
 import { EvidenceIngestionService } from "../../src/platform/evidence/evidence-ingestion-service.js";
+import {
+  EvidenceQualityRecorder,
+  type EvidenceClientQualityReportRow,
+  type EvidenceIntakeObservationRow,
+  type EvidenceQualityReportWriteResult,
+  type EvidenceQualitySourceRepository
+} from "../../src/platform/evidence/evidence-quality-recorder.js";
 import type {
   AnonymousIdentityRepository,
   EvidenceIngestionDiagnostics,
@@ -56,6 +63,27 @@ class RecordingDiagnostics implements EvidenceIngestionDiagnostics {
   }
 }
 
+class RecordingQualitySources implements EvidenceQualitySourceRepository {
+  public readonly observations: EvidenceIntakeObservationRow[] = [];
+  public readonly reports = new Map<string, EvidenceClientQualityReportRow>();
+  public failReports = false;
+
+  public async insertIntakeObservation(row: EvidenceIntakeObservationRow): Promise<void> {
+    this.observations.push(row);
+  }
+
+  public async insertClientQualityReport(row: EvidenceClientQualityReportRow): Promise<EvidenceQualityReportWriteResult> {
+    if (this.failReports) {
+      throw new Error("quality report storage unavailable");
+    }
+    if (this.reports.has(row.report_id)) {
+      return "DUPLICATE";
+    }
+    this.reports.set(row.report_id, row);
+    return "INSERTED";
+  }
+}
+
 function event(index: number, anonymousId: string | null = ANONYMOUS_ID) {
   return {
     event_id: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
@@ -80,12 +108,29 @@ function createHarness() {
     diagnostics,
     now: () => new Date("2026-09-27T02:00:00.000Z")
   });
+  const quality = new RecordingQualitySources();
+  let observationIndex = 0;
   const handler = createEventsBatchHandler({
     ingestion,
+    qualityRecorder: new EvidenceQualityRecorder({
+      repository: quality,
+      diagnostics,
+      now: () => new Date("2026-09-27T02:00:00.000Z"),
+      randomUUID: () => {
+        observationIndex += 1;
+        return `88888888-0000-4000-8000-${String(observationIndex).padStart(12, "0")}`;
+      }
+    }),
     createRequestId: () => REQUEST_ID
   });
-  return { diagnostics, evidence, handler, identities };
+  return { diagnostics, evidence, handler, identities, quality };
 }
+
+const QUALITY_REPORT = {
+  report_id: "823e4567-e89b-42d3-a456-426614174000",
+  local_queue_drop_count: 2,
+  offline_expired_event_count: 1
+};
 
 async function post(
   handler: ReturnType<typeof createEventsBatchHandler>,
@@ -201,5 +246,99 @@ describe("POST /api/v1/events/batch", () => {
     expect(harness.evidence.receivedAtByEventId.get(clockInvalid.event_id)).toBe(
       "2026-09-27T02:00:00.000Z"
     );
+  });
+});
+
+describe("POST /api/v1/events/batch quality_report", () => {
+  test("accepts a quality-only batch and dedupes the quality_report by report_id", async () => {
+    const harness = createHarness();
+    const body = JSON.stringify({ batch_id: BATCH_ID, events: [], quality_report: QUALITY_REPORT });
+
+    const first = await harness.handler({ body });
+    const retry = await harness.handler({ body });
+
+    for (const response of [first, retry]) {
+      expect(response).toEqual({
+        status: 200,
+        headers: { "X-Request-Id": REQUEST_ID },
+        body: {
+          request_id: REQUEST_ID,
+          data: { accepted: 0, duplicates: 0, rejected: 0, rejections: [], diagnostics: [] }
+        }
+      });
+    }
+    expect([...harness.quality.reports.values()]).toEqual([
+      { ...QUALITY_REPORT, received_at: "2026-09-27T02:00:00.000Z" }
+    ]);
+    expect(harness.quality.observations.map(row => [row.batch_accepted, row.event_received_count])).toEqual([
+      [true, 0],
+      [true, 0]
+    ]);
+    expect(harness.evidence.events.size).toBe(0);
+  });
+
+  test("rejects an empty batch without a quality_report and any malformed quality_report as F07-ERR-003", async () => {
+    const harness = createHarness();
+    const malformedReports: readonly unknown[] = [
+      null,
+      { ...QUALITY_REPORT, local_queue_drop_count: 0, offline_expired_event_count: 0 },
+      { ...QUALITY_REPORT, local_queue_drop_count: -1 },
+      { ...QUALITY_REPORT, offline_expired_event_count: 1.5 },
+      { ...QUALITY_REPORT, local_queue_drop_count: Number.MAX_SAFE_INTEGER + 1 },
+      { ...QUALITY_REPORT, report_id: "not-a-uuid" },
+      { ...QUALITY_REPORT, anonymous_id: ANONYMOUS_ID }
+    ];
+
+    const responses = [
+      await harness.handler({ body: JSON.stringify({ batch_id: BATCH_ID, events: [] }) }),
+      ...await Promise.all(malformedReports.map(report => harness.handler({
+        body: JSON.stringify({ batch_id: BATCH_ID, events: [event(1)], quality_report: report })
+      })))
+    ];
+
+    for (const response of responses) {
+      expect(response).toMatchObject({ status: 400, body: { error: { code: "F07-ERR-003", retryable: false } } });
+    }
+    expect(harness.evidence.events.size).toBe(0);
+    expect(harness.identities.ensured).toEqual([]);
+    expect(harness.quality.reports.size).toBe(0);
+    expect(harness.quality.observations.map(row => row.route_rejection_code))
+      .toEqual(responses.map(() => "F07-ERR-003"));
+  });
+
+  test("counts quality_report bytes in the 256 KiB request bound", async () => {
+    const harness = createHarness();
+    const compact = JSON.stringify({ batch_id: BATCH_ID, events: [], quality_report: QUALITY_REPORT });
+    const atBound = compact + " ".repeat(EVIDENCE_LIMITS.requestBytes - new TextEncoder().encode(compact).byteLength);
+
+    expect((await harness.handler({ body: atBound })).status).toBe(200);
+    expect(await harness.handler({ body: `${atBound} ` })).toMatchObject({
+      status: 400,
+      body: { error: { code: "API-REQUEST-TOO-LARGE" } }
+    });
+  });
+
+  test("returns retryable 503 F07-ERR-010 when the quality_report cannot be made durable", async () => {
+    const harness = createHarness();
+    harness.quality.failReports = true;
+
+    const response = await harness.handler({
+      body: JSON.stringify({ batch_id: BATCH_ID, events: [event(1)], quality_report: QUALITY_REPORT })
+    });
+
+    expect(response).toMatchObject({
+      status: 503,
+      body: { error: { code: "F07-ERR-010", message_key: "recovery.f07.event_storage_failed", retryable: true } }
+    });
+    expect(harness.evidence.events.size).toBe(1);
+    expect(harness.quality.observations).toMatchObject([{ batch_accepted: false, accepted_count: 1 }]);
+    expect(harness.diagnostics.failures).toEqual([new Error("quality report storage unavailable")]);
+
+    harness.quality.failReports = false;
+    const retry = await harness.handler({
+      body: JSON.stringify({ batch_id: BATCH_ID, events: [event(1)], quality_report: QUALITY_REPORT })
+    });
+    expect(retry.body).toMatchObject({ data: { accepted: 0, duplicates: 1 } });
+    expect(harness.quality.reports.size).toBe(1);
   });
 });

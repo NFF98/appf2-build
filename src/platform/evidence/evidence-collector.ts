@@ -2,6 +2,7 @@ import {
   createBrowserEvidenceBatchTransport,
   createBrowserEvidenceBeaconTransport,
   EVIDENCE_BEACON_BUDGET_BYTES,
+  isServerAcknowledged,
   type EvidenceBatchPayload,
   type EvidenceBatchTransport,
   type EvidenceBatchTransportResult,
@@ -13,7 +14,12 @@ import {
   EvidenceClientQueue,
   type QueuedEvidenceRecord
 } from "./evidence-client-queue.js";
-import type { EvidenceQueueObserver } from "./evidence-observability.js";
+import { fanOutQueueObservers, type EvidenceQueueObserver } from "./evidence-observability.js";
+import {
+  EvidenceQualityReportLedger,
+  qualityReportRequestBytes,
+  type EvidenceQualityReport
+} from "./evidence-quality-report.js";
 import {
   resolveBrowserEvidenceQueueStore,
   type EvidenceQueueStore
@@ -41,6 +47,9 @@ export interface EvidenceCollectorDependencies {
   readonly jitter: () => number;
   readonly scheduler: EvidenceCollectorScheduler;
   readonly observer?: EvidenceQueueObserver | null;
+  // Always present at runtime: when omitted the collector owns a fresh ledger. Pass the ledger the
+  // queue store reports to so durable drops reach the same quality_report.
+  readonly qualityReports?: EvidenceQualityReportLedger;
 }
 
 export interface BrowserEvidenceCollectorOptions {
@@ -55,6 +64,9 @@ export interface BrowserEvidenceCollectorOptions {
   readonly scheduler?: EvidenceCollectorScheduler;
   // Also attached to the default browser queue store; an injected queueStore carries its own.
   readonly observer?: EvidenceQueueObserver | null;
+  // The default browser queue store always reports to this ledger; an injected queueStore must be
+  // created with it to contribute durable drops.
+  readonly qualityReports?: EvidenceQualityReportLedger;
 }
 
 export function retryDelayMs(baseMs: number, unitJitter: number): number {
@@ -104,26 +116,59 @@ function batchEvents(batch: readonly QueuedEvidenceRecord[]): EvidenceEventInput
   return batch.map(record => record.event);
 }
 
+function batchPayload(
+  batchId: string,
+  events: readonly EvidenceEventInput[],
+  report: EvidenceQualityReport | null
+): EvidenceBatchPayload {
+  return report === null
+    ? { batch_id: batchId, events }
+    : { batch_id: batchId, events, quality_report: report };
+}
+
+// Quality observation must never change event delivery, so a failure to seal a report only means
+// this request carries none.
+function currentQualityReport(reports: EvidenceQualityReportLedger): EvidenceQualityReport | null {
+  try {
+    return reports.current();
+  } catch {
+    return null;
+  }
+}
+
+// An empty batch is a quality-only request. The report is captured once, so every retry of the
+// chunk resends the identical report_id and counts until a 2xx acknowledge or a non-retryable
+// refusal settles it.
 async function deliverChunk(
   dependencies: EvidenceCollectorDependencies,
   queue: EvidenceClientQueue,
-  batch: readonly QueuedEvidenceRecord[]
+  batch: readonly QueuedEvidenceRecord[],
+  reports: EvidenceQualityReportLedger
 ): Promise<"dequeue" | "retain"> {
   const batchId = dependencies.randomUUID();
+  let report = currentQualityReport(reports);
   let pending: readonly QueuedEvidenceRecord[] = batch;
   for (let attempt = 1; attempt <= EVIDENCE_MAX_SEND_ATTEMPTS; attempt += 1) {
-    const sendable = await queue.sendable(pending);
-    if (sendable === null) {
-      return "retain";
-    }
-    pending = sendable;
-    if (pending.length === 0) {
+    if (batch.length > 0) {
+      const sendable = await queue.sendable(pending);
+      if (sendable === null) {
+        return "retain";
+      }
+      pending = sendable;
+      if (pending.length === 0) {
+        return "dequeue";
+      }
+    } else if (report === null) {
       return "dequeue";
     }
-    const outcome = await sendSafely(dependencies.transport, {
-      batch_id: batchId,
-      events: batchEvents(pending)
-    });
+    const outcome = await sendSafely(
+      dependencies.transport,
+      batchPayload(batchId, batchEvents(pending), report)
+    );
+    if (report !== null && (isServerAcknowledged(outcome) || (!outcome.ok && !outcome.retryable))) {
+      reports.settle(report);
+      report = null;
+    }
     if (outcome.ok || !outcome.retryable) {
       return "dequeue";
     }
@@ -137,11 +182,17 @@ async function deliverChunk(
 
 export class EvidenceCollector {
   private readonly queue: EvidenceClientQueue;
+  private readonly qualityReports: EvidenceQualityReportLedger;
   private timer: unknown = null;
   private tail: Promise<void> = Promise.resolve();
 
   public constructor(private readonly dependencies: EvidenceCollectorDependencies) {
-    this.queue = new EvidenceClientQueue(dependencies.queueStore, dependencies.now, dependencies.observer ?? null);
+    this.qualityReports = dependencies.qualityReports ?? new EvidenceQualityReportLedger(dependencies.randomUUID);
+    this.queue = new EvidenceClientQueue(
+      dependencies.queueStore,
+      dependencies.now,
+      fanOutQueueObservers([this.qualityReports, dependencies.observer ?? null])
+    );
     void this.queue.restore().then(() => this.armFlushTriggers());
   }
 
@@ -178,18 +229,25 @@ export class EvidenceCollector {
   // membership, so a record another collector evicted after this one last reconciled may still be
   // handed off (the server dedupes by event_id). Everything handed off in one pagehide shares the
   // 64 KiB beacon budget; records beyond it, or in a batch the user agent refuses, stay queued.
+  // A pending quality_report rides on the first beacon (alone when nothing else is queued) but is
+  // never settled by the handoff, so a later normal flush resends the same report_id.
   public flushOnPageHide(): void {
     try {
-      const batches = beaconBoundedBatches(this.queue.terminalHandoffRecords(), EVIDENCE_BEACON_BUDGET_BYTES);
-      for (const batch of batches) {
-        const accepted = this.dependencies.beaconTransport.dispatch({
-          batch_id: this.dependencies.randomUUID(),
-          events: batchEvents(batch)
-        });
+      const records = this.queue.terminalHandoffRecords();
+      let report = currentQualityReport(this.qualityReports);
+      const budget = EVIDENCE_BEACON_BUDGET_BYTES - (report === null ? 0 : qualityReportRequestBytes(report));
+      for (const batch of beaconBoundedBatches(records, budget)) {
+        const accepted = this.dependencies.beaconTransport.dispatch(
+          batchPayload(this.dependencies.randomUUID(), batchEvents(batch), report)
+        );
         if (!accepted) {
           return;
         }
+        report = null;
         this.queue.remove(batch);
+      }
+      if (report !== null) {
+        this.dependencies.beaconTransport.dispatch(batchPayload(this.dependencies.randomUUID(), [], report));
       }
     } catch {
       return;
@@ -224,11 +282,33 @@ export class EvidenceCollector {
     this.timer = null;
   }
 
+  private reservedReportBytes(): number {
+    const report = currentQualityReport(this.qualityReports);
+    return report === null ? 0 : qualityReportRequestBytes(report);
+  }
+
+  // nextBatch purges expired records first, which can seal a new report the chunk must leave room for.
+  private nextChunk(): QueuedEvidenceRecord[] {
+    const reserved = this.reservedReportBytes();
+    const batch = this.queue.nextBatch(reserved);
+    const resealed = this.reservedReportBytes();
+    return resealed === reserved ? batch : this.queue.nextBatch(resealed);
+  }
+
+  // A pending quality_report rides on the first event chunk; it is sent alone only when this flush
+  // has no event to carry it.
   private async flushOwnedQueue(): Promise<void> {
     this.clearTimer();
     await this.queue.settled();
-    for (let batch = this.queue.nextBatch(); batch.length > 0; batch = this.queue.nextBatch()) {
-      const result = await deliverChunk(this.dependencies, this.queue, batch);
+    let batch = this.nextChunk();
+    if (batch.length === 0) {
+      if (this.qualityReports.hasPending()) {
+        await deliverChunk(this.dependencies, this.queue, [], this.qualityReports);
+      }
+      return;
+    }
+    for (; batch.length > 0; batch = this.nextChunk()) {
+      const result = await deliverChunk(this.dependencies, this.queue, batch, this.qualityReports);
       if (result === "retain") {
         this.ensureTimer();
         return;
@@ -242,15 +322,20 @@ export function createBrowserEvidenceCollector(
   options: BrowserEvidenceCollectorOptions = {}
 ): EvidenceCollector {
   const observer = options.observer ?? null;
+  const randomUUID = options.randomUUID ?? (() => globalThis.crypto.randomUUID());
+  const qualityReports = options.qualityReports ?? new EvidenceQualityReportLedger(randomUUID);
   return new EvidenceCollector({
     transport: options.transport ?? createBrowserEvidenceBatchTransport(options.fetch),
     beaconTransport: options.beaconTransport ?? createBrowserEvidenceBeaconTransport(),
-    queueStore: options.queueStore === undefined ? resolveBrowserEvidenceQueueStore(observer) : options.queueStore,
-    randomUUID: options.randomUUID ?? (() => globalThis.crypto.randomUUID()),
+    queueStore: options.queueStore === undefined
+      ? resolveBrowserEvidenceQueueStore(fanOutQueueObservers([qualityReports, observer]))
+      : options.queueStore,
+    randomUUID,
     now: options.now ?? (() => Date.now()),
     sleep: options.sleep ?? defaultSleep,
     jitter: options.jitter ?? (() => Math.random()),
     scheduler: options.scheduler ?? createBrowserEvidenceCollectorScheduler(),
-    observer
+    observer,
+    qualityReports
   });
 }

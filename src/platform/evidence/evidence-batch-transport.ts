@@ -1,3 +1,4 @@
+import type { EvidenceQualityReport } from "./evidence-quality-report.js";
 import type { EvidenceEventInput } from "./evidence-types.js";
 
 export const EVIDENCE_EVENTS_BATCH_PATH = "/api/v1/events/batch";
@@ -15,11 +16,18 @@ export const RETRYABLE_INGESTION_REJECTION_CODES = Object.freeze([
 export interface EvidenceBatchPayload {
   readonly batch_id: string;
   readonly events: readonly EvidenceEventInput[];
+  readonly quality_report?: EvidenceQualityReport;
 }
 
+// acknowledged: the server returned an HTTP 2xx canonical batch response, which confirms any
+// quality_report the request carried even when an event-level rejection is still retryable.
 export type EvidenceBatchTransportResult =
   | { readonly ok: true }
-  | { readonly ok: false; readonly retryable: boolean };
+  | { readonly ok: false; readonly retryable: boolean; readonly acknowledged?: boolean };
+
+export function isServerAcknowledged(result: EvidenceBatchTransportResult): boolean {
+  return result.ok || result.acknowledged === true;
+}
 
 export interface EvidenceBatchTransport {
   send(payload: EvidenceBatchPayload): Promise<EvidenceBatchTransportResult>;
@@ -36,10 +44,9 @@ export function isRetryableHttpStatus(status: number): boolean {
 }
 
 export function serializeEvidenceBatch(payload: EvidenceBatchPayload): string {
-  return JSON.stringify({
-    batch_id: payload.batch_id,
-    events: payload.events
-  });
+  return JSON.stringify(payload.quality_report === undefined
+    ? { batch_id: payload.batch_id, events: payload.events }
+    : { batch_id: payload.batch_id, events: payload.events, quality_report: payload.quality_report });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -81,7 +88,7 @@ function outcomeFromSuccessBody(body: unknown): EvidenceBatchTransportResult {
     return { ok: false, retryable: true };
   }
   if (hasRetryableIngestionRejection(rejections)) {
-    return { ok: false, retryable: true };
+    return { ok: false, retryable: true, acknowledged: true };
   }
   return { ok: true };
 }

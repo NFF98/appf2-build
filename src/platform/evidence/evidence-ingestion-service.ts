@@ -7,17 +7,14 @@ import type {
 import type {
   EvidenceBatchResult,
   EvidenceIntakeDiagnostic,
-  EvidenceRejection,
-  EvidenceRejectionCode
+  EvidenceRejection
 } from "./evidence-types.js";
 import {
   clockInvalidDiagnostic,
   isClockInvalid
 } from "./evidence-clock.js";
-import type {
-  EvidenceIntakeObservation,
-  EvidenceIntakeObserver
-} from "./evidence-observability.js";
+import { isProductionDeliverable } from "./evidence-queue-policy.js";
+import { lockedEvidenceRegistry, type EvidenceRegistry } from "./evidence-registry.js";
 import { validateEvidenceEvent } from "./evidence-validator.js";
 
 export interface EvidenceIngestionDependencies {
@@ -25,25 +22,7 @@ export interface EvidenceIngestionDependencies {
   readonly evidence: EvidenceRepository;
   readonly diagnostics: EvidenceIngestionDiagnostics;
   readonly now: () => Date;
-  readonly observer?: EvidenceIntakeObserver;
-}
-
-function intakeObservation(
-  received: number,
-  result: EvidenceBatchResult
-): EvidenceIntakeObservation {
-  const rejectionCodes: Partial<Record<EvidenceRejectionCode, number>> = {};
-  for (const { code } of result.rejections) {
-    rejectionCodes[code] = (rejectionCodes[code] ?? 0) + 1;
-  }
-  return {
-    received,
-    accepted: result.accepted,
-    duplicates: result.duplicates,
-    rejected: result.rejected,
-    clock_invalid: result.diagnostics.length,
-    rejection_codes: rejectionCodes
-  };
+  readonly registry?: EvidenceRegistry;
 }
 
 function eventIdOf(event: unknown): string | null {
@@ -63,7 +42,11 @@ function rejected(
 }
 
 export class EvidenceIngestionService {
-  public constructor(private readonly dependencies: EvidenceIngestionDependencies) {}
+  private readonly registry: EvidenceRegistry;
+
+  public constructor(private readonly dependencies: EvidenceIngestionDependencies) {
+    this.registry = dependencies.registry ?? lockedEvidenceRegistry;
+  }
 
   private async ensureIdentity(
     anonymousId: string,
@@ -95,9 +78,16 @@ export class EvidenceIngestionService {
 
     for (const candidate of events) {
       const serialized = JSON.stringify(candidate);
-      const validation = validateEvidenceEvent(candidate, serialized ?? "");
+      const validation = validateEvidenceEvent(candidate, serialized ?? "", this.registry);
       if (!validation.accepted) {
         rejections.push(validation.rejection);
+        continue;
+      }
+      // F07-RQ-009 step 13: collection-class production policy runs before identity ensure and
+      // product_event insert, so a DEBUG_ONLY event never touches either.
+      const entry = this.registry.find(validation.event.event_type);
+      if (entry !== undefined && !isProductionDeliverable(entry.collectionClass)) {
+        rejections.push(rejected(candidate, "F07-ERR-016"));
         continue;
       }
 
@@ -137,26 +127,12 @@ export class EvidenceIngestionService {
       }
     }
 
-    const result: EvidenceBatchResult = {
+    return {
       accepted,
       duplicates,
       rejected: rejections.length,
       rejections,
       diagnostics
     };
-    this.observe(events.length, result);
-    return result;
-  }
-
-  private observe(received: number, result: EvidenceBatchResult): void {
-    const observer = this.dependencies.observer;
-    if (observer === undefined) {
-      return;
-    }
-    try {
-      observer.observeIntake(intakeObservation(received, result));
-    } catch (error: unknown) {
-      this.dependencies.diagnostics.reportNonBlockingFailure(error);
-    }
   }
 }
