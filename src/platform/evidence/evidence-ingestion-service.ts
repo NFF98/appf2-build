@@ -7,12 +7,17 @@ import type {
 import type {
   EvidenceBatchResult,
   EvidenceIntakeDiagnostic,
-  EvidenceRejection
+  EvidenceRejection,
+  EvidenceRejectionCode
 } from "./evidence-types.js";
 import {
   clockInvalidDiagnostic,
   isClockInvalid
 } from "./evidence-clock.js";
+import type {
+  EvidenceIntakeObservation,
+  EvidenceIntakeObserver
+} from "./evidence-observability.js";
 import { validateEvidenceEvent } from "./evidence-validator.js";
 
 export interface EvidenceIngestionDependencies {
@@ -20,6 +25,25 @@ export interface EvidenceIngestionDependencies {
   readonly evidence: EvidenceRepository;
   readonly diagnostics: EvidenceIngestionDiagnostics;
   readonly now: () => Date;
+  readonly observer?: EvidenceIntakeObserver;
+}
+
+function intakeObservation(
+  received: number,
+  result: EvidenceBatchResult
+): EvidenceIntakeObservation {
+  const rejectionCodes: Partial<Record<EvidenceRejectionCode, number>> = {};
+  for (const { code } of result.rejections) {
+    rejectionCodes[code] = (rejectionCodes[code] ?? 0) + 1;
+  }
+  return {
+    received,
+    accepted: result.accepted,
+    duplicates: result.duplicates,
+    rejected: result.rejected,
+    clock_invalid: result.diagnostics.length,
+    rejection_codes: rejectionCodes
+  };
 }
 
 function eventIdOf(event: unknown): string | null {
@@ -113,12 +137,26 @@ export class EvidenceIngestionService {
       }
     }
 
-    return {
+    const result: EvidenceBatchResult = {
       accepted,
       duplicates,
       rejected: rejections.length,
       rejections,
       diagnostics
     };
+    this.observe(events.length, result);
+    return result;
+  }
+
+  private observe(received: number, result: EvidenceBatchResult): void {
+    const observer = this.dependencies.observer;
+    if (observer === undefined) {
+      return;
+    }
+    try {
+      observer.observeIntake(intakeObservation(received, result));
+    } catch (error: unknown) {
+      this.dependencies.diagnostics.reportNonBlockingFailure(error);
+    }
   }
 }
