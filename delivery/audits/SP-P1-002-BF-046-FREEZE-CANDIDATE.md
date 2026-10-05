@@ -1,7 +1,9 @@
 # SP-P1-002 / BF-046 — BS-P1-017 Freeze Candidate Audit
 
 - Source Design repo: NFF98/appf2-design
-- Canonical source commit: `3f006181e626c062561872e8a9dff4f47bd86740`
+- Canonical Working commit: `3f006181e626c062561872e8a9dff4f47bd86740`
+- Scope-clean derived freeze source: `6b5babe6e7ccc44b8f83731367aa8eece9c96364`
+- Freeze base: `336cc979e8645af6dfb04f72e07d4daf741d22c4`
 - Previous baseline: `BS-P1-016`
 - Replacement baseline: `BS-P1-017`
 - Human decision: Option A approved; centralized sender reviewed in Phase 4, default Phase 5 implementation.
