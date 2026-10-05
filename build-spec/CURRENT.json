@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-017",
-  "implementation_enabled": true,
-  "reason": "Human-authorized T008 Planning + Activation handoff passed independent BCE Activation Review. SP-P1-002 / T008 is active under locked BS-P1-017; Cursor execution remains a separate Human gate and has not been issued. T007 remains CLOSED; T009 remains PLANNED."
+  "implementation_enabled": false,
+  "reason": "BF-047 SPEC_AMBIGUITY temporarily blocks T008 under BS-P1-017 while Human-approved Evidence-quality observability semantics are frozen into replacement BS-P1-018. No Cursor execution until rebaseline activation/rebind."
 }

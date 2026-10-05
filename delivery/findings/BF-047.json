@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-047",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-017",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T008",
+  "expected": "F07 and DATA-MODEL must define complete, deterministic production observability, aggregate source/bucket/denominator/idempotence semantics, and server DEBUG_ONLY policy so F07-AC-027/028/029 are implementable without Cursor inventing Product semantics.",
+  "actual": "Independent BCE audit comment 5988784961 confirmed T008 candidate 27820de cannot complete AC-027/028/029 under BS-P1-017: pre-service rejections bypass the observer, queue drop/expiry has no locked server reporting path, six F07 quality metrics lack complete source semantics, and server DEBUG_ONLY behavior is undefined.",
+  "evidence": [
+    "Issue #245 audit 5988784961: T008 BLOCKED; AC-027 PARTIAL, AC-028 SCOPE_BLOCKER, AC-029 server SPEC_AMBIGUITY.",
+    "Human scope-expansion decision recorded in Issue #245 comment 5989184807.",
+    "Design PR #26 approved by Human and merged canonical as 82bd737ac5229fde218175c5d9baa67dfa6f281a.",
+    "Scope-clean freeze source 9c1e0c5f077663858530ac026fc55b9e20eddef2 starts from BS-P1-017 source 6b5babe6e7ccc44b8f83731367aa8eece9c96364 and changes exactly F07, DATA-MODEL-DETAILED, and Acceptance Registry for the approved T008 semantics."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T008_IMPLEMENTATION_THEN_BOUNDED_REMEDIATION_BCE",
+      "result": "SCOPE_AND_CONTRACT_GAP_CONFIRMED",
+      "evidence": "Cursor correctly HARD STOPPED without remediation commit; independent audit confirmed production wiring and locked semantic gaps."
+    }
+  ],
+  "requested_planning_action": [
+    "Freeze the Human-approved Design PR #26 semantics into replacement BS-P1-018.",
+    "Rebind SP-P1-002 / T008 to BS-P1-018 and expand T008 implementation scope to include src/edge/events-batch.ts plus the minimum app-owned production composition/wiring path required by AC-028.",
+    "Resume only to the pre-Cursor execution gate; Cursor execution remains separately Human-approved."
+  ],
+  "affected_contracts": [
+    "F07-API-001 batch quality_report extension",
+    "F07-RQ-009 collection class production policy",
+    "F07 §42 Evidence Quality Metrics",
+    "DATA-MODEL §6.11 evidence_daily_aggregate",
+    "DATA-MODEL §6.11A evidence_intake_observation",
+    "DATA-MODEL §6.11B evidence_client_quality_report"
+  ],
+  "affected_acceptance": [
+    "F07-AC-027",
+    "F07-AC-028",
+    "F07-AC-029"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-018"
+}
