@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-017",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T007",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-05T02:00:18Z",
+  "blocking_findings": [],
+  "source_commit": "e9680ea14631909a1d80a8a76799d1906695d569",
+  "evidence_id": "EV-SP-P1-002-T007-006",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37252675014#product-ci-test-behavior-pass",
+  "command": "npm run test:behavior",
+  "review_checks": null
+}
