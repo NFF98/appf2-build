@@ -662,7 +662,7 @@
         "BL-P1-033"
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-018",
       "scope": [
         "Implement executable 90-day raw product_event retention/deletion behavior while preserving bounded non-identifying aggregate truth.",
@@ -729,7 +729,20 @@
       "parallel_safe": false,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-002-T008-001",
+        "EV-SP-P1-002-T008-002",
+        "EV-SP-P1-002-T008-003",
+        "EV-SP-P1-002-T008-004",
+        "EV-SP-P1-002-T008-005",
+        "EV-SP-P1-002-T008-006",
+        "EV-SP-P1-002-T008-007",
+        "EV-SP-P1-002-T008-008",
+        "EV-SP-P1-002-T008-009",
+        "EV-SP-P1-002-T008-010",
+        "EV-SP-P1-002-T008-011",
+        "EV-SP-P1-002-T008-014"
+      ]
     },
     {
       "task_id": "T009",
