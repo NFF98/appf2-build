@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-017",
-  "implementation_enabled": true,
-  "reason": "Human-approved BCE rebaseline activation of BS-P1-017 for SP-P1-002 / T007 after BF-046 resolution. T007 is restored to IN_PROGRESS; Cursor implementation remains a separate fresh Human gate and has not been issued."
+  "implementation_enabled": false,
+  "reason": "Human-approved T007 final closure complete under locked BS-P1-017 after implementation PR #249, Evidence normalization PR #250 and closure REVIEW PR #251. Execution is HOLD; T008/T009 remain unactivated."
 }
