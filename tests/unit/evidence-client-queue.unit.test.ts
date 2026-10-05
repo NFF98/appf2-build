@@ -2,10 +2,13 @@ import { afterEach, describe, expect, test } from "vitest";
 
 import {
   createBrowserEvidenceBeaconTransport,
+  EVIDENCE_BEACON_BUDGET_BYTES,
   serializeEvidenceBatch
 } from "../../src/platform/evidence/evidence-batch-transport.js";
 import {
   admitEvidenceEvent,
+  batchRequestBytes,
+  beaconBoundedBatches,
   EVIDENCE_QUEUE_LIMITS,
   EvidenceClientQueue,
   type AdmittedEvidenceEvent,
@@ -174,6 +177,30 @@ describe("EvidenceClientQueue request-bounded batches", () => {
     expect(large.batches().map(batch => batch.length)).toEqual([32, 8]);
   });
 
+  test("beacon batches share one cumulative beacon budget far below the 256 KiB request bound", () => {
+    const large = createQueue().queue;
+    for (let index = 1; index <= 40; index += 1) {
+      large.enqueue(syntheticEvent(index, "CORE_OUTCOME", RECORD_BYTES));
+    }
+    const normal = large.batches();
+    expect(normal.map(batch => batch.length)).toEqual([31, 9]);
+    expect(batchRequestBytes(normal[0] ?? [])).toBeGreaterThan(EVIDENCE_BEACON_BUDGET_BYTES);
+    const beacon = Array.from(beaconBoundedBatches(normal.flat(), EVIDENCE_BEACON_BUDGET_BYTES));
+    expect(beacon.map(batch => batch.length)).toEqual([7]);
+    expect(beacon[0]).toEqual(normal[0]?.slice(0, 7));
+    expect(batchRequestBytes(beacon[0] ?? [])).toBeLessThanOrEqual(EVIDENCE_BEACON_BUDGET_BYTES);
+
+    const medium = createQueue().queue;
+    for (let index = 1; index <= 100; index += 1) {
+      medium.enqueue(syntheticEvent(index, "CORE_OUTCOME", 1000));
+    }
+    const shared = Array.from(beaconBoundedBatches(medium.batches().flat(), EVIDENCE_BEACON_BUDGET_BYTES));
+    expect(shared.map(batch => batch.length)).toEqual([50, 15]);
+    expect(shared.reduce((sum, batch) => sum + batchRequestBytes(batch), 0))
+      .toBeLessThanOrEqual(EVIDENCE_BEACON_BUDGET_BYTES);
+    expect(Array.from(beaconBoundedBatches(medium.batches().flat(), 1000))).toEqual([]);
+  });
+
   test("batch byte accounting equals the serialized batch request bytes", () => {
     const { queue } = createQueue();
     queue.enqueue(admitted(coreOutcomeEvent(1)));
@@ -237,28 +264,34 @@ describe("Evidence queue IndexedDB store", () => {
     }
   });
 
-  test("load deletes malformed entries, entries without payloads and orphan payloads", async () => {
+  test("load deletes malformed and expired entries with their payloads, entries without payloads and orphan payloads", async () => {
     const factory = new FakeIndexedDbFactory();
     await ensureQueueDatabase(factory);
     const database = factory.database(EVIDENCE_QUEUE_DATABASE.name);
     const entries = database.records(EVIDENCE_QUEUE_DATABASE.entryStore);
     const payloads = database.records(EVIDENCE_QUEUE_DATABASE.payloadStore);
+    const now = QUEUE_T0 + EVIDENCE_QUEUE_LIMITS.ttlMs;
     const valid = { eventId: "ok", enqueuedAt: QUEUE_T0, collectionClass: "CORE_OUTCOME", bytes: 7 };
-    entries.set("ok", valid);
-    payloads.set("ok", { eventId: "ok", serialized: '{"a":1}' });
-    entries.set("bad-class", { ...valid, eventId: "bad-class", collectionClass: "UNKNOWN" });
-    entries.set("negative-bytes", { ...valid, eventId: "negative-bytes", bytes: -7 });
-    entries.set("bad-time", { ...valid, eventId: "bad-time", enqueuedAt: "yesterday" });
+    const withPayload = (eventId: string, entryValue: unknown): void => {
+      entries.set(eventId, entryValue);
+      payloads.set(eventId, { eventId, serialized: '{"a":1}' });
+    };
+    withPayload("ok", valid);
+    withPayload("bad-class", { ...valid, eventId: "bad-class", collectionClass: "UNKNOWN" });
+    withPayload("negative-bytes", { ...valid, eventId: "negative-bytes", bytes: -7 });
+    withPayload("bad-time", { ...valid, eventId: "bad-time", enqueuedAt: "yesterday" });
+    withPayload("expired", { ...valid, eventId: "expired", enqueuedAt: QUEUE_T0 - 1 });
     entries.set("no-payload", { ...valid, eventId: "no-payload" });
     payloads.set("bad-payload", { eventId: "bad-payload", serialized: 42 });
     entries.set("bad-payload", { ...valid, eventId: "bad-payload" });
     payloads.set("orphan", { eventId: "orphan", serialized: "{}" });
+    expect(payloads.size).toBe(7);
 
-    const records = await createIndexedDbEvidenceQueueStore(factory).load(QUEUE_T0);
+    const records = await createIndexedDbEvidenceQueueStore(factory).load(now);
 
     expect(records).toEqual([{ entry: valid, serialized: '{"a":1}' }]);
     expect([...database.records(EVIDENCE_QUEUE_DATABASE.entryStore).keys()]).toEqual(["ok"]);
-    expect([...database.records(EVIDENCE_QUEUE_DATABASE.payloadStore).keys()].sort()).toEqual(["ok", "orphan"]);
+    expect([...database.records(EVIDENCE_QUEUE_DATABASE.payloadStore).keys()]).toEqual(["ok"]);
   });
 
   test("storage write failure never blocks emit and the event stays queued in memory", async () => {
@@ -349,6 +382,27 @@ describe("Evidence beacon transport", () => {
         throw new TypeError("Illegal invocation");
       }
     }).dispatch(payload)).toBe(false);
+  });
+
+  test("never passes a body larger than the beacon budget to sendBeacon", () => {
+    const sizes: number[] = [];
+    const navigator = {
+      sendBeacon(_url: string | URL, data?: BodyInit | null) {
+        sizes.push((data as Blob).size);
+        return true;
+      }
+    };
+    const transport = createBrowserEvidenceBeaconTransport(navigator);
+    const atBudget = (padding: number) => ({
+      batch_id: payload.batch_id,
+      events: [{ ...coreOutcomeEvent(1), properties: { source_capsule_id: "x".repeat(padding) } }]
+    });
+    const padding = EVIDENCE_BEACON_BUDGET_BYTES - byteLength(serializeEvidenceBatch(atBudget(0)));
+
+    expect(transport.dispatch(atBudget(padding + 1))).toBe(false);
+    expect(sizes).toEqual([]);
+    expect(transport.dispatch(atBudget(padding))).toBe(true);
+    expect(sizes).toEqual([EVIDENCE_BEACON_BUDGET_BYTES]);
   });
 
   test("invokes sendBeacon on the navigator with the JSON batch body", async () => {

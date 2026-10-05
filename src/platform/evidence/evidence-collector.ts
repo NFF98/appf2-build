@@ -1,6 +1,7 @@
 import {
   createBrowserEvidenceBatchTransport,
   createBrowserEvidenceBeaconTransport,
+  EVIDENCE_BEACON_BUDGET_BYTES,
   type EvidenceBatchPayload,
   type EvidenceBatchTransport,
   type EvidenceBatchTransportResult,
@@ -8,8 +9,9 @@ import {
 } from "./evidence-batch-transport.js";
 import {
   admitEvidenceEvent,
+  batchRequestBytes,
+  beaconBoundedBatches,
   EvidenceClientQueue,
-  requestBoundedBatches,
   type QueuedEvidenceRecord
 } from "./evidence-client-queue.js";
 import {
@@ -175,18 +177,20 @@ export class EvidenceCollector {
 
   // Best-effort, no retries. Records no other collector can evict are handed to sendBeacon
   // synchronously inside pagehide; records in the shared durable queue are handed off only after
-  // one durable transaction confirms another collector has not evicted them. Batches the user agent
-  // refuses stay queued for the next session.
+  // one durable transaction confirms another collector has not evicted them. Everything handed off
+  // in one pagehide shares the beacon budget; records beyond it, or in a batch the user agent
+  // refuses, stay queued for the next session.
   public flushOnPageHide(): void {
     try {
       const { unshared, shared } = this.queue.pageHideCandidates();
-      if (!this.handOffToBeacon(unshared) || shared.length === 0) {
+      const remainingBudget = this.handOffToBeacon(unshared, EVIDENCE_BEACON_BUDGET_BYTES);
+      if (remainingBudget === null || shared.length === 0) {
         return;
       }
       const handoff = this.queue.sendable(shared)
         .then(verified => {
           if (verified !== null) {
-            this.handOffToBeacon(verified);
+            this.handOffToBeacon(verified, remainingBudget);
           }
         })
         .catch(() => undefined);
@@ -196,18 +200,24 @@ export class EvidenceCollector {
     }
   }
 
-  private handOffToBeacon(records: readonly QueuedEvidenceRecord[]): boolean {
-    for (const batch of requestBoundedBatches(records)) {
-      const handedOff = this.dependencies.beaconTransport.dispatch({
+  // Returns the unused budget once every record was handed off, or null when the user agent refused
+  // a batch or the budget ran out first.
+  private handOffToBeacon(records: readonly QueuedEvidenceRecord[], budgetBytes: number): number | null {
+    let remaining = budgetBytes;
+    let handedOff = 0;
+    for (const batch of beaconBoundedBatches(records, budgetBytes)) {
+      const accepted = this.dependencies.beaconTransport.dispatch({
         batch_id: this.dependencies.randomUUID(),
         events: batchEvents(batch)
       });
-      if (!handedOff) {
-        return false;
+      if (!accepted) {
+        return null;
       }
       this.queue.remove(batch);
+      remaining -= batchRequestBytes(batch);
+      handedOff += batch.length;
     }
-    return true;
+    return handedOff === records.length ? remaining : null;
   }
 
   private ensureTimer(): void {

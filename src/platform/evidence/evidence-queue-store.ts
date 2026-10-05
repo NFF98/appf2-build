@@ -207,13 +207,22 @@ function liveIdsInTransaction(database: EvidenceIdbDatabase, now: number): Promi
   });
 }
 
-function payloadsById(stores: QueueStores, values: readonly unknown[]): Map<string, string> {
+// Payloads that are malformed or belong to no live entry are deleted, so payload storage never
+// holds data outside the bounded entry accounting.
+function livePayloadsById(
+  stores: QueueStores,
+  values: readonly unknown[],
+  liveIds: ReadonlySet<string>
+): Map<string, string> {
   const payloads = new Map<string, string>();
   for (const value of values) {
     const key = storedKey(value);
-    if (key !== null && isRecord(value) && typeof value.serialized === "string") {
+    if (key === null) {
+      continue;
+    }
+    if (liveIds.has(key) && isRecord(value) && typeof value.serialized === "string") {
       payloads.set(key, value.serialized);
-    } else if (key !== null) {
+    } else {
       stores.payloads.delete(key);
     }
   }
@@ -228,7 +237,7 @@ function loadInTransaction(
     readLiveEntries(stores, now, live => {
       const request = stores.payloads.getAll();
       request.onsuccess = () => {
-        const payloads = payloadsById(stores, request.result);
+        const payloads = livePayloadsById(stores, request.result, new Set(live.map(entry => entry.eventId)));
         const records: DurableEvidenceRecord[] = [];
         for (const entry of live) {
           const serialized = payloads.get(entry.eventId);

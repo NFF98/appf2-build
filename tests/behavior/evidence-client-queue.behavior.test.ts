@@ -1,9 +1,13 @@
 import { describe, expect, test } from "vitest";
 
+import {
+  EVIDENCE_BEACON_BUDGET_BYTES,
+  serializeEvidenceBatch
+} from "../../src/platform/evidence/evidence-batch-transport.js";
 import { EVIDENCE_QUEUE_LIMITS } from "../../src/platform/evidence/evidence-client-queue.js";
 import { bindEvidencePageLifecycle } from "../../src/platform/evidence/evidence-page-lifecycle.js";
 import type { EvidenceEventInput } from "../../src/platform/evidence/evidence-types.js";
-import { isUuid } from "../../src/platform/evidence/evidence-validator.js";
+import { EVIDENCE_LIMITS, isUuid } from "../../src/platform/evidence/evidence-validator.js";
 import { createScriptedFetch } from "../unit/evidence-collector-test-support.js";
 import { FakeIndexedDbFactory } from "../unit/evidence-fake-indexeddb.js";
 import {
@@ -17,6 +21,7 @@ import {
   eventIds,
   hangingFetch,
   HOUR_MS,
+  largestValidEvent,
   ManualClock,
   offlineFetch,
   productSampleEvent,
@@ -160,6 +165,78 @@ async function provePageHideHandsOffMemoryOnlyRecordsSynchronously(): Promise<vo
   expect(await beaconedEventIds(beacon.beacons)).toEqual(eventIds(events));
 }
 
+function memoryOnlyPageHideCollector(beacon: ReturnType<typeof createRecordingNavigator>) {
+  const factory = new FakeIndexedDbFactory();
+  factory.failWrites = true;
+  const collector = createDurableTestCollector({
+    fetch: hangingFetch(),
+    factory,
+    clock: new ManualClock(QUEUE_T0),
+    navigator: beacon.navigator
+  });
+  const targets = lifecycleTargets();
+  bindEvidencePageLifecycle(collector, targets);
+  return { collector, targets };
+}
+
+async function provePageHideStaysWithinBeaconBudget(): Promise<void> {
+  const beacon = createRecordingNavigator();
+  const { collector, targets } = memoryOnlyPageHideCollector(beacon);
+  const events = Array.from({ length: 50 }, (_, index) => largestValidEvent(index + 1));
+  events.forEach(event => collector.emit(event));
+  await collector.settled();
+  expect(collector.queuedCount()).toBe(50);
+  const normalRequestBytes = new TextEncoder().encode(serializeEvidenceBatch({
+    batch_id: "bbbbbbbb-cccc-4ddd-8eee-000000000000",
+    events
+  })).byteLength;
+  expect(normalRequestBytes).toBeGreaterThan(EVIDENCE_BEACON_BUDGET_BYTES);
+  expect(normalRequestBytes).toBeLessThanOrEqual(EVIDENCE_LIMITS.requestBytes);
+
+  const handedOffPerPageHide: number[] = [];
+  while (collector.queuedCount() > 0 && handedOffPerPageHide.length < events.length) {
+    const before = collector.queuedCount();
+    const firstBeacon = beacon.beacons.length;
+    targets.window.dispatchEvent(new Event("pagehide"));
+    const sent = beacon.beacons.slice(firstBeacon);
+    expect(sent.every(attempt => attempt.accepted)).toBe(true);
+    expect(sent.reduce((sum, attempt) => sum + attempt.bytes, 0)).toBeLessThanOrEqual(EVIDENCE_BEACON_BUDGET_BYTES);
+    handedOffPerPageHide.push(before - collector.queuedCount());
+    beacon.completeInFlight();
+  }
+
+  expect(handedOffPerPageHide.length).toBeGreaterThan(1);
+  expect(handedOffPerPageHide.every(count => count > 0)).toBe(true);
+  expect(await beaconedEventIds(beacon.beacons)).toEqual(eventIds(events));
+}
+
+async function provePartiallyAcceptedPageHideRetainsRefusedRecords(): Promise<void> {
+  const events = Array.from({ length: 60 }, (_, index) => coreOutcomeEvent(index + 1));
+  const firstBatchBytes = new TextEncoder().encode(serializeEvidenceBatch({
+    batch_id: "bbbbbbbb-cccc-4ddd-8eee-000000000000",
+    events: events.slice(0, 50)
+  })).byteLength;
+  const beacon = createRecordingNavigator([], {
+    foreignInFlightBytes: EVIDENCE_BEACON_BUDGET_BYTES - firstBatchBytes
+  });
+  const { collector, targets } = memoryOnlyPageHideCollector(beacon);
+  events.forEach(event => collector.emit(event));
+  await collector.settled();
+
+  targets.window.dispatchEvent(new Event("pagehide"));
+
+  expect(beacon.beacons.map(attempt => attempt.accepted)).toEqual([true, false]);
+  expect(beacon.beacons[0]?.bytes).toBe(firstBatchBytes);
+  expect(await beaconedEventIds(beacon.beacons.slice(0, 1))).toEqual(eventIds(events.slice(0, 50)));
+  expect(eventIds(collector.queuedEvents())).toEqual(eventIds(events.slice(50)));
+
+  beacon.completeInFlight();
+  targets.window.dispatchEvent(new Event("pagehide"));
+  expect(beacon.beacons.map(attempt => attempt.accepted)).toEqual([true, false, true]);
+  expect(await beaconedEventIds(beacon.beacons.slice(2))).toEqual(eventIds(events.slice(50)));
+  expect(collector.queuedCount()).toBe(0);
+}
+
 async function proveRefusedPageHideKeepsDurableQueue(events: readonly EvidenceEventInput[]): Promise<void> {
   const factory = new FakeIndexedDbFactory();
   const clock = new ManualClock(QUEUE_T0);
@@ -235,6 +312,8 @@ describe("F07 durable client evidence queue", () => {
     const events = Array.from({ length: 60 }, (_, index) => coreOutcomeEvent(index + 1));
     await provePageHideHandsOffBatches(events);
     await provePageHideHandsOffMemoryOnlyRecordsSynchronously();
+    await provePageHideStaysWithinBeaconBudget();
+    await provePartiallyAcceptedPageHideRetainsRefusedRecords();
     await proveRefusedPageHideKeepsDurableQueue(events);
   });
 

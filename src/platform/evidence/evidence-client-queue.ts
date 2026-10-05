@@ -129,27 +129,55 @@ function matchesPersistedEntry(admitted: AdmittedEvidenceEvent, entry: EvidenceQ
     admitted.bytes === entry.bytes;
 }
 
-export function* requestBoundedBatches(
-  records: Iterable<QueuedEvidenceRecord>
+export function batchRequestBytes(batch: readonly QueuedEvidenceRecord[]): number {
+  return batch.reduce((sum, record) => sum + record.bytes, BATCH_ENVELOPE_BYTES + batch.length - 1);
+}
+
+// Splits records in order into batches of at most 50 events and requestByteLimit bytes each, and
+// stops before the first record that would push the combined bytes of every yielded batch past
+// totalByteLimit. Each batch's bytes are charged only once the consumer resumes past it.
+function* boundedBatches(
+  records: Iterable<QueuedEvidenceRecord>,
+  requestByteLimit: number,
+  totalByteLimit: number
 ): Generator<QueuedEvidenceRecord[]> {
+  let remaining = totalByteLimit;
   let batch: QueuedEvidenceRecord[] = [];
   let requestBytes = BATCH_ENVELOPE_BYTES;
   for (const record of records) {
     const full = batch.length > 0 && (
       batch.length === EVIDENCE_LIMITS.batchEvents ||
-      requestBytes + 1 + record.bytes > EVIDENCE_LIMITS.requestBytes
+      requestBytes + 1 + record.bytes > requestByteLimit
     );
     if (full) {
       yield batch;
+      remaining -= requestBytes;
       batch = [];
       requestBytes = BATCH_ENVELOPE_BYTES;
     }
-    requestBytes += (batch.length === 0 ? 0 : 1) + record.bytes;
+    const added = (batch.length === 0 ? 0 : 1) + record.bytes;
+    if (requestBytes + added > remaining) {
+      break;
+    }
+    requestBytes += added;
     batch.push(record);
   }
   if (batch.length > 0) {
     yield batch;
   }
+}
+
+export function requestBoundedBatches(
+  records: Iterable<QueuedEvidenceRecord>
+): Generator<QueuedEvidenceRecord[]> {
+  return boundedBatches(records, EVIDENCE_LIMITS.requestBytes, Number.POSITIVE_INFINITY);
+}
+
+export function beaconBoundedBatches(
+  records: Iterable<QueuedEvidenceRecord>,
+  budgetBytes: number
+): Generator<QueuedEvidenceRecord[]> {
+  return boundedBatches(records, Math.min(budgetBytes, EVIDENCE_LIMITS.requestBytes), budgetBytes);
 }
 
 // The shared 200-event / 1 MiB bound, TTL purge and overflow priority are decided atomically by

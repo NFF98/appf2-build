@@ -2,6 +2,10 @@ import type { EvidenceEventInput } from "./evidence-types.js";
 
 export const EVIDENCE_EVENTS_BATCH_PATH = "/api/v1/events/batch";
 
+// The Fetch Standard caps the bodies of all in-flight keepalive requests of a document, which
+// sendBeacon shares, at 64 KiB; the user agent refuses anything beyond it outright.
+export const EVIDENCE_BEACON_BUDGET_BYTES = 64 * 1024;
+
 export const RETRYABLE_INGESTION_REJECTION_CODES = Object.freeze([
   "F07-ERR-008",
   "F07-ERR-009",
@@ -127,7 +131,8 @@ export function createBrowserEvidenceBeaconTransport(
       }
       try {
         const body = new Blob([serializeEvidenceBatch(payload)], { type: "application/json" });
-        return navigatorImpl.sendBeacon(EVIDENCE_EVENTS_BATCH_PATH, body);
+        return body.size <= EVIDENCE_BEACON_BUDGET_BYTES &&
+          navigatorImpl.sendBeacon(EVIDENCE_EVENTS_BATCH_PATH, body);
       } catch {
         return false;
       }

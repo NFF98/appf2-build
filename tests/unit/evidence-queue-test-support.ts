@@ -1,5 +1,6 @@
 import {
   createBrowserEvidenceBeaconTransport,
+  EVIDENCE_BEACON_BUDGET_BYTES,
   type EvidenceBeaconNavigator
 } from "../../src/platform/evidence/evidence-batch-transport.js";
 import { admitEvidenceEvent } from "../../src/platform/evidence/evidence-client-queue.js";
@@ -91,20 +92,40 @@ export class ManualClock {
 export interface RecordedBeacon {
   readonly url: string;
   readonly type: string;
+  readonly bytes: number;
+  readonly accepted: boolean;
   readonly body: Promise<string>;
 }
 
-export function createRecordingNavigator(results: readonly boolean[] = []) {
+// Models the user agent's keepalive quota: an accepted beacon stays in flight, counting against the
+// 64 KiB budget, until completeInFlight(); a beacon that does not fit the remaining quota is refused.
+// Scripted results can additionally refuse beacons that would fit.
+export function createRecordingNavigator(
+  results: readonly boolean[] = [],
+  options: { readonly foreignInFlightBytes?: number } = {}
+) {
   const remaining = [...results];
   const beacons: RecordedBeacon[] = [];
+  let inFlightBytes = options.foreignInFlightBytes ?? 0;
   const navigator: EvidenceBeaconNavigator = {
     sendBeacon(url, data) {
       const blob = data instanceof Blob ? data : new Blob([]);
-      beacons.push({ url: String(url), type: blob.type, body: blob.text() });
-      return remaining.shift() ?? true;
+      const scripted = remaining.shift() ?? true;
+      const accepted = scripted && inFlightBytes + blob.size <= EVIDENCE_BEACON_BUDGET_BYTES;
+      if (accepted) {
+        inFlightBytes += blob.size;
+      }
+      beacons.push({ url: String(url), type: blob.type, bytes: blob.size, accepted, body: blob.text() });
+      return accepted;
     }
   };
-  return { navigator, beacons };
+  return {
+    navigator,
+    beacons,
+    completeInFlight(): void {
+      inFlightBytes = 0;
+    }
+  };
 }
 
 export async function beaconPayload(beacon: RecordedBeacon): Promise<{
@@ -206,6 +227,39 @@ export function reliabilityEvent(index: number): EvidenceEventInput {
       blueprint_schema_version: "1.0.0",
       registry_version: "7.0.0",
       validation_stage: "V05"
+    }
+  };
+}
+
+// The locked registry caps every envelope and property string, so no valid event approaches the
+// 8 KiB event bound; this fills every optional envelope field and property to its maximum.
+export function largestValidEvent(index: number): EvidenceEventInput {
+  const maxSemVer = `1.0.0-${"a".repeat(250)}`;
+  return {
+    event_id: fixtureEventId(4, index),
+    event_type: "F01-EVT-001",
+    schema_version: "2.0.0",
+    occurred_at: "2026-10-05T00:00:00.000Z",
+    function_id: "F01",
+    anonymous_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    session_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    intent_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    share_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    blueprint_hash: `sha256:${"b".repeat(64)}`,
+    capability_id: `${"c".repeat(127)}.${"d".repeat(128)}`,
+    error_code: `E${"X".repeat(63)}`,
+    policy_rule_id: `P${"r".repeat(127)}`,
+    trace_id: "f".repeat(32),
+    properties: {
+      intent_kind: "CREATE",
+      policy_version: `p${"v".repeat(63)}`,
+      prompt_version: `p${"v".repeat(63)}`,
+      blueprint_schema_version: maxSemVer,
+      registry_version: maxSemVer,
+      model_adapter: `m${"a".repeat(63)}`,
+      attempt_no: 255,
+      latency_ms: 2147483647,
+      coverage_status: "EXTERNAL_OR_HEAVY_REQUIRED"
     }
   };
 }
