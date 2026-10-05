@@ -596,7 +596,7 @@
         "BL-P1-033"
       ],
       "title": "Implement durable client evidence queue, expiry, overflow priority and pagehide flush",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-016",
       "scope": [
         "Add durable client evidence buffering with maximum 24-hour TTL and bounded queue/storage limits.",

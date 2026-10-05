@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-046",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-016",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T007",
+  "expected": "F07 must define deterministic precedence between terminal pagehide best-effort handoff and shared durable-queue cross-tab eviction so TEST-F07-AC-018 can prove real browser-safe handoff without inventing semantics.",
+  "actual": "BCE audit of T007 candidate 867107dbc06b7a0d7f3084a5f5f8d8df9ef2707b found that strict fresh IndexedDB membership verification is asynchronous and cannot be required before a terminal pagehide sendBeacon handoff; BS-P1-016 did not define which behavior wins in the narrow cross-tab eviction race.",
+  "evidence": [
+    "Issue #245 EXECUTE comment 5985787466 required browser-safe terminal handoff and HARD STOP on semantic tension.",
+    "Issue #245 RESULT comment 5985861303 correctly HARD STOPPED AUDIT-FIX-6 while fixing AUDIT-FIX-7/8 at candidate 867107dbc06b7a0d7f3084a5f5f8d8df9ef2707b.",
+    "Human explicitly approved Option A on 2026-10-05: terminal pagehide handoff wins for the narrow race; normal flush/retry retains durable membership semantics.",
+    "Human also required the stronger centralized sender design to be reviewed in Phase 4 and implemented by Phase 5 if not promoted earlier.",
+    "Design PR #24 merged as 3f006181e626c062561872e8a9dff4f47bd86740 and changes only F07 Working Current Truth."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T007_BCE_IMPLEMENTATION_PLUS_INDEPENDENT_BROWSER_LIFECYCLE_AUDIT",
+      "result": "CONTRACT_PRECEDENCE_GAP_CONFIRMED",
+      "evidence": "Candidate 867107d preserves shared durable eviction finality by awaiting IndexedDB before durable pagehide beacon; this cannot prove synchronous terminal handoff."
+    }
+  ],
+  "requested_planning_action": [
+    "Freeze the Human-approved Option A terminal lifecycle precedence into a replacement Build Spec.",
+    "Rebind SP-P1-002 / T007 to the replacement baseline and resume to the pre-Cursor execution gate.",
+    "Track centralized browser Evidence delivery coordination as Phase 4 mandatory architecture review with Phase 5 default implementation."
+  ],
+  "affected_contracts": [
+    "F07-RQ-006 Client Event Buffer",
+    "F07-POL-006 Offline / Unsent Queue precedence",
+    "F07-AC-018 pagehide best-effort flush"
+  ],
+  "affected_acceptance": [
+    "F07-AC-018"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-017"
+}
