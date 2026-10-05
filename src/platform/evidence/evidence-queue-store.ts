@@ -312,14 +312,28 @@ function removeInTransaction(
   });
 }
 
-function openDatabase(factory: EvidenceIdbFactory): Promise<EvidenceIdbDatabase> {
+export interface EvidenceIdbSchema {
+  readonly name: string;
+  readonly version: number;
+  readonly storeNames: readonly string[];
+  readonly keyPath: string;
+}
+
+const EVIDENCE_QUEUE_SCHEMA: EvidenceIdbSchema = Object.freeze({
+  name: EVIDENCE_QUEUE_DATABASE.name,
+  version: EVIDENCE_QUEUE_DATABASE.version,
+  storeNames: Object.freeze([EVIDENCE_QUEUE_DATABASE.entryStore, EVIDENCE_QUEUE_DATABASE.payloadStore]),
+  keyPath: "eventId"
+});
+
+function openDatabase(factory: EvidenceIdbFactory, schema: EvidenceIdbSchema): Promise<EvidenceIdbDatabase> {
   return new Promise((resolve, reject) => {
-    const request = factory.open(EVIDENCE_QUEUE_DATABASE.name, EVIDENCE_QUEUE_DATABASE.version);
+    const request = factory.open(schema.name, schema.version);
     request.onupgradeneeded = () => {
       const database = request.result;
-      for (const name of [EVIDENCE_QUEUE_DATABASE.entryStore, EVIDENCE_QUEUE_DATABASE.payloadStore]) {
+      for (const name of schema.storeNames) {
         if (!database.objectStoreNames.contains(name)) {
-          database.createObjectStore(name, { keyPath: "eventId" });
+          database.createObjectStore(name, { keyPath: schema.keyPath });
         }
       }
     };
@@ -327,22 +341,22 @@ function openDatabase(factory: EvidenceIdbFactory): Promise<EvidenceIdbDatabase>
       resolve(request.result);
     };
     request.onerror = () => {
-      reject(request.error ?? new DOMException("Evidence queue database unavailable.", "UnknownError"));
+      reject(request.error ?? new DOMException(`${schema.name} database unavailable.`, "UnknownError"));
     };
     request.onblocked = () => {
-      reject(new DOMException("Evidence queue database upgrade blocked.", "UnknownError"));
+      reject(new DOMException(`${schema.name} database upgrade blocked.`, "UnknownError"));
     };
   });
 }
 
-// One connection per collector; a failed open is retried by the next operation rather than cached.
-export function createIndexedDbEvidenceQueueStore(
+// One connection per store instance; a failed open is retried by the next operation rather than cached.
+export function evidenceIdbConnection(
   factory: EvidenceIdbFactory,
-  observer: EvidenceQueueObserver | null = null
-): EvidenceQueueStore {
+  schema: EvidenceIdbSchema
+): () => Promise<EvidenceIdbDatabase> {
   let connection: Promise<EvidenceIdbDatabase> | null = null;
-  const database = (): Promise<EvidenceIdbDatabase> => {
-    connection ??= openDatabase(factory).then(
+  return () => {
+    connection ??= openDatabase(factory, schema).then(
       opened => {
         opened.onversionchange = () => {
           opened.close();
@@ -357,6 +371,13 @@ export function createIndexedDbEvidenceQueueStore(
     );
     return connection;
   };
+}
+
+export function createIndexedDbEvidenceQueueStore(
+  factory: EvidenceIdbFactory,
+  observer: EvidenceQueueObserver | null = null
+): EvidenceQueueStore {
+  const database = evidenceIdbConnection(factory, EVIDENCE_QUEUE_SCHEMA);
   return {
     async admit(record, now) {
       return admitInTransaction(await database(), observer, record, now);
