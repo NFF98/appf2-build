@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_date": "2026-10-05",
+  "updated_date": "2026-10-04",
   "purpose": "Canonical carry-forward ledger for project-level unresolved items that are not fully owned by an active Backlog/Task/Finding. Do not duplicate Product truth.",
   "status_values": [
     "OPEN",
@@ -102,18 +102,6 @@
       "blocks_activation": false,
       "next_action": "At the next project-wide verification / integration cleanup window, run the T005 Postgres trust-transition CAS and admission-lineage adapters against real PostgreSQL, including concurrent VALIDATED→REVOKED|INCOMPATIBLE races, stale/replay behavior, immutable-column checks and Evidence-failure ordering. Revisit whether DB-level constraints should additionally enforce trust_status transition direction and byte_size immutability. Coordinate production route/service wiring with POI-005 instead of duplicating it; include the still-unwired F02 validation/trust Evidence and execution-admission EVT010..013 production path only in an explicitly Human-approved future scope.",
       "completion_criterion": "Real PostgreSQL integration proves one-winner CAS semantics, replay/stale no-op behavior, terminal-status durability under Evidence failure and immutable admission lineage; any DB-level hardening decision is explicitly recorded and implemented if approved; production wiring responsibility is either completed under POI-005 or explicitly re-scoped without changing Product semantics.",
-      "resolution_ref": null
-    },
-    {
-      "id": "POI-007",
-      "title": "Centralized browser Evidence delivery coordinator hardening",
-      "status": "DEFERRED_REVIEW",
-      "owner": "CHATGPT_PLANNING + HUMAN_APPROVAL + CURSOR_IMPLEMENTATION",
-      "source": "Human 2026-10-05 Option A decision; Design PR #24 merge 3f006181e626c062561872e8a9dff4f47bd86740; BS-P1-017 / BD-017",
-      "blocking_scope": [],
-      "blocks_activation": false,
-      "next_action": "At Phase 4 architecture planning, explicitly review whether to promote a centralized browser Evidence delivery coordinator (for example Service Worker / single-owner sender) so shared eviction finality and terminal lifecycle handoff can both be enforced. If not promoted into Phase 4, schedule implementation by Phase 5. Do not back-port this architecture expansion into Phase 1-3 or T007.",
-      "completion_criterion": "A Human-approved future architecture/task either implements and verifies centralized Evidence delivery coordination, or records an explicit replacement design achieving the same cross-tab finality plus terminal handoff objective no later than Phase 5.",
       "resolution_ref": null
     }
   ],
