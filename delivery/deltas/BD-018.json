@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-018",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-047"
+  ],
+  "affected_build_spec": "BS-P1-017",
+  "affected_tasks": [
+    "T008"
+  ],
+  "affected_contracts": [
+    "F07-API-001 batch quality_report extension",
+    "F07-RQ-009 collection class production policy",
+    "F07 §42 Evidence Quality Metrics",
+    "DATA-MODEL §6.11 evidence_daily_aggregate",
+    "DATA-MODEL §6.11A evidence_intake_observation",
+    "DATA-MODEL §6.11B evidence_client_quality_report"
+  ],
+  "affected_acceptance": [
+    "F07-AC-027",
+    "F07-AC-028",
+    "F07-AC-029"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-05: approve Design PR #26 semantics; continue rebaseline + T008 rebind; stop before Cursor execution."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "82bd737ac5229fde218175c5d9baa67dfa6f281a",
+  "replacement_build_spec": "BS-P1-018",
+  "verification": [
+    "Design PR #26 merged canonical as 82bd737ac5229fde218175c5d9baa67dfa6f281a.",
+    "Approved semantics define quality_report, EvidenceQualityRecorder, all seven F07 quality metric source/bucket/numerator/denominator rules, source-specific watermark retention, and F07-ERR-016 DEBUG_ONLY server rejection.",
+    "BL-P1-034 final cross-function Product metrics remain explicitly out of scope.",
+    "Scope-clean source excludes unrelated Design PR #25 Phase-4 hardening and any other drift not present in BS-P1-017 source.",
+    "Derived source compare changes exactly three files: F07, DATA-MODEL-DETAILED, Acceptance Registry.",
+    "No Product implementation or Cursor execution is authorized by this delta."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "9c1e0c5f077663858530ac026fc55b9e20eddef2",
+    "base_commit": "6b5babe6e7ccc44b8f83731367aa8eece9c96364",
+    "provenance_audit": "delivery/audits/SP-P1-002-BF-047-FREEZE-CANDIDATE.md"
+  }
+}

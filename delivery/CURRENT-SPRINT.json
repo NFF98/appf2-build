@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-017",
-  "active_task": "T008",
-  "status": "ACTIVE",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T008 Activation Review PASS under locked BS-P1-017. T007 remains CLOSED; T008 is IN_PROGRESS; T009 remains PLANNED. Cursor execution authority has not been issued."
+  "reason": "SP-P1-002 / T008 is temporarily blocked by BF-047 during BS-P1-018 replacement freeze. T007 remains CLOSED; T009 remains unauthorized."
 }
