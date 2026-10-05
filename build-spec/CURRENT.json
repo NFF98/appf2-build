@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-017",
-  "implementation_enabled": false,
-  "reason": "BF-047 SPEC_AMBIGUITY temporarily blocks T008 under BS-P1-017 while Human-approved Evidence-quality observability semantics are frozen into replacement BS-P1-018. No Cursor execution until rebaseline activation/rebind."
+  "active_baseline": "BS-P1-018",
+  "implementation_enabled": true,
+  "reason": "Human-approved BCE rebaseline activation of BS-P1-018 for SP-P1-002 / T008 after BF-047 resolution. T008 is restored to IN_PROGRESS under expanded observability scope; Cursor implementation remains a separate fresh Human gate and has not been issued."
 }
