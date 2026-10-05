@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-047",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-017",
   "sprint_id": "SP-P1-002",
   "task_id": "T008",
@@ -12,7 +12,9 @@
     "Issue #245 audit 5988784961: T008 BLOCKED; AC-027 PARTIAL, AC-028 SCOPE_BLOCKER, AC-029 server SPEC_AMBIGUITY.",
     "Human scope-expansion decision recorded in Issue #245 comment 5989184807.",
     "Design PR #26 approved by Human and merged canonical as 82bd737ac5229fde218175c5d9baa67dfa6f281a.",
-    "Scope-clean freeze source 9c1e0c5f077663858530ac026fc55b9e20eddef2 starts from BS-P1-017 source 6b5babe6e7ccc44b8f83731367aa8eece9c96364 and changes exactly F07, DATA-MODEL-DETAILED, and Acceptance Registry for the approved T008 semantics."
+    "Scope-clean freeze source 9c1e0c5f077663858530ac026fc55b9e20eddef2 starts from BS-P1-017 source 6b5babe6e7ccc44b8f83731367aa8eece9c96364 and changes exactly F07, DATA-MODEL-DETAILED, and Acceptance Registry for the approved T008 semantics.",
+    "BS-P1-018 Freeze merged via PR #257 as 69b29c4c2f4d5b7314dc7964942d3953cf91b22d.",
+    "Human-approved BCE activation/rebind to BS-P1-018 resolves BF-047; T008 may resume only after canonical activation checks, with Cursor execution still separately gated."
   ],
   "attempts": [
     {

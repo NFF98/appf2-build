@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-018",
+  "active_task": "T008",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-002 / T008 is temporarily blocked by BF-047 during BS-P1-018 replacement freeze. T007 remains CLOSED; T009 remains unauthorized."
+  "reason": "Human-approved BCE rebaseline activation: BS-P1-018 resolves BF-047 and restores SP-P1-002 / T008 to IN_PROGRESS. T007 remains CLOSED; T009 remains PLANNED / unauthorized; Cursor execution is not yet issued."
 }

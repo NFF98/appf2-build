@@ -662,17 +662,23 @@
         "BL-P1-033"
       ],
       "title": "Implement evidence retention, aggregate survival and drop/expiry observability",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-017",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-018",
       "scope": [
-        "Implement executable 90-day raw product_event retention/deletion behavior while allowing non-identifying aggregate counts/rates to remain.",
-        "Make rejection/drop/queue-expiry observable and prevent DEBUG_ONLY events from durable production storage by default.",
-        "Implement appf2-owned EvidenceRetentionMaintenance semantics with received_at as the 90-day raw-retention cutoff.",
-        "Persist bounded non-identifying evidence_daily_aggregate data before raw deletion and fail closed unless aggregate watermark coverage is verified."
+        "Implement executable 90-day raw product_event retention/deletion behavior while preserving bounded non-identifying aggregate truth.",
+        "Implement appf2-owned EvidenceRetentionMaintenance with first durable received_at as the canonical raw-retention cutoff and fail-closed source-specific aggregate watermark verification.",
+        "Persist/materialize event_count plus all seven F07 Evidence-quality metrics using the BS-P1-018 canonical source/bucket/numerator/denominator/idempotence semantics.",
+        "Implement bounded retry-idempotent quality_report transport for local queue drop / offline expiry without creating recursive Product Events.",
+        "Implement appf2-owned EvidenceQualityRecorder production wiring that covers pre-service batch rejection and event-level intake observations.",
+        "Enforce server-side DEBUG_ONLY production policy: F07-ERR-016 non-retryable rejection before identity ensure / product_event insert.",
+        "Preserve existing T007 queue/TTL/overflow/pagehide behavior while extending only the quality-observability path."
       ],
       "non_scope": [
         "Do not define final cross-function Product metrics from BL-P1-034.",
-        "Do not weaken F07 privacy allowlists or identity boundaries."
+        "Do not weaken F07 privacy allowlists or identity boundaries.",
+        "Do not absorb Design PR #25 / P4-HARD-001..P4-HARD-011 Phase-4 hardening.",
+        "Do not create a new Product Event family for Evidence-pipeline quality telemetry.",
+        "Do not activate or modify T009 Product scope."
       ],
       "acceptance_links": [
         {
@@ -694,8 +700,11 @@
       ],
       "allowed_write_paths": [
         "src/platform/evidence/",
+        "src/edge/events-batch.ts",
+        "src/edge/evidence-runtime.ts",
         "supabase/migrations/",
         "tests/contract/",
+        "tests/unit/",
         "tests/behavior/",
         "tests/api/",
         "tests/regression/"
@@ -705,6 +714,7 @@
         "npm run check:types",
         "npm run check:lint",
         "npm run test:contract",
+        "npm run test:unit",
         "npm run test:behavior",
         "npm run test:api",
         "npm run test:regression",
@@ -729,7 +739,7 @@
       ],
       "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-017",
+      "build_spec_id": "BS-P1-018",
       "scope": [
         "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
         "Prove F01-AC-002 by showing NEEDS_CLARIFICATION when required intent data is missing and no safe default exists.",

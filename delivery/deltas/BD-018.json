@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-018",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-047"
   ],
@@ -39,7 +39,9 @@
     "BL-P1-034 final cross-function Product metrics remain explicitly out of scope.",
     "Scope-clean source excludes unrelated Design PR #25 Phase-4 hardening and any other drift not present in BS-P1-017 source.",
     "Derived source compare changes exactly three files: F07, DATA-MODEL-DETAILED, Acceptance Registry.",
-    "No Product implementation or Cursor execution is authorized by this delta."
+    "No Product implementation or Cursor execution is authorized by this delta.",
+    "BS-P1-018 Freeze merged via PR #257 as 69b29c4c2f4d5b7314dc7964942d3953cf91b22d.",
+    "SP-P1-002 / T008 is re-bound to BS-P1-018 with expanded allowed paths and remains stopped before fresh Cursor execution approval."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
