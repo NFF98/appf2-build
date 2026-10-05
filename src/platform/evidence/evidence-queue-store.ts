@@ -1,4 +1,10 @@
 import {
+  reportQueueDrops,
+  type EvidenceQueueDrop,
+  type EvidenceQueueDropCode,
+  type EvidenceQueueObserver
+} from "./evidence-observability.js";
+import {
   isExpired,
   planQueueAdmission,
   type EvidenceCollectionClass,
@@ -23,13 +29,21 @@ export interface DurableEvidenceAdmission {
   readonly liveIds: ReadonlySet<string>;
 }
 
+// A policy removal requested by a collector: entries still live in the shared queue are deleted
+// and reported as dropped with this code.
+export interface EvidenceQueueDropRequest {
+  readonly code: EvidenceQueueDropCode;
+  readonly now: number;
+}
+
 // Every operation is one atomic unit over the queue shared by all collectors on the origin, and
-// every operation purges expired entries first. A rejected promise means durable storage failed.
+// every operation that reads entries purges expired entries first. A rejected promise means
+// durable storage failed. remove() without a drop request is a delivery / integrity removal.
 export interface EvidenceQueueStore {
   admit(record: DurableEvidenceRecord, now: number): Promise<DurableEvidenceAdmission>;
   liveIds(now: number): Promise<ReadonlySet<string>>;
   load(now: number): Promise<readonly DurableEvidenceRecord[]>;
-  remove(eventIds: readonly string[]): Promise<void>;
+  remove(eventIds: readonly string[], drop?: EvidenceQueueDropRequest): Promise<void>;
 }
 
 // Handler slots accept any DOM IndexedDB handler signature; this module only assigns them.
@@ -75,6 +89,7 @@ export interface EvidenceIdbFactory {
 interface QueueStores {
   readonly entries: EvidenceIdbObjectStore;
   readonly payloads: EvidenceIdbObjectStore;
+  readonly drops: EvidenceQueueDrop[];
 }
 
 const COLLECTION_CLASSES: ReadonlySet<string> = new Set<EvidenceCollectionClass>([
@@ -122,7 +137,13 @@ function deleteRecord(stores: QueueStores, eventId: string): void {
   stores.payloads.delete(eventId);
 }
 
-// Malformed and expired entries are deleted inside the caller's transaction before it decides.
+function dropRecord(stores: QueueStores, entry: EvidenceQueueEntry, code: EvidenceQueueDropCode): void {
+  deleteRecord(stores, entry.eventId);
+  stores.drops.push({ code, collection_class: entry.collectionClass });
+}
+
+// Malformed and expired entries are deleted inside the caller's transaction before it decides;
+// expired entries are reported as F07-ERR-012 drops once the transaction commits.
 function readLiveEntries(
   stores: QueueStores,
   now: number,
@@ -136,6 +157,8 @@ function readLiveEntries(
       const key = storedKey(value);
       if (entry !== null && !isExpired(entry, now)) {
         live.push(entry);
+      } else if (entry !== null) {
+        dropRecord(stores, entry, "F07-ERR-012");
       } else if (key !== null) {
         deleteRecord(stores, key);
       }
@@ -146,10 +169,12 @@ function readLiveEntries(
 
 function transact<T>(
   database: EvidenceIdbDatabase,
+  observer: EvidenceQueueObserver | null,
   work: (stores: QueueStores, finish: (value: T) => void) => void
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     let outcome: { readonly value: T } | null = null;
+    const drops: EvidenceQueueDrop[] = [];
     const transaction = database.transaction(
       [EVIDENCE_QUEUE_DATABASE.entryStore, EVIDENCE_QUEUE_DATABASE.payloadStore],
       "readwrite"
@@ -158,6 +183,7 @@ function transact<T>(
       if (outcome === null) {
         reject(new Error("Evidence queue transaction completed without a result."));
       } else {
+        reportQueueDrops(observer, drops);
         resolve(outcome.value);
       }
     };
@@ -167,7 +193,8 @@ function transact<T>(
     work(
       {
         entries: transaction.objectStore(EVIDENCE_QUEUE_DATABASE.entryStore),
-        payloads: transaction.objectStore(EVIDENCE_QUEUE_DATABASE.payloadStore)
+        payloads: transaction.objectStore(EVIDENCE_QUEUE_DATABASE.payloadStore),
+        drops
       },
       value => {
         outcome = { value };
@@ -176,17 +203,20 @@ function transact<T>(
   });
 }
 
+// An incoming record the shared queue refuses is reported by the admitting collector, which alone
+// knows whether it still held that record.
 function admitInTransaction(
   database: EvidenceIdbDatabase,
+  observer: EvidenceQueueObserver | null,
   record: DurableEvidenceRecord,
   now: number
 ): Promise<DurableEvidenceAdmission> {
-  return transact(database, (stores, finish) => {
+  return transact(database, observer, (stores, finish) => {
     readLiveEntries(stores, now, live => {
       const plan = planQueueAdmission(live, record.entry, now);
       const liveIds = new Set(live.map(entry => entry.eventId));
       for (const victim of plan.evicted) {
-        deleteRecord(stores, victim.eventId);
+        dropRecord(stores, victim, "F07-ERR-011");
         liveIds.delete(victim.eventId);
       }
       if (plan.outcome === "QUEUED") {
@@ -199,8 +229,12 @@ function admitInTransaction(
   });
 }
 
-function liveIdsInTransaction(database: EvidenceIdbDatabase, now: number): Promise<ReadonlySet<string>> {
-  return transact(database, (stores, finish) => {
+function liveIdsInTransaction(
+  database: EvidenceIdbDatabase,
+  observer: EvidenceQueueObserver | null,
+  now: number
+): Promise<ReadonlySet<string>> {
+  return transact(database, observer, (stores, finish) => {
     readLiveEntries(stores, now, live => {
       finish(new Set(live.map(entry => entry.eventId)));
     });
@@ -231,9 +265,10 @@ function livePayloadsById(
 
 function loadInTransaction(
   database: EvidenceIdbDatabase,
+  observer: EvidenceQueueObserver | null,
   now: number
 ): Promise<readonly DurableEvidenceRecord[]> {
-  return transact(database, (stores, finish) => {
+  return transact(database, observer, (stores, finish) => {
     readLiveEntries(stores, now, live => {
       const request = stores.payloads.getAll();
       request.onsuccess = () => {
@@ -253,10 +288,27 @@ function loadInTransaction(
   });
 }
 
-function removeInTransaction(database: EvidenceIdbDatabase, eventIds: readonly string[]): Promise<void> {
-  return transact(database, (stores, finish) => {
-    eventIds.forEach(eventId => deleteRecord(stores, eventId));
-    finish(undefined);
+function removeInTransaction(
+  database: EvidenceIdbDatabase,
+  observer: EvidenceQueueObserver | null,
+  eventIds: readonly string[],
+  drop: EvidenceQueueDropRequest | undefined
+): Promise<void> {
+  return transact(database, observer, (stores, finish) => {
+    if (drop === undefined) {
+      eventIds.forEach(eventId => deleteRecord(stores, eventId));
+      finish(undefined);
+      return;
+    }
+    const requested = new Set(eventIds);
+    readLiveEntries(stores, drop.now, live => {
+      for (const entry of live) {
+        if (requested.has(entry.eventId)) {
+          dropRecord(stores, entry, drop.code);
+        }
+      }
+      finish(undefined);
+    });
   });
 }
 
@@ -284,7 +336,10 @@ function openDatabase(factory: EvidenceIdbFactory): Promise<EvidenceIdbDatabase>
 }
 
 // One connection per collector; a failed open is retried by the next operation rather than cached.
-export function createIndexedDbEvidenceQueueStore(factory: EvidenceIdbFactory): EvidenceQueueStore {
+export function createIndexedDbEvidenceQueueStore(
+  factory: EvidenceIdbFactory,
+  observer: EvidenceQueueObserver | null = null
+): EvidenceQueueStore {
   let connection: Promise<EvidenceIdbDatabase> | null = null;
   const database = (): Promise<EvidenceIdbDatabase> => {
     connection ??= openDatabase(factory).then(
@@ -304,26 +359,28 @@ export function createIndexedDbEvidenceQueueStore(factory: EvidenceIdbFactory): 
   };
   return {
     async admit(record, now) {
-      return admitInTransaction(await database(), record, now);
+      return admitInTransaction(await database(), observer, record, now);
     },
     async liveIds(now) {
-      return liveIdsInTransaction(await database(), now);
+      return liveIdsInTransaction(await database(), observer, now);
     },
     async load(now) {
-      return loadInTransaction(await database(), now);
+      return loadInTransaction(await database(), observer, now);
     },
-    async remove(eventIds) {
+    async remove(eventIds, drop) {
       if (eventIds.length > 0) {
-        await removeInTransaction(await database(), eventIds);
+        await removeInTransaction(await database(), observer, eventIds, drop);
       }
     }
   };
 }
 
-export function resolveBrowserEvidenceQueueStore(): EvidenceQueueStore | null {
+export function resolveBrowserEvidenceQueueStore(
+  observer: EvidenceQueueObserver | null = null
+): EvidenceQueueStore | null {
   try {
     const factory: IDBFactory | undefined = globalThis.indexedDB;
-    return factory === undefined ? null : createIndexedDbEvidenceQueueStore(factory);
+    return factory === undefined ? null : createIndexedDbEvidenceQueueStore(factory, observer);
   } catch {
     return null;
   }

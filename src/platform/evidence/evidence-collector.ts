@@ -13,6 +13,7 @@ import {
   EvidenceClientQueue,
   type QueuedEvidenceRecord
 } from "./evidence-client-queue.js";
+import type { EvidenceQueueObserver } from "./evidence-observability.js";
 import {
   resolveBrowserEvidenceQueueStore,
   type EvidenceQueueStore
@@ -39,6 +40,7 @@ export interface EvidenceCollectorDependencies {
   readonly sleep: (ms: number) => Promise<void>;
   readonly jitter: () => number;
   readonly scheduler: EvidenceCollectorScheduler;
+  readonly observer?: EvidenceQueueObserver | null;
 }
 
 export interface BrowserEvidenceCollectorOptions {
@@ -51,6 +53,8 @@ export interface BrowserEvidenceCollectorOptions {
   readonly sleep?: (ms: number) => Promise<void>;
   readonly jitter?: () => number;
   readonly scheduler?: EvidenceCollectorScheduler;
+  // Also attached to the default browser queue store; an injected queueStore carries its own.
+  readonly observer?: EvidenceQueueObserver | null;
 }
 
 export function retryDelayMs(baseMs: number, unitJitter: number): number {
@@ -137,7 +141,7 @@ export class EvidenceCollector {
   private tail: Promise<void> = Promise.resolve();
 
   public constructor(private readonly dependencies: EvidenceCollectorDependencies) {
-    this.queue = new EvidenceClientQueue(dependencies.queueStore, dependencies.now);
+    this.queue = new EvidenceClientQueue(dependencies.queueStore, dependencies.now, dependencies.observer ?? null);
     void this.queue.restore().then(() => this.armFlushTriggers());
   }
 
@@ -237,14 +241,16 @@ export class EvidenceCollector {
 export function createBrowserEvidenceCollector(
   options: BrowserEvidenceCollectorOptions = {}
 ): EvidenceCollector {
+  const observer = options.observer ?? null;
   return new EvidenceCollector({
     transport: options.transport ?? createBrowserEvidenceBatchTransport(options.fetch),
     beaconTransport: options.beaconTransport ?? createBrowserEvidenceBeaconTransport(),
-    queueStore: options.queueStore === undefined ? resolveBrowserEvidenceQueueStore() : options.queueStore,
+    queueStore: options.queueStore === undefined ? resolveBrowserEvidenceQueueStore(observer) : options.queueStore,
     randomUUID: options.randomUUID ?? (() => globalThis.crypto.randomUUID()),
     now: options.now ?? (() => Date.now()),
     sleep: options.sleep ?? defaultSleep,
     jitter: options.jitter ?? (() => Math.random()),
-    scheduler: options.scheduler ?? createBrowserEvidenceCollectorScheduler()
+    scheduler: options.scheduler ?? createBrowserEvidenceCollectorScheduler(),
+    observer
   });
 }

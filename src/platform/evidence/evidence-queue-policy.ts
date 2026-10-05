@@ -27,6 +27,12 @@ export function isExpired(entry: EvidenceQueueEntry, now: number): boolean {
   return now > entry.enqueuedAt + EVIDENCE_QUEUE_LIMITS.ttlMs;
 }
 
+// F07-DATA-002 / F07-AC-029: DEBUG_ONLY evidence is never durable in production product_event by
+// default, so the production collector never queues it for delivery.
+export function isProductionDeliverable(collectionClass: EvidenceCollectionClass): boolean {
+  return collectionClass !== "DEBUG_ONLY";
+}
+
 function isRetainedOnOverflow(collectionClass: EvidenceCollectionClass): boolean {
   return collectionClass === "CORE_OUTCOME" || collectionClass === "RELIABILITY";
 }
