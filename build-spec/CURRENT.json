@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-021",
-  "implementation_enabled": true,
-  "reason": "Human-approved BF-050 replacement rebaseline activates BS-P1-021 for SP-P1-003/T001 after bounded DO_NOT_PERSIST contract closure. T001 is rebound at the pre-Cursor boundary; PR #290 remains unmerged and no fresh Cursor execution command is authorized by this control transition."
+  "implementation_enabled": false,
+  "reason": "Human-approved T001 final closure after independent closure audit PASS (Issue #245 comment 6026067087). BS-P1-021 remains the active locked baseline; execution is HOLD before any separate T002 activation."
 }
