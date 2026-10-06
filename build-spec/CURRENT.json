@@ -2,5 +2,5 @@
   "schema_version": 1,
   "active_baseline": "BS-P1-018",
   "implementation_enabled": true,
-  "reason": "Human-approved T009 activation under BS-P1-018. SP-P1-002 / T009 is ACTIVE for the locked test-only browser verification scope; Cursor execution remains a separate authority posted only after activation merge."
+  "reason": "Human-approved restoration of T009 after CI tooling remediation merged. SP-P1-002 / T009 returns to ACTIVE execution context under locked BS-P1-018; implementation candidate remains independently audited."
 }

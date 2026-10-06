@@ -5,5 +5,5 @@
   "active_task": "T009",
   "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved T009 activation under BS-P1-018. T009 is IN_PROGRESS for the locked test-only real-browser verification harness; Cursor execution authority is separately gated and not conveyed by this file."
+  "reason": "Human-approved restoration after T009 CI tooling remediation. SP-P1-002 / T009 resumes ACTIVE CURRENT authority; Task scope, Acceptance mappings and audited implementation candidate are unchanged."
 }
