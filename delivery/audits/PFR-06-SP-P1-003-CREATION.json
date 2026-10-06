@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "SPRINT_CREATION_CANDIDATE",
+  "program": "PFR-2026",
+  "step": "PFR-06",
+  "sprint_id": "SP-P1-003",
+  "build_spec_id": "BS-P1-019",
+  "human_authority": "Human 2026-10-06 approved Stage A detailed plan and approved execution through pre-Cursor boundary; Sprint creation and later activation are intentionally separated into BCE chunks.",
+  "mapping": {
+    "planning_slots_to_tasks": {
+      "A1": "T001",
+      "A2": "T002",
+      "A3": "T003",
+      "A4": "T004",
+      "A5": "T005",
+      "A6": "T006"
+    },
+    "backlog_count": 12,
+    "acceptance_count": 84
+  },
+  "control_state_before": {
+    "schema_version": 1,
+    "active_sprint": null,
+    "active_build_spec": null,
+    "active_task": null,
+    "status": "HOLD",
+    "automation_mode": "SAFE_AUTOMATION",
+    "reason": "Human-approved BS-P1-019 Build Freeze complete. No Sprint or Task is active; HOLD remains until separate Product Proof Stage A planning/activation approval."
+  },
+  "control_state_after_required": {
+    "active_sprint": null,
+    "active_build_spec": null,
+    "active_task": null,
+    "status": "HOLD"
+  },
+  "implementation_enabled_after_required": false,
+  "readiness_pr_merged": "appf2-build#281",
+  "non_authority": [
+    "No Sprint activation in this BCE",
+    "No active Task",
+    "No Cursor execution"
+  ]
+}
