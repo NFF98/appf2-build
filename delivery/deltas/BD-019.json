@@ -61,7 +61,7 @@
     "No Product implementation, Sprint activation, CURRENT.json mutation or Cursor execution authority is authorized.",
     "Design PR #27 merged canonical as 65d3a63e15c4e42230556cf4d82d4588e58d75e9.",
     "Human explicitly approved the BS-P1-019 Build Freeze candidate on 2026-10-06.",
-    "BS-P1-019 manifest locks scope-clean source e7c83ac198b63a0273f30aeaf27a6dd65abadfee with content_sha256 85e3b6ede9c0b924bf144f900f206ee8dc7dfec6ab32bd019962044ccb53f565.",
+    "BS-P1-019 manifest locks scope-clean source e7c83ac198b63a0273f30aeaf27a6dd65abadfee with content_sha256 eb812ce9209806fcf2a7e3514d662e5aac0697866e632bdcdaaa3ad8d3d98b79.",
     "BS-P1-019 acceptance_count = 307; backlog active Acceptance coverage = 306 because F00-AC-008 remains SUPERSEDED/non-required.",
     "32 unfinished existing backlog items are rebound to BS-P1-019; BL-P1-044..046 add the 18 F19 Acceptance contracts; 11 historical DONE items retain provenance.",
     "CURRENT activates BS-P1-019 with implementation_enabled=false; CURRENT-SPRINT remains HOLD with no active Sprint/Task."
