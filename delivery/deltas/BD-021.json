@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-021",
   "type": "DESIGN_DELTA",
-  "status": "ASSESSING",
+  "status": "APPROVED",
   "source_finding_ids": [
     "BF-050"
   ],
@@ -32,6 +32,17 @@
   "replacement_build_spec": "BS-P1-021",
   "verification": [
     "Issue #245 independent BCE audit comment 6016838295 confirmed BF-050 as a remaining T001 specification ambiguity.",
-    "Design remediation is bounded to DO_NOT_PERSIST request lifecycle; FAILED_TERMINAL replay remains implementation remediation."
-  ]
+    "Design remediation is bounded to DO_NOT_PERSIST request lifecycle; FAILED_TERMINAL replay remains implementation remediation.",
+    "appf2-design PR #30 merged bounded BF-050 normative F01 addenda as af3fc11f7326e58955c17b850cb4427a4f27ddd1.",
+    "Scope-clean freeze source 2e8a3f45a281c981b6bd7e4f10ceca22b5f47c9f derives from the exact BS-P1-020 source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 and adds exactly three BF-050 F01 addendum paths.",
+    "No new Acceptance ID is introduced; F01-AC-007/014/016/020 proof obligations are clarified.",
+    "PR #290 remains unmerged; FAILED_TERMINAL replay remains bounded implementation remediation after rebind."
+  ],
+  "upstream_working_commit": "af3fc11f7326e58955c17b850cb4427a4f27ddd1",
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "2e8a3f45a281c981b6bd7e4f10ceca22b5f47c9f",
+    "base_commit": "d8a9af891dbd61f3f830bd63ae5e21b6bb525603",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-021-FREEZE-CANDIDATE.md"
+  }
 }
