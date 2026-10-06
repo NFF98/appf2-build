@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-049",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-019",
   "sprint_id": "SP-P1-003",
   "task_id": "T001",
@@ -19,7 +19,9 @@
     "BS-P1-019 idempotency_operation has only IN_PROGRESS / SUCCEEDED / FAILED_TERMINAL and explicitly forbids locking retryable transient failures as FAILED_TERMINAL, but defines no release/retry/takeover transition.",
     "BS-P1-019 shared API allows anonymous_id from Function payload or trusted request context, but F01 answers/compile do not lock the trusted-context binding or mismatch behavior against intent_record.anonymous_id.",
     "Human-approved BF-049 bounded Design remediation merged in appf2-design PR #29 as c970bd29c192a77a836721a8ebe2d49189e370d9.",
-    "BD-020 binds the scope-clean replacement freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 for proposed BS-P1-020."
+    "BD-020 binds the scope-clean replacement freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 for proposed BS-P1-020.",
+    "BS-P1-020 was frozen from scope-clean source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 and passed Governance, Attack, CI/Product CI and CodeQL on PR #287.",
+    "Human-approved atomic rebind switches SP-P1-003/T001 to BS-P1-020 and resolves BF-049 as a specification blocker at the pre-Cursor boundary."
   ],
   "attempts": [
     {
