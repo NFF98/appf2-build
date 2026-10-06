@@ -35,13 +35,14 @@
     "Design remediation is bounded to DO_NOT_PERSIST request lifecycle; FAILED_TERMINAL replay remains implementation remediation.",
     "appf2-design PR #30 merged bounded BF-050 remediation as af3fc11f7326e58955c17b850cb4427a4f27ddd1.",
     "Independent BCE contract audit confirmed the three normative addenda lock value-free EphemeralInputRequirement markers, compile request-scoped ephemeral_inputs binding/validation, and idempotency/re-provision semantics without persisting protected values or widening Product scope.",
-    "The Design delta changes exactly 3 files relative to c970bd29c192a77a836721a8ebe2d49189e370d9 and introduces no new Acceptance ID."
+    "The Design delta changes exactly 3 files relative to c970bd29c192a77a836721a8ebe2d49189e370d9 and introduces no new Acceptance ID.",
+    "Scope-clean derived freeze source f1fdb6398a06eca58690d8a6bc47f71098be2929 is based on c970bd29c192a77a836721a8ebe2d49189e370d9 and changes exactly the 3 BF-050 normative addenda."
   ],
   "upstream_working_commit": "af3fc11f7326e58955c17b850cb4427a4f27ddd1",
   "freeze_source": {
-    "type": "SCOPE_CLEAN_MERGED",
-    "commit": "af3fc11f7326e58955c17b850cb4427a4f27ddd1",
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "f1fdb6398a06eca58690d8a6bc47f71098be2929",
     "base_commit": "c970bd29c192a77a836721a8ebe2d49189e370d9",
-    "design_pr": 30
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-021-FREEZE-CANDIDATE.md"
   }
 }
