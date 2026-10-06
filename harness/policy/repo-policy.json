@@ -29,8 +29,7 @@
     "tests/accessibility/README.md",
     "tests/regression/README.md",
     "tests/unit/README.md",
-    "tests/e2e/README.md",
-    "package-lock.json"
+    "tests/e2e/README.md"
   ],
   "governance_only_paths": [
     "build-spec/",
