@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-050",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-020",
   "sprint_id": "SP-P1-003",
   "task_id": "T001",
@@ -13,7 +13,10 @@
     "Issue #245 independent BCE audit comment 6016838295 classified the remaining DO_NOT_PERSIST lifecycle ambiguity as SPEC_GAP and blocked PR #290 merge.",
     "BS-P1-020 F01-DATA-005 requires DO_NOT_PERSIST values to be non-durable, permits request-scoped EphemeralResolvedContext for Prompt B, and requires User re-provision when context is absent.",
     "BS-P1-020 F01 compile API does not define a bounded request field/schema for those re-provided values.",
-    "PR #290 remains OPEN and unmerged."
+    "PR #290 remains OPEN and unmerged.",
+    "Human-approved bounded BF-050 Design remediation merged in appf2-design PR #30; canonical scope-clean source is 7a1189f65268a82bb03b27f378fcaf59c41e4220.",
+    "Replacement Build Spec BS-P1-021 froze and merged in appf2-build PR #295 as 0ff7dbaf4437069faac6a19913c2c64752765905 with source_working_commit 7a1189f65268a82bb03b27f378fcaf59c41e4220.",
+    "Human-approved atomic rebind to BS-P1-021 resolves the DO_NOT_PERSIST specification blocker at the pre-Cursor boundary; PR #290 remains unmerged and FAILED_TERMINAL replay remains bounded implementation remediation."
   ],
   "attempts": [
     {
