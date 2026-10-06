@@ -166,3 +166,20 @@ Canonical candidate artifacts:
 - `delivery/audits/PFR-06-PLAYABLE-APP-SPRINT-PLANNING-CANDIDATE.md`
 
 **Next Human Gate:** approve the Stage A detailed plan and authorize a governance-only pre-activation React/browser toolchain readiness change. No Sprint creation, Task activation, or Cursor Product authority is implied.
+
+
+## PFR-06 Sprint Creation — SP-P1-003
+
+Human pre-authorization received on 2026-10-06 for governance through the pre-Cursor boundary.
+
+BCE-3 creation state:
+
+- `SP-P1-003` allocated as the next canonical Sprint ID.
+- Sprint status = `PLANNED`.
+- Build Spec = `BS-P1-019`.
+- 12 Stage A backlog items move `QUEUED → READY`.
+- planning slots A1–A6 become canonical `T001–T006`.
+- `CURRENT-SPRINT` remains HOLD with active Sprint/Task null.
+- `implementation_enabled=false`.
+
+This is Sprint creation only. Activation is a separate BCE transition.
