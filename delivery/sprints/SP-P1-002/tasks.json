@@ -751,7 +751,7 @@
         "BL-P1-008"
       ],
       "title": "Add SP2 real-browser verification harness for clarification and explicit result proof",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-018",
       "scope": [
         "Create a minimal test-only browser verification harness under tests/e2e that calls the already implemented SP2 production logic and renders its returned state/output for Playwright verification.",
