@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-021",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T001",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-06T21:40:24Z",
+  "blocking_findings": [],
+  "source_commit": "4ce33fe44266321f7f670e61ff1b05de7eacf9b9",
+  "evidence_id": "EV-SP-P1-003-T001-010",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37533385137#ci-security-audit-pass",
+  "command": "npm run security:audit",
+  "review_checks": null
+}
