@@ -29,6 +29,9 @@ jobs:
         run: npm ci
       - name: Repository lint
         run: npm run check:lint
+      - name: Install Playwright browsers
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        run: npx --no -- playwright install --with-deps chromium firefox webkit
       - name: Product CI
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
