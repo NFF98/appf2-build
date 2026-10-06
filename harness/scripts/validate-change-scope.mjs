@@ -168,8 +168,42 @@ const approvedRebaselineTransition=
 if(approvedRebaselineTransition) console.log("- Human-approved rebaseline control transition recognized; Activation/Baseline/Sprint gates must independently approve it.");
 if(approvedRebaselineTransition && rebaselineLifecycleAllowed.size) console.log("- Introduced Delta/source Finding lifecycle side effects: "+[...rebaselineLifecycleAllowed].sort().join(", "));
 
+const pfr06ReadinessPaths=new Set([
+  "package.json",
+  "package-lock.json",
+  "tooling/TOOLCHAIN.json",
+  "tooling/web/vite.config.ts",
+  "playwright.config.ts",
+  "harness/scripts/validate-toolchain.mjs",
+  "harness/scripts/validate-change-scope.mjs",
+  "delivery/audits/PFR-06-WEB-READINESS.json"
+]);
+const pfr06ReadinessAudit=readHeadJson("delivery/audits/PFR-06-WEB-READINESS.json");
+const approvedPfr06WebReadinessTransition=
+  baseCurrentSprint?.status==="HOLD" &&
+  baseCurrentSprint?.active_sprint===null &&
+  baseCurrentSprint?.active_task===null &&
+  cs.status==="HOLD" &&
+  cs.active_sprint===null &&
+  cs.active_task===null &&
+  currentBuild.implementation_enabled===false &&
+  stable(baseCurrentBuild)===stable(currentBuild) &&
+  stable(baseCurrentSprint)===stable(cs) &&
+  pfr06ReadinessAudit?.status==="READINESS_CANDIDATE" &&
+  typeof pfr06ReadinessAudit?.approved_by==="string" &&
+  pfr06ReadinessAudit.approved_by.includes("Human 2026-10-06") &&
+  changed.includes("package-lock.json") &&
+  changed.includes("delivery/audits/PFR-06-WEB-READINESS.json") &&
+  changed.every(p=>pfr06ReadinessPaths.has(p));
+
+if(approvedPfr06WebReadinessTransition){
+  console.log("- Human-approved PFR-06 web readiness transition recognized; Product source remains forbidden while Sprint HOLD.");
+}
+
 if(cs.active_sprint===null){
-  for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
+  if(!approvedPfr06WebReadinessTransition){
+    for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
+  }
 }else if(safeControlTransition || approvedRebaselineTransition){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
