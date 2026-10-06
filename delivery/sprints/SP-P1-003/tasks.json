@@ -1,0 +1,677 @@
+{
+  "schema_version": 3,
+  "sprint_id": "SP-P1-003",
+  "tasks": [
+    {
+      "task_id": "T001",
+      "backlog_item_ids": [
+        "BL-P1-009",
+        "BL-P1-010",
+        "BL-P1-011"
+      ],
+      "title": "Compiler gate, API lifecycle & truthful creation progress",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-019",
+      "scope": [
+        "Implement F01 compiler orchestration from Resolved Intent through F04 Capability Coverage, bounded Blueprint Composition and mandatory F02 validation.",
+        "Implement /api/v1 intents, answers and compile mutation boundaries including Idempotency-Key, optimistic intent_version and stable error envelope semantics.",
+        "Implement provider-neutral ModelGateway domain interface plus one production-configurable server adapter without exposing provider secret or SDK to Browser.",
+        "Persist intent_record / compiler_run / canonical idempotency_operation integration required by BS-P1-019.",
+        "Emit F01 privacy-safe Evidence and CREATE v1 fixed checkpoint progress projection."
+      ],
+      "non_scope": [
+        "No F00 React UI.",
+        "No F03 Runtime implementation.",
+        "No F19 / Share / Remix behavior.",
+        "No provider-specific Product semantics or client-side provider secret."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F01-AC-007",
+          "test_id": "TEST-F01-007"
+        },
+        {
+          "acceptance_id": "F01-AC-008",
+          "test_id": "TEST-F01-008"
+        },
+        {
+          "acceptance_id": "F01-AC-009",
+          "test_id": "TEST-F01-AC-009"
+        },
+        {
+          "acceptance_id": "F01-AC-010",
+          "test_id": "TEST-F01-010"
+        },
+        {
+          "acceptance_id": "F01-AC-011",
+          "test_id": "TEST-F01-AC-011"
+        },
+        {
+          "acceptance_id": "F01-AC-012",
+          "test_id": "TEST-F01-012"
+        },
+        {
+          "acceptance_id": "F01-AC-013",
+          "test_id": "TEST-F01-API-001"
+        },
+        {
+          "acceptance_id": "F01-AC-014",
+          "test_id": "TEST-F01-AC-014"
+        },
+        {
+          "acceptance_id": "F01-AC-015",
+          "test_id": "TEST-F01-API-002"
+        },
+        {
+          "acceptance_id": "F01-AC-016",
+          "test_id": "TEST-F01-API-003"
+        },
+        {
+          "acceptance_id": "F01-AC-018",
+          "test_id": "TEST-F01-AC-018"
+        },
+        {
+          "acceptance_id": "F01-AC-019",
+          "test_id": "TEST-F01-019"
+        },
+        {
+          "acceptance_id": "F01-AC-020",
+          "test_id": "TEST-F01-AC-020"
+        },
+        {
+          "acceptance_id": "F01-AC-021",
+          "test_id": "TEST-F01-021"
+        },
+        {
+          "acceptance_id": "F01-AC-022",
+          "test_id": "TEST-F01-AC-022"
+        },
+        {
+          "acceptance_id": "F01-AC-023",
+          "test_id": "TEST-F01-AC-023"
+        },
+        {
+          "acceptance_id": "F01-AC-024",
+          "test_id": "TEST-F01-AC-024"
+        },
+        {
+          "acceptance_id": "F01-AC-025",
+          "test_id": "TEST-F01-PROG-001"
+        },
+        {
+          "acceptance_id": "F01-AC-026",
+          "test_id": "TEST-F01-PROG-002"
+        },
+        {
+          "acceptance_id": "F01-AC-027",
+          "test_id": "TEST-F01-PROG-003"
+        },
+        {
+          "acceptance_id": "F01-AC-028",
+          "test_id": "TEST-F01-PROG-004"
+        },
+        {
+          "acceptance_id": "F01-AC-029",
+          "test_id": "TEST-F01-PROG-005"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/compiler/",
+        "src/platform/intent/",
+        "src/edge/intent-api.ts",
+        "supabase/migrations/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/api/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:api",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "db-migration",
+        "reviewer"
+      ],
+      "parallel_safe": true,
+      "product_decision_allowed": false,
+      "blocked_by": [],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T002",
+      "backlog_item_ids": [
+        "BL-P1-012",
+        "BL-P1-013"
+      ],
+      "title": "Deterministic Runtime core & atomic interaction engine",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-019",
+      "scope": [
+        "Implement F03 hydration into READY from valid admitted Blueprint only.",
+        "Implement mutable Instance Store, derived/rule recomputation, typed pure expressions, deterministic RNG and monotonic-time semantics.",
+        "Implement FIFO event queue, single-writer action execution, nested-event queueing and atomic commit/rollback boundaries.",
+        "Implement reset semantics and capability-local state separation without mutating immutable Blueprint identity."
+      ],
+      "non_scope": [
+        "No consumer F00 shell.",
+        "No F01 compiler behavior.",
+        "No final S03 chrome/result presentation.",
+        "No F19 durable shared data."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F03-AC-001",
+          "test_id": "TEST-F03-001"
+        },
+        {
+          "acceptance_id": "F03-AC-002",
+          "test_id": "TEST-F03-AC-002"
+        },
+        {
+          "acceptance_id": "F03-AC-003",
+          "test_id": "TEST-F03-AC-003"
+        },
+        {
+          "acceptance_id": "F03-AC-004",
+          "test_id": "TEST-F03-004"
+        },
+        {
+          "acceptance_id": "F03-AC-008",
+          "test_id": "TEST-F03-AC-008"
+        },
+        {
+          "acceptance_id": "F03-AC-010",
+          "test_id": "TEST-F03-010"
+        },
+        {
+          "acceptance_id": "F03-AC-011",
+          "test_id": "TEST-F03-011"
+        },
+        {
+          "acceptance_id": "F03-AC-012",
+          "test_id": "TEST-F03-012"
+        },
+        {
+          "acceptance_id": "F03-AC-013",
+          "test_id": "TEST-F03-AC-013"
+        },
+        {
+          "acceptance_id": "F03-AC-021",
+          "test_id": "TEST-F03-021"
+        },
+        {
+          "acceptance_id": "F03-AC-023",
+          "test_id": "TEST-F03-AC-023"
+        },
+        {
+          "acceptance_id": "F03-AC-005",
+          "test_id": "TEST-F03-005"
+        },
+        {
+          "acceptance_id": "F03-AC-006",
+          "test_id": "TEST-F03-006"
+        },
+        {
+          "acceptance_id": "F03-AC-007",
+          "test_id": "TEST-F03-007"
+        },
+        {
+          "acceptance_id": "F03-AC-016",
+          "test_id": "TEST-F03-AC-016"
+        },
+        {
+          "acceptance_id": "F03-AC-017",
+          "test_id": "TEST-F03-017"
+        },
+        {
+          "acceptance_id": "F03-AC-026",
+          "test_id": "TEST-F03-AC-026"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/runtime/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/unit/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:unit",
+        "npm run test:regression"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": true,
+      "product_decision_allowed": false,
+      "blocked_by": [],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T003",
+      "backlog_item_ids": [
+        "BL-P1-014",
+        "BL-P1-016"
+      ],
+      "title": "Runtime trust, lifecycle, operation token & hard-timeout safety",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-019",
+      "scope": [
+        "Enforce Runtime trust / compatibility / handler injection prevention and F02/F04 hard resource ceilings.",
+        "Implement node isolation, last-known-good committed state preservation, dispose cleanup and bounded loop/queue behavior.",
+        "Implement operation token lifecycle, checkpoint progress, stale/late completion rejection, retry token replacement and hard-timeout pre-commit guard.",
+        "Implement F03 v2 privacy-safe Evidence separating runtime_status / operation_status and fail-closed integrity_status semantics."
+      ],
+      "non_scope": [
+        "No F12 recovery UI beyond emitting the locked handoff/error contract.",
+        "No F00 shell presentation.",
+        "No production Share/Ranking integration."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F03-AC-014",
+          "test_id": "TEST-F03-AC-014"
+        },
+        {
+          "acceptance_id": "F03-AC-015",
+          "test_id": "TEST-F03-015"
+        },
+        {
+          "acceptance_id": "F03-AC-018",
+          "test_id": "TEST-F03-018"
+        },
+        {
+          "acceptance_id": "F03-AC-019",
+          "test_id": "TEST-F03-019"
+        },
+        {
+          "acceptance_id": "F03-AC-020",
+          "test_id": "TEST-F03-AC-020"
+        },
+        {
+          "acceptance_id": "F03-AC-022",
+          "test_id": "TEST-F03-022"
+        },
+        {
+          "acceptance_id": "F03-AC-025",
+          "test_id": "TEST-F03-AC-025"
+        },
+        {
+          "acceptance_id": "F03-AC-027",
+          "test_id": "TEST-F03-AC-027"
+        },
+        {
+          "acceptance_id": "F03-AC-028",
+          "test_id": "TEST-F03-AC-028"
+        },
+        {
+          "acceptance_id": "F03-AC-029",
+          "test_id": "TEST-F03-AC-029"
+        },
+        {
+          "acceptance_id": "F03-AC-030",
+          "test_id": "TEST-F03-030"
+        },
+        {
+          "acceptance_id": "F03-AC-031",
+          "test_id": "TEST-F03-031"
+        },
+        {
+          "acceptance_id": "F03-AC-032",
+          "test_id": "TEST-F03-032"
+        },
+        {
+          "acceptance_id": "F03-AC-033",
+          "test_id": "TEST-F03-033"
+        },
+        {
+          "acceptance_id": "F03-AC-034",
+          "test_id": "TEST-F03-034"
+        },
+        {
+          "acceptance_id": "F03-AC-035",
+          "test_id": "TEST-F03-035"
+        },
+        {
+          "acceptance_id": "F03-AC-036",
+          "test_id": "TEST-F03-036"
+        },
+        {
+          "acceptance_id": "F03-AC-037",
+          "test_id": "TEST-F03-037"
+        },
+        {
+          "acceptance_id": "F03-AC-038",
+          "test_id": "TEST-F03-038"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/runtime/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T002"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T004",
+      "backlog_item_ids": [
+        "BL-P1-017"
+      ],
+      "title": "Discover/Create React shell, clarification & visible-assumption flow",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-019",
+      "scope": [
+        "Create Phase 1 React Product shell entry for S01/S02 Create path under locked Design System and approved S01/S02 contracts.",
+        "Implement blank prompt and Inspiration Capsule editable prefill flow.",
+        "Render clarification and visible-assumption states without turning LLM proposals into User facts.",
+        "Preserve prompt/answers across recoverable failure and maintain duplicate-submit guard handoff to F01 idempotency.",
+        "Keep Inspiration Capsule on Create semantics; do not use Shared App restore semantics."
+      ],
+      "non_scope": [
+        "No Share / Remix / Correction feature implementation beyond inactive placeholders required by approved shell structure.",
+        "No S03 final runtime chrome yet.",
+        "No accessibility hardening AC outside selected Stage A backlog."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F00-AC-001",
+          "test_id": "TEST-F00-001"
+        },
+        {
+          "acceptance_id": "F00-AC-002",
+          "test_id": "TEST-F00-AC-002"
+        },
+        {
+          "acceptance_id": "F00-AC-003",
+          "test_id": "TEST-F00-003"
+        },
+        {
+          "acceptance_id": "F00-AC-004",
+          "test_id": "TEST-F00-004"
+        },
+        {
+          "acceptance_id": "F00-AC-005",
+          "test_id": "TEST-F00-005"
+        },
+        {
+          "acceptance_id": "F00-AC-006",
+          "test_id": "TEST-F00-006"
+        },
+        {
+          "acceptance_id": "F00-AC-038",
+          "test_id": "TEST-F00-038"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/app/",
+        "tests/behavior/",
+        "tests/e2e/",
+        "tests/visual/",
+        "tests/responsive/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:behavior",
+        "npm run test:e2e",
+        "npm run test:visual",
+        "npm run test:responsive"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "ui-verifier",
+        "reviewer"
+      ],
+      "parallel_safe": true,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T001"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T005",
+      "backlog_item_ids": [
+        "BL-P1-020",
+        "BL-P1-022"
+      ],
+      "title": "Shell persistence, authority boundary & truthful processing presentation",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-019",
+      "scope": [
+        "Implement F00 local draft persistence rules including DO_NOT_PERSIST exclusion.",
+        "Enforce Shell never mutates Runtime Instance Store directly and never displays LLM proposal as User fact.",
+        "Project F01 six CREATE checkpoints plus F03 APP_READY into S02/O05 truthful composite progress.",
+        "Freeze progress while waiting for User; never inflate by elapsed time; only F03 READY may reach 100%.",
+        "Project accepted Runtime interaction operation lifecycle into logical global processing presentation without artificial delay."
+      ],
+      "non_scope": [
+        "No F12 recovery implementation beyond consuming the locked handoff.",
+        "No Share / Remix / Correction implementation.",
+        "No elapsed-time ETA or fake progress."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F00-AC-018",
+          "test_id": "TEST-F00-AC-018"
+        },
+        {
+          "acceptance_id": "F00-AC-019",
+          "test_id": "TEST-F00-019"
+        },
+        {
+          "acceptance_id": "F00-AC-020",
+          "test_id": "TEST-F00-020"
+        },
+        {
+          "acceptance_id": "F00-AC-021",
+          "test_id": "TEST-F00-AC-021"
+        },
+        {
+          "acceptance_id": "F00-AC-029",
+          "test_id": "TEST-F00-029"
+        },
+        {
+          "acceptance_id": "F00-AC-030",
+          "test_id": "TEST-F00-030"
+        },
+        {
+          "acceptance_id": "F00-AC-031",
+          "test_id": "TEST-F00-031"
+        },
+        {
+          "acceptance_id": "F00-AC-033",
+          "test_id": "TEST-F00-PROG-001"
+        },
+        {
+          "acceptance_id": "F00-AC-034",
+          "test_id": "TEST-F00-PROG-002"
+        },
+        {
+          "acceptance_id": "F00-AC-035",
+          "test_id": "TEST-F00-PROG-003"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/app/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/e2e/",
+        "tests/visual/",
+        "tests/responsive/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:e2e",
+        "npm run test:visual",
+        "npm run test:responsive"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "ui-verifier",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T001",
+        "T002",
+        "T003",
+        "T004"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T006",
+      "backlog_item_ids": [
+        "BL-P1-015",
+        "BL-P1-018"
+      ],
+      "title": "Result contract, S03 App surface & Playable App vertical proof",
+      "status": "PLANNED",
+      "build_spec_id": "BS-P1-019",
+      "scope": [
+        "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
+        "Implement S03 Runtime surface so Generated App is visual/interaction primary content and Shell never wraps/mutates Runtime controls.",
+        "Implement explicit Modify-this-App vs Make-my-version entry selection and returnable S05-origin Inspection Mode continuity without starting S05 implementation.",
+        "Keep correction failure from destroying current App and preserve Compare decision boundaries without implementing full F16 correction engine.",
+        "Deliver executable vertical proof: one natural-language request → F01 generate → F02 validated/admitted → F03 READY/render → at least one real local interaction changes committed Runtime state/result without LLM/server round-trip."
+      ],
+      "non_scope": [
+        "No F05 Share behavior beyond visible non-functional entry boundary if required by approved chrome.",
+        "No F06 Remix/Refine implementation; only correct destination/intent selection contract.",
+        "No F16 correction implementation; only current-App preservation / entry boundary required by selected F00 AC.",
+        "No F19 Shared Ranking.",
+        "No Phase 4 hardening carry-forward."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F03-AC-009",
+          "test_id": "TEST-F03-009"
+        },
+        {
+          "acceptance_id": "F03-AC-024",
+          "test_id": "TEST-F03-AC-024"
+        },
+        {
+          "acceptance_id": "F00-AC-007",
+          "test_id": "TEST-F00-007"
+        },
+        {
+          "acceptance_id": "F00-AC-009",
+          "test_id": "TEST-F00-AC-009"
+        },
+        {
+          "acceptance_id": "F00-AC-010",
+          "test_id": "TEST-F00-010"
+        },
+        {
+          "acceptance_id": "F00-AC-011",
+          "test_id": "TEST-F00-011"
+        },
+        {
+          "acceptance_id": "F00-AC-012",
+          "test_id": "TEST-F00-AC-012"
+        },
+        {
+          "acceptance_id": "F00-AC-036",
+          "test_id": "TEST-F00-036"
+        },
+        {
+          "acceptance_id": "F00-AC-037",
+          "test_id": "TEST-F00-037"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/runtime/",
+        "src/app/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/e2e/",
+        "tests/visual/",
+        "tests/responsive/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:e2e",
+        "npm run test:visual",
+        "npm run test:responsive"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "ui-verifier",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T001",
+        "T002",
+        "T003",
+        "T004",
+        "T005"
+      ],
+      "completion_evidence": []
+    }
+  ]
+}
