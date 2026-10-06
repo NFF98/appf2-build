@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SP2 production contract harness (test-only)</title>
+  </head>
+  <body>
+    <main>
+      <section aria-labelledby="f01-heading">
+        <h1 id="f01-heading">F01 Clarification Policy</h1>
+        <label for="f01-input">Untrusted analysis envelope (JSON)</label>
+        <textarea id="f01-input"></textarea>
+        <button id="f01-submit" type="button">Evaluate</button>
+        <dl>
+          <dt>HTTP status</dt>
+          <dd data-testid="f01-http-status"></dd>
+          <dt>decision</dt>
+          <dd data-testid="f01-decision"></dd>
+          <dt>triggered_rule_ids</dt>
+          <dd><ul data-testid="f01-triggered-rule-ids"></ul></dd>
+          <dt>questions</dt>
+          <dd><ul data-testid="f01-questions"></ul></dd>
+        </dl>
+      </section>
+      <section aria-labelledby="f02-heading">
+        <h2 id="f02-heading">F02 Blueprint validation</h2>
+        <label for="f02-input">Candidate payload (exact bytes)</label>
+        <textarea id="f02-input"></textarea>
+        <button id="f02-submit" type="button">Validate</button>
+        <dl>
+          <dt>HTTP status</dt>
+          <dd data-testid="f02-http-status"></dd>
+          <dt>report.status</dt>
+          <dd data-testid="f02-report-status"></dd>
+          <dt>report.issues</dt>
+          <dd><ul data-testid="f02-report-issues"></ul></dd>
+          <dt>result.outputs</dt>
+          <dd data-testid="f02-result-outputs-presence"></dd>
+          <dd><ul data-testid="f02-result-outputs"></ul></dd>
+        </dl>
+      </section>
+    </main>
+    <script type="module">
+      const byTestId = (id) => document.querySelector(`[data-testid="${id}"]`);
+
+      function renderList(testId, entries, renderEntry) {
+        const list = byTestId(testId);
+        list.replaceChildren(
+          ...entries.map((entry) => {
+            const item = document.createElement("li");
+            renderEntry(item, entry);
+            return item;
+          })
+        );
+      }
+
+      function appendField(item, field, text) {
+        const span = document.createElement("span");
+        span.dataset.field = field;
+        span.textContent = text;
+        item.append(span);
+      }
+
+      async function post(path, body) {
+        const response = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body });
+        return { status: response.status, payload: await response.json() };
+      }
+
+      function renderClarification({ status, payload }) {
+        byTestId("f01-http-status").textContent = String(status);
+        byTestId("f01-decision").textContent = payload.decision ?? payload.error?.code ?? "";
+        renderList("f01-triggered-rule-ids", payload.triggered_rule_ids ?? [], (item, ruleId) => {
+          item.textContent = ruleId;
+        });
+        renderList("f01-questions", payload.questions ?? [], (item, question) => {
+          item.dataset.questionId = question.question_id;
+          appendField(item, "semantic_item_ids", question.semantic_item_ids.join(","));
+          appendField(item, "policy_rule_id", question.policy_rule_id);
+          appendField(item, "prompt", question.prompt);
+        });
+      }
+
+      function renderValidation({ status, payload }) {
+        const report = payload.report ?? {};
+        const outputs = payload.admissible?.blueprint?.result?.outputs;
+        byTestId("f02-http-status").textContent = String(status);
+        byTestId("f02-report-status").textContent = report.status ?? payload.error?.code ?? "";
+        renderList("f02-report-issues", report.issues ?? [], (item, issue) => {
+          appendField(item, "error_code", issue.error_code);
+          appendField(item, "stage", issue.stage);
+          appendField(item, "json_path", issue.json_path);
+        });
+        byTestId("f02-result-outputs-presence").textContent = Array.isArray(outputs) ? "PRESENT" : "ABSENT";
+        renderList("f02-result-outputs", outputs ?? [], (item, output) => {
+          item.dataset.outputId = output.id;
+          appendField(item, "id", output.id);
+          appendField(item, "label", output.label);
+          appendField(item, "value", JSON.stringify(output.value));
+          appendField(item, "sensitivity", output.sensitivity);
+        });
+      }
+
+      document.querySelector("#f01-submit").addEventListener("click", async () => {
+        renderClarification(await post("/api/f01/clarification", document.querySelector("#f01-input").value));
+      });
+      document.querySelector("#f02-submit").addEventListener("click", async () => {
+        renderValidation(await post("/api/f02/validation", document.querySelector("#f02-input").value));
+      });
+    </script>
+  </body>
+</html>
