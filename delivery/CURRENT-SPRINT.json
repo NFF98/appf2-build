@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-003",
-  "active_build_spec": "BS-P1-019",
-  "active_task": "T001",
-  "status": "ACTIVE",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human bounded approval on 2026-10-06 activates Product Proof Stage A SP-P1-003 with T001 as the sole active Task. This control transition stops before Cursor execution; no new [APPF2-EXECUTE][APPROVED] command is authorized by this file alone."
+  "reason": "SP-P1-003 / T001 is BLOCKED by BF-049 after independent BCE audit confirmed six bounded contract gaps under BS-P1-019. T002-T006 remain PLANNED and unauthorized. Resume only after Human-approved replacement Build Spec rebind; fresh Cursor execution is a separate gate."
 }

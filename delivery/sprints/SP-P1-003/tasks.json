@@ -10,7 +10,7 @@
         "BL-P1-011"
       ],
       "title": "Compiler gate, API lifecycle & truthful creation progress",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-019",
       "scope": [
         "Implement F01 compiler orchestration from Resolved Intent through F04 Capability Coverage, bounded Blueprint Composition and mandatory F02 validation.",
