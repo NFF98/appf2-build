@@ -16,6 +16,12 @@ export default defineConfig({
     ["list"],
     ["html", { outputFolder: "playwright-report", open: "never" }]
   ],
+  webServer: {
+    command: "npm run web:test-server",
+    url: "http://127.0.0.1:4173",
+    reuseExistingServer: !Boolean(process.env.CI),
+    timeout: 120_000
+  },
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:4173",
     trace: "retain-on-failure",
