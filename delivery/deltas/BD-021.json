@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-021",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-050"
   ],
@@ -37,7 +37,9 @@
     "Independent BCE contract audit confirmed the three normative addenda lock value-free EphemeralInputRequirement markers, compile request-scoped ephemeral_inputs binding/validation, and idempotency/re-provision semantics without persisting protected values or widening Product scope.",
     "The Design delta changes exactly 3 files relative to c970bd29c192a77a836721a8ebe2d49189e370d9 and introduces no new Acceptance ID.",
     "Scope-clean derived freeze source f1fdb6398a06eca58690d8a6bc47f71098be2929 is based on c970bd29c192a77a836721a8ebe2d49189e370d9 and changes exactly the 3 BF-050 normative addenda.",
-    "Provenance correction: canonical scope-clean freeze source is 7a1189f65268a82bb03b27f378fcaf59c41e4220 derived directly from BS-P1-020 source d8a9af891dbd61f3f830bd63ae5e21b6bb525603, changing only the same 3 BF-050 addenda."
+    "Provenance correction: canonical scope-clean freeze source is 7a1189f65268a82bb03b27f378fcaf59c41e4220 derived directly from BS-P1-020 source d8a9af891dbd61f3f830bd63ae5e21b6bb525603, changing only the same 3 BF-050 addenda.",
+    "Replacement Build Spec BS-P1-021 is locked on main by PR #295 / commit 0ff7dbaf4437069faac6a19913c2c64752765905.",
+    "Human-approved rebind activates BS-P1-021 for SP-P1-003/T001 at the pre-Cursor boundary; no Cursor execution lease is granted by this transition."
   ],
   "upstream_working_commit": "af3fc11f7326e58955c17b850cb4427a4f27ddd1",
   "freeze_source": {
