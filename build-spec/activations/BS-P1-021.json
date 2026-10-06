@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-021",
+  "previous_baseline": "BS-P1-020",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "Human 2026-10-06: 批准，繼續下一步要先補 DO_NOT_PERSIST contract，再 rebaseline / rebind；停在 Cursor execution 前。",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011",
+    "BD-012",
+    "BD-013",
+    "BD-014",
+    "BD-015",
+    "BD-016",
+    "BD-017",
+    "BD-018",
+    "BD-019",
+    "BD-020",
+    "BD-021"
+  ],
+  "source_working_commit": "7a1189f65268a82bb03b27f378fcaf59c41e4220",
+  "activated_at": "2026-10-06T23:14:00+09:00"
+}
