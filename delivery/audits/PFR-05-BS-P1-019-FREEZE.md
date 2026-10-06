@@ -7,7 +7,7 @@ Status: **PASS / HUMAN-APPROVED / LOCKED**
 - Candidate Build PR #278 merge: `24fd40fa9b9457a24bcf861dbf259f941bcaad15`.
 - Supersedes: `BS-P1-018`.
 - Scope-clean source: `e7c83ac198b63a0273f30aeaf27a6dd65abadfee`.
-- Locked manifest content hash: `85e3b6ede9c0b924bf144f900f206ee8dc7dfec6ab32bd019962044ccb53f565`.
+- Locked manifest content hash: `eb812ce9209806fcf2a7e3514d662e5aac0697866e632bdcdaaa3ad8d3d98b79`.
 - Acceptance Registry: 307 total / 306 ACTIVE required-for-freeze.
 - Backlog: 46 total = 11 historical DONE + 35 remaining; 32 prior QUEUED rebound + BL-P1-044..046.
 - F19 Phase 1 scope: `shared.ranking.v1` only.
