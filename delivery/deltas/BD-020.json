@@ -52,7 +52,10 @@
     "Issue #245 independent BCE audit comment 6013292757 confirmed the BS-P1-019 blocker.",
     "appf2-design PR #29 merged bounded BF-049 contract closure as c970bd29c192a77a836721a8ebe2d49189e370d9.",
     "Scope-clean freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 derives from e7c83ac198b63a0273f30aeaf27a6dd65abadfee and changes exactly 8 Design contract paths.",
-    "SP-P1-003/T001 remains BLOCKED and execution remains HOLD during Freeze Candidate."
+    "SP-P1-003/T001 remains BLOCKED and execution remains HOLD during Freeze Candidate.",
+    "BS-P1-020 manifest locks content_sha256 e179e8286a134f38ab0dd86c529dabce63205f9c8ba309eae8a6e868b87a067e.",
+    "BS-P1-020 acceptance_count remains 307; only the eight approved projected contract outputs differ from BS-P1-019, plus projection-map.json and manifest.json.",
+    "All other projected artifacts, including canonical High-fi PNG references, reuse the exact BS-P1-019 bytes."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",

@@ -19,7 +19,8 @@
     "BS-P1-019 idempotency_operation has only IN_PROGRESS / SUCCEEDED / FAILED_TERMINAL and explicitly forbids locking retryable transient failures as FAILED_TERMINAL, but defines no release/retry/takeover transition.",
     "BS-P1-019 shared API allows anonymous_id from Function payload or trusted request context, but F01 answers/compile do not lock the trusted-context binding or mismatch behavior against intent_record.anonymous_id.",
     "Human-approved BF-049 bounded Design remediation merged in appf2-design PR #29 as c970bd29c192a77a836721a8ebe2d49189e370d9.",
-    "BD-020 binds the scope-clean replacement freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 for proposed BS-P1-020."
+    "BD-020 binds the scope-clean replacement freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 for proposed BS-P1-020.",
+    "BS-P1-020 locked freeze materializes the Human-approved BF-049 remediation with manifest content_sha256 e179e8286a134f38ab0dd86c529dabce63205f9c8ba309eae8a6e868b87a067e while BF-049 remains BLOCKED pending rebind."
   ],
   "attempts": [
     {

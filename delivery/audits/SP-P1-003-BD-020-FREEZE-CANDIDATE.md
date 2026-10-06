@@ -160,3 +160,19 @@ After BS-P1-020 is separately frozen and validated:
 **PASS — ready for immutable BS-P1-020 Build Freeze.**
 
 No Product implementation is authorized by this audit.
+
+## 10. Frozen candidate materialization
+
+The immutable BS-P1-020 candidate is now materialized with:
+
+- baseline_id: `BS-P1-020`
+- source_working_commit: `d8a9af891dbd61f3f830bd63ae5e21b6bb525603`
+- supersedes: `BS-P1-019`
+- approved deltas: `BD-003..BD-020`
+- acceptance_count: `307`
+- manifest content_sha256: `e179e8286a134f38ab0dd86c529dabce63205f9c8ba309eae8a6e868b87a067e`
+- projection-map sha256: `831b19dee9e01f9043d8cd087bf5376d05dcbeb75a03433ce68cfdeacc8e1156`
+
+Byte-preservation construction reuses every unchanged BS-P1-019 Git blob exactly. Only the 8 BF-049 projected outputs plus projection-map/manifest receive new blobs.
+
+Freeze does not resolve BF-049 and does not activate execution.
