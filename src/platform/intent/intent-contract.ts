@@ -1,7 +1,10 @@
 import type { JsonValue } from "./json-value.js";
 
-/** Implementation-owned identity of the deterministic BS-P1-016 F01 Clarification Policy. */
-export const F01_CLARIFICATION_POLICY_VERSION = "f01-clarification-policy/BS-P1-016";
+/**
+ * Implementation-owned identity of the deterministic F01 Clarification Policy. It travels as the
+ * Evidence `policy_version` property, so it must satisfy that Registry token grammar.
+ */
+export const F01_CLARIFICATION_POLICY_VERSION = "f01-clarification-policy.BS-P1-016";
 
 export const INTENT_SOURCES = [
   "USER_EXPLICIT",
@@ -119,19 +122,46 @@ export type AnalysisMetadata = {
   readonly clarification_policy_state?: ClarificationPolicyState;
 };
 
+/** F01-DATA-001A bounded descriptor shared by `actors[]` / `entities[]`. */
+export type SemanticDescriptor = {
+  readonly id: string;
+  readonly semantic_role: string;
+  readonly description: string;
+  readonly source: IntentSource;
+  readonly source_ref?: SourceRef;
+};
+
+export type RequestedOutputDescriptor = SemanticDescriptor & {
+  readonly output_type: ValueType;
+  readonly required: boolean;
+};
+
+/** F01-DATA-001A semantic requirement hint; never a Capability selection. */
+export type CapabilityHintV1 = {
+  readonly hint_id: string;
+  readonly semantic_need: string;
+  readonly required: boolean;
+  readonly impact_level: ImpactLevel;
+  readonly input_types: readonly ValueType[];
+  readonly output_types: readonly ValueType[];
+  readonly interaction_class: string;
+  readonly constraint_item_ids: readonly string[];
+  readonly source_item_ids: readonly string[];
+};
+
 export type StructuredIntentEnvelope = {
   readonly envelope_version: string;
   readonly goal: JsonValue;
-  readonly actors: readonly JsonValue[];
-  readonly entities: readonly JsonValue[];
+  readonly actors: readonly SemanticDescriptor[];
+  readonly entities: readonly SemanticDescriptor[];
   readonly known_inputs: readonly KnownInput[];
   readonly constraints: readonly PolicyVisibleItem[];
-  readonly requested_outputs: readonly JsonValue[];
+  readonly requested_outputs: readonly RequestedOutputDescriptor[];
   readonly candidate_rules: readonly PolicyVisibleItem[];
   readonly missing_fields: readonly PolicyVisibleItem[];
   readonly ambiguities: readonly PolicyVisibleItem[];
   readonly assumptions: readonly PolicyVisibleItem[];
-  readonly capability_hints: readonly JsonValue[];
+  readonly capability_hints: readonly CapabilityHintV1[];
   readonly analysis_metadata: AnalysisMetadata;
 };
 

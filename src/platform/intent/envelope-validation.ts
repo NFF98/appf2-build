@@ -23,6 +23,7 @@ import {
   type StructuredIntentEnvelope
 } from "./intent-contract.js";
 import { isJsonValue, isPlainRecord } from "./json-value.js";
+import { checkDescriptorReferences, validateDescriptorShapes } from "./semantic-descriptors.js";
 import { distinctCanonicalCount, isChoiceQuestion, valueFitsItem, valueMatchesType } from "./value-shape.js";
 
 /**
@@ -48,7 +49,6 @@ const ENVELOPE_FIELDS = [
   "capability_hints",
   "analysis_metadata"
 ] as const;
-const OPAQUE_ARRAY_FIELDS = ["actors", "entities", "requested_outputs", "capability_hints"] as const;
 const ITEM_REQUIRED_FIELDS = [
   "id",
   "semantic_role",
@@ -314,13 +314,12 @@ function checkDependencyGraph(envelope: StructuredIntentEnvelope, resolution: De
   for (const id of new DependencyGraph(indexed.map(({ item }) => item)).cyclicItemIds()) {
     out.add(`$.depends_on_ids[${id}]`, "DEPENDENCY_CYCLE");
   }
+  checkDescriptorReferences(envelope, (path, reason) => out.add(path, reason));
 }
 
 function validateCollections(record: UnknownRecord, trust: EnvelopeTrust, out: Violations): void {
   if (!isNonEmptyString(record.envelope_version)) out.add("$.envelope_version", "INVALID_STRING");
-  for (const key of OPAQUE_ARRAY_FIELDS) {
-    if (!Array.isArray(record[key])) out.add(`$.${key}`, "INVALID_ARRAY");
-  }
+  validateDescriptorShapes(record, (path, reason) => out.add(path, reason));
   if (!Array.isArray(record.known_inputs)) out.add("$.known_inputs", "INVALID_ARRAY");
   else record.known_inputs.forEach((input, index) => validateKnownInput(input, `$.known_inputs[${index}]`, trust, out));
   for (const collection of POLICY_ITEM_COLLECTIONS) {
