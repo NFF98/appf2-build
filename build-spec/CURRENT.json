@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-018",
-  "implementation_enabled": true,
-  "reason": "Human-approved restoration of SP-P1-002 / T009 after closure security remediation. The temporary package-lock HOLD exception has been removed; T009 resumes its exact prior execution context for Evidence normalization and REVIEW."
+  "implementation_enabled": false,
+  "reason": "Human-approved T009 final closure after independent closure audit PASS. BS-P1-018 remains active/locked; execution returns to HOLD pending a separate SP-P1-002 Sprint Close decision."
 }
