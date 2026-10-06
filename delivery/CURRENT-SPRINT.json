@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-021",
   "active_task": "T001",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved BF-050 rebind restores SP-P1-003 / T001 under locked BS-P1-021. T001 is the sole active Task at the pre-Cursor boundary; PR #290 remains unmerged, T002-T006 remain PLANNED and unauthorized, and fresh Cursor execution requires a separate explicit command."
+  "reason": "T001 implementation merged via PR #297 and final Evidence normalized via PR #298. T001 final Evidence is bound for independent closure audit; T002-T006 remain PLANNED / unauthorized."
 }
