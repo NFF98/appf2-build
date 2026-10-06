@@ -49,10 +49,10 @@ SP-P1-002 foundation — CLOSED
 
 | Planning stage | Human outcome | Sprint ID | Backlog allocation |
 |---|---|---|---|
-| Product Proof Stage A — Playable App | Intent → generated App → render → play | **TBD at Sprint creation** | Re-plan from remaining canonical backlog after PFR-03/PFR-04 + Product Proof Build Freeze |
-| Product Proof Stage B — Share + Shared Ranking | Share → recipient use → bounded asynchronous Shared Ranking | **TBD at Sprint creation** | TBD during detailed planning |
-| Product Proof Stage C — Remix + Lineage | Remix → child Version → Direct Parent / Root lineage → fresh Shared Data scope | **TBD at Sprint creation** | TBD during detailed planning |
-| Product Hardening + Phase 1 Close | Required recovery / correction / accessibility / performance / evidence hardening | **TBD at Sprint creation** | Evidence-driven |
+| Product Proof Stage A — Playable App | Intent → generated App → render → play | **TBD at Sprint creation** | Candidate mapping: 12 existing queued items |
+| Product Proof Stage B — Share + Shared Ranking | Share → recipient use → bounded asynchronous Shared Ranking | **TBD at Sprint creation** | Candidate mapping: 3 existing + BL-P1-044/045 |
+| Product Proof Stage C — Remix + Lineage | Remix → child Version → Direct Parent / Root lineage → fresh Shared Data scope | **TBD at Sprint creation** | Candidate mapping: 5 existing + BL-P1-046 |
+| Product Hardening + Phase 1 Close | Required recovery / correction / accessibility / performance / evidence hardening | **TBD at Sprint creation** | Candidate mapping: 12 existing queued items |
 
 These stage names are stable planning labels. They are **not** aliases for any pre-existing `SP-P1-NNN`.
 
@@ -90,12 +90,42 @@ As of this normalization, `BS-P1-005` through `BS-P1-018` already exist as histo
 
 `SP-P1-002` is CLOSED. All nine Tasks are CLOSED and all six selected Backlog items are DONE. No detailed Sprint is currently active; the repository remains HOLD until a separate Human-approved planning / Build Freeze / Sprint activation flow.
 
-All Product Proof stages after SP-P1-002 remain planning-only. Before implementation they require, as applicable:
+All Product Proof stages after SP-P1-002 remain planning-only.
 
-1. PFR-03 F19 Shared App Data detailed-design closure.
-2. PFR-04 S03/S04/S05 UI/UX Delta Review.
-3. Human-approved Product Proof Build Freeze using a newly allocated Build Spec ID.
-4. Detailed Sprint planning with a newly allocated Sprint ID.
-5. Human Sprint/Task activation.
+PFR-03 / PFR-04 candidate work is now complete:
+
+- F19 is converged to Phase 1 `shared.ranking.v1` only.
+- S03 / S04 / S05 F19 textual delta review PASS; no High-fi reopen.
+- PFR-05 has a reviewable **BS-P1-019 candidate**, but it is not yet a locked baseline.
+- Candidate backlog projection preserves the 32 existing QUEUED items and proposes only BL-P1-044..046 for new F19 Acceptance.
+
+Before implementation they still require:
+
+1. Human Build Freeze approval for the PFR-05 candidate.
+2. Creation/locking of the approved replacement Build Spec while execution remains disabled.
+3. Detailed Playable App Sprint planning with the next canonical Sprint ID.
+4. Human Sprint/Task activation.
+5. Separate Cursor execution approval.
 
 No roadmap text alone authorizes Cursor implementation.
+
+
+## PFR-05 Candidate Snapshot — Not Yet Canonical Execution Truth
+
+Candidate only:
+
+- proposed replacement baseline: `BS-P1-019`;
+- scope-clean Design source: `e7c83ac198b63a0273f30aeaf27a6dd65abadfee`;
+- current active baseline remains `BS-P1-018`;
+- 11 historical DONE backlog items remain immutable;
+- 32 existing QUEUED backlog items are preserved;
+- proposed F19 increment = `BL-P1-044`–`BL-P1-046`;
+- candidate remaining total = 35;
+- no Sprint ID allocated;
+- no Product code / Cursor authority.
+
+Canonical candidate details:
+- `delivery/audits/PFR-05-BS-P1-019-FREEZE-CANDIDATE.md`
+- `delivery/audits/PFR-05-PROJECTION-CANDIDATE.json`
+- `delivery/audits/PFR-05-BACKLOG-PROJECTION-CANDIDATE.json`
+- `delivery/deltas/BD-019.json`
