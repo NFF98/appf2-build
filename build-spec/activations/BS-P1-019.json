@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-019",
+  "previous_baseline": "BS-P1-018",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "Human 2026-10-06: 批准 Design PR #27 的 Product semantics + BS-P1-019 Build Freeze candidate",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011",
+    "BD-012",
+    "BD-013",
+    "BD-014",
+    "BD-015",
+    "BD-016",
+    "BD-017",
+    "BD-018",
+    "BD-019"
+  ],
+  "source_working_commit": "e7c83ac198b63a0273f30aeaf27a6dd65abadfee",
+  "activated_at": "2026-10-06T05:31:53Z"
+}
