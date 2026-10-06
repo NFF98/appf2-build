@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-002",
+  "active_build_spec": "BS-P1-018",
+  "active_task": "T009",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved temporary HOLD/security-maintenance window for T009 closure security remediation. SP-P1-002 manifest remains ACTIVE and T009 remains IN_PROGRESS; only CURRENT execution authority is suspended."
+  "reason": "Human-approved restoration after T009 closure security remediation. SP-P1-002 / T009 resumes ACTIVE CURRENT authority for Evidence normalization and closure REVIEW; Task semantics are unchanged."
 }
