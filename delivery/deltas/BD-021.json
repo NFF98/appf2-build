@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-021",
+  "type": "DESIGN_DELTA",
+  "status": "ASSESSING",
+  "source_finding_ids": [
+    "BF-050"
+  ],
+  "affected_build_spec": "BS-P1-020",
+  "affected_tasks": [
+    "T001"
+  ],
+  "affected_contracts": [
+    "F01 DO_NOT_PERSIST durable marker / request-scoped value split",
+    "F01 compile API ephemeral input binding",
+    "Shared mutation idempotency digest interaction"
+  ],
+  "affected_acceptance": [
+    "F01-AC-007",
+    "F01-AC-014",
+    "F01-AC-016",
+    "F01-AC-020"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-06: 批准繼續補 DO_NOT_PERSIST contract，再 rebaseline / rebind；停在 Cursor execution 前。"
+  },
+  "replacement_build_spec_required": true,
+  "replacement_build_spec": "BS-P1-021",
+  "verification": [
+    "Issue #245 independent BCE audit comment 6016838295 confirmed BF-050 as a remaining T001 specification ambiguity.",
+    "Design remediation is bounded to DO_NOT_PERSIST request lifecycle; FAILED_TERMINAL replay remains implementation remediation."
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-050",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-020",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T001",
+  "expected": "BS-P1-020 must make DO_NOT_PERSIST input lifecycle implementable across POST /intents and POST /intents/{id}/compile without persisting protected values or requiring implementation to invent transport/re-provision semantics.",
+  "actual": "Independent BCE audit of PR #290 confirmed the locked design requires request-scoped EphemeralResolvedContext for Prompt B and User re-provision on retry, but the compile request contract does not define the field, shape, binding, validation, or idempotency behavior for supplying those values. PR #290 therefore selected a narrower behavior that rejects referenced DO_NOT_PERSIST inputs before Prompt B. A separate FAILED_TERMINAL replay defect remains implementation remediation and does not widen this Design delta.",
+  "evidence": [
+    "Issue #245 RESULT comment 6016578938 reported the DO_NOT_PERSIST behavior as a Finding candidate.",
+    "Issue #245 independent BCE audit comment 6016838295 classified the remaining DO_NOT_PERSIST lifecycle ambiguity as SPEC_GAP and blocked PR #290 merge.",
+    "BS-P1-020 F01-DATA-005 requires DO_NOT_PERSIST values to be non-durable, permits request-scoped EphemeralResolvedContext for Prompt B, and requires User re-provision when context is absent.",
+    "BS-P1-020 F01 compile API does not define a bounded request field/schema for those re-provided values.",
+    "PR #290 remains OPEN and unmerged."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T001_BS_P1_020_IMPLEMENTATION_AND_INDEPENDENT_BCE_AUDIT",
+      "result": "SPEC_GAP_CONFIRMED_WITH_IMPLEMENTATION_CANDIDATE_UNMERGED",
+      "evidence": "Candidate #290 passed structural gates but independent semantic audit blocked merge on DO_NOT_PERSIST lifecycle ambiguity."
+    }
+  ],
+  "requested_planning_action": [
+    "Lock value-free durable EphemeralInputRequirement descriptors while keeping values non-durable.",
+    "Lock compile request-scoped ephemeral_inputs transport, binding and validation.",
+    "Lock missing/mismatched ephemeral input recovery so User re-provision is explicit.",
+    "Lock idempotency interaction: ephemeral values affect request_digest but raw values are never persisted; same-body retry resubmits them with the same key; material value change uses a new key.",
+    "Lock durable replay behavior so completed logical outcomes do not need ephemeral values again.",
+    "Freeze a replacement Build Spec, rebind SP-P1-003/T001, and stop before Cursor execution."
+  ],
+  "affected_contracts": [
+    "F01 ResolvedIntent / F01-DATA-005",
+    "F01 compile API / F01-API-003",
+    "F01 retry-progress / F01-RQ-010",
+    "Shared mutation idempotency interaction with request-scoped ephemeral values"
+  ],
+  "affected_acceptance": [
+    "F01-AC-007",
+    "F01-AC-014",
+    "F01-AC-016",
+    "F01-AC-020"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-021"
+}
