@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-020",
-  "implementation_enabled": false,
-  "reason": "Human-approved BF-050 bounded remediation: T001 implementation is HOLD while DO_NOT_PERSIST request-lifecycle semantics are clarified and a replacement Build Spec is frozen/rebound. PR #290 remains unmerged; no Cursor execution or T002 authority is active."
+  "active_baseline": "BS-P1-021",
+  "implementation_enabled": true,
+  "reason": "Human-approved BF-050 replacement rebaseline activates BS-P1-021 for SP-P1-003/T001 after bounded DO_NOT_PERSIST contract closure. T001 is rebound at the pre-Cursor boundary; PR #290 remains unmerged and no fresh Cursor execution command is authorized by this control transition."
 }
