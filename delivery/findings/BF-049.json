@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-049",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-019",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T001",
+  "expected": "BS-P1-019 must make SP-P1-003/T001 compiler orchestration, ResolvedIntent projection, F02 rejection feedback, compile retry lifecycle, mutation idempotency, and anonymous identity binding implementable without Cursor inventing Product/API/persistence/recovery semantics.",
+  "actual": "Cursor RESULT comment 6012821241 correctly HARD STOPPED before code write. Independent BCE audit comment 6013292757 confirmed five full gaps plus one narrowed-but-blocking identity-binding gap: CapabilityRequirement derivation is unspecified; ResolvedIntent exact projection/provenance schema is incomplete; F02-ERR-012 recovery truth directly contradicts F12/F02; failed compile lifecycle has no retry transition; retryable idempotency has no completed transient-failure state transition; and answers/compile lack a locked trusted anonymous identity binding/mismatch rule.",
+  "evidence": [
+    "Issue #245 EXECUTE comment 6012666055 authorized only SP-P1-003/T001 under BS-P1-019 and required HARD STOP on SPEC_GAP.",
+    "Issue #245 RESULT comment 6012821241 reported pre-code-write SPEC_GAP with zero repository writes, branch, commit, PR, merge or T002 start.",
+    "Issue #245 independent BCE audit comment 6013292757 confirmed the HARD STOP and independently classified SG-1/3/4/5 as blocking, SG-2 as blocking with a narrow DO_NOT_PERSIST correction, and SG-6 as a narrowed identity-binding blocker.",
+    "BS-P1-019 F01-RQ-004 defines CapabilityRequirement shape and F04 handoff but does not define deterministic derivation from canonical Resolved Intent.",
+    "BS-P1-019 F01-DATA-005 defines ResolvedIntent top-level collections but not exact projection/item/provenance schema; existing DO_NOT_PERSIST truth remains request-scoped and must stay non-durable.",
+    "BS-P1-019 F02 §39 and F12 §18 classify F02-ERR-012 PERMISSION_NOT_ALLOWED as non-retry/security-terminal while recovery-registry.json marks it BLOCKING_RECOVERABLE / CONDITIONAL_RETRY.",
+    "BS-P1-019 F01-API-003 requires intent.status=READY while durable lifecycle includes COMPOSITION_FAILED / VALIDATION_REJECTED / INCOMPATIBLE and F01-RQ-010 allows User retry without defining the transition back to an eligible compile state.",
+    "BS-P1-019 idempotency_operation has only IN_PROGRESS / SUCCEEDED / FAILED_TERMINAL and explicitly forbids locking retryable transient failures as FAILED_TERMINAL, but defines no release/retry/takeover transition.",
+    "BS-P1-019 shared API allows anonymous_id from Function payload or trusted request context, but F01 answers/compile do not lock the trusted-context binding or mismatch behavior against intent_record.anonymous_id."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T001_BS_P1_019_PREWRITE_IMPLEMENTATION_PREFLIGHT",
+      "result": "SPEC_GAP_CONFIRMED_NO_CODE_WRITTEN",
+      "evidence": "Cursor correctly stopped before creating an implementation candidate; independent BCE audit confirmed the blocker while narrowing two overbroad subclaims."
+    }
+  ],
+  "requested_planning_action": [
+    "Lock a deterministic CapabilityRequirement derivation contract from canonical ResolvedIntent truth into F01.",
+    "Lock exact ResolvedIntent projection/item/provenance schema while preserving existing request-scoped DO_NOT_PERSIST non-durability.",
+    "Lock an authoritative F02 error to F01 rejection-class map and resolve the F02-ERR-012 recovery-registry contradiction.",
+    "Lock an explicit intent lifecycle transition table for compile failure, recoverability and User-triggered retry.",
+    "Lock idempotency_operation semantics for retryable transient failure, interrupted IN_PROGRESS and successful replay.",
+    "Lock trusted anonymous identity context binding for F01 intent mutations and mismatch behavior without treating anonymous_id as authentication.",
+    "Perform a bounded same-class cross-contract sweep across F01/F02/F07/F12/API-CONVENTIONS/DATA-MODEL/recovery-registry so the six decisions do not leave a second contradictory truth.",
+    "Merge Design remediation, freeze a scope-clean replacement Build Spec, rebind SP-P1-003/T001, and stop at the pre-Cursor execution boundary."
+  ],
+  "affected_contracts": [
+    "F01 CapabilityRequirementExtractor / F01-RQ-004",
+    "F01 ResolvedIntent / F01-DATA-005",
+    "F01 validation feedback loop / F01-RQ-008",
+    "F01 compile API lifecycle / F01-API-003",
+    "F01 retry-progress semantics / F01-RQ-010",
+    "Shared mutation idempotency / idempotency_operation",
+    "F01 anonymous identity trusted-context binding",
+    "F12 F02 recovery mapping",
+    "Recovery Registry F02-ERR-012"
+  ],
+  "affected_acceptance": [
+    "F01-AC-007",
+    "F01-AC-008",
+    "F01-AC-009",
+    "F01-AC-010",
+    "F01-AC-011",
+    "F01-AC-012",
+    "F01-AC-013",
+    "F01-AC-014",
+    "F01-AC-015",
+    "F01-AC-016",
+    "F01-AC-020",
+    "F01-AC-021",
+    "F01-AC-022",
+    "F01-AC-028",
+    "F01-AC-029"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
