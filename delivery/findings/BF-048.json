@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-048",
   "classification": "DESIGN_DELTA_CANDIDATE",
-  "status": "ASSESSING",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-018",
   "sprint_id": "PFR-2026",
   "task_id": "PFR-05",
@@ -14,7 +14,9 @@
     "BS-P1-018 exact scope-clean source is 9c1e0c5f077663858530ac026fc55b9e20eddef2 and contains no F19 Product contract.",
     "PFR-05 scope-clean derived source e7c83ac198b63a0273f30aeaf27a6dd65abadfee changes exactly 16 projected paths and excludes unrelated Phase-4/future drift.",
     "PFR-05 registry audit: Acceptance 289→307 (+18 F19), Evidence 113→120 (+7 F19), Recovery 122→132 (+10 F19), with document/registry alignment PASS.",
-    "PFR-05 backlog audit preserves all 11 historical DONE items and all 32 existing QUEUED items, proposing only BL-P1-044..046 for the 18 new F19 Acceptance contracts."
+    "PFR-05 backlog audit preserves all 11 historical DONE items and all 32 existing QUEUED items, proposing only BL-P1-044..046 for the 18 new F19 Acceptance contracts.",
+    "Human approved Design PR #27 Product semantics + BS-P1-019 Build Freeze candidate on 2026-10-06.",
+    "BS-P1-019 replacement baseline is created in the same governed Freeze change with content_sha256 85e3b6ede9c0b924bf144f900f206ee8dc7dfec6ab32bd019962044ccb53f565."
   ],
   "attempts": [
     {
@@ -22,6 +24,12 @@
       "strategy": "PFR_05_SCOPE_CLEAN_PHASE1_REMAINING_FREEZE_CANDIDATE",
       "result": "CANDIDATE_PASS_HUMAN_APPROVED",
       "evidence": "Candidate audit proves a single replacement baseline can carry Playable App → Share + Shared Ranking → Remix + Lineage → Hardening without importing F01/F02/F07 Phase-4 hardening, F18/F20, Vote/Counter, F09 or full F13."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "HUMAN_APPROVED_BS_P1_019_REPLACEMENT_FREEZE",
+      "result": "PASSED",
+      "evidence": "Replacement baseline supersedes BS-P1-018, freezes only the scope-clean F19/PFR-04 delta, rebinds unfinished backlog, and keeps execution HOLD."
     }
   ],
   "requested_planning_action": [

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-018",
+  "active_baseline": "BS-P1-019",
   "implementation_enabled": false,
-  "reason": "Human-approved SP-P1-002 Sprint closure complete. BS-P1-018 remains the active/locked baseline; execution stays disabled until a separate future planning/activation decision."
+  "reason": "Human-approved PFR-05 Phase 1 remaining Build Freeze complete. BS-P1-019 is active/locked; implementation remains disabled pending separate Playable App Sprint planning/activation and Cursor approval."
 }
