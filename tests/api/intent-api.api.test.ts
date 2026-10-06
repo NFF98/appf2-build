@@ -242,7 +242,7 @@ describe("F01-AC-014 POST /compile retries never duplicate a logical compile", (
 });
 
 describe("F01-AC-014 FAILED_TERMINAL replay keeps the bounded terminal recovery truth", () => {
-  test("TEST-F01-AC-014 a not-compilable F01-ERR-001 FAILED_TERMINAL replays the same reason and lifecycle_status without new work", async () => {
+  test("TEST-F01-AC-014 a not-compilable F01-ERR-001 FAILED_TERMINAL replays the same bounded reason without new work", async () => {
     const h = createF01Harness();
     h.gateway.queueAnalysis(succeeded(clarifyingAnalysis() as unknown as JsonValue));
     const created = dataOf(await h.create());
@@ -251,7 +251,7 @@ describe("F01-AC-014 FAILED_TERMINAL replay keeps the bounded terminal recovery 
     const first = await h.compile(intentId, intentVersion, "compile-early");
     expect(first.status).toBe(422);
     expect(errorOf(first)).toMatchObject({ code: "F01-ERR-001", retryable: false, retry_after_seconds: null });
-    expect(errorOf(first).details).toEqual({ reason: "INTENT_NOT_COMPILABLE", lifecycle_status: "NEEDS_CLARIFICATION" });
+    expect(errorOf(first).details).toEqual({ reason: "INTENT_NOT_COMPILABLE" });
     const terminal = structuredClone(h.db.operationFor(COMPILE_ROUTE, "compile-early")!);
     expect(terminal).toMatchObject({ status: "FAILED_TERMINAL", attempt_no: 1, error_code: "F01-ERR-001", http_status: 422, result_ref_type: null, result_ref_id: null });
     h.clock.advance(60_000);
@@ -266,12 +266,45 @@ describe("F01-AC-014 FAILED_TERMINAL replay keeps the bounded terminal recovery 
     const validatedVersion = Number(g.db.intents.get(validatedId)?.intent_version);
     const again = await g.compile(validatedId, validatedVersion, "compile-again");
     expect(again.status).toBe(422);
-    expect(errorOf(again)).toMatchObject({ code: "F01-ERR-001", retryable: false, details: { reason: "INTENT_NOT_COMPILABLE", lifecycle_status: "VALIDATED" } });
+    expect(errorOf(again)).toMatchObject({ code: "F01-ERR-001", retryable: false });
+    expect(errorOf(again).details).toEqual({ reason: "INTENT_NOT_COMPILABLE" });
     g.clock.advance(60_000);
     const againReplay = await g.compile(validatedId, validatedVersion, "compile-again");
     expect([againReplay.status, errorOf(againReplay)]).toEqual([422, errorOf(again)]);
     expect(g.gateway.calls("BLUEPRINT_COMPOSE")).toHaveLength(1);
     expect(g.db.operationFor(COMPILE_ROUTE, "compile-again")).toMatchObject({ status: "FAILED_TERMINAL", attempt_no: 1, error_code: "F01-ERR-001", http_status: 422 });
+  });
+
+  test("TEST-F01-AC-014 an F01-ERR-001 FAILED_TERMINAL replay stays the same terminal outcome after answers move the intent to READY", async () => {
+    const h = createF01Harness();
+    h.gateway.queueAnalysis(succeeded(clarifyingAnalysis() as unknown as JsonValue));
+    const created = dataOf(await h.create());
+    const intentId = String(created.intent_id);
+    const originalVersion = Number(created.intent_version);
+    expect(created.status).toBe("NEEDS_CLARIFICATION");
+
+    const first = await h.compile(intentId, originalVersion, "compile-drift");
+    expect(first.status).toBe(422);
+    expect(errorOf(first)).toMatchObject({ code: "F01-ERR-001", retryable: false });
+    expect(errorOf(first).details).toEqual({ reason: "INTENT_NOT_COMPILABLE" });
+    const terminal = structuredClone(h.db.operationFor(COMPILE_ROUTE, "compile-drift")!);
+    expect(terminal).toMatchObject({ status: "FAILED_TERMINAL", attempt_no: 1, error_code: "F01-ERR-001", http_status: 422 });
+
+    const questionId = String((created.questions as { question_id: string }[])[0]?.question_id);
+    const answered = dataOf(await h.answers(intentId, { answers: [{ question_id: questionId, value: 6 }], assumption_decisions: [], intent_version: originalVersion }, "answers-drift"));
+    expect(answered.status).toBe("READY");
+    expect(Number(answered.intent_version)).toBeGreaterThan(originalVersion);
+    expect(h.db.intents.get(intentId)).toMatchObject({ lifecycle_status: "READY", intent_version: answered.intent_version });
+
+    h.clock.advance(60_000);
+    const replay = await h.compile(intentId, originalVersion, "compile-drift");
+    expect(replay.status).toBe(first.status);
+    expect(errorOf(replay)).toEqual(errorOf(first));
+    expect(h.db.operationFor(COMPILE_ROUTE, "compile-drift")).toEqual(terminal);
+    expect(h.gateway.calls("BLUEPRINT_COMPOSE")).toEqual([]);
+    expect([...h.db.compilerRuns.values()].filter((run) => run.stage === "BLUEPRINT_COMPOSE")).toEqual([]);
+    expect(h.db.blueprint.runs.size).toBe(0);
+    expect(h.db.intents.get(intentId)).toMatchObject({ lifecycle_status: "READY", intent_version: answered.intent_version });
   });
 });
 

@@ -53,7 +53,8 @@ describe("F01-AC-007 Prompt B never runs before the Clarification Gate passes", 
 
     const blocked = await h.compile(intentId, Number(created.intent_version), "compile-early");
     expect(blocked.status).toBe(422);
-    expect(errorOf(blocked)).toMatchObject({ code: "F01-ERR-001", details: { reason: "INTENT_NOT_COMPILABLE", lifecycle_status: "NEEDS_CLARIFICATION" } });
+    expect(errorOf(blocked).code).toBe("F01-ERR-001");
+    expect(errorOf(blocked).details).toEqual({ reason: "INTENT_NOT_COMPILABLE" });
     expect(h.gateway.calls("BLUEPRINT_COMPOSE")).toEqual([]);
     expect(composeRuns(h)).toEqual([]);
     expect(h.db.intents.get(intentId)).toMatchObject({ lifecycle_status: "NEEDS_CLARIFICATION", resolved_intent: null });
@@ -219,7 +220,9 @@ describe("F01-AC-009 Unsupported / External never fake local success", () => {
     expect([replay.status, errorOf(replay)]).toEqual([422, errorOf(response)]);
 
     const again = await h.compile(intentId, version + 1, "compile-again");
-    expect(errorOf(again)).toMatchObject({ code: "F01-ERR-001", details: { reason: "INTENT_NOT_COMPILABLE", lifecycle_status: "INCOMPATIBLE" } });
+    expect(errorOf(again).code).toBe("F01-ERR-001");
+    expect(errorOf(again).details).toEqual({ reason: "INTENT_NOT_COMPILABLE" });
+    expect(h.db.intents.get(intentId)?.lifecycle_status).toBe("INCOMPATIBLE");
     expect(h.gateway.calls("BLUEPRINT_COMPOSE")).toEqual([]);
   });
 

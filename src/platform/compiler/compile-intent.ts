@@ -37,8 +37,12 @@ function isReacquired(operation: IdempotencyOperationRow): boolean {
 
 const NOT_COMPILABLE_STATUS = 422;
 
-const notCompilable = (record: IntentRecord): IntentApiError =>
-  new IntentApiError("F01-ERR-001", { httpStatus: NOT_COMPILABLE_STATUS, details: { reason: "INTENT_NOT_COMPILABLE", lifecycle_status: record.lifecycle_status } });
+/**
+ * The 422 F01-ERR-001 terminal outcome. Its details must not carry the mutable `intent_record.lifecycle_status`:
+ * a FAILED_TERMINAL replay returns the same logical outcome even after a later answers mutation moves the intent.
+ */
+const notCompilable = (): IntentApiError =>
+  new IntentApiError("F01-ERR-001", { httpStatus: NOT_COMPILABLE_STATUS, details: { reason: "INTENT_NOT_COMPILABLE" } });
 
 /**
  * Optimistic concurrency: a fresh compile must carry the current intent_version. A re-acquired attempt of the
@@ -82,14 +86,14 @@ async function compileEntry(dependencies: ResolvedServiceDependencies, record: I
   if (status === "VALIDATION_REJECTED") return validationRejectedEntry(dependencies, record);
   if (reacquired && IN_FLIGHT_STATES.has(status)) return "RETRY";
   if (reacquired && status === "VALIDATED") return "RECOVER_VALIDATED";
-  throw notCompilable(record);
+  throw notCompilable();
 }
 
 /** Re-runs the Clarification Gate on durable truth (AC-007) and proves the persisted projection is exact. */
 function verifiedResolvedIntent(record: IntentRecord): ResolvedIntentProjection {
-  if (record.structured_intent === null || record.resolved_intent === null) throw notCompilable(record);
+  if (record.structured_intent === null || record.resolved_intent === null) throw notCompilable();
   const admission = admitResolvedIntent(restoreTrustedIntentState(record.structured_intent));
-  if (!isResolvedIntentAdmission(admission)) throw notCompilable(record);
+  if (!isResolvedIntentAdmission(admission)) throw notCompilable();
   const projection = projectResolvedIntent(admission, record.intent_id);
   if (tryCanonicalJson(record.resolved_intent) !== canonicalJson(projection.resolved_intent as unknown as JsonValue)) {
     internalInvariant("PERSISTED_RESOLVED_INTENT_DRIFT", "$.resolved_intent");
@@ -138,7 +142,7 @@ async function validatedData(dependencies: ResolvedServiceDependencies, record: 
 async function recoverValidated(dependencies: ResolvedServiceDependencies, record: IntentRecord, operation: IdempotencyOperationRow): Promise<OperationSuccess> {
   const outcomes = await dependencies.outcomes.listValidationOutcomes(record.intent_id, operation.created_at);
   const passed = outcomes.find((outcome) => outcome.status === "PASSED");
-  if (passed === undefined) throw notCompilable(record);
+  if (passed === undefined) throw notCompilable();
   return { data: await validatedData(dependencies, record, passed.validation_run_id), resultRef: { type: "VALIDATION_RUN", id: passed.validation_run_id } };
 }
 
@@ -226,8 +230,8 @@ function digestBody(body: JsonRecord, binding: EphemeralBinding): JsonRecord {
 /**
  * FAILED_TERMINAL replay details come from canonical durable truth through the same classifiers the first
  * attempt used: the latest F02 outcome for F01-ERR-011 (no validation can follow a terminal rejection), the
- * pinned F04 coverage of the durable requirements for F01-ERR-008, and for the 422 F01-ERR-001 the sole Intent
- * lifecycle owner `intent_record.lifecycle_status` (F01-RQ-001 rule 5; no second lifecycle truth is stored).
+ * pinned F04 coverage of the durable requirements for F01-ERR-008, and for the 422 F01-ERR-001 the same
+ * lifecycle-independent factory the first attempt threw (no lifecycle snapshot / second lifecycle truth is stored).
  */
 async function terminalReplayDetails(
   dependencies: ResolvedServiceDependencies,
@@ -235,7 +239,7 @@ async function terminalReplayDetails(
   operation: IdempotencyOperationRow,
   code: IntentApiErrorCode
 ): Promise<IntentApiErrorDetails> {
-  if (code === "F01-ERR-001" && operation.http_status === NOT_COMPILABLE_STATUS) return notCompilable(record).failure.details;
+  if (code === "F01-ERR-001" && operation.http_status === NOT_COMPILABLE_STATUS) return notCompilable().failure.details;
   if (code === "F01-ERR-011") {
     const [latest] = await dependencies.outcomes.listValidationOutcomes(record.intent_id, null);
     const codes = latest === undefined ? null : await rejectionCodesOf(dependencies, latest);
