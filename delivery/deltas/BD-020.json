@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-020",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-049"
   ],
@@ -52,7 +52,9 @@
     "Issue #245 independent BCE audit comment 6013292757 confirmed the BS-P1-019 blocker.",
     "appf2-design PR #29 merged bounded BF-049 contract closure as c970bd29c192a77a836721a8ebe2d49189e370d9.",
     "Scope-clean freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 derives from e7c83ac198b63a0273f30aeaf27a6dd65abadfee and changes exactly 8 Design contract paths.",
-    "SP-P1-003/T001 remains BLOCKED and execution remains HOLD during Freeze Candidate."
+    "SP-P1-003/T001 remains BLOCKED and execution remains HOLD during Freeze Candidate.",
+    "Independent BCE audit after BS-P1-020 freeze verified all six BF-049 contract surfaces are closed without a new contradictory recovery or identity truth.",
+    "Human-approved atomic BS-P1-020 / SP-P1-003 / T001 rebind restores T001 to IN_PROGRESS at the pre-Cursor boundary; no implementation candidate is accepted or executed by this governance transition."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",

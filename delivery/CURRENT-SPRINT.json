@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-020",
+  "active_task": "T001",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "SP-P1-003 / T001 is BLOCKED by BF-049 after independent BCE audit confirmed six bounded contract gaps under BS-P1-019. T002-T006 remain PLANNED and unauthorized. Resume only after Human-approved replacement Build Spec rebind; fresh Cursor execution is a separate gate."
+  "reason": "Human-approved BF-049 rebind restores SP-P1-003 / T001 under locked BS-P1-020. T001 is the sole active Task at the pre-Cursor boundary; T002-T006 remain PLANNED and unauthorized, and fresh Cursor execution requires a separate explicit command."
 }
