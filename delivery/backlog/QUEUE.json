@@ -394,7 +394,7 @@
         "BL-P1-008"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -449,7 +449,7 @@
         "BL-P1-009"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -496,7 +496,7 @@
         "BL-P1-010"
       ],
       "priority": "P1",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -559,7 +559,7 @@
         "BL-P1-005"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -601,7 +601,7 @@
         "BL-P1-012"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -662,7 +662,7 @@
         "BL-P1-013"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -689,7 +689,7 @@
         "BL-P1-013"
       ],
       "priority": "P1",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -744,7 +744,7 @@
         "BL-P1-014"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -792,7 +792,7 @@
         "BL-P1-010"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -840,7 +840,7 @@
         "BL-P1-017"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -918,7 +918,7 @@
         "BL-P1-017"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
@@ -1009,7 +1009,7 @@
         "BL-P1-017"
       ],
       "priority": "P0",
-      "status": "QUEUED",
+      "status": "READY",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
     },
