@@ -13,7 +13,9 @@
     "Issue #245 independent BCE audit comment 6016838295 classified the remaining DO_NOT_PERSIST lifecycle ambiguity as SPEC_GAP and blocked PR #290 merge.",
     "BS-P1-020 F01-DATA-005 requires DO_NOT_PERSIST values to be non-durable, permits request-scoped EphemeralResolvedContext for Prompt B, and requires User re-provision when context is absent.",
     "BS-P1-020 F01 compile API does not define a bounded request field/schema for those re-provided values.",
-    "PR #290 remains OPEN and unmerged."
+    "PR #290 remains OPEN and unmerged.",
+    "appf2-design PR #30 merged the bounded BF-050 F01 addenda as af3fc11f7326e58955c17b850cb4427a4f27ddd1.",
+    "Scope-clean freeze source 2e8a3f45a281c981b6bd7e4f10ceca22b5f47c9f adds exactly the three BF-050 addenda to the BS-P1-020 source and no other Design path."
   ],
   "attempts": [
     {
@@ -28,7 +30,7 @@
     "Lock compile request-scoped ephemeral_inputs transport, binding and validation.",
     "Lock missing/mismatched ephemeral input recovery so User re-provision is explicit.",
     "Lock idempotency interaction: ephemeral values affect request_digest but raw values are never persisted; same-body retry resubmits them with the same key; material value change uses a new key.",
-    "Lock durable replay behavior so completed logical outcomes do not need ephemeral values again.",
+    "Keep SUCCEEDED/FAILED_TERMINAL replay bound to same-key+same-digest durable outcome truth without re-running Prompt B or persisting the ephemeral values.",
     "Freeze a replacement Build Spec, rebind SP-P1-003/T001, and stop before Cursor execution."
   ],
   "affected_contracts": [
