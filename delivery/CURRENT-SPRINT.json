@@ -5,5 +5,5 @@
   "active_task": "T009",
   "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved restoration after T009 CI tooling remediation. SP-P1-002 / T009 resumes ACTIVE CURRENT authority; Task scope, Acceptance mappings and audited implementation candidate are unchanged."
+  "reason": "Human-approved restoration after T009 closure security remediation. SP-P1-002 / T009 resumes ACTIVE CURRENT authority for Evidence normalization and closure REVIEW; Task semantics are unchanged."
 }
