@@ -1,7 +1,7 @@
 # Phase 1 Delivery Roadmap — Product-First Alignment
 
 > Status: CURRENT PLANNING ROADMAP / FUTURE STAGES PROVISIONAL  
-> Current locked Build Spec: `BS-P1-012`  
+> Current locked Build Spec: `BS-P1-018`  
 > Canonical Build control state: `build-spec/CURRENT.json` + `delivery/CURRENT-SPRINT.json`  
 > Design planning source: `NFF98/appf2-design/working/PHASE-REALIGNMENT-PROGRAM.md`
 
@@ -23,16 +23,16 @@ This roadmap is a planning view. It does **not** reserve future Build Spec IDs, 
 | Canonical unit | Goal | Current state |
 |---|---|---|
 | `SP-P1-001` | Platform foundations: trusted capability registry, canonical Blueprint identity, anonymous identity, evidence intake/retry foundations | **CLOSED** |
-| `SP-P1-002` | Validation + intent foundation + evidence reliability | **OPEN / HOLD between Tasks** — T001–T003 CLOSED; T004–T009 PLANNED |
+| `SP-P1-002` | Validation + intent foundation + evidence reliability | **CLOSED** — T001–T009 CLOSED; all six selected Backlog items DONE |
 
 Current canonical execution boundary:
 
 - Canonical control state is read from `build-spec/CURRENT.json` + `delivery/CURRENT-SPRINT.json`.
-- `BS-P1-012 = LOCKED`.
+- `BS-P1-018 = LOCKED`.
 - `implementation_enabled = false`.
 - `delivery/CURRENT-SPRINT.json = HOLD`.
-- T003 is CLOSED.
-- T004 is the next Task for Activation Review; **T004 is not activated by this roadmap**.
+- SP-P1-002 is CLOSED; T001–T009 are CLOSED.
+- No Sprint or Task is currently active.
 - POI-005 records non-blocking future production HTTP / Runtime / Postgres fresh-admission wiring and must not be silently absorbed into T004.
 
 ## Product-First Future Stage Sequence
@@ -40,7 +40,7 @@ Current canonical execution boundary:
 The Human-approved Product-First order is:
 
 ~~~text
-SP-P1-002 foundation completion
+SP-P1-002 foundation — CLOSED
 → Product Proof Stage A — Playable App
 → Product Proof Stage B — Share + Shared Ranking
 → Product Proof Stage C — Remix + Lineage
@@ -82,13 +82,13 @@ next Human-approved Product Proof Build Spec
 → choose the next unique canonical BS-P1-NNN after the latest existing baseline
 ~~~
 
-As of this normalization, `BS-P1-005` through `BS-P1-012` already exist as historical blocker/remediation rebaselines and retain those meanings permanently.
+As of this normalization, `BS-P1-005` through `BS-P1-018` already exist as historical blocker/remediation rebaselines and retain those meanings permanently.
 
 ## Current Detailed Planning Boundary
 
 `SP-P1-001` is CLOSED.
 
-`SP-P1-002` remains the only current detailed Sprint. T001–T003 are CLOSED; T004–T009 remain PLANNED. The repository is HOLD until a separate Human-approved T004 activation transition.
+`SP-P1-002` is CLOSED. All nine Tasks are CLOSED and all six selected Backlog items are DONE. No detailed Sprint is currently active; the repository remains HOLD until a separate Human-approved planning / Build Freeze / Sprint activation flow.
 
 All Product Proof stages after SP-P1-002 remain planning-only. Before implementation they require, as applicable:
 

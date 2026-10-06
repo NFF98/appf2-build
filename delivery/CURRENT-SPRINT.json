@@ -5,5 +5,5 @@
   "active_task": null,
   "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T009 is CLOSED under BS-P1-018. SP-P1-002 remains in REVIEW pending a separate Human Sprint Close gate; no active execution context exists."
+  "reason": "Human-approved SP-P1-002 Sprint closure complete. SP-P1-002 is CLOSED; no Sprint or Task is active."
 }
