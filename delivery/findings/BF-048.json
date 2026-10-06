@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-048",
+  "classification": "DESIGN_DELTA_CANDIDATE",
+  "status": "ASSESSING",
+  "build_spec_id": "BS-P1-018",
+  "sprint_id": "PFR-2026",
+  "task_id": "PFR-05",
+  "expected": "The locked Phase 1 implementation baseline must include the Human-approved Product-First Shared Ranking proof, its F05/F06 integration, S03/S04/S05 delta, and complete Acceptance/Evidence/Recovery contracts before any future Product Proof Sprint can plan against that truth.",
+  "actual": "BS-P1-018 predates F19 Shared Ranking. Human approved the PFR-03/PFR-04 Product semantics and the BS-P1-019 freeze candidate on 2026-10-06, so BS-P1-018 is intentionally stale for the remaining Phase 1 Product-First roadmap until a clean replacement Build Freeze is created.",
+  "evidence": [
+    "Human 2026-10-06 approved: F19 convergence to Phase 1 ranking-only, S03/S04/S05 delta, registry/backlog incremental mapping, and then explicitly approved Design PR #27 Product semantics + BS-P1-019 Build Freeze candidate.",
+    "appf2-design PR #27 merged canonical as 65d3a63e15c4e42230556cf4d82d4588e58d75e9.",
+    "BS-P1-018 exact scope-clean source is 9c1e0c5f077663858530ac026fc55b9e20eddef2 and contains no F19 Product contract.",
+    "PFR-05 scope-clean derived source e7c83ac198b63a0273f30aeaf27a6dd65abadfee changes exactly 16 projected paths and excludes unrelated Phase-4/future drift.",
+    "PFR-05 registry audit: Acceptance 289→307 (+18 F19), Evidence 113→120 (+7 F19), Recovery 122→132 (+10 F19), with document/registry alignment PASS.",
+    "PFR-05 backlog audit preserves all 11 historical DONE items and all 32 existing QUEUED items, proposing only BL-P1-044..046 for the 18 new F19 Acceptance contracts."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "PFR_05_SCOPE_CLEAN_PHASE1_REMAINING_FREEZE_CANDIDATE",
+      "result": "CANDIDATE_PASS_HUMAN_APPROVED",
+      "evidence": "Candidate audit proves a single replacement baseline can carry Playable App → Share + Shared Ranking → Remix + Lineage → Hardening without importing F01/F02/F07 Phase-4 hardening, F18/F20, Vote/Counter, F09 or full F13."
+    }
+  ],
+  "requested_planning_action": [
+    "Create and lock BS-P1-019 from the approved scope-clean source, superseding BS-P1-018.",
+    "Rebind only the 32 unfinished existing backlog items to BS-P1-019 and append BL-P1-044..046; preserve 11 historical DONE provenance.",
+    "Keep implementation_enabled=false and Sprint state HOLD after Freeze; detailed Playable App Sprint planning remains a separate Human gate."
+  ],
+  "affected_contracts": [
+    "F19 shared.ranking.v1",
+    "F05 Phase 1 F19 opaque scope handoff",
+    "F06 derived-Version fresh F19 scope",
+    "S03/S04/S05 PFR-04 F19 delta",
+    "Phase 1 Shared Data architecture/data/infrastructure boundary",
+    "Acceptance Registry 2.4.0",
+    "Evidence Registry 3.1.0",
+    "Recovery Registry 1.2.0"
+  ],
+  "affected_acceptance": [
+    "F19-AC-001",
+    "F19-AC-002",
+    "F19-AC-003",
+    "F19-AC-004",
+    "F19-AC-005",
+    "F19-AC-006",
+    "F19-AC-007",
+    "F19-AC-008",
+    "F19-AC-009",
+    "F19-AC-010",
+    "F19-AC-011",
+    "F19-AC-012",
+    "F19-AC-013",
+    "F19-AC-014",
+    "F19-AC-015",
+    "F19-AC-016",
+    "F19-AC-017",
+    "F19-AC-018"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-019"
+}
