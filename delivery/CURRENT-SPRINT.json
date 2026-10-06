@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-002",
-  "active_build_spec": "BS-P1-018",
-  "active_task": "T009",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T009 implementation is merged, closure security remediation is merged, final Evidence is normalized via PR #269, and T009 Evidence is bound for Human closure review."
+  "reason": "T009 is CLOSED under BS-P1-018. SP-P1-002 remains in REVIEW pending a separate Human Sprint Close gate; no active execution context exists."
 }
