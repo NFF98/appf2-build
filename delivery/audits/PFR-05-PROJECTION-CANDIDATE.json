@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "status": "CANDIDATE_ONLY",
+  "program": "PFR-2026",
+  "step": "PFR-05",
+  "previous_baseline": "BS-P1-018",
+  "candidate_baseline": "BS-P1-019",
+  "build_base_commit": "29cac720dd427015b354b7cdac2aeac23c6f5d31",
+  "design_candidate": {
+    "pull_request": 27,
+    "branch": "design/pfr-f19-ranking-freeze-candidate",
+    "head_commit": "a219323b5fd74b8cbebb593f23be1a8a603b19de"
+  },
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "base_commit": "9c1e0c5f077663858530ac026fc55b9e20eddef2",
+    "branch": "freeze-source/pfr-f19-ranking-bs019-candidate",
+    "commit": "e7c83ac198b63a0273f30aeaf27a6dd65abadfee",
+    "unchanged_strategy": "REUSE_BS_P1_018_SOURCE_TRUTH_BYTE_FOR_BYTE"
+  },
+  "changed_source_paths": [
+    "working/common-core/APP-ARCHITECTURE.md",
+    "working/common-core/CAPABILITY-FABRIC.md",
+    "working/common-core/DATA-MODEL.md",
+    "working/detailed-design/APP-DETAILED-DESIGN-OVERVIEW.md",
+    "working/detailed-design/UI-UX/PHASE1-SCREEN-INVENTORY.md",
+    "working/detailed-design/UI-UX/screens/S03-APP-RUNTIME.md",
+    "working/detailed-design/UI-UX/screens/S04-SHARED-APP-ENTRY.md",
+    "working/detailed-design/UI-UX/screens/S05-REFINE-REMIX.md",
+    "working/detailed-design/data-model/DATA-MODEL-DETAILED.md",
+    "working/detailed-design/functions/F05-SHARE-RESTORE.md",
+    "working/detailed-design/functions/F06-REMIX-REFINE.md",
+    "working/detailed-design/functions/F19-SHARED-APP-DATA.md",
+    "working/detailed-design/infrastructure/INFRASTRUCTURE-DETAILED.md",
+    "working/detailed-design/registries/acceptance-test-registry.json",
+    "working/detailed-design/registries/evidence-event-registry.json",
+    "working/detailed-design/registries/recovery-registry.json"
+  ],
+  "projection_strategy": {
+    "changed_paths": "FULL_COPY_FROM_SCOPE_CLEAN_DERIVED_SOURCE",
+    "unchanged_paths": "REUSE_BS_P1_018_PROJECTED_OUTPUT_BYTE_FOR_BYTE",
+    "ui_binary_references": "REUSE_ALL_BS_P1_018_CANONICAL_PNGS_BYTE_FOR_BYTE"
+  },
+  "registry_delta": {
+    "acceptance": {
+      "from": 289,
+      "to": 307,
+      "added": 18,
+      "function": "F19"
+    },
+    "evidence": {
+      "from": 113,
+      "to": 120,
+      "added": 7,
+      "function": "F19"
+    },
+    "recovery": {
+      "from": 122,
+      "to": 132,
+      "added": 10,
+      "function": "F19"
+    }
+  },
+  "explicitly_excluded": [
+    "F01 Phase 4 intent authority/persistence hardening carry-forward",
+    "F02 Phase 4 production admission/trust/PostgreSQL hardening carry-forward",
+    "F07 Phase 4 registry-consumer hardening carry-forward",
+    "F18 capability discovery/evolution",
+    "F20 creator commerce",
+    "Shared Vote",
+    "Shared Counter",
+    "generic Shared Records or arbitrary KV",
+    "F09 Realtime Room",
+    "full F13 entitlement/billing/metering runtime",
+    "Business Plan / PFR tracker / Working README governance-only drift",
+    "Cursor implementation",
+    "Sprint creation or activation"
+  ],
+  "machine_audit": {
+    "status": "PASS",
+    "changed_source_path_count": 16,
+    "f19_acceptance_count": 18,
+    "f19_evidence_event_count": 7,
+    "f19_recovery_error_count": 10,
+    "f19_document_registry_alignment": true,
+    "evidence_property_schema_complete": true,
+    "raw_participant_or_score_evidence_forbidden": true,
+    "future_f05_f20_content_excluded": true,
+    "future_f06_f08_f20_content_excluded": true
+  },
+  "human_gate": {
+    "required": true,
+    "gate": "BUILD_FREEZE_APPROVAL",
+    "implementation_authority": false,
+    "sprint_authority": false
+  }
+}
