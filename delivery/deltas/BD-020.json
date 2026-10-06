@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-020",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-049"
+  ],
+  "affected_build_spec": "BS-P1-019",
+  "affected_tasks": [
+    "T001"
+  ],
+  "affected_contracts": [
+    "F01 CapabilityRequirement derivation",
+    "F01 ResolvedIntent projection",
+    "F01/F02 rejection classification",
+    "F01 compile retry lifecycle",
+    "Shared mutation idempotency state machine",
+    "F01/F07 anonymous continuity binding",
+    "F12 recovery alignment",
+    "Acceptance Registry 2.5.0",
+    "Recovery Registry 1.3.0"
+  ],
+  "affected_acceptance": [
+    "F01-AC-007",
+    "F01-AC-008",
+    "F01-AC-009",
+    "F01-AC-010",
+    "F01-AC-011",
+    "F01-AC-012",
+    "F01-AC-013",
+    "F01-AC-014",
+    "F01-AC-015",
+    "F01-AC-016",
+    "F01-AC-020",
+    "F01-AC-021",
+    "F01-AC-022",
+    "F01-AC-028",
+    "F01-AC-029"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-06: continue BF-049 BCE through Design remediation, replacement Build Spec and T001 rebind; stop before Cursor execution."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "c970bd29c192a77a836721a8ebe2d49189e370d9",
+  "replacement_build_spec": "BS-P1-020",
+  "verification": [
+    "Issue #245 independent BCE audit comment 6013292757 confirmed the BS-P1-019 blocker.",
+    "appf2-design PR #29 merged bounded BF-049 contract closure as c970bd29c192a77a836721a8ebe2d49189e370d9.",
+    "Scope-clean freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 derives from e7c83ac198b63a0273f30aeaf27a6dd65abadfee and changes exactly 8 Design contract paths.",
+    "SP-P1-003/T001 remains BLOCKED and execution remains HOLD during Freeze Candidate."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "d8a9af891dbd61f3f830bd63ae5e21b6bb525603",
+    "base_commit": "e7c83ac198b63a0273f30aeaf27a6dd65abadfee",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-020-FREEZE-CANDIDATE.md"
+  }
+}
