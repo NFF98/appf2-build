@@ -1,6 +1,6 @@
 import { collectEphemeralRequirementViolations } from "../intent/envelope-validation.js";
 import { internalInvariant, type EphemeralInputRequirement, type KnownInput } from "../intent/intent-contract.js";
-import { isPlainRecord, type JsonValue } from "../intent/json-value.js";
+import { canonicalJson, isPlainRecord, type JsonValue } from "../intent/json-value.js";
 import type { EphemeralResolvedContext } from "../intent/resolved-intent.js";
 import { valueMatchesType } from "../intent/value-shape.js";
 import { IntentApiError } from "./f01-errors.js";
@@ -76,5 +76,58 @@ export function bindEphemeralInputs(requirements: readonly EphemeralInputRequire
     context: {
       inputs: bound.map(({ requirement, value }): KnownInput => ({ ...requirement, value, sensitivity: "DO_NOT_PERSIST" }))
     }
+  };
+}
+
+type JsonScalar = Exclude<JsonValue, object>;
+
+/** Stack-safe visit of every scalar leaf of `root`; object keys are reported only when `onKey` is given. */
+function visitScalars(root: JsonValue, onScalar: (value: JsonScalar) => void, onKey?: (key: string) => void): void {
+  const pending: JsonValue[] = [root];
+  while (pending.length > 0) {
+    const value = pending.pop() as JsonValue;
+    if (Array.isArray(value)) {
+      for (const entry of value as readonly JsonValue[]) pending.push(entry);
+    } else if (isPlainRecord(value)) {
+      for (const [key, entry] of Object.entries(value as Readonly<Record<string, JsonValue>>)) {
+        onKey?.(key);
+        pending.push(entry);
+      }
+    } else {
+      onScalar(value as JsonScalar);
+    }
+  }
+}
+
+/**
+ * BF-050 non-persistence guard over untrusted Prompt B output: true when any scalar leaf of a request-scoped
+ * DO_NOT_PERSIST value appears anywhere in `candidate`, as an equal scalar / object key (type-exact canonical
+ * JSON) or as non-empty text inside any string. Fail-closed by design (a coincidental match also blocks); the
+ * verdict carries no value. Needles are prepared once per compile; each check is one candidate traversal.
+ */
+export function ephemeralValueDetector(context: EphemeralResolvedContext): (candidate: JsonValue) => boolean {
+  if (context.inputs.length === 0) return () => false;
+  const needleScalars = new Set<string>();
+  const needleTexts = new Set<string>();
+  for (const input of context.inputs) {
+    visitScalars(input.value, (value) => {
+      const canonical = canonicalJson(value);
+      needleScalars.add(canonical);
+      const text = typeof value === "string" ? value : canonical;
+      if (text.length > 0) needleTexts.add(text);
+    });
+  }
+  const fragments = [...needleTexts];
+  return (candidate) => {
+    const strings = new Set<string>();
+    const scalars = new Set<string>();
+    const collect = (value: JsonScalar): void => {
+      if (typeof value === "string") strings.add(value);
+      scalars.add(canonicalJson(value));
+    };
+    visitScalars(candidate, collect, collect);
+    for (const scalar of needleScalars) if (scalars.has(scalar)) return true;
+    for (const text of strings) if (fragments.some((fragment) => text.includes(fragment))) return true;
+    return false;
   };
 }

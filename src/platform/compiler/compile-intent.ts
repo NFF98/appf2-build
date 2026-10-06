@@ -35,8 +35,10 @@ function isReacquired(operation: IdempotencyOperationRow): boolean {
   return Date.parse(operation.updated_at) !== Date.parse(operation.created_at);
 }
 
+const NOT_COMPILABLE_STATUS = 422;
+
 const notCompilable = (record: IntentRecord): IntentApiError =>
-  new IntentApiError("F01-ERR-001", { httpStatus: 422, details: { reason: "INTENT_NOT_COMPILABLE", lifecycle_status: record.lifecycle_status } });
+  new IntentApiError("F01-ERR-001", { httpStatus: NOT_COMPILABLE_STATUS, details: { reason: "INTENT_NOT_COMPILABLE", lifecycle_status: record.lifecycle_status } });
 
 /**
  * Optimistic concurrency: a fresh compile must carry the current intent_version. A re-acquired attempt of the
@@ -223,10 +225,17 @@ function digestBody(body: JsonRecord, binding: EphemeralBinding): JsonRecord {
 
 /**
  * FAILED_TERMINAL replay details come from canonical durable truth through the same classifiers the first
- * attempt used: the latest F02 outcome for F01-ERR-011 (no validation can follow a terminal rejection) and the
- * pinned F04 coverage of the durable requirements for F01-ERR-008.
+ * attempt used: the latest F02 outcome for F01-ERR-011 (no validation can follow a terminal rejection), the
+ * pinned F04 coverage of the durable requirements for F01-ERR-008, and for the 422 F01-ERR-001 the sole Intent
+ * lifecycle owner `intent_record.lifecycle_status` (F01-RQ-001 rule 5; no second lifecycle truth is stored).
  */
-async function terminalReplayDetails(dependencies: ResolvedServiceDependencies, record: IntentRecord, code: IntentApiErrorCode): Promise<IntentApiErrorDetails> {
+async function terminalReplayDetails(
+  dependencies: ResolvedServiceDependencies,
+  record: IntentRecord,
+  operation: IdempotencyOperationRow,
+  code: IntentApiErrorCode
+): Promise<IntentApiErrorDetails> {
+  if (code === "F01-ERR-001" && operation.http_status === NOT_COMPILABLE_STATUS) return notCompilable(record).failure.details;
   if (code === "F01-ERR-011") {
     const [latest] = await dependencies.outcomes.listValidationOutcomes(record.intent_id, null);
     const codes = latest === undefined ? null : await rejectionCodesOf(dependencies, latest);
@@ -259,7 +268,7 @@ export async function compileIntent(dependencies: ResolvedServiceDependencies, c
     },
     {
       replaySucceeded: async (operation) => validatedData(dependencies, await scoped.reload(), operation.result_ref_id),
-      terminalDetails: async (_operation, code) => terminalReplayDetails(dependencies, await scoped.reload(), code),
+      terminalDetails: async (operation, code) => terminalReplayDetails(dependencies, await scoped.reload(), operation, code),
       execute: (guard, operation, collect) => executeCompile(dependencies, { scoped, request, guard, operation, collect })
     }
   );

@@ -241,6 +241,40 @@ describe("F01-AC-014 POST /compile retries never duplicate a logical compile", (
   });
 });
 
+describe("F01-AC-014 FAILED_TERMINAL replay keeps the bounded terminal recovery truth", () => {
+  test("TEST-F01-AC-014 a not-compilable F01-ERR-001 FAILED_TERMINAL replays the same reason and lifecycle_status without new work", async () => {
+    const h = createF01Harness();
+    h.gateway.queueAnalysis(succeeded(clarifyingAnalysis() as unknown as JsonValue));
+    const created = dataOf(await h.create());
+    const intentId = String(created.intent_id);
+    const intentVersion = Number(created.intent_version);
+    const first = await h.compile(intentId, intentVersion, "compile-early");
+    expect(first.status).toBe(422);
+    expect(errorOf(first)).toMatchObject({ code: "F01-ERR-001", retryable: false, retry_after_seconds: null });
+    expect(errorOf(first).details).toEqual({ reason: "INTENT_NOT_COMPILABLE", lifecycle_status: "NEEDS_CLARIFICATION" });
+    const terminal = structuredClone(h.db.operationFor(COMPILE_ROUTE, "compile-early")!);
+    expect(terminal).toMatchObject({ status: "FAILED_TERMINAL", attempt_no: 1, error_code: "F01-ERR-001", http_status: 422, result_ref_type: null, result_ref_id: null });
+    h.clock.advance(60_000);
+    const replay = await h.compile(intentId, intentVersion, "compile-early");
+    expect([replay.status, errorOf(replay)]).toEqual([422, errorOf(first)]);
+    expect(h.db.operationFor(COMPILE_ROUTE, "compile-early")).toEqual(terminal);
+    expect(h.gateway.calls("BLUEPRINT_COMPOSE")).toEqual([]);
+    expect([...h.db.compilerRuns.values()].filter((run) => run.stage === "BLUEPRINT_COMPOSE")).toEqual([]);
+
+    const g = createF01Harness();
+    const { intentId: validatedId } = await compiledIntent(g);
+    const validatedVersion = Number(g.db.intents.get(validatedId)?.intent_version);
+    const again = await g.compile(validatedId, validatedVersion, "compile-again");
+    expect(again.status).toBe(422);
+    expect(errorOf(again)).toMatchObject({ code: "F01-ERR-001", retryable: false, details: { reason: "INTENT_NOT_COMPILABLE", lifecycle_status: "VALIDATED" } });
+    g.clock.advance(60_000);
+    const againReplay = await g.compile(validatedId, validatedVersion, "compile-again");
+    expect([againReplay.status, errorOf(againReplay)]).toEqual([422, errorOf(again)]);
+    expect(g.gateway.calls("BLUEPRINT_COMPOSE")).toHaveLength(1);
+    expect(g.db.operationFor(COMPILE_ROUTE, "compile-again")).toMatchObject({ status: "FAILED_TERMINAL", attempt_no: 1, error_code: "F01-ERR-001", http_status: 422 });
+  });
+});
+
 describe("F01-AC-015 stale intent_version is a 409", () => {
   test("TEST-F01-API-002 answers and compile with a stale or future intent_version return 409 F01-ERR-004 without mutation", async () => {
     const h = createF01Harness();

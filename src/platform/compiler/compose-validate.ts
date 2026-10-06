@@ -8,6 +8,7 @@ import type { EphemeralResolvedContext, ResolvedIntent } from "../intent/resolve
 import type { F01EvidenceBuffer } from "./compiler-evidence.js";
 import type { AttemptGuard, IntentLifecycleStatus } from "./compiler-records.js";
 import type { CreateProgressOperation } from "./create-progress.js";
+import { ephemeralValueDetector } from "./ephemeral-binding.js";
 import { IntentApiError, isF01ErrorCode } from "./f01-errors.js";
 import { guardNow, requireTransition, type ResolvedServiceDependencies } from "./intent-operation.js";
 import type { RequestDeadline } from "./model-gateway.js";
@@ -94,8 +95,15 @@ function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: r
   };
 }
 
-/** Any JSON object Prompt B returns is a candidate for F02; only non-JSON / non-object output is invalid. */
-const acceptCandidate = (output: JsonValue): JsonValue | null => (isPlainRecord(output) ? output : null);
+/**
+ * Any JSON object Prompt B returns is a candidate for F02. Non-object output, or output carrying a request-scoped
+ * DO_NOT_PERSIST value (F01-DATA-005 rule 3 / BF-050), is invalid model output (F01-ERR-007): it never reaches
+ * F02 validation / admission, so no validation_run, Blueprint content or replay truth can hold the value.
+ */
+function candidateAcceptor(ephemeral: EphemeralResolvedContext): (output: JsonValue) => JsonValue | null {
+  const carriesEphemeralValue = ephemeralValueDetector(ephemeral);
+  return (output) => (isPlainRecord(output) && !carriesEphemeralValue(output) ? output : null);
+}
 
 async function validateAndAdmit(scope: ComposeScope, candidate: JsonValue, compilerRunId: string): Promise<Verdict> {
   const { dependencies } = scope;
@@ -131,11 +139,13 @@ class ComposeLoop {
   private version: number;
   private coverage: CoverageResult;
   private recomposeAvailable: boolean;
+  private readonly acceptCandidate: (output: JsonValue) => JsonValue | null;
 
   public constructor(private readonly scope: ComposeScope, startVersion: number, coverage: CoverageResult) {
     this.version = startVersion;
     this.coverage = coverage;
     this.recomposeAvailable = scope.recomposeAvailable;
+    this.acceptCandidate = candidateAcceptor(scope.ephemeral);
   }
 
   private retentionDeadline(): string {
@@ -164,7 +174,7 @@ class ComposeLoop {
     try {
       const composed = await callProviderWithBoundedRetry(
         { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence },
-        { operation: "BLUEPRINT_COMPOSE", promptVersion: PROMPT_B_VERSION, schemaVersion: BLUEPRINT_SCHEMA_VERSION, responseSchema: COMPOSE_RESPONSE_SCHEMA, inputPayload: composeInput(this.scope, this.coverage, feedback), accept: acceptCandidate, rejectedOutputCode: "F01-ERR-007" }
+        { operation: "BLUEPRINT_COMPOSE", promptVersion: PROMPT_B_VERSION, schemaVersion: BLUEPRINT_SCHEMA_VERSION, responseSchema: COMPOSE_RESPONSE_SCHEMA, inputPayload: composeInput(this.scope, this.coverage, feedback), accept: this.acceptCandidate, rejectedOutputCode: "F01-ERR-007" }
       );
       evidence.add("F01-EVT-010", { ...versions, attempt_no: composed.attemptNo, latency_ms: composed.latencyMs });
       this.scope.progress?.complete("F01-CREATE-CP-05");

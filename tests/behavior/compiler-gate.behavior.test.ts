@@ -1,7 +1,9 @@
 import { describe, expect, test } from "vitest";
 
 import { POSTGRES_ADMIT_BLUEPRINT_CONTENT_SQL } from "../../src/platform/blueprint/postgres-blueprint-repository.js";
+import { validateBlueprintCandidate } from "../../src/platform/blueprint/validate-blueprint.js";
 import { resolveCapabilityCoverage, type CoverageResolutionRequest } from "../../src/platform/capabilities/coverage.js";
+import { ephemeralValueDetector } from "../../src/platform/compiler/ephemeral-binding.js";
 import { restoreTrustedIntentState, startIntentClarification } from "../../src/platform/intent/intent-state.js";
 import type { JsonValue } from "../../src/platform/intent/json-value.js";
 import { admitResolvedIntent, isResolvedIntentAdmission } from "../../src/platform/intent/resolved-intent-gate.js";
@@ -24,6 +26,7 @@ import {
   type F01Harness
 } from "../api/f01-harness.js";
 import { actionIndex, nodeIndex, withValue } from "../contract/blueprint-validation-fixtures.js";
+import { knownInput } from "../contract/intent-envelope-fixtures.js";
 
 const schemaFixable = (): JsonValue => withValue(["extra"], true) as JsonValue;
 const capabilityFixable = (): JsonValue => withValue(["nodes", nodeIndex("node_title"), "capability", "version"], "9.9.9") as JsonValue;
@@ -133,6 +136,65 @@ describe("F01-AC-007 Prompt B never runs before the Clarification Gate passes", 
     expect(errorOf(response)).toMatchObject({ code: "F01-ERR-014", details: {} });
     expect(h.gateway.calls("BLUEPRINT_COMPOSE")).toEqual([]);
     expect(h.db.intents.get(intentId)?.lifecycle_status).toBe("READY");
+  });
+});
+
+describe("F01-AC-007 DO_NOT_PERSIST values never cross from Prompt B output into durable truth", () => {
+  test("TEST-F01-007 a Prompt B candidate echoing a DO_NOT_PERSIST value is rejected before F02 admission and never becomes durable", async () => {
+    const echoes: readonly JsonValue[] = [
+      withValue(["meta", "description"], `付款卡號 ${DNP_SECRET} 已帶入`) as JsonValue,
+      withValue(["nodes", nodeIndex("node_title"), "bindings", "text", "value"], DNP_SECRET) as JsonValue
+    ];
+    for (const echo of echoes) expect(validateBlueprintCandidate(new TextEncoder().encode(JSON.stringify(echo))).report.status).toBe("PASSED");
+
+    const h = createF01Harness();
+    const { intentId, version } = await h.readyIntent(dnpReadyAnalysis());
+    h.gateway.queueCompose(succeeded(echoes[0]!), succeeded(echoes[1]!));
+    const rejected = await h.compileWith(intentId, version, [{ id: DNP_ID, value: DNP_SECRET }]);
+    expect(rejected.status).toBe(502);
+    expect(errorOf(rejected)).toMatchObject({ code: "F01-ERR-007", retryable: true, details: {} });
+    expect(composeRuns(h).map((run) => [run.status, run.failure_code])).toEqual([["FAILED", "F01-ERR-007"], ["FAILED", "F01-ERR-007"]]);
+    expect(validationRuns(h)).toEqual([]);
+    expect(h.db.blueprint.contents.size).toBe(0);
+    expect(h.db.intents.get(intentId)?.lifecycle_status).toBe("COMPOSITION_FAILED");
+    expect(h.db.operationFor("POST /api/v1/intents/{intent_id}/compile", "compile-1")).toMatchObject({ status: "FAILED_RETRYABLE", error_code: "F01-ERR-007" });
+    expect(eventTypes(h)).toContain("F01-EVT-011");
+    expect(eventTypes(h)).not.toContain("F01-EVT-013");
+    expect(h.diagnostics).toEqual([]);
+    expect(JSON.stringify(rejected.body)).not.toContain(DNP_SECRET);
+    expect(h.durableText()).not.toContain(DNP_SECRET);
+
+    h.clock.advance(1_000);
+    h.gateway.queueCompose(succeeded(echoes[1]!), succeeded(blueprintCandidate()));
+    const compiled = await h.compileWith(intentId, version, [{ id: DNP_ID, value: DNP_SECRET }]);
+    expect(compiled.status, JSON.stringify(compiled.body)).toBe(200);
+    expect(dataOf(compiled)).toMatchObject({ status: "VALIDATED" });
+    const composes = h.gateway.calls("BLUEPRINT_COMPOSE");
+    expect(composes).toHaveLength(4);
+    for (const request of composes) {
+      expect(request.input_payload.ephemeral_resolved_context).toEqual({ inputs: [expect.objectContaining({ id: DNP_ID, value: DNP_SECRET })] });
+    }
+    expect(validationRuns(h).map((run) => run.status)).toEqual(["PASSED"]);
+    expect(h.db.blueprint.contents.size).toBe(1);
+    expect(JSON.stringify([...h.db.blueprint.contents.values()])).not.toContain(DNP_SECRET);
+    expect(JSON.stringify(compiled.body)).not.toContain(DNP_SECRET);
+    expect(h.durableText()).not.toContain(DNP_SECRET);
+  });
+
+  test("TEST-F01-007 the DO_NOT_PERSIST echo guard matches every value leaf type-exactly, inside strings and keys, and nothing else", () => {
+    const detect = ephemeralValueDetector({
+      inputs: [
+        knownInput({ id: "pin", value: 482913, value_type: "NUMBER", sensitivity: "DO_NOT_PERSIST" }),
+        knownInput({ id: "account", value: { holder: "Zed-Holder-Q", tags: ["vip-tag-77"] }, value_type: "RECORD", sensitivity: "DO_NOT_PERSIST" })
+      ]
+    });
+    expect(detect({ amount: 482913 })).toBe(true);
+    expect(detect({ text: "code 482913 ok" })).toBe(true);
+    expect(detect({ "Zed-Holder-Q": 1 })).toBe(true);
+    expect(detect({ list: [{ deep: "x vip-tag-77 y" }] })).toBe(true);
+    expect(detect({ holder: "someone", tags: [], amount: 482914 })).toBe(false);
+    expect(detect(blueprintCandidate())).toBe(false);
+    expect(ephemeralValueDetector({ inputs: [] })(withValue(["meta", "title"], "482913") as JsonValue)).toBe(false);
   });
 });
 
