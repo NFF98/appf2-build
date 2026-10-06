@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-021",
+  "active_task": "T002",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T001 is CLOSED under BS-P1-021 after closure audit PASS. SP-P1-003 remains in REVIEW with T002-T006 PLANNED / unauthorized; no active execution context exists."
+  "reason": "Human-approved SP-P1-003 / T002 activation under BS-P1-021. T002 is IN_PROGRESS at the pre-Cursor boundary; watcher/execution channel is Issue #301. Cursor execution authority remains separately gated."
 }
