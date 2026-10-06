@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "sprint_id": "SP-P1-003",
+  "status": "PLANNED",
+  "build_spec_id": "BS-P1-019",
+  "goal": "完成 Product Proof Stage A — Playable App：一個自然語言 request 必須能經 F01 產生 Blueprint、F02 validate/admit、F03 hydrate READY、在 S03 render，並由 User 做出至少一個真實 local interaction 改變 committed Runtime state/result。",
+  "scope": [
+    "BL-P1-009 Compiler gating, capability coverage & validation loop",
+    "BL-P1-010 Compiler APIs, idempotency, timeout & version trace",
+    "BL-P1-011 Compiler evidence & CREATE checkpoint progress",
+    "BL-P1-012 Runtime hydration, state, expression, RNG & time semantics",
+    "BL-P1-013 Event queue & atomic action transaction semantics",
+    "BL-P1-014 Runtime trust, isolation, lifecycle & resource enforcement",
+    "BL-P1-015 Result evaluation & correction replay support",
+    "BL-P1-016 Runtime operation identity, truthful progress & hard timeout",
+    "BL-P1-017 Discover/Create, Capsule, clarification & assumption UX",
+    "BL-P1-018 APP surface navigation, compare & inspection continuity",
+    "BL-P1-020 Shell persistence, idempotency & authority boundaries",
+    "BL-P1-022 Runtime/Create processing presentation & checkpoint progress"
+  ],
+  "non_scope": [
+    "Share restore / durable Share behavior (Stage B).",
+    "F19 Shared Ranking (Stage B).",
+    "F06 Remix/Lineage implementation (Stage C).",
+    "F16 full Correction/Revert implementation.",
+    "Phase 4 T004/T005/T006 hardening carry-forward.",
+    "Production deployment / Release approval.",
+    "Dependency PR merges #1/#2/#4/#94/#261 unless separately Human-approved."
+  ],
+  "tasks_file": "tasks.json",
+  "entry_gate": {
+    "build_spec_locked": true,
+    "baseline_gate_passed": true,
+    "acceptance_mapped": true,
+    "user_approved": false,
+    "approval_ref": null
+  },
+  "backlog_item_ids": [
+    "BL-P1-009",
+    "BL-P1-010",
+    "BL-P1-011",
+    "BL-P1-012",
+    "BL-P1-013",
+    "BL-P1-014",
+    "BL-P1-015",
+    "BL-P1-016",
+    "BL-P1-017",
+    "BL-P1-018",
+    "BL-P1-020",
+    "BL-P1-022"
+  ]
+}
