@@ -3,7 +3,9 @@
   "delta_id": "BD-019",
   "type": "DESIGN_DELTA",
   "status": "OPEN",
-  "source_finding_ids": [],
+  "source_finding_ids": [
+    "BF-048"
+  ],
   "affected_build_spec": "BS-P1-018",
   "affected_tasks": [],
   "affected_contracts": [
