@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-018",
+  "sprint_id": "SP-P1-002",
+  "task_id": "T009",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-06T01:02:40Z",
+  "blocking_findings": [],
+  "source_commit": "8068d37a187041e0814d0a4c6a3c8fc61f988aed",
+  "evidence_id": "EV-SP-P1-002-T009-001",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F01-AC-002",
+    "F02-AC-017"
+  ],
+  "test_ids": [
+    "TEST-F01-CP-001",
+    "TEST-F02-017"
+  ],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37396919167#product-ci-real-browser-mapped-tests-16-pass",
+  "command": null,
+  "review_checks": null
+}
