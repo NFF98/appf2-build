@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-018",
-  "implementation_enabled": true,
-  "reason": "Human-approved restoration of T009 after CI tooling remediation merged. SP-P1-002 / T009 returns to ACTIVE execution context under locked BS-P1-018; implementation candidate remains independently audited."
+  "implementation_enabled": false,
+  "reason": "Human-approved temporary HOLD/security-maintenance window for T009 closure dependency remediation. T009 task semantics remain unchanged and will be restored after the isolated lockfile fix is merged."
 }
