@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-019",
-  "implementation_enabled": true,
-  "reason": "Human bounded approval on 2026-10-06 activates SP-P1-003/T001 under BS-P1-019. Cursor execution is separately stopped at the pre-Cursor boundary until a new approved Issue #137 execution command is explicitly issued."
+  "implementation_enabled": false,
+  "reason": "BF-049 SPEC_AMBIGUITY blocks SP-P1-003/T001 under BS-P1-019 after independent BCE audit of Cursor SPEC_GAP result. Product execution is HOLD pending bounded F01/API/Data/Recovery contract remediation, replacement Build Spec freeze, and T001 rebind. No Cursor execution authority is active."
 }
