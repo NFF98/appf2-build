@@ -5,5 +5,5 @@
   "active_task": null,
   "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved SP-P1-002 Sprint closure complete. SP-P1-002 is CLOSED; no Sprint or Task is active."
+  "reason": "Human-approved BS-P1-019 Build Freeze complete. No Sprint or Task is active; HOLD remains until separate Product Proof Stage A planning/activation approval."
 }

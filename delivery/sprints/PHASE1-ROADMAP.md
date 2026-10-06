@@ -1,7 +1,7 @@
 # Phase 1 Delivery Roadmap — Product-First Alignment
 
 > Status: CURRENT PLANNING ROADMAP / FUTURE STAGES PROVISIONAL  
-> Current locked Build Spec: `BS-P1-018`  
+> Current locked Build Spec: `BS-P1-019`  
 > Canonical Build control state: `build-spec/CURRENT.json` + `delivery/CURRENT-SPRINT.json`  
 > Design planning source: `NFF98/appf2-design/working/PHASE-REALIGNMENT-PROGRAM.md`
 
@@ -28,7 +28,7 @@ This roadmap is a planning view. It does **not** reserve future Build Spec IDs, 
 Current canonical execution boundary:
 
 - Canonical control state is read from `build-spec/CURRENT.json` + `delivery/CURRENT-SPRINT.json`.
-- `BS-P1-018 = LOCKED`.
+- `BS-P1-019 = LOCKED` and supersedes `BS-P1-018`.
 - `implementation_enabled = false`.
 - `delivery/CURRENT-SPRINT.json = HOLD`.
 - SP-P1-002 is CLOSED; T001–T009 are CLOSED.
@@ -110,22 +110,29 @@ Before implementation they still require:
 No roadmap text alone authorizes Cursor implementation.
 
 
-## PFR-05 Candidate Snapshot — Not Yet Canonical Execution Truth
+## PFR-05 Freeze Result — Canonical Planning Truth
 
-Candidate only:
+Human-approved Freeze result:
 
-- proposed replacement baseline: `BS-P1-019`;
+- active replacement baseline: `BS-P1-019`;
 - scope-clean Design source: `e7c83ac198b63a0273f30aeaf27a6dd65abadfee`;
-- current active baseline remains `BS-P1-018`;
+- `BS-P1-018` is superseded;
 - 11 historical DONE backlog items remain immutable;
 - 32 existing QUEUED backlog items are preserved;
-- proposed F19 increment = `BL-P1-044`–`BL-P1-046`;
-- candidate remaining total = 35;
+- F19 increment = `BL-P1-044`–`BL-P1-046`;
+- remaining planned work = 35;
 - no Sprint ID allocated;
-- no Product code / Cursor authority.
+- no Product code / Cursor authority; implementation remains disabled and Sprint HOLD.
 
 Canonical candidate details:
 - `delivery/audits/PFR-05-BS-P1-019-FREEZE-CANDIDATE.md`
 - `delivery/audits/PFR-05-PROJECTION-CANDIDATE.json`
 - `delivery/audits/PFR-05-BACKLOG-PROJECTION-CANDIDATE.json`
 - `delivery/deltas/BD-019.json`
+
+
+## PFR-05 Closure — 2026-10-06
+
+Human approved Design PR #27 Product semantics and the BS-P1-019 Build Freeze candidate. BS-P1-019 is now the locked Phase 1 remaining baseline. PFR-05 is complete.
+
+Next permitted activity is **Product Proof Stage A — Playable App detailed Sprint planning only**. No Sprint ID, activation, Task, or Cursor execution authority is created by this Freeze.

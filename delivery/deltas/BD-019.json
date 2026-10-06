@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-019",
   "type": "DESIGN_DELTA",
-  "status": "OPEN",
+  "status": "CLOSED",
   "source_finding_ids": [
     "BF-048"
   ],
@@ -42,11 +42,11 @@
   "owner": "HUMAN_GOVERNANCE",
   "user_decision_required": true,
   "user_decision": {
-    "status": "APPROVED_FOR_ALIGNMENT_AND_FREEZE_PREPARATION_ONLY",
-    "decision_ref": "Human 2026-10-06: approved F19 ranking-only convergence, S03/S04/S05 delta, registry/backlog incremental mapping, and preparation of one clean Phase 1 remaining freeze candidate. Build Freeze, Sprint activation and Cursor implementation remain separately gated."
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-06: 批准 Design PR #27 的 Product semantics + BS-P1-019 Build Freeze candidate"
   },
   "replacement_build_spec_required": true,
-  "upstream_working_commit": "a219323b5fd74b8cbebb593f23be1a8a603b19de",
+  "upstream_working_commit": "65d3a63e15c4e42230556cf4d82d4588e58d75e9",
   "replacement_build_spec": "BS-P1-019",
   "verification": [
     "Design candidate PR #27 carries F19 ranking-only convergence and PFR-04 UI deltas.",
@@ -58,7 +58,13 @@
     "F01/F02/F07 Phase-4 hardening, F18/F20, Vote/Counter/generic Shared Records, F09 and full F13 are excluded from the scope-clean source.",
     "All canonical High-fi PNG references are unchanged.",
     "No historical DONE backlog Acceptance requires revalidation because this delta introduces new F19 Acceptance IDs rather than changing already-claimed IDs.",
-    "No Product implementation, Sprint activation, CURRENT.json mutation or Cursor execution authority is authorized."
+    "No Product implementation, Sprint activation, CURRENT.json mutation or Cursor execution authority is authorized.",
+    "Design PR #27 merged canonical as 65d3a63e15c4e42230556cf4d82d4588e58d75e9.",
+    "Human explicitly approved the BS-P1-019 Build Freeze candidate on 2026-10-06.",
+    "BS-P1-019 manifest locks scope-clean source e7c83ac198b63a0273f30aeaf27a6dd65abadfee with content_sha256 4bef52151da03af2eecfd5653ca4d4f68bf1ea3e7d9047385a4c0a0b9a74950f.",
+    "BS-P1-019 acceptance_count = 307; backlog active Acceptance coverage = 306 because F00-AC-008 remains SUPERSEDED/non-required.",
+    "32 unfinished existing backlog items are rebound to BS-P1-019; BL-P1-044..046 add the 18 F19 Acceptance contracts; 11 historical DONE items retain provenance.",
+    "CURRENT activates BS-P1-019 with implementation_enabled=false; CURRENT-SPRINT remains HOLD with no active Sprint/Task."
   ],
   "freeze_source": {
     "type": "SCOPE_CLEAN_DERIVED",
