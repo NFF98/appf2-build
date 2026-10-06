@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "status": "CANDIDATE_ONLY",
+  "candidate_build_spec": "BS-P1-019",
+  "canonical_queue_base": {
+    "build_spec_id": "BS-P1-018",
+    "total": 43,
+    "done": 11,
+    "queued": 32
+  },
+  "rule": "Preserve all historical DONE items and all 32 existing QUEUED items; append only F19 items generated from newly approved Phase 1 Shared Ranking acceptance. No Sprint assignment is made.",
+  "proposed_new_items": [
+    {
+      "backlog_item_id": "BL-P1-044",
+      "source": "BUILD_SPEC_CANDIDATE",
+      "build_spec_id": "BS-P1-019",
+      "function_id": "F19",
+      "title": "Shared Ranking scope, restore authority & bounded API",
+      "status": "CANDIDATE_QUEUED",
+      "priority": "P1",
+      "implementation_scope": "Provision and resolve one server-authoritative shared.ranking.v1 scope per eligible immutable Blueprint; expose only opaque scope_ref; enforce Share/trust/scope/participant authority, bounded ranking read/submit APIs, idempotency, and privacy-safe response boundaries.",
+      "scope_contracts": [
+        "F19 §4 Immutable Capability Configuration",
+        "F19 §5 Shared Data Scope Lifecycle",
+        "F19 §6 Participant Authority",
+        "F19 §7 Ranking Write Semantics",
+        "F19 §8 Idempotency / Concurrency",
+        "F19 §9 Read Semantics",
+        "F19 §12 HTTP / Service API",
+        "F19 §14 Privacy / Abuse / Security"
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F19-AC-001",
+          "test_id": "TEST-F19-001"
+        },
+        {
+          "acceptance_id": "F19-AC-002",
+          "test_id": "TEST-F19-002"
+        },
+        {
+          "acceptance_id": "F19-AC-003",
+          "test_id": "TEST-F19-003"
+        },
+        {
+          "acceptance_id": "F19-AC-004",
+          "test_id": "TEST-F19-004"
+        },
+        {
+          "acceptance_id": "F19-AC-005",
+          "test_id": "TEST-F19-005"
+        },
+        {
+          "acceptance_id": "F19-AC-006",
+          "test_id": "TEST-F19-006"
+        },
+        {
+          "acceptance_id": "F19-AC-007",
+          "test_id": "TEST-F19-007"
+        },
+        {
+          "acceptance_id": "F19-AC-008",
+          "test_id": "TEST-F19-008"
+        },
+        {
+          "acceptance_id": "F19-AC-015",
+          "test_id": "TEST-F19-015"
+        },
+        {
+          "acceptance_id": "F19-AC-018",
+          "test_id": "TEST-F19-018"
+        }
+      ],
+      "dependencies": [
+        "BL-P1-012",
+        "BL-P1-023",
+        "BL-P1-024",
+        "BL-P1-031"
+      ],
+      "sprint_id": null,
+      "product_decision_allowed": false
+    },
+    {
+      "backlog_item_id": "BL-P1-045",
+      "source": "BUILD_SPEC_CANDIDATE",
+      "build_spec_id": "BS-P1-019",
+      "function_id": "F19",
+      "title": "Deterministic ranking persistence, resource policy & evidence",
+      "status": "CANDIDATE_QUEUED",
+      "priority": "P1",
+      "implementation_scope": "Implement deterministic ASC/DESC and BEST_SCORE/LATEST_SCORE ranking semantics on real PostgreSQL with atomic rank/dedupe transactions, standalone F19ResourcePolicyV1 quota/grace behavior, privacy-safe Evidence, and asynchronous A/B/C cross-time ranking proof.",
+      "scope_contracts": [
+        "F19 §7.1 Update policy",
+        "F19 §7.2 Deterministic ordering",
+        "F19 §8 Idempotency / Concurrency",
+        "F19 §10 Phase 1 Data Contract",
+        "F19 §11 Phase 1 Resource Policy",
+        "F19 §15 Evidence Contract"
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F19-AC-009",
+          "test_id": "TEST-F19-009"
+        },
+        {
+          "acceptance_id": "F19-AC-012",
+          "test_id": "TEST-F19-012"
+        },
+        {
+          "acceptance_id": "F19-AC-013",
+          "test_id": "TEST-F19-013"
+        },
+        {
+          "acceptance_id": "F19-AC-014",
+          "test_id": "TEST-F19-014"
+        },
+        {
+          "acceptance_id": "F19-AC-016",
+          "test_id": "TEST-F19-016"
+        },
+        {
+          "acceptance_id": "F19-AC-017",
+          "test_id": "TEST-F19-017"
+        }
+      ],
+      "dependencies": [
+        "BL-P1-044",
+        "BL-P1-032",
+        "BL-P1-033"
+      ],
+      "sprint_id": null,
+      "product_decision_allowed": false
+    },
+    {
+      "backlog_item_id": "BL-P1-046",
+      "source": "BUILD_SPEC_CANDIDATE",
+      "build_spec_id": "BS-P1-019",
+      "function_id": "F19",
+      "title": "Derived-version fresh Shared Data scope",
+      "status": "CANDIDATE_QUEUED",
+      "priority": "P1",
+      "implementation_scope": "Ensure REMIX child and Phase 1 REFINE new immutable Version receive fresh shared.ranking.v1 scopes, never inherit or write the Parent ranking scope automatically, and preserve existing F06 explicit relation selection and lineage semantics.",
+      "scope_contracts": [
+        "F19 §5.3 New Version / Remix",
+        "F06 Phase 1 F19 Shared Data Integration",
+        "S05 PFR-04 Delta — F19 Fresh Scope / Lineage"
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F19-AC-010",
+          "test_id": "TEST-F19-010"
+        },
+        {
+          "acceptance_id": "F19-AC-011",
+          "test_id": "TEST-F19-011"
+        }
+      ],
+      "dependencies": [
+        "BL-P1-044",
+        "BL-P1-027",
+        "BL-P1-028",
+        "BL-P1-029"
+      ],
+      "sprint_id": null,
+      "product_decision_allowed": false
+    }
+  ],
+  "candidate_remaining_total": 35,
+  "product_first_stage_mapping": {
+    "PLAYABLE_APP": [
+      "BL-P1-009",
+      "BL-P1-010",
+      "BL-P1-011",
+      "BL-P1-012",
+      "BL-P1-013",
+      "BL-P1-014",
+      "BL-P1-015",
+      "BL-P1-016",
+      "BL-P1-017",
+      "BL-P1-018",
+      "BL-P1-020",
+      "BL-P1-022"
+    ],
+    "SHARE_AND_SHARED_RANKING": [
+      "BL-P1-023",
+      "BL-P1-024",
+      "BL-P1-026",
+      "BL-P1-044",
+      "BL-P1-045"
+    ],
+    "REMIX_AND_LINEAGE": [
+      "BL-P1-025",
+      "BL-P1-027",
+      "BL-P1-028",
+      "BL-P1-029",
+      "BL-P1-030",
+      "BL-P1-046"
+    ],
+    "HARDENING_AND_PHASE1_CLOSE": [
+      "BL-P1-019",
+      "BL-P1-021",
+      "BL-P1-034",
+      "BL-P1-035",
+      "BL-P1-036",
+      "BL-P1-037",
+      "BL-P1-038",
+      "BL-P1-039",
+      "BL-P1-040",
+      "BL-P1-041",
+      "BL-P1-042",
+      "BL-P1-043"
+    ]
+  },
+  "stage_counts": {
+    "PLAYABLE_APP": 12,
+    "SHARE_AND_SHARED_RANKING": 5,
+    "REMIX_AND_LINEAGE": 6,
+    "HARDENING_AND_PHASE1_CLOSE": 12
+  },
+  "historical_done_preserved": [
+    "BL-P1-001",
+    "BL-P1-002",
+    "BL-P1-003",
+    "BL-P1-004",
+    "BL-P1-005",
+    "BL-P1-006",
+    "BL-P1-007",
+    "BL-P1-008",
+    "BL-P1-031",
+    "BL-P1-032",
+    "BL-P1-033"
+  ],
+  "revalidation": {
+    "required_for_historical_done": false,
+    "reason": "The candidate adds new F19 Acceptance IDs and does not change the semantics of Acceptance IDs already claimed by historical DONE backlog items."
+  },
+  "human_gate": {
+    "required": true,
+    "no_sprint_assignment": true,
+    "no_activation": true,
+    "no_cursor_authority": true
+  }
+}
