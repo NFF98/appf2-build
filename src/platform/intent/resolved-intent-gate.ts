@@ -9,6 +9,8 @@ export type CompileRequest = {
   readonly intent_version: number;
   readonly source_blueprint_hash: string | null;
   readonly client_context: JsonRecord;
+  /** BF-050 `ephemeral_inputs[]` exactly as submitted; bound against the durable markers by the compile service. */
+  readonly ephemeral_inputs: unknown;
 };
 
 /**
@@ -17,7 +19,7 @@ export type CompileRequest = {
  */
 export function parseCompileRequest(body: unknown): CompileRequest {
   const record = requireJsonObjectBody(body);
-  rejectUnexpectedFields(record, { required: ["intent_version"], optional: ["source_blueprint_hash", "client_context"] }, "$");
+  rejectUnexpectedFields(record, { required: ["intent_version"], optional: ["source_blueprint_hash", "client_context", "ephemeral_inputs"] }, "$");
   const hash = record.source_blueprint_hash ?? null;
   if (hash !== null && typeof hash !== "string") invalidRequest([{ path: "$.source_blueprint_hash", reason: "INVALID_STRING" }]);
   const context = record.client_context ?? {};
@@ -25,7 +27,8 @@ export function parseCompileRequest(body: unknown): CompileRequest {
   return {
     intent_version: requirePositiveInteger(record.intent_version, "$.intent_version"),
     source_blueprint_hash: hash,
-    client_context: context as JsonRecord
+    client_context: context as JsonRecord,
+    ephemeral_inputs: record.ephemeral_inputs
   };
 }
 

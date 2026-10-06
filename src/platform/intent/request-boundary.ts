@@ -12,6 +12,7 @@ export const SERVER_OWNED_REQUEST_FIELDS: ReadonlySet<string> = new Set([
   "clarification_policy_state",
   "answered_question_ids",
   "changed_semantic_item_ids",
+  "ephemeral_input_requirements",
   "status",
   "policy_version",
   "triggered_rule_ids",
