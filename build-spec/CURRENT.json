@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-018",
-  "implementation_enabled": false,
-  "reason": "Human-approved temporary governance HOLD/tooling window for T009 CI remediation. Product/Task semantics are unchanged; T009 remains IN_PROGRESS in its Sprint manifest/tasks and must be explicitly restored to CURRENT before implementation merge."
+  "implementation_enabled": true,
+  "reason": "Human-approved restoration of T009 after CI tooling remediation merged. SP-P1-002 / T009 returns to ACTIVE execution context under locked BS-P1-018; implementation candidate remains independently audited."
 }
