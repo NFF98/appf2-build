@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-019",
+  "type": "DESIGN_DELTA",
+  "status": "OPEN",
+  "source_finding_ids": [],
+  "affected_build_spec": "BS-P1-018",
+  "affected_tasks": [],
+  "affected_contracts": [
+    "F19 shared.ranking.v1 Phase 1 product contract",
+    "F05 Phase 1 F19 opaque scope handoff",
+    "F06 derived-Version fresh F19 scope boundary",
+    "S03/S04/S05 PFR-04 F19 textual delta",
+    "Phase 1 shared-data architecture/data/infrastructure boundary",
+    "Acceptance Registry 2.4.0",
+    "Evidence Registry 3.1.0",
+    "Recovery Registry 1.2.0"
+  ],
+  "affected_acceptance": [
+    "F19-AC-001",
+    "F19-AC-002",
+    "F19-AC-003",
+    "F19-AC-004",
+    "F19-AC-005",
+    "F19-AC-006",
+    "F19-AC-007",
+    "F19-AC-008",
+    "F19-AC-009",
+    "F19-AC-010",
+    "F19-AC-011",
+    "F19-AC-012",
+    "F19-AC-013",
+    "F19-AC-014",
+    "F19-AC-015",
+    "F19-AC-016",
+    "F19-AC-017",
+    "F19-AC-018"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED_FOR_ALIGNMENT_AND_FREEZE_PREPARATION_ONLY",
+    "decision_ref": "Human 2026-10-06: approved F19 ranking-only convergence, S03/S04/S05 delta, registry/backlog incremental mapping, and preparation of one clean Phase 1 remaining freeze candidate. Build Freeze, Sprint activation and Cursor implementation remain separately gated."
+  },
+  "replacement_build_spec_required": true,
+  "upstream_working_commit": "a219323b5fd74b8cbebb593f23be1a8a603b19de",
+  "replacement_build_spec": "BS-P1-019",
+  "verification": [
+    "Design candidate PR #27 carries F19 ranking-only convergence and PFR-04 UI deltas.",
+    "Scope-clean freeze source derives from the exact BS-P1-018 source 9c1e0c5f077663858530ac026fc55b9e20eddef2.",
+    "Scope-clean candidate source e7c83ac198b63a0273f30aeaf27a6dd65abadfee changes exactly 16 projected paths.",
+    "Acceptance Registry 2.4.0 contains 307 total entries: +18 F19 entries; document/registry F19 IDs match exactly.",
+    "Evidence Registry 3.1.0 contains 120 total entries: +7 F19 events; no raw participant_ref/display_name/raw score/full ranking properties.",
+    "Recovery Registry 1.2.0 contains 132 total entries: +10 F19 errors using existing recovery vocabulary.",
+    "F01/F02/F07 Phase-4 hardening, F18/F20, Vote/Counter/generic Shared Records, F09 and full F13 are excluded from the scope-clean source.",
+    "All canonical High-fi PNG references are unchanged.",
+    "No historical DONE backlog Acceptance requires revalidation because this delta introduces new F19 Acceptance IDs rather than changing already-claimed IDs.",
+    "No Product implementation, Sprint activation, CURRENT.json mutation or Cursor execution authority is authorized."
+  ],
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "e7c83ac198b63a0273f30aeaf27a6dd65abadfee",
+    "base_commit": "9c1e0c5f077663858530ac026fc55b9e20eddef2",
+    "provenance_audit": "delivery/audits/PFR-05-BS-P1-019-FREEZE-CANDIDATE.md"
+  }
+}
