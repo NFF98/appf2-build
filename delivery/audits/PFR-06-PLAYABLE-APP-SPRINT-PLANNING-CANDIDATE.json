@@ -1,0 +1,861 @@
+{
+  "schema_version": 1,
+  "status": "PLANNING_CANDIDATE_HUMAN_REVIEW_REQUIRED",
+  "program": "PFR-2026",
+  "step": "PFR-06",
+  "product_stage": "Product Proof Stage A — Playable App",
+  "build_spec_id": "BS-P1-019",
+  "sprint_id": null,
+  "sprint_id_rule": "Allocate the next canonical SP-P1-NNN only when Human approves Sprint creation; planning does not reserve a numeric ID.",
+  "task_id_rule": "Task IDs are allocated inside the created Sprint; planning slots A1–A6 are not canonical Task IDs.",
+  "goal": "Prove one natural-language request can become a validated generated App that renders in the browser and is genuinely interactive/playable, while preserving locked F00/F01/F03 semantics.",
+  "visible_product_proof": "one natural-language request → App generated → validated → rendered → actually interactive/playable",
+  "selected_backlog_item_ids": [
+    "BL-P1-009",
+    "BL-P1-010",
+    "BL-P1-011",
+    "BL-P1-012",
+    "BL-P1-013",
+    "BL-P1-014",
+    "BL-P1-015",
+    "BL-P1-016",
+    "BL-P1-017",
+    "BL-P1-018",
+    "BL-P1-020",
+    "BL-P1-022"
+  ],
+  "selected_backlog_count": 12,
+  "acceptance_count": 84,
+  "acceptance_by_function": {
+    "F00": 24,
+    "F01": 22,
+    "F03": 38
+  },
+  "proof_scope_counts": {
+    "BEHAVIOR": 41,
+    "CONTRACT": 31,
+    "END_TO_END": 2,
+    "RUNTIME_EVIDENCE": 10
+  },
+  "dependency_audit": {
+    "all_external_dependencies_done": true,
+    "external_dependencies": [
+      {
+        "backlog_item_id": "BL-P1-002",
+        "status": "DONE",
+        "build_spec_id": "BS-P1-001"
+      },
+      {
+        "backlog_item_id": "BL-P1-005",
+        "status": "DONE",
+        "build_spec_id": "BS-P1-012"
+      },
+      {
+        "backlog_item_id": "BL-P1-008",
+        "status": "DONE",
+        "build_spec_id": "BS-P1-016"
+      }
+    ]
+  },
+  "current_control_state": {
+    "active_baseline": "BS-P1-019",
+    "implementation_enabled": false,
+    "current_sprint_status": "HOLD",
+    "active_sprint": null,
+    "active_task": null
+  },
+  "complete_open_pr_inventory": {
+    "captured_at": "2026-10-06T14:50:00+09:00",
+    "pull_requests": [
+      {
+        "number": 261,
+        "title": "Bump the lint-tooling group across 1 directory with 3 updates",
+        "disposition": "NON_BLOCKING_DEFER"
+      },
+      {
+        "number": 207,
+        "title": "治理：SP-P1-002 / T005 Handoff Channel",
+        "disposition": "STALE_HANDOFF_NON_BLOCKING"
+      },
+      {
+        "number": 94,
+        "title": "Bump vitest from 5.0.1 to 5.0.3 in the test-tooling group across 1 directory",
+        "disposition": "NON_BLOCKING_SEPARATE_HUMAN_APPROVAL"
+      },
+      {
+        "number": 4,
+        "title": "Bump actions/checkout from 4 to 7",
+        "disposition": "NON_BLOCKING_DEFER_MAJOR"
+      },
+      {
+        "number": 2,
+        "title": "Bump actions/setup-node from 4 to 7",
+        "disposition": "NON_BLOCKING_DEFER_MAJOR"
+      },
+      {
+        "number": 1,
+        "title": "Bump actions/upload-artifact from 4 to 7",
+        "disposition": "NON_BLOCKING_DEFER_MAJOR"
+      }
+    ],
+    "blocks_planning": false,
+    "blocks_sprint_creation": false
+  },
+  "unresolved_finding_audit": {
+    "open": 0,
+    "assessing": 0,
+    "blocked": 0,
+    "blocks_planning": false
+  },
+  "pre_activation_readiness": [
+    {
+      "id": "PFR06-RDY-01",
+      "status": "BLOCKING_BEFORE_SPRINT_ACTIVATION",
+      "title": "Declare the locked React browser toolchain in Build Machine",
+      "evidence": [
+        "BS-P1-019 Infrastructure Phase 1 Runtime Plane explicitly locks React in the Browser.",
+        "tsconfig already enables DOM + react-jsx.",
+        "package.json / package-lock currently do not declare react or react-dom; vite exists only transitively."
+      ],
+      "required_governance_action": [
+        "Before Sprint activation, Human-approved governance/toolchain PR must explicitly pin react + react-dom and matching type packages.",
+        "Declare the browser build/preview tool as a direct dependency rather than relying on a transitive Vite copy.",
+        "Add exact npm scripts required by planned Tasks; package.json / config changes must happen while HOLD/PLANNED because active Tasks cannot write governance paths."
+      ]
+    },
+    {
+      "id": "PFR06-RDY-02",
+      "status": "BLOCKING_BEFORE_SPRINT_ACTIVATION",
+      "title": "Prepare real-browser Product proof runner before product code starts",
+      "evidence": [
+        "Playwright has a baseURL but current repo has no formal Product web app/server scaffold.",
+        "Stage A includes END_TO_END Acceptance and the explicit real-browser visible Product proof."
+      ],
+      "required_governance_action": [
+        "Prepare Playwright/webServer or equivalent deterministic browser runner in governance/tooling config before activation.",
+        "Runner must exercise the actual future src/app Product surface, not only the SP2 test-only harness.",
+        "Do not create Product UI source while HOLD; Product source begins only after Sprint/Task activation."
+      ]
+    }
+  ],
+  "proposed_tasks": [
+    {
+      "planning_slot": "A1",
+      "title": "Compiler gate, API lifecycle & truthful creation progress",
+      "backlog_item_ids": [
+        "BL-P1-009",
+        "BL-P1-010",
+        "BL-P1-011"
+      ],
+      "outcome": "自然語言 Intent 可經 deterministic gate、F04 coverage、Prompt B、mandatory F02 validation，產生 validated Blueprint；三個 F01 mutation API 具 idempotency / timeout / version trace，CREATE progress checkpoint truth 可由 F00 消費。",
+      "scope": [
+        "Implement F01 compiler orchestration from Resolved Intent through F04 Capability Coverage, bounded Blueprint Composition and mandatory F02 validation.",
+        "Implement /api/v1 intents, answers and compile mutation boundaries including Idempotency-Key, optimistic intent_version and stable error envelope semantics.",
+        "Implement provider-neutral ModelGateway domain interface plus one production-configurable server adapter without exposing provider secret or SDK to Browser.",
+        "Persist intent_record / compiler_run / canonical idempotency_operation integration required by BS-P1-019.",
+        "Emit F01 privacy-safe Evidence and CREATE v1 fixed checkpoint progress projection."
+      ],
+      "non_scope": [
+        "No F00 React UI.",
+        "No F03 Runtime implementation.",
+        "No F19 / Share / Remix behavior.",
+        "No provider-specific Product semantics or client-side provider secret."
+      ],
+      "allowed_write_paths": [
+        "src/platform/compiler/",
+        "src/platform/intent/",
+        "src/edge/intent-api.ts",
+        "supabase/migrations/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/api/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:api",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "db-migration",
+        "reviewer"
+      ],
+      "blocked_by": [],
+      "parallel_safe": true,
+      "build_spec_id": "BS-P1-019",
+      "product_decision_allowed": false,
+      "acceptance_links": [
+        {
+          "acceptance_id": "F01-AC-007",
+          "test_id": "TEST-F01-007"
+        },
+        {
+          "acceptance_id": "F01-AC-008",
+          "test_id": "TEST-F01-008"
+        },
+        {
+          "acceptance_id": "F01-AC-009",
+          "test_id": "TEST-F01-AC-009"
+        },
+        {
+          "acceptance_id": "F01-AC-010",
+          "test_id": "TEST-F01-010"
+        },
+        {
+          "acceptance_id": "F01-AC-011",
+          "test_id": "TEST-F01-AC-011"
+        },
+        {
+          "acceptance_id": "F01-AC-012",
+          "test_id": "TEST-F01-012"
+        },
+        {
+          "acceptance_id": "F01-AC-013",
+          "test_id": "TEST-F01-API-001"
+        },
+        {
+          "acceptance_id": "F01-AC-014",
+          "test_id": "TEST-F01-AC-014"
+        },
+        {
+          "acceptance_id": "F01-AC-015",
+          "test_id": "TEST-F01-API-002"
+        },
+        {
+          "acceptance_id": "F01-AC-016",
+          "test_id": "TEST-F01-API-003"
+        },
+        {
+          "acceptance_id": "F01-AC-018",
+          "test_id": "TEST-F01-AC-018"
+        },
+        {
+          "acceptance_id": "F01-AC-019",
+          "test_id": "TEST-F01-019"
+        },
+        {
+          "acceptance_id": "F01-AC-020",
+          "test_id": "TEST-F01-AC-020"
+        },
+        {
+          "acceptance_id": "F01-AC-021",
+          "test_id": "TEST-F01-021"
+        },
+        {
+          "acceptance_id": "F01-AC-022",
+          "test_id": "TEST-F01-AC-022"
+        },
+        {
+          "acceptance_id": "F01-AC-023",
+          "test_id": "TEST-F01-AC-023"
+        },
+        {
+          "acceptance_id": "F01-AC-024",
+          "test_id": "TEST-F01-AC-024"
+        },
+        {
+          "acceptance_id": "F01-AC-025",
+          "test_id": "TEST-F01-PROG-001"
+        },
+        {
+          "acceptance_id": "F01-AC-026",
+          "test_id": "TEST-F01-PROG-002"
+        },
+        {
+          "acceptance_id": "F01-AC-027",
+          "test_id": "TEST-F01-PROG-003"
+        },
+        {
+          "acceptance_id": "F01-AC-028",
+          "test_id": "TEST-F01-PROG-004"
+        },
+        {
+          "acceptance_id": "F01-AC-029",
+          "test_id": "TEST-F01-PROG-005"
+        }
+      ],
+      "acceptance_count": 22,
+      "completion_evidence_requirements": [
+        "Mapped AC/Test results PASS with command output references.",
+        "Reviewer PASS for Product correctness, architecture boundary, engineering quality, security/performance risk and test quality.",
+        "No undeclared write path; any scope gap produces Finding/HARD STOP rather than Task expansion."
+      ]
+    },
+    {
+      "planning_slot": "A2",
+      "title": "Deterministic Runtime core & atomic interaction engine",
+      "backlog_item_ids": [
+        "BL-P1-012",
+        "BL-P1-013"
+      ],
+      "outcome": "VALIDATED/admitted Blueprint 可在 Browser deterministic hydrate；state / derived rules / expressions / RNG / time 與 FIFO event queue、atomic Action transaction 形成可互動 Runtime core。",
+      "scope": [
+        "Implement F03 hydration into READY from valid admitted Blueprint only.",
+        "Implement mutable Instance Store, derived/rule recomputation, typed pure expressions, deterministic RNG and monotonic-time semantics.",
+        "Implement FIFO event queue, single-writer action execution, nested-event queueing and atomic commit/rollback boundaries.",
+        "Implement reset semantics and capability-local state separation without mutating immutable Blueprint identity."
+      ],
+      "non_scope": [
+        "No consumer F00 shell.",
+        "No F01 compiler behavior.",
+        "No final S03 chrome/result presentation.",
+        "No F19 durable shared data."
+      ],
+      "allowed_write_paths": [
+        "src/platform/runtime/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/unit/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:unit",
+        "npm run test:regression"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "blocked_by": [],
+      "parallel_safe": true,
+      "build_spec_id": "BS-P1-019",
+      "product_decision_allowed": false,
+      "acceptance_links": [
+        {
+          "acceptance_id": "F03-AC-001",
+          "test_id": "TEST-F03-001"
+        },
+        {
+          "acceptance_id": "F03-AC-002",
+          "test_id": "TEST-F03-AC-002"
+        },
+        {
+          "acceptance_id": "F03-AC-003",
+          "test_id": "TEST-F03-AC-003"
+        },
+        {
+          "acceptance_id": "F03-AC-004",
+          "test_id": "TEST-F03-004"
+        },
+        {
+          "acceptance_id": "F03-AC-008",
+          "test_id": "TEST-F03-AC-008"
+        },
+        {
+          "acceptance_id": "F03-AC-010",
+          "test_id": "TEST-F03-010"
+        },
+        {
+          "acceptance_id": "F03-AC-011",
+          "test_id": "TEST-F03-011"
+        },
+        {
+          "acceptance_id": "F03-AC-012",
+          "test_id": "TEST-F03-012"
+        },
+        {
+          "acceptance_id": "F03-AC-013",
+          "test_id": "TEST-F03-AC-013"
+        },
+        {
+          "acceptance_id": "F03-AC-021",
+          "test_id": "TEST-F03-021"
+        },
+        {
+          "acceptance_id": "F03-AC-023",
+          "test_id": "TEST-F03-AC-023"
+        },
+        {
+          "acceptance_id": "F03-AC-005",
+          "test_id": "TEST-F03-005"
+        },
+        {
+          "acceptance_id": "F03-AC-006",
+          "test_id": "TEST-F03-006"
+        },
+        {
+          "acceptance_id": "F03-AC-007",
+          "test_id": "TEST-F03-007"
+        },
+        {
+          "acceptance_id": "F03-AC-016",
+          "test_id": "TEST-F03-AC-016"
+        },
+        {
+          "acceptance_id": "F03-AC-017",
+          "test_id": "TEST-F03-017"
+        },
+        {
+          "acceptance_id": "F03-AC-026",
+          "test_id": "TEST-F03-AC-026"
+        }
+      ],
+      "acceptance_count": 17,
+      "completion_evidence_requirements": [
+        "Mapped AC/Test results PASS with command output references.",
+        "Reviewer PASS for Product correctness, architecture boundary, engineering quality, security/performance risk and test quality.",
+        "No undeclared write path; any scope gap produces Finding/HARD STOP rather than Task expansion."
+      ]
+    },
+    {
+      "planning_slot": "A3",
+      "title": "Runtime trust, lifecycle, operation token & hard-timeout safety",
+      "backlog_item_ids": [
+        "BL-P1-014",
+        "BL-P1-016"
+      ],
+      "outcome": "Runtime 不可繞過 admission/trust/resource ceiling；每個 interaction 有唯一 operation token、truthful checkpoint progress、hard deadline 與 fail-closed integrity handling。",
+      "scope": [
+        "Enforce Runtime trust / compatibility / handler injection prevention and F02/F04 hard resource ceilings.",
+        "Implement node isolation, last-known-good committed state preservation, dispose cleanup and bounded loop/queue behavior.",
+        "Implement operation token lifecycle, checkpoint progress, stale/late completion rejection, retry token replacement and hard-timeout pre-commit guard.",
+        "Implement F03 v2 privacy-safe Evidence separating runtime_status / operation_status and fail-closed integrity_status semantics."
+      ],
+      "non_scope": [
+        "No F12 recovery UI beyond emitting the locked handoff/error contract.",
+        "No F00 shell presentation.",
+        "No production Share/Ranking integration."
+      ],
+      "allowed_write_paths": [
+        "src/platform/runtime/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "blocked_by": [
+        "A2"
+      ],
+      "parallel_safe": false,
+      "build_spec_id": "BS-P1-019",
+      "product_decision_allowed": false,
+      "acceptance_links": [
+        {
+          "acceptance_id": "F03-AC-014",
+          "test_id": "TEST-F03-AC-014"
+        },
+        {
+          "acceptance_id": "F03-AC-015",
+          "test_id": "TEST-F03-015"
+        },
+        {
+          "acceptance_id": "F03-AC-018",
+          "test_id": "TEST-F03-018"
+        },
+        {
+          "acceptance_id": "F03-AC-019",
+          "test_id": "TEST-F03-019"
+        },
+        {
+          "acceptance_id": "F03-AC-020",
+          "test_id": "TEST-F03-AC-020"
+        },
+        {
+          "acceptance_id": "F03-AC-022",
+          "test_id": "TEST-F03-022"
+        },
+        {
+          "acceptance_id": "F03-AC-025",
+          "test_id": "TEST-F03-AC-025"
+        },
+        {
+          "acceptance_id": "F03-AC-027",
+          "test_id": "TEST-F03-AC-027"
+        },
+        {
+          "acceptance_id": "F03-AC-028",
+          "test_id": "TEST-F03-AC-028"
+        },
+        {
+          "acceptance_id": "F03-AC-029",
+          "test_id": "TEST-F03-AC-029"
+        },
+        {
+          "acceptance_id": "F03-AC-030",
+          "test_id": "TEST-F03-030"
+        },
+        {
+          "acceptance_id": "F03-AC-031",
+          "test_id": "TEST-F03-031"
+        },
+        {
+          "acceptance_id": "F03-AC-032",
+          "test_id": "TEST-F03-032"
+        },
+        {
+          "acceptance_id": "F03-AC-033",
+          "test_id": "TEST-F03-033"
+        },
+        {
+          "acceptance_id": "F03-AC-034",
+          "test_id": "TEST-F03-034"
+        },
+        {
+          "acceptance_id": "F03-AC-035",
+          "test_id": "TEST-F03-035"
+        },
+        {
+          "acceptance_id": "F03-AC-036",
+          "test_id": "TEST-F03-036"
+        },
+        {
+          "acceptance_id": "F03-AC-037",
+          "test_id": "TEST-F03-037"
+        },
+        {
+          "acceptance_id": "F03-AC-038",
+          "test_id": "TEST-F03-038"
+        }
+      ],
+      "acceptance_count": 19,
+      "completion_evidence_requirements": [
+        "Mapped AC/Test results PASS with command output references.",
+        "Reviewer PASS for Product correctness, architecture boundary, engineering quality, security/performance risk and test quality.",
+        "No undeclared write path; any scope gap produces Finding/HARD STOP rather than Task expansion."
+      ]
+    },
+    {
+      "planning_slot": "A4",
+      "title": "Discover/Create React shell, clarification & visible-assumption flow",
+      "backlog_item_ids": [
+        "BL-P1-017"
+      ],
+      "outcome": "User 可從空白 prompt 或 Inspiration Capsule 進 editable Create；clear intent fast-path、clarification 1–3 題、visible assumptions Accept/Edit/Reject 都忠實消費 F01 truth。",
+      "scope": [
+        "Create Phase 1 React Product shell entry for S01/S02 Create path under locked Design System and approved S01/S02 contracts.",
+        "Implement blank prompt and Inspiration Capsule editable prefill flow.",
+        "Render clarification and visible-assumption states without turning LLM proposals into User facts.",
+        "Preserve prompt/answers across recoverable failure and maintain duplicate-submit guard handoff to F01 idempotency.",
+        "Keep Inspiration Capsule on Create semantics; do not use Shared App restore semantics."
+      ],
+      "non_scope": [
+        "No Share / Remix / Correction feature implementation beyond inactive placeholders required by approved shell structure.",
+        "No S03 final runtime chrome yet.",
+        "No accessibility hardening AC outside selected Stage A backlog."
+      ],
+      "allowed_write_paths": [
+        "src/app/",
+        "tests/behavior/",
+        "tests/e2e/",
+        "tests/visual/",
+        "tests/responsive/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:behavior",
+        "npm run test:e2e",
+        "npm run test:visual",
+        "npm run test:responsive"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "ui-verifier",
+        "reviewer"
+      ],
+      "blocked_by": [
+        "A1"
+      ],
+      "parallel_safe": true,
+      "build_spec_id": "BS-P1-019",
+      "product_decision_allowed": false,
+      "acceptance_links": [
+        {
+          "acceptance_id": "F00-AC-001",
+          "test_id": "TEST-F00-001"
+        },
+        {
+          "acceptance_id": "F00-AC-002",
+          "test_id": "TEST-F00-AC-002"
+        },
+        {
+          "acceptance_id": "F00-AC-003",
+          "test_id": "TEST-F00-003"
+        },
+        {
+          "acceptance_id": "F00-AC-004",
+          "test_id": "TEST-F00-004"
+        },
+        {
+          "acceptance_id": "F00-AC-005",
+          "test_id": "TEST-F00-005"
+        },
+        {
+          "acceptance_id": "F00-AC-006",
+          "test_id": "TEST-F00-006"
+        },
+        {
+          "acceptance_id": "F00-AC-038",
+          "test_id": "TEST-F00-038"
+        }
+      ],
+      "acceptance_count": 7,
+      "completion_evidence_requirements": [
+        "Mapped AC/Test results PASS with command output references.",
+        "Reviewer PASS for Product correctness, architecture boundary, engineering quality, security/performance risk and test quality.",
+        "No undeclared write path; any scope gap produces Finding/HARD STOP rather than Task expansion."
+      ]
+    },
+    {
+      "planning_slot": "A5",
+      "title": "Shell persistence, authority boundary & truthful processing presentation",
+      "backlog_item_ids": [
+        "BL-P1-020",
+        "BL-P1-022"
+      ],
+      "outcome": "Create/Runtime processing presentation只顯示 source-owned真實 checkpoints；DO_NOT_PERSIST、duplicate logical create、Shell/Runtime authority boundary與 APP_READY 100% 規則可被 contract/E2E 證明。",
+      "scope": [
+        "Implement F00 local draft persistence rules including DO_NOT_PERSIST exclusion.",
+        "Enforce Shell never mutates Runtime Instance Store directly and never displays LLM proposal as User fact.",
+        "Project F01 six CREATE checkpoints plus F03 APP_READY into S02/O05 truthful composite progress.",
+        "Freeze progress while waiting for User; never inflate by elapsed time; only F03 READY may reach 100%.",
+        "Project accepted Runtime interaction operation lifecycle into logical global processing presentation without artificial delay."
+      ],
+      "non_scope": [
+        "No F12 recovery implementation beyond consuming the locked handoff.",
+        "No Share / Remix / Correction implementation.",
+        "No elapsed-time ETA or fake progress."
+      ],
+      "allowed_write_paths": [
+        "src/app/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/e2e/",
+        "tests/visual/",
+        "tests/responsive/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:e2e",
+        "npm run test:visual",
+        "npm run test:responsive"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "ui-verifier",
+        "reviewer"
+      ],
+      "blocked_by": [
+        "A1",
+        "A2",
+        "A3",
+        "A4"
+      ],
+      "parallel_safe": false,
+      "build_spec_id": "BS-P1-019",
+      "product_decision_allowed": false,
+      "acceptance_links": [
+        {
+          "acceptance_id": "F00-AC-018",
+          "test_id": "TEST-F00-AC-018"
+        },
+        {
+          "acceptance_id": "F00-AC-019",
+          "test_id": "TEST-F00-019"
+        },
+        {
+          "acceptance_id": "F00-AC-020",
+          "test_id": "TEST-F00-020"
+        },
+        {
+          "acceptance_id": "F00-AC-021",
+          "test_id": "TEST-F00-AC-021"
+        },
+        {
+          "acceptance_id": "F00-AC-029",
+          "test_id": "TEST-F00-029"
+        },
+        {
+          "acceptance_id": "F00-AC-030",
+          "test_id": "TEST-F00-030"
+        },
+        {
+          "acceptance_id": "F00-AC-031",
+          "test_id": "TEST-F00-031"
+        },
+        {
+          "acceptance_id": "F00-AC-033",
+          "test_id": "TEST-F00-PROG-001"
+        },
+        {
+          "acceptance_id": "F00-AC-034",
+          "test_id": "TEST-F00-PROG-002"
+        },
+        {
+          "acceptance_id": "F00-AC-035",
+          "test_id": "TEST-F00-PROG-003"
+        }
+      ],
+      "acceptance_count": 10,
+      "completion_evidence_requirements": [
+        "Mapped AC/Test results PASS with command output references.",
+        "Reviewer PASS for Product correctness, architecture boundary, engineering quality, security/performance risk and test quality.",
+        "No undeclared write path; any scope gap produces Finding/HARD STOP rather than Task expansion."
+      ]
+    },
+    {
+      "planning_slot": "A6",
+      "title": "Result contract, S03 App surface & Playable App vertical proof",
+      "backlog_item_ids": [
+        "BL-P1-015",
+        "BL-P1-018"
+      ],
+      "outcome": "Validated Blueprint 真正 hydrate/render 成可互動 Generated App；canonical result 來自 result.outputs 而非 DOM，S03 navigation/inspection continuity符合已批准 contract，並完成 Stage A visible Product proof。",
+      "scope": [
+        "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
+        "Implement S03 Runtime surface so Generated App is visual/interaction primary content and Shell never wraps/mutates Runtime controls.",
+        "Implement explicit Modify-this-App vs Make-my-version entry selection and returnable S05-origin Inspection Mode continuity without starting S05 implementation.",
+        "Keep correction failure from destroying current App and preserve Compare decision boundaries without implementing full F16 correction engine.",
+        "Deliver executable vertical proof: one natural-language request → F01 generate → F02 validated/admitted → F03 READY/render → at least one real local interaction changes committed Runtime state/result without LLM/server round-trip."
+      ],
+      "non_scope": [
+        "No F05 Share behavior beyond visible non-functional entry boundary if required by approved chrome.",
+        "No F06 Remix/Refine implementation; only correct destination/intent selection contract.",
+        "No F16 correction implementation; only current-App preservation / entry boundary required by selected F00 AC.",
+        "No F19 Shared Ranking.",
+        "No Phase 4 hardening carry-forward."
+      ],
+      "allowed_write_paths": [
+        "src/platform/runtime/",
+        "src/app/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/runtime/",
+        "tests/e2e/",
+        "tests/visual/",
+        "tests/responsive/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:runtime",
+        "npm run test:e2e",
+        "npm run test:visual",
+        "npm run test:responsive"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "ui-verifier",
+        "reviewer"
+      ],
+      "blocked_by": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5"
+      ],
+      "parallel_safe": false,
+      "build_spec_id": "BS-P1-019",
+      "product_decision_allowed": false,
+      "acceptance_links": [
+        {
+          "acceptance_id": "F03-AC-009",
+          "test_id": "TEST-F03-009"
+        },
+        {
+          "acceptance_id": "F03-AC-024",
+          "test_id": "TEST-F03-AC-024"
+        },
+        {
+          "acceptance_id": "F00-AC-007",
+          "test_id": "TEST-F00-007"
+        },
+        {
+          "acceptance_id": "F00-AC-009",
+          "test_id": "TEST-F00-AC-009"
+        },
+        {
+          "acceptance_id": "F00-AC-010",
+          "test_id": "TEST-F00-010"
+        },
+        {
+          "acceptance_id": "F00-AC-011",
+          "test_id": "TEST-F00-011"
+        },
+        {
+          "acceptance_id": "F00-AC-012",
+          "test_id": "TEST-F00-AC-012"
+        },
+        {
+          "acceptance_id": "F00-AC-036",
+          "test_id": "TEST-F00-036"
+        },
+        {
+          "acceptance_id": "F00-AC-037",
+          "test_id": "TEST-F00-037"
+        }
+      ],
+      "acceptance_count": 9,
+      "completion_evidence_requirements": [
+        "Mapped AC/Test results PASS with command output references.",
+        "Reviewer PASS for Product correctness, architecture boundary, engineering quality, security/performance risk and test quality.",
+        "No undeclared write path; any scope gap produces Finding/HARD STOP rather than Task expansion.",
+        "Real-browser Stage A Product proof recorded with request, generated/validated Blueprint identity, READY transition and observable local interaction result."
+      ]
+    }
+  ],
+  "sprint_non_scope": [
+    "Share restore / durable Share behavior (Stage B).",
+    "F19 Shared Ranking (Stage B).",
+    "F06 Remix/Lineage implementation (Stage C).",
+    "F16 full Correction/Revert implementation.",
+    "Phase 4 T004/T005/T006 hardening carry-forward.",
+    "Production deployment / Release approval.",
+    "Dependency PR merges #1/#2/#4/#94/#261 unless separately Human-approved."
+  ],
+  "activation_readiness_verdict": "NOT_READY_YET — detailed plan is coherent, but PFR06-RDY-01 and PFR06-RDY-02 must be completed before Sprint creation/activation.",
+  "human_gate": {
+    "next": "Approve this Stage A detailed plan and authorize a governance-only pre-activation React/browser toolchain readiness PR.",
+    "sprint_creation_authority": false,
+    "sprint_activation_authority": false,
+    "cursor_authority": false
+  }
+}

@@ -136,3 +136,33 @@ Canonical candidate details:
 Human approved Design PR #27 Product semantics and the BS-P1-019 Build Freeze candidate. BS-P1-019 is now the locked Phase 1 remaining baseline. PFR-05 is complete.
 
 Next permitted activity is **Product Proof Stage A — Playable App detailed Sprint planning only**. No Sprint ID, activation, Task, or Cursor execution authority is created by this Freeze.
+
+
+## PFR-06 Detailed Planning Candidate — Playable App
+
+Human approved **starting detailed Sprint planning** on 2026-10-06. This does not create or activate a Sprint.
+
+Planning candidate:
+
+- Build Spec: `BS-P1-019`
+- Sprint ID: **not allocated**
+- selected backlog: 12 Playable App items
+- mapped Acceptance/Test: 84 = F00 24 + F01 22 + F03 38
+- task planning slots: A1–A6 (not canonical Task IDs)
+- A1 Compiler and A2 Runtime Core may proceed in parallel after future activation
+- A6 is the terminal real-browser Product proof: natural-language request → generated/validated Blueprint → F03 READY/render → real local interaction
+- implementation remains disabled / Sprint HOLD
+
+Planning audit: **PASS CANDIDATE**.
+
+Pre-activation readiness still required before Sprint creation/activation:
+
+1. explicit React / ReactDOM browser toolchain declaration and exact build/preview scripts;
+2. real Product Playwright/webServer runner targeting the future `src/app/` surface rather than the SP2 test-only harness.
+
+Canonical candidate artifacts:
+
+- `delivery/audits/PFR-06-PLAYABLE-APP-SPRINT-PLANNING-CANDIDATE.json`
+- `delivery/audits/PFR-06-PLAYABLE-APP-SPRINT-PLANNING-CANDIDATE.md`
+
+**Next Human Gate:** approve the Stage A detailed plan and authorize a governance-only pre-activation React/browser toolchain readiness change. No Sprint creation, Task activation, or Cursor Product authority is implied.
