@@ -16,7 +16,7 @@
     "PFR-05 registry audit: Acceptance 289→307 (+18 F19), Evidence 113→120 (+7 F19), Recovery 122→132 (+10 F19), with document/registry alignment PASS.",
     "PFR-05 backlog audit preserves all 11 historical DONE items and all 32 existing QUEUED items, proposing only BL-P1-044..046 for the 18 new F19 Acceptance contracts.",
     "Human approved Design PR #27 Product semantics + BS-P1-019 Build Freeze candidate on 2026-10-06.",
-    "BS-P1-019 replacement baseline is created in the same governed Freeze change with content_sha256 85e3b6ede9c0b924bf144f900f206ee8dc7dfec6ab32bd019962044ccb53f565."
+    "BS-P1-019 replacement baseline is created in the same governed Freeze change with content_sha256 eb812ce9209806fcf2a7e3514d662e5aac0697866e632bdcdaaa3ad8d3d98b79."
   ],
   "attempts": [
     {
