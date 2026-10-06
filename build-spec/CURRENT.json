@@ -2,5 +2,5 @@
   "schema_version": 1,
   "active_baseline": "BS-P1-018",
   "implementation_enabled": false,
-  "reason": "Human-approved T009 final closure after independent closure audit PASS. BS-P1-018 remains active/locked; execution returns to HOLD pending a separate SP-P1-002 Sprint Close decision."
+  "reason": "Human-approved SP-P1-002 Sprint closure complete. BS-P1-018 remains the active/locked baseline; execution stays disabled until a separate future planning/activation decision."
 }
