@@ -17,7 +17,9 @@
     "BS-P1-019 F02 §39 and F12 §18 classify F02-ERR-012 PERMISSION_NOT_ALLOWED as non-retry/security-terminal while recovery-registry.json marks it BLOCKING_RECOVERABLE / CONDITIONAL_RETRY.",
     "BS-P1-019 F01-API-003 requires intent.status=READY while durable lifecycle includes COMPOSITION_FAILED / VALIDATION_REJECTED / INCOMPATIBLE and F01-RQ-010 allows User retry without defining the transition back to an eligible compile state.",
     "BS-P1-019 idempotency_operation has only IN_PROGRESS / SUCCEEDED / FAILED_TERMINAL and explicitly forbids locking retryable transient failures as FAILED_TERMINAL, but defines no release/retry/takeover transition.",
-    "BS-P1-019 shared API allows anonymous_id from Function payload or trusted request context, but F01 answers/compile do not lock the trusted-context binding or mismatch behavior against intent_record.anonymous_id."
+    "BS-P1-019 shared API allows anonymous_id from Function payload or trusted request context, but F01 answers/compile do not lock the trusted-context binding or mismatch behavior against intent_record.anonymous_id.",
+    "Human-approved BF-049 bounded Design remediation merged in appf2-design PR #29 as c970bd29c192a77a836721a8ebe2d49189e370d9.",
+    "BD-020 binds the scope-clean replacement freeze source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 for proposed BS-P1-020."
   ],
   "attempts": [
     {
@@ -66,5 +68,5 @@
     "F01-AC-029"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-020"
 }
