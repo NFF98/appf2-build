@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-021",
-  "implementation_enabled": false,
-  "reason": "Human-approved T001 final closure after independent closure audit PASS (Issue #245 comment 6026067087). BS-P1-021 remains the active locked baseline; execution is HOLD before any separate T002 activation."
+  "implementation_enabled": true,
+  "reason": "Human-approved SP-P1-003 / T002 governance activation under locked BS-P1-021. T002 is activated at the pre-Cursor boundary using watcher Issue #301; Cursor execution remains a separate explicit Human gate and is not authorized by this transition."
 }
