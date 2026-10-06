@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "sprint_id": "SP-P1-003",
-  "status": "REVIEW",
+  "status": "ACTIVE",
   "build_spec_id": "BS-P1-021",
   "goal": "完成 Product Proof Stage A — Playable App：一個自然語言 request 必須能經 F01 產生 Blueprint、F02 validate/admit、F03 hydrate READY、在 S03 render，並由 User 做出至少一個真實 local interaction 改變 committed Runtime state/result。",
   "scope": [
@@ -33,7 +33,7 @@
     "baseline_gate_passed": true,
     "acceptance_mapped": true,
     "user_approved": true,
-    "approval_ref": "Human 2026-10-06: 批准，繼續下一步要先補 DO_NOT_PERSIST contract，再 rebaseline / rebind；停在 Cursor execution 前。"
+    "approval_ref": "HUMAN-T002-ACTIVATION-ISSUE301-20261007"
   },
   "backlog_item_ids": [
     "BL-P1-009",
