@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-020",
+  "previous_baseline": "BS-P1-019",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "Human 2026-10-06: continue BF-049 BCE through replacement Build Spec and T001 rebind; hard stop before fresh Cursor execution.",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011",
+    "BD-012",
+    "BD-013",
+    "BD-014",
+    "BD-015",
+    "BD-016",
+    "BD-017",
+    "BD-018",
+    "BD-019",
+    "BD-020"
+  ],
+  "source_working_commit": "d8a9af891dbd61f3f830bd63ae5e21b6bb525603",
+  "activated_at": "2026-10-06T20:05:00+09:00"
+}
