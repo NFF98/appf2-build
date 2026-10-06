@@ -2,5 +2,5 @@
   "schema_version": 1,
   "active_baseline": "BS-P1-019",
   "implementation_enabled": false,
-  "reason": "BF-049 SPEC_AMBIGUITY blocks SP-P1-003/T001 under BS-P1-019 after independent BCE audit of Cursor SPEC_GAP result. Product execution is HOLD pending bounded F01/API/Data/Recovery contract remediation, replacement Build Spec freeze, and T001 rebind. No Cursor execution authority is active."
+  "reason": "BF-049 remains BLOCKED while active baseline stays BS-P1-019. Locked replacement BS-P1-020 is now materialized from scope-clean source d8a9af891dbd61f3f830bd63ae5e21b6bb525603 with implementation still disabled; activation/rebind is the next separate Human-approved BCE and Cursor execution remains unauthorized."
 }
