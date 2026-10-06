@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "READINESS_CANDIDATE",
+  "program": "PFR-2026",
+  "step": "PFR-06",
+  "build_spec_id": "BS-P1-019",
+  "approved_by": "Human 2026-10-06: 批准 Stage A detailed plan，並批准 governance-only pre-activation React/browser toolchain readiness；批准 until 啟動 Cursor。",
+  "scope": [
+    "RDY-01 React/browser toolchain",
+    "RDY-02 real Product browser runner"
+  ],
+  "exact_pins": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "vite": "8.3.1"
+  },
+  "product_root": "src/app",
+  "output_dir": "dist/web",
+  "preview_url": "http://127.0.0.1:4173",
+  "changes": [
+    "Direct runtime React dependencies",
+    "Direct Vite/types dev dependencies",
+    "Canonical Vite config",
+    "Canonical browser build/preview/test-server scripts",
+    "Playwright webServer binding",
+    "Toolchain gate enforcement"
+  ],
+  "non_scope": [
+    "No src/app Product implementation",
+    "No Sprint creation in this readiness PR",
+    "No Sprint activation",
+    "No Task activation",
+    "No Cursor execution"
+  ],
+  "control_state_must_remain": {
+    "active_baseline": "BS-P1-019",
+    "implementation_enabled": false,
+    "active_sprint": null,
+    "active_task": null,
+    "status": "HOLD"
+  }
+}
