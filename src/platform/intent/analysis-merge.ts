@@ -2,6 +2,7 @@ import { evaluateClarificationPolicy, type ClarificationPolicyEvaluation } from 
 import { parseUntrustedAnalysisEnvelope } from "./envelope-validation.js";
 import {
   POLICY_ITEM_COLLECTIONS,
+  ephemeralRequirementsOf,
   policyItemsOf,
   type IndexedPolicyItem,
   type KnownInput,
@@ -66,13 +67,17 @@ function mergeKnownInputs(trusted: readonly KnownInput[], incoming: readonly Kno
 
 /**
  * Trusted items or inputs omitted by the new analysis are retained: Prompt A output cannot delete
- * server-trusted truth or a pending blocker.
+ * server-trusted truth or a pending blocker. Server-owned BF-050 DO_NOT_PERSIST markers are trusted facts
+ * too: they are kept and an incoming KnownInput under a marker ID never replaces the marker.
  */
 function applySourcePrecedence(trusted: StructuredIntentEnvelope, incoming: StructuredIntentEnvelope): StructuredIntentEnvelope {
+  const markers = ephemeralRequirementsOf(trusted);
+  const markerIds = new Set(markers.map((marker) => marker.id));
   return {
     ...incoming,
-    known_inputs: mergeKnownInputs(trusted.known_inputs, incoming.known_inputs),
-    ...mergeItems(trusted, incoming)
+    known_inputs: mergeKnownInputs(trusted.known_inputs, incoming.known_inputs.filter((input) => !markerIds.has(input.id))),
+    ...mergeItems(trusted, incoming),
+    ...(markers.length === 0 ? {} : { ephemeral_input_requirements: markers })
   };
 }
 

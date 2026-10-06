@@ -14,7 +14,9 @@ import {
   SENSITIVITY_LEVELS,
   USER_DECISION_SOURCES,
   VALUE_TYPES,
+  ephemeralRequirementsOf,
   policyItemsOf,
+  type EphemeralInputRequirement,
   type IntentErrorCode,
   type IntentViolation,
   type KnownInput,
@@ -23,6 +25,7 @@ import {
   type StructuredIntentEnvelope
 } from "./intent-contract.js";
 import { isJsonValue, isPlainRecord } from "./json-value.js";
+import { checkDescriptorReferences, validateDescriptorShapes } from "./semantic-descriptors.js";
 import { distinctCanonicalCount, isChoiceQuestion, valueFitsItem, valueMatchesType } from "./value-shape.js";
 
 /**
@@ -48,7 +51,7 @@ const ENVELOPE_FIELDS = [
   "capability_hints",
   "analysis_metadata"
 ] as const;
-const OPAQUE_ARRAY_FIELDS = ["actors", "entities", "requested_outputs", "capability_hints"] as const;
+const EPHEMERAL_REQUIREMENTS_FIELD = "ephemeral_input_requirements";
 const ITEM_REQUIRED_FIELDS = [
   "id",
   "semantic_role",
@@ -71,6 +74,7 @@ const ITEM_REQUIRED_FIELDS = [
 const ITEM_OPTIONAL_FIELDS = ["source_ref", "resolved_value", "proposed_default"] as const;
 const KNOWN_INPUT_REQUIRED_FIELDS = ["id", "key", "value", "value_type", "source", "sensitivity"] as const;
 const KNOWN_INPUT_OPTIONAL_FIELDS = ["source_ref", "confidence"] as const;
+const EPHEMERAL_REQUIREMENT_FIELDS = { required: ["id", "key", "value_type", "source"], optional: ["source_ref"] } as const;
 const SOURCE_REF_FIELDS = ["policy_id", "policy_version", "origin_item_id"] as const;
 const POLICY_STATE_FIELDS = ["policy_version", "answered_question_ids", "changed_semantic_item_ids"] as const;
 
@@ -261,6 +265,50 @@ function validateKnownInput(value: unknown, path: string, trust: EnvelopeTrust, 
   if (!valueMatchesType(input.value, input.value_type)) out.add(`${path}.value`, "VALUE_TYPE_MISMATCH");
 }
 
+function validateEphemeralRequirement(value: unknown, path: string, out: Violations): void {
+  if (!isPlainRecord(value)) {
+    out.add(path, "INVALID_EPHEMERAL_REQUIREMENT");
+    return;
+  }
+  const before = out.count;
+  checkClosedKeys(value, EPHEMERAL_REQUIREMENT_FIELDS, path, out);
+  if (!isNonEmptyString(value.id)) out.add(`${path}.id`, "INVALID_ID");
+  if (typeof value.key !== "string") out.add(`${path}.key`, "INVALID_STRING");
+  checkEnum(value.value_type, VALUE_TYPES, `${path}.value_type`, out);
+  checkEnum(value.source, INTENT_SOURCES, `${path}.source`, out);
+  checkSourceRef(value.source_ref, `${path}.source_ref`, out);
+  if (out.count === before) checkProvenance(value as EphemeralInputRequirement, path, "TRUSTED", out);
+}
+
+/** BF-050 marker list: closed value-free entries in strictly ascending stable `id` order. */
+function checkEphemeralRequirements(value: unknown, path: string, out: Violations): void {
+  if (!Array.isArray(value)) {
+    out.add(path, "INVALID_ARRAY");
+    return;
+  }
+  const before = out.count;
+  value.forEach((entry, index) => validateEphemeralRequirement(entry, `${path}[${index}]`, out));
+  if (out.count !== before) return;
+  const requirements = value as readonly EphemeralInputRequirement[];
+  for (let index = 1; index < requirements.length; index += 1) {
+    if (requirements[index - 1]!.id >= requirements[index]!.id) out.add(`${path}[${index}].id`, "EPHEMERAL_REQUIREMENTS_NOT_CANONICAL");
+  }
+}
+
+/** Shape check for a server-persisted marker list read outside a full Envelope restore. */
+export function collectEphemeralRequirementViolations(value: unknown): IntentViolation[] {
+  const out = new Violations();
+  checkEphemeralRequirements(value, `$.${EPHEMERAL_REQUIREMENTS_FIELD}`, out);
+  return out.list;
+}
+
+function validateEphemeralField(record: UnknownRecord, trust: EnvelopeTrust, out: Violations): void {
+  if (!Object.hasOwn(record, EPHEMERAL_REQUIREMENTS_FIELD)) return;
+  const path = `$.${EPHEMERAL_REQUIREMENTS_FIELD}`;
+  if (trust === "UNTRUSTED_ANALYSIS") out.add(path, "SERVER_OWNED_EPHEMERAL_REQUIREMENTS");
+  else checkEphemeralRequirements(record[EPHEMERAL_REQUIREMENTS_FIELD], path, out);
+}
+
 function validatePolicyState(value: unknown, path: string, out: Violations): void {
   if (!isPlainRecord(value)) {
     out.add(path, "CLARIFICATION_POLICY_STATE_REQUIRED");
@@ -302,6 +350,7 @@ function checkDependencyGraph(envelope: StructuredIntentEnvelope, resolution: De
     ids.add(id);
   };
   envelope.known_inputs.forEach((input, index) => register(input.id, `$.known_inputs[${index}].id`));
+  ephemeralRequirementsOf(envelope).forEach((requirement, index) => register(requirement.id, `$.${EPHEMERAL_REQUIREMENTS_FIELD}[${index}].id`));
   indexed.forEach(({ collection, item }) => register(item.id, `$.${collection}[${item.id}].id`));
   for (const { collection, item } of indexed) {
     const path = `$.${collection}[${item.id}].depends_on_ids`;
@@ -314,13 +363,12 @@ function checkDependencyGraph(envelope: StructuredIntentEnvelope, resolution: De
   for (const id of new DependencyGraph(indexed.map(({ item }) => item)).cyclicItemIds()) {
     out.add(`$.depends_on_ids[${id}]`, "DEPENDENCY_CYCLE");
   }
+  checkDescriptorReferences(envelope, (path, reason) => out.add(path, reason));
 }
 
 function validateCollections(record: UnknownRecord, trust: EnvelopeTrust, out: Violations): void {
   if (!isNonEmptyString(record.envelope_version)) out.add("$.envelope_version", "INVALID_STRING");
-  for (const key of OPAQUE_ARRAY_FIELDS) {
-    if (!Array.isArray(record[key])) out.add(`$.${key}`, "INVALID_ARRAY");
-  }
+  validateDescriptorShapes(record, (path, reason) => out.add(path, reason));
   if (!Array.isArray(record.known_inputs)) out.add("$.known_inputs", "INVALID_ARRAY");
   else record.known_inputs.forEach((input, index) => validateKnownInput(input, `$.known_inputs[${index}]`, trust, out));
   for (const collection of POLICY_ITEM_COLLECTIONS) {
@@ -328,6 +376,7 @@ function validateCollections(record: UnknownRecord, trust: EnvelopeTrust, out: V
     if (!Array.isArray(items)) out.add(`$.${collection}`, "INVALID_ARRAY");
     else items.forEach((item, index) => validateItem(item, { collection, path: `$.${collection}[${index}]` }, trust, out));
   }
+  validateEphemeralField(record, trust, out);
   validateAnalysisMetadata(record.analysis_metadata, trust, out);
 }
 
@@ -345,7 +394,7 @@ export function collectEnvelopeViolations(
     out.add("$", "INVALID_ENVELOPE");
     return out.list;
   }
-  checkClosedKeys(input, { required: ENVELOPE_FIELDS, optional: [] }, "$", out);
+  checkClosedKeys(input, { required: ENVELOPE_FIELDS, optional: [EPHEMERAL_REQUIREMENTS_FIELD] }, "$", out);
   if (out.count > 0) return out.list;
   validateCollections(input, trust, out);
   if (out.count > 0) return out.list;
