@@ -12,8 +12,8 @@ Human 2026-10-06: 批准繼續補 DO_NOT_PERSIST contract，再 rebaseline / reb
 
 - Design remediation PR: NFF98/appf2-design #30
 - merged upstream Working commit: `af3fc11f7326e58955c17b850cb4427a4f27ddd1`
-- scope-clean base: `c970bd29c192a77a836721a8ebe2d49189e370d9`
-- scope-clean derived freeze source: `f1fdb6398a06eca58690d8a6bc47f71098be2929`
+- scope-clean base: `d8a9af891dbd61f3f830bd63ae5e21b6bb525603`
+- scope-clean derived freeze source: `7a1189f65268a82bb03b27f378fcaf59c41e4220`
 - delta: `BD-021`
 - finding: `BF-050`
 - replacement baseline: `BS-P1-021`
@@ -43,3 +43,7 @@ The bounded addenda lock:
 FAILED_TERMINAL replay fidelity remains a separate implementation remediation in T001 and is not hidden inside this Design delta.
 
 No Cursor execution is authorized by this audit.
+
+## Provenance correction
+
+The freeze source is intentionally derived directly from the locked BS-P1-020 source commit so BS-P1-021 is byte-lineage-equivalent to BS-P1-020 plus only the three BF-050 addenda. The merged Design PR remains the upstream Human-approved Working source.
