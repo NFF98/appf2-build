@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-022",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-051"
   ],
@@ -33,7 +33,9 @@
     "Canonical rule: MOD(a,b) = a - trunc(a/b) × b; trunc is toward zero; non-zero remainder sign follows dividend; exact multiples return canonical 0, never -0.",
     "Zero denominator remains F03-ERR-008 and non-finite remains F03-ERR-009.",
     "Scope-clean freeze source 3328bd2fe9d026995e4a81810ade2648b170ced2 is based on BS-P1-021 source 7a1189f65268a82bb03b27f378fcaf59c41e4220 and changes exactly one Design file with no unrelated drift.",
-    "No new Acceptance ID is introduced; F03-AC-010 / TEST-F03-010 remains the golden-case acceptance surface."
+    "No new Acceptance ID is introduced; F03-AC-010 / TEST-F03-010 remains the golden-case acceptance surface.",
+    "Replacement Build Spec BS-P1-022 locked on main by PR #306 / commit ab2efb9473eb9289e7ce5fb7521700ce57241ff6.",
+    "Human-approved atomic rebind activates BS-P1-022 for SP-P1-003/T002 at the pre-Cursor boundary; the fresh single-use Cursor execution lease remains a separate Issue #301 gate."
   ],
   "upstream_working_commit": "2e3e05d93efd098b4d06707b7048016b8961209a",
   "freeze_source": {
