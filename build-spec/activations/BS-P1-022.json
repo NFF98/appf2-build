@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "baseline_id": "BS-P1-022",
+  "previous_baseline": "BS-P1-021",
+  "type": "REBASELINE",
+  "status": "USER_APPROVED",
+  "decision_ref": "Human 2026-10-07: 批准將 T002 governance 轉成 BLOCKED，然後我們決定 MOD v1 語意 → rebaseline → rebind T002 → fresh Cursor lease；Human 2026-10-07: 批准 MOD v1 = truncated remainder",
+  "approved_delta_ids": [
+    "BD-003",
+    "BD-004",
+    "BD-005",
+    "BD-006",
+    "BD-007",
+    "BD-008",
+    "BD-009",
+    "BD-010",
+    "BD-011",
+    "BD-012",
+    "BD-013",
+    "BD-014",
+    "BD-015",
+    "BD-016",
+    "BD-017",
+    "BD-018",
+    "BD-019",
+    "BD-020",
+    "BD-021",
+    "BD-022"
+  ],
+  "source_working_commit": "3328bd2fe9d026995e4a81810ade2648b170ced2",
+  "activated_at": "2026-10-07T22:16:24+09:00"
+}
