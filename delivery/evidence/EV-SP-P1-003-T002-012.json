@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-022",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T002",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-07T21:07:58Z",
+  "blocking_findings": [],
+  "source_commit": "bfaadf80c771180c21dfd3d559aa386f3bf53057",
+  "evidence_id": "EV-SP-P1-003-T002-012",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37631426538#ci-security-audit-pass-0-vulnerabilities",
+  "command": "npm run security:audit",
+  "review_checks": null
+}
