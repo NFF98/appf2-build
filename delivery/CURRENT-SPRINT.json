@@ -5,5 +5,5 @@
   "active_task": null,
   "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T002 is CLOSED under BS-P1-022 after closure audit PASS. SP-P1-003 remains in REVIEW with T001/T002 CLOSED and T003-T006 PLANNED / unauthorized; no active execution context exists."
+  "reason": "BF-052 semantic gap is resolved by locked BS-P1-023; SP-P1-003 remains REVIEW/HOLD while T003 returns to PLANNED for independent re-planning. No activation or Cursor execution is authorized."
 }
