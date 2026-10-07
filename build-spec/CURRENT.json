@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-021",
-  "implementation_enabled": false,
-  "reason": "BF-051 SPEC_AMBIGUITY blocks SP-P1-003/T002 under BS-P1-021 after independent BCE audit confirmed unlocked mixed-sign MOD semantics. Product execution is HOLD pending Human semantic decision, replacement Build Spec freeze, T002 rebind, and a fresh Cursor execution lease."
+  "active_baseline": "BS-P1-022",
+  "implementation_enabled": true,
+  "reason": "Human-approved BF-051 replacement rebaseline activates locked BS-P1-022 for SP-P1-003/T002 after canonical MOD v1 closure. This transition restores T002 at the pre-Cursor boundary; a fresh single-use Cursor execution lease remains a separate execution gate."
 }

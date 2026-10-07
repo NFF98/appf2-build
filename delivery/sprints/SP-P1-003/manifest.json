@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "sprint_id": "SP-P1-003",
-  "status": "BLOCKED",
-  "build_spec_id": "BS-P1-021",
+  "status": "ACTIVE",
+  "build_spec_id": "BS-P1-022",
   "goal": "完成 Product Proof Stage A — Playable App：一個自然語言 request 必須能經 F01 產生 Blueprint、F02 validate/admit、F03 hydrate READY、在 S03 render，並由 User 做出至少一個真實 local interaction 改變 committed Runtime state/result。",
   "scope": [
     "BL-P1-009 Compiler gating, capability coverage & validation loop",
@@ -33,7 +33,7 @@
     "baseline_gate_passed": true,
     "acceptance_mapped": true,
     "user_approved": true,
-    "approval_ref": "HUMAN-T002-ACTIVATION-ISSUE301-20261007"
+    "approval_ref": "Human 2026-10-07: BF-051 MOD v1 truncated remainder approved; rebaseline / rebind T002 → fresh Cursor lease approved."
   },
   "backlog_item_ids": [
     "BL-P1-009",
