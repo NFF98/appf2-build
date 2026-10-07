@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-052",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-022",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T003",
+  "expected": "BS-P1-022 F03 must lock the post-hydration lifecycle of dynamic repeat concrete clones so T003 can implement capability-local state, timer/subscription ownership, dispose cleanup and stale callback safety without inventing semantics.",
+  "actual": "BS-P1-022 defines index-based NodeInstanceKey identity, clone-local state/timer/error isolation, initial H08 capability initialization and Instance disposal, but does not define how newly materialized repeat clones initialize, how removed clones dispose, whether shrink→regrow resurrects prior local state, how late callbacks from a prior incarnation are rejected, or how reorder behaves under index-based identity.",
+  "evidence": [
+    "Issue #301 planning audit comment 6047866020 independently classified T003 as BLOCKED — SPEC_GAP and prohibited activation/Cursor execution.",
+    "BS-P1-022 F03 §5.1 defines NodeInstanceKey = node_id + ordered repeat_coordinates(item_index) and requires clone-local state/timer/error isolation.",
+    "BS-P1-022 F03 H08 only defines initial capability-local state initialization; §25 render traversal materializes repeated NodeInstanceKeys; §34 defines whole-Instance disposal, but no post-hydration per-clone reconciliation lifecycle is locked.",
+    "Human 2026-10-08 approved closure of the dynamic-repeat lifecycle semantic gap, replacement rebaseline/rebind, and T003 re-planning.",
+    "appf2-design PR #32 merged the bounded F03 + F03-AC-019 closure as 4889199dee040f43ae7961b0976f120598503337.",
+    "Scope-clean derived freeze source 05f261a8f83f447df60af7e4c581432fe825787d is based directly on BS-P1-022 source 3328bd2fe9d026995e4a81810ade2648b170ced2 and changes exactly two Design files: F03-RUNTIME-EXECUTION.md and acceptance-test-registry.json."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T003_PLANNING_FAIL_CLOSED_ON_DYNAMIC_REPEAT_LIFECYCLE_GAP",
+      "result": "SPEC_GAP_SURFACED_NO_CURSOR_SEMANTIC_INVENTION",
+      "evidence": "Planning verified the 19/19 T003 mapping but stopped because clone materialization/de-materialization semantics were not uniquely locked."
+    }
+  ],
+  "requested_planning_action": [
+    "Keep T003 unactivated and implementation disabled while BF-052 is unresolved.",
+    "Freeze a scope-clean replacement Build Spec BS-P1-023 from the approved Design closure.",
+    "Resolve BF-052 through replacement baseline rebind, bind T003 to BS-P1-023, then rerun independent T003 Planning.",
+    "Do not issue a Cursor lease until the rerun Planning and a separate activation gate permit it."
+  ],
+  "affected_contracts": [
+    "F03 §25 Rendering Semantics / dynamic repeat concrete clone lifecycle",
+    "F03 §34 Disposal Contract / clone-local teardown and stale callback safety"
+  ],
+  "affected_acceptance": [
+    "F03-AC-019"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-023"
+}
