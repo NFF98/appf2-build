@@ -299,7 +299,7 @@
         "BL-P1-016"
       ],
       "title": "Runtime trust, lifecycle, operation token & hard-timeout safety",
-      "status": "PLANNED",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-022",
       "scope": [
         "Enforce Runtime trust / compatibility / handler injection prevention and F02/F04 hard resource ceilings.",
