@@ -166,7 +166,7 @@
         "BL-P1-013"
       ],
       "title": "Deterministic Runtime core & atomic interaction engine",
-      "status": "IN_PROGRESS",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-022",
       "scope": [
         "Implement F03 hydration into READY from valid admitted Blueprint only.",
@@ -277,7 +277,19 @@
       "parallel_safe": true,
       "product_decision_allowed": false,
       "blocked_by": [],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-003-T002-001",
+        "EV-SP-P1-003-T002-002",
+        "EV-SP-P1-003-T002-003",
+        "EV-SP-P1-003-T002-004",
+        "EV-SP-P1-003-T002-005",
+        "EV-SP-P1-003-T002-006",
+        "EV-SP-P1-003-T002-007",
+        "EV-SP-P1-003-T002-008",
+        "EV-SP-P1-003-T002-009",
+        "EV-SP-P1-003-T002-010",
+        "EV-SP-P1-003-T002-011"
+      ]
     },
     {
       "task_id": "T003",
