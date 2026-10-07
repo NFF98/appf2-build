@@ -166,8 +166,8 @@
         "BL-P1-013"
       ],
       "title": "Deterministic Runtime core & atomic interaction engine",
-      "status": "BLOCKED",
-      "build_spec_id": "BS-P1-021",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-022",
       "scope": [
         "Implement F03 hydration into READY from valid admitted Blueprint only.",
         "Implement mutable Instance Store, derived/rule recomputation, typed pure expressions, deterministic RNG and monotonic-time semantics.",
@@ -287,7 +287,7 @@
       ],
       "title": "Runtime trust, lifecycle, operation token & hard-timeout safety",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-021",
+      "build_spec_id": "BS-P1-022",
       "scope": [
         "Enforce Runtime trust / compatibility / handler injection prevention and F02/F04 hard resource ceilings.",
         "Implement node isolation, last-known-good committed state preservation, dispose cleanup and bounded loop/queue behavior.",
@@ -414,7 +414,7 @@
       ],
       "title": "Discover/Create React shell, clarification & visible-assumption flow",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-021",
+      "build_spec_id": "BS-P1-022",
       "scope": [
         "Create Phase 1 React Product shell entry for S01/S02 Create path under locked Design System and approved S01/S02 contracts.",
         "Implement blank prompt and Inspiration Capsule editable prefill flow.",
@@ -495,7 +495,7 @@
       ],
       "title": "Shell persistence, authority boundary & truthful processing presentation",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-021",
+      "build_spec_id": "BS-P1-022",
       "scope": [
         "Implement F00 local draft persistence rules including DO_NOT_PERSIST exclusion.",
         "Enforce Shell never mutates Runtime Instance Store directly and never displays LLM proposal as User fact.",
@@ -593,7 +593,7 @@
       ],
       "title": "Result contract, S03 App surface & Playable App vertical proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-021",
+      "build_spec_id": "BS-P1-022",
       "scope": [
         "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
         "Implement S03 Runtime surface so Generated App is visual/interaction primary content and Shell never wraps/mutates Runtime controls.",
