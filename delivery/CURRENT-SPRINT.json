@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-022",
   "active_task": "T002",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved BF-051 rebind restores SP-P1-003 / T002 under locked BS-P1-022. T002 is the sole active Task; T001 remains CLOSED and T003-T006 remain PLANNED. Fresh Cursor execution uses a separate single-use lease in Issue #301."
+  "reason": "T002 implementation merged via PR #308 and final Evidence normalized via PR #309. T002 final Evidence is bound for independent closure audit; T001 remains CLOSED and T003-T006 remain PLANNED / unauthorized."
 }
