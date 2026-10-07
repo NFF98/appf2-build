@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-051",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-021",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T002",
+  "expected": "BS-P1-021 F03 §12 must lock the exact typed output of MOD(NUMBER, NUMBER) for every admissible finite operand pair so that F03-AC-010 (pure expression 同 inputs → 同 typed output) has a single locked golden value, including operands of opposite sign.",
+  "actual": "F03 §12 only locks the signature MOD(NUMBER, NUMBER) → NUMBER, the zero-denominator failure F03-ERR-008 and the non-finite failure F03-ERR-009; F02-RQ-005 only lists MOD in the allowlist and defers exact typed signatures to F03. Neither chooses between truncated remainder (sign of dividend, e.g. MOD(-7, 3) = -1) and floored / Euclidean remainder (e.g. MOD(-7, 3) = 2). F02 admits any MOD expression, so a valid admitted Blueprint can reach the undecided domain at Runtime. The T002 candidate evaluates MOD only where both conventions agree (remainder 0 or operands of the same sign) and fails closed with typed F03-ERR-005 for non-zero mixed-sign remainders instead of guessing a value; that fail-closed behavior is itself not chosen by the locked contract.",
+  "evidence": [
+    "BS-P1-021 functions/F03-RUNTIME-EXECUTION.md §12 Arithmetic: `MOD(NUMBER, NUMBER) → NUMBER`; rules: every output finite, DIV / MOD denominator 0 → F03-ERR-008, non-finite → F03-ERR-009. ROUND tie semantics are explicitly locked as appf2 ROUND v1, MOD sign semantics are not.",
+    "BS-P1-021 functions/F02-BLUEPRINT-VALIDATION.md F02-RQ-005: MOD in Pure Operator Allowlist; rule 3 only requires bounded typed failure for zero; `Exact typed signatures 由 F03 實作並回指本 allowlist`.",
+    "T002 candidate src/platform/runtime/expression-vm.ts `remainder()` evaluates same-sign / zero-remainder MOD and rejects mixed-sign non-zero remainders with F03-ERR-005.",
+    "T002 candidate tests/behavior/runtime-determinism.behavior.test.ts TEST-F03-010 golden cases cover MOD same-sign, both-negative, exact multiple and zero denominator only; no mixed-sign golden value is asserted because none is locked.",
+    "Issue #301 RESULT comment 6038074492 produced PR #303 at d6b9dee21b8070a8b8a8091fe4ee3584aaeab7c3 and correctly surfaced BF-051 instead of inventing mixed-sign MOD semantics.",
+    "Issue #301 independent BCE audit comment 6038182280 confirmed BF-051 as a real BS-P1-021 contract gap; GitHub Governance Gate and CI Gate both stop at `BF-051 requires affected Task T002 to be BLOCKED`."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T002_FAIL_CLOSED_ON_UNLOCKED_MOD_DOMAIN",
+      "result": "SPEC_GAP_SURFACED_NO_SEMANTIC_CHOICE_MADE",
+      "evidence": "Candidate evaluates only the domain where truncated and floored remainder agree and returns typed F03-ERR-005 elsewhere; all mapped T002 tests pass, but the mixed-sign MOD output remains undecided by BS-P1-021."
+    }
+  ],
+  "requested_planning_action": [
+    "Keep SP-P1-003/T002 governance BLOCKED and implementation disabled while BF-051 is unresolved.",
+    "Human governance must choose canonical appf2 MOD v1 semantics for opposite-sign finite operands, with at least one mixed-sign golden value, or explicitly lock mixed-sign non-zero MOD as a named typed Runtime error.",
+    "Propagate the approved semantic decision through canonical Design truth and freeze a scope-clean replacement Build Spec superseding BS-P1-021.",
+    "Resolve/normalize BF-051 through replacement baseline activation, rebind SP-P1-003/T002, then issue a fresh single-use T002 Cursor execution lease limited to semantic alignment and affected tests.",
+    "Do not merge PR #303 and do not start T003 before the replacement baseline rebind."
+  ],
+  "affected_contracts": [
+    "F03 §12 Exact Phase 1 Operator Semantics — Arithmetic MOD",
+    "F02-RQ-005 Pure Operator Allowlist (exact typed signature delegated to F03)"
+  ],
+  "affected_acceptance": [
+    "F03-AC-010"
+  ],
+  "contract_affecting": true,
+  "delta_id": null
+}
