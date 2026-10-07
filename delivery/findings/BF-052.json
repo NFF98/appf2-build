@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-052",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-022",
   "sprint_id": "SP-P1-003",
   "task_id": "T003",
@@ -14,7 +14,9 @@
     "BS-P1-022 F03 H08 only defines initial capability-local state initialization; §25 render traversal materializes repeated NodeInstanceKeys; §34 defines whole-Instance disposal, but no post-hydration per-clone reconciliation lifecycle is locked.",
     "Human 2026-10-08 approved closure of the dynamic-repeat lifecycle semantic gap, replacement rebaseline/rebind, and T003 re-planning.",
     "appf2-design PR #32 merged the bounded F03 + F03-AC-019 closure as 4889199dee040f43ae7961b0976f120598503337.",
-    "Scope-clean derived freeze source 05f261a8f83f447df60af7e4c581432fe825787d is based directly on BS-P1-022 source 3328bd2fe9d026995e4a81810ade2648b170ced2 and changes exactly two Design files: F03-RUNTIME-EXECUTION.md and acceptance-test-registry.json."
+    "Scope-clean derived freeze source 05f261a8f83f447df60af7e4c581432fe825787d is based directly on BS-P1-022 source 3328bd2fe9d026995e4a81810ade2648b170ced2 and changes exactly two Design files: F03-RUNTIME-EXECUTION.md and acceptance-test-registry.json.",
+    "Replacement Build Spec BS-P1-023 froze and merged in appf2-build PR #315 as af4f8211a301209d938477915e2548f482b500eb with source_working_commit 05f261a8f83f447df60af7e4c581432fe825787d.",
+    "Human-approved rebind moves remaining SP-P1-003 work to BS-P1-023 while keeping implementation disabled/HOLD; T003 returns to PLANNED solely for independent re-planning."
   ],
   "attempts": [
     {
