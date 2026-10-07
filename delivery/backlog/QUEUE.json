@@ -562,7 +562,7 @@
         "BL-P1-005"
       ],
       "priority": "P0",
-      "status": "SPRINTED",
+      "status": "DONE",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure.",
       "sprint_id": "SP-P1-003"
@@ -605,7 +605,7 @@
         "BL-P1-012"
       ],
       "priority": "P0",
-      "status": "SPRINTED",
+      "status": "DONE",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure.",
       "sprint_id": "SP-P1-003"
