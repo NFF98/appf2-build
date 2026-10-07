@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-023",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-052"
+  ],
+  "affected_build_spec": "BS-P1-022",
+  "affected_tasks": [
+    "T003"
+  ],
+  "affected_contracts": [
+    "F03 §25.1 Dynamic Repeat Clone Lifecycle",
+    "F03-AC-019 dynamic clone disposal / fresh regrow lifecycle"
+  ],
+  "affected_acceptance": [
+    "F03-AC-019"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-08: 批准 closure dynamic-repeat lifecycle semantic gap → contract change rebaseline → rebind T003 → rerun Planning"
+  },
+  "replacement_build_spec_required": true,
+  "replacement_build_spec": "BS-P1-023",
+  "verification": [
+    "Issue #301 comment 6047866020 established the exact lifecycle SPEC_GAP and stopped T003 before activation.",
+    "Human approved closing the gap and rebaseline/rebind/re-planning chain.",
+    "appf2-design PR #32 merged the bounded closure as 4889199dee040f43ae7961b0976f120598503337.",
+    "Canonical lifecycle: retained exact NodeInstanceKey keeps lifecycle state; added key fresh-initializes; removed key is made inactive then cleaned/disposed; shrink→regrow is a fresh incarnation.",
+    "Per-key lifecycle_generation rejects late callbacks/events from prior incarnations without changing canonical NodeInstanceKey identity.",
+    "Phase 1 identity remains positional/index-based; no item-key/durable identity semantics are introduced.",
+    "Initialize failure isolates the new clone; dispose failure cannot resurrect it; inability to prove lifecycle/resource integrity fails closed with F03-ERR-018.",
+    "No new Acceptance ID is introduced; existing F03-AC-019 / TEST-F03-019 is strengthened.",
+    "Scope-clean freeze source 05f261a8f83f447df60af7e4c581432fe825787d is exactly two files ahead of BS-P1-022 source 3328bd2fe9d026995e4a81810ade2648b170ced2."
+  ],
+  "upstream_working_commit": "4889199dee040f43ae7961b0976f120598503337",
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "05f261a8f83f447df60af7e4c581432fe825787d",
+    "base_commit": "3328bd2fe9d026995e4a81810ade2648b170ced2",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-023-FREEZE-CANDIDATE.md"
+  }
+}
