@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-021",
-  "implementation_enabled": true,
-  "reason": "Human-approved SP-P1-003 / T002 governance activation under locked BS-P1-021. T002 is activated at the pre-Cursor boundary using watcher Issue #301; Cursor execution remains a separate explicit Human gate and is not authorized by this transition."
+  "implementation_enabled": false,
+  "reason": "BF-051 SPEC_AMBIGUITY blocks SP-P1-003/T002 under BS-P1-021 after independent BCE audit confirmed unlocked mixed-sign MOD semantics. Product execution is HOLD pending Human semantic decision, replacement Build Spec freeze, T002 rebind, and a fresh Cursor execution lease."
 }
