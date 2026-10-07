@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-022",
   "type": "DESIGN_DELTA",
-  "status": "IMPLEMENTING",
+  "status": "CLOSED",
   "source_finding_ids": [
     "BF-051"
   ],
@@ -35,7 +35,10 @@
     "Scope-clean freeze source 3328bd2fe9d026995e4a81810ade2648b170ced2 is based on BS-P1-021 source 7a1189f65268a82bb03b27f378fcaf59c41e4220 and changes exactly one Design file with no unrelated drift.",
     "No new Acceptance ID is introduced; F03-AC-010 / TEST-F03-010 remains the golden-case acceptance surface.",
     "Replacement Build Spec BS-P1-022 locked on main by PR #306 / commit ab2efb9473eb9289e7ce5fb7521700ce57241ff6.",
-    "Human-approved atomic rebind activates BS-P1-022 for SP-P1-003/T002 at the pre-Cursor boundary; the fresh single-use Cursor execution lease remains a separate Issue #301 gate."
+    "Human-approved atomic rebind activates BS-P1-022 for SP-P1-003/T002 at the pre-Cursor boundary; the fresh single-use Cursor execution lease remains a separate Issue #301 gate.",
+    "T002 implementation merged via PR #308 as bfaadf80c771180c21dfd3d559aa386f3bf53057 after independent BCE audit PASS (Issue #301 comment 6039846835).",
+    "Final T002 Evidence normalized via PR #309 as 73c4ec98108013a353370a59d5818cc16a88cd4c, supplemental security-audit Evidence via PR #311 as 4b620e122a2e41f50ae1196abaf9e4af7767dabb, and T002 entered REVIEW via PR #312 as f67dd43d251bdc96515f8756413481ab6d0d36e3.",
+    "Independent closure audit PASS recorded in Issue #301 comment 6047160699; Human explicitly approved T002 final closure. BD-022 remediation lifecycle is complete under BS-P1-022; T003 remains separately gated and unactivated."
   ],
   "upstream_working_commit": "2e3e05d93efd098b4d06707b7048016b8961209a",
   "freeze_source": {
