@@ -166,7 +166,7 @@
         "BL-P1-013"
       ],
       "title": "Deterministic Runtime core & atomic interaction engine",
-      "status": "REVIEW",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-022",
       "scope": [
         "Implement F03 hydration into READY from valid admitted Blueprint only.",
