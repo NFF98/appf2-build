@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-022",
+  "active_baseline": "BS-P1-023",
   "implementation_enabled": false,
-  "reason": "Human-approved T002 final closure after independent closure audit PASS (Issue #301 comment 6047160699). BS-P1-022 remains the active locked baseline; execution is HOLD before any separate T003 activation."
+  "reason": "Human-approved BF-052 dynamic-repeat lifecycle closure rebaselined to BS-P1-023. Baseline is rebound for T003 re-planning only; implementation remains disabled and no active execution context exists."
 }
