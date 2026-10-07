@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-023",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-052"
   ],
@@ -35,7 +35,9 @@
     "Phase 1 identity remains positional/index-based; no item-key/durable identity semantics are introduced.",
     "Initialize failure isolates the new clone; dispose failure cannot resurrect it; inability to prove lifecycle/resource integrity fails closed with F03-ERR-018.",
     "No new Acceptance ID is introduced; existing F03-AC-019 / TEST-F03-019 is strengthened.",
-    "Scope-clean freeze source 05f261a8f83f447df60af7e4c581432fe825787d is exactly two files ahead of BS-P1-022 source 3328bd2fe9d026995e4a81810ade2648b170ced2."
+    "Scope-clean freeze source 05f261a8f83f447df60af7e4c581432fe825787d is exactly two files ahead of BS-P1-022 source 3328bd2fe9d026995e4a81810ade2648b170ced2.",
+    "Replacement Build Spec BS-P1-023 locked on main by PR #315 / commit af4f8211a301209d938477915e2548f482b500eb.",
+    "Human-approved rebind sets BS-P1-023 as active locked baseline for remaining SP-P1-003 planning while implementation remains disabled; T003 is PLANNED pending independent planning verdict."
   ],
   "upstream_working_commit": "4889199dee040f43ae7961b0976f120598503337",
   "freeze_source": {
