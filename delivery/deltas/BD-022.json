@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-022",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-051"
+  ],
+  "affected_build_spec": "BS-P1-021",
+  "affected_tasks": [
+    "T002"
+  ],
+  "affected_contracts": [
+    "F03 §12 Exact Phase 1 Operator Semantics — Arithmetic MOD",
+    "F02-RQ-005 Pure Operator Allowlist exact semantics delegated to F03"
+  ],
+  "affected_acceptance": [
+    "F03-AC-010"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-07: 批准 MOD v1 = truncated remainder"
+  },
+  "replacement_build_spec_required": true,
+  "replacement_build_spec": "BS-P1-022",
+  "verification": [
+    "Issue #301 independent BCE audit comment 6038182280 confirmed BF-051 as a real BS-P1-021 MOD semantics ambiguity.",
+    "Human governance selected truncated remainder semantics for canonical appf2 MOD v1.",
+    "appf2-design PR #31 merged bounded F03 remediation as 2e3e05d93efd098b4d06707b7048016b8961209a.",
+    "Canonical rule: MOD(a,b) = a - trunc(a/b) × b; trunc is toward zero; non-zero remainder sign follows dividend; exact multiples return canonical 0, never -0.",
+    "Zero denominator remains F03-ERR-008 and non-finite remains F03-ERR-009.",
+    "Scope-clean freeze source 3328bd2fe9d026995e4a81810ade2648b170ced2 is based on BS-P1-021 source 7a1189f65268a82bb03b27f378fcaf59c41e4220 and changes exactly one Design file with no unrelated drift.",
+    "No new Acceptance ID is introduced; F03-AC-010 / TEST-F03-010 remains the golden-case acceptance surface."
+  ],
+  "upstream_working_commit": "2e3e05d93efd098b4d06707b7048016b8961209a",
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "3328bd2fe9d026995e4a81810ade2648b170ced2",
+    "base_commit": "7a1189f65268a82bb03b27f378fcaf59c41e4220",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-022-FREEZE-CANDIDATE.md"
+  }
+}
