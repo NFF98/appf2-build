@@ -14,7 +14,10 @@
     "T002 candidate src/platform/runtime/expression-vm.ts `remainder()` evaluates same-sign / zero-remainder MOD and rejects mixed-sign non-zero remainders with F03-ERR-005.",
     "T002 candidate tests/behavior/runtime-determinism.behavior.test.ts TEST-F03-010 golden cases cover MOD same-sign, both-negative, exact multiple and zero denominator only; no mixed-sign golden value is asserted because none is locked.",
     "Issue #301 RESULT comment 6038074492 produced PR #303 at d6b9dee21b8070a8b8a8091fe4ee3584aaeab7c3 and correctly surfaced BF-051 instead of inventing mixed-sign MOD semantics.",
-    "Issue #301 independent BCE audit comment 6038182280 confirmed BF-051 as a real BS-P1-021 contract gap; GitHub Governance Gate and CI Gate both stop at `BF-051 requires affected Task T002 to be BLOCKED`."
+    "Issue #301 independent BCE audit comment 6038182280 confirmed BF-051 as a real BS-P1-021 contract gap; GitHub Governance Gate and CI Gate both stop at `BF-051 requires affected Task T002 to be BLOCKED`.",
+    "Human 2026-10-07 approved canonical appf2 MOD v1 = truncated remainder.",
+    "appf2-design PR #31 merged the bounded F03 MOD v1 closure as 2e3e05d93efd098b4d06707b7048016b8961209a.",
+    "Scope-clean derived freeze source 3328bd2fe9d026995e4a81810ade2648b170ced2 is based directly on BS-P1-021 source 7a1189f65268a82bb03b27f378fcaf59c41e4220 and changes exactly one file: working/detailed-design/functions/F03-RUNTIME-EXECUTION.md."
   ],
   "attempts": [
     {
@@ -39,5 +42,5 @@
     "F03-AC-010"
   ],
   "contract_affecting": true,
-  "delta_id": null
+  "delta_id": "BD-022"
 }
