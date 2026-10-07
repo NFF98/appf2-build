@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-023",
+  "active_task": "T003",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "BF-052 semantic gap is resolved by locked BS-P1-023; SP-P1-003 remains REVIEW/HOLD while T003 returns to PLANNED for independent re-planning. No activation or Cursor execution is authorized."
+  "reason": "Human-approved SP-P1-003 / T003 activation under BS-P1-023. T003 is IN_PROGRESS at the pre-Cursor boundary; Cursor execution authority remains separately gated until activation merge and canonical verification."
 }
