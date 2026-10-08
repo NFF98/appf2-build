@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-023",
   "type": "DESIGN_DELTA",
-  "status": "IMPLEMENTING",
+  "status": "CLOSED",
   "source_finding_ids": [
     "BF-052"
   ],
@@ -37,7 +37,10 @@
     "No new Acceptance ID is introduced; existing F03-AC-019 / TEST-F03-019 is strengthened.",
     "Scope-clean freeze source 05f261a8f83f447df60af7e4c581432fe825787d is exactly two files ahead of BS-P1-022 source 3328bd2fe9d026995e4a81810ade2648b170ced2.",
     "Replacement Build Spec BS-P1-023 locked on main by PR #315 / commit af4f8211a301209d938477915e2548f482b500eb.",
-    "Human-approved rebind sets BS-P1-023 as active locked baseline for remaining SP-P1-003 planning while implementation remains disabled; T003 is PLANNED pending independent planning verdict."
+    "Human-approved rebind sets BS-P1-023 as active locked baseline for remaining SP-P1-003 planning while implementation remains disabled; T003 is PLANNED pending independent planning verdict.",
+    "T003 implementation merged via PR #318 as d14b5cd842b2cdc1ad916757a410c77971343131 after independent BCE implementation audit and all required GitHub checks PASS.",
+    "Final T003 Evidence normalized via PR #319 as f32e6970136bc7855f5cc1dc7712b8d7aeca05fd and T003 entered REVIEW with bound Evidence via PR #320 as a1cee78af47f7af9116e3f079d0047cb5215143a.",
+    "Independent closure audit PASS recorded in Issue #301 comment 6070255667; Human explicitly approved T003 final closure. BD-023 dynamic-repeat lifecycle remediation is complete under BS-P1-023; T004 remains separately gated and unactivated."
   ],
   "upstream_working_commit": "4889199dee040f43ae7961b0976f120598503337",
   "freeze_source": {
