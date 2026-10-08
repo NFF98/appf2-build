@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-003",
-  "active_build_spec": "BS-P1-023",
-  "active_task": "T003",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T003 implementation merged via PR #318 and final Evidence normalized via PR #319. T003 final Evidence is bound for independent closure audit; T001-T002 remain CLOSED and T004-T006 remain PLANNED / unauthorized."
+  "reason": "T003 is CLOSED under BS-P1-023 after closure audit PASS. SP-P1-003 remains in REVIEW with T001-T003 CLOSED and T004-T006 PLANNED / unauthorized; no active execution context exists."
 }
