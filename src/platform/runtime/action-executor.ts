@@ -14,7 +14,9 @@ import { evaluateTyped, type EvaluationEnv } from "./expression-vm.js";
 import type { MonotonicClock } from "./monotonic-timer.js";
 import { nodeInstanceKeyId, singletonKey, type NodeInstanceKey } from "./node-instance-key.js";
 import type { StoreTransaction } from "./instance-store.js";
+import { assertLocalStateWithinBudget } from "./resource-guard.js";
 import { invariantBroken, RuntimeFailure, runtimeFail } from "./runtime-errors.js";
+import { StaleOperation, stepCheckpoint, type ActionGuard } from "./runtime-operation.js";
 import { deepFreeze, type RuntimeRecord, type RuntimeValue } from "./runtime-value.js";
 
 /** Immutable admitted dispatch-site envelope that EVENT and SCOPE resolve from (F03 §14 BF-036). */
@@ -23,11 +25,21 @@ export interface DispatchEnvelope {
   readonly scope: LexicalScope;
 }
 
+export interface ActionRun {
+  readonly index: ExecutionIndex;
+  readonly tx: StoreTransaction;
+  readonly action: BlueprintAction;
+  readonly envelope: DispatchEnvelope;
+  readonly clock: MonotonicClock;
+  readonly guard: ActionGuard;
+}
+
 interface StepContext {
   readonly index: ExecutionIndex;
   readonly tx: StoreTransaction;
   readonly env: EvaluationEnv;
   readonly clock: MonotonicClock;
+  readonly guard: ActionGuard;
 }
 
 const NO_SCOPE: LexicalScope = new Map();
@@ -79,8 +91,10 @@ function invokeCapability(step: Extract<ActionStep, { type: "INVOKE_CAPABILITY" 
   const props = resolveProps(target, tx.env, NO_SCOPE);
   const node = { node_id: target.node.id, capability: target.node.capability, props };
   const result = callHandler(target, key, { action: step.capability_action, args, state: slot.state }, { node, rng: tx.rng, clock: context.clock });
+  context.guard.check("HANDLER_RETURN");
   const next = applyStatePatch(target, slot.state, result.capability_state_patch);
   checkStateInvariants(target, next, props);
+  assertLocalStateWithinBudget(target, next, "F03-ERR-011");
   const events = result.emitted_events ?? [];
   const effects = result.staged_effects ?? [];
   validateEmittedEvents(target, events, props, index);
@@ -107,23 +121,24 @@ function executeStep(step: ActionStep, context: StepContext): void {
   }
 }
 
-/** Declared steps run sequentially on the working transaction; any failure aborts the whole Action. */
-export function executeAction(
-  index: ExecutionIndex,
-  tx: StoreTransaction,
-  action: BlueprintAction,
-  envelope: DispatchEnvelope,
-  clock: MonotonicClock
-): void {
-  const context: StepContext = { index, tx, clock, env: { ...tx.env, event: envelope.payload, scope: envelope.scope } };
-  for (const step of action.steps) {
+/**
+ * Declared steps run sequentially on the working transaction; any failure aborts the whole Action. The operation
+ * guard runs before and after every step, so a closed / stale / timed-out token never reaches the next step.
+ */
+export function executeAction(run: ActionRun): void {
+  const { index, tx, action, envelope, clock, guard } = run;
+  const context: StepContext = { index, tx, clock, guard, env: { ...tx.env, event: envelope.payload, scope: envelope.scope } };
+  for (const [stepIndex, step] of action.steps.entries()) {
     try {
+      guard.check("STEP_BEFORE");
       executeStep(step, context);
+      guard.check("STEP_AFTER");
     } catch (error: unknown) {
-      if (error instanceof RuntimeFailure) {
+      if (error instanceof RuntimeFailure || error instanceof StaleOperation) {
         throw error;
       }
       throw new RuntimeFailure("F03-ERR-007", `Action ${action.id} step failed unexpectedly.`);
     }
+    guard.checkpoint(stepCheckpoint(stepIndex));
   }
 }

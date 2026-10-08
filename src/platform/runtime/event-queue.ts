@@ -1,5 +1,6 @@
 import type { LexicalScope } from "./capability-runtime.js";
 import type { NodeInstanceKey } from "./node-instance-key.js";
+import type { RuntimeOperation } from "./runtime-operation.js";
 import type { RuntimeValue } from "./runtime-value.js";
 
 /** F03 §15 guards. */
@@ -20,6 +21,9 @@ export interface RuntimeEventEnvelope {
   readonly lexical_scope_bindings: LexicalScope;
   readonly occurred_monotonic_ms: number;
   readonly origin: EventOrigin;
+  /** Lifecycle generation of the source clone incarnation at admission (F03 §5.1 Dynamic Repeat Lifecycle). */
+  readonly source_generation: number;
+  readonly operation: RuntimeOperation;
 }
 
 /** Bounded FIFO with O(1) amortized poll; nested events only ever append to the tail (§15). */
@@ -53,8 +57,24 @@ export class BoundedEventQueue {
     return event;
   }
 
-  public clear(): void {
+  /** Removes and returns every pending event matching `predicate`, preserving FIFO order of the rest. */
+  public removeWhere(predicate: (event: RuntimeEventEnvelope) => boolean): RuntimeEventEnvelope[] {
+    const removed: RuntimeEventEnvelope[] = [];
+    const kept: RuntimeEventEnvelope[] = [];
+    for (let position = this.head; position < this.items.length; position += 1) {
+      const event = this.items[position] as RuntimeEventEnvelope;
+      (predicate(event) ? removed : kept).push(event);
+    }
+    this.items = kept;
+    this.head = 0;
+    return removed;
+  }
+
+  /** Empties the queue and returns what was pending, so callers can close each pending operation. */
+  public clear(): RuntimeEventEnvelope[] {
+    const pending = this.items.slice(this.head) as RuntimeEventEnvelope[];
     this.items = [];
     this.head = 0;
+    return pending;
   }
 }

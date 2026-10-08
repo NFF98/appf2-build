@@ -99,15 +99,37 @@ export class TimerWakeService {
     this.scheduleWake(slot, armed, onComplete);
   }
 
+  /**
+   * The slot is released before the scheduler cancel runs, so even a throwing cancel leaves a wake that can no longer
+   * reach `onComplete` (the wake re-checks slot identity). A cancel failure is rethrown for the caller to record.
+   */
   public disarm(slot: string): void {
-    this.slots.get(slot)?.cancel();
+    const armed = this.slots.get(slot);
     this.slots.delete(slot);
+    armed?.cancel();
   }
 
-  public disarmAll(): void {
-    for (const slot of [...this.slots.keys()]) {
-      this.disarm(slot);
+  /** Returns how many scheduler cancels threw; every slot is released regardless. */
+  public disarmAll(): number {
+    const armed = [...this.slots.values()];
+    this.slots.clear();
+    let failures = 0;
+    for (const entry of armed) {
+      try {
+        entry.cancel();
+      } catch {
+        failures += 1;
+      }
     }
+    return failures;
+  }
+
+  public isArmed(slot: string): boolean {
+    return this.slots.has(slot);
+  }
+
+  public armedSlots(): readonly string[] {
+    return [...this.slots.keys()];
   }
 
   public observe(slot: string): TimerObservation | undefined {

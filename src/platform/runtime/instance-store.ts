@@ -18,14 +18,20 @@ export interface CapabilitySlot {
   readonly state: CapabilityState | undefined;
 }
 
-/** Last committed Instance state. Only `StoreTransaction.commit` writes it. */
+/**
+ * Last committed Instance state. Only `StoreTransaction.commit` and the clone lifecycle slot transitions below write
+ * it; each write bumps `revision`, which is what makes "committed state untouched" provable.
+ */
 export interface CommittedStore {
   readonly mutable: Map<string, RuntimeValue>;
   readonly derived: Map<string, RuntimeValue>;
   readonly rules: Map<string, RuleEntry>;
   readonly capability: Map<string, CapabilitySlot>;
   rng: Pcg32State;
+  revision: number;
 }
+
+export type RecomputeBoundary = "RECOMPUTE_BEFORE" | "RECOMPUTE_AFTER";
 
 export interface StagedEvent extends CapabilityEmittedEvent {
   readonly source: NodeInstanceKey;
@@ -37,7 +43,20 @@ export interface StagedNodeEffect {
 }
 
 export function emptyStore(rng: Pcg32State): CommittedStore {
-  return { mutable: new Map(), derived: new Map(), rules: new Map(), capability: new Map(), rng };
+  return { mutable: new Map(), derived: new Map(), rules: new Map(), capability: new Map(), rng, revision: 0 };
+}
+
+/** Lifecycle transition for a clone added after hydration; never part of an Action transaction. */
+export function installCapabilitySlot(store: CommittedStore, keyId: string, slot: CapabilitySlot): void {
+  store.capability.set(keyId, slot);
+  store.revision += 1;
+}
+
+/** Lifecycle transition for a removed clone: its capability-local state is released, never reused. */
+export function releaseCapabilitySlot(store: CommittedStore, keyId: string): void {
+  if (store.capability.delete(keyId)) {
+    store.revision += 1;
+  }
 }
 
 /**
@@ -57,7 +76,8 @@ export class StoreTransaction {
 
   public constructor(
     private readonly index: ExecutionIndex,
-    private readonly committed: CommittedStore
+    private readonly committed: CommittedStore,
+    private readonly guard?: (boundary: RecomputeBoundary) => void
   ) {
     this.rng = new Pcg32Cursor(committed.rng);
     this.env = { readState: (key) => this.readState(key), readRule: (ruleId) => this.readRule(ruleId) };
@@ -136,6 +156,7 @@ export class StoreTransaction {
       this.committed.capability.set(keyId, slot);
     }
     this.committed.rng = this.rng.snapshot();
+    this.committed.revision += 1;
   }
 
   private initialValue(key: string): RuntimeValue {
@@ -145,6 +166,15 @@ export class StoreTransaction {
 
   /** Derived failure fails the transaction (§9); rule failure is cached and isolated (§13, §27 LEVEL 1). */
   private recompute(vertices: readonly EvaluationVertex[]): void {
+    if (vertices.length === 0) {
+      return;
+    }
+    this.guard?.("RECOMPUTE_BEFORE");
+    this.recomputeVertices(vertices);
+    this.guard?.("RECOMPUTE_AFTER");
+  }
+
+  private recomputeVertices(vertices: readonly EvaluationVertex[]): void {
     for (const vertex of vertices) {
       if (vertex.kind === "DERIVED") {
         this.derived.set(vertex.key, this.evaluateVertex(vertex));

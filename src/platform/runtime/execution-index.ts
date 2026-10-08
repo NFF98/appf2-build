@@ -1,3 +1,4 @@
+import type { ResourceBudget, ResourceUsageProfile } from "../capabilities/schema/capability-definition.js";
 import type { DescriptorType, TypeDescriptor, ValidatorContract } from "../capabilities/schema/validator-contract.js";
 import { validateStates } from "../blueprint/state-rules.js";
 import { collectReferences } from "../blueprint/value-source-typing.js";
@@ -9,15 +10,26 @@ export type EvaluationVertex =
   | { readonly kind: "DERIVED"; readonly key: string; readonly type: DescriptorType; readonly expr: ValueSource }
   | { readonly kind: "RULE"; readonly id: string; readonly type: DescriptorType; readonly expr: ValueSource };
 
+/** Pinned F04 per-capability hard resource ceilings; the Runtime may only enforce them, never relax them. */
+export interface CapabilityResources {
+  readonly budget: ResourceBudget;
+  readonly usage: ResourceUsageProfile;
+}
+
 export interface NodeBinding {
   readonly validator: ValidatorContract;
   readonly handler: TrustedCapabilityHandler;
+  readonly resources: CapabilityResources;
 }
 
 export interface NodeExecution extends NodeBinding {
   readonly node: BlueprintNode;
   /** Strict structural ancestors carrying `repeat`, outermost → innermost (F03 §5.1 rule 1). */
   readonly repeatAncestors: readonly string[];
+  /** Structural parent node id; undefined only for the root. */
+  readonly parentId: string | undefined;
+  /** F02 V09 static instance upper bound: product of every repeat ancestor's `max_items`. */
+  readonly instanceBound: number;
 }
 
 /** F03 §8: Browser-memory-only, rebuildable indexes; never written back and never a second semantic truth. */
@@ -97,21 +109,29 @@ function affectedIndex(
   return affected;
 }
 
+interface PendingNode {
+  readonly id: string;
+  readonly ancestors: readonly string[];
+  readonly parentId: string | undefined;
+  readonly bound: number;
+}
+
 function indexNodes(blueprint: Blueprint, bind: (node: BlueprintNode) => NodeBinding): { byId: Map<string, NodeExecution>; order: string[] } {
   const definitions = new Map(blueprint.nodes.map((node) => [node.id, node] as const));
   const byId = new Map<string, NodeExecution>();
   const order: string[] = [];
-  const pending: { readonly id: string; readonly ancestors: readonly string[] }[] = [{ id: blueprint.root_node_id, ancestors: [] }];
+  const pending: PendingNode[] = [{ id: blueprint.root_node_id, ancestors: [], parentId: undefined, bound: 1 }];
   for (let item = pending.pop(); item !== undefined; item = pending.pop()) {
     const node = definitions.get(item.id);
     if (node === undefined || byId.has(item.id)) {
       return invariantBroken(`Admitted node tree is not a rooted tree at ${item.id}.`);
     }
-    byId.set(node.id, { node, repeatAncestors: item.ancestors, ...bind(node) });
+    byId.set(node.id, { node, repeatAncestors: item.ancestors, parentId: item.parentId, instanceBound: item.bound, ...bind(node) });
     order.push(node.id);
     const childAncestors = node.repeat === undefined ? item.ancestors : [...item.ancestors, node.id];
+    const childBound = item.bound * (node.repeat?.max_items ?? 1);
     for (let index = node.children.length - 1; index >= 0; index -= 1) {
-      pending.push({ id: node.children[index] as string, ancestors: childAncestors });
+      pending.push({ id: node.children[index] as string, ancestors: childAncestors, parentId: node.id, bound: childBound });
     }
   }
   return { byId, order };

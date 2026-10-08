@@ -69,7 +69,17 @@ interface ExpansionFrame {
   readonly scope: LexicalScope;
 }
 
-/** Every concrete NodeInstanceKey of the committed state, in structural pre-order (F03 §25 rules 1–2). */
+/** Structural parent instance: the parent node keeps only the coordinates of its own repeat ancestors. */
+export function parentInstanceKey(index: ExecutionIndex, key: NodeInstanceKey): NodeInstanceKey | undefined {
+  const parentId = index.nodeById.get(key.node_id)?.parentId;
+  const parent = parentId === undefined ? undefined : index.nodeById.get(parentId);
+  return parent === undefined ? undefined : { node_id: parent.node.id, repeat_coordinates: key.repeat_coordinates.slice(0, parent.repeatAncestors.length) };
+}
+
+/**
+ * Every concrete NodeInstanceKey of the committed state, in structural pre-order (F03 §25 rules 1–2). Coordinates
+ * are only materialized for `index < min(max_items, item count)` (F03 §5.1 rule 2).
+ */
 export function expandNodeInstances(index: ExecutionIndex, env: EvaluationEnv): ConcreteNodeInstance[] {
   const instances: ConcreteNodeInstance[] = [];
   const pending: ExpansionFrame[] = [{ nodeId: index.blueprint.root_node_id, coordinates: [], scope: EMPTY_SCOPE }];
@@ -82,10 +92,8 @@ export function expandNodeInstances(index: ExecutionIndex, env: EvaluationEnv): 
       continue;
     }
     const items = repeatItems(execution, env, frame.scope);
-    if (items.length > execution.node.repeat.max_items) {
-      runtimeFail("F03-ERR-004", `repeat ${frame.nodeId} item count exceeds its admitted max_items.`);
-    }
-    for (let itemIndex = items.length - 1; itemIndex >= 0; itemIndex -= 1) {
+    const limit = Math.min(items.length, execution.node.repeat.max_items);
+    for (let itemIndex = limit - 1; itemIndex >= 0; itemIndex -= 1) {
       const coordinates = [...frame.coordinates, { repeat_node_id: frame.nodeId, item_index: itemIndex }];
       const scope = withRepeatAliases(frame.scope, execution, items[itemIndex] as RuntimeValue, itemIndex);
       pending.push(...children.map((nodeId) => ({ nodeId, coordinates, scope })));
