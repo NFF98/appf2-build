@@ -314,7 +314,7 @@ test("TEST-F03-AC-020 the Runtime never relaxes F02 / F04 resource ceilings", as
 
 test("TEST-F03-022 the Runtime never writes PostgreSQL or any server per interaction", async () => {
   const runtimeDir = join(process.cwd(), "src", "platform", "runtime");
-  const forbidden = [/from\s+["'](pg|postgres)["']/, /postgres-/, /from\s+["']node:(net|http|https|tls|dgram)["']/, /\bfetch\s*\(/, /XMLHttpRequest|WebSocket|sendBeacon/];
+  const forbidden = [/from\s+[\x22\x27](pg|postgres)[\x22\x27]/, /postgres-/, /from\s+[\x22\x27]node:(net|http|https|tls|dgram)[\x22\x27]/, new RegExp("\\bfetch\\s*\\("), /XMLHttpRequest|WebSocket|sendBeacon/];
   for (const file of readdirSync(runtimeDir).filter((name) => name.endsWith(".ts"))) {
     const source = readFileSync(join(runtimeDir, file), "utf8");
     for (const pattern of forbidden) {
