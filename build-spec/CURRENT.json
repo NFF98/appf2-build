@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-023",
-  "implementation_enabled": false,
-  "reason": "Human-approved T003 final closure after independent closure audit PASS (Issue #301 comment 6070255667). BS-P1-023 remains the active locked baseline; execution is HOLD before any separate T004 activation."
+  "implementation_enabled": true,
+  "reason": "Human-preapproved SP-P1-003 / T004 governance activation under locked BS-P1-023 after independent BCE Planning PASS (Issue #301 comment 6070406614; Human handover comment 6070363507). Activation and Cursor execution remain separate; fresh single-use execution lease only after activation PR gates/merge and main verification."
 }

@@ -438,7 +438,7 @@
         "BL-P1-017"
       ],
       "title": "Discover/Create React shell, clarification & visible-assumption flow",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-023",
       "scope": [
         "Create Phase 1 React Product shell entry for S01/S02 Create path under locked Design System and approved S01/S02 contracts.",
