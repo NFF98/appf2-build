@@ -24,3 +24,9 @@ export function nodeInstanceKeyId(key: NodeInstanceKey): string {
     key.node_id
   );
 }
+
+/** Inverse of the injective encoding above for the node_id component only. */
+export function nodeIdOfKeyId(keyId: string): string {
+  const separator = keyId.indexOf("/");
+  return separator === -1 ? keyId : keyId.slice(0, separator);
+}

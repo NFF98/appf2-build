@@ -55,6 +55,8 @@ export interface TrustedCapabilityHandler {
     state: CapabilityState | undefined,
     context: CapabilityInvokeContext
   ): CapabilityInvocationResult;
+  /** Optional teardown for a removed clone incarnation or a disposed Instance; its state is released afterwards. */
+  dispose?(key: NodeInstanceKey, state: CapabilityState | undefined): void;
 }
 
 /** Host broker for non-timer local effects; executed only after commit (F03 §21). */

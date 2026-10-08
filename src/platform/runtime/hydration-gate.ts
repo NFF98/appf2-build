@@ -120,12 +120,12 @@ export function pinnedNodeBinder(trust: HydrationTrust): (node: BlueprintNode) =
   const { runtime_registry: runtimeRegistry, validator_registry: validatorRegistry } = trust.registry_snapshot;
   return (node) => {
     const { id, version } = node.capability;
-    const validator = lookup(validatorRegistry.capabilities, id, version)?.validator;
+    const entry = lookup(validatorRegistry.capabilities, id, version);
     const binding = lookup(runtimeRegistry.capabilities, id, version);
     const handler = binding === undefined ? undefined : trust.handlers.get(binding.registration_key);
-    if (validator === undefined || handler === undefined) {
+    if (entry === undefined || handler === undefined) {
       return runtimeFail("F03-ERR-003", `No pinned trusted handler binding for ${id}@${version}.`, id);
     }
-    return { validator, handler };
+    return { validator: entry.validator, handler, resources: { budget: entry.resource_budget, usage: entry.resource_usage } };
   };
 }
