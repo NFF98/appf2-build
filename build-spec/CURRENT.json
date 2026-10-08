@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-023",
-  "implementation_enabled": true,
-  "reason": "Human-preapproved SP-P1-003 / T004 governance activation under locked BS-P1-023 after independent BCE Planning PASS (Issue #301 comment 6070406614; Human handover comment 6070363507). Activation and Cursor execution remain separate; fresh single-use execution lease only after activation PR gates/merge and main verification."
+  "implementation_enabled": false,
+  "reason": "Human 2026-10-09 Choice 1 T004 F00/F01 semantic closure approved (Design PR #33 merge f2e32e10); SPEC_GAP quarantined; Build Freeze and F01/T004 rebind preparation only, no Cursor execution. Issue #301."
 }
