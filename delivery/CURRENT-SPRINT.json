@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-023",
+  "active_task": "T004",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T003 is CLOSED under BS-P1-023 after closure audit PASS. SP-P1-003 remains in REVIEW with T001-T003 CLOSED and T004-T006 PLANNED / unauthorized; no active execution context exists."
+  "reason": "Human-preapproved T004 activation after independent BCE Planning PASS (Issue #301 comments 6070363507 / 6070406614). T004 is IN_PROGRESS at pre-Cursor boundary; Cursor remains unauthorized until activation CI/merge and fresh single-use Issue #301 lease."
 }
