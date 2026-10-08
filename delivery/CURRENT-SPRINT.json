@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-023",
   "active_task": "T003",
-  "status": "ACTIVE",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved SP-P1-003 / T003 activation under BS-P1-023. T003 is IN_PROGRESS at the pre-Cursor boundary; Cursor execution authority remains separately gated until activation merge and canonical verification."
+  "reason": "T003 implementation merged via PR #318 and final Evidence normalized via PR #319. T003 final Evidence is bound for independent closure audit; T001-T002 remain CLOSED and T004-T006 remain PLANNED / unauthorized."
 }
