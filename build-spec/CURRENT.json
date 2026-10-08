@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-023",
-  "implementation_enabled": true,
-  "reason": "Human-approved SP-P1-003 / T003 governance activation under locked BS-P1-023 after independent BCE Planning PASS. T003 is activated at the pre-Cursor boundary; Issue #301 will be reused as the watcher/execution channel only after activation merge and canonical verification."
+  "implementation_enabled": false,
+  "reason": "Human-approved T003 final closure after independent closure audit PASS (Issue #301 comment 6070255667). BS-P1-023 remains the active locked baseline; execution is HOLD before any separate T004 activation."
 }
