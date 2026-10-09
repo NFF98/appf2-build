@@ -438,7 +438,7 @@
         "BL-P1-017"
       ],
       "title": "Discover/Create React shell, clarification & visible-assumption flow",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-024",
       "scope": [
         "Create Phase 1 React Product shell entry for S01/S02 Create path under locked Design System and approved S01/S02 contracts.",
@@ -717,7 +717,7 @@
         "BL-P1-009"
       ],
       "title": "F01 validated VisibleAssumption edit-shape projection revalidation (F01-AC-004)",
-      "status": "CLOSED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-024",
       "scope": [
         "Implement F01-DATA-004A server-authoritative projection on F01-API-001 create and F01-API-002 answers responses for each pending DEFAULT/PROPOSAL visible assumption, including validated expected_value_type/question_type.",
@@ -767,19 +767,7 @@
       "blocked_by": [
         "T001"
       ],
-      "completion_evidence": [
-        "EV-SP-P1-003-T007-001",
-        "EV-SP-P1-003-T007-002",
-        "EV-SP-P1-003-T007-003",
-        "EV-SP-P1-003-T007-004",
-        "EV-SP-P1-003-T007-005",
-        "EV-SP-P1-003-T007-006",
-        "EV-SP-P1-003-T007-007",
-        "EV-SP-P1-003-T007-008",
-        "EV-SP-P1-003-T007-009",
-        "EV-SP-P1-003-T007-010",
-        "EV-SP-P1-003-T007-011"
-      ]
+      "completion_evidence": []
     }
   ]
 }
