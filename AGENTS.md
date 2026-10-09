@@ -9,6 +9,14 @@
 
 本檔是所有 coding agent / Cursor 的 repository-level operating contract。
 
+## 三級變更路由（權限不能推論或互相取代）
+
+- **L1 Build**：僅在 locked SPEC 不變且有 active Sprint/Task 的 allowed write paths 內執行，仍需 CI/Evidence/BCE/Human merge。
+- **L2 SPEC／REBIND**：Product/Acceptance/Architecture semantics 先回 `NFF98/appf2-design/working/` 經 Human 批准，Build 只能新建 immutable baseline 並經正式 Freeze/Activation/REBIND。
+- **L3 修憲**：變更 AI/Human 權限、保護路徑、安全 Gate、治理依賴（`package.json` 與 `package-lock.json`）須 5 Why／五次獨立 Human 審查；執行規則詳見 [APPf2 Constitution](harness/policy/APPF2-CONSTITUTION.md#1a-三級變更分類buildspec憲法不得混淆)。
+- 跨層時需**完成每層自己的核准鏈**，不得以 REBIND 假裝修憲，不得用 L3 取代 Product Truth 審議；分類不清時 HARD STOP 交 Human。
+- 此為 Build Repo 執行路由；Design Repo 機器約束必須經獨立 Design governance PR 才能生效。
+
 ## Absolute Rules
 
 - Product truth 不在本 Repo 產生；來源是已批准的 locked Build Spec。
