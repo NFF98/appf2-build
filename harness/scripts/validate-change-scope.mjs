@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -294,11 +295,24 @@ if(approvedPfr06WebReadinessTransition){
   console.log("- Human-approved PFR-06 web readiness transition recognized; Product source remains forbidden while Sprint HOLD.");
 }
 
+const boundedT005PercentRepair = isExactT005PercentGovernanceRepair({
+  base:baseSha,
+  head:process.env.HEAD_SHA||"HEAD",
+  changed,
+  current:cs,
+  build:currentBuild
+});
+try {
+  const n=testT005PercentRepairGuard();
+  console.log("- T005 bounded repair guard: "+n+" positive/negative regression cases PASS.");
+} catch(error) { errors.push(String(error)); }
+if(boundedT005PercentRepair) console.log("- "+T005_PERCENT_GATE_MARKER+".");
+
 if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || approvedRebaselineTransition){
+}else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);

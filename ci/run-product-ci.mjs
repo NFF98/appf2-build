@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { spawnSync, execFileSync } from "node:child_process";
+import { isExactT005PercentGovernanceRepair, T005_PERCENT_GATE_MARKER } from "../harness/scripts/t005-percent-test-compat.mjs";
 
 const current=JSON.parse(fs.readFileSync("build-spec/CURRENT.json","utf8"));
 const sprint=JSON.parse(fs.readFileSync("delivery/CURRENT-SPRINT.json","utf8"));
@@ -39,6 +40,23 @@ const controlPaths=new Set([
 if(policy.activation_control_only_skip_product_ci===true && changed.length && changed.every(p=>controlPaths.has(p))){
   console.log("PRODUCT CI: CONTROL-ONLY — governance gates validate activation/task-state transition; no product code changed.");
   process.exit(0);
+}
+
+// Only the Human-approved, byte-exact T004 TEST-F00-003 / T005 progress compatibility repair.
+// T005 executable implementation tests are NOT claimed complete; this skip cannot match future
+// implementation diffs or any base after the one obsolete assertion was removed.
+if(isExactT005PercentGovernanceRepair({base,head,changed,current:sprint,build:current})){
+  const guard=spawnSync("node",["harness/scripts/validate-change-scope.mjs"],{
+    encoding:"utf8",shell:false,env:{...process.env,BASE_SHA:base,HEAD_SHA:head}
+  });
+  if(guard.stdout) process.stdout.write(guard.stdout);
+  if(guard.stderr) process.stderr.write(guard.stderr);
+  if(guard.status===0 && guard.stdout.includes(T005_PERCENT_GATE_MARKER)){
+    console.log("PRODUCT CI: ONE-SHOT CONTROLLED REPAIR ONLY — T005 implementation 10 mapped tests still NOT IMPLEMENTED; no product code changed.");
+    process.exit(0);
+  }
+  console.error("PRODUCT CI: bounded T005 repair did not pass independent change-scope gate.");
+  process.exit(1);
 }
 
 // Atomic rebaseline Activation may also carry Delta/Finding lifecycle side effects. Their legality is owned
