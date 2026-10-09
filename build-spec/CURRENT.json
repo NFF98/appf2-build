@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-024",
-  "implementation_enabled": true,
-  "reason": "Human 2026-10-09 approved bounded validator remediation and T007 final closure / T004 activation; PR #332 BCE PASS #6072480020 and T007 Evidence PR #329 merged. BS-P1-024 unchanged; T004 Cursor execution NOT approved."
+  "implementation_enabled": false,
+  "reason": "Human 2026-10-09 approved T004 final closure after implementation PR #334 (BCE-2 PASS) and Evidence PR #335 (17 PASS evidence, 4/4 CI). BS-P1-024 remains LOCKED; implementation disabled during SP-P1-003 inter-task HOLD. T005 not activated."
 }

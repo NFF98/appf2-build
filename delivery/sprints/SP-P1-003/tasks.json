@@ -438,7 +438,7 @@
         "BL-P1-017"
       ],
       "title": "Discover/Create React shell, clarification & visible-assumption flow",
-      "status": "IN_PROGRESS",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-024",
       "scope": [
         "Create Phase 1 React Product shell entry for S01/S02 Create path under locked Design System and approved S01/S02 contracts.",
@@ -511,7 +511,25 @@
         "T001",
         "T007"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-003-T004-001",
+        "EV-SP-P1-003-T004-002",
+        "EV-SP-P1-003-T004-003",
+        "EV-SP-P1-003-T004-004",
+        "EV-SP-P1-003-T004-005",
+        "EV-SP-P1-003-T004-006",
+        "EV-SP-P1-003-T004-007",
+        "EV-SP-P1-003-T004-008",
+        "EV-SP-P1-003-T004-009",
+        "EV-SP-P1-003-T004-010",
+        "EV-SP-P1-003-T004-011",
+        "EV-SP-P1-003-T004-012",
+        "EV-SP-P1-003-T004-013",
+        "EV-SP-P1-003-T004-014",
+        "EV-SP-P1-003-T004-015",
+        "EV-SP-P1-003-T004-016",
+        "EV-SP-P1-003-T004-017"
+      ]
     },
     {
       "task_id": "T005",
