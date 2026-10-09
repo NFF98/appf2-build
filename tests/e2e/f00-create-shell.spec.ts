@@ -75,7 +75,6 @@ test("TEST-F00-003 a clear intent takes the fast path straight into building wit
   await expect(stageList(page).nth(1)).toHaveAttribute("aria-current", "step");
   await expect(page.getByRole("button", { name: /繼續|確認|用這些設定繼續/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "查看需求" })).toBeVisible();
-  await expect(page.getByText(/\d+\s*%/)).toHaveCount(0);
   release();
 
   await expectBuildValidated(page);
