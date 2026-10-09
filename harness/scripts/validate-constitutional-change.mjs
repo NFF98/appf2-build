@@ -1,8 +1,9 @@
 // GOV-CONST-001: fail-closed constitutional review, real Human signatures,
 // and SHA-locked, exact-path, once-only founding bootstrap.
-import { createHash, createPublicKey, verify as verifySignature } from "node:crypto";
+import { createHash, createPublicKey, generateKeyPairSync, sign as signApproval, verify as verifySignature } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 
 export const CONSTITUTION_GENESIS_BASE="5b556e5d38b35b16640b58b27c1d64be63cac26b";
 export const CONSTITUTION_BOOTSTRAP_FILES=Object.freeze([
@@ -166,6 +167,70 @@ export function inspectConstitutionalChange({changed,base,cs,build,policy,root,t
   return {errors,constitutional:true,bootstrap:false};
 }
 
+// CI-only ephemeral signing key; never the Human's real private key.
+const testSignedFiveStageCase=()=>{
+  const {publicKey,privateKey}=generateKeyPairSync("ed25519");
+  const trusted=Buffer.from(publicKey.export({format:"pem",type:"spki"})).toString("base64");
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-constitutional-test-"));
+  const id="GOV-CASE-TEST-001",base="a".repeat(40);
+  const casePath="delivery/constitutional-cases/"+id+".json";
+  const docPaths=CONSTITUTION_STAGES.map(stage=>
+    "delivery/constitutional-dossiers/"+id+"-"+stage+".md");
+  const changed=["package.json",...docPaths,casePath];
+  const makeFile=(p,value)=>{
+    fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});
+    fs.writeFileSync(path.join(root,p),value);
+  };
+  const check=(ok,label)=>{if(!ok) throw Error("CONSTITUTION SIGNATURE TEST FAIL: "+label);};
+  try{
+    makeFile("package.json",JSON.stringify({name:"test",dependencies:{pg:"8.0.0"}}));
+    for(const [i,p] of docPaths.entries()) makeFile(p,"Human finalised R"+(i+1)+" dossier v1");
+    const digest=contentDigest(root,changed.filter(p=>p!==casePath));
+    const docket={
+      case_id:id,base_sha:base,constitution_version:"1.0",
+      exact_changed_paths:changed.filter(p=>p!==casePath),
+      candidate_digest_sha256:digest,
+      why5:CONSTITUTION_STAGES.map(stage=>({
+        question:"Why "+stage+"?",answer:"Evidence-led test",evidence_ref:"CI-ONLY"
+      })),
+      stages:[]
+    };
+    let previous="GENESIS";
+    for(let i=0;i<5;i++){
+      const stage=CONSTITUTION_STAGES[i];
+      const rec={
+        stage,
+        dossier_sha256:sha(readSafe(root,docPaths[i])),
+        human_message_ref:"TEST-ONLY-DIRECT-HUMAN-R"+(i+1),
+        approved_at_unix:1791600000+i*120
+      };
+      const payload=approvalPayload({docket,rec,stage,i,base,previous,digest});
+      rec.signature_base64=signApproval(
+        null,Buffer.from(JSON.stringify(payload)),privateKey
+      ).toString("base64");
+      docket.stages.push(rec);
+      previous=sha(Buffer.from(rec.signature_base64,"base64"));
+    }
+    makeFile(casePath,JSON.stringify(docket));
+    const args={
+      changed,base,policy:{governance_only_paths:["package.json"]},
+      root,trustPublicKeyB64:trusted,cs:null,build:null
+    };
+    check(inspectConstitutionalChange(args).errors.length===0,
+      "five real independent chained stage signatures must pass");
+    const altered=structuredClone(docket);
+    altered.stages[2].human_message_ref="AI-DESCRIBED-SIGNATURE";
+    makeFile(casePath,JSON.stringify(altered));
+    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("R3")),
+      "AI must not change meaning/evidence of prior Human signature");
+    makeFile(casePath,JSON.stringify(docket));
+    makeFile("package.json",JSON.stringify({name:"test",dependencies:{pg:"9.0.0"}}));
+    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("digest")),
+      "candidate dependency drift after R5 signature must fail");
+    return 3;
+  }finally{fs.rmSync(root,{recursive:true,force:true});}
+};
+
 export function testConstitutionFailClosed(){
   const basic={
     base:CONSTITUTION_GENESIS_BASE,changed:[...CONSTITUTION_BOOTSTRAP_FILES],
@@ -199,5 +264,5 @@ export function testConstitutionFailClosed(){
   });
   expect(!routine.constitutional && !routine.errors.length,
     "ordinary control record keeps existing independent governance gates");count++;
-  return count;
+  return count+testSignedFiveStageCase();
 }
