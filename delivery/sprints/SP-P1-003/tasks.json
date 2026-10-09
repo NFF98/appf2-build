@@ -538,7 +538,7 @@
         "BL-P1-022"
       ],
       "title": "Shell persistence, authority boundary & truthful processing presentation",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-024",
       "scope": [
         "Implement F00 local draft persistence rules including DO_NOT_PERSIST exclusion.",
