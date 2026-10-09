@@ -225,7 +225,7 @@ const testSignedFiveStageCase=()=>{
       "AI must not change meaning/evidence of prior Human signature");
     makeFile(casePath,JSON.stringify(docket));
     makeFile("package.json",JSON.stringify({name:"test",dependencies:{pg:"9.0.0"}}));
-    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("digest")),
+    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("PR bytes changed after approval")),
       "candidate dependency drift after R5 signature must fail");
     return 3;
   }finally{fs.rmSync(root,{recursive:true,force:true});}
