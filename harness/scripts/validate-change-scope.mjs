@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { isOneTimeConstitutionFounding } from "./validate-constitutional-change.mjs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
@@ -295,6 +296,11 @@ if(approvedPfr06WebReadinessTransition){
   console.log("- Human-approved PFR-06 web readiness transition recognized; Product source remains forbidden while Sprint HOLD.");
 }
 
+const foundedConstitutionException=isOneTimeConstitutionFounding({
+  changed,base:baseSha,cs,build:currentBuild
+});
+if(foundedConstitutionException) console.log("- GOV-CONST-001 single-SHA founding exception (governance-only exact paths, expires after main advances).");
+
 const boundedT005PercentRepair = isExactT005PercentGovernanceRepair({
   base:baseSha,
   head:process.env.HEAD_SHA||"HEAD",
@@ -312,7 +318,7 @@ if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair){
+}else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);
