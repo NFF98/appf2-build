@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-023",
-  "implementation_enabled": false,
-  "reason": "Human 2026-10-09 Choice 1 T004 F00/F01 semantic closure approved (Design PR #33 merge f2e32e10); SPEC_GAP quarantined; Build Freeze and F01/T004 rebind preparation only, no Cursor execution. Issue #301."
+  "active_baseline": "BS-P1-024",
+  "implementation_enabled": true,
+  "reason": "Human 2026-10-09 approved Choice 1 and BCE preparation through pre-Cursor: BS-P1-024 locked PR #326, BD-024 approved; T007 F01-AC-004 revalidation governance activation after BCE Planning PASS Issue #301 comment 6071561660. No Cursor execution lease."
 }

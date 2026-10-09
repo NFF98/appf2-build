@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-024",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-053"
   ],
@@ -32,7 +32,8 @@
   "verification": [
     "Design PR #33 and PR #34 merged and independently reviewed.",
     "Scope-clean provenance audit delivery/audits/SP-P1-003-BD-024-FREEZE-CANDIDATE.md declares exact 4 approved changed Design paths.",
-    "Prior baseline BS-P1-023 remains immutable; F01-AC-004/TEST-F01-004 strengthened without new ID; T004 existing F00-AC-005 retained."
+    "Prior baseline BS-P1-023 remains immutable; F01-AC-004/TEST-F01-004 strengthened without new ID; T004 existing F00-AC-005 retained.",
+    "BS-P1-024 immutable snapshot locked by PR #326, Governance/CI PASS; Human-approved BCE rebaseline + F01 T007 and T004 dependency binding activation, no Cursor execution."
   ],
   "upstream_working_commit": "7a69bdab36db34618a1904a637587a01148ee138",
   "freeze_source": {

@@ -439,7 +439,7 @@
       ],
       "title": "Discover/Create React shell, clarification & visible-assumption flow",
       "status": "BLOCKED",
-      "build_spec_id": "BS-P1-023",
+      "build_spec_id": "BS-P1-024",
       "scope": [
         "Create Phase 1 React Product shell entry for S01/S02 Create path under locked Design System and approved S01/S02 contracts.",
         "Implement blank prompt and Inspiration Capsule editable prefill flow.",
@@ -508,7 +508,8 @@
       "parallel_safe": true,
       "product_decision_allowed": false,
       "blocked_by": [
-        "T001"
+        "T001",
+        "T007"
       ],
       "completion_evidence": []
     },
@@ -520,7 +521,7 @@
       ],
       "title": "Shell persistence, authority boundary & truthful processing presentation",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-023",
+      "build_spec_id": "BS-P1-024",
       "scope": [
         "Implement F00 local draft persistence rules including DO_NOT_PERSIST exclusion.",
         "Enforce Shell never mutates Runtime Instance Store directly and never displays LLM proposal as User fact.",
@@ -618,7 +619,7 @@
       ],
       "title": "Result contract, S03 App surface & Playable App vertical proof",
       "status": "PLANNED",
-      "build_spec_id": "BS-P1-023",
+      "build_spec_id": "BS-P1-024",
       "scope": [
         "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
         "Implement S03 Runtime surface so Generated App is visual/interaction primary content and Shell never wraps/mutates Runtime controls.",
@@ -707,6 +708,64 @@
         "T003",
         "T004",
         "T005"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "task_id": "T007",
+      "backlog_item_ids": [
+        "BL-P1-009"
+      ],
+      "title": "F01 validated VisibleAssumption edit-shape projection revalidation (F01-AC-004)",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-024",
+      "scope": [
+        "Implement F01-DATA-004A server-authoritative projection on F01-API-001 create and F01-API-002 answers responses for each pending DEFAULT/PROPOSAL visible assumption, including validated expected_value_type/question_type.",
+        "Project ENUM/LIST options exactly from server-validated policy-visible item alternatives, preserve native JsonValue type and order; RECORD declares OPEN_JSON_RECORD_V1 and maintains existing plain-record validation.",
+        "Fail closed on missing/inconsistent type/options/record-shape without emitting false READY_WITH_VISIBLE_ASSUMPTIONS. Preserve the immutable F01 policy decisions, trusted source/provenance, version/idempotency/identity and server validation.",
+        "Strengthen existing TEST-F01-004 and executable behavior/API/contract proof for six types, eligible pending/other classes, choice selection, native RECORD nested edit, malformed metadata, stale/mismatch handling, and no silent conversion. F01 revalidation of historical BL-P1-008, preserving DONE history; selected BL-P1-009 is the existing compiler Task anchor only."
+      ],
+      "non_scope": [
+        "No F00 React/browser UI, S02 visuals, no alteration of implementation PR #323 or TEST-F00-005/TEST-F00-AC-002.",
+        "No new Product semantics, alternative choice inference, assumed record key schema, or risk/provenance shortcut.",
+        "No new database migration, new public endpoint, broad production Edge/HTTP mount, POI-005, Share/Remix/Correction or Runtime changes.",
+        "No changes to Design, Build Spec, Registry, Governance, CI/harness scripts, or already CLOSED Task Evidence."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F01-AC-004",
+          "test_id": "TEST-F01-004"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/platform/intent/",
+        "src/platform/compiler/",
+        "src/edge/intent-api.ts",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/api/",
+        "tests/regression/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:api",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T001"
       ],
       "completion_evidence": []
     }

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-053",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-023",
   "sprint_id": "SP-P1-003",
   "task_id": "T004",
@@ -16,7 +16,8 @@
     "Design PR #33 merged at f2e32e10dfe01aa3d8308a5444353c28f540aa89.",
     "Design PR #34 strengthened existing F01-AC-004 / TEST-F01-004, merged at 7a69bdab36db34618a1904a637587a01148ee138.",
     "Scoped derived freeze commit 736c757e72734f46407f8c9afcd81580ae75f0ef changes exactly four Design owner files relative to BS-P1-023 source 05f261a8f83f447df60af7e4c581432fe825787d.",
-    "Build governance quarantine PR #324 merged as a83303f4b84aa7258e8370c4fa86072a59abd3ba; T004 BLOCKED and implementation disabled."
+    "Build governance quarantine PR #324 merged as a83303f4b84aa7258e8370c4fa86072a59abd3ba; T004 BLOCKED and implementation disabled.",
+    "Design PR #33/#34 merged; BF-053 semantic gap addressed by scoped Design source 736c757e72734f46407f8c9afcd81580ae75f0ef and locked BS-P1-024 PR #326, independent T007 planning PASS #6071561660; F01 implementation remains T007 IN_PROGRESS, T004 blocked by T007."
   ],
   "attempts": [
     {
