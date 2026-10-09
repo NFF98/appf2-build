@@ -1,0 +1,3096 @@
+{
+  "registry_version": "2.5.0",
+  "phase_1_freeze_audit": {
+    "status": "PASS",
+    "scope": "PHASE_1_APPLICABLE_TRUTH_ONLY",
+    "eligibility": "HUMAN_APPROVED_BUILD_FREEZE_REQUIRED",
+    "excludes": [
+      "PHASE_2_PLUS",
+      "DEFERRED_CONTENT",
+      "F19_VOTE_COUNTER_GENERIC_RECORDS"
+    ],
+    "audited_on": "2026-10-06",
+    "change_ref": "BF-049-T001-COMPILER-CONTRACT-CLOSURE"
+  },
+  "owner": "working/detailed-design/registries/acceptance-test-registry.json",
+  "conventions": "working/common-core/ACCEPTANCE-CONVENTIONS.md",
+  "total_acceptance": 307,
+  "entries": [
+    {
+      "acceptance_id": "F00-AC-001",
+      "function_id": "F00",
+      "criterion": "User可從空白 prompt 或 Capsule開始 Create。",
+      "test_id": "TEST-F00-001",
+      "expected_observable": "User可從空白 prompt 或 Capsule開始 Create。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-002",
+      "function_id": "F00",
+      "criterion": "Capsule prefill永遠可編輯。",
+      "test_id": "TEST-F00-AC-002",
+      "expected_observable": "Capsule prefill永遠可編輯。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-003",
+      "function_id": "F00",
+      "criterion": "Clear Intent不增加不必要 confirmation page。",
+      "test_id": "TEST-F00-003",
+      "expected_observable": "Clear Intent不增加不必要 confirmation page。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-004",
+      "function_id": "F00",
+      "criterion": "F01需要 clarification時，F00一次只呈現選定的1–3題。",
+      "test_id": "TEST-F00-004",
+      "expected_observable": "F01需要 clarification時，F00一次只呈現選定的1–3題。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-005",
+      "function_id": "F00",
+      "criterion": "material proposal一定可見且可 Accept/Edit/Reject。",
+      "test_id": "TEST-F00-005",
+      "expected_observable": "material proposal一定可見且可 Accept/Edit/Reject。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-006",
+      "function_id": "F00",
+      "criterion": "prompt / answers在 recoverable failure後仍保留。",
+      "test_id": "TEST-F00-006",
+      "expected_observable": "prompt / answers在 recoverable failure後仍保留。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-007",
+      "function_id": "F00",
+      "criterion": "VALIDATED Blueprint可進 F03 hydrate並切到 APP surface。",
+      "test_id": "TEST-F00-007",
+      "expected_observable": "VALIDATED Blueprint可進 F03 hydrate並切到 APP surface。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-008",
+      "function_id": "F00",
+      "criterion": "normal Runtime interaction不觸發 global shell loading。",
+      "test_id": "TEST-F00-008",
+      "expected_observable": "normal Runtime interaction不觸發 global shell loading。",
+      "contract_status": "SUPERSEDED",
+      "superseded_by": [
+        "F00-AC-029",
+        "F00-AC-030",
+        "F00-AC-031",
+        "F00-AC-032"
+      ],
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": false
+    },
+    {
+      "acceptance_id": "F00-AC-009",
+      "function_id": "F00",
+      "criterion": "APP surface可到 Share / Remix / Correction入口。",
+      "test_id": "TEST-F00-AC-009",
+      "expected_observable": "APP surface可到 Share / Remix / Correction入口。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-010",
+      "function_id": "F00",
+      "criterion": "correction failure不破壞 current App。",
+      "test_id": "TEST-F00-010",
+      "expected_observable": "correction failure不破壞 current App。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-011",
+      "function_id": "F00",
+      "criterion": "Compare可 Accept New / Keep Previous / Adjust Again。",
+      "test_id": "TEST-F00-011",
+      "expected_observable": "Compare可 Accept New / Keep Previous / Adjust Again。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-012",
+      "function_id": "F00",
+      "criterion": "Keep Previous不 mutation old Blueprint。",
+      "test_id": "TEST-F00-AC-012",
+      "expected_observable": "Keep Previous不 mutation old Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-013",
+      "function_id": "F00",
+      "criterion": "unsupported intent不 fake success。",
+      "test_id": "TEST-F00-013",
+      "expected_observable": "unsupported intent不 fake success。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-014",
+      "function_id": "F00",
+      "criterion": "consumer不看到 raw 401/500/stack trace。",
+      "test_id": "TEST-F00-014",
+      "expected_observable": "consumer不看到 raw 401/500/stack trace。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-015",
+      "function_id": "F00",
+      "criterion": "recoverable failure至少有一個有效 next action。",
+      "test_id": "TEST-F00-AC-015",
+      "expected_observable": "recoverable failure至少有一個有效 next action。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-016",
+      "function_id": "F00",
+      "criterion": "node-level Runtime failure不強迫離開整個 App。",
+      "test_id": "TEST-F00-AC-016",
+      "expected_observable": "node-level Runtime failure不強迫離開整個 App。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-017",
+      "function_id": "F00",
+      "criterion": "terminal failure提供 safe exit。",
+      "test_id": "TEST-F00-AC-017",
+      "expected_observable": "terminal failure提供 safe exit。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-018",
+      "function_id": "F00",
+      "criterion": "DO_NOT_PERSIST value不進 local draft storage。",
+      "test_id": "TEST-F00-AC-018",
+      "expected_observable": "DO_NOT_PERSIST value不進 local draft storage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-019",
+      "function_id": "F00",
+      "criterion": "duplicate tap不造成 duplicate logical create/compile。",
+      "test_id": "TEST-F00-019",
+      "expected_observable": "duplicate tap不造成 duplicate logical create/compile。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-020",
+      "function_id": "F00",
+      "criterion": "Shell不直接修改 Runtime Instance Store。",
+      "test_id": "TEST-F00-020",
+      "expected_observable": "Shell不直接修改 Runtime Instance Store。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-021",
+      "function_id": "F00",
+      "criterion": "Shell不把 LLM proposal顯示成 User fact。",
+      "test_id": "TEST-F00-AC-021",
+      "expected_observable": "Shell不把 LLM proposal顯示成 User fact。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-022",
+      "function_id": "F00",
+      "criterion": "Phase 1 Core Create flow可全鍵盤操作。",
+      "test_id": "TEST-F00-A11Y-001",
+      "expected_observable": "Phase 1 Core Create flow可全鍵盤操作。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-023",
+      "function_id": "F00",
+      "criterion": "modal關閉後focus回合理觸發點。",
+      "test_id": "TEST-F00-AC-023",
+      "expected_observable": "modal關閉後focus回合理觸發點。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-024",
+      "function_id": "F00",
+      "criterion": "mobile width下 clarification / compare無必要 horizontal scroll。",
+      "test_id": "TEST-F00-RWD-001",
+      "expected_observable": "mobile width下 clarification / compare無必要 horizontal scroll。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-025",
+      "function_id": "F00",
+      "criterion": "reduced-motion preference被 Shell animation尊重。",
+      "test_id": "TEST-F00-AC-025",
+      "expected_observable": "reduced-motion preference被 Shell animation尊重。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-026",
+      "function_id": "F00",
+      "criterion": "Create / clarification / App Ready / recovery / share / remix / correction入口可量測。",
+      "test_id": "TEST-F00-AC-026",
+      "expected_observable": "Create / clarification / App Ready / recovery / share / remix / correction入口可量測。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-027",
+      "function_id": "F00",
+      "criterion": "telemetry不記 every keystroke。",
+      "test_id": "TEST-F00-AC-027",
+      "expected_observable": "telemetry不記 every keystroke。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-028",
+      "function_id": "F00",
+      "criterion": "App Ready不被 telemetry命名為 semantic success。",
+      "test_id": "TEST-F00-AC-028",
+      "expected_observable": "App Ready不被 telemetry命名為 semantic success。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-029",
+      "function_id": "F00",
+      "criterion": "每個被F03 accepted/admitted的Runtime interaction都進入logical global processing presentation；同一render frame內完成而未paint完整loading frame不算failure。",
+      "test_id": "TEST-F00-029",
+      "expected_observable": "admitted interaction建立processing presentation state，且不為極快操作強迫額外paint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-030",
+      "function_id": "F00",
+      "criterion": "checkpoint-derived Progress %只反映已完成planned checkpoints，且只有commit成立後才可呈現100%。",
+      "test_id": "TEST-F00-030",
+      "expected_observable": "progress單調且truthful；無可靠plan不顯示百分比；commit-ready不顯示100%。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-031",
+      "function_id": "F00",
+      "criterion": "Runtime processing不得為了讓loading可見而人工延長action。",
+      "test_id": "TEST-F00-031",
+      "expected_observable": "action完成後立即離開processing，沒有minimum-display delay阻擋commit outcome。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-032",
+      "function_id": "F00",
+      "criterion": "Runtime Hard Timeout轉交F12；integrity成立時回安全S03 last-known-good App，無法證明integrity時進terminal safe-state。",
+      "test_id": "TEST-F00-032",
+      "expected_observable": "safe timeout回APP_CURRENT；integrity uncertainty不render正常Runtime並進terminal safe-state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-001",
+      "function_id": "F01",
+      "criterion": "User fact 不被 LLM proposal 覆蓋。",
+      "test_id": "TEST-F01-001",
+      "expected_observable": "User fact 不被 LLM proposal 覆蓋。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-002",
+      "function_id": "F01",
+      "criterion": "required missing + no safe default → NEEDS_CLARIFICATION。",
+      "test_id": "TEST-F01-CP-001",
+      "expected_observable": "required missing + no safe default → NEEDS_CLARIFICATION。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-003",
+      "function_id": "F01",
+      "criterion": "money/permission/cost rule 未 USER_EXPLICIT → NEEDS_CLARIFICATION。",
+      "test_id": "TEST-F01-CP-003",
+      "expected_observable": "money/permission/cost rule 未 USER_EXPLICIT → NEEDS_CLARIFICATION。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-004",
+      "function_id": "F01",
+      "criterion": "material proposal 必須 visible；pending DEFAULT/PROPOSAL 依 F01-DATA-004A 投影可信 edit-shape（六種 type、ENUM/LIST 完整 alternatives、RECORD OPEN_JSON_RECORD_V1），缺少或錯配 metadata 必須 fail closed，server 保持 source/version/trusted validation。",
+      "test_id": "TEST-F01-004",
+      "expected_observable": "F01 create/answers response 的 material pending 假設含型別一致的 expected_value_type/question_type；ENUM/LIST options 與 canonical alternatives native-equal、RECORD open record shape；缺失/錯配時拒絕輸出可用假設；User EDIT 維持原生型別與可信 F01 provenance/version 檢查，無 scope/schema guess。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "API",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-005",
+      "function_id": "F01",
+      "criterion": "answered question 不重問，除非 upstream condition 改變。",
+      "test_id": "TEST-F01-005",
+      "expected_observable": "answered question 不重問，除非 upstream condition 改變。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-006",
+      "function_id": "F01",
+      "criterion": "same Envelope + policy version → same decision。",
+      "test_id": "TEST-F01-006",
+      "expected_observable": "same Envelope + policy version → same decision。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-007",
+      "function_id": "F01",
+      "criterion": "Prompt B / CapabilityRequirement finalization不得在 Clarification Gate pass 前執行；ResolvedIntent durable projection只含已鎖定 truth，DO_NOT_PERSIST不得 durable。",
+      "test_id": "TEST-F01-007",
+      "expected_observable": "Gate未 pass時無 Prompt B / final CapabilityRequirement；Gate pass後 ResolvedIntent依 F01-DATA-005 exact projection持久化，DO_NOT_PERSIST只存在 request-scoped EphemeralResolvedContext。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-008",
+      "function_id": "F01",
+      "criterion": "LLM只可輸出 bounded semantic CapabilityHint；unknown interaction class / Capability ID注入不得形成 final CapabilityRequirement或 Blueprint CapabilityRef。",
+      "test_id": "TEST-F01-008",
+      "expected_observable": "CapabilityHint通過 machine invariant後由 deterministic extractor產生 stable requirement_id；hint內 Capability ID、unknown interaction_class 或未 resolved MATERIAL source均 fail closed，F01不自創 CapabilityRef。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-009",
+      "function_id": "F01",
+      "criterion": "Unsupported / External 不 fake local success。",
+      "test_id": "TEST-F01-AC-009",
+      "expected_observable": "Unsupported / External 不 fake local success。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-010",
+      "function_id": "F01",
+      "criterion": "Prompt B output 100% 經 F02。",
+      "test_id": "TEST-F01-010",
+      "expected_observable": "Prompt B output 100% 經 F02。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-011",
+      "function_id": "F01",
+      "criterion": "F02 rejection不可 bypass；每個 F02 error只依 F01-RQ-008A authoritative class決定 recompose/recovery，security/resource/integrity terminal不得被普通 retry降級。",
+      "test_id": "TEST-F01-AC-011",
+      "expected_observable": "F02 REJECTED永遠不成為 VALIDATED；F02-ERR-012/013不 retry，ERR-011不 same-body retry，ERR-015不 recompose；fixable errors只走鎖定的 bounded path。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-012",
+      "function_id": "F01",
+      "criterion": "validation-driven recompose整個 compile logical operation最多 1 次；CAPABILITY_FIXABLE先 refresh F04，任何 class不得重設第二份 budget。",
+      "test_id": "TEST-F01-012",
+      "expected_observable": "所有 fixable rejection合計最多觸發一次 recompose；第二次 rejection停止並回 canonical F01 failure/recovery，不因換 error class再多一次。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-013",
+      "function_id": "F01",
+      "criterion": "POST /intents network/same-body retry與 expired-IN_PROGRESS takeover不得 duplicate intent；retryable failure重用同一 idempotency logical operation與 intent_id。",
+      "test_id": "TEST-F01-API-001",
+      "expected_observable": "FAILED_RETRYABLE可 CAS成新 attempt；有效 IN_PROGRESS回409；expired lease只有一個 takeover winner；所有成功/失敗重試仍只存在一個 logical intent/result_ref，late attempt不可覆寫。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-014",
+      "function_id": "F01",
+      "criterion": "POST /compile retry不 duplicate logical compile；FAILED_RETRYABLE / expired-IN_PROGRESS依 canonical attempt lease/CAS重試，SUCCEEDED replay同一 validated result。",
+      "test_id": "TEST-F01-AC-014",
+      "expected_observable": "同 key+digest只有一個 logical compile；retry/takeover只增加 attempt_no；late attempt commit被拒絕；SUCCEEDED由 durable validation/result_ref重建同 content_hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-015",
+      "function_id": "F01",
+      "criterion": "stale intent_version → 409。",
+      "test_id": "TEST-F01-API-002",
+      "expected_observable": "stale intent_version → 409。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-016",
+      "function_id": "F01",
+      "criterion": "所有 F01 error envelope永遠有 request_id + stable code；intent不存在與 anonymous continuity mismatch使用相同404/F01-ERR-015，不洩漏跨 anonymous identity存在性。",
+      "test_id": "TEST-F01-API-003",
+      "expected_observable": "malformed/missing identity有 stable 400 code；not-found/mismatch均為不可區分的404 F01-ERR-015 envelope；details無 provider stack/ownership leak。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-017",
+      "function_id": "F01",
+      "criterion": "Client 無法送 resolved_intent 繞過 policy。",
+      "test_id": "TEST-F01-SEC-007",
+      "expected_observable": "Client 無法送 resolved_intent 繞過 policy。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-018",
+      "function_id": "F01",
+      "criterion": "Provider secret 不出 Client / Blueprint。",
+      "test_id": "TEST-F01-AC-018",
+      "expected_observable": "Provider secret 不出 Client / Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-019",
+      "function_id": "F01",
+      "criterion": "provider retry bounded。",
+      "test_id": "TEST-F01-019",
+      "expected_observable": "provider retry bounded。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-020",
+      "function_id": "F01",
+      "criterion": "timeout保留已建立 Intent與 logical operation identity，轉 FAILED_RETRYABLE後可用同 Idempotency-Key安全 retry；stale/late attempt不得覆寫。",
+      "test_id": "TEST-F01-AC-020",
+      "expected_observable": "504後 intent_id/result_ref不丟失；idempotency row不是永久IN_PROGRESS也不是FAILED_TERMINAL；retry取得新attempt並沿用同 intent，late completion fail closed。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-021",
+      "function_id": "F01",
+      "criterion": "compile failure 不破壞 existing Blueprint。",
+      "test_id": "TEST-F01-021",
+      "expected_observable": "compile failure 不破壞 existing Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-022",
+      "function_id": "F01",
+      "criterion": "prompt/schema/registry/model adapter version 可追。",
+      "test_id": "TEST-F01-AC-022",
+      "expected_observable": "prompt/schema/registry/model adapter version 可追。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-023",
+      "function_id": "F01",
+      "criterion": "Raw Intent 不要求進 telemetry。",
+      "test_id": "TEST-F01-AC-023",
+      "expected_observable": "Raw Intent 不要求進 telemetry。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-024",
+      "function_id": "F01",
+      "criterion": "token/cost/latency 可按 compiler_run 量測。",
+      "test_id": "TEST-F01-AC-024",
+      "expected_observable": "token/cost/latency 可按 compiler_run 量測。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-001",
+      "function_id": "F02",
+      "criterion": "相同 logical Blueprint canonicalize 後 byte-for-byte 相同。",
+      "test_id": "TEST-F02-001",
+      "expected_observable": "相同 logical Blueprint canonicalize 後 byte-for-byte 相同。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-002",
+      "function_id": "F02",
+      "criterion": "相同 canonical Blueprint 產生相同 SHA-256 content_hash。",
+      "test_id": "TEST-F02-002",
+      "expected_observable": "相同 canonical Blueprint 產生相同 SHA-256 content_hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-003",
+      "function_id": "F02",
+      "criterion": "任一 canonical content change 改變 content_hash。",
+      "test_id": "TEST-F02-003",
+      "expected_observable": "任一 canonical content change 改變 content_hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-004",
+      "function_id": "F02",
+      "criterion": "invalid / unknown top-level executable key 被拒絕。",
+      "test_id": "TEST-F02-004",
+      "expected_observable": "invalid / unknown top-level executable key 被拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-005",
+      "function_id": "F02",
+      "criterion": "unknown capability ID/version 100% 不得 admission。",
+      "test_id": "TEST-F02-005",
+      "expected_observable": "unknown capability ID/version 100% 不得 admission。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-006",
+      "function_id": "F02",
+      "criterion": "invalid state / binding / rule / action reference 100% 不得 admission。",
+      "test_id": "TEST-F02-006",
+      "expected_observable": "invalid state / binding / rule / action reference 100% 不得 admission。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-007",
+      "function_id": "F02",
+      "criterion": "node / derived rule cycles 被拒絕。",
+      "test_id": "TEST-F02-007",
+      "expected_observable": "node / derived rule cycles 被拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-008",
+      "function_id": "F02",
+      "criterion": "admitted Blueprint 可保存為 immutable blueprint_content。",
+      "test_id": "TEST-F02-AC-008",
+      "expected_observable": "admitted Blueprint 可保存為 immutable blueprint_content。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-009",
+      "function_id": "F02",
+      "criterion": "arbitrary JS / eval / dynamic import 無法成為 executable path。",
+      "test_id": "TEST-F02-009",
+      "expected_observable": "arbitrary JS / eval / dynamic import 無法成為 executable path。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-010",
+      "function_id": "F02",
+      "criterion": "超過 hard resource ceiling 在 Runtime 前被拒絕。",
+      "test_id": "TEST-F02-010",
+      "expected_observable": "超過 hard resource ceiling 在 Runtime 前被拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-011",
+      "function_id": "F02",
+      "criterion": "disabled / revoked / incompatible capability 不得 admission / execute。",
+      "test_id": "TEST-F02-011",
+      "expected_observable": "disabled / revoked / incompatible capability 不得 admission / execute。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-012",
+      "function_id": "F02",
+      "criterion": "Client supplied trust flag 無法繞過 validation。",
+      "test_id": "TEST-F02-012",
+      "expected_observable": "Client supplied trust flag 無法繞過 validation。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-013",
+      "function_id": "F02",
+      "criterion": "validation failure 不破壞既有 validated Blueprint。",
+      "test_id": "TEST-F02-AC-013",
+      "expected_observable": "validation failure 不破壞既有 validated Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-014",
+      "function_id": "F02",
+      "criterion": "rejected candidate body 不成為 executable durable artifact。",
+      "test_id": "TEST-F02-AC-014",
+      "expected_observable": "rejected candidate body 不成為 executable durable artifact。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-015",
+      "function_id": "F02",
+      "criterion": "PARTIALLY_SUPPORTED 必須有 explicit user-visible degradation metadata。",
+      "test_id": "TEST-F02-015",
+      "expected_observable": "PARTIALLY_SUPPORTED 必須有 explicit user-visible degradation metadata。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-016",
+      "function_id": "F02",
+      "criterion": "semantic core not preserved 不得 admission 為 partial success。",
+      "test_id": "TEST-F02-AC-016",
+      "expected_observable": "semantic core not preserved 不得 admission 為 partial success。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-017",
+      "function_id": "F02",
+      "criterion": "result surface 有 explicit outputs，不需 F16 從 UI tree 猜結果。",
+      "test_id": "TEST-F02-017",
+      "expected_observable": "result surface 有 explicit outputs，不需 F16 從 UI tree 猜結果。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-018",
+      "function_id": "F02",
+      "criterion": "Runtime Instance state change 不改 Blueprint hash。",
+      "test_id": "TEST-F02-AC-018",
+      "expected_observable": "Runtime Instance state change 不改 Blueprint hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-019",
+      "function_id": "F02",
+      "criterion": "每次 validation 可追蹤 deterministic candidate_digest / stage / error / trace。",
+      "test_id": "TEST-F02-AC-019",
+      "expected_observable": "同一 exact candidate payload bytes 產生相同 sha256:<hex> candidate_digest；invalid candidate 仍可用 digest + stage + error + trace 追蹤，且不保存 raw Blueprint body。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-020",
+      "function_id": "F02",
+      "criterion": "validation evidence 不需要 telemetry raw Blueprint body。",
+      "test_id": "TEST-F02-AC-020",
+      "expected_observable": "validation evidence 不需要 telemetry raw Blueprint body。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-021",
+      "function_id": "F02",
+      "criterion": "admitted Blueprint 可追到 admitting validation_run。",
+      "test_id": "TEST-F02-021",
+      "expected_observable": "admitted Blueprint 可追到 admitting validation_run。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F02-AC-022",
+      "function_id": "F02",
+      "criterion": "trust revoke / incompatible 可追蹤但不 mutation Blueprint body。",
+      "test_id": "TEST-F02-AC-022",
+      "expected_observable": "trust revoke / incompatible 可追蹤但不 mutation Blueprint body。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-001",
+      "function_id": "F03",
+      "criterion": "Valid admitted Blueprint 可 deterministic hydrate 到 READY。",
+      "test_id": "TEST-F03-001",
+      "expected_observable": "Valid admitted Blueprint 可 deterministic hydrate 到 READY。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-002",
+      "function_id": "F03",
+      "criterion": "normal interaction 0 LLM call。",
+      "test_id": "TEST-F03-AC-002",
+      "expected_observable": "normal interaction 0 LLM call。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-003",
+      "function_id": "F03",
+      "criterion": "normal local interaction 不需 server round trip。",
+      "test_id": "TEST-F03-AC-003",
+      "expected_observable": "normal local interaction 不需 server round trip。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-004",
+      "function_id": "F03",
+      "criterion": "state mutation 後 affected derived/rules 正確 recompute。",
+      "test_id": "TEST-F03-004",
+      "expected_observable": "state mutation 後 affected derived/rules 正確 recompute。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-005",
+      "function_id": "F03",
+      "criterion": "FIFO event 順序固定，無 parallel state writer。",
+      "test_id": "TEST-F03-005",
+      "expected_observable": "FIFO event 順序固定，無 parallel state writer。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-006",
+      "function_id": "F03",
+      "criterion": "Action 全成功才 commit；step failure 無 partial state。",
+      "test_id": "TEST-F03-006",
+      "expected_observable": "Action 全成功才 commit；step failure 無 partial state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-007",
+      "function_id": "F03",
+      "criterion": "emitted nested event 只 queue，不 re-enter current Action。",
+      "test_id": "TEST-F03-007",
+      "expected_observable": "emitted nested event 只 queue，不 re-enter current Action。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-008",
+      "function_id": "F03",
+      "criterion": "Reset 回 Blueprint initial mutable state。",
+      "test_id": "TEST-F03-AC-008",
+      "expected_observable": "Reset 回 Blueprint initial mutable state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-009",
+      "function_id": "F03",
+      "criterion": "Result 由 result.outputs 評估，不讀 DOM。",
+      "test_id": "TEST-F03-009",
+      "expected_observable": "Result 由 result.outputs 評估，不讀 DOM。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-010",
+      "function_id": "F03",
+      "criterion": "pure expression 同 inputs → 同 typed output。",
+      "test_id": "TEST-F03-010",
+      "expected_observable": "pure expression 同 inputs → 同 typed output。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-011",
+      "function_id": "F03",
+      "criterion": "same RNG seed + consumption order → same sequence。",
+      "test_id": "TEST-F03-011",
+      "expected_observable": "same RNG seed + consumption order → same sequence。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-012",
+      "function_id": "F03",
+      "criterion": "Timer 以 monotonic elapsed 為 truth。",
+      "test_id": "TEST-F03-012",
+      "expected_observable": "Timer 以 monotonic elapsed 為 truth。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-013",
+      "function_id": "F03",
+      "criterion": "background-tab delay 不造成 tick-count drift。",
+      "test_id": "TEST-F03-AC-013",
+      "expected_observable": "background-tab delay 不造成 tick-count drift。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-014",
+      "function_id": "F03",
+      "criterion": "Blueprint 無法注入 runtime handler / JS。",
+      "test_id": "TEST-F03-AC-014",
+      "expected_observable": "Blueprint 無法注入 runtime handler / JS。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-015",
+      "function_id": "F03",
+      "criterion": "Node render failure 不造成整頁 White Screen。",
+      "test_id": "TEST-F03-015",
+      "expected_observable": "Node render failure 不造成整頁 White Screen。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-016",
+      "function_id": "F03",
+      "criterion": "Action failure rollback current transaction。",
+      "test_id": "TEST-F03-AC-016",
+      "expected_observable": "Action failure rollback current transaction。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-017",
+      "function_id": "F03",
+      "criterion": "event loop / queue bounded。",
+      "test_id": "TEST-F03-017",
+      "expected_observable": "event loop / queue bounded。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-018",
+      "function_id": "F03",
+      "criterion": "revoked / incompatible Blueprint 不進 READY。",
+      "test_id": "TEST-F03-018",
+      "expected_observable": "revoked / incompatible Blueprint 不進 READY。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-019",
+      "function_id": "F03",
+      "criterion": "Instance dispose 或 dynamic repeat clone de-materialize 後，舊 timers/subscriptions/late callback 不再改 state；同 coordinate regrow 必須 fresh initialize，不復活舊 lifecycle state。",
+      "test_id": "TEST-F03-019",
+      "expected_observable": "removed clone 先失效並清理 host-owned resources；舊 lifecycle generation 的 late callback/event 被 discard；同 coordinate regrow 建立 fresh capability-local lifecycle。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-020",
+      "function_id": "F03",
+      "criterion": "Runtime 不可放寬 F02/F04 resource ceiling。",
+      "test_id": "TEST-F03-AC-020",
+      "expected_observable": "Runtime 不可放寬 F02/F04 resource ceiling。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-021",
+      "function_id": "F03",
+      "criterion": "Instance state mutation 不改 Blueprint content_hash。",
+      "test_id": "TEST-F03-021",
+      "expected_observable": "Instance state mutation 不改 Blueprint content_hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-022",
+      "function_id": "F03",
+      "criterion": "Runtime 不逐 click 寫 PostgreSQL。",
+      "test_id": "TEST-F03-022",
+      "expected_observable": "Runtime 不逐 click 寫 PostgreSQL。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-023",
+      "function_id": "F03",
+      "criterion": "capability-local state 與 Blueprint state 分離。",
+      "test_id": "TEST-F03-AC-023",
+      "expected_observable": "capability-local state 與 Blueprint state 分離。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-024",
+      "function_id": "F03",
+      "criterion": "Result sensitivity 可供 F16 persistence policy。",
+      "test_id": "TEST-F03-AC-024",
+      "expected_observable": "Result sensitivity 可供 F16 persistence policy。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-025",
+      "function_id": "F03",
+      "criterion": "Runtime failure 保留最近一次完整 committed state。",
+      "test_id": "TEST-F03-AC-025",
+      "expected_observable": "Runtime failure 保留最近一次完整 committed state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-026",
+      "function_id": "F03",
+      "criterion": "action commit / rollback / fatal failure 可 trace。",
+      "test_id": "TEST-F03-AC-026",
+      "expected_observable": "action commit / rollback / fatal failure 可 trace。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-027",
+      "function_id": "F03",
+      "criterion": "node isolation 帶 capability/node/error context。",
+      "test_id": "TEST-F03-AC-027",
+      "expected_observable": "node isolation 帶 capability/node/error context。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-028",
+      "function_id": "F03",
+      "criterion": "telemetry failure 不阻斷 Runtime。",
+      "test_id": "TEST-F03-AC-028",
+      "expected_observable": "telemetry failure 不阻斷 Runtime。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-029",
+      "function_id": "F03",
+      "criterion": "evidence 不要求 raw Runtime state。",
+      "test_id": "TEST-F03-AC-029",
+      "expected_observable": "evidence 不要求 raw Runtime state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-030",
+      "function_id": "F03",
+      "criterion": "每個admitted Runtime interaction建立唯一operation token，terminal token永不重用或reopen。",
+      "test_id": "TEST-F03-030",
+      "expected_observable": "每次admission取得不同token，terminal transition後token不可再次active。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-031",
+      "function_id": "F03",
+      "criterion": "checkpoint progress保持單調、truthful、operation-scoped；無可靠checkpoint plan時不造假百分比。",
+      "test_id": "TEST-F03-031",
+      "expected_observable": "只接受當前token plan內的單調完成checkpoint，無plan只回stage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-032",
+      "function_id": "F03",
+      "criterion": "Hard Timeout不留下partial state、staged effect或未提交event；committed store保持原樣。",
+      "test_id": "TEST-F03-032",
+      "expected_observable": "working transaction、effects與events全部discard，last committed store byte-for-byte unchanged。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-033",
+      "function_id": "F03",
+      "criterion": "closed/stale token與late completion永遠不得commit。",
+      "test_id": "TEST-F03-033",
+      "expected_observable": "所有late/stale completion被discard且不改變store、UI或recovery outcome。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-034",
+      "function_id": "F03",
+      "criterion": "同一recovery episode的每次Retry都建立新operation token。",
+      "test_id": "TEST-F03-034",
+      "expected_observable": "episode ID保持，operation token每次更新且舊token維持closed。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-035",
+      "function_id": "F03",
+      "criterion": "hard deadline跨越後，即使synchronous handler稍後返回，pre-commit guard仍拒絕commit。",
+      "test_id": "TEST-F03-035",
+      "expected_observable": "handler return後pre-commit產生F03-ERR-021並discard transaction。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-036",
+      "function_id": "F03",
+      "criterion": "Runtime integrity無法證明時產生F03-ERR-018並停止affected execution path，不得回正常Runtime。",
+      "test_id": "TEST-F03-036",
+      "expected_observable": "F03-ERR-018取代recoverable timeout path並停止affected execution。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-037",
+      "function_id": "F03",
+      "criterion": "F03 v2 Evidence必須分離 runtime_status與operation_status；不得再以runtime_stage混合兩種語意。",
+      "test_id": "TEST-F03-037",
+      "expected_observable": "F03 v2 events只接受runtime_status / operation_status的各自合法 enum；runtime_stage被拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F03-AC-038",
+      "function_id": "F03",
+      "criterion": "只有integrity_status=PROVEN可進normal timeout recovery；non-PROVEN必須走F03-ERR-018 fail-closed，且discard_reason只表示stale/expired operation原因。",
+      "test_id": "TEST-F03-038",
+      "expected_observable": "UNKNOWN / ASSURANCE_DEGRADED / CORRUPTED均不得回正常Runtime；discard_reason不接受integrity failure語意。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-001",
+      "function_id": "F04",
+      "criterion": "Canonical source 可 deterministic 產生 Compiler / Validator / Runtime / Compatibility artifacts。",
+      "test_id": "TEST-F04-AC-001",
+      "expected_observable": "Canonical source 可 deterministic 產生 Compiler / Validator / Runtime / Compatibility artifacts。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-002",
+      "function_id": "F04",
+      "criterion": "同一 registry_version 若 source digest 改變，build 必須 fail。",
+      "test_id": "TEST-F04-002",
+      "expected_observable": "同一 registry_version 若 source digest 改變，build 必須 fail。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-003",
+      "function_id": "F04",
+      "criterion": "duplicate capability ID+version 必須 fail build。",
+      "test_id": "TEST-F04-003",
+      "expected_observable": "duplicate capability ID+version 必須 fail build。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-004",
+      "function_id": "F04",
+      "criterion": "unknown capability / version 必須被 Validator 拒絕。",
+      "test_id": "TEST-F04-004",
+      "expected_observable": "unknown capability / version 必須被 Validator 拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-005",
+      "function_id": "F04",
+      "criterion": "ENABLED capability 必須存在 trusted runtime handler。",
+      "test_id": "TEST-F04-005",
+      "expected_observable": "ENABLED capability 必須存在 trusted runtime handler。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-006",
+      "function_id": "F04",
+      "criterion": "Compiler / Validator / Runtime deployment 使用同 registry version/digest。",
+      "test_id": "TEST-F04-AC-006",
+      "expected_observable": "Compiler / Validator / Runtime deployment 使用同 registry version/digest。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-007",
+      "function_id": "F04",
+      "criterion": "dependency cycle 必須 fail build。",
+      "test_id": "TEST-F04-007",
+      "expected_observable": "dependency cycle 必須 fail build。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-008",
+      "function_id": "F04",
+      "criterion": "Blueprint 無法指定 JS / module path / dynamic handler。",
+      "test_id": "TEST-F04-008",
+      "expected_observable": "Blueprint 無法指定 JS / module path / dynamic handler。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-009",
+      "function_id": "F04",
+      "criterion": "disabled / revoked capability 不得執行。",
+      "test_id": "TEST-F04-009",
+      "expected_observable": "disabled / revoked capability 不得執行。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-010",
+      "function_id": "F04",
+      "criterion": "Card 不可突破 platform global resource ceiling。",
+      "test_id": "TEST-F04-AC-010",
+      "expected_observable": "Card 不可突破 platform global resource ceiling。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-011",
+      "function_id": "F04",
+      "criterion": "required dependency 不可用時 dependent capability 不可假裝 available。",
+      "test_id": "TEST-F04-AC-011",
+      "expected_observable": "required dependency 不可用時 dependent capability 不可假裝 available。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-012",
+      "function_id": "F04",
+      "criterion": "Coverage Result 對每個 material requirement 都有 COVERED / DEGRADED / UNSUPPORTED / EXTERNAL_REQUIRED。",
+      "test_id": "TEST-F04-012",
+      "expected_observable": "Coverage Result 對每個 material requirement 都有 COVERED / DEGRADED / UNSUPPORTED / EXTERNAL_REQUIRED。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-013",
+      "function_id": "F04",
+      "criterion": "PARTIAL degradation 必須標記是否保留 semantic core。",
+      "test_id": "TEST-F04-AC-013",
+      "expected_observable": "PARTIAL degradation 必須標記是否保留 semantic core。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-014",
+      "function_id": "F04",
+      "criterion": "不保留 semantic core 時不得回 FULL / PARTIAL success。",
+      "test_id": "TEST-F04-014",
+      "expected_observable": "不保留 semantic core 時不得回 FULL / PARTIAL success。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-015",
+      "function_id": "F04",
+      "criterion": "LLM 建議 unknown capability 不得進 Blueprint。",
+      "test_id": "TEST-F04-AC-015",
+      "expected_observable": "LLM 建議 unknown capability 不得進 Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-016",
+      "function_id": "F04",
+      "criterion": "Optional capability 缺失不能阻斷 Release 1 Core Loop。",
+      "test_id": "TEST-F04-AC-016",
+      "expected_observable": "Optional capability 缺失不能阻斷 Release 1 Core Loop。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-017",
+      "function_id": "F04",
+      "criterion": "selected / rejected / gap / mismatch 可形成 traceable evidence。",
+      "test_id": "TEST-F04-AC-017",
+      "expected_observable": "selected / rejected / gap / mismatch 可形成 traceable evidence。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-018",
+      "function_id": "F04",
+      "criterion": "evidence 可辨識 capability version + registry version。",
+      "test_id": "TEST-F04-AC-018",
+      "expected_observable": "evidence 可辨識 capability version + registry version。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F04-AC-019",
+      "function_id": "F04",
+      "criterion": "Registry evidence 不要求 raw user intent。",
+      "test_id": "TEST-F04-AC-019",
+      "expected_observable": "Registry evidence 不要求 raw user intent。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-001",
+      "function_id": "F05",
+      "criterion": "validated compatible Blueprint可建立 Durable Share。",
+      "test_id": "TEST-F05-001",
+      "expected_observable": "validated compatible Blueprint可建立 Durable Share。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-002",
+      "function_id": "F05",
+      "criterion": "Candidate / revoked / incompatible Blueprint不可建立 production share。",
+      "test_id": "TEST-F05-002",
+      "expected_observable": "Candidate / revoked / incompatible Blueprint不可建立 production share。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-003",
+      "function_id": "F05",
+      "criterion": "duplicate submit with same Idempotency-Key不建立 duplicate logical share。",
+      "test_id": "TEST-F05-003",
+      "expected_observable": "duplicate submit with same Idempotency-Key不建立 duplicate logical share。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-004",
+      "function_id": "F05",
+      "criterion": "Share failure不破壞 current App。",
+      "test_id": "TEST-F05-AC-004",
+      "expected_observable": "Share failure不破壞 current App。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-005",
+      "function_id": "F05",
+      "criterion": "public Share URL不含 Runtime input/result/raw prompt。",
+      "test_id": "TEST-F05-005",
+      "expected_observable": "public Share URL不含 Runtime input/result/raw prompt。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-006",
+      "function_id": "F05",
+      "criterion": "Recipient不需 install。",
+      "test_id": "TEST-F05-AC-006",
+      "expected_observable": "Recipient不需 install。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-007",
+      "function_id": "F05",
+      "criterion": "Recipient First Value前不需 account。",
+      "test_id": "TEST-F05-AC-007",
+      "expected_observable": "Recipient First Value前不需 account。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-008",
+      "function_id": "F05",
+      "criterion": "valid ACTIVE share解析到原 immutable Blueprint hash。",
+      "test_id": "TEST-F05-008",
+      "expected_observable": "valid ACTIVE share解析到原 immutable Blueprint hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-009",
+      "function_id": "F05",
+      "criterion": "Share Restore不呼叫 LLM。",
+      "test_id": "TEST-F05-009",
+      "expected_observable": "Share Restore不呼叫 LLM。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-010",
+      "function_id": "F05",
+      "criterion": "Recipient建立fresh Runtime Instance，不取得 Creator Runtime state。",
+      "test_id": "TEST-F05-010",
+      "expected_observable": "Recipient建立fresh Runtime Instance，不取得 Creator Runtime state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-011",
+      "function_id": "F05",
+      "criterion": "revoked/expired share不 hydrate App。",
+      "test_id": "TEST-F05-011",
+      "expected_observable": "revoked/expired share不 hydrate App。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-012",
+      "function_id": "F05",
+      "criterion": "Runtime/Registry incompatible時不 silently reinterpret Blueprint。",
+      "test_id": "TEST-F05-012",
+      "expected_observable": "Runtime/Registry incompatible時不 silently reinterpret Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-013",
+      "function_id": "F05",
+      "criterion": "Blueprint fetch cache miss仍可由 durable source restore。",
+      "test_id": "TEST-F05-AC-013",
+      "expected_observable": "Blueprint fetch cache miss仍可由 durable source restore。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-014",
+      "function_id": "F05",
+      "criterion": "CDN中存在 Blueprint body不能繞過 revoked trust gate。",
+      "test_id": "TEST-F05-014",
+      "expected_observable": "CDN中存在 Blueprint body不能繞過 revoked trust gate。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-015",
+      "function_id": "F05",
+      "criterion": "Copy failure不使 Share失效。",
+      "test_id": "TEST-F05-AC-015",
+      "expected_observable": "Copy failure不使 Share失效。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-016",
+      "function_id": "F05",
+      "criterion": "Restore transient failure可 retry且保留 Share reference。",
+      "test_id": "TEST-F05-016",
+      "expected_observable": "Restore transient failure可 retry且保留 Share reference。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-017",
+      "function_id": "F05",
+      "criterion": "Share not found / expired / revoked有 humanized next action。",
+      "test_id": "TEST-F05-AC-017",
+      "expected_observable": "Share not found / expired / revoked有 humanized next action。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-018",
+      "function_id": "F05",
+      "criterion": "Shared App READY後可進 Remix。",
+      "test_id": "TEST-F05-018",
+      "expected_observable": "Shared App READY後可進 Remix。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-019",
+      "function_id": "F05",
+      "criterion": "share create/open/restore ready/failure可量測。",
+      "test_id": "TEST-F05-AC-019",
+      "expected_observable": "share create/open/restore ready/failure可量測。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-020",
+      "function_id": "F05",
+      "criterion": "telemetry不要求 Runtime input/result。",
+      "test_id": "TEST-F05-AC-020",
+      "expected_observable": "telemetry不要求 Runtime input/result。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-021",
+      "function_id": "F05",
+      "criterion": "Share Open與Restore Ready可區分，不能把 click當成功使用。",
+      "test_id": "TEST-F05-AC-021",
+      "expected_observable": "Share Open與Restore Ready可區分，不能把 click當成功使用。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-001",
+      "function_id": "F06",
+      "criterion": "REFINE / REMIX都必須有 source Blueprint hash。",
+      "test_id": "TEST-F06-AC-001",
+      "expected_observable": "REFINE / REMIX都必須有 source Blueprint hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-002",
+      "function_id": "F06",
+      "criterion": "source Blueprint永遠不被 mutation。",
+      "test_id": "TEST-F06-002",
+      "expected_observable": "source Blueprint永遠不被 mutation。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-003",
+      "function_id": "F06",
+      "criterion": "Runtime state change不建立 lineage。",
+      "test_id": "TEST-F06-003",
+      "expected_observable": "Runtime state change不建立 lineage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-004",
+      "function_id": "F06",
+      "criterion": "Semantic Delta不能作 executable Blueprint patch。",
+      "test_id": "TEST-F06-004",
+      "expected_observable": "Semantic Delta不能作 executable Blueprint patch。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-005",
+      "function_id": "F06",
+      "criterion": "child永遠完整經 F02 Validation。",
+      "test_id": "TEST-F06-005",
+      "expected_observable": "child永遠完整經 F02 Validation。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-006",
+      "function_id": "F06",
+      "criterion": "validated child內容不同時產生新 content_hash。",
+      "test_id": "TEST-F06-AC-006",
+      "expected_observable": "validated child內容不同時產生新 content_hash。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-007",
+      "function_id": "F06",
+      "criterion": "REFINE / REMIX建立正確 relation_type lineage。",
+      "test_id": "TEST-F06-007",
+      "expected_observable": "REFINE / REMIX建立正確 relation_type lineage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-008",
+      "function_id": "F06",
+      "criterion": "same source/new hash不建立 self-lineage。",
+      "test_id": "TEST-F06-008",
+      "expected_observable": "same source/new hash不建立 self-lineage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-009",
+      "function_id": "F06",
+      "criterion": "MUST_PRESERVE requirement衝突時必須 clarification。",
+      "test_id": "TEST-F06-009",
+      "expected_observable": "MUST_PRESERVE requirement衝突時必須 clarification。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-010",
+      "function_id": "F06",
+      "criterion": "failure不破壞 source App。",
+      "test_id": "TEST-F06-010",
+      "expected_observable": "failure不破壞 source App。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-011",
+      "function_id": "F06",
+      "criterion": "child preview前 source App仍可返回。",
+      "test_id": "TEST-F06-AC-011",
+      "expected_observable": "child preview前 source App仍可返回。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-012",
+      "function_id": "F06",
+      "criterion": "Keep Previous不 mutation/delete source。",
+      "test_id": "TEST-F06-AC-012",
+      "expected_observable": "Keep Previous不 mutation/delete source。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-013",
+      "function_id": "F06",
+      "criterion": "Adjust Again保留 change context。",
+      "test_id": "TEST-F06-AC-013",
+      "expected_observable": "Adjust Again保留 change context。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-014",
+      "function_id": "F06",
+      "criterion": "一般 Refine/Remix 不自動 carry Runtime input。",
+      "test_id": "TEST-F06-014",
+      "expected_observable": "一般 Refine/Remix 不自動 carry Runtime input。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-015",
+      "function_id": "F06",
+      "criterion": "F06重用 F01 lifecycle，不建立第二套 compiler endpoint。",
+      "test_id": "TEST-F06-015",
+      "expected_observable": "F06重用 F01 lifecycle，不建立第二套 compiler endpoint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-016",
+      "function_id": "F06",
+      "criterion": "Remix share_id與 source hash不一致時拒絕。",
+      "test_id": "TEST-F06-016",
+      "expected_observable": "Remix share_id與 source hash不一致時拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-017",
+      "function_id": "F06",
+      "criterion": "Client不能用 arbitrary Blueprint body當 source。",
+      "test_id": "TEST-F06-AC-017",
+      "expected_observable": "Client不能用 arbitrary Blueprint body當 source。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-018",
+      "function_id": "F06",
+      "criterion": "retry不重複建立 logical intent / lineage。",
+      "test_id": "TEST-F06-018",
+      "expected_observable": "retry不重複建立 logical intent / lineage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-019",
+      "function_id": "F06",
+      "criterion": "sensitive Runtime input不因 change flow自動送 Model。",
+      "test_id": "TEST-F06-019",
+      "expected_observable": "sensitive Runtime input不因 change flow自動送 Model。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-020",
+      "function_id": "F06",
+      "criterion": "Refine與Remix可分開量測。",
+      "test_id": "TEST-F06-AC-020",
+      "expected_observable": "Refine與Remix可分開量測。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-021",
+      "function_id": "F06",
+      "criterion": "child generated與User accepted可分開量測。",
+      "test_id": "TEST-F06-AC-021",
+      "expected_observable": "child generated與User accepted可分開量測。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-022",
+      "function_id": "F06",
+      "criterion": "no_effective_change可辨識。",
+      "test_id": "TEST-F06-AC-022",
+      "expected_observable": "no_effective_change可辨識。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-023",
+      "function_id": "F06",
+      "criterion": "Shared App → Remix lineage / evidence可追蹤。",
+      "test_id": "TEST-F06-AC-023",
+      "expected_observable": "Shared App → Remix lineage / evidence可追蹤。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-001",
+      "function_id": "F07",
+      "criterion": "First Value前不需 account。",
+      "test_id": "TEST-F07-AC-001",
+      "expected_observable": "First Value前不需 account。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-002",
+      "function_id": "F07",
+      "criterion": "first-party random anonymous_id不使用 fingerprint。",
+      "test_id": "TEST-F07-002",
+      "expected_observable": "first-party random anonymous_id不使用 fingerprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-003",
+      "function_id": "F07",
+      "criterion": "clear site storage後不嘗試重建舊 identity。",
+      "test_id": "TEST-F07-003",
+      "expected_observable": "clear site storage後不嘗試重建舊 identity。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-004",
+      "function_id": "F07",
+      "criterion": "anonymous_id不能授權 owner-only action。",
+      "test_id": "TEST-F07-004",
+      "expected_observable": "anonymous_id不能授權 owner-only action。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-005",
+      "function_id": "F07",
+      "criterion": "last_seen不因每個 event同步 write。",
+      "test_id": "TEST-F07-AC-005",
+      "expected_observable": "last_seen不因每個 event同步 write。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-006",
+      "function_id": "F07",
+      "criterion": "unknown event_type被拒絕。",
+      "test_id": "TEST-F07-006",
+      "expected_observable": "unknown event_type被拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-007",
+      "function_id": "F07",
+      "criterion": "function_id / event_type prefix mismatch被拒絕。",
+      "test_id": "TEST-F07-AC-007",
+      "expected_observable": "function_id / event_type prefix mismatch被拒絕。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-008",
+      "function_id": "F07",
+      "criterion": "Envelope identifier / UUID version、reserved-envelope separation、property allowlist，以及 registry type / enum / format / bounds / narrowing constraint 任一不合法，該 event不能進 product_event。",
+      "test_id": "TEST-F07-008",
+      "expected_observable": "非 canonical envelope identifier（含要求 UUID v4 卻非 v4）、properties 重複 reserved envelope field、或 property type / enum / format / bounds / narrowing constraint 不合法時，該 event獨立拒絕且不寫入 product_event。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-009",
+      "function_id": "F07",
+      "criterion": "raw Intent / raw Result不需要進 Evidence。",
+      "test_id": "TEST-F07-009",
+      "expected_observable": "raw Intent / raw Result不需要進 Evidence。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-010",
+      "function_id": "F07",
+      "criterion": "event retry使用同 event_id且不 duplicate durable row。",
+      "test_id": "TEST-F07-010",
+      "expected_observable": "event retry使用同 event_id且不 duplicate durable row。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-011",
+      "function_id": "F07",
+      "criterion": "one invalid event不 rollback整個 valid batch。",
+      "test_id": "TEST-F07-011",
+      "expected_observable": "one invalid event不 rollback整個 valid batch。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-012",
+      "function_id": "F07",
+      "criterion": "payload limits在 server enforce。",
+      "test_id": "TEST-F07-AC-012",
+      "expected_observable": "payload limits在 server enforce。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-013",
+      "function_id": "F07",
+      "criterion": "normal local Runtime interaction不逐 action發 network request。",
+      "test_id": "TEST-F07-013",
+      "expected_observable": "normal local Runtime interaction不逐 action發 network request。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-014",
+      "function_id": "F07",
+      "criterion": "batch最多50 events。",
+      "test_id": "TEST-F07-014",
+      "expected_observable": "batch最多50 events。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-015",
+      "function_id": "F07",
+      "criterion": "transient ingest failure不阻斷 product flow。",
+      "test_id": "TEST-F07-AC-015",
+      "expected_observable": "transient ingest failure不阻斷 product flow。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-016",
+      "function_id": "F07",
+      "criterion": "unsent queue最多保留24h。",
+      "test_id": "TEST-F07-016",
+      "expected_observable": "unsent queue最多保留24h。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-017",
+      "function_id": "F07",
+      "criterion": "queue overflow優先保留 CORE_OUTCOME / RELIABILITY。",
+      "test_id": "TEST-F07-017",
+      "expected_observable": "queue overflow優先保留 CORE_OUTCOME / RELIABILITY。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-018",
+      "function_id": "F07",
+      "criterion": "pagehide可 best-effort flush。",
+      "test_id": "TEST-F07-AC-018",
+      "expected_observable": "pagehide可 best-effort flush。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-019",
+      "function_id": "F07",
+      "criterion": "Share Open與Restore Ready分開量。",
+      "test_id": "TEST-F07-019",
+      "expected_observable": "Share Open與Restore Ready分開量。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-020",
+      "function_id": "F07",
+      "criterion": "Runtime Ready與Meaningful Use分開量。",
+      "test_id": "TEST-F07-020",
+      "expected_observable": "Runtime Ready與Meaningful Use分開量。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-021",
+      "function_id": "F07",
+      "criterion": "technical Successful Intent與Useful Intent分開量。",
+      "test_id": "TEST-F07-AC-021",
+      "expected_observable": "technical Successful Intent與Useful Intent分開量。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-022",
+      "function_id": "F07",
+      "criterion": "anonymous repeat不用 fingerprint修正。",
+      "test_id": "TEST-F07-022",
+      "expected_observable": "anonymous repeat不用 fingerprint修正。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-023",
+      "function_id": "F07",
+      "criterion": "cost per successful/useful intent可從 canonical evidence計算。",
+      "test_id": "TEST-F07-AC-023",
+      "expected_observable": "cost per successful/useful intent可從 canonical evidence計算。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-024",
+      "function_id": "F07",
+      "criterion": "semantic mismatch可與原 intent / Blueprint關聯。",
+      "test_id": "TEST-F07-AC-024",
+      "expected_observable": "semantic mismatch可與原 intent / Blueprint關聯。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-025",
+      "function_id": "F07",
+      "criterion": "recovery success可與 recovery episode關聯。",
+      "test_id": "TEST-F07-AC-025",
+      "expected_observable": "recovery success可與 recovery episode關聯。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-026",
+      "function_id": "F07",
+      "criterion": "raw product_event 以 first durable received_at 為 cutoff anchor，透過 appf2-owned EvidenceRetentionMaintenance 可執行 90-day retention。",
+      "test_id": "TEST-F07-026",
+      "expected_observable": "maintenance_now - 90 days 之前的 first durable received_at row，只有在 required aggregate watermark verified 後才被刪除；duplicate retry / occurred_at 不改變 cutoff；maintenance 可重跑且不 double count。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-027",
+      "function_id": "F07",
+      "criterion": "bounded non-identifying evidence_daily_aggregate 可在 source deletion 後保留 event_count 與七個 F07 Evidence-quality metric 的 canonical count/rate truth，且不含 event/user/session/intent/share/trace identity 或 raw content。",
+      "test_id": "TEST-F07-AC-027",
+      "expected_observable": "product_event / evidence_intake_observation / evidence_client_quality_report 各自先完成其 owned metric aggregate materialization + watermark verification 再刪除；evidence_daily_aggregate 保留 event_count、clock_invalid_rate、event_batch_accept_rate、event_rejection_rate、duplicate_retry_rate、unknown_event_type_count、local_queue_drop_count、offline_expired_event_count 的 applicable bounded truth，schema 不含 event_id / anonymous_id / session_id / intent_id / share_id / trace_id 或 raw content。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-028",
+      "function_id": "F07",
+      "criterion": "evidence batch/event rejection、local queue drop、offline queue expiry本身必須經 appf2-owned production Evidence-quality path 成為可持久化與可 aggregate 的 observable；optional callback-only proof 不足。",
+      "test_id": "TEST-F07-AC-028",
+      "expected_observable": "route-level pre-service rejection 形成 evidence_intake_observation；event-level rejected/duplicate/unknown counts 形成 bounded intake observation；browser queue drop/expiry 形成 retry-idempotent quality_report 並以 report_id server dedupe；上述 source 可 materialize 對應 evidence_daily_aggregate rows，且 production path 不以 optional/null observer 為 default。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-029",
+      "function_id": "F07",
+      "criterion": "DEBUG_ONLY 不默認 durable 到 production product_event，且 client/server 都 fail closed。",
+      "test_id": "TEST-F07-029",
+      "expected_observable": "production client collector 不 admission DEBUG_ONLY；server 收到 registry-classified DEBUG_ONLY 時以 F07-ERR-016 DEBUG_ONLY_PRODUCTION_REJECTED non-retryable reject，rejected 增加且不得 ensure identity / insert product_event；canonical locked registry 即使目前沒有 DEBUG_ONLY entry，也必須有 server policy test fixture 證明此 defense-in-depth path。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-030",
+      "function_id": "F07",
+      "criterion": "parseable occurred_at > received_at + 10m 的 event仍 accepted；保留 occurred_at / received_at，response以 diagnostics[]回 F07-ERR-013 / occurred_at / USE_RECEIVED_AT，且不得增加 rejected。",
+      "test_id": "TEST-F07-030",
+      "expected_observable": "clock-invalid event形成 durable row並計入 accepted；原 occurred_at與server received_at均保留；F07-ERR-013只出現在diagnostics[]，rejections[]與rejected count不增加。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F07-AC-031",
+      "function_id": "F07",
+      "criterion": "effective_event_at由durable occurred_at / received_at deterministic derive：clock-invalid用received_at，其餘用occurred_at；exactly +10m valid；duplicate retry不得改寫received_at或以新的retry time重算classification。",
+      "test_id": "TEST-F07-031",
+      "expected_observable": "future skew >10m查詢/aggregate使用首次durable received_at；exactly +10m使用occurred_at；同event_id retry只計duplicate且不改變durable timestamps、clock classification或effective_event_at。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-001",
+      "function_id": "F12",
+      "criterion": "source Fxx error code保持唯一 technical identity。",
+      "test_id": "TEST-F12-001",
+      "expected_observable": "source Fxx error code保持唯一 technical identity。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-002",
+      "function_id": "F12",
+      "criterion": "F12不重新編號 source errors。",
+      "test_id": "TEST-F12-AC-002",
+      "expected_observable": "F12不重新編號 source errors。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-003",
+      "function_id": "F12",
+      "criterion": "same error context + policy version產生 deterministic RecoveryState。",
+      "test_id": "TEST-F12-003",
+      "expected_observable": "same error context + policy version產生 deterministic RecoveryState。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-004",
+      "function_id": "F12",
+      "criterion": "security/integrity failure優先於 convenience recovery。",
+      "test_id": "TEST-F12-004",
+      "expected_observable": "security/integrity failure優先於 convenience recovery。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-005",
+      "function_id": "F12",
+      "criterion": "recoverable Create failure保留 prompt / intent context。",
+      "test_id": "TEST-F12-005",
+      "expected_observable": "recoverable Create failure保留 prompt / intent context。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-006",
+      "function_id": "F12",
+      "criterion": "Refine/Remix/Correction failure保留 last-known-good App。",
+      "test_id": "TEST-F12-006",
+      "expected_observable": "Refine/Remix/Correction failure保留 last-known-good App。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-007",
+      "function_id": "F12",
+      "criterion": "Runtime action failure保留 F03 last committed state。",
+      "test_id": "TEST-F12-007",
+      "expected_observable": "Runtime action failure保留 F03 last committed state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-008",
+      "function_id": "F12",
+      "criterion": "DO_NOT_PERSIST內容不因 Recovery被 durable保存。",
+      "test_id": "TEST-F12-008",
+      "expected_observable": "DO_NOT_PERSIST內容不因 Recovery被 durable保存。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-009",
+      "function_id": "F12",
+      "criterion": "material context loss會告知 User。",
+      "test_id": "TEST-F12-AC-009",
+      "expected_observable": "material context loss會告知 User。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-010",
+      "function_id": "F12",
+      "criterion": "automatic retry有上限。",
+      "test_id": "TEST-F12-010",
+      "expected_observable": "automatic retry有上限。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-011",
+      "function_id": "F12",
+      "criterion": "terminal/security failure不提供必然無效 Retry。",
+      "test_id": "TEST-F12-011",
+      "expected_observable": "terminal/security failure不提供必然無效 Retry。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-012",
+      "function_id": "F12",
+      "criterion": "unsupported flow提供 Edit/Simplify而不是無限 Retry。",
+      "test_id": "TEST-F12-AC-012",
+      "expected_observable": "unsupported flow提供 Edit/Simplify而不是無限 Retry。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-013",
+      "function_id": "F12",
+      "criterion": "每個 blocking recoverable failure 至少有 1 個有效 next action。",
+      "test_id": "TEST-F12-013",
+      "expected_observable": "每個 blocking recoverable failure 至少有 1 個有效 next action。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-014",
+      "function_id": "F12",
+      "criterion": "visible next actions通常不超過3個。",
+      "test_id": "TEST-F12-AC-014",
+      "expected_observable": "visible next actions通常不超過3個。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-015",
+      "function_id": "F12",
+      "criterion": "Consumer不看到 raw stack / SQL / provider secret。",
+      "test_id": "TEST-F12-015",
+      "expected_observable": "Consumer不看到 raw stack / SQL / provider secret。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-016",
+      "function_id": "F12",
+      "criterion": "raw HTTP status不是主 consumer message。",
+      "test_id": "TEST-F12-AC-016",
+      "expected_observable": "raw HTTP status不是主 consumer message。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-017",
+      "function_id": "F12",
+      "criterion": "component-level failure能局部呈現，不強制全App失效。",
+      "test_id": "TEST-F12-017",
+      "expected_observable": "component-level failure能局部呈現，不強制全App失效。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-018",
+      "function_id": "F12",
+      "criterion": "semantic mismatch導向 F16，不呈現technical error。",
+      "test_id": "TEST-F12-018",
+      "expected_observable": "semantic mismatch導向 F16，不呈現technical error。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-019",
+      "function_id": "F12",
+      "criterion": "blocking recovery keyboard可操作。",
+      "test_id": "TEST-F12-AC-019",
+      "expected_observable": "blocking recovery keyboard可操作。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-020",
+      "function_id": "F12",
+      "criterion": "每個 User-visible recovery episode 有 episode ID。",
+      "test_id": "TEST-F12-020",
+      "expected_observable": "每個 User-visible recovery episode 有 episode ID。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-021",
+      "function_id": "F12",
+      "criterion": "retry click不等於 recovered。",
+      "test_id": "TEST-F12-021",
+      "expected_observable": "retry click不等於 recovered。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-022",
+      "function_id": "F12",
+      "criterion": "recovered / abandoned / terminated可區分。",
+      "test_id": "TEST-F12-AC-022",
+      "expected_observable": "recovered / abandoned / terminated可區分。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-023",
+      "function_id": "F12",
+      "criterion": "recovery event不包含 raw preserved context。",
+      "test_id": "TEST-F12-023",
+      "expected_observable": "recovery event不包含 raw preserved context。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-024",
+      "function_id": "F12",
+      "criterion": "F07可計算 recovery success rate。",
+      "test_id": "TEST-F12-AC-024",
+      "expected_observable": "F07可計算 recovery success rate。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-025",
+      "function_id": "F12",
+      "criterion": "F12不建立第二套 public recovery backend。",
+      "test_id": "TEST-F12-025",
+      "expected_observable": "F12不建立第二套 public recovery backend。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-026",
+      "function_id": "F12",
+      "criterion": "Recovery不 mutation immutable Blueprint。",
+      "test_id": "TEST-F12-AC-026",
+      "expected_observable": "Recovery不 mutation immutable Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-027",
+      "function_id": "F12",
+      "criterion": "Recovery不繞過 F02/F04 trust / compatibility。",
+      "test_id": "TEST-F12-027",
+      "expected_observable": "Recovery不繞過 F02/F04 trust / compatibility。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-028",
+      "function_id": "F12",
+      "criterion": "telemetry failure本身不阻斷產品 recovery。",
+      "test_id": "TEST-F12-AC-028",
+      "expected_observable": "telemetry failure本身不阻斷產品 recovery。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-029",
+      "function_id": "F12",
+      "criterion": "F03-ERR-021在integrity成立時依F12-POL-011保留last-known-good App並回APP_CURRENT。",
+      "test_id": "TEST-F12-029",
+      "expected_observable": "RecoveryState保留approved context、safe_surface為APP_CURRENT且提供budget-aware actions。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-030",
+      "function_id": "F12",
+      "criterion": "integrity/critical precedence高於TIMEOUT convenience recovery；無法證明安全時不得回正常Runtime。",
+      "test_id": "TEST-F12-030",
+      "expected_observable": "F03-ERR-018由F12-POL-001產生CRITICAL terminal state，沒有unsafe Retry或APP_CURRENT return。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F12-AC-031",
+      "function_id": "F12",
+      "criterion": "同一recovery episode每次Retry都建立新的F03 operation token，且只有safe continuation成立才標RECOVERED。",
+      "test_id": "TEST-F12-031",
+      "expected_observable": "episode identity與operation identity分離；retry click不等於RECOVERED。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-001",
+      "function_id": "F16",
+      "criterion": "semantic mismatch不被分類為 technical Runtime error。",
+      "test_id": "TEST-F16-001",
+      "expected_observable": "semantic mismatch不被分類為 technical Runtime error。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-002",
+      "function_id": "F16",
+      "criterion": "feature addition / input-schema change可路由 F06而不是硬塞 F16。",
+      "test_id": "TEST-F16-002",
+      "expected_observable": "feature addition / input-schema change可路由 F06而不是硬塞 F16。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-003",
+      "function_id": "F16",
+      "criterion": "base Blueprint永不 mutation。",
+      "test_id": "TEST-F16-003",
+      "expected_observable": "base Blueprint永不 mutation。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-004",
+      "function_id": "F16",
+      "criterion": "Correction Delta不是 executable JSON patch。",
+      "test_id": "TEST-F16-004",
+      "expected_observable": "Correction Delta不是 executable JSON patch。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-005",
+      "function_id": "F16",
+      "criterion": "child完整走 F02。",
+      "test_id": "TEST-F16-005",
+      "expected_observable": "child完整走 F02。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-006",
+      "function_id": "F16",
+      "criterion": "corrected child建立 CORRECT lineage且無 self-lineage。",
+      "test_id": "TEST-F16-006",
+      "expected_observable": "corrected child建立 CORRECT lineage且無 self-lineage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-007",
+      "function_id": "F16",
+      "criterion": "replay input只來自 user-editable input-bound mutable state。",
+      "test_id": "TEST-F16-007",
+      "expected_observable": "replay input只來自 user-editable input-bound mutable state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-008",
+      "function_id": "F16",
+      "criterion": "DERIVED / internal capability state不自動進 replay inputs。",
+      "test_id": "TEST-F16-AC-008",
+      "expected_observable": "DERIVED / internal capability state不自動進 replay inputs。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-009",
+      "function_id": "F16",
+      "criterion": "SENSITIVE值不預設 durable保存。",
+      "test_id": "TEST-F16-009",
+      "expected_observable": "SENSITIVE值不預設 durable保存。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-010",
+      "function_id": "F16",
+      "criterion": "DO_NOT_PERSIST值永不 durable保存。",
+      "test_id": "TEST-F16-010",
+      "expected_observable": "DO_NOT_PERSIST值永不 durable保存。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-011",
+      "function_id": "F16",
+      "criterion": "protected value仍可在同一 Browser session MEMORY_ONLY replay。",
+      "test_id": "TEST-F16-AC-011",
+      "expected_observable": "protected value仍可在同一 Browser session MEMORY_ONLY replay。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-012",
+      "function_id": "F16",
+      "criterion": "replay前 child input keys/types/constraints全部驗證。",
+      "test_id": "TEST-F16-012",
+      "expected_observable": "replay前 child input keys/types/constraints全部驗證。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-013",
+      "function_id": "F16",
+      "criterion": "incompatible input不 silent drop/coerce。",
+      "test_id": "TEST-F16-AC-013",
+      "expected_observable": "incompatible input不 silent drop/coerce。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-014",
+      "function_id": "F16",
+      "criterion": "exact replay做不到時comparison標 LIMITED，不假裝 apples-to-apples。",
+      "test_id": "TEST-F16-014",
+      "expected_observable": "exact replay做不到時comparison標 LIMITED，不假裝 apples-to-apples。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-015",
+      "function_id": "F16",
+      "criterion": "User不需重新輸入可安全 replay的 NORMAL inputs。",
+      "test_id": "TEST-F16-AC-015",
+      "expected_observable": "User不需重新輸入可安全 replay的 NORMAL inputs。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-016",
+      "function_id": "F16",
+      "criterion": "correction failure不破壞 current App。",
+      "test_id": "TEST-F16-016",
+      "expected_observable": "correction failure不破壞 current App。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-017",
+      "function_id": "F16",
+      "criterion": "Compare可看到 previous/new result與change summary。",
+      "test_id": "TEST-F16-017",
+      "expected_observable": "Compare可看到 previous/new result與change summary。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-018",
+      "function_id": "F16",
+      "criterion": "Accept New切到 child但不刪 base。",
+      "test_id": "TEST-F16-AC-018",
+      "expected_observable": "Accept New切到 child但不刪 base。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-019",
+      "function_id": "F16",
+      "criterion": "Keep Previous不刪 child / lineage。",
+      "test_id": "TEST-F16-AC-019",
+      "expected_observable": "Keep Previous不刪 child / lineage。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-020",
+      "function_id": "F16",
+      "criterion": "Adjust Again建立新 correction lifecycle。",
+      "test_id": "TEST-F16-AC-020",
+      "expected_observable": "Adjust Again建立新 correction lifecycle。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-021",
+      "function_id": "F16",
+      "criterion": "Revert前重新做 trust / compatibility check。",
+      "test_id": "TEST-F16-021",
+      "expected_observable": "Revert前重新做 trust / compatibility check。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-022",
+      "function_id": "F16",
+      "criterion": "correction create retry不 duplicate before snapshot / correction record。",
+      "test_id": "TEST-F16-022",
+      "expected_observable": "correction create retry不 duplicate before snapshot / correction record。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-023",
+      "function_id": "F16",
+      "criterion": "comparison retry不 duplicate after snapshot。",
+      "test_id": "TEST-F16-AC-023",
+      "expected_observable": "comparison retry不 duplicate after snapshot。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-024",
+      "function_id": "F16",
+      "criterion": "stale decision不能覆蓋新 correction outcome。",
+      "test_id": "TEST-F16-024",
+      "expected_observable": "stale decision不能覆蓋新 correction outcome。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-025",
+      "function_id": "F16",
+      "criterion": "before/new/after hashes符合 consistency invariant。",
+      "test_id": "TEST-F16-025",
+      "expected_observable": "before/new/after hashes符合 consistency invariant。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-026",
+      "function_id": "F16",
+      "criterion": "result_snapshot只在 correction / explicit compare flow durable建立，不是每次 Runtime。",
+      "test_id": "TEST-F16-AC-026",
+      "expected_observable": "result_snapshot只在 correction / explicit compare flow durable建立，不是每次 Runtime。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-027",
+      "function_id": "F16",
+      "criterion": "semantic mismatch、generated、accepted、rejected、reverted可分開量測。",
+      "test_id": "TEST-F16-027",
+      "expected_observable": "semantic mismatch、generated、accepted、rejected、reverted可分開量測。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-028",
+      "function_id": "F16",
+      "criterion": "correction accepted不等於技術 generated。",
+      "test_id": "TEST-F16-AC-028",
+      "expected_observable": "correction accepted不等於技術 generated。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-029",
+      "function_id": "F16",
+      "criterion": "telemetry不含 raw input/result/feedback。",
+      "test_id": "TEST-F16-029",
+      "expected_observable": "telemetry不含 raw input/result/feedback。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-030",
+      "function_id": "F16",
+      "criterion": "F07可把 correction outcome連回 base/new Blueprint。",
+      "test_id": "TEST-F16-AC-030",
+      "expected_observable": "F07可把 correction outcome連回 base/new Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-031",
+      "function_id": "F16",
+      "criterion": "Client不能用 arbitrary Blueprint body作 correction child。",
+      "test_id": "TEST-F16-AC-031",
+      "expected_observable": "Client不能用 arbitrary Blueprint body作 correction child。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-032",
+      "function_id": "F16",
+      "criterion": "replay不能繞過 F03 state/type constraints。",
+      "test_id": "TEST-F16-032",
+      "expected_observable": "replay不能繞過 F03 state/type constraints。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-033",
+      "function_id": "F16",
+      "criterion": "unsafe/revoked previous Blueprint不可 Revert執行。",
+      "test_id": "TEST-F16-AC-033",
+      "expected_observable": "unsafe/revoked previous Blueprint不可 Revert執行。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F16-AC-034",
+      "function_id": "F16",
+      "criterion": "correction technical failure進 F12；semantic mismatch本身不進 F12 error。",
+      "test_id": "TEST-F16-AC-034",
+      "expected_observable": "correction technical failure進 F12；semantic mismatch本身不進 F12 error。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-025",
+      "function_id": "F01",
+      "criterion": "CREATE v1 使用固定六 checkpoint plan；同一 progress operation 的 completed set 必須 monotonic。",
+      "test_id": "TEST-F01-PROG-001",
+      "expected_observable": "六 checkpoint plan固定，completed checkpoints只增不減。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-026",
+      "function_id": "F01",
+      "criterion": "Clarification / Assumption waiting 不改 denominator、不推進 progress；material Intent edit開始新的 logical progress operation。",
+      "test_id": "TEST-F01-PROG-002",
+      "expected_observable": "等待 User 時 progress凍結；material edit後新 operation不沿用舊 completed count。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-027",
+      "function_id": "F01",
+      "criterion": "CREATE API success response提供可驗證 progress snapshot；不得依 elapsed time補進度。",
+      "test_id": "TEST-F01-PROG-003",
+      "expected_observable": "progress snapshot只包含 plan/completed truth；等待期間無 time-based inflation。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-028",
+      "function_id": "F01",
+      "criterion": "network retry不重複 checkpoint；same-body User retry建立新 progress operation但沿用同 API idempotency logical operation/Key，只從仍有效 truth重建 progress。",
+      "test_id": "TEST-F01-PROG-004",
+      "expected_observable": "same-key retry無 duplicate completion；FAILED_RETRYABLE/takeover只開新 attempt與新 progress operation，不複製舊百分比；material edit才是新 mutation/new Idempotency-Key。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F01-AC-029",
+      "function_id": "F01",
+      "criterion": "validation-driven recompose不回退 completed checkpoint；只有 F02 PASS 才完成 BLUEPRINT_VALIDATED。",
+      "test_id": "TEST-F01-PROG-005",
+      "expected_observable": "progress monotonic；BLUEPRINT_VALIDATED只在最終 F02 PASS。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-033",
+      "function_id": "F00",
+      "criterion": "S02 composite Create progress只由 F01六 checkpoint + F03 APP_READY truth組成；F00不得自行完成 source-owned checkpoint。",
+      "test_id": "TEST-F00-PROG-001",
+      "expected_observable": "overall progress只隨 source owner truth推進。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-034",
+      "function_id": "F00",
+      "criterion": "Clarification / Assumption waiting凍結 Create progress並停止 processing animation。",
+      "test_id": "TEST-F00-PROG-002",
+      "expected_observable": "等待 User期間 percent不前進、processing animation停止。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-035",
+      "function_id": "F00",
+      "criterion": "F01 VALIDATED最多呈現 composite 6/7（85%）；只有 F03 READY才可呈現100%。",
+      "test_id": "TEST-F00-PROG-003",
+      "expected_observable": "VALIDATED時不顯示100%；F03 READY後才100%。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-036",
+      "function_id": "F00",
+      "criterion": "Normal S03 必須讓 User 明確選擇「修改這個 App → S05A/REFINE」或「改成我的版本 → S05B/REMIX」；UI不得依 ownership、Shared來源或其他 metadata替 User猜 intent。",
+      "test_id": "TEST-F00-036",
+      "expected_observable": "兩條 consumer action明確且 routing正確；source/ownership變化不會自動選 relation。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-037",
+      "function_id": "F00",
+      "criterion": "從既有 S05「查看原版」進 S03 Inspection Mode時，必須保留同一 S05 session/path/draft/preview context，依 origin提供返回修改畫面或返回新版預覽，且不得建立第二個 S05 session。",
+      "test_id": "TEST-F00-037",
+      "expected_observable": "Inspection可操作 source App；return回原 session/context；無 nested S05。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F00-AC-038",
+      "function_id": "F00",
+      "criterion": "Phase 1 Inspiration Capsule 的 Try/Fork 必須進 editable prefill → F01 Create；不得套用 Shared App use-as-is restore semantics。",
+      "test_id": "TEST-F00-038",
+      "expected_observable": "Capsule開啟 editable prefill並進 F01 Create，沒有直接 hydrate existing Blueprint。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F05-AC-022",
+      "function_id": "F05",
+      "criterion": "Shared App Restore READY後可直接 use-as-is；單純 open/use不得建立 REMIX lineage，只有 User明確選「改成我的版本」才進 F06 Remix。",
+      "test_id": "TEST-F05-022",
+      "expected_observable": "restore建立 fresh Runtime Instance並可直接使用；open/use無 remix lineage；explicit remix才建立。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-024",
+      "function_id": "F06",
+      "criterion": "REFINE / REMIX intent必須由 User明確選擇；ownership、Shared來源或目前頁面不得自動決定 relation_type。",
+      "test_id": "TEST-F06-024",
+      "expected_observable": "relation_type只由 explicit selected intent決定，source metadata不覆寫。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F06-AC-025",
+      "function_id": "F06",
+      "criterion": "S05「查看原版」的 returnable inspection不得建立第二個 F06/S05 change session；返回後必須續用原 session/draft/Preview context。",
+      "test_id": "TEST-F06-025",
+      "expected_observable": "session id unchanged；draft/preview preserved；no duplicate lineage/change operation created。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-001",
+      "function_id": "F19",
+      "criterion": "同一 Shared App recipients 可跨時間讀取同一 durable ranking scope。",
+      "test_id": "TEST-F19-001",
+      "expected_observable": "同一 Shared App recipients 可跨時間讀取同一 durable ranking scope。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-002",
+      "function_id": "F19",
+      "criterion": "Shared Ranking read/write 不依賴 F09 Realtime Room。",
+      "test_id": "TEST-F19-002",
+      "expected_observable": "Shared Ranking read/write 不依賴 F09 Realtime Room。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-003",
+      "function_id": "F19",
+      "criterion": "ranking mutable data 不進 immutable Blueprint body，也不等同 Creator Runtime state。",
+      "test_id": "TEST-F19-003",
+      "expected_observable": "ranking mutable data 不進 immutable Blueprint body，也不等同 Creator Runtime state。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-004",
+      "function_id": "F19",
+      "criterion": "Client 無法建立 arbitrary DB schema/SQL/collection CRUD。",
+      "test_id": "TEST-F19-004",
+      "expected_observable": "Client 無法建立 arbitrary DB schema/SQL/collection CRUD。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-005",
+      "function_id": "F19",
+      "criterion": "eligible Share restore 只回 opaque scope_ref，不洩漏 internal scope id / DB authority。",
+      "test_id": "TEST-F19-005",
+      "expected_observable": "eligible Share restore 只回 opaque scope_ref，不洩漏 internal scope id / DB authority。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-006",
+      "function_id": "F19",
+      "criterion": "participant authority 由 server/F07 解析；Client 不能 spoof participant_ref。",
+      "test_id": "TEST-F19-006",
+      "expected_observable": "participant authority 由 server/F07 解析；Client 不能 spoof participant_ref。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-007",
+      "function_id": "F19",
+      "criterion": "submit 依 Share→trust→scope→identity→payload→quota 順序 fail closed 驗證。",
+      "test_id": "TEST-F19-007",
+      "expected_observable": "submit 依 Share→trust→scope→identity→payload→quota 順序 fail closed 驗證。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-008",
+      "function_id": "F19",
+      "criterion": "duplicate logical submit idempotent；same operation id + different payload fail closed。",
+      "test_id": "TEST-F19-008",
+      "expected_observable": "duplicate logical submit idempotent；same operation id + different payload fail closed。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-009",
+      "function_id": "F19",
+      "criterion": "ASC/DESC + BEST_SCORE/LATEST_SCORE + tie-break 產生 deterministic ranking。",
+      "test_id": "TEST-F19-009",
+      "expected_observable": "ASC/DESC + BEST_SCORE/LATEST_SCORE + tie-break 產生 deterministic ranking。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-010",
+      "function_id": "F19",
+      "criterion": "REMIX child 建立 fresh scope，且不能自動讀寫 Parent scope。",
+      "test_id": "TEST-F19-010",
+      "expected_observable": "REMIX child 建立 fresh scope，且不能自動讀寫 Parent scope。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-011",
+      "function_id": "F19",
+      "criterion": "Phase 1 REFINE new immutable Version 也不自動繼承舊 ranking scope。",
+      "test_id": "TEST-F19-011",
+      "expected_observable": "Phase 1 REFINE new immutable Version 也不自動繼承舊 ranking scope。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-012",
+      "function_id": "F19",
+      "criterion": "F19ResourcePolicyV1 不依賴 full F13 runtime / billing。",
+      "test_id": "TEST-F19-012",
+      "expected_observable": "F19ResourcePolicyV1 不依賴 full F13 runtime / billing。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-013",
+      "function_id": "F19",
+      "criterion": "quota/grace exhausted 優先限制新寫入並保留 safe read/local play。",
+      "test_id": "TEST-F19-013",
+      "expected_observable": "quota/grace exhausted 優先限制新寫入並保留 safe read/local play。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "BEHAVIOR",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-014",
+      "function_id": "F19",
+      "criterion": "F19 Evidence 不含 participant_ref、display_name、raw score 或 full ranking。",
+      "test_id": "TEST-F19-014",
+      "expected_observable": "F19 Evidence 不含 participant_ref、display_name、raw score 或 full ranking。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "RUNTIME_EVIDENCE",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-015",
+      "function_id": "F19",
+      "criterion": "revoked/expired/untrusted Share 不能繼續作 public ranking read/write authority。",
+      "test_id": "TEST-F19-015",
+      "expected_observable": "revoked/expired/untrusted Share 不能繼續作 public ranking read/write authority。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-016",
+      "function_id": "F19",
+      "criterion": "A/B/C 在不同時間提交後可觀察同一正確排序結果。",
+      "test_id": "TEST-F19-016",
+      "expected_observable": "A/B/C 在不同時間提交後可觀察同一正確排序結果。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-017",
+      "function_id": "F19",
+      "criterion": "transaction/concurrency failure 不產生 partial rank + false dedupe success。",
+      "test_id": "TEST-F19-017",
+      "expected_observable": "transaction/concurrency failure 不產生 partial rank + false dedupe success。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "END_TO_END",
+      "required_for_build_freeze": true
+    },
+    {
+      "acceptance_id": "F19-AC-018",
+      "function_id": "F19",
+      "criterion": "read response bounded 且不洩漏 participant_ref、operation history、DB metadata。",
+      "test_id": "TEST-F19-018",
+      "expected_observable": "read response bounded 且不洩漏 participant_ref、operation history、DB metadata。",
+      "contract_status": "ACTIVE",
+      "proof_scope": "CONTRACT",
+      "required_for_build_freeze": true
+    }
+  ]
+}
