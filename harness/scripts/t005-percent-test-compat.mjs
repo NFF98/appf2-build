@@ -26,17 +26,26 @@ export function exactNoPercentAssertionRemoval(before, after) {
   return before.split(staleAssertion).length === 2 && after === before.replace(staleAssertion, "");
 }
 
+const activeT005Truth = (current, build) => (
+  current?.active_sprint === "SP-P1-003" &&
+  current?.active_build_spec === "BS-P1-024" &&
+  current?.active_task === "T005" &&
+  current?.status === "ACTIVE" &&
+  build?.active_baseline === "BS-P1-024" &&
+  build?.implementation_enabled === true
+);
+
+const exactRepairFiles = changed => (
+  Array.isArray(changed) &&
+  changed.length === permittedFiles.length &&
+  permittedFiles.every(file => changed.includes(file)) &&
+  new Set(changed).size === permittedFiles.length
+);
+
 export function exactT005RepairShape({ base, changed, current, build, beforeTest, afterTest }) {
   return base === T005_PERCENT_REPAIR_BASE &&
-    current?.active_sprint === "SP-P1-003" &&
-    current?.active_build_spec === "BS-P1-024" &&
-    current?.active_task === "T005" &&
-    current?.status === "ACTIVE" &&
-    build?.active_baseline === "BS-P1-024" &&
-    build?.implementation_enabled === true &&
-    Array.isArray(changed) && changed.length === permittedFiles.length &&
-    permittedFiles.every(file => changed.includes(file)) &&
-    new Set(changed).size === permittedFiles.length &&
+    activeT005Truth(current, build) &&
+    exactRepairFiles(changed) &&
     exactNoPercentAssertionRemoval(beforeTest, afterTest);
 }
 
