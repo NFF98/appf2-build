@@ -658,7 +658,7 @@
         "BL-P1-018"
       ],
       "title": "Result contract, S03 App surface & Playable App vertical proof",
-      "status": "PLANNED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-024",
       "scope": [
         "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",

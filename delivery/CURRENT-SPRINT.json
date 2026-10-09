@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-024",
+  "active_task": "T006",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-approved 2026-10-09 T005 final closure. 21 verified Evidence linked; SP-P1-003 manifest remains ACTIVE, but CURRENT execution is inter-task HOLD. T006 production S03/F03 integration is PLANNED, NOT activated; no Cursor lease or automatic next Task."
+  "reason": "Human 2026-10-09 requested T006 Cursor execution after Governance scope amendment #342; fresh independent T006 Planning BCE #6076967717 PASS-with-execution-hard-gates. T006 Activation remains pending independent four GitHub CI/BCE and approved governance merge; Cursor requires one fresh post-merge SHA-locked single-use lease on Issue #301, no tooling/protected-path writes and no automatic implementation merge."
 }
