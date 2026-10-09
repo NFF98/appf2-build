@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-024",
-  "implementation_enabled": true,
-  "reason": "Human 2026-10-09 approved SP-P1-003/T005 governance activation after independent Planning BCE PASS (Issue #301 comment #6073881763). BS-P1-024 remains LOCKED. Cursor execution requires a separate Human approval and fresh single-use lease."
+  "implementation_enabled": false,
+  "reason": "Human 2026-10-09 approved T005 Final Closure after PR #339 implementation merged, PR #340 21 Evidence merged, four GitHub CI SUCCESS and independent Closure Audit #6076432304 PASS. BS-P1-024 remains LOCKED. SP-P1-003 inter-task HOLD; T006 remains PLANNED without activation or Cursor authorization. TEST-F00-029 is test-only F03 relay harness, not production S03 integration."
 }

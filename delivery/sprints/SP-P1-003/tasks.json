@@ -538,7 +538,7 @@
         "BL-P1-022"
       ],
       "title": "Shell persistence, authority boundary & truthful processing presentation",
-      "status": "IN_PROGRESS",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-024",
       "scope": [
         "Implement F00 local draft persistence rules including DO_NOT_PERSIST exclusion.",
@@ -627,7 +627,29 @@
         "T003",
         "T004"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-003-T005-001",
+        "EV-SP-P1-003-T005-002",
+        "EV-SP-P1-003-T005-003",
+        "EV-SP-P1-003-T005-004",
+        "EV-SP-P1-003-T005-005",
+        "EV-SP-P1-003-T005-006",
+        "EV-SP-P1-003-T005-007",
+        "EV-SP-P1-003-T005-008",
+        "EV-SP-P1-003-T005-009",
+        "EV-SP-P1-003-T005-010",
+        "EV-SP-P1-003-T005-011",
+        "EV-SP-P1-003-T005-012",
+        "EV-SP-P1-003-T005-013",
+        "EV-SP-P1-003-T005-014",
+        "EV-SP-P1-003-T005-015",
+        "EV-SP-P1-003-T005-016",
+        "EV-SP-P1-003-T005-017",
+        "EV-SP-P1-003-T005-018",
+        "EV-SP-P1-003-T005-019",
+        "EV-SP-P1-003-T005-020",
+        "EV-SP-P1-003-T005-021"
+      ]
     },
     {
       "task_id": "T006",
