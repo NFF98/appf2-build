@@ -65,6 +65,26 @@ const immutableBuild=b=>omit(b,["implementation_enabled","reason"]);
  * Safe-control-only exception for an audited revalidation closure, never a general backlog rewrite.
  * The existing Evidence Gate independently verifies every referenced PASS record before a Task is CLOSED.
  */
+const unchangedRevalidationBinding=(oldR,newR,beforeQueue,afterQueue,beforeTd,afterTd)=>{
+  if(!oldR || !newR || oldR.status!=="IN_PROGRESS" || newR.status!=="CLOSED") return false;
+  if(stable(omit(oldR,["status"]))!==stable(omit(newR,["status"]))) return false;
+  return oldR.sprint_id===beforeTd.sprint_id &&
+    newR.sprint_id===afterTd.sprint_id &&
+    oldR.target_build_spec_id===beforeQueue.build_spec_id &&
+    newR.target_build_spec_id===afterQueue.build_spec_id;
+};
+const exactlyClosingTask=(oldTask,newTask,oldR,newR)=>{
+  if(!oldTask || !newTask || oldTask.task_id!==newTask.task_id) return false;
+  return oldTask.status==="IN_PROGRESS" &&
+    newTask.status==="CLOSED" &&
+    oldTask.build_spec_id===oldR.target_build_spec_id &&
+    newTask.build_spec_id===newR.target_build_spec_id;
+};
+const completedTaskHasMappedEvidence=(newTask,newR)=>{
+  if(!Array.isArray(newTask.completion_evidence) || !newTask.completion_evidence.length) return false;
+  if(!Array.isArray(newR.acceptance_ids)) return false;
+  return newR.acceptance_ids.every(aid=>(newTask.acceptance_links||[]).some(link=>link.acceptance_id===aid));
+};
 const exactRevalidationClosures=(beforeQueue,afterQueue,beforeTd,afterTd)=>{
   if(!Array.isArray(beforeQueue?.items) || !Array.isArray(afterQueue?.items) ||
      beforeQueue.items.length!==afterQueue.items.length ||
@@ -82,20 +102,10 @@ const exactRevalidationClosures=(beforeQueue,afterQueue,beforeTd,afterTd)=>{
       restored.push(newItem);
       continue;
     }
-    if(!oldR || !newR || oldR.status!=="IN_PROGRESS" || newR.status!=="CLOSED" ||
-       stable(omit(oldR,["status"]))!==stable(omit(newR,["status"])) ||
-       oldR.sprint_id!==beforeTd.sprint_id ||
-       newR.sprint_id!==afterTd.sprint_id ||
-       oldR.target_build_spec_id!==beforeQueue.build_spec_id ||
-       newR.target_build_spec_id!==afterQueue.build_spec_id) return false;
-    const beforeTask=beforeTasks.get(oldR.task_id),afterTask=afterTasks.get(newR.task_id);
-    if(!beforeTask || !afterTask || beforeTask.task_id!==afterTask.task_id ||
-       beforeTask.status!=="IN_PROGRESS" || afterTask.status!=="CLOSED" ||
-       beforeTask.build_spec_id!==oldR.target_build_spec_id ||
-       afterTask.build_spec_id!==newR.target_build_spec_id ||
-       !Array.isArray(afterTask.completion_evidence) || !afterTask.completion_evidence.length ||
-       !Array.isArray(newR.acceptance_ids) ||
-       !newR.acceptance_ids.every(aid=>(afterTask.acceptance_links||[]).some(link=>link.acceptance_id===aid))) return false;
+    if(!unchangedRevalidationBinding(oldR,newR,beforeQueue,afterQueue,beforeTd,afterTd)) return false;
+    const oldTask=beforeTasks.get(oldR.task_id),newTask=afterTasks.get(newR.task_id);
+    if(!exactlyClosingTask(oldTask,newTask,oldR,newR)) return false;
+    if(!completedTaskHasMappedEvidence(newTask,newR)) return false;
     restored.push({...newItem,revalidation:oldR});
     closures++;
   }
