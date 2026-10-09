@@ -1,4 +1,4 @@
-import type { PolicyVisibleItem, ValueType } from "./intent-contract.js";
+import { QUESTION_VALUE_TYPE, type PolicyVisibleItem, type ValueType } from "./intent-contract.js";
 import { canonicalJson, isPlainRecord, type JsonValue } from "./json-value.js";
 
 export function distinctCanonicalCount(values: readonly JsonValue[]): number {
@@ -7,6 +7,19 @@ export function distinctCanonicalCount(values: readonly JsonValue[]): number {
 
 export function isChoiceQuestion(item: Pick<PolicyVisibleItem, "question_type">): boolean {
   return item.question_type === "SINGLE_CHOICE" || item.question_type === "MULTI_CHOICE";
+}
+
+/**
+ * F01-DATA-003 / F01-DATA-004A projection precondition: the fixed question_type → expected_value_type pairing
+ * holds and a choice target carries at least two distinct server-validated alternatives.
+ */
+export function hasProjectableAnswerShape(
+  item: Pick<PolicyVisibleItem, "question_type" | "expected_value_type" | "alternatives">
+): boolean {
+  if (!Object.hasOwn(QUESTION_VALUE_TYPE, item.question_type)) return false;
+  if (QUESTION_VALUE_TYPE[item.question_type] !== item.expected_value_type) return false;
+  if (!isChoiceQuestion(item)) return true;
+  return Array.isArray(item.alternatives) && distinctCanonicalCount(item.alternatives) >= 2;
 }
 
 /** SINGLE_CHOICE / MULTI_CHOICE values may only select from the target alternatives. */

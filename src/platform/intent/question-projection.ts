@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 
-import { QUESTION_VALUE_TYPE, internalInvariant, type ImpactLevel, type QuestionType, type ValueType } from "./intent-contract.js";
+import { internalInvariant, type ImpactLevel, type QuestionType, type ValueType } from "./intent-contract.js";
 import { canonicalJson, type JsonValue } from "./json-value.js";
 import type { ItemPolicyMatch, PolicyRuleId } from "./policy-rules.js";
-import { distinctCanonicalCount, isChoiceQuestion } from "./value-shape.js";
+import { choiceOptionsOf, hasProjectableAnswerShape } from "./value-shape.js";
 
 /** F01-RQ-002: at most three questions per clarification round. */
 export const MAX_QUESTIONS_PER_ROUND = 3;
@@ -87,19 +87,14 @@ export function compareCandidates(left: QuestionCandidate, right: QuestionCandid
 /** F01-DATA-003 projection: every question field derives from the validated target item contract. */
 export function projectQuestion(candidate: QuestionCandidate): ClarificationQuestion {
   const { item, owner_rule_id } = candidate.match;
-  const isChoice = isChoiceQuestion(item);
-  if (
-    QUESTION_VALUE_TYPE[item.question_type] !== item.expected_value_type ||
-    (isChoice && distinctCanonicalCount(item.alternatives) < 2)
-  ) {
-    internalInvariant("QUESTION_NOT_PROJECTABLE", `$.questions[${item.id}]`);
-  }
+  if (!hasProjectableAnswerShape(item)) internalInvariant("QUESTION_NOT_PROJECTABLE", `$.questions[${item.id}]`);
+  const options = choiceOptionsOf(item);
   return {
     question_id: candidate.question_id,
     semantic_item_ids: [item.id],
     question_type: item.question_type,
     prompt: item.description,
-    ...(isChoice ? { options: item.alternatives } : {}),
+    ...(options === undefined ? {} : { options }),
     expected_value_type: item.expected_value_type,
     required: true,
     rationale_key: RATIONALE_KEYS[owner_rule_id],

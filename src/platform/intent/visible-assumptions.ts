@@ -4,17 +4,44 @@ import {
   type IntentSource,
   type Materiality,
   type PolicyVisibleItem,
-  type SourceRef
+  type QuestionType,
+  type SourceRef,
+  type ValueType
 } from "./intent-contract.js";
-import type { JsonValue } from "./json-value.js";
+import { deepFreeze, type JsonValue } from "./json-value.js";
 import type { ItemPolicyMatch } from "./policy-rules.js";
+import { choiceOptionsOf, hasProjectableAnswerShape, valueFitsItem } from "./value-shape.js";
 
 export const ASSUMPTION_CLASSIFICATIONS = ["FACT", "DEFAULT", "PROPOSAL", "UNKNOWN"] as const;
 export type AssumptionClassification = (typeof ASSUMPTION_CLASSIFICATIONS)[number];
 
 /**
+ * F01-DATA-004A fixed RECORD edit descriptor. It only describes the existing open plain-record / JsonValue
+ * validation; it is never a key whitelist, required-field schema or per-field domain rule.
+ */
+export const OPEN_JSON_RECORD_V1 = deepFreeze({
+  kind: "OPEN_JSON_RECORD_V1",
+  key_policy: "USER_DEFINED",
+  value_kind: "JSON_VALUE",
+  nested: true
+} as const);
+export type RecordEditSchema = typeof OPEN_JSON_RECORD_V1;
+
+/**
+ * F01-DATA-004A edit shape of a pending DEFAULT / PROPOSAL, copied from the validated target item only:
+ * `options` iff SINGLE_CHOICE / MULTI_CHOICE, `record_edit_schema` iff STRUCTURED_FIELDS.
+ */
+export type AssumptionEditShape = {
+  readonly expected_value_type: ValueType;
+  readonly question_type: QuestionType;
+  readonly options?: readonly JsonValue[];
+  readonly record_edit_schema?: RecordEditSchema;
+};
+
+/**
  * F01-DATA-004 projection: FACT presents `resolved_value`, DEFAULT / PROPOSAL present the pending
- * `proposed_default`, UNKNOWN carries neither. Internal provenance is reported unchanged.
+ * `proposed_default` plus the F01-DATA-004A edit shape, UNKNOWN carries neither. Internal provenance is
+ * reported unchanged.
  */
 export type VisibleAssumption = {
   readonly assumption_id: string;
@@ -26,7 +53,7 @@ export type VisibleAssumption = {
   readonly source_ref?: SourceRef;
   readonly resolved_value?: JsonValue;
   readonly proposed_default?: JsonValue;
-};
+} & Partial<AssumptionEditShape>;
 
 const FACT_SOURCES: ReadonlySet<IntentSource> = new Set(["USER_EXPLICIT", "DOMAIN_KNOWN", "USER_ACCEPTED_PROPOSAL"]);
 
@@ -50,6 +77,24 @@ export function isPendingDecision(classification: AssumptionClassification | nul
   return classification === "DEFAULT" || classification === "PROPOSAL";
 }
 
+/**
+ * F01-DATA-004A rule 6: a pending assumption whose type pairing, alternatives or pending value cannot be
+ * projected is F01-ERR-014, so no apparently editable READY_WITH_VISIBLE_ASSUMPTIONS is ever emitted.
+ */
+export function projectEditShape(item: PolicyVisibleItem): AssumptionEditShape {
+  const pending = item.proposed_default;
+  if (!hasProjectableAnswerShape(item) || pending === undefined || !valueFitsItem(pending, item)) {
+    internalInvariant("ASSUMPTION_EDIT_SHAPE_NOT_PROJECTABLE", `$.visible_assumptions[${item.id}]`);
+  }
+  const options = choiceOptionsOf(item);
+  return {
+    expected_value_type: item.expected_value_type,
+    question_type: item.question_type,
+    ...(options === undefined ? {} : { options }),
+    ...(item.expected_value_type === "RECORD" ? { record_edit_schema: OPEN_JSON_RECORD_V1 } : {})
+  };
+}
+
 function project(item: PolicyVisibleItem, classification: AssumptionClassification): VisibleAssumption {
   return {
     assumption_id: item.id,
@@ -60,7 +105,7 @@ function project(item: PolicyVisibleItem, classification: AssumptionClassificati
     source: item.source,
     ...(item.source_ref === undefined ? {} : { source_ref: item.source_ref }),
     ...(classification === "FACT" ? { resolved_value: item.resolved_value } : {}),
-    ...(isPendingDecision(classification) ? { proposed_default: item.proposed_default } : {})
+    ...(isPendingDecision(classification) ? { proposed_default: item.proposed_default, ...projectEditShape(item) } : {})
   };
 }
 
