@@ -1,4 +1,5 @@
-// APPf2 憲法級重大變更 Gate：Human R1..R5 非自簽證明、不可重播、一次性制憲例外。
+// GOV-CONST-001: fail-closed constitutional review, real Human signatures,
+// and SHA-locked, exact-path, once-only founding bootstrap.
 import { createHash, createPublicKey, verify as verifySignature } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -14,18 +15,33 @@ export const CONSTITUTION_BOOTSTRAP_FILES=Object.freeze([
   "harness/scripts/validate-constitutional-change.mjs"
 ]);
 export const CONSTITUTION_STAGES=Object.freeze(["R1","R2","R3","R4","R5"]);
-const SHA256=/^[a-f0-9]{64}$/;
-const BASE=/^[a-f0-9]{40}$/;
-const CASE=/^GOV-[A-Z0-9-]{3,90}$/;
+
+const RE_SHA256=/^[0-9a-f]{64}$/;
+const RE_SHA=/^[0-9a-f]{40}$/;
+const RE_CASE=/^GOV-[A-Z0-9-]{3,90}$/;
 const sorted=xs=>[...xs].sort();
-const eql=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-const sha=buf=>createHash("sha256").update(buf).digest("hex");
-const isProtected=(p,policy)=>p==="package-lock.json" ||
-  (policy.governance_only_paths||[]).some(x=>x.endsWith("/")?p.startsWith(x):p===x);
+const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const sha=bytes=>createHash("sha256").update(bytes).digest("hex");
+const fail=(errors,cond,msg)=>{if(!cond) errors.push("CONSTITUTION: "+msg);};
+
+// Control and evidence record updates (e.g. approved Rebaseline/Activation)
+// have their own stronger gates and are NOT edits to constitutional policy.
+const isOrdinaryGovernedRecord=p=>
+  p==="build-spec/CURRENT.json" || p.startsWith("build-spec/activations/") ||
+  p.startsWith("build-spec/baselines/") ||
+  p==="delivery/CURRENT-SPRINT.json" ||
+  ["delivery/backlog/","delivery/sprints/","delivery/deltas/","delivery/findings/",
+   "delivery/evidence/","delivery/audits/"].some(x=>p.startsWith(x)) ||
+  p.startsWith("releases/manifests/");
+
+const isConstitutionProtected=(p,policy)=>
+  p==="package-lock.json" ||
+  (!isOrdinaryGovernedRecord(p) &&
+    (policy.governance_only_paths||[]).some(x=>x.endsWith("/")?p.startsWith(x):p===x));
 
 export function isOneTimeConstitutionFounding({changed,base,cs,build}){
   return base===CONSTITUTION_GENESIS_BASE &&
-    eql(sorted(changed),sorted(CONSTITUTION_BOOTSTRAP_FILES)) &&
+    equal(sorted(changed),sorted(CONSTITUTION_BOOTSTRAP_FILES)) &&
     cs?.status==="ACTIVE" && cs.active_sprint==="SP-P1-003" &&
     cs.active_task==="T006" && cs.active_build_spec==="BS-P1-024" &&
     build?.active_baseline==="BS-P1-024" && build.implementation_enabled===true;
@@ -36,136 +52,152 @@ const readSafe=(root,rel)=>{
   try{return fs.readFileSync(path.join(root,rel));}catch{return null;}
 };
 const contentDigest=(root,paths)=>{
-  const digest=createHash("sha256");
+  const h=createHash("sha256");
   for(const p of sorted(paths)){
-    const content=readSafe(root,p);
-    if(!content) return null;
-    digest.update(p+"\0","utf8");digest.update(content);digest.update("\0","utf8");
+    const bytes=readSafe(root,p);
+    if(!bytes) return null;
+    h.update(p+"\0");h.update(bytes);h.update("\0");
   }
-  return digest.digest("hex");
+  return h.digest("hex");
+};
+const loadDocket=(root,rel,errors)=>{
+  try{return JSON.parse(readSafe(root,rel)?.toString("utf8")||"");}
+  catch{errors.push("CONSTITUTION: docket missing/invalid");return null;}
+};
+const humanKey=(raw,errors)=>{
+  try{
+    if(!raw) throw Error("missing");
+    const key=createPublicKey(Buffer.from(raw,"base64").toString("utf8"));
+    if(key.asymmetricKeyType!=="ed25519") throw Error("not Ed25519");
+    return key;
+  }catch{errors.push("CONSTITUTION: independently configured Human Ed25519 public key missing or invalid");return null;}
+};
+
+const checkIdentity=({docket,changed,casePath,base,root,errors})=>{
+  const id=docket.case_id,changedOther=changed.filter(p=>p!==casePath);
+  fail(errors,RE_CASE.test(id||"") && casePath==="delivery/constitutional-cases/"+id+".json","case identity/path invalid");
+  fail(errors,RE_SHA.test(base||"") && docket.base_sha===base,"base SHA mismatch");
+  fail(errors,docket.constitution_version==="1.0","constitutional protocol mismatch");
+  const exact=docket.exact_changed_paths;
+  fail(errors,Array.isArray(exact) &&
+    equal(sorted(exact),sorted(changedOther)) &&
+    new Set(exact).size===exact.length,"PR changed paths differ from exact approved paths");
+  const digest=contentDigest(root,changedOther);
+  fail(errors,digest!==null && digest===docket.candidate_digest_sha256,"PR bytes changed after approval");
+  return digest;
+};
+const checkWhy5=(d,errors)=>{
+  const valid=Array.isArray(d.why5) && d.why5.length===5 &&
+    d.why5.every(x=>x && typeof x.question==="string" && x.question.length>0 &&
+      typeof x.evidence_ref==="string" && x.evidence_ref.length>0 &&
+      typeof x.answer==="string" && x.answer.length>0);
+  fail(errors,valid,"five evidence-linked Why answers required");
+};
+
+const approvalPayload=({docket,rec,stage,i,base,previous,digest})=>({
+  protocol:"APPF2-CONSTITUTION-1.0",
+  case_id:docket.case_id,
+  stage,
+  stage_number:i+1,
+  canonical_base_sha:base,
+  dossier_sha256:rec.dossier_sha256,
+  previous_signature_sha256:previous,
+  candidate_digest_sha256:i===4?digest:null,
+  decision:i===4?"AUTHORIZE_EXACT_CANDIDATE":"CONTINUE_REVIEW",
+  human_message_ref:rec.human_message_ref,
+  approved_at_unix:rec.approved_at_unix
+});
+const checkOneStage=({docket,rec,stage,i,base,previous,digest,key,root,errors})=>{
+  const rel="delivery/constitutional-dossiers/"+docket.case_id+"-"+stage+".md";
+  const blob=readSafe(root,rel);
+  fail(errors,rec.stage===stage &&
+    blob!==null && rec.dossier_sha256===sha(blob) &&
+    RE_SHA256.test(rec.dossier_sha256||"") &&
+    docket.exact_changed_paths?.includes(rel),
+    stage+" must bind an immutable evidence dossier in the exact PR");
+  fail(errors,typeof rec.human_message_ref==="string" && rec.human_message_ref.trim().length>0,
+    stage+" requires separate direct Human evidence reference");
+  fail(errors,Number.isSafeInteger(rec.approved_at_unix) && rec.approved_at_unix>0,
+    stage+" requires chronological signed Human approval time");
+  const sig=typeof rec.signature_base64==="string"?rec.signature_base64:"";
+  const encoded=Buffer.from(JSON.stringify(approvalPayload({
+    docket,rec,stage,i,base,previous,digest
+  })));
+  const validSig=/^[A-Za-z0-9+/=]+$/.test(sig) && Boolean(key) &&
+    verifySignature(null,encoded,key,Buffer.from(sig,"base64"));
+  fail(errors,validSig,stage+" must have a valid independent Human Ed25519 signature");
+  return sha(Buffer.from(sig,"base64"));
+};
+const checkStages=({docket,base,digest,key,root,errors})=>{
+  if(!Array.isArray(docket.stages) || docket.stages.length!==5){
+    errors.push("CONSTITUTION: exactly five signed, independent Human decisions required");
+    return;
+  }
+  let prev="GENESIS",last=0;
+  for(let i=0;i<5;i++){
+    const rec=docket.stages[i]||{};
+    prev=checkOneStage({
+      docket,rec,stage:CONSTITUTION_STAGES[i],i,base,previous:prev,
+      digest,key,root,errors
+    });
+    fail(errors,Number.isSafeInteger(rec.approved_at_unix) &&
+      rec.approved_at_unix>last,CONSTITUTION_STAGES[i]+" approval order must increase");
+    last=rec.approved_at_unix||last;
+  }
 };
 
 export function inspectConstitutionalChange({changed,base,cs,build,policy,root,trustPublicKeyB64}){
-  const errors=[];
-  const protectedChanged=changed.filter(p=>isProtected(p,policy));
+  const errors=[],protectedChanged=changed.filter(p=>isConstitutionProtected(p,policy));
   if(!protectedChanged.length) return {errors,constitutional:false,bootstrap:false};
   if(isOneTimeConstitutionFounding({changed,base,cs,build})){
     const charter=readSafe(root,"harness/policy/APPF2-CONSTITUTION.md")?.toString("utf8")||"";
-    if(!charter.includes("GOV-CONST-001") || !charter.includes("五次獨立 Human 審議") ||
-        !charter.includes("R5")) errors.push("CONSTITUTION: founding charter required and exact identity missing");
+    fail(errors,charter.includes("GOV-CONST-001") &&
+      charter.includes("五次獨立 Human 審議"),"founding charter identity missing");
     return {errors,constitutional:true,bootstrap:true};
   }
-
-  // Fail closed: a self-authored label/Issue comment cannot authenticate Human. Require
-  // five Ed25519 signatures against a public key from trusted GitHub Actions variables,
-  // NOT a public key supplied by the candidate PR itself.
-  if(!BASE.test(base||"")) errors.push("CONSTITUTION: valid canonical base SHA required");
   const cases=changed.filter(p=>/^delivery\/constitutional-cases\/GOV-[A-Z0-9-]+\.json$/.test(p));
-  if(cases.length!==1) errors.push("CONSTITUTION: exactly one changed constitutional case docket required");
-  let docket=null;
-  if(cases.length===1){
-    try{docket=JSON.parse(readSafe(root,cases[0])?.toString("utf8")||"");}
-    catch{errors.push("CONSTITUTION: docket JSON missing or invalid");}
-  }
+  fail(errors,cases.length===1,"exactly one changed human approval case docket required");
+  const docket=cases.length===1?loadDocket(root,cases[0],errors):null;
   if(!docket) return {errors,constitutional:true,bootstrap:false};
-
-  const expectedCasePath="delivery/constitutional-cases/"+docket.case_id+".json";
-  if(!CASE.test(docket.case_id||"") || cases[0]!==expectedCasePath)
-    errors.push("CONSTITUTION: case_id/path invalid");
-  if(docket.base_sha!==base) errors.push("CONSTITUTION: dossier base SHA differs from PR base");
-  if(docket.constitution_version!=="1.0") errors.push("CONSTITUTION: unsupported constitution version");
-  const changedExceptCase=changed.filter(p=>!cases.includes(p));
-  if(!Array.isArray(docket.exact_changed_paths) ||
-     !eql(sorted(docket.exact_changed_paths),sorted(changedExceptCase)) ||
-     new Set(docket.exact_changed_paths).size!==docket.exact_changed_paths.length)
-    errors.push("CONSTITUTION: exact_changed_paths must match complete PR diff");
-  const actualDiffDigest=contentDigest(root,changedExceptCase);
-  if(!actualDiffDigest || docket.candidate_digest_sha256!==actualDiffDigest)
-    errors.push("CONSTITUTION: PR content digest mismatch (dossier/scope drift)");
-  if(!Array.isArray(docket.why5) || docket.why5.length!==5 ||
-     docket.why5.some(x=>!x || typeof x.question!=="string" || !x.question ||
-       typeof x.evidence_ref!=="string" || !x.evidence_ref ||
-       typeof x.answer!=="string" || !x.answer))
-    errors.push("CONSTITUTION: five evidence-linked Whys required");
-
-  let trustedKey=null;
-  try{
-    if(!trustPublicKeyB64) throw Error("unset");
-    trustedKey=createPublicKey(Buffer.from(trustPublicKeyB64,"base64").toString("utf8"));
-    if(trustedKey.asymmetricKeyType!=="ed25519") throw Error("not Ed25519");
-  }catch{errors.push("CONSTITUTION: trusted human Ed25519 public key missing/invalid; deny by default");}
-  if(!Array.isArray(docket.stages) || docket.stages.length!==5)
-    errors.push("CONSTITUTION: exactly five independent signed human stages required");
-  else{
-    let previous="GENESIS",lastTime=0;
-    for(let i=0;i<5;i++){
-      const stage=CONSTITUTION_STAGES[i],rec=docket.stages[i]||{};
-      const rel="delivery/constitutional-dossiers/"+docket.case_id+"-"+stage+".md";
-      const actualDossierHash=sha(readSafe(root,rel)||Buffer.alloc(0));
-      const action=i===4?"AUTHORIZE_EXACT_CANDIDATE":"CONTINUE_REVIEW";
-      const payload={
-        protocol:"APPF2-CONSTITUTION-1.0",
-        case_id:docket.case_id,
-        stage,
-        stage_number:i+1,
-        canonical_base_sha:base,
-        dossier_sha256:rec.dossier_sha256,
-        previous_signature_sha256:previous,
-        candidate_digest_sha256:i===4?actualDiffDigest:null,
-        decision:action
-      };
-      if(rec.stage!==stage || rec.dossier_sha256!==actualDossierHash ||
-         !SHA256.test(rec.dossier_sha256||"") || !Array.isArray(docket.exact_changed_paths) ||
-         !docket.exact_changed_paths.includes(rel))
-        errors.push("CONSTITUTION: "+stage+" signed dossier not present/matching exact PR scope");
-      if(typeof rec.human_message_ref!=="string" || !rec.human_message_ref.trim())
-        errors.push("CONSTITUTION: "+stage+" lacks separate Human approval evidence reference");
-      if(!Number.isInteger(rec.approved_at_unix) || rec.approved_at_unix<=lastTime)
-        errors.push("CONSTITUTION: "+stage+" timestamps must strictly increase");
-      lastTime=rec.approved_at_unix||lastTime;
-      const sig=rec.signature_base64;
-      if(!sig || !/^[A-Za-z0-9+/=]+$/.test(sig) || !trustedKey ||
-        !verifySignature(null,Buffer.from(JSON.stringify(payload)),trustedKey,Buffer.from(sig||"","base64")))
-        errors.push("CONSTITUTION: "+stage+" missing/invalid independent Human signature");
-      previous=typeof sig==="string"?sha(Buffer.from(sig,"base64")):"INVALID";
-    }
-  }
+  const digest=checkIdentity({docket,changed,casePath:cases[0],base,root,errors});
+  checkWhy5(docket,errors);
+  const key=humanKey(trustPublicKeyB64,errors);
+  checkStages({docket,base,digest,key,root,errors});
   return {errors,constitutional:true,bootstrap:false};
 }
 
-// Regressions run inside standard Governance Gate. No secret key and no Human
-// approval means no path should be able to slip through except exact genesis PR.
 export function testConstitutionFailClosed(){
-  const basic={base:CONSTITUTION_GENESIS_BASE,
-    changed:[...CONSTITUTION_BOOTSTRAP_FILES],
+  const basic={
+    base:CONSTITUTION_GENESIS_BASE,changed:[...CONSTITUTION_BOOTSTRAP_FILES],
     cs:{status:"ACTIVE",active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-024"},
-    build:{active_baseline:"BS-P1-024",implementation_enabled:true}};
-  const expect=(truth,label)=>{if(!truth) throw Error("CONSTITUTION SELF TEST FAIL: "+label);};
-  let count=0;
-  expect(isOneTimeConstitutionFounding(basic),"valid exact genesis");count++;
-  for(const [label,patch] of [
+    build:{active_baseline:"BS-P1-024",implementation_enabled:true}
+  };
+  const expect=(good,label)=>{if(!good) throw Error("CONSTITUTION SELF TEST FAILED: "+label);};
+  expect(isOneTimeConstitutionFounding(basic),"only exact founding passes");
+  let count=1;
+  for(const [name,patch] of [
     ["extra-package",{changed:[...basic.changed,"package.json"]}],
     ["rogue-source",{changed:[...basic.changed,"src/edge/intent-api.ts"]}],
-    ["new-base",{base:"a".repeat(40)}],
-    ["another-task",{cs:{...basic.cs,active_task:"T009"}}],
-    ["not-all-files",{changed:basic.changed.slice(1)}],
-    ["after-merge",{base:"b".repeat(40)}]
-  ]){expect(!isOneTimeConstitutionFounding({...basic,...patch}),label);count++;}
-  const policy={governance_only_paths:["harness/","package.json","AGENTS.md"]};
-  const r=inspectConstitutionalChange({
-    ...basic,base:"a".repeat(40),changed:["package.json"],
-    root:"/non-existent",policy,trustPublicKeyB64:""
+    ["base-drift",{base:"a".repeat(40)}],
+    ["task-drift",{cs:{...basic.cs,active_task:"T009"}}],
+    ["file-missing",{changed:basic.changed.slice(1)}],
+    ["expired",{base:"b".repeat(40)}]
+  ]){
+    expect(!isOneTimeConstitutionFounding({...basic,...patch}),name);count++;
+  }
+  const p={governance_only_paths:["harness/","package.json","AGENTS.md","build-spec/","delivery/CURRENT-SPRINT.json"]};
+  for(const target of ["package.json","package-lock.json","harness/policy/repo-policy.json"]){
+    const result=inspectConstitutionalChange({
+      ...basic,changed:[target],base:"a".repeat(40),
+      root:"/non-existent",policy:p,trustPublicKeyB64:""
+    });
+    expect(result.errors.length>0,"unsigned "+target+" rejected");count++;
+  }
+  const routine=inspectConstitutionalChange({
+    ...basic,changed:["build-spec/CURRENT.json"],
+    base:"a".repeat(40),root:"/non-existent",policy:p,trustPublicKeyB64:""
   });
-  expect(r.errors.length>0,"unsigned package.json must fail");count++;
-  const r2=inspectConstitutionalChange({
-    ...basic,base:"a".repeat(40),changed:["package-lock.json"],
-    root:"/non-existent",policy,trustPublicKeyB64:""
-  });
-  expect(r2.errors.length>0,"unsigned package-lock.json must fail");count++;
-  const r3=inspectConstitutionalChange({
-    ...basic,base:"a".repeat(40),changed:["src/example.ts"],
-    root:"/non-existent",policy,trustPublicKeyB64:""
-  });
-  expect(!r3.errors.length,"unprotected ordinary task not subject to constitution");count++;
+  expect(!routine.constitutional && !routine.errors.length,
+    "ordinary control record keeps existing independent governance gates");count++;
   return count;
 }
