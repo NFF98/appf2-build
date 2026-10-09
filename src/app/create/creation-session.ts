@@ -56,6 +56,11 @@ export type CreationSession = {
   /** Keyed by RECORD field / value node id. */
   readonly nodeProblems: Readonly<Record<string, NodeProblem>>;
   readonly busy: boolean;
+  /**
+   * F01 CREATE checkpoints completed in the current progress operation, from the latest trusted response; null
+   * until that operation has one (a new create or a User retry never inherits the previous operation's value).
+   */
+  readonly checkpoints: number | null;
 };
 
 export function newSession(rawIntent: string, capsuleId: string | null): CreationSession {
@@ -69,7 +74,8 @@ export function newSession(rawIntent: string, capsuleId: string | null): Creatio
     provided: [],
     problems: {},
     nodeProblems: {},
-    busy: false
+    busy: false,
+    checkpoints: null
   };
 }
 
@@ -102,30 +108,4 @@ export function compatibleDrafts(session: CreationSession, decision: IntentDecis
     }
   }
   return { answerDrafts, assumptionDrafts };
-}
-
-export const STAGE_LABELS = ["理解想法", "整理 App", "檢查互動", "準備 App"] as const;
-
-/**
- * Stage-only presentation (O05 INDETERMINATE mode): `completed` counts stages whose F01 checkpoints are
- * confirmed by a response (VALIDATED → stages 1–3); `active` only while a request is actually in flight.
- * Waiting for the User or a failure shows no activity, and no percentage is ever derived here.
- */
-export type StageView = { readonly completed: number; readonly current: number | null; readonly active: boolean };
-
-export function stageView(phase: CreationPhase): StageView {
-  switch (phase.kind) {
-    case "ANALYZING":
-      return { completed: 0, current: 0, active: true };
-    case "CLARIFICATION_REQUIRED":
-    case "ASSUMPTION_REVIEW":
-      return { completed: 0, current: 0, active: false };
-    case "BUILDING":
-      return { completed: 1, current: 1, active: true };
-    case "BUILD_VALIDATED":
-      return { completed: 3, current: null, active: false };
-    case "RECOVERABLE_FAILURE":
-    case "INTERRUPTED":
-      return phase.step.kind === "COMPILE" ? { completed: 1, current: 1, active: false } : { completed: 0, current: 0, active: false };
-  }
 }

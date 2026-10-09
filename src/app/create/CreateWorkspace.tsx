@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { RuntimeStatus } from "../../platform/runtime/runtime-evidence.js";
 import { Brand } from "../shell/Brand.js";
 import { decidableAssumptions } from "./assumptions.js";
 import { AssumptionList } from "./AssumptionList.js";
+import { createProgressView } from "./create-progress.js";
 import type { CreationController } from "./creation-controller.js";
-import { stageView, stepAnswers, type CreationSession, type CreationStep, type ProvidedAnswer, type RecoveryReason } from "./creation-session.js";
+import { stepAnswers, type CreationSession, type CreationStep, type ProvidedAnswer, type RecoveryReason } from "./creation-session.js";
 import { IntentDisclosure, type DisclosureMode } from "./IntentDisclosure.js";
 import { QuestionField } from "./QuestionField.js";
 import { StageProgress } from "./StageProgress.js";
@@ -14,6 +16,8 @@ type WorkspaceProps = {
   readonly session: CreationSession;
   readonly controller: CreationController;
   readonly onBack: () => void;
+  /** F03 Runtime Instance status of the validated App; absent until F03 hydration is mounted for it. */
+  readonly runtimeStatus?: RuntimeStatus;
 };
 
 type BodyProps = WorkspaceProps & { readonly onEditIntent: () => void };
@@ -192,7 +196,7 @@ function StatusBody({ session, controller }: BodyProps) {
  * stop the flow; everything the User typed survives failures and the explicit 「修改需求」 path.
  */
 export function CreateWorkspace(props: WorkspaceProps) {
-  const { session, controller, onBack } = props;
+  const { session, controller, onBack, runtimeStatus } = props;
   const [disclosure, setDisclosure] = useState<DisclosureMode>("CLOSED");
   const mainRef = useRef<HTMLElement>(null);
   const kind = session.phase.kind;
@@ -213,7 +217,7 @@ export function CreateWorkspace(props: WorkspaceProps) {
         </button>
       </header>
       <main className="s02-main" ref={mainRef}>
-        <StageProgress view={stageView(session.phase)} />
+        <StageProgress view={createProgressView(session.phase, session.checkpoints, runtimeStatus ?? null)} />
         <IntentDisclosure
           key={session.rawIntent}
           rawIntent={session.rawIntent}

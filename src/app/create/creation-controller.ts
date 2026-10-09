@@ -192,11 +192,17 @@ export class CreationController {
     void this.run({ kind: "ANSWERS", intentId: decision.intentId, body, decision });
   }
 
-  /** Recovery 「再試一次」 / resume after leaving: the identical request, therefore the same Idempotency-Key. */
+  /**
+   * Recovery 「再試一次」 / resume after leaving: the identical request, therefore the same Idempotency-Key. It is a
+   * new progress operation (F01-RQ-010), so the previous percentage is not carried into it.
+   */
   public retry(): void {
     const phase = this.session?.phase;
     if (this.inFlight !== null || phase === undefined) return;
-    if ((phase.kind === "RECOVERABLE_FAILURE" && phase.reason === "RETRYABLE") || phase.kind === "INTERRUPTED") void this.run(phase.step);
+    if ((phase.kind === "RECOVERABLE_FAILURE" && phase.reason === "RETRYABLE") || phase.kind === "INTERRUPTED") {
+      this.patch(() => ({ checkpoints: null }));
+      void this.run(phase.step);
+    }
   }
 
   /** 「回到建立 App」: stop waiting locally (F00-UX-023); server work is still deduplicated by the open key. */
@@ -214,7 +220,8 @@ export class CreationController {
     if (!result.ok) return this.fail(step, result.failure);
     this.keys.settle();
     if (step.kind === "COMPILE") {
-      return this.patch(() => ({ busy: false, phase: { kind: "BUILD_VALIDATED", contentHash: (result.data as CompileOutcome).contentHash } }));
+      const outcome = result.data as CompileOutcome;
+      return this.patch(() => ({ busy: false, phase: { kind: "BUILD_VALIDATED", contentHash: outcome.contentHash }, checkpoints: outcome.checkpoints ?? null }));
     }
     this.decide(step, result.data as IntentDecision);
   }
@@ -238,6 +245,7 @@ export class CreationController {
     this.patch((session) => ({
       busy: ready,
       decision,
+      checkpoints: decision.checkpoints ?? null,
       ...(ready ? {} : { phase: decisionPhase(decision) }),
       ...compatibleDrafts(session, decision),
       problems: {},
