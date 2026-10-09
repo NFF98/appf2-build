@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-053",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-023",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T004",
+  "expected": "T004 BS-P1-023 F00-AC-005 must support functional Accept/Edit/Reject for material visible assumption including ENUM/LIST/RECORD, with legal input projection F01 can validate.",
+  "actual": "F01-DATA-004 visible_assumptions response does not project question_type/expected_value_type, ENUM/LIST authoritative alternatives or RECORD editor contract; composite Edit disabled. Client cannot safely infer server answer-shape. CI mapped TEST-F00-AC-002 also fails scanner on apostrophe in title (independent TEST_BUG bounded correction retained for T004).",
+  "evidence": [
+    "Issue #301 BCE-1 independent BLOCKED audit #6070920725.",
+    "Issue #301 Cursor SPEC_GAP RESULT #6071105189 consumed bounded lease 6071060168, no push.",
+    "Issue #301 BCE-2 independent BLOCKED / SPEC_GAP confirmation #6071183275.",
+    "Human 2026-10-09 approved Choice 1 and subsequent BCE execution through pre-Cursor.",
+    "Design PR #33 merged at f2e32e10dfe01aa3d8308a5444353c28f540aa89.",
+    "Design PR #34 strengthened existing F01-AC-004 / TEST-F01-004, merged at 7a69bdab36db34618a1904a637587a01148ee138.",
+    "Scoped derived freeze commit 736c757e72734f46407f8c9afcd81580ae75f0ef changes exactly four Design owner files relative to BS-P1-023 source 05f261a8f83f447df60af7e4c581432fe825787d.",
+    "Build governance quarantine PR #324 merged as a83303f4b84aa7258e8370c4fa86072a59abd3ba; T004 BLOCKED and implementation disabled."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "T004_BOUNDED_REMEDIATION_CHECK_LOCKED_EDIT_SHAPE",
+      "result": "HARD_STOP_SPEC_GAP_NO_COMMIT",
+      "evidence": "Cursor lease #6071060168 RESULT #6071105189; F01 projection missing authoritative alternatives and RECORD semantics."
+    }
+  ],
+  "requested_planning_action": [
+    "New BS-P1-024 from scoped approved Design source 736c757e... with BD-024 trace.",
+    "New F01 revalidation Task must own strengthened F01-AC-004 / TEST-F01-004 without re-opening completed T001.",
+    "T004 rebind after F01 dependency, retain PR #323 unmerged until independent re-audit.",
+    "Do not start Cursor until fresh Human-scoped authorization and dedicated lease."
+  ],
+  "affected_contracts": [
+    "F01-DATA-004 / F01-DATA-004A visible_assumptions projection",
+    "F01-API-001/002 response edit-shape",
+    "F00-UX-010 / F00-UX-010A",
+    "S02 ASSUMPTION_REVIEW",
+    "F01-AC-004 revalidation",
+    "F00-AC-005"
+  ],
+  "affected_acceptance": [
+    "F01-AC-004",
+    "F00-AC-005"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-024"
+}
