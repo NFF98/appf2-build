@@ -17,6 +17,7 @@ jobs:
           node-version: 22
       - name: Run repository gates
         env:
+          APPF2_CONSTITUTION_PUBKEY_B64: ${{ vars.APPF2_CONSTITUTION_PUBKEY_B64 }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: npm run gate
