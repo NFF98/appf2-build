@@ -60,6 +60,80 @@ const immutableBacklog=q=>({
 });
 const immutableBuild=b=>omit(b,["implementation_enabled","reason"]);
 
+
+/**
+ * Safe-control-only exception for an audited revalidation closure, never a general backlog rewrite.
+ * The existing Evidence Gate independently verifies every referenced PASS record before a Task is CLOSED.
+ */
+const exactRevalidationClosures=(beforeQueue,afterQueue,beforeTd,afterTd)=>{
+  if(!Array.isArray(beforeQueue?.items) || !Array.isArray(afterQueue?.items) ||
+     beforeQueue.items.length!==afterQueue.items.length ||
+     beforeTd?.sprint_id!==afterTd?.sprint_id ||
+     !Array.isArray(beforeTd?.tasks) || !Array.isArray(afterTd?.tasks)) return false;
+  const beforeTasks=new Map(beforeTd.tasks.map(t=>[t.task_id,t]));
+  const afterTasks=new Map(afterTd.tasks.map(t=>[t.task_id,t]));
+  let closures=0;
+  const restored=[];
+  for(let i=0;i<beforeQueue.items.length;i++){
+    const oldItem=beforeQueue.items[i],newItem=afterQueue.items[i];
+    if(!oldItem || !newItem || oldItem.backlog_item_id!==newItem.backlog_item_id) return false;
+    const oldR=oldItem.revalidation,newR=newItem.revalidation;
+    if(stable(oldR)===stable(newR)){
+      restored.push(newItem);
+      continue;
+    }
+    if(!oldR || !newR || oldR.status!=="IN_PROGRESS" || newR.status!=="CLOSED" ||
+       stable(omit(oldR,["status"]))!==stable(omit(newR,["status"])) ||
+       oldR.sprint_id!==beforeTd.sprint_id ||
+       newR.sprint_id!==afterTd.sprint_id ||
+       oldR.target_build_spec_id!==beforeQueue.build_spec_id ||
+       newR.target_build_spec_id!==afterQueue.build_spec_id) return false;
+    const beforeTask=beforeTasks.get(oldR.task_id),afterTask=afterTasks.get(newR.task_id);
+    if(!beforeTask || !afterTask || beforeTask.task_id!==afterTask.task_id ||
+       beforeTask.status!=="IN_PROGRESS" || afterTask.status!=="CLOSED" ||
+       beforeTask.build_spec_id!==oldR.target_build_spec_id ||
+       afterTask.build_spec_id!==newR.target_build_spec_id ||
+       !Array.isArray(afterTask.completion_evidence) || !afterTask.completion_evidence.length ||
+       !Array.isArray(newR.acceptance_ids) ||
+       !newR.acceptance_ids.every(aid=>(afterTask.acceptance_links||[]).some(link=>link.acceptance_id===aid))) return false;
+    restored.push({...newItem,revalidation:oldR});
+    closures++;
+  }
+  return closures>0 &&
+    stable(immutableBacklog(beforeQueue))===
+    stable(immutableBacklog({...afterQueue,items:restored}));
+};
+
+/** Mandatory positive/negative regression assertions, executed by npm run gate on every CI run. */
+const checkRevalidationClosureGuard=()=>{
+  const revalidation={target_build_spec_id:"BS-P1-024",sprint_id:"SP-P1-003",task_id:"T007",acceptance_ids:["F01-AC-004"],status:"IN_PROGRESS"};
+  const item={backlog_item_id:"BL-P1-008",status:"DONE",sprint_id:"SP-P1-002",revalidation};
+  const oldQueue={schema_version:1,build_spec_id:"BS-P1-024",status:"OPEN",generation:{},items:[item]};
+  const newQueue={...oldQueue,items:[{...item,revalidation:{...revalidation,status:"CLOSED"}}]};
+  const oldTask={task_id:"T007",status:"IN_PROGRESS",build_spec_id:"BS-P1-024",completion_evidence:[],acceptance_links:[{acceptance_id:"F01-AC-004",test_id:"TEST-F01-004"}]};
+  const newTask={...oldTask,status:"CLOSED",completion_evidence:["EV-SP-P1-003-T007-001"]};
+  const oldTd={sprint_id:"SP-P1-003",tasks:[oldTask]},newTd={sprint_id:"SP-P1-003",tasks:[newTask]};
+  const replace=(base,patch)=>({...base,...patch});
+  const cases=[
+    ["valid exact closure",true,oldQueue,newQueue,oldTd,newTd],
+    ["no evidence",false,oldQueue,newQueue,oldTd,replace(newTd,{tasks:[replace(newTask,{completion_evidence:[]})]})],
+    ["Task not CLOSED",false,oldQueue,newQueue,oldTd,replace(newTd,{tasks:[replace(newTask,{status:"IN_PROGRESS"})]})],
+    ["Task source already CLOSED",false,oldQueue,newQueue,replace(oldTd,{tasks:[replace(oldTask,{status:"CLOSED"})]}),newTd],
+    ["revalidation status reopened",false,replace(oldQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED"}}]}),replace(oldQueue,{items:[item]}),oldTd,newTd],
+    ["revalidation VERIFIED instead of CLOSED",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"VERIFIED"}}]}),oldTd,newTd],
+    ["different target Build Spec",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED",target_build_spec_id:"BS-P1-023"}}]}),oldTd,newTd],
+    ["different revalidation Task",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED",task_id:"T006"}}]}),oldTd,newTd],
+    ["different acceptance scope",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED",acceptance_ids:["F01-AC-005"]}}]}),oldTd,newTd],
+    ["extra edited backlog metadata",false,oldQueue,replace(newQueue,{items:[{...newQueue.items[0],priority:"P0"}]}),oldTd,newTd],
+    ["wrong Sprint identity",false,oldQueue,newQueue,oldTd,replace(newTd,{sprint_id:"SP-P1-004"})]
+  ];
+  for(const [name,expected,before,after,tasksBefore,tasksAfter] of cases){
+    if(exactRevalidationClosures(before,after,tasksBefore,tasksAfter)!==expected) errors.push("Revalidation closure guard self-test failed: "+name);
+  }
+  if(!errors.some(e=>e.startsWith("Revalidation closure guard self-test failed:"))) console.log("- Revalidation closure guard: 11 positive/negative regression cases PASS.");
+};
+checkRevalidationClosureGuard();
+
 const baseCurrentSprint=showBaseJson("delivery/CURRENT-SPRINT.json");
 const baseCurrentBuild=showBaseJson("build-spec/CURRENT.json");
 const targetSprint=cs.active_sprint || baseCurrentSprint?.active_sprint;
@@ -84,7 +158,8 @@ if(changed.length && changed.every(p=>controlAllowed.has(p)) && baseSha && !/^0+
     stable(immutableBuild(oldBuild))===stable(immutableBuild(currentBuild)) &&
     (!oldManifest || stable(immutableManifest(oldManifest))===stable(immutableManifest(newManifest))) &&
     (!oldTasks || stable(immutableTasks(oldTasks))===stable(immutableTasks(newTasks))) &&
-    (!oldBacklog || stable(immutableBacklog(oldBacklog))===stable(immutableBacklog(newBacklog)));
+    (!oldBacklog || stable(immutableBacklog(oldBacklog))===stable(immutableBacklog(newBacklog)) ||
+      exactRevalidationClosures(oldBacklog,newBacklog,oldTasks,newTasks));
   if(safeControlTransition) console.log("- Safe execution control transition recognized; Task definitions remain immutable.");
 }
 
