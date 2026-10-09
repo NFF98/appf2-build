@@ -20,6 +20,20 @@ Human 2026-10-10 授權啟動本法入庫流程；本次是「制憲候選案」
 
 不得以調整 `allowed_write_paths`、臨時例外、工作樹、合併小 PR、使用外部 Node 專案、腳本、fork 或「測試用途」迴避。外部 PoC 必須有自己的權限，不等於正式產品修改的授權。locked baselines 永不可原地編輯。
 
+## 1A. 三級變更分類：Build／SPEC／憲法（不得混淆）
+
+**先判斷改變了什麼權威與語意，不以資料夾名稱、PR 標籤或 AI 主觀命名分類。** 每一變更提案在任何 implementation lease 之前，需列出「變更前後語意、檔案、Product/Contract 影響、治理權限影響、證據與最終核准者」。未能證明類型時，HARD STOP，由 Human 定性。
+
+| 層級 | 判準 | 唯一真相與合法執行路徑 | 核准／驗收 |
+| --- | --- | --- | --- |
+| **L1 一般 Build（行政／執行）** | 不改 Product semantics、已鎖定的 SPEC/Acceptance、Agent 權限或安全 Gate；只按既有契約實作、修 Bug、測試 | `NFF98/appf2-build`：active locked Build Spec → 已批准 Sprint/Task → `src/`、`tests/` 等 Task `allowed_write_paths`；`validate-change-scope.mjs` + `validate-sprint.mjs` + CI | Human Sprint/Task 權限；Cursor 執行後獨立 BCE、Evidence、另行 Human merge／closure |
+| **L2 SPEC／REBIND（修法／產品契約）** | 改需求、行為、架構契約、Acceptance／Test 的規範意義、Baseline 綁定或 Design-to-Build 投影；不改上位安全治理 | **先** `NFF98/appf2-design/working/`（Product Truth）→ Human Design/Delta 審查 → Build Freeze → `appf2-build/build-spec/baselines/BS-*` **新建** immutable Baseline → `build-spec/activations/`、Backlog/Sprint 正式 REBIND | Design Human approval + Freeze/Activation Gate + 獨立 CI/BCE；舊 locked baseline 永不改寫 |
+| **L3 憲法級（修憲／上位治理）** | 改 AI/Human 權限、安全政策、Gate、CI 保護、受保護依賴（包含 `package.json`／`package-lock.json`）或憲法本身 | 本檔 `harness/policy/APPF2-CONSTITUTION.md` 為 Build/Delivery 治理 owner，`AGENTS.md` 通知 Agent；`validate-constitutional-change.mjs`、`governance-gate.mjs` 在 CI 執行 | 強制 5 Why + 依序五次 Human 核准 R1–R5 + 獨立 CI/BCE + **另一筆** Human merge approval |
+
+**跨層處理**：同一變更若同時涉及 L2 產品契約和 L3 安全規則，**兩組獨立核准鏈均須完成**，不得只走最高層就豁免 Product Design；也不得以一般 REBIND 包裝修憲。L1 實作衍生的 SPEC gap 只能先建 Finding，退回 L2；不能把 code 反向當 Product truth。
+
+**SSOT 邊界**：本文件是 `appf2-build` 的 Build/Delivery 上位治理，不取得 `appf2-design` Product Truth 修改權。`appf2-design/SSOT.md` 與 `working/` 仍是 Design 的唯一 Current Truth；若要讓 Design repo 的自身 CI 也讀到此三級分類與修憲 Gate，必須另行提出經 Human 批准的 Design governance PR。**單在 Build Repo 加規則，不得宣稱已跨 Repo 機器執行。**
+
 ## 2. 五層防 AI 誤判
 
 1. **談論 ≠ 核准**。問題、建議、假設、問句、「OK」「差不多」「那就裝」「核准下一步」「批准執行」等未含特定 Case＋階段＋案卷版本者，一律不算「修憲階段」核准。當人明示「目前沒批准」時，不得反向推論。
