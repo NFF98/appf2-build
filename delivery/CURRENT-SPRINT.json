@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-024",
+  "active_task": "T004",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-09 approved bounded governance validator remediation; TEMPORARY HOLD before correcting conflicting revalidation closure rules, Issue #301 #6072409243. T007 remains IN_PROGRESS until verified closure; T004 remains BLOCKED; never start Cursor in HOLD."
+  "reason": "Human-approved 2026-10-09 T007 closure and T004 governance activation after strict revalidation validator remediation PR #332 and 11 T007 Evidence. T004 BS-P1-024 active without fresh Cursor lease; old T004 PR #323 frozen, no T005/T006."
 }
