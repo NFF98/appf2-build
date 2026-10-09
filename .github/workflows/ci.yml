@@ -21,6 +21,7 @@ jobs:
           node-version: 22
       - name: Governance / traceability gates
         env:
+          APPF2_CONSTITUTION_PUBKEY_B64: ${{ vars.APPF2_CONSTITUTION_PUBKEY_B64 }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: npm run gate
@@ -32,8 +33,22 @@ jobs:
       - name: Install Playwright browsers
         if: ${{ hashFiles('package-lock.json') != '' }}
         run: npx --no -- playwright install --with-deps chromium firefox webkit
-      - name: Product CI
+      - name: Product CI (one-time founding governance-only N/A when exact scope)
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
-        run: npm run product:ci
+        run: |
+          if node --input-type=module -e '
+            import fs from "node:fs";
+            import { execFileSync } from "node:child_process";
+            import { isOneTimeConstitutionFounding } from "./harness/scripts/validate-constitutional-change.mjs";
+            const base=process.env.BASE_SHA,head=process.env.HEAD_SHA;
+            const changed=execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
+            const cs=JSON.parse(fs.readFileSync("delivery/CURRENT-SPRINT.json","utf8"));
+            const build=JSON.parse(fs.readFileSync("build-spec/CURRENT.json","utf8"));
+            if(!isOneTimeConstitutionFounding({changed,base,cs,build})) process.exit(1);
+          '; then
+            echo "::notice::GOV-CONST-001 exact-SHA exact-seven-path founding only: Product CI=N/A (NOT PASS); T006 missing product tests remain BLOCKED"
+          else
+            npm run product:ci
+          fi

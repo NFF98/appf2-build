@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { inspectConstitutionalChange, testConstitutionFailClosed } from "./validate-constitutional-change.mjs";
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -38,6 +39,7 @@ if(current.active_baseline===null){
 }
 
 const base=process.env.BASE_SHA, head=process.env.HEAD_SHA||'HEAD';
+const constitutionalChanged=[];
 if(base && !/^0+$/.test(base)){
   let diff='';
   try{diff=execFileSync('git',['diff','--name-status','-M',base,head],{encoding:'utf8'}).trim();}
@@ -45,9 +47,22 @@ if(base && !/^0+$/.test(base)){
 
   for(const line of diff.split('\n').filter(Boolean)){
     const cols=line.split('\t'), status=cols[0], paths=cols.slice(1);
-    for(const changed of paths) inspectProtectedChange(base,status,changed);
+    for(const changed of paths) { inspectProtectedChange(base,status,changed); constitutionalChanged.push(changed); }
   }
 }
+
+if(base && !/^0+$/.test(base)){
+  const cs=readJson("delivery/CURRENT-SPRINT.json");
+  const result=inspectConstitutionalChange({
+    changed:[...new Set(constitutionalChanged)],base,cs,build:current,
+    policy,root,trustPublicKeyB64:process.env.APPF2_CONSTITUTION_PUBKEY_B64
+  });
+  fail.push(...result.errors);
+  if(result.bootstrap && !result.errors.length) note.push("GOV-CONST-001 narrow one-time bootstrap verified against exact old main SHA.");
+  if(result.constitutional && !result.bootstrap) note.push("Constitutional amendment: signature-and-digest checks required; current Sprint write scope remains independent.");
+}
+try{ const count=testConstitutionFailClosed(); note.push("Constitution negative-scope self tests: "+count+" PASS."); }
+catch(error){ fail.push(String(error)); }
 
 if(fail.length){console.error('GOVERNANCE GATE: FAIL'); fail.forEach(x=>console.error('- '+x)); process.exit(1);}
 console.log('GOVERNANCE GATE: PASS'); note.forEach(x=>console.log('- '+x));
