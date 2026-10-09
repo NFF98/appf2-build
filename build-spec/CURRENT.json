@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-024",
-  "implementation_enabled": false,
-  "reason": "Human 2026-10-09 approved T004 final closure after implementation PR #334 (BCE-2 PASS) and Evidence PR #335 (17 PASS evidence, 4/4 CI). BS-P1-024 remains LOCKED; implementation disabled during SP-P1-003 inter-task HOLD. T005 not activated."
+  "implementation_enabled": true,
+  "reason": "Human 2026-10-09 approved SP-P1-003/T005 governance activation after independent Planning BCE PASS (Issue #301 comment #6073881763). BS-P1-024 remains LOCKED. Cursor execution requires a separate Human approval and fresh single-use lease."
 }

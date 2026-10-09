@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-024",
+  "active_task": "T005",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-09 approved T004 final closure; 17 normalized Evidence in main; SP-P1-003 manifest remains ACTIVE but CURRENT execution is HOLD, pending separately approved T005 Planning/Activation and separate Cursor execution lease. No auto-start."
+  "reason": "Human 2026-10-09 approved T005 control-only Activation after independent Planning BCE PASS #6073881763; implementation execution has NOT been authorized and requires a distinct Human approval. T004 remains CLOSED; T006 PLANNED."
 }
