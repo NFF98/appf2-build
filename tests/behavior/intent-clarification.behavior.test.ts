@@ -7,6 +7,16 @@ import { F01_CLARIFICATION_POLICY_VERSION, type StructuredIntentEnvelope } from 
 import { restoreTrustedIntentState, startIntentClarification, type TrustedIntentState } from "../../src/platform/intent/intent-state.js";
 import { questionIdFor } from "../../src/platform/intent/question-projection.js";
 import { admitResolvedIntent, isResolvedIntentAdmission, parseCompileRequest } from "../../src/platform/intent/resolved-intent-gate.js";
+import type { JsonValue } from "../../src/platform/intent/json-value.js";
+import { createF01Harness, dataOf, errorOf, succeeded, type F01Harness } from "../api/f01-harness.js";
+import {
+  ADD_ON_OPTIONS,
+  MENU_EDIT,
+  MENU_PROPOSAL,
+  SIX_TYPE_ASSUMPTIONS,
+  editShapeAnalysis,
+  expectedEditShapeAssumptions
+} from "../contract/intent-edit-shape-fixtures.js";
 import {
   NFF_POLICY_REF,
   analysis,
@@ -191,6 +201,169 @@ describe("F01-AC-004 material proposals and defaults are visible", () => {
     expect(() =>
       submitClarificationAnswers(state, answersBody([], [{ assumption_id: "split", decision: "EDIT", edited_value: 3 }]))
     ).toThrowError(contractError("F01-ERR-003", "ANSWER_TYPE_MISMATCH"));
+  });
+});
+
+type ShapeIntent = { readonly intentId: string; readonly version: number; readonly data: Record<string, unknown> };
+
+async function createShapeIntent(h: F01Harness, envelope: StructuredIntentEnvelope = editShapeAnalysis()): Promise<ShapeIntent> {
+  h.gateway.queueAnalysis(succeeded(envelope as unknown as JsonValue));
+  const response = await h.create("create-shape");
+  expect(response.status, JSON.stringify(response.body)).toBe(200);
+  const data = dataOf(response);
+  return { intentId: String(data.intent_id), version: Number(data.intent_version), data };
+}
+
+const assumptionsOf = (data: Record<string, unknown>) => data.visible_assumptions as Record<string, JsonValue>[];
+const assumptionOf = (data: Record<string, unknown>, id: string) => assumptionsOf(data).find((entry) => entry.assumption_id === id);
+const durableItem = (h: F01Harness, intentId: string, id: string) =>
+  findItem(h.db.intents.get(intentId)!.structured_intent as StructuredIntentEnvelope, id);
+const decisionsBody = (version: number, decisions: readonly Record<string, JsonValue>[]) => ({ answers: [], assumption_decisions: decisions, intent_version: version });
+
+describe("F01-AC-004 F01-DATA-004A server-authoritative visible assumption edit shape", () => {
+  test("TEST-F01-004 every pending DEFAULT / PROPOSAL projects its validated type, question type, choice options and OPEN_JSON_RECORD_V1 exactly", () => {
+    const evaluation = evaluateClarificationPolicy(startIntentClarification(editShapeAnalysis()));
+
+    expect(evaluation.decision).toBe("READY_WITH_VISIBLE_ASSUMPTIONS");
+    expect(evaluation.questions).toEqual([]);
+    expect(JSON.parse(JSON.stringify(evaluation.visible_assumptions))).toStrictEqual(expectedEditShapeAssumptions());
+    const byId = new Map(evaluation.visible_assumptions.map((entry) => [entry.assumption_id, entry]));
+    expect(byId.get("d_rounding")?.options).toStrictEqual([10, 1, "none"]);
+    expect(byId.get("e_add_ons")?.options).toStrictEqual(ADD_ON_OPTIONS);
+    for (const id of ["a_title", "b_headcount", "c_tip_included", "f_menu", "g_greeting", "h_theme", "occasion"]) {
+      expect(byId.get(id), id).not.toHaveProperty("options");
+    }
+    for (const id of ["a_title", "b_headcount", "c_tip_included", "d_rounding", "e_add_ons", "g_greeting", "h_theme", "occasion"]) {
+      expect(byId.get(id), id).not.toHaveProperty("record_edit_schema");
+    }
+    for (const id of ["h_theme", "occasion"]) {
+      expect(byId.get(id), id).not.toHaveProperty("expected_value_type");
+      expect(byId.get(id), id).not.toHaveProperty("question_type");
+    }
+  });
+
+  test("TEST-F01-004 the real create and answers handlers return the same trusted edit shape and persist a native nested RECORD / LIST / ENUM EDIT as USER_EXPLICIT", async () => {
+    const h = createF01Harness();
+    const created = await createShapeIntent(h);
+    expect(created.data.status).toBe("READY_WITH_VISIBLE_ASSUMPTIONS");
+    expect(assumptionsOf(created.data)).toStrictEqual(expectedEditShapeAssumptions());
+
+    const edited = await h.answers(
+      created.intentId,
+      decisionsBody(created.version, [
+        { assumption_id: "f_menu", decision: "EDIT", edited_value: MENU_EDIT },
+        { assumption_id: "e_add_ons", decision: "EDIT", edited_value: [0, { item: "cake", size: 6 }] },
+        { assumption_id: "d_rounding", decision: "EDIT", edited_value: "none" },
+        { assumption_id: "b_headcount", decision: "ACCEPT" }
+      ]),
+      "answers-edit"
+    );
+    expect(edited.status, JSON.stringify(edited.body)).toBe(200);
+    const afterEdit = dataOf(edited);
+    expect(afterEdit).toMatchObject({ status: "READY_WITH_VISIBLE_ASSUMPTIONS", intent_version: created.version + 1 });
+    for (const id of ["a_title", "c_tip_included", "g_greeting"]) {
+      expect(assumptionOf(afterEdit, id), id).toStrictEqual(assumptionOf(created.data, id));
+    }
+    expect(assumptionOf(afterEdit, "f_menu")).toStrictEqual({
+      assumption_id: "f_menu",
+      classification: "FACT",
+      description: "Decide f_menu",
+      materiality: "MATERIAL",
+      impact_level: "MEDIUM",
+      source: "USER_EXPLICIT",
+      resolved_value: MENU_EDIT
+    });
+    expect(assumptionOf(afterEdit, "b_headcount")).toBeUndefined();
+
+    expect(durableItem(h, created.intentId, "f_menu")).toMatchObject({ source: "USER_EXPLICIT", resolution_state: "CONFIRMED", can_default: false });
+    expect(durableItem(h, created.intentId, "f_menu").resolved_value).toStrictEqual(MENU_EDIT);
+    expect(durableItem(h, created.intentId, "f_menu")).not.toHaveProperty("proposed_default");
+    expect(durableItem(h, created.intentId, "e_add_ons").resolved_value).toStrictEqual([0, { item: "cake", size: 6 }]);
+    expect(durableItem(h, created.intentId, "d_rounding")).toMatchObject({ source: "USER_EXPLICIT", resolved_value: "none", source_ref: NFF_POLICY_REF });
+    expect(durableItem(h, created.intentId, "b_headcount")).toMatchObject({ source: "NFF_DEFAULT", resolved_value: 8, source_ref: NFF_POLICY_REF });
+
+    const finished = dataOf(
+      await h.answers(
+        created.intentId,
+        decisionsBody(created.version + 1, [
+          { assumption_id: "a_title", decision: "ACCEPT" },
+          { assumption_id: "c_tip_included", decision: "EDIT", edited_value: true },
+          { assumption_id: "g_greeting", decision: "ACCEPT" }
+        ]),
+        "answers-finish"
+      )
+    );
+    expect(finished.status).toBe("READY");
+    expect(assumptionsOf(finished).filter((entry) => entry.classification === "DEFAULT" || entry.classification === "PROPOSAL")).toEqual([]);
+    expect(durableItem(h, created.intentId, "a_title")).toMatchObject({ source: "USER_ACCEPTED_PROPOSAL", resolved_value: "Team dinner split" });
+    expect(durableItem(h, created.intentId, "c_tip_included")).toMatchObject({ source: "USER_EXPLICIT", resolved_value: true });
+    expect(h.db.intents.get(created.intentId)?.lifecycle_status).toBe("READY");
+  });
+});
+
+describe("F01-AC-004 F01-DATA-004A invalid edits and malformed edit-shape metadata fail closed", () => {
+  test("TEST-F01-004 EDIT values outside the projected shape are F01-ERR-003 without coercion or mutation, and a valid retry recovers", async () => {
+    const h = createF01Harness();
+    const created = await createShapeIntent(h);
+    const invalid: readonly (readonly [string, JsonValue])[] = [
+      ["b_headcount", "12"],
+      ["c_tip_included", "true"],
+      ["a_title", 7],
+      ["d_rounding", "10"],
+      ["d_rounding", 5],
+      ["e_add_ons", ["drinks", "drinks"]],
+      ["e_add_ons", ["wine"]],
+      ["e_add_ons", "drinks"],
+      ["f_menu", JSON.stringify(MENU_PROPOSAL)],
+      ["f_menu", [MENU_PROPOSAL]],
+      ["f_menu", 3]
+    ];
+    const before = structuredClone(h.db.intents.get(created.intentId));
+    for (const [index, [id, value]] of invalid.entries()) {
+      const response = await h.answers(created.intentId, decisionsBody(created.version, [{ assumption_id: id, decision: "EDIT", edited_value: value }]), `bad-${index}`);
+      expect(response.status, `${id} ${JSON.stringify(value)}`).toBe(400);
+      expect(errorOf(response)).toMatchObject({ code: "F01-ERR-003", details: { violations: [{ path: "$.assumption_decisions[0].edited_value", reason: "ANSWER_TYPE_MISMATCH" }] } });
+    }
+    expect(h.db.intents.get(created.intentId)).toEqual(before);
+
+    const recovered = await h.answers(created.intentId, decisionsBody(created.version, [{ assumption_id: "f_menu", decision: "EDIT", edited_value: { only_key: [] } }]), "good-retry");
+    expect(recovered.status, JSON.stringify(recovered.body)).toBe(200);
+    expect(durableItem(h, created.intentId, "f_menu").resolved_value).toStrictEqual({ only_key: [] });
+  });
+
+  test("TEST-F01-004 missing, mismatched or inconsistent edit-shape metadata fails closed and never yields READY_WITH_VISIBLE_ASSUMPTIONS", async () => {
+    const malformed: readonly Record<string, JsonValue>[] = [
+      { expected_value_type: "ENUM", question_type: "FREE_TEXT" },
+      { expected_value_type: "RECORD", question_type: "MULTI_CHOICE" },
+      { expected_value_type: "ENUM", question_type: "SINGLE_CHOICE", alternatives: ["only", "only"] },
+      { expected_value_type: "LIST", question_type: "MULTI_CHOICE", alternatives: ["x", "y"], proposed_default: ["z"] }
+    ];
+    for (const [index, patch] of malformed.entries()) {
+      const h = createF01Harness();
+      const output = { ...editShapeAnalysis(), assumptions: [{ ...SIX_TYPE_ASSUMPTIONS[0], ...patch }] } as unknown as JsonValue;
+      h.gateway.queueAnalysis(succeeded(output), succeeded(output));
+      const response = await h.create(`create-malformed-${index}`);
+      expect([response.status, errorOf(response).code], JSON.stringify(patch)).toEqual([502, "F01-ERR-002"]);
+      expect(JSON.stringify(response.body)).not.toContain("READY_WITH_VISIBLE_ASSUMPTIONS");
+      expect([...h.db.intents.values()].map((intent) => intent.lifecycle_status)).toEqual(["ANALYSIS_FAILED"]);
+    }
+
+    const h = createF01Harness();
+    const created = await createShapeIntent(h);
+    const stored = h.db.intents.get(created.intentId)!;
+    const envelope = stored.structured_intent as StructuredIntentEnvelope;
+    stored.structured_intent = {
+      ...envelope,
+      assumptions: envelope.assumptions.map((entry) => (entry.id === "d_rounding" ? { ...entry, question_type: "FREE_TEXT" } : entry))
+    };
+    const before = structuredClone(stored);
+    const response = await h.answers(created.intentId, decisionsBody(created.version, [{ assumption_id: "a_title", decision: "ACCEPT" }]), "answers-corrupt");
+    expect([response.status, errorOf(response)]).toEqual([
+      500,
+      { code: "F01-ERR-014", message_key: "recovery.f01.internal_invariant", retryable: false, retry_after_seconds: null, details: {} }
+    ]);
+    expect(h.db.intents.get(created.intentId)).toEqual(before);
+    expect(h.db.operationFor("POST /api/v1/intents/{intent_id}/answers", "answers-corrupt")).toMatchObject({ status: "FAILED_TERMINAL", error_code: "F01-ERR-014" });
   });
 });
 
