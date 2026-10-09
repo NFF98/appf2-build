@@ -65,13 +65,19 @@ const immutableBuild=b=>omit(b,["implementation_enabled","reason"]);
  * Safe-control-only exception for an audited revalidation closure, never a general backlog rewrite.
  * The existing Evidence Gate independently verifies every referenced PASS record before a Task is CLOSED.
  */
-const unchangedRevalidationBinding=(oldR,newR,beforeQueue,afterQueue,beforeTd,afterTd)=>{
+const validRevalidationClosureContext=(beforeQueue,afterQueue,beforeTd,afterTd)=>{
+  if(!Array.isArray(beforeQueue?.items) || !Array.isArray(afterQueue?.items)) return false;
+  if(beforeQueue.items.length!==afterQueue.items.length) return false;
+  return beforeTd?.sprint_id===afterTd?.sprint_id &&
+    Array.isArray(beforeTd?.tasks) && Array.isArray(afterTd?.tasks);
+};
+const unchangedRevalidationBinding=(oldR,newR,ctx)=>{
   if(!oldR || !newR || oldR.status!=="IN_PROGRESS" || newR.status!=="CLOSED") return false;
   if(stable(omit(oldR,["status"]))!==stable(omit(newR,["status"]))) return false;
-  return oldR.sprint_id===beforeTd.sprint_id &&
-    newR.sprint_id===afterTd.sprint_id &&
-    oldR.target_build_spec_id===beforeQueue.build_spec_id &&
-    newR.target_build_spec_id===afterQueue.build_spec_id;
+  return oldR.sprint_id===ctx.beforeTd.sprint_id &&
+    newR.sprint_id===ctx.afterTd.sprint_id &&
+    oldR.target_build_spec_id===ctx.beforeQueue.build_spec_id &&
+    newR.target_build_spec_id===ctx.afterQueue.build_spec_id;
 };
 const exactlyClosingTask=(oldTask,newTask,oldR,newR)=>{
   if(!oldTask || !newTask || oldTask.task_id!==newTask.task_id) return false;
@@ -85,13 +91,19 @@ const completedTaskHasMappedEvidence=(newTask,newR)=>{
   if(!Array.isArray(newR.acceptance_ids)) return false;
   return newR.acceptance_ids.every(aid=>(newTask.acceptance_links||[]).some(link=>link.acceptance_id===aid));
 };
+const exactItemRevalidationClosure=(oldR,newR,ctx)=>{
+  if(!unchangedRevalidationBinding(oldR,newR,ctx)) return false;
+  const oldTask=ctx.beforeTasks.get(oldR.task_id),newTask=ctx.afterTasks.get(newR.task_id);
+  if(!exactlyClosingTask(oldTask,newTask,oldR,newR)) return false;
+  return completedTaskHasMappedEvidence(newTask,newR);
+};
 const exactRevalidationClosures=(beforeQueue,afterQueue,beforeTd,afterTd)=>{
-  if(!Array.isArray(beforeQueue?.items) || !Array.isArray(afterQueue?.items) ||
-     beforeQueue.items.length!==afterQueue.items.length ||
-     beforeTd?.sprint_id!==afterTd?.sprint_id ||
-     !Array.isArray(beforeTd?.tasks) || !Array.isArray(afterTd?.tasks)) return false;
-  const beforeTasks=new Map(beforeTd.tasks.map(t=>[t.task_id,t]));
-  const afterTasks=new Map(afterTd.tasks.map(t=>[t.task_id,t]));
+  if(!validRevalidationClosureContext(beforeQueue,afterQueue,beforeTd,afterTd)) return false;
+  const ctx={
+    beforeQueue,afterQueue,beforeTd,afterTd,
+    beforeTasks:new Map(beforeTd.tasks.map(t=>[t.task_id,t])),
+    afterTasks:new Map(afterTd.tasks.map(t=>[t.task_id,t]))
+  };
   let closures=0;
   const restored=[];
   for(let i=0;i<beforeQueue.items.length;i++){
@@ -102,10 +114,7 @@ const exactRevalidationClosures=(beforeQueue,afterQueue,beforeTd,afterTd)=>{
       restored.push(newItem);
       continue;
     }
-    if(!unchangedRevalidationBinding(oldR,newR,beforeQueue,afterQueue,beforeTd,afterTd)) return false;
-    const oldTask=beforeTasks.get(oldR.task_id),newTask=afterTasks.get(newR.task_id);
-    if(!exactlyClosingTask(oldTask,newTask,oldR,newR)) return false;
-    if(!completedTaskHasMappedEvidence(newTask,newR)) return false;
+    if(!exactItemRevalidationClosure(oldR,newR,ctx)) return false;
     restored.push({...newItem,revalidation:oldR});
     closures++;
   }
