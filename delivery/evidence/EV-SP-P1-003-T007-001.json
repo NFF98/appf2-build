@@ -1,0 +1,22 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-024",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T007",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-09T01:10:46.800Z",
+  "blocking_findings": [],
+  "source_commit": "61108dabc153985b6689680577188a945153f05b",
+  "evidence_id": "EV-SP-P1-003-T007-001",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F01-AC-004"
+  ],
+  "test_ids": [
+    "TEST-F01-004"
+  ],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/37867961823#TEST-F01-004-ci-pass",
+  "command": null,
+  "review_checks": null
+}

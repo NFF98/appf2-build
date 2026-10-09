@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-024",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T007",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-09T01:10:46.800Z",
+  "blocking_findings": [],
+  "source_commit": "61108dabc153985b6689680577188a945153f05b",
+  "evidence_id": "EV-SP-P1-003-T007-009",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-issue://NFF98/appf2-build/issues/301#issuecomment-6072048159#npm-run-test-regression-exit-0",
+  "command": "npm run test:regression",
+  "review_checks": null
+}
