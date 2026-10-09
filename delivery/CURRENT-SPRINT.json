@@ -2,8 +2,8 @@
   "schema_version": 1,
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-024",
-  "active_task": "T007",
+  "active_task": "T004",
   "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-09 approved BCE governance through pre-Cursor only; F01 T007 revalidation activation after Design #33/#34, BF-053/BD-024, BS-P1-024 and Planning #6071561660. T004 BLOCKED until T007 CLOSED; no executable lease issued."
+  "reason": "Human 2026-10-09 approved T007 implementation merge PR #328, T007 final closure and return to T004. T007 source merge 61108dabc153985b6689680577188a945153f05b; BCE-2 PASS #6072160120; 11 normalized evidence records via evidence-only PR #329 merged d787e2cdd529e4b9a7aed39284ef6e864fdea3e4. T004 activation is governance-only under BS-P1-024; old PR #323 remains OPEN/FROZEN, no T004 Cursor execution lease."
 }
