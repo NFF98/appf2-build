@@ -13,7 +13,7 @@ Human 2026-10-10 授權啟動本法入庫流程；本次是「制憲候選案」
 ## 1. 強制觸發（Fail-closed）
 
 任何涉及下列變更者均為「憲法級」：
-- 既有 `harness/policy/repo-policy.json` 所列 `governance_only_paths`，包含 `harness/`、`AGENTS.md`、`.github/`、`ci/`、`deploy/`、`tooling/`、`package.json`、品質/測試設定及規則。
+- 既有 `harness/policy/repo-policy.json` 所列**安全政策或執行規則類** `governance_only_paths`，包含 `harness/`、`AGENTS.md`、`.github/`、`ci/`、`deploy/`、`tooling/`、`package.json`、品質/測試設定及規則。**既有合法的純控制狀態／交付紀錄**（例如 `build-spec/CURRENT.json`、既有 baseline/activation、`delivery/CURRENT-SPRINT.json`、Backlog、Sprint、Delta、Evidence、Finding、審核紀錄和 Release manifests）仍由各自既有獨立的 Lifecycle/Scope/Evidence/Activation Gates 嚴格管控，不因本法額外要求五審；但如果它們被用來擴張安全政策或修改 Agent 權限，本法仍須適用，不能藉此逃避。
 - `package-lock.json` 和 `package.json` 的依賴/版本變更視為同一憲法級單位，不許拆分或提前先裝後審。
 - 任何可更改 Cursor lease、角色分工、Human approval、SSOT、授權界線、驗收與 CI 安全 Gate 的行為，無論檔名。
 - 不確定是否觸發，依憲法級處理，禁止 AI 自行放行。
