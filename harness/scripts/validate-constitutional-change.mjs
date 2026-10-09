@@ -218,7 +218,7 @@ const testSignedFiveStageCase=()=>{
     };
     check(inspectConstitutionalChange(args).errors.length===0,
       "five real independent chained stage signatures must pass");
-    const altered=structuredClone(docket);
+    const altered=JSON.parse(JSON.stringify(docket));
     altered.stages[2].human_message_ref="AI-DESCRIBED-SIGNATURE";
     makeFile(casePath,JSON.stringify(altered));
     check(inspectConstitutionalChange(args).errors.some(x=>x.includes("R3")),
