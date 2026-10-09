@@ -1,5 +1,7 @@
+import { INTENT_SOURCES, type IntentSource } from "../../platform/intent/intent-contract.js";
 import { isJsonValue, type JsonValue } from "../../platform/intent/json-value.js";
 import { ASSUMPTION_CLASSIFICATIONS, isPendingDecision, type AssumptionClassification } from "../../platform/intent/visible-assumptions.js";
+import { readCreateProgress } from "./create-progress.js";
 import { readAssumptionShape, readQuestionShape, type EditShape } from "./edit-shape.js";
 
 /** F01-RQ-002 per-round ceiling; the Server module that owns it is Node-only, so the Browser restates the bound. */
@@ -29,18 +31,21 @@ export type AssumptionView = {
   readonly shape: EditShape | null;
 };
 
+/** F01-API-005 CREATE checkpoints completed so far; absent when the response carries no progress snapshot. */
+type ProgressField = { readonly checkpoints?: number };
+
 export type IntentDecision = {
   readonly intentId: string;
   readonly status: DecisionStatus;
   readonly intentVersion: number;
   readonly questions: readonly QuestionView[];
   readonly assumptions: readonly AssumptionView[];
-};
+} & ProgressField;
 
 export type CompileOutcome = {
   readonly intentId: string;
   readonly contentHash: string;
-};
+} & ProgressField;
 
 export type F01Failure =
   | {
@@ -77,14 +82,26 @@ function readClassification(value: unknown): AssumptionClassification | null {
   return (ASSUMPTION_CLASSIFICATIONS as readonly unknown[]).includes(value) ? (value as AssumptionClassification) : null;
 }
 
+/** F01-DATA-004 provenance each label may carry: an LLM proposal or a default can never be labelled as a User fact. */
+const LABEL_SOURCES: Readonly<Record<AssumptionClassification, readonly IntentSource[]>> = {
+  FACT: ["USER_EXPLICIT", "DOMAIN_KNOWN", "USER_ACCEPTED_PROPOSAL"],
+  DEFAULT: ["NFF_DEFAULT"],
+  PROPOSAL: ["LLM_PROPOSED"],
+  UNKNOWN: INTENT_SOURCES
+};
+
+const sourceFits = (classification: AssumptionClassification, source: unknown): boolean =>
+  source === undefined || (LABEL_SOURCES[classification] as readonly unknown[]).includes(source);
+
 /**
  * A pending DEFAULT / PROPOSAL without a complete, consistent F01-DATA-004A edit shape makes the whole
- * response unusable (rule 6): the Shell fails closed rather than offering a guessed or disabled editor.
+ * response unusable (rule 6): the Shell fails closed rather than offering a guessed or disabled editor. So does
+ * a label that its own reported provenance contradicts.
  */
 function readAssumption(entry: unknown): AssumptionView | null {
   if (!isRecord(entry) || !isNonEmptyString(entry.assumption_id) || typeof entry.description !== "string") return null;
   const classification = readClassification(entry.classification);
-  if (classification === null) return null;
+  if (classification === null || !sourceFits(classification, entry.source)) return null;
   const base = { assumptionId: entry.assumption_id, classification, description: entry.description };
   if (classification === "UNKNOWN") return { ...base, value: undefined, shape: null };
   const value = classification === "FACT" ? entry.resolved_value : entry.proposed_default;
@@ -124,13 +141,22 @@ export function readDecision(data: unknown): IntentDecision | null {
   const status = (DECISION_STATUSES as readonly unknown[]).includes(data.status) ? (data.status as DecisionStatus) : null;
   const questions = readAll(data.questions, readQuestion, (question) => question.questionId);
   const assumptions = readAll(data.visible_assumptions, readAssumption, (assumption) => assumption.assumptionId);
-  if (status === null || questions === null || assumptions === null || !consistent(status, questions, assumptions)) return null;
-  return { intentId: data.intent_id, status, intentVersion: data.intent_version, questions, assumptions };
+  const progress = readProgressField(data);
+  if (status === null || questions === null || assumptions === null || progress === null || !consistent(status, questions, assumptions)) return null;
+  return { intentId: data.intent_id, status, intentVersion: data.intent_version, questions, assumptions, ...progress };
 }
 
 export function readCompileOutcome(data: unknown): CompileOutcome | null {
   if (!isRecord(data) || !isNonEmptyString(data.intent_id) || data.status !== "VALIDATED" || !isNonEmptyString(data.content_hash)) return null;
-  return { intentId: data.intent_id, contentHash: data.content_hash };
+  const progress = readProgressField(data);
+  return progress === null ? null : { intentId: data.intent_id, contentHash: data.content_hash, ...progress };
+}
+
+/** An absent snapshot leaves progress indeterminate; a present but unreliable one makes the response malformed. */
+function readProgressField(data: WireRecord): ProgressField | null {
+  if (data.progress === undefined) return {};
+  const checkpoints = readCreateProgress(data.progress);
+  return checkpoints === null ? null : { checkpoints };
 }
 
 function readViolations(details: unknown): { path: string; reason: string }[] {
