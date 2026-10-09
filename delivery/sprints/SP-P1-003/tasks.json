@@ -720,7 +720,11 @@
         "tests/runtime/",
         "tests/e2e/",
         "tests/visual/",
-        "tests/responsive/"
+        "tests/responsive/",
+        "src/edge/",
+        "src/platform/blueprint/",
+        "tests/api/",
+        "tooling/web/vite.config.ts"
       ],
       "required_commands": [
         "npm run gate",
