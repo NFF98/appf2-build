@@ -43,7 +43,7 @@ jobs:
             import { execFileSync } from "node:child_process";
             import { isOneTimeConstitutionFounding } from "./harness/scripts/validate-constitutional-change.mjs";
             const base=process.env.BASE_SHA,head=process.env.HEAD_SHA;
-            const changed=execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\\n").filter(Boolean);
+            const changed=execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
             const cs=JSON.parse(fs.readFileSync("delivery/CURRENT-SPRINT.json","utf8"));
             const build=JSON.parse(fs.readFileSync("build-spec/CURRENT.json","utf8"));
             if(!isOneTimeConstitutionFounding({changed,base,cs,build})) process.exit(1);
