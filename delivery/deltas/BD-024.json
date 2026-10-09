@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-024",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-053"
+  ],
+  "affected_build_spec": "BS-P1-023",
+  "affected_tasks": [
+    "T004"
+  ],
+  "affected_contracts": [
+    "F01-DATA-004A: server-authoritative material assumption edit-shape projection",
+    "F00-UX-010A + S02 material typed Edit",
+    "F01-AC-004 / TEST-F01-004 revalidation",
+    "F00-AC-005 / TEST-F00-005"
+  ],
+  "affected_acceptance": [
+    "F01-AC-004",
+    "F00-AC-005"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-09: 批准 Choice 1：先完成 Design / F01 contract semantic closure，再規劃 rebaseline 與 T004 rebind；後續批准 BCE way 全部做到 Cursor execution 之前。"
+  },
+  "replacement_build_spec_required": true,
+  "replacement_build_spec": "BS-P1-024",
+  "verification": [
+    "Design PR #33 and PR #34 merged and independently reviewed.",
+    "Scope-clean provenance audit delivery/audits/SP-P1-003-BD-024-FREEZE-CANDIDATE.md declares exact 4 approved changed Design paths.",
+    "Prior baseline BS-P1-023 remains immutable; F01-AC-004/TEST-F01-004 strengthened without new ID; T004 existing F00-AC-005 retained."
+  ],
+  "upstream_working_commit": "7a69bdab36db34618a1904a637587a01148ee138",
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "736c757e72734f46407f8c9afcd81580ae75f0ef",
+    "base_commit": "05f261a8f83f447df60af7e4c581432fe825787d",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-024-FREEZE-CANDIDATE.md"
+  }
+}
