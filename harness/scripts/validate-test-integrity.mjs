@@ -130,4 +130,4 @@ if(activeTask && base && !/^0+$/.test(base)){
 if(exactT005PercentRepair) console.log("- T005 one-shot governance repair: old TEST-F00-003 assertion removal only; 10 T005 mapped implementation tests still NOT IMPLEMENTED.");
 if(errors.length){console.error("TEST INTEGRITY GATE: FAIL");errors.forEach(e=>console.error("- "+e));process.exit(1);}
 console.log("TEST INTEGRITY GATE: PASS");
-if(requireActive && activeTask) console.log("- Executable mapped tests verified for "+activeTask.task_id);
+if(requireActive && activeTask && !exactT005PercentRepair) console.log("- Executable mapped tests verified for "+activeTask.task_id);
