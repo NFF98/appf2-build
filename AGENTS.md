@@ -1,5 +1,12 @@
 # appf2-build Agent Contract
 
+## 憲法級 Human 主權（GOV-CONST-001）
+
+- 治理憲法唯一有效 owner：[`harness/policy/APPF2-CONSTITUTION.md`](harness/policy/APPF2-CONSTITUTION.md)，僅在已合併 canonical main 時有正式效力。
+- `harness/`、`package.json`、`package-lock.json`、`.github/` 等任何受保護變更，均需 5 Why、依序五次獨立 Human 審查、獨立 CI/BCE 和額外 Human merge 核准；AI 在討論或 GitHub 留言中宣稱「已核准」無效。
+- 已完成五審也不解除 ACTIVE Sprint 的 fail-closed scope gate；任何不確定或沒有可驗證 Human 授權的操作必須 HARD STOP。
+- 制憲候選分支只能使用與原始 SHA 綁定的有限、一次性 scope 例外；不得據此安裝 `pg` 或發 Cursor lease。
+
 本檔是所有 coding agent / Cursor 的 repository-level operating contract。
 
 ## Absolute Rules
