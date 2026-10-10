@@ -15,46 +15,84 @@ const same=(a,b)=>JSON.stringify(norm(a))===JSON.stringify(norm(b));
 const seteq=(a,b)=>Array.isArray(a)&&a.length===new Set(a).size&&a.length===b.length&&a.every(x=>b.includes(x));
 const entry=(c,id,a)=>c.registry[id]?.entries?.find(e=>e.acceptance_id===a);
 const changed=(c,item,from,to)=>item.acceptance_links.filter(l=>{const a=entry(c,from,l.acceptance_id),b=entry(c,to,l.acceptance_id);return !a||!b||a.test_id!==l.test_id||b.test_id!==l.test_id||!same(a,b)}).map(l=>l.acceptance_id);
-function audit(c,p,rounds,mode){
- const e=[],claims=new Map(),used=new Set(),t001=c.tasks.tasks.find(x=>x.task_id==="T001"),t007=c.tasks.tasks.find(x=>x.task_id==="T007");
- if(c.build.active_baseline!=="BS-P1-024"||c.build.implementation_enabled!==false||c.current.status!=="HOLD"||c.current.active_task!==null)e.push("CANONICAL_HOLD_CHANGED");
- if(t001?.status!=="CLOSED"||t007?.status!=="CLOSED"||c.sprint.build_spec_id!=="BS-P1-024"||!c.sprint.revalidation_item_ids.includes("BL-P1-008"))e.push("LEGACY_TASK_OR_SPRINT_MUTATED");
- for(const bid of ["BL-P1-008","BL-P1-010","BL-P1-031","BL-P1-032"]){
-  const item=c.queue.items.find(x=>x.backlog_item_id===bid);
-  if(!item||item.status!=="DONE"){e.push(bid+":HISTORICAL_ITEM_MISSING");continue}
-  let cursor=item.build_spec_id;
-  if(item.revalidation){
-   const r=item.revalidation;
-   if(r.status!=="CLOSED"||!seteq(r.acceptance_ids,changed(c,item,cursor,r.target_build_spec_id)))e.push(bid+":LEGACY_INVALID");
-   if(bid==="BL-P1-008"&&(r.task_id!=="T007"||r.sprint_id!=="SP-P1-003"||r.target_build_spec_id!=="BS-P1-024"||!t007.completion_evidence.length))e.push("BL008:T007_HISTORY_CHANGED");
-   cursor=r.target_build_spec_id;
-  }
-  const list=rounds.rounds?.[bid]||[];let seq=1;
-  for(const r of list){
-   if(r.sequence!==seq++)e.push(bid+":SEQUENCE_REPLAY");
-   if(r.item_id!==bid||r.source_build_spec_id!==cursor||r.target_build_spec_id===cursor)e.push(bid+":SOURCE_CHAIN_MISMATCH");
-   if(!c.manifest[r.source_build_spec_id]||!c.manifest[r.target_build_spec_id])e.push(bid+":UNKNOWN_BASELINE");
-   if(r.target_build_spec_id!=="BS-P1-025")e.push(bid+":TARGET_BASELINE_WRONG");
-   if(r.source_registry_sha256!==p[r.source_build_spec_id]||r.target_registry_sha256!==p[r.target_build_spec_id])e.push(bid+":REGISTRY_DIGEST_MISMATCH");
-   const drift=c.registry[r.source_build_spec_id]&&c.registry[r.target_build_spec_id]?changed(c,item,r.source_build_spec_id,r.target_build_spec_id):[];
-   if(!seteq(r.acceptance_ids,drift)||!seteq(r.test_ids,r.acceptance_ids.map(a=>entry(c,"BS-P1-025",a)?.test_id)))e.push(bid+":INCOMPLETE_DRIFT_OR_TEST");
-   if(r.status!=="CLOSED")e.push(bid+":UNFINISHED_NOT_PROOF");
-   const task=rounds.tasks?.[r.owner_task_id];
-   if(!task||task.build_spec_id!==r.target_build_spec_id||task.sprint_id!==r.owner_sprint_id||task.status!=="CLOSED"||!seteq(r.acceptance_ids,task.acceptance_ids))e.push(bid+":FOREIGN_OR_UNCLOSED_OWNER");
-   if(!Array.isArray(r.evidence_ids)||!r.evidence_ids.length)e.push(bid+":MISSING_EVIDENCE");
-   for(const a of r.acceptance_ids||[]){if(claims.has(a))e.push(bid+":DUPLICATE_ACCEPTANCE_OWNER");claims.set(a,r.owner_task_id)}
-   if(used.has(r.replay_nonce)||!r.replay_nonce)e.push(bid+":REPLAY_NONCE");used.add(r.replay_nonce);
-   for(const id of r.evidence_ids||[]){
-    if(used.has("ev:"+id))e.push(bid+":EVIDENCE_REPLAY");used.add("ev:"+id);
-    const ev=rounds.evidence?.[id];
-    if(!ev||ev.status!=="PASS"||ev.owner_task_id!==r.owner_task_id||ev.target_build_spec_id!==r.target_build_spec_id||!seteq(ev.acceptance_ids,r.acceptance_ids)||!seteq(ev.test_ids,r.test_ids)||!ev.trusted_locator||!ev.source_commit)e.push(bid+":EVIDENCE_UNVERIFIED");
-    if(mode==="PRODUCTION"&&(typeof c.verifyEvidence!=="function"||c.verifyEvidence(id,ev,r)!==true))e.push(bid+":EXTERNAL_TRUSTED_EVIDENCE_VERIFIER_REQUIRED");
-   }
-   cursor=r.target_build_spec_id;
-  }
-  if(changed(c,item,cursor,"BS-P1-025").length)e.push(bid+":UNRESOLVED_VERSION_DRIFT");
+const baselineLocked=c=>c.build.active_baseline==="BS-P1-024"&&
+ c.build.implementation_enabled===false&&c.current.status==="HOLD"&&c.current.active_task===null;
+const legacyTasksLocked=(c,t001,t007)=>t001?.status==="CLOSED"&&t007?.status==="CLOSED"&&
+ c.sprint.build_spec_id==="BS-P1-024"&&c.sprint.revalidation_item_ids.includes("BL-P1-008");
+const exactOldRound=(c,bid,item,cursor,t007,e)=>{
+ const r=item.revalidation;
+ if(r.status!=="CLOSED"||!seteq(r.acceptance_ids,changed(c,item,cursor,r.target_build_spec_id)))e.push(bid+":LEGACY_INVALID");
+ if(bid==="BL-P1-008"&&!lockedT007(r,t007))e.push("BL008:T007_HISTORY_CHANGED");
+ return r.target_build_spec_id;
+};
+const lockedT007=(r,t007)=>r.task_id==="T007"&&r.sprint_id==="SP-P1-003"&&
+ r.target_build_spec_id==="BS-P1-024"&&Boolean(t007?.completion_evidence?.length);
+const chainValid=(c,bid,r,cursor)=>r.item_id===bid&&r.source_build_spec_id===cursor&&r.target_build_spec_id!==cursor;
+const knownBaselines=(c,r)=>Boolean(c.manifest[r.source_build_spec_id]&&c.manifest[r.target_build_spec_id]);
+const pinsValid=(p,r)=>r.source_registry_sha256===p[r.source_build_spec_id]&&r.target_registry_sha256===p[r.target_build_spec_id];
+const mappingValid=(c,item,r)=>{
+ const drift=c.registry[r.source_build_spec_id]&&c.registry[r.target_build_spec_id]?
+  changed(c,item,r.source_build_spec_id,r.target_build_spec_id):[];
+ const tests=(r.acceptance_ids||[]).map(a=>entry(c,"BS-P1-025",a)?.test_id);
+ return seteq(r.acceptance_ids,drift)&&seteq(r.test_ids,tests);
+};
+const ownerValid=(task,r)=>Boolean(task&&task.build_spec_id===r.target_build_spec_id&&
+ task.sprint_id===r.owner_sprint_id&&task.status==="CLOSED"&&seteq(r.acceptance_ids,task.acceptance_ids));
+const evidenceValid=(ev,r)=>Boolean(ev&&ev.status==="PASS"&&ev.owner_task_id===r.owner_task_id&&
+ ev.target_build_spec_id===r.target_build_spec_id&&seteq(ev.acceptance_ids,r.acceptance_ids)&&
+ seteq(ev.test_ids,r.test_ids)&&ev.trusted_locator&&ev.source_commit);
+function inspectRoundShape(c,p,rounds,bid,item,r,cursor,seq,e){
+ if(r.sequence!==seq)e.push(bid+":SEQUENCE_REPLAY");
+ if(!chainValid(c,bid,r,cursor))e.push(bid+":SOURCE_CHAIN_MISMATCH");
+ if(!knownBaselines(c,r))e.push(bid+":UNKNOWN_BASELINE");
+ if(r.target_build_spec_id!=="BS-P1-025")e.push(bid+":TARGET_BASELINE_WRONG");
+ if(!pinsValid(p,r))e.push(bid+":REGISTRY_DIGEST_MISMATCH");
+ if(!mappingValid(c,item,r))e.push(bid+":INCOMPLETE_DRIFT_OR_TEST");
+ if(r.status!=="CLOSED")e.push(bid+":UNFINISHED_NOT_PROOF");
+ if(!ownerValid(rounds.tasks?.[r.owner_task_id],r))e.push(bid+":FOREIGN_OR_UNCLOSED_OWNER");
+ if(!Array.isArray(r.evidence_ids)||!r.evidence_ids.length)e.push(bid+":MISSING_EVIDENCE");
+}
+function inspectRoundOwnership(bid,r,state){
+ for(const a of r.acceptance_ids||[]){
+  if(state.claims.has(a))state.errors.push(bid+":DUPLICATE_ACCEPTANCE_OWNER");
+  state.claims.set(a,r.owner_task_id);
  }
- return {ok:e.length===0,errors:[...new Set(e)]};
+ if(state.used.has(r.replay_nonce)||!r.replay_nonce)state.errors.push(bid+":REPLAY_NONCE");
+ state.used.add(r.replay_nonce);
+}
+function inspectProof(bid,r,id,rounds,c,mode,state){
+ if(state.used.has("ev:"+id))state.errors.push(bid+":EVIDENCE_REPLAY");
+ state.used.add("ev:"+id);
+ const ev=rounds.evidence?.[id];
+ if(!evidenceValid(ev,r))state.errors.push(bid+":EVIDENCE_UNVERIFIED");
+ if(mode==="PRODUCTION"&&(typeof c.verifyEvidence!=="function"||c.verifyEvidence(id,ev,r)!==true)){
+  state.errors.push(bid+":EXTERNAL_TRUSTED_EVIDENCE_VERIFIER_REQUIRED");
+ }
+}
+function inspectItem(c,p,rounds,mode,bid,t007,state){
+ const item=c.queue.items.find(x=>x.backlog_item_id===bid);
+ if(!item||item.status!=="DONE"){state.errors.push(bid+":HISTORICAL_ITEM_MISSING");return}
+ let cursor=item.build_spec_id;
+ if(item.revalidation)cursor=exactOldRound(c,bid,item,cursor,t007,state.errors);
+ const list=rounds.rounds?.[bid]||[];
+ for(const [i,r] of list.entries()){
+  inspectRoundShape(c,p,rounds,bid,item,r,cursor,i+1,state.errors);
+  inspectRoundOwnership(bid,r,state);
+  for(const id of r.evidence_ids||[])inspectProof(bid,r,id,rounds,c,mode,state);
+  cursor=r.target_build_spec_id;
+ }
+ if(changed(c,item,cursor,"BS-P1-025").length)state.errors.push(bid+":UNRESOLVED_VERSION_DRIFT");
+}
+function audit(c,p,rounds,mode){
+ const state={errors:[],claims:new Map(),used:new Set()};
+ const t001=c.tasks.tasks.find(x=>x.task_id==="T001");
+ const t007=c.tasks.tasks.find(x=>x.task_id==="T007");
+ if(!baselineLocked(c))state.errors.push("CANONICAL_HOLD_CHANGED");
+ if(!legacyTasksLocked(c,t001,t007))state.errors.push("LEGACY_TASK_OR_SPRINT_MUTATED");
+ for(const bid of ["BL-P1-008","BL-P1-010","BL-P1-031","BL-P1-032"]){
+  inspectItem(c,p,rounds,mode,bid,t007,state);
+ }
+ return {ok:state.errors.length===0,errors:[...new Set(state.errors)]};
 }
 function synthetic(c,p){
  const d={rounds:{},tasks:{},evidence:{}};
