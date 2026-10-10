@@ -23,10 +23,12 @@ const activationValid=(s,e)=>s.build?.active_baseline===TARGET&&
  s.activation.source_working_commit===s.manifest.source_working_commit&&
  s.activation.decision_ref&&s.manifest.approval.decision_ref&&
  e.target_baseline===TARGET;
-const sprintValid=(s,e)=>s.sprint?.status==='ACTIVE'&&s.sprint.active_sprint===e.sprint_id&&
- s.sprint.active_task===e.task_id&&s.sprint.active_build_spec===TARGET&&
- s.tasks?.sprint_id===e.sprint_id&&s.sprintManifest?.sprint_id===e.sprint_id&&
- s.sprintManifest.status==='ACTIVE'&&s.sprintManifest.build_spec_id===TARGET;
+const activeSprint=(s,e)=>s.sprint?.status==='ACTIVE'&&s.sprint.active_sprint===e.sprint_id&&
+ s.sprint.active_task===e.task_id&&s.sprint.active_build_spec===TARGET;
+const alignedSprint=(s,e)=>s.tasks?.sprint_id===e.sprint_id&&
+ s.sprintManifest?.sprint_id===e.sprint_id&&s.sprintManifest.status==='ACTIVE'&&
+ s.sprintManifest.build_spec_id===TARGET;
+const sprintValid=(s,e)=>activeSprint(s,e)&&alignedSprint(s,e);
 const taskValid=(t,e)=>t?.task_id===e.task_id&&t.status==='IN_PROGRESS'&&
  t.build_spec_id===TARGET&&Array.isArray(t.allowed_write_paths)&&
  uniq(t.acceptance_links?.map(x=>x.acceptance_id))&&
