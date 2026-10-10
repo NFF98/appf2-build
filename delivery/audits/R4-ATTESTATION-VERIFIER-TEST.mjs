@@ -9,7 +9,7 @@ const H='a'.repeat(40),D='b'.repeat(64);
 const expected={repo:'NFF98/appf2-build',ref:'refs/heads/main',workflow:'.github/workflows/revalidation-proof.yml',source_sha:H,run_id:42,run_attempt:1,sprint_id:'SP-P1-004',task_id:'T008',baseline_id:'BS-P1-025',evidence_id:'EV-SP-P1-004-T008-001',source_registry_sha256:D,target_registry_sha256:D,acceptance_ids:['F01-AC-017'],test_ids:['TEST-F01-SEC-007']};
 const proof={...expected,product_ci_mode:'EXECUTED',gate_status:'PASS',results:[{acceptance_id:'F01-AC-017',test_id:'TEST-F01-SEC-007',status:'PASS',executed:true,assertion_count:1,skipped:0}]};
 const run={id:42,run_attempt:1,status:'completed',conclusion:'success',event:'push',head_sha:H,head_branch:'main',path:expected.workflow,repository:{full_name:expected.repo}};
-const job={name:'revalidation-proof',conclusion:'success',run_attempt:1,steps:['Execute exact mapped tests','Generate test proof manifest','Attest proof artifact'].map(name=>({name,conclusion:'success'}))};
+const job={name:'revalidation-proof',conclusion:'success',run_attempt:1,steps:['Verify exact Human-authorized Revalidation Task','Governance Gate','Execute exact mapped tests','Generate test proof manifest','Attest proof artifact'].map(name=>({name,conclusion:'success'}))};
 const jobs={total_count:1,jobs:[job]};
 const verified=[{attestation:{bundle:'TEST_DOUBLE_ONLY'},verificationResult:{signature:{certificate:'TEST_DOUBLE_ONLY'}}}];
 const clone=x=>JSON.parse(JSON.stringify(x));
