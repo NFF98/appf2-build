@@ -3,7 +3,9 @@
   "delta_id": "BD-025",
   "type": "DESIGN_DELTA",
   "status": "OPEN",
-  "source_finding_ids": [],
+  "source_finding_ids": [
+    "BF-054"
+  ],
   "source_case_ids": [
     "GOV-CASE-PG-001"
   ],
