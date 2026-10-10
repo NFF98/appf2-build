@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-024",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-09 requested T006 Cursor execution after Governance scope amendment #342; fresh independent T006 Planning BCE #6076967717 PASS-with-execution-hard-gates. T006 Activation remains pending independent four GitHub CI/BCE and approved governance merge; Cursor requires one fresh post-merge SHA-locked single-use lease on Issue #301, no tooling/protected-path writes and no automatic implementation merge."
+  "reason": "PROPOSED GOVERNANCE QUARANTINE ONLY / PR #350 DRAFT. Human approved merged Design PR #37, but BF-054/BD-025 finds materially changed hash-read/PoP/F05 security contract not yet in Human-frozen BS-P1-025; T006 must remain BLOCKED under existing BS-P1-024 until scope-clean candidate PR #38 Freeze Audit, Recovery/Acceptance mappings, separate Human Build Freeze and Task rebind. No Cursor lease or production DDL; pre-existing Human T006 intent retained without automatic re-execution."
 }
