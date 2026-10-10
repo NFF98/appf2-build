@@ -68,6 +68,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
           CLOUDFLARE_WORKER_NAME: ${{ secrets.CLOUDFLARE_WORKER_NAME }}
+          APPF2_HYPERDRIVE_ID: ${{ vars.APPF2_HYPERDRIVE_ID }}
+          APPF2_API_ROUTE: ${{ vars.APPF2_API_ROUTE }}
+          APPF2_ZONE_NAME: ${{ vars.APPF2_ZONE_NAME }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -113,6 +116,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
           CLOUDFLARE_WORKER_NAME: ${{ secrets.CLOUDFLARE_WORKER_NAME }}
+          APPF2_HYPERDRIVE_ID: ${{ vars.APPF2_HYPERDRIVE_ID }}
+          APPF2_API_ROUTE: ${{ vars.APPF2_API_ROUTE }}
+          APPF2_ZONE_NAME: ${{ vars.APPF2_ZONE_NAME }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -130,6 +136,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
           CLOUDFLARE_WORKER_NAME: ${{ secrets.CLOUDFLARE_WORKER_NAME }}
+          APPF2_HYPERDRIVE_ID: ${{ vars.APPF2_HYPERDRIVE_ID }}
+          APPF2_API_ROUTE: ${{ vars.APPF2_API_ROUTE }}
+          APPF2_ZONE_NAME: ${{ vars.APPF2_ZONE_NAME }}
         run: npm run deploy:rollback -- --environment production --release "$RELEASE_ID"
       - uses: actions/upload-artifact@v4
         if: always()

@@ -16,9 +16,13 @@ for(const h of manifest.health_checks){
   let ok=false,last=null;
   for(let i=1;i<=attempts;i++){
     try{
-      const r=await fetch(url,{method:h.method||"GET",redirect:"follow"});
-      last={attempt:i,status:r.status};
-      if((h.expected_status||[200]).includes(r.status)){ok=true;break;}
+      const r=await fetch(url,{method:h.method||"GET",redirect:"manual"});
+      const contentType=(r.headers.get("content-type")||"").split(";",1)[0].trim().toLowerCase();
+      const statusOk=(h.expected_status||[200]).includes(r.status);
+      const redirectOk=h.reject_redirects!==true || r.status<300 || r.status>=400;
+      const contentTypeOk=typeof h.expected_content_type!=="string" || contentType===h.expected_content_type.toLowerCase();
+      last={attempt:i,status:r.status,content_type:contentType||null,status_ok:statusOk,redirect_ok:redirectOk,content_type_ok:contentTypeOk};
+      if(statusOk && redirectOk && contentTypeOk){ok=true;break;}
     }catch(e){last={attempt:i,error:String(e.message||e)};}
     if(i<attempts) await sleep(interval);
   }

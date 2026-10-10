@@ -52,3 +52,31 @@ export function statePath(releaseId,environment){
 export function outputDir(releaseId,environment){
   return path.join(root,".deploy-output",releaseId,environment);
 }
+
+export function renderWorkerConfig(templateRel,destination,env=process.env){
+  const template=JSON.parse(fs.readFileSync(safePath(templateRel),"utf8"));
+  const required=name=>{
+    const value=env[name];
+    if(typeof value!=="string" || value.trim()==="") throw new Error("Missing required environment variable: "+name);
+    return value.trim();
+  };
+  const replacements={
+    "__APPF2_WORKER_NAME__":required("CLOUDFLARE_WORKER_NAME"),
+    "__APPF2_HYPERDRIVE_ID__":required("APPF2_HYPERDRIVE_ID"),
+    "__APPF2_API_ROUTE__":required("APPF2_API_ROUTE"),
+    "__APPF2_ZONE_NAME__":required("APPF2_ZONE_NAME")
+  };
+  if(!replacements.__APPF2_API_ROUTE__.endsWith("/api/v1/*")) throw new Error("APPF2_API_ROUTE must end with /api/v1/*");
+  const replace=value=>{
+    if(Array.isArray(value)) return value.map(replace);
+    if(value && typeof value==="object") return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,replace(item)]));
+    return typeof value==="string" && Object.hasOwn(replacements,value) ? replacements[value] : value;
+  };
+  const config=replace(template);
+  if(typeof config.main!=="string") throw new Error("Worker config main is missing");
+  config.main=safePath(config.main);
+  const serialized=JSON.stringify(config);
+  if(serialized.includes("__APPF2_")) throw new Error("Worker config contains unresolved placeholders");
+  writeJson(destination,config);
+  return destination;
+}

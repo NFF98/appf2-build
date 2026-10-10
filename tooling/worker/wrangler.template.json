@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "__APPF2_WORKER_NAME__",
+  "main": "src/edge/worker-entry.ts",
+  "compatibility_date": "2026-10-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "__APPF2_API_ROUTE__",
+      "zone_name": "__APPF2_ZONE_NAME__"
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE_FRESH",
+      "id": "__APPF2_HYPERDRIVE_ID__"
+    }
+  ]
+}
