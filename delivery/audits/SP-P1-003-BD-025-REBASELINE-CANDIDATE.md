@@ -14,8 +14,9 @@
 | Build main at candidate branch creation | `c4ef766d127dd04ad101e358b52b295beca5ba3f` | Current source of this governance PR |
 | Finding / delta | `BF-054` / `BD-025` | OPEN / NOT YET FROZEN |
 | Planned successor | `BS-P1-025` | RESERVED CANDIDATE ONLY; NO BASELINE CREATED |
+| Exact scope-clean Design review branch | `freeze/bd025-pr37-scope-clean-review` / `22ce2b03a571467401faee8e79b4b0496c97f38f` | **PREPARED**; Design PR #38 DRAFT, no merge |
 
-Independent GitHub compare `736c757e...2e74ea19` returned **status=diverged**, `ahead_by=132`, `behind_by=72`, **43 changed paths**. This is **not** the approved eight-path PR #37 scope. Blindly projecting Design current `main` would silently pick up unrelated Product decisions. There is no legitimate `source_working_commit=2e74...` Version Lock until a new scoped Freeze Audit actually passes.
+Independent GitHub compare `736c757e...2e74ea19` returned **status=diverged**, `ahead_by=132`, `behind_by=72`, **43 changed paths**. This is **not** the approved eight-path PR #37 scope. **A separate exact scope-clean candidate has now been created**, see Design PR #38. Blindly projecting Design current `main` would silently pick up unrelated Product decisions. There is no legitimate `source_working_commit=2e74...` Version Lock until a new scoped Freeze Audit actually passes.
 
 ## 2. Approved Design amendment mapping (existing BS-P1-024 Projection Map)
 
@@ -41,7 +42,7 @@ The other **56** old Projection Map entries must remain byte-for-byte accounted 
 | Human approval for Design PR #37 merge | **PASS** |
 | GitHub Design PR #37 merge / canonical main | **PASS** — `2e74ea19623c81261bf408856543717e943f6f51` |
 | Change boundary: eight source owner paths | **KNOWN** |
-| Derived exact eight-path source on old locked source | **BLOCKED / NOT GENERATED**; overlap resolution needed on F00/F01/F05/F07 |
+| Derived exact eight-path source on old locked source | **PREPARED — NOT FREEZE-PASSED**; Design Draft PR #38, head `22ce2b03a571467401faee8e79b4b0496c97f38f`, eight files / 24 exact original PR37 hunks, GitHub compare ahead 8 / behind 0 / changed paths 8 |
 | Recovery Registry version 1.4.0 Freeze Audit marker | **PENDING_HUMAN_APPROVAL**, not PASS |
 | Acceptance IDs / Test IDs for new PoP, grant, F05 owner-only Share, private body read | **NOT MAPPED as new approved registry entries**; no fake pass |
 | Existing T006 nine executable mapped tests | **UNCHANGED & REQUIRED**; still lack CI evidence |
@@ -62,7 +63,7 @@ Recommend **do not move F05 Stage B functionality into T006**. New read security
 
 ## 5. Exact next operations (named owners)
 
-1. **ChatGPT / governance:** isolate approved PR #37 clauses into candidate Design Freeze source based on pinned `736c757e...`, with exact eight-path provenance; independently reconcile F00/F01/F05/F07 overlapping text. Keep this as an unmerged candidate until verified.
+1. **ChatGPT / governance:** **DONE — Design Draft PR #38 CREATED** from pinned `736c757e...`: exact 24/24 PR37 patch hunks applied (each unique exact match), only eight source-owner paths changed. Independently review F00/F01/F05/F07 overlapping semantics; keep source branch unmerged until all gates validated.
 2. **ChatGPT / Design audit:** verify no unintended diff, resolve Recovery Registry freeze status and any required new Acceptance IDs from actual Design owners. Lock exact candidate SHA only after independent PASS.
 3. **Human / Build Freeze:** approve the reviewed *actual* candidate scope + `BS-P1-025` freeze, separately from already approved Design PR merge.
 4. **ChatGPT / Projection:** deterministic 64-entry Projection Map `FULL_COPY / SECTION_FILTERED / REFERENCE_ONLY`; verify source Git blob SHA and output SHA256, full manifest aggregation/CI on isolated Build PR; never touch `BS-P1-024`.
@@ -73,4 +74,4 @@ Recommend **do not move F05 Stage B functionality into T006**. New read security
 
 This audit names objective blockers, **not** proof of finished tests or a request for more local environment diagnosis. No protected Design main rewrite, production DDL, implementation mutation, PG R4/R5 constitutional signature, Cursor launch, merge or closure is approved by this candidate PR.
 
-**VERDICT: PR37-DESIGN-MERGE=PASS; SOURCE-PROJECTION/FREEZE=BLOCKED; T006 EXECUTION=NOT STARTED.**
+**VERDICT: PR37-DESIGN-MERGE=PASS; SCOPE-CLEAN-SOURCE-PREPARED (PR38, 8/8 paths, 24/24 hunks); FORMAL FREEZE=BLOCKED (audit + acceptance + Human approval); T006 EXECUTION=NOT STARTED.**
