@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
   "active_baseline": "BS-P1-024",
-  "implementation_enabled": true,
-  "reason": "Human 2026-10-09 approved T006 bounded integration scope PR #342 (merged 71371b7c7450b826956bd4dfa54c643f971eb025) and requested governed execution; T006 fresh Planning BCE Issue #301 comment 6076967717 PASS-with-hard-gates. Activation enables only SP-P1-003/T006 under locked BS-P1-024; no Cursor lease until four CI, independent Activation BCE, merge and fresh canonical main SHA."
+  "implementation_enabled": false,
+  "reason": "Human 2026-10-11 approved PR39 and BS-P1-025 Build Freeze through pre-Cursor. Temporary governance HOLD while T006 remains BLOCKED; exact Human-approved scope-clean Design freeze source fda9045d0fc1b2b718d56ed49fa09abdce343a5c; no Cursor lease or production DB actions."
 }

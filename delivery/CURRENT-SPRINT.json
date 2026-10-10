@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-003",
-  "active_build_spec": "BS-P1-024",
-  "active_task": "T006",
-  "status": "BLOCKED",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human-merged Design PR #37 materially changed F01 PoP, protected hash read and F05 Share/Intent access boundaries; T006 under old locked BS-P1-024 is BLOCKED pending BF-054/BD-025 independent rebaseline Review (Build PR #350), scope-clean Design candidate PR #38, explicit Human Build Freeze/rebind and verified security gates. This is a safe control transition only; no Cursor lease, T007 or prod DB change."
+  "reason": "Human 2026-10-11 approved Build Freeze and pre-Cursor governance transition; T006 BLOCKED preserved in Sprint tasks pending BS-P1-025 promotion/rebind. Pause all implementation and Watcher lease issuance until new activation independently audited. No next Task."
 }
