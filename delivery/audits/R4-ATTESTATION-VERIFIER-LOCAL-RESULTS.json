@@ -5,13 +5,13 @@
   "audited_base": "7bf5c9466e681719463560c2676ccb82ab097f0e",
   "verifier": {
     "path": "delivery/audits/R4-ATTESTATION-VERIFIER.mjs",
-    "git_blob_sha1": "228708967c0e1a1a4272b104bde7f806e1449d5c",
-    "sha256": "1c9ea535239443f0be409d122865b8e1e332ad2972e8eeb6e2c4794c1f618528"
+    "git_blob_sha1": "449b06d21a3930e12188a720e248595f44762e7b",
+    "sha256": "a046824afd656e3529ad44cf7284c37ca79a3de3807e5c0703adc68f9e708232"
   },
   "tests": {
     "path": "delivery/audits/R4-ATTESTATION-VERIFIER-TEST.mjs",
-    "git_blob_sha1": "a1b9508c1d78e65c9ec8db7e45ea9ac650f86e68",
-    "sha256": "be2e834bfeb09b99578dd90430db313bfd4998c048912c3e953732ed0b57cf7c",
+    "git_blob_sha1": "b6f2b5122b3955c480d05f2232eeabc0fafdc882",
+    "sha256": "e5a283a2ee5da8e5480c182de3aaa1c9dde46cb204a0c82197f4b9c1fab96bfc",
     "execution": "LOCAL Node v22.16.0; exact GitHub readback blobs independently compared with local git hash-object",
     "command": "node delivery/audits/R4-ATTESTATION-VERIFIER-TEST.mjs",
     "result_json_sha256": "c47dbaf7073eddad70d0a50fb0dbaac6c3e80b73538e9d94f85570400ae61993",
@@ -58,6 +58,30 @@
     "actual_ci_conclusion": "success",
     "observed_inspector_result": "UNTRUSTED_GITHUB_RUN",
     "verdict": "CORRECTLY_REJECTS_GREEN_CI_WITH_WRONG_PROVENANCE",
-    "input_proof": "SYNTHETIC_UNTRUSTED_TEST_DOUBLE_NOT_ATTESTED"
+    "input_proof": "SYNTHETIC_UNTRUSTED_TEST_DOUBLE_NOT_ATTESTED",
+    "reconfirmed_against_new_blob": "449b06d21a3930e12188a720e248595f44762e7b"
+  },
+  "emitter": {
+    "path": "delivery/audits/R4-TEST-REPORT-EMITTER.mjs",
+    "git_blob_sha1": "44def52b40c78382c4a7fb5fde920225464c52b3",
+    "sha256": "70ba5d83e1756aa902f845b3746268d2a1ba4b03304a163d34f37bf3d94ccdc1",
+    "test_path": "delivery/audits/R4-TEST-REPORT-EMITTER-TEST.mjs",
+    "test_git_blob_sha1": "040cf52e811d02ed278267e0b268a0c79ae9ef23",
+    "test_sha256": "a137586ff45688fdac0a4b06ae6a3a649d90d8d02688ad5022509645a679a1c4",
+    "local_node22_cases": 27,
+    "matched": 27,
+    "synthetic_positive": 1,
+    "negative": 26,
+    "local_json_sha256": "a8aeb093794890f975c6fa3c97de19ca579397da1f9d94f85570400ae61993",
+    "production_emit_command_exit_code": 2,
+    "real_vitest_report_verified": false
+  },
+  "aggregate_local_test_doubles": {
+    "total": 69,
+    "expected_matched": 69,
+    "synthetic_positive": 3,
+    "negative": 66,
+    "real_attested_positive": 0,
+    "local_node_version": "v22.16.0"
   }
 }
