@@ -10,17 +10,26 @@
   },
   "tests": {
     "path": "delivery/audits/R4-ATTESTATION-VERIFIER-TEST.mjs",
-    "git_blob_sha1": "6b6c536fa63889d98a5f7f211131f8d98f291f7e",
-    "sha256": "3c4a697539e227a6e28aa112cbe930f77551e142721029c1a9d6f76d04f1b244",
+    "git_blob_sha1": "a1b9508c1d78e65c9ec8db7e45ea9ac650f86e68",
+    "sha256": "be2e834bfeb09b99578dd90430db313bfd4998c048912c3e953732ed0b57cf7c",
     "execution": "LOCAL Node v22.16.0; exact GitHub readback blobs independently compared with local git hash-object",
     "command": "node delivery/audits/R4-ATTESTATION-VERIFIER-TEST.mjs",
-    "result_json_sha256": "ddefc344f3a95f72f69c7a23b3d28c9da8aa59aebe2ff79e40df5ab3bf3102e6",
-    "total": 33,
-    "matched": 33,
+    "result_json_sha256": "c47dbaf7073eddad70d0a50fb0dbaac6c3e80b73538e9d94f85570400ae61993",
+    "total": 42,
+    "matched": 42,
     "positive_test_doubles": 2,
-    "negative": 31,
+    "negative": 40,
     "actual_cryptographic_github_attestation_verified": false,
-    "live_github_runner_attestation_test": false
+    "live_github_runner_attestation_test": false,
+    "confirmed_gh_flags": [
+      "--repo",
+      "--signer-workflow",
+      "--source-digest",
+      "--source-ref",
+      "--deny-self-hosted-runners",
+      "--format=json"
+    ],
+    "local_cli_availability": "gh not installed on isolated runner, test doubles only, CLI fail closed"
   },
   "direct_production_entrance": {
     "command": "node delivery/audits/R4-ATTESTATION-VERIFIER.mjs verify",
@@ -40,5 +49,15 @@
     "gh attestation verify real process is not run in container because gh is not installed and no signed artifact exists",
     "CI on draft audit-only files does not execute these tests unless an approved workflow is wired to do so",
     "All actual new acceptance/Task execution stays blocked; no R4 approval or R5"
-  ]
+  ],
+  "live_github_negative": {
+    "source_pr_head": "6ee85c6647d4f578e8551c02a5be68e78f52c850",
+    "github_actions_ci_run": 38095337831,
+    "actual_event": "pull_request",
+    "actual_workflow": ".github/workflows/ci.yml",
+    "actual_ci_conclusion": "success",
+    "observed_inspector_result": "UNTRUSTED_GITHUB_RUN",
+    "verdict": "CORRECTLY_REJECTS_GREEN_CI_WITH_WRONG_PROVENANCE",
+    "input_proof": "SYNTHETIC_UNTRUSTED_TEST_DOUBLE_NOT_ATTESTED"
+  }
 }
