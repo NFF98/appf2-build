@@ -1,0 +1,78 @@
+{
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "revision": "v1.5",
+  "mode": "ISOLATED_NODE_EXECUTION_AUDIT_ONLY",
+  "trusted_product_pass": false,
+  "canonical_main_sha": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "github_exact_sources": [
+    {
+      "file": "delivery/audits/R4-AUTHORIZED-PREFLIGHT.mjs",
+      "sha256": "322c3fffb7d00f46a6bfc9bf29bec0937c6db33085f57b3a3fa0152f20694793",
+      "blob": "de67d6593b526205fefaa78431d3b0686dc9a373"
+    },
+    {
+      "file": "delivery/audits/R4-AUTHORIZED-PREFLIGHT-TEST.mjs",
+      "sha256": "52ec434ff40895ea589c79b22d380f793f6a70f1ddebf049d929fa83e623513a",
+      "blob": "ee70f290a10132cc61757b91cd9d54d7813b2327"
+    },
+    {
+      "file": "delivery/audits/R4-REPLAY-LEDGER.mjs",
+      "sha256": "2c7fb3288ef95cf107e4fb2b587e5b269862c5bc13b6522432225e6900dbb0c9",
+      "blob": "d963353eff995beaaa21961bd74378876181f7ba"
+    },
+    {
+      "file": "delivery/audits/R4-REPLAY-LEDGER-TEST.mjs",
+      "sha256": "401423ff65877cee2765ad4b830efec29fd3bab9416654aacb9fa42ac42fd91e",
+      "blob": "45c86827dbe7523454739fd0cfa276cad447cb4b"
+    }
+  ],
+  "node": "v22.16.0",
+  "local_runs": [
+    {
+      "command": "node delivery/audits/R4-AUTHORIZED-PREFLIGHT-TEST.mjs",
+      "total": 37,
+      "matched": 37,
+      "positive": 1,
+      "negative": 36,
+      "stdout_sha256": "a74ae80b40c70775b1fe1c0c2644ef4b67a6fc913ba0875141941eb589cf1835",
+      "all_positives_synthetic": true
+    },
+    {
+      "command": "node delivery/audits/R4-REPLAY-LEDGER-TEST.mjs",
+      "total": 24,
+      "matched": 24,
+      "positive": 3,
+      "negative": 21,
+      "stdout_sha256": "937445969c4f106623defe7ecadfa6d255bb95a374237237c1a17305c55a3a72",
+      "all_positives_synthetic": true
+    }
+  ],
+  "cumulative_isolated_node_tests": {
+    "pre_existing": 69,
+    "new": 61,
+    "total": 130,
+    "all_matched": true,
+    "real_attestation_positive": 0
+  },
+  "actual_canonical_hold_negative": {
+    "from_main": "build-spec/CURRENT.json and delivery/CURRENT-SPRINT.json",
+    "current_baseline": "BS-P1-024",
+    "implementation_enabled": false,
+    "sprint_status": "HOLD",
+    "actual_bs025_activation_present": false,
+    "expected": "NO_AUTHORIZED_BS025_ACTIVATION",
+    "passed": true,
+    "note": "Input is an explicit test fixture reconstructed from actual canonical JSON fields; tests do not authorize any Sprint/Task."
+  },
+  "fail_closed": {
+    "preflight_untrusted_approval_adapter": "NO_APPROVAL",
+    "missing_git_ancestry_verifier": "DENY",
+    "ledger_missing_external_immutability_and_CAS": "DENY",
+    "production_launchers": "exit 2; no authority",
+    "external_CAS_implemented": false,
+    "independent_human_signatures": 0,
+    "github_artifact_attestation_positive": false
+  },
+  "conclusion": "ISOLATED_MODEL_PASS_PROTECTED_L3_AND_R4_HUMAN_REVIEW_BLOCKED"
+}
