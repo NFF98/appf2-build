@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R2",
+  "decision_kind": "DIRECT_HUMAN_CHAT_APPROVAL_RECEIPT_NOT_CRYPTOGRAPHIC_SIGNATURE",
+  "human_decision": "APPROVED_TO_PROCEED_TO_R3_ALTERNATIVES_ONLY",
+  "human_exact_message": "批准 GOV-CASE-T006-REBIND-001 / R2 / dossier_version=v1.0 / dossier_sha256=88134edf64b5ddf2a61c1fed1a56dc73c8a58a32b654276b54380f37101ce141 / commit=17851adaff39bbd004e3235d7ed153edae7315ea。接受 R2 事實覆核及修正，僅批准進入 R3 替代方案審查。",
+  "dossier_version": "v1.0",
+  "dossier_sha256": "88134edf64b5ddf2a61c1fed1a56dc73c8a58a32b654276b54380f37101ce141",
+  "dossier_commit_sha": "17851adaff39bbd004e3235d7ed153edae7315ea",
+  "dossier_blob_sha": "828215d0e889563e30726b0e1573123eb00e2475",
+  "approved_scope": [
+    "READ_ONLY_R3_OPTION_ANALYSIS",
+    "ISOLATED_SOURCE_CONDITION_REPRODUCTION",
+    "PREPARE_R3_REVIEW_CANDIDATE"
+  ],
+  "excluded_scope": [
+    "R3_HUMAN_APPROVAL",
+    "R4_TO_R5_APPROVAL",
+    "PROTECTED_HARNESS_OR_CI_MODIFICATION",
+    "TASK_SPRINT_CURRENT_REBIND",
+    "T001_T007_REWRITE",
+    "NEW_TASK_START",
+    "CURSOR_EXECUTION_LEASE",
+    "POSTGRES_PRODUCTION_DDL"
+  ],
+  "human_ed25519_signature_base64": null,
+  "cryptographic_signature_verified": false,
+  "prior_direct_approvals": [
+    "R1",
+    "R2"
+  ],
+  "cryptographically_verified_stages": 0,
+  "provenance_warning": "Direct Human R2 chat approval authenticates the intent in the conversation but does NOT constitute an independently verified Ed25519 stage signature. Governance files emitted using GitHub app credentials are AI evidence, not signed Human attestations.",
+  "recorded_by": "CHATGPT_GOVERNANCE",
+  "current_build_main_at_receipt": "aaf1af0fe55199bd142b33425227459f40338b97"
+}

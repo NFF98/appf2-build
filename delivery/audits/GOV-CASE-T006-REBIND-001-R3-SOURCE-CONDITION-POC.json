@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R3",
+  "version": "v1.0-preparation",
+  "status": "READ_ONLY_ALTERNATIVES_EVALUATED_R3_HUMAN_SELECTION_PENDING",
+  "main_source_sha": "aaf1af0fe55199bd142b33425227459f40338b97",
+  "r2_dossier_commit": "17851adaff39bbd004e3235d7ed153edae7315ea",
+  "r2_dossier_sha256": "88134edf64b5ddf2a61c1fed1a56dc73c8a58a32b654276b54380f37101ce141",
+  "source_evidence_verified": {
+    "old_sprint": "SP-P1-003",
+    "old_sprint_build_spec": "BS-P1-024",
+    "old_manifest_revalidation_items": [
+      "BL-P1-008"
+    ],
+    "BL008_original_baseline": "BS-P1-016",
+    "BL008_single_revalidation": {
+      "target_build_spec_id": "BS-P1-024",
+      "status": "CLOSED",
+      "sprint_id": "SP-P1-003",
+      "task_id": "T007",
+      "acceptance_ids": [
+        "F01-AC-004"
+      ]
+    },
+    "BL008_new_separate_drift": [
+      "F01-AC-017"
+    ],
+    "revalidation_task_T007_status": "CLOSED",
+    "new_target_baseline": "BS-P1-025",
+    "other_new_evidence": {
+      "BL010": [
+        "F01-AC-013",
+        "F01-AC-016"
+      ],
+      "BL031": [
+        "F07-AC-004"
+      ]
+    },
+    "unchanged_legacy_exception": {
+      "BL032": "prior BS004 proof carries to BS025 without further drift"
+    }
+  },
+  "executed_test_method": "READ_ONLY_SOURCE_CONDITION_REPRODUCTION of exact current validator guards and canonical JSON; NOT a checkout/npm run gate, protected PR or executable product test",
+  "tests": [
+    {
+      "case_id": "L2-001",
+      "scenario": "Retain BL-P1-008 historical single revalidation",
+      "assertion": "BL008.revalidation.target=BS-P1-024 and sprint=SP-P1-003; old Sprint accepts; BS-P1-025 active Backlog requires target=BS-P1-025 for added F01-AC-017 drift",
+      "source_guards": [
+        "validate-sprint.mjs: revalidation.target_build_spec_id===m.build_spec_id and sprint_id===sid",
+        "validate-backlog.mjs: laterDrift.length=>no historical carry-forward, then target_build_spec_id must equal currentBaseline"
+      ],
+      "expected": {
+        "historical_valid": true,
+        "new_baseline_coverage_valid": false
+      },
+      "observed": {
+        "historical_valid": true,
+        "new_baseline_coverage_valid": false
+      },
+      "outcome": "CONFIRMED_STATIC_FAIL_NEW_BASELINE"
+    },
+    {
+      "case_id": "L2-002",
+      "scenario": "Overwrite BL-P1-008 revalidation with BS-P1-025 for new Sprint",
+      "assertion": "new target may meet new Backlog target check but old SP-P1-003 now references BS025/SP004 rather than BS024/SP003 and old T007 receipt is destroyed",
+      "source_guards": [
+        "validate-sprint.mjs exact old Sprint revalidation target and sprint guard",
+        "T007 CLOSED and original BL008 r binding immutable"
+      ],
+      "expected": {
+        "historical_valid": false,
+        "new_target_shape_valid": true,
+        "history_preserved": false
+      },
+      "observed": {
+        "historical_valid": false,
+        "new_target_shape_valid": true,
+        "history_preserved": false
+      },
+      "outcome": "CONFIRMED_STATIC_FAIL_HISTORY"
+    },
+    {
+      "case_id": "L2-003",
+      "scenario": "Add SP-P1-004 without touching BL008",
+      "assertion": "New Sprint does not alter a single existing revalidation pointer; BL008 retains target BS024",
+      "source_guards": [
+        "validate-backlog.mjs resolveItemRevalidationIds(item,...current.active_baseline)"
+      ],
+      "expected": {
+        "new_baseline_coverage_valid": false
+      },
+      "observed": {
+        "new_baseline_coverage_valid": false
+      },
+      "outcome": "CONFIRMED_STATIC_FAIL_BACKLOG"
+    },
+    {
+      "case_id": "L2-004",
+      "scenario": "Add new BL item for F01-AC-017 but keep BL008 unchanged",
+      "assertion": "Original DONE BL008 still owns F01-AC-017, and active Backlog validates every old item independently; duplicate coverage does not clear its semantic drift",
+      "source_guards": [
+        "validate-backlog.mjs per-item resolveItemRevalidationIds and validateAcceptanceLinks claimed ownership"
+      ],
+      "expected": {
+        "original_drift_unresolved": true
+      },
+      "observed": {
+        "original_drift_unresolved": true
+      },
+      "outcome": "CONFIRMED_STATIC_FAIL_ORIGINAL"
+    },
+    {
+      "case_id": "SAFE-005",
+      "scenario": "Keep existing BS024 active, Sprint HOLD and old T007 CLOSED",
+      "assertion": "All historical pointers and guards remain consistent, but BS025 cannot be activated and T006 still blocked",
+      "source_guards": [
+        "build-spec/CURRENT.json implementation_enabled=false",
+        "delivery/CURRENT-SPRINT.json status=HOLD"
+      ],
+      "expected": {
+        "old_truth_preserved": true,
+        "new_T006_ready": false
+      },
+      "observed": {
+        "old_truth_preserved": true,
+        "new_T006_ready": false
+      },
+      "outcome": "CONFIRMED_STATIC_SAFE_HOLD"
+    },
+    {
+      "case_id": "L3-006",
+      "scenario": "Minimal append-only second-round revalidation ledger",
+      "assertion": "Keep legacy item.revalidation unchanged and introduce separately verified append-only versioned revalidation records; extend only required read-side validators with exact lineage, invariant and negative cases",
+      "source_guards": [
+        "APPF2-CONSTITUTION.md R1-R5 distinct Human approvals, CI/BCE, merge",
+        "Current change-scope whitelist does not yet allow this protected diff"
+      ],
+      "expected": {
+        "old_truth_preserved": true,
+        "new_BS025_possible_conditional": true
+      },
+      "observed": null,
+      "outcome": "NOT_EXECUTED_REQUIRES_R4_DIFF_AND_SIGNATURES"
+    }
+  ],
+  "executed_boolean_assertions": 5,
+  "all_executed_assertions_matched": true,
+  "alternatives": [
+    {
+      "id": "A",
+      "label": "No change/HOLD",
+      "risk": "No security regression but T006 remains blocked and BS025 cannot be selected",
+      "scope": "zero repo mutation",
+      "reversible": true,
+      "relative_cost": "LOW_NOW_HIGH_DELIVERY_DELAY",
+      "finding": "SAFE_NOT_SOLUTION"
+    },
+    {
+      "id": "B",
+      "label": "L2-only separate new Sprint / add Backlog item without gate edits",
+      "risk": "Single BL008 old/new permission history conflict; duplicate or omitted current coverage",
+      "scope": "new Sprint/backlog controls",
+      "reversible": "not responsibly mergeable with current guard failures",
+      "relative_cost": "WASTED_REBASELINE_AND_GOVERNANCE_CYCLES",
+      "finding": "FOUR_VERIFIED_SOURCE_CONDITION_BLOCKERS"
+    },
+    {
+      "id": "C",
+      "label": "Isolated nonmerged PoC for minimal append-only multi-round revalidation",
+      "risk": "Proof may show need for extra protected gates; no current-main mutation",
+      "scope": "R4 preparation on isolated candidate branch only after Human R3 route selection; no protected modifications prior to R4/R5",
+      "reversible": true,
+      "relative_cost": "MODERATE",
+      "finding": "RECOMMENDED_NEXT_INVESTIGATION_NOT_AUTHORIZED"
+    },
+    {
+      "id": "D",
+      "label": "Minimal protected L3 controlled extension",
+      "risk": "High if not fail closed; requires distinct Human five-stage Ed25519, exact diff, negative tests, independent CI/BCE, separate merge approval",
+      "scope": "append-only new evidence ledger + narrow validation hooks, preserve historical records, no stage B",
+      "reversible": "new pre-activation rollback to HOLD subject to Gate; never delete old evidence",
+      "relative_cost": "HIGHER_UPFRONT_LOWER_REPEAT_DRIFT",
+      "finding": "CANDIDATE_ONLY_R4_REQUIRES_HUMAN_R3_DECISION"
+    }
+  ],
+  "preconditions_for_any_L3": [
+    "independent signed Human R1/R2 provenance resolved; no forged keys",
+    "separate Human R3 explicit route choice",
+    "R4 actual exact code diff, base/version/provenance, positive/negative regression executed",
+    "R4/R5 human approvals sequential, independent CI/BCE, Human merge approval",
+    "keep T001/T007 CLOSED, no missing T006 test PASS inference",
+    "PG-001 protected scope separate, no prod DDL"
+  ],
+  "human_R3_approval_received": false,
+  "constitution_modified": false,
+  "cursor_lease_issued": false
+}
