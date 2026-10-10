@@ -19,7 +19,7 @@ const baselineLocked=c=>c.build.active_baseline==="BS-P1-024"&&
  c.build.implementation_enabled===false&&c.current.status==="HOLD"&&c.current.active_task===null;
 const legacyTasksLocked=(c,t001,t007)=>t001?.status==="CLOSED"&&t007?.status==="CLOSED"&&
  c.sprint.build_spec_id==="BS-P1-024"&&c.sprint.revalidation_item_ids.includes("BL-P1-008");
-const exactOldRound=(c,bid,item,cursor,t007,e)=>{
+const exactOldRound=({c,bid,item,cursor,t007,e})=>{
  const r=item.revalidation;
  if(r.status!=="CLOSED"||!seteq(r.acceptance_ids,changed(c,item,cursor,r.target_build_spec_id)))e.push(bid+":LEGACY_INVALID");
  if(bid==="BL-P1-008"&&!lockedT007(r,t007))e.push("BL008:T007_HISTORY_CHANGED");
@@ -41,7 +41,7 @@ const ownerValid=(task,r)=>Boolean(task&&task.build_spec_id===r.target_build_spe
 const evidenceValid=(ev,r)=>Boolean(ev&&ev.status==="PASS"&&ev.owner_task_id===r.owner_task_id&&
  ev.target_build_spec_id===r.target_build_spec_id&&seteq(ev.acceptance_ids,r.acceptance_ids)&&
  seteq(ev.test_ids,r.test_ids)&&ev.trusted_locator&&ev.source_commit);
-function inspectRoundShape(c,p,rounds,bid,item,r,cursor,seq,e){
+function inspectRoundShape({c,p,rounds,bid,item,r,cursor,seq,e}){
  if(r.sequence!==seq)e.push(bid+":SEQUENCE_REPLAY");
  if(!chainValid(c,bid,r,cursor))e.push(bid+":SOURCE_CHAIN_MISMATCH");
  if(!knownBaselines(c,r))e.push(bid+":UNKNOWN_BASELINE");
@@ -60,7 +60,7 @@ function inspectRoundOwnership(bid,r,state){
  if(state.used.has(r.replay_nonce)||!r.replay_nonce)state.errors.push(bid+":REPLAY_NONCE");
  state.used.add(r.replay_nonce);
 }
-function inspectProof(bid,r,id,rounds,c,mode,state){
+function inspectProof({bid,r,id,rounds,c,mode,state}){
  if(state.used.has("ev:"+id))state.errors.push(bid+":EVIDENCE_REPLAY");
  state.used.add("ev:"+id);
  const ev=rounds.evidence?.[id];
@@ -69,16 +69,16 @@ function inspectProof(bid,r,id,rounds,c,mode,state){
   state.errors.push(bid+":EXTERNAL_TRUSTED_EVIDENCE_VERIFIER_REQUIRED");
  }
 }
-function inspectItem(c,p,rounds,mode,bid,t007,state){
+function inspectItem({c,p,rounds,mode,bid,t007,state}){
  const item=c.queue.items.find(x=>x.backlog_item_id===bid);
  if(!item||item.status!=="DONE"){state.errors.push(bid+":HISTORICAL_ITEM_MISSING");return}
  let cursor=item.build_spec_id;
- if(item.revalidation)cursor=exactOldRound(c,bid,item,cursor,t007,state.errors);
+ if(item.revalidation)cursor=exactOldRound({c,bid,item,cursor,t007,e:state.errors});
  const list=rounds.rounds?.[bid]||[];
  for(const [i,r] of list.entries()){
-  inspectRoundShape(c,p,rounds,bid,item,r,cursor,i+1,state.errors);
+  inspectRoundShape({c,p,rounds,bid,item,r,cursor,seq:i+1,e:state.errors});
   inspectRoundOwnership(bid,r,state);
-  for(const id of r.evidence_ids||[])inspectProof(bid,r,id,rounds,c,mode,state);
+  for(const id of r.evidence_ids||[])inspectProof({bid,r,id,rounds,c,mode,state});
   cursor=r.target_build_spec_id;
  }
  if(changed(c,item,cursor,"BS-P1-025").length)state.errors.push(bid+":UNRESOLVED_VERSION_DRIFT");
@@ -90,7 +90,7 @@ function audit(c,p,rounds,mode){
  if(!baselineLocked(c))state.errors.push("CANONICAL_HOLD_CHANGED");
  if(!legacyTasksLocked(c,t001,t007))state.errors.push("LEGACY_TASK_OR_SPRINT_MUTATED");
  for(const bid of ["BL-P1-008","BL-P1-010","BL-P1-031","BL-P1-032"]){
-  inspectItem(c,p,rounds,mode,bid,t007,state);
+  inspectItem({c,p,rounds,mode,bid,t007,state});
  }
  return {ok:state.errors.length===0,errors:[...new Set(state.errors)]};
 }
