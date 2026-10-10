@@ -1,0 +1,102 @@
+diff --git a/harness/scripts/validate-change-scope.mjs b/harness/scripts/validate-change-scope.mjs
+--- a/harness/scripts/validate-change-scope.mjs
++++ b/harness/scripts/validate-change-scope.mjs
+@@ -112,10 +112,24 @@
+     const oldItem=beforeQueue.items[i],newItem=afterQueue.items[i];
+     if(!oldItem || !newItem || oldItem.backlog_item_id!==newItem.backlog_item_id) return false;
+     const oldR=oldItem.revalidation,newR=newItem.revalidation;
+     if(stable(oldR)===stable(newR)){
+-      restored.push(newItem);
+-      continue;
++      // Proposed append-only closure guard: a pre-existing, approved round may
++      // change only IN_PROGRESS -> CLOSED; all earlier records stay byte-stable.
++      const before=oldItem.revalidation_rounds,after=newItem.revalidation_rounds;
++      if(stable(before)===stable(after)){
++        restored.push(newItem);
++        continue;
++      }
++      if(!Array.isArray(before)||!Array.isArray(after)||before.length!==after.length) return false;
++      if(oldItem.status!=="DONE"||newItem.status!=="DONE") return false;
++      const diffs=before.map((r,j)=>stable(r)===stable(after[j])?null:j).filter(j=>j!==null);
++      if(diffs.length!==1)return false;
++      const j=diffs[0];
++      if(!exactItemRevalidationClosure(before[j],after[j],ctx))return false;
++      // BLOCKED: external CI attestation authority is not integrated yet;
++      // do not permit closed-round changes by merely writing PASS in JSON.
++      return false;
+     }
+     if(!exactItemRevalidationClosure(oldR,newR,ctx)) return false;
+     restored.push({...newItem,revalidation:oldR});
+     closures++;
+diff --git a/harness/scripts/validate-evidence.mjs b/harness/scripts/validate-evidence.mjs
+--- a/harness/scripts/validate-evidence.mjs
++++ b/harness/scripts/validate-evidence.mjs
+@@ -40,23 +40,53 @@
+   if(!/^[0-9a-f]{40}$/.test(sha||"") || /^0+$/.test(sha||"")) return false;
+   try{execFileSync("git",["cat-file","-e",sha+"^{commit}"],{stdio:"ignore"}); return true;}
+   catch{return false;}
+ };
+-
+-for(const file of files){
+-  const e=JSON.parse(fs.readFileSync(path.join(evidenceDir,file),"utf8"));
+-  if(e.schema_version!==2) errors.push((e.evidence_id||file)+" evidence schema_version must be 2");
+-  if(!/^EV-SP-P\d+-\d{3}-T\d{3}-\d{3}$/.test(e.evidence_id||"")) errors.push("Invalid evidence_id: "+file);
+-  if(file!==e.evidence_id+".json") errors.push("Evidence filename must equal evidence_id: "+file);
+-  if(seen.has(e.evidence_id)) errors.push("Duplicate evidence_id: "+e.evidence_id); seen.add(e.evidence_id);
+-  if(!kinds.has(e.kind)) errors.push(e.evidence_id+" invalid kind");
+-  if(!statuses.has(e.status)) errors.push(e.evidence_id+" invalid status");
+-  for(const k of ["build_spec_id","sprint_id","task_id","locator","recorded_at","source_commit"]) if(!e[k]) errors.push(e.evidence_id+" missing "+k);
+-  if(!Array.isArray(e.acceptance_ids)) errors.push(e.evidence_id+" acceptance_ids must be array");
+-  if(!Array.isArray(e.test_ids)) errors.push(e.evidence_id+" test_ids must be array");
+-  if(e.sha256!==null && !/^[0-9a-f]{64}$/.test(e.sha256||"")) errors.push(e.evidence_id+" invalid sha256");
+-  if(!/^[0-9a-f]{40}$/.test(e.source_commit||"") || /^0+$/.test(e.source_commit||"")) errors.push(e.evidence_id+" invalid source_commit");
+-  else if(!isAncestor(e.source_commit)) errors.push(e.evidence_id+" source_commit not found in repository history: "+e.source_commit);
++const isActualAncestor=sha=>{
++  if(!/^[0-9a-f]{40}$/.test(sha||"") || /^0+$/.test(sha||"")) return false;
++  try{execFileSync("git",["merge-base","--is-ancestor",sha,"HEAD"],{stdio:"ignore"});return true;}
++  catch{return false;}
++};
++const appendedRoundEvidenceIDs=new Map();
++for(const item of read("delivery/backlog/QUEUE.json").items||[]){
++  for(const round of item.revalidation_rounds||[]){
++    for(const id of round.evidence_ids||[]){
++      if(appendedRoundEvidenceIDs.has(id)) errors.push("New security round Evidence replayed across items: "+id);
++      appendedRoundEvidenceIDs.set(id,{item:item.backlog_item_id,round});
++    }
++  }
++}
++
++
++for(const file of files){
++  const e=JSON.parse(fs.readFileSync(path.join(evidenceDir,file),"utf8"));
++  if(e.schema_version!==2) errors.push((e.evidence_id||file)+" evidence schema_version must be 2");
++  if(!/^EV-SP-P\d+-\d{3}-T\d{3}-\d{3}$/.test(e.evidence_id||"")) errors.push("Invalid evidence_id: "+file);
++  if(file!==e.evidence_id+".json") errors.push("Evidence filename must equal evidence_id: "+file);
++  if(seen.has(e.evidence_id)) errors.push("Duplicate evidence_id: "+e.evidence_id); seen.add(e.evidence_id);
++  if(!kinds.has(e.kind)) errors.push(e.evidence_id+" invalid kind");
++  if(!statuses.has(e.status)) errors.push(e.evidence_id+" invalid status");
++  for(const k of ["build_spec_id","sprint_id","task_id","locator","recorded_at","source_commit"]) if(!e[k]) errors.push(e.evidence_id+" missing "+k);
++  if(!Array.isArray(e.acceptance_ids)) errors.push(e.evidence_id+" acceptance_ids must be array");
++  if(!Array.isArray(e.test_ids)) errors.push(e.evidence_id+" test_ids must be array");
++  if(e.sha256!==null && !/^[0-9a-f]{64}$/.test(e.sha256||"")) errors.push(e.evidence_id+" invalid sha256");
++  if(!/^[0-9a-f]{40}$/.test(e.source_commit||"") || /^0+$/.test(e.source_commit||"")) errors.push(e.evidence_id+" invalid source_commit");
++  else if(!isAncestor(e.source_commit)) errors.push(e.evidence_id+" source_commit not found in repository history: "+e.source_commit);
++  const roundEntry=appendedRoundEvidenceIDs.get(e.evidence_id);
++  if(roundEntry){
++    const r=roundEntry.round;
++    if(!isActualAncestor(e.source_commit)) errors.push(e.evidence_id+" new security round source commit must be a true ancestor");
++    if(r.target_build_spec_id!==e.build_spec_id||r.sprint_id!==e.sprint_id||
++       r.task_id!==e.task_id||!Array.isArray(r.acceptance_ids)||
++       !Array.isArray(r.test_ids)||
++       JSON.stringify(r.acceptance_ids)!==JSON.stringify(e.acceptance_ids)||
++       JSON.stringify(r.test_ids)!==JSON.stringify(e.test_ids)){
++      errors.push(e.evidence_id+" new security round identity/acceptance/test binding mismatch");
++    }
++    // HARD STOP: no independently authenticated CI attestation trust anchor.
++    // Never turn a user-controlled status:PASS or locator/hash into CI truth.
++    if(e.status==="PASS")errors.push(e.evidence_id+" externally trusted CI result NOT IMPLEMENTED for new security round");
++  }
+ 
+   const task=taskMap.get(e.sprint_id+"/"+e.task_id);
+   if(!task) errors.push(e.evidence_id+" binds unknown Sprint/Task");
+   else{
