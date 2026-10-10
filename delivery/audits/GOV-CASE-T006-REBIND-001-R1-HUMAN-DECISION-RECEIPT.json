@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R1",
+  "decision_kind": "DIRECT_HUMAN_CHAT_APPROVAL_RECEIPT_NOT_CRYPTOGRAPHIC_SIGNATURE",
+  "human_decision": "APPROVED_TO_PROCEED_TO_R2_FACT_CHECK_ONLY",
+  "human_exact_message": "批准 GOV-CASE-T006-REBIND-001 / R1 / dossier_version=v1.0 / dossier_sha256=50f4a19124080876691563f01652ec82a72088afa1b258404ae27d057a43f453 / commit=fc538abb9d4f1838c3639e0a7fd818f26aab3ae5。僅批准進入 R2 事實覆核。",
+  "dossier_version": "v1.0",
+  "dossier_sha256": "50f4a19124080876691563f01652ec82a72088afa1b258404ae27d057a43f453",
+  "dossier_commit_sha": "fc538abb9d4f1838c3639e0a7fd818f26aab3ae5",
+  "dossier_blob_sha": "1373d7611225436358339fab954a474f719045ad",
+  "approved_scope": [
+    "R2_READ_ONLY_FACT_VERIFICATION",
+    "PREPARE_R2_REVIEW_CANDIDATE"
+  ],
+  "excluded_scope": [
+    "R2_HUMAN_APPROVAL",
+    "R3_TO_R5_APPROVAL",
+    "PROTECTED_HARNESS_OR_CI_MODIFICATION",
+    "T001_OR_T007_HISTORY_REWRITE",
+    "SPRINT_ACTIVATION",
+    "TASK_SCOPE_EXPANSION",
+    "CURSOR_EXECUTION_LEASE",
+    "PG_PRODUCTION_OR_SIGNING"
+  ],
+  "human_ed25519_signature_base64": null,
+  "signature_verified": false,
+  "cryptographic_stage_count": 0,
+  "provenance_warning": "A direct Human message confirms intent to proceed to R2; repository constitution additionally requires independently verified Ed25519 signatures in the eventual exact constitutional case. This ChatGPT-authored receipt is evidence, not a Human signature or the case docket.",
+  "created_by": "CHATGPT_GOVERNANCE",
+  "date_jst": "2026-10-11",
+  "current_build_main_at_receipt": "699eff7e088e1b5b741e9369f3f6a4596e794c9c"
+}

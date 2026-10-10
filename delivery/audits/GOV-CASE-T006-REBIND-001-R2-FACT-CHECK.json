@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "review_stage": "R2_FACT_CHECK",
+  "review_version": "v1.0",
+  "status": "FACT_CHECK_COMPLETED_R2_HUMAN_APPROVAL_PENDING",
+  "canonical_build_main": "699eff7e088e1b5b741e9369f3f6a4596e794c9c",
+  "design_main": "17a3a57f15c17a6240b887ee55a6ded64cdf7106",
+  "design_pr_37_merge_sha": "2e74ea19623c81261bf408856543717e943f6f51",
+  "design_pr_39_merge_sha": "17a3a57f15c17a6240b887ee55a6ded64cdf7106",
+  "design_scope_clean_source": "fda9045d0fc1b2b718d56ed49fa09abdce343a5c",
+  "build_freeze": {
+    "baseline_id": "BS-P1-025",
+    "status": "LOCKED",
+    "manifest_content_sha256": "f46e8ecdb9f183baf82d4a53e40fb61eaed9d340838373d515d10e7a73d342c5",
+    "selected_baseline": "BS-P1-024",
+    "implementation_enabled": false
+  },
+  "sprint": {
+    "id": "SP-P1-003",
+    "status": "HOLD",
+    "active_task": null,
+    "task_T001": "CLOSED",
+    "task_T006": "BLOCKED",
+    "task_T007": "CLOSED"
+  },
+  "delta": {
+    "id": "BD-025",
+    "status": "APPROVED"
+  },
+  "finding": {
+    "id": "BF-054",
+    "status": "BLOCKED"
+  },
+  "registry_comparison": {
+    "old": "BS-P1-024",
+    "new": "BS-P1-025",
+    "changed_count": 10,
+    "changed_acceptance_ids": [
+      "F01-AC-013",
+      "F01-AC-016",
+      "F01-AC-017",
+      "F05-AC-001",
+      "F05-AC-002",
+      "F05-AC-008",
+      "F05-AC-011",
+      "F05-AC-014",
+      "F07-AC-004",
+      "F12-AC-004"
+    ],
+    "comparison_method": "machine-readable acceptance registry object equality, stable key ordering"
+  },
+  "historical_closed_tasks": {
+    "T001": {
+      "origin": "BS-P1-021",
+      "semantic_drift": [
+        "F01-AC-013",
+        "F01-AC-016"
+      ]
+    },
+    "T002": {
+      "origin": "BS-P1-022",
+      "semantic_drift": []
+    },
+    "T003": {
+      "origin": "BS-P1-023",
+      "semantic_drift": []
+    },
+    "T004": {
+      "origin": "BS-P1-024",
+      "semantic_drift": []
+    },
+    "T005": {
+      "origin": "BS-P1-024",
+      "semantic_drift": []
+    },
+    "T007": {
+      "origin": "BS-P1-024",
+      "semantic_drift": []
+    }
+  },
+  "done_backlog_with_drift": [
+    {
+      "item": "BL-P1-008",
+      "origin": "BS-P1-016",
+      "total_origin_to_current_drift": [
+        "F01-AC-004",
+        "F01-AC-017"
+      ],
+      "previous_proven_revalidation": {
+        "target": "BS-P1-024",
+        "owner_task": "T007",
+        "status": "CLOSED",
+        "acceptance_ids": [
+          "F01-AC-004"
+        ]
+      },
+      "new_distinct_drift": [
+        "F01-AC-017"
+      ],
+      "assessment": "NEW_PROOF_REQUIRED_KEEP_OLD_T007"
+    },
+    {
+      "item": "BL-P1-010",
+      "origin": "BS-P1-021",
+      "total_origin_to_current_drift": [
+        "F01-AC-013",
+        "F01-AC-016"
+      ],
+      "new_distinct_drift": [
+        "F01-AC-013",
+        "F01-AC-016"
+      ],
+      "assessment": "NEW_PROOF_REQUIRED"
+    },
+    {
+      "item": "BL-P1-031",
+      "origin": "BS-P1-001",
+      "total_origin_to_current_drift": [
+        "F07-AC-004"
+      ],
+      "new_distinct_drift": [
+        "F07-AC-004"
+      ],
+      "assessment": "NEW_PROOF_REQUIRED"
+    },
+    {
+      "item": "BL-P1-032",
+      "origin": "BS-P1-003",
+      "total_origin_to_current_drift": [
+        "F07-AC-008"
+      ],
+      "previous_proven_revalidation": {
+        "target": "BS-P1-004",
+        "status": "CLOSED",
+        "acceptance_ids": [
+          "F07-AC-008"
+        ]
+      },
+      "further_drift_from_previous_target": [],
+      "assessment": "HISTORICAL_CARRY_FORWARD_ALLOWED_NO_NEW_PROOF"
+    }
+  ],
+  "source_files_confirmed": [
+    "harness/scripts/baseline-lineage.mjs",
+    "harness/scripts/validate-sprint.mjs",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-test-integrity.mjs",
+    "harness/scripts/validate-activation.mjs",
+    "ci/run-product-ci.mjs",
+    ".github/workflows/ci.yml",
+    "ci/policy.json",
+    "harness/policy/APPF2-CONSTITUTION.md"
+  ],
+  "ci_facts": {
+    "historical_failed_ci_run": 38088567310,
+    "failed_while_implementation_enabled": true,
+    "failed_due_to_missing_active_task_executable_tests_count": 9,
+    "currently_in_hold": true,
+    "currently_implementation_enabled": false,
+    "run_product_ci_explicitly_skips_product_tests_when_hold": true,
+    "atomic_control_only_rebaseline_can_skip_product_ci_if_all_governance_guards_pass": true
+  },
+  "r1_challenge": {
+    "original_w5_overbroad": "CI always forces nine T006 tests before any activation or even while HOLD",
+    "corrected": "Product CI exits early during HOLD; guarded control-only activation can skip Product CI. After Product implementation is enabled and non-control changes are proposed, nine mapped executable tests must be present. The actual unresolved blockers are completed-task semantic drift, backlog multi-round revalidation and ownership, not an across-the-board HOLD CI impossibility."
+  },
+  "architecture_choice_status": "UNDECIDED_NO_R3_APPROVAL",
+  "least_privilege_alternatives_to_verify": [
+    "L2_NEW_SPRINT_OR_SEPARATE_REVALIDATION_TASK_WITHOUT_HARNESS_CHANGES",
+    "L3_APPEND_ONLY_HISTORICAL_LINEAGE_ONLY_IF_L2_FAILS_WITH_EVIDENCE",
+    "SAFE_HOLD_NO_CHANGE"
+  ],
+  "l3_required_proven": false,
+  "signature_evidence": {
+    "r1_direct_approval": true,
+    "r1_cryptographic_signature_verified": false,
+    "r2_human_approval": false,
+    "verified_signatures": 0
+  },
+  "claims_not_made": [
+    "NO_R2_HUMAN_APPROVAL",
+    "NO_24_CASES_EXECUTED",
+    "NO_IMPLEMENTATION_CI_PASS",
+    "NO_HARNESS_PATCH_AUTHORIZED",
+    "NO_CURSOR_LEASE",
+    "NO_PRODUCTION_POSTGRES"
+  ],
+  "next": "Publish exact R2 dossier v1.0 and ask separate Human R2 decision; do not select R3 architecture here."
+}
