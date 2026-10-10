@@ -64,14 +64,17 @@
     "Design Recovery Registry v1.4.0 has 135 unique IDs but phase_1_freeze_audit.status=PENDING_HUMAN_APPROVAL.",
     "T006 remains Stage A, current Sprint manifest declares Share restore/durable Share (Stage B) non_scope; no automatic Stage B scope expansion.",
     "Independent static Design 13/13 conditions were checked, not actual CI/executable contract tests.",
-    "Source-clean candidate, Version Lock/Freeze Audit PASS, per-file hashes, projected immutable BS manifest and Human Freeze approval are NOT YET available."
+    "Scope-clean candidate Design branch prepared exactly from old pinned SHA: PR #38 head 22ce2b03a571467401faee8e79b4b0496c97f38f, eight files, 24 original PR37 patch hunks all applied with unique exact context, GitHub compare base...head ahead=8 behind=0 files=8. NOT yet audited/Freeze-PASS.",
+    "PR #38 is DRAFT/DO NOT MERGE against historical Design frozen branch. No historical base or Design main changed. Acceptance Registry, Registry freeze state, Human BS-P1-025 Freeze and Task rebind still pending."
   ],
   "upstream_working_commit": "2e74ea19623c81261bf408856543717e943f6f51",
   "freeze_source": {
-    "type": "PENDING_SCOPE_CLEAN_DERIVATION",
-    "commit": null,
+    "type": "SCOPE_CLEAN_DERIVED_CANDIDATE",
+    "commit": "22ce2b03a571467401faee8e79b4b0496c97f38f",
     "base_commit": "736c757e72734f46407f8c9afcd81580ae75f0ef",
-    "provenance_audit": "delivery/audits/SP-P1-003-BD-025-REBASELINE-CANDIDATE.md"
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-025-REBASELINE-CANDIDATE.md",
+    "source_review_pr": "NFF98/appf2-design#38",
+    "freeze_audit_status": "PENDING"
   },
   "implementation_activation_authorized": false,
   "cursor_lease_authorized_by_this_delta": false,
