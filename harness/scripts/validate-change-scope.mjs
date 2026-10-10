@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { isOneTimeConstitutionFounding } from "./validate-constitutional-change.mjs";
+import { inspectConstitutionalChange, isOneTimeConstitutionFounding } from "./validate-constitutional-change.mjs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
@@ -301,6 +301,21 @@ const foundedConstitutionException=isOneTimeConstitutionFounding({
 });
 if(foundedConstitutionException) console.log("- GOV-CONST-001 single-SHA founding exception (governance-only exact paths, expires after main advances).");
 
+const constitutionalInspection=inspectConstitutionalChange({
+  changed,
+  base:baseSha,
+  cs,
+  build:currentBuild,
+  policy,
+  root,
+  trustPublicKeyB64:process.env.APPF2_CONSTITUTION_PUBKEY_B64
+});
+const approvedConstitutionalCase=
+  constitutionalInspection.constitutional &&
+  !constitutionalInspection.bootstrap &&
+  constitutionalInspection.errors.length===0;
+if(approvedConstitutionalCase) console.log("- Human-signed constitutional case recognized; exact docket paths/digest/signature chain govern this candidate.");
+
 const boundedT005PercentRepair = isExactT005PercentGovernanceRepair({
   base:baseSha,
   head:process.env.HEAD_SHA||"HEAD",
@@ -318,7 +333,7 @@ if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
+}else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedConstitutionalCase){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);
