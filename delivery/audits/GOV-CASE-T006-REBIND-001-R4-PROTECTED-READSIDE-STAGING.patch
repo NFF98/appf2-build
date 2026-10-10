@@ -1,8 +1,7 @@
-### R4 ISOLATED CANDIDATE. NOT MERGE-READY. EXTERNAL EVIDENCE TRUST IS FAIL-CLOSED.
 diff --git a/harness/scripts/validate-backlog.mjs b/harness/scripts/validate-backlog.mjs
 --- a/harness/scripts/validate-backlog.mjs
 +++ b/harness/scripts/validate-backlog.mjs
-@@ -1,137 +1,215 @@
+@@ -1,137 +1,216 @@
  import fs from "node:fs";
  import path from "node:path";
 -import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor } from "./baseline-lineage.mjs";
@@ -312,7 +311,8 @@ diff --git a/harness/scripts/validate-backlog.mjs b/harness/scripts/validate-bac
 +    }
 +    const drift=acceptanceSemanticDriftIds(root,source,r.target_build_spec_id,item.acceptance_links);
 +    const testIds=(r.acceptance_ids||[]).map(aid=>(item.acceptance_links||[]).find(x=>x.acceptance_id===aid)?.test_id);
-+    if(!drift.length||!sameIdSet(r.acceptance_ids,drift)||!sameIdSet(r.test_ids,testIds)){
++    if(!drift.length||!Array.isArray(r.acceptance_ids)||r.acceptance_ids.length!==drift.length||!sameIdSet(r.acceptance_ids,drift)||
++       !Array.isArray(r.test_ids)||r.test_ids.length!==testIds.length||!sameIdSet(r.test_ids,testIds)){
 +      errors.push(id+" round must exactly cover newly changed acceptance/test pairs");return new Set();
 +    }
 +    if(!revalidationStates.has(r.status)){errors.push(id+" round status invalid");return new Set()}
@@ -321,7 +321,7 @@ diff --git a/harness/scripts/validate-backlog.mjs b/harness/scripts/validate-bac
 +    if(!task)return new Set();
 +    const validated=validateRevalidationAcceptances(r,task,id,drift);
 +    validateRevalidationTaskStatus(r,task,id);
-+    if(r.status==="CLOSED"){
++    if(r.status==="CLOSED"||r.status==="VERIFIED"){
 +      // There is no independent real-world CI attestation resolver in canon yet.
 +      // Deliberately reject synthetic PASS / JSON / bare hashes.
 +      errors.push(id+" CLOSED appended round requires externally trusted CI attestation (NOT IMPLEMENTED)");
