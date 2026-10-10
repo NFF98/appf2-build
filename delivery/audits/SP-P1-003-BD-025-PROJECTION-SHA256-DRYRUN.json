@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "kind": "PRE_FREEZE_PROJECTION_SHA256_DRY_RUN",
+  "status": "CANDIDATE_ONLY_NO_VERSION_LOCK_NO_FREEZE",
+  "planned_baseline_id": "BS-P1-025",
+  "source_repo": "NFF98/appf2-design",
+  "old_baseline_id": "BS-P1-024",
+  "old_source_commit": "736c757e72734f46407f8c9afcd81580ae75f0ef",
+  "candidate_source_commit": "22ce2b03a571467401faee8e79b4b0496c97f38f",
+  "source_review_pr": "NFF98/appf2-design#38",
+  "old_projection_map_entries": 64,
+  "changed_full_copy_entries": 8,
+  "other_entries_preserved_in_candidate_plan": 56,
+  "sha256_validation": {
+    "known_vector_abc": true,
+    "previous_full_copy_hashes_verified": "8_of_8_before_projection",
+    "candidate_content_is_exact_sourced_text": true
+  },
+  "mapped_outputs": [
+    {
+      "source_path": "working/common-core/API-CONVENTIONS.md",
+      "target_path": "shared/API-CONVENTIONS.md",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "a5686986fc343ddac72fd818ef34db34bad88ce5",
+      "candidate_source_blob_sha": "97372f8fd0c1cc0292937eadddb36bfc03e4da9e",
+      "previous_output_sha256": "d93a699bdd1b3f2fe317898aaeb4abaa9eafa3077d73ecb5afb8ffa7a14a48e5",
+      "candidate_output_sha256": "9840de2778e87b5d4eb973f58c4e9b0ac746be63bfa73186c203153d173f1dfd",
+      "changed": true
+    },
+    {
+      "source_path": "working/common-core/EXECUTION-ADMISSION.md",
+      "target_path": "shared/EXECUTION-ADMISSION.md",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "ce6400904016c423b689e13b2c26df86094ea11f",
+      "candidate_source_blob_sha": "257f53fbea42330dc4abf8e095167f080249afe9",
+      "previous_output_sha256": "eb38d65721fa3bdf4f724ec66ba2a8af21b1f3b35def858499c16b7288d3b127",
+      "candidate_output_sha256": "9a87d80828739618d232daba4ca74f6b6018db626f52a384b8c05100642c3d5b",
+      "changed": true
+    },
+    {
+      "source_path": "working/detailed-design/functions/F00-EXPERIENCE-SHELL.md",
+      "target_path": "functions/F00-EXPERIENCE-SHELL.md",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "1711dfbd4fc42bd8ea37d2d1a963c8ea2f0db515",
+      "candidate_source_blob_sha": "529232c98b33253265ce283fed040da17ef6d0d3",
+      "previous_output_sha256": "5c446c5c9d0d69024d0690cee2d1782d76742065c17e2437d64fc3f199b04838",
+      "candidate_output_sha256": "1cfe19ccb513461c02da06cd1ea36c09f04e68c68cc95b9d9dafd15fade0638a",
+      "changed": true
+    },
+    {
+      "source_path": "working/detailed-design/functions/F01-INTENT-COMPILATION.md",
+      "target_path": "functions/F01-INTENT-COMPILATION.md",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "6d3026938ccc5d01a81d5519440175d8f8a9364e",
+      "candidate_source_blob_sha": "82ef2f517bdc13d842bdce41e59f695751167d41",
+      "previous_output_sha256": "2005b2501911c690a1d7c55ef1306cd77c6c37ee3f62aac7960f7a2dc946ef7c",
+      "candidate_output_sha256": "39d896359011df7a2898022f18d8558b760b118eae24ee16a601418d819f3a70",
+      "changed": true
+    },
+    {
+      "source_path": "working/detailed-design/functions/F05-SHARE-RESTORE.md",
+      "target_path": "functions/F05-SHARE-RESTORE.md",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "188846135839ae01e0b662261a4ed738cba2c10a",
+      "candidate_source_blob_sha": "86af09b9f94d926993727038f140f24aec102922",
+      "previous_output_sha256": "394a294e93d23ff060f7468f2afca8fc8ed94d9f622e23d92b9539de44825852",
+      "candidate_output_sha256": "24ed0403c5753d00c6869530fda712efceb4e11ea79c8cd5faa20c816eb8c041",
+      "changed": true
+    },
+    {
+      "source_path": "working/detailed-design/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
+      "target_path": "functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "93fbfdf3cb66e958b94d632cc9e139a45c8f1b28",
+      "candidate_source_blob_sha": "fc011ea86c33713dc8351c62da444709bc079175",
+      "previous_output_sha256": "21009da418e63d5e094950dd155965d8cdedc8d29608c11e70cbaedf30273cc7",
+      "candidate_output_sha256": "bfb0e1d486a75e11f1640225ee011f6c386eb0f70190174d60014123b66e226f",
+      "changed": true
+    },
+    {
+      "source_path": "working/detailed-design/functions/F12-HUMANIZED-RECOVERY.md",
+      "target_path": "functions/F12-HUMANIZED-RECOVERY.md",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "cd93a5b21a63e0a268926a662125d05abe86451f",
+      "candidate_source_blob_sha": "f49496fe7f0ef823197ceb076cbe038b2291193a",
+      "previous_output_sha256": "cc2798ba0439544aceab97ba16ffeae6ccd89e8871ac7768e7f3fb17f0b1447f",
+      "candidate_output_sha256": "4664b25bfc93a8389ba6d9c5077f25e0450b6aaee3fddd14c53218569fc51bb5",
+      "changed": true
+    },
+    {
+      "source_path": "working/detailed-design/registries/recovery-registry.json",
+      "target_path": "registries/recovery-registry.json",
+      "mode": "FULL_COPY",
+      "previous_source_blob_sha": "ab302e5230f5e7aba4b76aa8fbf92a6dc2698510",
+      "candidate_source_blob_sha": "f6f9710b8b104319e9c5a05e3e908c0870b4559b",
+      "previous_output_sha256": "de6dc41f79651701ab42698d63733b3a28c8f3a3d114e49f43acb76f34d0c848",
+      "candidate_output_sha256": "acf644de9d3434cfdb5598a938b4c167433c5424f15572e647a2e403d3c4875f",
+      "changed": true
+    }
+  ],
+  "blocked_before_freeze": [
+    "independent Phase1 Freeze Audit PASS on exact derived source",
+    "Design Recovery Registry 1.4.0 PENDING_HUMAN_APPROVAL",
+    "Acceptance/Test ID proof mapping for new security semantics",
+    "Human explicit separate Build Freeze approval",
+    "full 64-entry projector run and complete 52-file inventory/aggregate hash",
+    "independent CI/BCE and task rebind"
+  ],
+  "explicit_non_actions": [
+    "no output added to build-spec/baselines",
+    "no LOCKED manifest",
+    "no CURRENT.json change",
+    "no activated Task",
+    "no Cursor execution lease"
+  ]
+}
