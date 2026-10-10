@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-025",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-054"
+  ],
+  "source_case_ids": [
+    "GOV-CASE-PG-001"
+  ],
+  "source_issue_refs": [
+    "NFF98/appf2-design#36",
+    "NFF98/appf2-design#37",
+    "NFF98/appf2-build#301",
+    "NFF98/appf2-build#345"
+  ],
+  "affected_build_spec": "BS-P1-024",
+  "affected_tasks": [
+    "T006"
+  ],
+  "revalidation_dependencies": [
+    "T001 F01 PoP / API original-holder read proof / private Blueprint delivery",
+    "F05 Stage B Share mint/read contract; T006 must NOT inherit full F05 implementation"
+  ],
+  "affected_contracts": [
+    "working/common-core/API-CONVENTIONS.md §12.2/§12.3/§13.1",
+    "working/common-core/EXECUTION-ADMISSION.md §8.1/§9.1",
+    "working/detailed-design/functions/F00-EXPERIENCE-SHELL.md F00-UX-017A",
+    "working/detailed-design/functions/F01-INTENT-COMPILATION.md F01-API-ID-001A/001B",
+    "working/detailed-design/functions/F05-SHARE-RESTORE.md F05-API-001A/003A (Stage B; not T006 implementation expansion)",
+    "working/detailed-design/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md F07-SEC-003",
+    "working/detailed-design/functions/F12-HUMANIZED-RECOVERY.md F12-RCV-PG001",
+    "working/detailed-design/registries/recovery-registry.json candidate v1.4.0"
+  ],
+  "affected_acceptance": [
+    "F01-AC-013",
+    "F01-AC-016",
+    "F01-AC-017",
+    "F05-AC-001",
+    "F05-AC-002",
+    "F05-AC-008",
+    "F05-AC-011",
+    "F05-AC-014",
+    "F07-AC-004",
+    "F12-AC-004"
+  ],
+  "new_test_obligations": [
+    "hash-only read denied uniformly 404; foreign/expired/revoked/incorrect Share denied",
+    "original Intent scoped cookie + fresh P-256 PoP required for exact <=60s hash read grant",
+    "hash-only / arbitrary anonymous UUID cannot mint Share (Stage B, not T006 implementation)",
+    "protected body not publicly cached; no access token leakage; independent fresh execution-admission",
+    "real PostgreSQL authorization and RLS least privilege with positive and negative proof",
+    "T006 existing nine mapped executable tests remain mandatory without claiming PASS"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "design_merge_decision": {
+    "status": "APPROVED_AND_MERGED",
+    "decision_ref": "Human 2026-10-11: 正式批准 PR #37 合併",
+    "design_pr": "NFF98/appf2-design#37",
+    "design_merge_sha": "2e74ea19623c81261bf408856543717e943f6f51"
+  },
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-11: 『批准 Design PR #39 合併 批准 Build Freeze。直接批准到cursor 再執行前』, prior Human PR37 approval/merge, security decision: hash-only forbidden."
+  },
+  "replacement_build_spec_required": true,
+  "replacement_build_spec": "BS-P1-025",
+  "verification": [
+    "Design PR #37 merged; exact current Design Working commit 2e74ea19623c81261bf408856543717e943f6f51, eight changed Working sources.",
+    "Locked BS-P1-024 remains immutable, sourced from derived Design commit 736c757e72734f46407f8c9afcd81580ae75f0ef.",
+    "GitHub compare old-derived...merged-main status=diverged, ahead_by=132, behind_by=72, 43 changed paths: SOURCE_PROVENANCE_BLOCKER for naive FULL main Freeze.",
+    "Design Recovery Registry v1.4.0 has 135 unique IDs but phase_1_freeze_audit.status=PENDING_HUMAN_APPROVAL.",
+    "T006 remains Stage A, current Sprint manifest declares Share restore/durable Share (Stage B) non_scope; no automatic Stage B scope expansion.",
+    "Independent static Design 13/13 conditions were checked, not actual CI/executable contract tests.",
+    "PR #350 CI initial FINDING/DELTA GATE failed (BF-054 requires T006 BLOCKED); scoped proposed quarantine now added in Draft PR only, never masked Finding to fake PASS.",
+    "Human separately approved Build Freeze 2026-10-11; registry source audit scope/shape completed, no runtime tests asserted.",
+    "Design PR37 merged 2e74ea19623c81261bf408856543717e943f6f51; Design PR39 merged 17a3a57f15c17a6240b887ee55a6ded64cdf7106.",
+    "Scope-clean 15-commit derived Design Freeze source fda9045d0fc1b2b718d56ed49fa09abdce343a5c changes EXACTLY 9 mapped source files against 736c757e72734f46407f8c9afcd81580ae75f0ef; registry structural 307 unique acceptance / 135 unique recovery, signed audit ref.",
+    "Full immutable candidate Build Spec BS-P1-025 53-file tree from post-HOLD main, source ref pinned, CI/BCE required before merge. Cursor execution not yet allowed."
+  ],
+  "upstream_working_commit": "17a3a57f15c17a6240b887ee55a6ded64cdf7106",
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "fda9045d0fc1b2b718d56ed49fa09abdce343a5c",
+    "base_commit": "736c757e72734f46407f8c9afcd81580ae75f0ef",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-025-HUMAN-APPROVED-FREEZE-AUDIT.md"
+  },
+  "implementation_activation_authorized": false,
+  "cursor_lease_authorized_by_this_delta": false,
+  "no_change_to": [
+    "build-spec/baselines/BS-P1-024",
+    "build-spec/CURRENT.json",
+    "production Postgres"
+  ],
+  "proposed_quarantine": {
+    "status": "DRAFT_NOT_MERGED",
+    "reason": "BF-054 CONTRACT blocker requires Task T006 BLOCKED per validate-findings.mjs; draft PR #350 now proposes T006 status BLOCKED and CURRENT-SPRINT status BLOCKED while active binding remains BS-P1-024. This does not authorize new Task, merge, execution or deployment.",
+    "paths": [
+      "delivery/CURRENT-SPRINT.json",
+      "delivery/sprints/SP-P1-003/tasks.json"
+    ],
+    "human_approval_needed_for_merge": true
+  }
+}

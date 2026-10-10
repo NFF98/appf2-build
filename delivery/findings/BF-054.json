@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-054",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "BLOCKED",
+  "build_spec_id": "BS-P1-024",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T006",
+  "expected": "Rebaseline Human-merged Design PR #37 into a new version-locked, scope-clean immutable BS-P1-025 without admitting unrelated design drift, then rebind T006 without expanding Stage A into F05 Stage B.",
+  "actual": "Current Design main 2e74ea19623c81261bf408856543717e943f6f51 diverges from BS-P1-024 frozen derived Design source 736c757e72734f46407f8c9afcd81580ae75f0ef. GitHub compare reports 132 commits ahead, 72 behind and 43 changed paths. Four of the eight PR37 owners (F00/F01/F05/F07) have preexisting unrelated differences relative to the PR37 base; naive current-main FULL_COPY silently imports extra Product semantics. Recovery Registry 1.4.0 still reports PENDING_HUMAN_APPROVAL; Stage B Share changes are outside current T006 scope, and new PoP/read-grant security proofs require accepted Test mappings. The user approved Design merge, not an immutable Build Freeze/Task expansion.",
+  "evidence": [
+    "Human 2026-10-11 formally approved Design PR #37 merge; merged as appf2-design main 2e74ea19623c81261bf408856543717e943f6f51.",
+    "PR #37 exact 8 changed Working paths: Shared API, Execution Admission, F00, F01, F05, F07, F12, Recovery Registry.",
+    "BS-P1-024 manifest immutable source_working_commit=736c757e72734f46407f8c9afcd81580ae75f0ef; its 64-entry Projection Map FULL_COPYs these 8 paths.",
+    "GitHub compare 736c...2e74: diverged ahead_by=132, behind_by=72; 43 changed files.",
+    "Four of eight affected source blob SHA identities match original PR37 base (API, Admission, F12, Recovery Registry); F00/F01/F05/F07 source blobs do NOT match and need overlap-aware scope-clean derivation.",
+    "Design recovery-registry.json registry_version=1.4.0, phase_1_freeze_audit.status=PENDING_HUMAN_APPROVAL.",
+    "delivery/sprints/SP-P1-003/manifest.json explicitly lists Share restore/durable Share as non_scope Stage B, and tasks.json T006 nine stable TEST IDs.",
+    "BD-025 scope-clean candidate Design PR #38 created: base 736c757e72734f46407f8c9afcd81580ae75f0ef, HEAD 22ce2b03a571467401faee8e79b4b0496c97f38f; 24/24 exact PR37 patch hunks applied, GitHub compare exactly eight approved paths, 8 commits ahead/0 behind.",
+    "Human 2026-10-11 explicitly approved Design PR39 Merge and Build Freeze up to before Cursor execution; Design PR39 merged SHA 17a3a57f15c17a6240b887ee55a6ded64cdf7106.",
+    "Human governance transition PR351 merged 7c7accea6161bd7beed476235c03a0e970a0c628 (T006 BLOCKED); subsequent legal HOLD PR354 merged d01092c5403870e34508535f42840b523263b4ba with 4/4 exact-head CI PASS; T006 still BLOCKED, no implementation enabled.",
+    "Human-approved full BS-P1-025 immutable candidate source fda9045d0fc1b2b718d56ed49fa09abdce343a5c (old frozen base 736c757e72734f46407f8c9afcd81580ae75f0ef), 9 source changes, 51 projected outputs, 64 entries, aggregate f46e8ecdb9f183baf82d4a53e40fb61eaed9d340838373d515d10e7a73d342c5 (Build Freeze PR355 pending CI)."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "READ_ONLY_DESIGN_MAIN_VS_FROZEN_SOURCE_PROVENANCE_COMPARE",
+      "result": "SOURCE_DRIFT_CONFIRMED_NO_FREEZE_CREATED",
+      "evidence": "GitHub comparison shows four-source overlap and 43 changed paths; status=diverged."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "EXACT_APPROVED_PR37_UNIFIED_PATCH_ON_OLD_FROZEN_SOURCE",
+      "result": "SCOPE_CLEAN_DERIVED_CANDIDATE_PREPARED_8_PATHS_NO_EXTRA_DRIFT",
+      "evidence": "Design PR #38 draft; still requires independent Freeze Audit, Acceptance Registry closure and Human Build Freeze approval."
+    }
+  ],
+  "requested_planning_action": [
+    "Maintain fail-closed finding quarantine: in the same Draft PR #350 propose T006 BLOCKED and CURRENT-SPRINT BLOCKED, reviewed/merged only under separate Human governance approval; do not hide OPEN finding.",
+    "Independent review of already-created scope-clean Design PR #38 (8 exact paths, 24 hunks, 8 commits) for ownership/semantic consistency; DO NOT MERGE into historical freeze base.",
+    "Perform new Design Freeze Audit/Version Lock on the scope-clean source; resolve recovery-registry pending state and acceptance IDs/test proof coverage.",
+    "Obtain distinct Human Build Freeze approval; generate BS-P1-025 full deterministic 64-entry snapshot and manifest with actual source blob/output SHA256.",
+    "Rebind active T006 without reopening closed T001–T005, preserve Stage A non-scope F05, and audit new permitted implementation/PG L3 boundaries.",
+    "Only then issue a newly SHA-locked single-use Watcher T006 lease under previously granted T006 execution intent after verifying once-only transport."
+  ],
+  "affected_contracts": [
+    "F01-API-ID-001A/001B",
+    "API-CONVENTIONS §12.2/12.3/13.1",
+    "EXECUTION-ADMISSION §8.1/9.1",
+    "F05-API-001A/003A",
+    "F00-UX-017A",
+    "F07-SEC-003",
+    "F12-RCV-PG001",
+    "recovery-registry.json v1.4.0"
+  ],
+  "affected_acceptance": [],
+  "contract_affecting": true,
+  "delta_id": "BD-025"
+}
