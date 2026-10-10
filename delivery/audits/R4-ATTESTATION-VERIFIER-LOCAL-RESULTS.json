@@ -1,0 +1,44 @@
+{
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "scope": "ISOLATED_EXECUTABLE_VERIFIER_PREPARED_NO_PRODUCTION_AUTHORITY",
+  "audited_base": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "verifier": {
+    "path": "delivery/audits/R4-ATTESTATION-VERIFIER.mjs",
+    "git_blob_sha1": "228708967c0e1a1a4272b104bde7f806e1449d5c",
+    "sha256": "1c9ea535239443f0be409d122865b8e1e332ad2972e8eeb6e2c4794c1f618528"
+  },
+  "tests": {
+    "path": "delivery/audits/R4-ATTESTATION-VERIFIER-TEST.mjs",
+    "git_blob_sha1": "6b6c536fa63889d98a5f7f211131f8d98f291f7e",
+    "sha256": "3c4a697539e227a6e28aa112cbe930f77551e142721029c1a9d6f76d04f1b244",
+    "execution": "LOCAL Node v22.16.0; exact GitHub readback blobs independently compared with local git hash-object",
+    "command": "node delivery/audits/R4-ATTESTATION-VERIFIER-TEST.mjs",
+    "result_json_sha256": "ddefc344f3a95f72f69c7a23b3d28c9da8aa59aebe2ff79e40df5ab3bf3102e6",
+    "total": 33,
+    "matched": 33,
+    "positive_test_doubles": 2,
+    "negative": 31,
+    "actual_cryptographic_github_attestation_verified": false,
+    "live_github_runner_attestation_test": false
+  },
+  "direct_production_entrance": {
+    "command": "node delivery/audits/R4-ATTESTATION-VERIFIER.mjs verify",
+    "local_exit_code": 2,
+    "fail_closed": true,
+    "reason": "No approved trust adapter or immutable replay ledger; cannot certify"
+  },
+  "signer_workflow_candidate": {
+    "path": "delivery/audits/R4-REVALIDATION-PROOF-WORKFLOW-CANDIDATE.yml",
+    "sha256": "f01419093a46e9843d1c1bbde0fdc92ec7624d6a71d7e720f90924740a523db0",
+    "installed_as_github_workflow": false,
+    "necessary_scripts_missing": true,
+    "pin_actions_before_authorization": true
+  },
+  "caveats": [
+    "A mocked cli passed to verifyWithTrustedGitHub is a local test double, not live GitHub provenance",
+    "gh attestation verify real process is not run in container because gh is not installed and no signed artifact exists",
+    "CI on draft audit-only files does not execute these tests unless an approved workflow is wired to do so",
+    "All actual new acceptance/Task execution stays blocked; no R4 approval or R5"
+  ]
+}
