@@ -1,0 +1,279 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "version": "v0.1-prep",
+  "status": "R1_PREPARATION_ONLY",
+  "human_signed_stages": 0,
+  "canonical_build_main_at_preparation": "9ead15a20537a92f6b09d76042b069eccc89169c",
+  "locked_source": {
+    "old": "BS-P1-024",
+    "new": "BS-P1-025",
+    "design_source": "fda9045d0fc1b2b718d56ed49fa09abdce343a5c",
+    "new_content_sha256": "f46e8ecdb9f183baf82d4a53e40fb61eaed9d340838373d515d10e7a73d342c5"
+  },
+  "human_prior_approval": "Design PR39 Merge, Build Freeze and governance only until before Cursor; not any R1-R5 signature",
+  "protected_paths_to_review": [
+    "harness/scripts/validate-sprint.mjs",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-test-integrity.mjs",
+    "harness/scripts/baseline-lineage.mjs"
+  ],
+  "scope_status": "PROPOSED_NOT_EXACT_PATH_SIGNED",
+  "immutable_closed_history": {
+    "tasks": [
+      "T001",
+      "T002",
+      "T003",
+      "T004",
+      "T005",
+      "T007"
+    ],
+    "never_relabel": true
+  },
+  "drift_ids": [
+    "F01-AC-013",
+    "F01-AC-016",
+    "F01-AC-017",
+    "F05-AC-001",
+    "F05-AC-002",
+    "F05-AC-008",
+    "F05-AC-011",
+    "F05-AC-014",
+    "F07-AC-004",
+    "F12-AC-004"
+  ],
+  "old_done_revalidation_conflicts": [
+    {
+      "backlog": "BL-P1-008",
+      "drift": [
+        "F01-AC-017"
+      ],
+      "existing_revalidation": {
+        "task": "T007",
+        "target": "BS-P1-024",
+        "status": "CLOSED",
+        "acceptance": "F01-AC-004"
+      }
+    },
+    {
+      "backlog": "BL-P1-010",
+      "drift": [
+        "F01-AC-013",
+        "F01-AC-016"
+      ]
+    },
+    {
+      "backlog": "BL-P1-031",
+      "drift": [
+        "F07-AC-004"
+      ]
+    }
+  ],
+  "gate_deadlocks": [
+    "closed-task semantic drift",
+    "single legacy revalidation pointer",
+    "blocked/HOLD->active rebaseline transition",
+    "nine mapped test() required pre-implementation",
+    "protected PG runtime distinct"
+  ],
+  "test_matrix": [
+    {
+      "id": "P01",
+      "category": "positive-only-when-proof",
+      "setup": "old T001 CLOSED BS021 unchanged; new explicitly owned BS025 revalidation with exact required genuine tests and evidence",
+      "expected": "After independent verifiers pass, new proof may cover new semantics; history remains unchanged",
+      "current_disposition": "L3_RULE_CANDIDATE_NOT_EXECUTED",
+      "executed": false
+    },
+    {
+      "id": "N01",
+      "category": "no-approval",
+      "setup": "AI-produced R1 dossier but no independent Human signature",
+      "expected": "Hard stop before protected harness change",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N02",
+      "category": "single-approval",
+      "setup": "Human pre-Cursor Build Freeze text reused as five-stage L3 approval",
+      "expected": "Reject distinct Human R1–R5 signature requirement",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N03",
+      "category": "retroactive-pass",
+      "setup": "T001 CLOSED BS021 reused as F01 P-256 PoP PASS under BS025",
+      "expected": "Reject; historical evidence only",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N04",
+      "category": "rewrite-old-status",
+      "setup": "T001 status reopened, BS021 reassigned or old evidence deleted",
+      "expected": "Reject immutable history tamper",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N05",
+      "category": "overwrite-t007",
+      "setup": "BL-P1-008 T007 BS024 revalidation overwritten with BS025",
+      "expected": "Reject; append-only chain required",
+      "current_disposition": "GAP_EXISTING_SINGLE_POINTER",
+      "executed": false
+    },
+    {
+      "id": "N06",
+      "category": "foreign-owner",
+      "setup": "F01-AC-013 mapped to F05 recipient or unrelated T006 without explicit scope approval",
+      "expected": "Reject owner mismatch",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N07",
+      "category": "partial-coverage",
+      "setup": "Only F01-AC-013 updated while F01-AC-016 and F01-AC-017 ignored",
+      "expected": "Reject incomplete exact drift coverage",
+      "current_disposition": "NEEDS_NEW_RULE",
+      "executed": false
+    },
+    {
+      "id": "N08",
+      "category": "false-closure",
+      "setup": "Revalidation PLANNED/IN_PROGRESS marked as VERIFIED/PASS with no new test proof",
+      "expected": "Reject",
+      "current_disposition": "NEEDS_NEW_RULE",
+      "executed": false
+    },
+    {
+      "id": "N09",
+      "category": "stale-target",
+      "setup": "Revalidation target is BS024 but canonical target is BS025",
+      "expected": "Reject",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N10",
+      "category": "untrusted-hash",
+      "setup": "hash-only /b/content_hash treated as Blueprint read authority",
+      "expected": "Reject no Share or original signed Intent grant",
+      "current_disposition": "DESIGN_LOCKED",
+      "executed": false
+    },
+    {
+      "id": "N11",
+      "category": "stale-share",
+      "setup": "Previously ACTIVE Share revoked while cache retained",
+      "expected": "Reject next body/admission read",
+      "current_disposition": "DESIGN_LOCKED",
+      "executed": false
+    },
+    {
+      "id": "N12",
+      "category": "borrow-token",
+      "setup": "Share recipient obtains owner share:create without original Intent proof",
+      "expected": "Reject",
+      "current_disposition": "DESIGN_LOCKED",
+      "executed": false
+    },
+    {
+      "id": "N13",
+      "category": "anon-identity",
+      "setup": "anonymous_id alone used as owner authentication",
+      "expected": "Reject",
+      "current_disposition": "DESIGN_LOCKED",
+      "executed": false
+    },
+    {
+      "id": "N14",
+      "category": "fake-nine-tests",
+      "setup": "Nine placeholder executable test() declarations but no actual E2E proof",
+      "expected": "Reject closure/CI completeness even if scanner sees declarations",
+      "current_disposition": "NEEDS_EXECUTION_EVIDENCE",
+      "executed": false
+    },
+    {
+      "id": "N15",
+      "category": "waive-scanner",
+      "setup": "set REQUIRE_ACTIVE_TASK_TESTS=0 in workflow without signed constitutional change",
+      "expected": "Reject",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N16",
+      "category": "historical-f07",
+      "setup": "BL-P1-031 DONE F07-AC-004 assumed current without revalidation",
+      "expected": "Reject",
+      "current_disposition": "NEEDS_NEW_RULE",
+      "executed": false
+    },
+    {
+      "id": "N17",
+      "category": "cross-phase-f05",
+      "setup": "Stage B Share restore stuffed into T006 Stage A allowed_write_paths",
+      "expected": "Reject",
+      "current_disposition": "CURRENT_SCOPE_LOCK",
+      "executed": false
+    },
+    {
+      "id": "N18",
+      "category": "pg-bypass",
+      "setup": "DB positive mutations tested as superuser BYPASSRLS or production role",
+      "expected": "Reject",
+      "current_disposition": "PG_INDEPENDENT_GATE",
+      "executed": false
+    },
+    {
+      "id": "N19",
+      "category": "sha-drift",
+      "setup": "Candidate source or base SHA changes after approval",
+      "expected": "Reject expired signatures/review",
+      "current_disposition": "CURRENT_PASS",
+      "executed": false
+    },
+    {
+      "id": "N20",
+      "category": "lease-before-gates",
+      "setup": "Watcher executes T006 while Sprint HOLD / source proof pending",
+      "expected": "Reject",
+      "current_disposition": "CURRENT_HOLD",
+      "executed": false
+    },
+    {
+      "id": "N21",
+      "category": "backlog-claim-dup",
+      "setup": "Old and new task both claim strengthened Acceptance as currently proven",
+      "expected": "Reject duplicate live ownership; historic is archived only",
+      "current_disposition": "NEEDS_NEW_RULE",
+      "executed": false
+    },
+    {
+      "id": "N22",
+      "category": "wrong-target-proof",
+      "setup": "Evidence from older baseline replayed into BS025",
+      "expected": "Reject cryptographic/registry provenance mismatch",
+      "current_disposition": "NEEDS_NEW_RULE",
+      "executed": false
+    },
+    {
+      "id": "N23",
+      "category": "fallback-on-error",
+      "setup": "DB authority lookup unavailable and client proceeds via cache/anonymous UUID",
+      "expected": "Reject fail-closed 503",
+      "current_disposition": "DESIGN_LOCKED",
+      "executed": false
+    }
+  ],
+  "ci_executed": false,
+  "product_tests_claimed_pass": false,
+  "permission_to_edit_harness": false,
+  "permission_to_merge": false,
+  "permission_to_issue_cursor_lease": false
+}
