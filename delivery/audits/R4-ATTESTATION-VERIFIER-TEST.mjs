@@ -51,13 +51,33 @@ check('N26_REPLAY',false,x=>{const r=inspectProof(x);x.ledger=[r.replay_key]});
 check('N27_MISSING_RUN',false,x=>{x.run=null});
 check('N28_DUPLICATE_EXPECTED_TEST',false,x=>{x.expected.test_ids.push('TEST-F01-SEC-007')});
 check('N29_DUPLICATE_SIGNING_JOB',false,x=>{x.jobs.jobs.push(clone(x.jobs.jobs[0]));x.jobs.total_count=2});
+check('N32_RUN_ATTEMPT_MISMATCH',false,x=>{x.run.run_attempt=2});
+check('N33_JOB_ATTEMPT_MISMATCH',false,x=>{x.jobs.jobs[0].run_attempt=2});
+check('N34_UNSIGNED_RESULT',false,x=>{x.verified=[{verificationResult:{}}]});
+check('N35_MISSING_LEDGER',false,x=>{x.ledger=null});
+check('N36_WRONG_EVIDENCE_ID',false,x=>{x.proof.evidence_id='forged'});
+check('N37_RUN_IS_NOT_COMPLETE',false,x=>{x.run.status='in_progress'});
+check('N38_DUPLICATE_REQUIRED_STEP',false,x=>{x.jobs.jobs[0].steps.push(clone(x.jobs.jobs[0].steps[0]))});
 
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'r4-attest-rehearsal-'));
 const artifact=path.join(tmp,'proof.json');fs.writeFileSync(artifact,JSON.stringify(proof));
 const fakeGh=(bin,args)=>{
  assert.equal(bin,'gh');
- if(args[0]==='attestation')return JSON.stringify(verified);
- if(args[1]==='api'||args[0]==='api')return JSON.stringify(args[3]?.includes('/jobs?')?jobs:run);
+ if(args[0]==='attestation'){
+  assert.deepEqual(args,['attestation','verify',artifact,'--repo',expected.repo,
+   '--signer-workflow',expected.repo+'/'+expected.workflow,'--source-digest',expected.source_sha,
+   '--source-ref',expected.ref,'--deny-self-hosted-runners','--format','json']);
+  return JSON.stringify(verified);
+ }
+ if(args[0]==='api'){
+  const prefix=['api','--method','GET'];
+  const endpoint=args[3];
+  assert.deepEqual(args.slice(0,3),prefix);
+  const runPath='repos/'+expected.repo+'/actions/runs/'+expected.run_id;
+  const jobsPath=runPath+'/attempts/'+expected.run_attempt+'/jobs?per_page=100';
+  assert.ok(endpoint===runPath||endpoint===jobsPath);
+  return JSON.stringify(endpoint===jobsPath?jobs:run);
+ }
  throw Error('bad command');
 };
 try{
@@ -71,6 +91,12 @@ try{
  const noGh=verifyWithTrustedGitHub({artifactPath:artifact,expected,ledger:[],cli:()=>{throw Error('no gh available')}});
  assert.equal(noGh.ok,false);
  tests.push({name:'N31_GH_UNAVAILABLE_FAIL_CLOSED',expected:false,actual:false,code:noGh.code});
+ const unsafe=verifyWithTrustedGitHub({artifactPath:artifact,expected,ledger:null,cli:fakeGh});
+ assert.equal(unsafe.ok,false);
+ tests.push({name:'N39_UNTRUSTED_LEDGER',expected:false,actual:false,code:unsafe.code});
+ const fakeResponse=verifyWithTrustedGitHub({artifactPath:artifact,expected,ledger:[],cli:()=>JSON.stringify({})});
+ assert.equal(fakeResponse.ok,false);
+ tests.push({name:'N40_EMPTY_CLI_RETURN',expected:false,actual:false,code:fakeResponse.code});
 }finally{fs.rmSync(tmp,{recursive:true,force:true})}
 const summary={case_id:'GOV-CASE-T006-REBIND-001',mode:'LOCAL_DOUBLE_ONLY',node:process.version,total:tests.length,positive:tests.filter(t=>t.expected).length,negative:tests.filter(t=>!t.expected).length,matched:tests.length,tests};
 console.log(JSON.stringify(summary,null,2));
