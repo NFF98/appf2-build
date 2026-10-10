@@ -1,0 +1,232 @@
+{
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "dossier_version": "v1.0-preparation",
+  "canonical_build_main_sha": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "r3_human_approved_selection": "C_ISOLATED_POC_ONLY",
+  "source_validation_method": "Read exact GitHub source via authenticated connector; extract functions from the exact committed R4 PoC .mjs and evaluate them in independent V8 isolate on the actual canonical JSON; does not invoke Node CLI, GitHub Actions or protected gates.",
+  "isolated_poc": {
+    "script_path": "delivery/audits/GOV-CASE-T006-REBIND-001-R4-POC.mjs",
+    "script_source_git_blob_sha1": "263cb94cdcee1bb149098a6ff5517ea0c4afa3c2",
+    "fix_commit": "e0a92cf3ddd9c755b59c8abbadd7e81929ae3b51"
+  },
+  "actual_source_blobs": {
+    "delivery/backlog/QUEUE.json": "40aa54bb1500f13644bdcd4131638cd1c0103533",
+    "delivery/sprints/SP-P1-003/tasks.json": "be439594922f59501e30facb52055929ee32e8f8",
+    "delivery/sprints/SP-P1-003/manifest.json": "7568ca9326d45e6a23cb97bcf90f4aa94c756ff5",
+    "build-spec/CURRENT.json": "cb032acf5c88109f8434f2524f31320f7fa00621",
+    "delivery/CURRENT-SPRINT.json": "42e8e7c5e371c257457087eb13c58c9caf2b150c",
+    "harness/scripts/validate-backlog.mjs": "349906a97ab71c48069208c42874aca9eb290e51",
+    "harness/scripts/validate-sprint.mjs": "d46ed2a4d9eb216ad59ee6d7eb7f0fa1ec0330eb",
+    "harness/scripts/baseline-lineage.mjs": "6a8fc0fd331220074e5f04a972d641c6069718d1",
+    "harness/scripts/validate-change-scope.mjs": "ce5ce96fd460895f874eb9dae10e81db8b785340"
+  },
+  "registry_sha256": {
+    "BS-P1-001": "8a33b94ab974e16688bf3de2d00f3cbf4753f717e64476a1542918063b0bdeb0",
+    "BS-P1-003": "d281a04ddf0e0923a6dc34a3f7160243e3d0194bf8537ddb6291f08df01965eb",
+    "BS-P1-004": "4342d363fc2717e066cc87bdcadcc8c1c8bd1e6430ea94790fba86e958f7a360",
+    "BS-P1-016": "4342d363fc2717e066cc87bdcadcc8c1c8bd1e6430ea94790fba86e958f7a360",
+    "BS-P1-021": "a494d1290b33cc8ea87afcb488b25d468a8646f7d11b0e0a5e95901571138ff0",
+    "BS-P1-024": "0862d8b7fcef2e996788919d3ee0c899fa53fb58f90a1c6f7e678a7810e94c44",
+    "BS-P1-025": "eea0d35a377ae5d7c240d71a20ada75b783840af26d912b3de3105cf42db1074"
+  },
+  "drifts": [
+    {
+      "item": "BL-P1-008",
+      "legacy_chain": "BS-P1-016 → BS-P1-024; T007 CLOSED F01-AC-004",
+      "new_source": "BS-P1-024",
+      "new_target": "BS-P1-025",
+      "new_acceptances": [
+        "F01-AC-017"
+      ],
+      "test_ids": [
+        "TEST-F01-SEC-007"
+      ],
+      "synthetic_future_owner": "SP-P1-004/T008",
+      "test_double_evidence": "POC-ONLY-EV-T008"
+    },
+    {
+      "item": "BL-P1-010",
+      "legacy_chain": "BS-P1-021; T001 historical CLOSED unaffected",
+      "new_source": "BS-P1-021",
+      "new_target": "BS-P1-025",
+      "new_acceptances": [
+        "F01-AC-013",
+        "F01-AC-016"
+      ],
+      "test_ids": [
+        "TEST-F01-API-001",
+        "TEST-F01-API-003"
+      ],
+      "synthetic_future_owner": "SP-P1-004/T009",
+      "test_double_evidence": "POC-ONLY-EV-T009"
+    },
+    {
+      "item": "BL-P1-031",
+      "legacy_chain": "BS-P1-001",
+      "new_source": "BS-P1-001",
+      "new_target": "BS-P1-025",
+      "new_acceptances": [
+        "F07-AC-004"
+      ],
+      "test_ids": [
+        "TEST-F07-004"
+      ],
+      "synthetic_future_owner": "SP-P1-004/T010",
+      "test_double_evidence": "POC-ONLY-EV-T010"
+    },
+    {
+      "item": "BL-P1-032",
+      "legacy_chain": "BS-P1-003 → BS-P1-004; T001 CLOSED F07-AC-008",
+      "new_source": "BS-P1-004",
+      "new_target": "BS-P1-025",
+      "new_acceptances": [],
+      "unchanged": true
+    }
+  ],
+  "execution": {
+    "executed_cases": 19,
+    "matched": 19,
+    "synthetic_positive_cases": 2,
+    "rejected_negative_cases": 17,
+    "cases": [
+      {
+        "id": "P01_TWO_ROUNDS_SYNTHETIC",
+        "expected_accept": true,
+        "observed_accept": true,
+        "matched": true
+      },
+      {
+        "id": "P02_BL032_PRESERVED_SYNTHETIC",
+        "expected_accept": true,
+        "observed_accept": true,
+        "matched": true
+      },
+      {
+        "id": "N01_NO_NEW_PROOF",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N02_BAD_SOURCE",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N03_BAD_TARGET",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N04_FAKE_PASS_PLANNED",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N05_TASK_NOT_CLOSED",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N06_DUPLICATE_OWNER",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N07_MISSING_EVIDENCE",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N08_FALSE_EVIDENCE_STATUS",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N09_REPLAY_NONCE",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N10_REPLAY_EVIDENCE",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N11_BAD_DIGEST",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N12_FOREIGN_TASK",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N13_BAD_TEST_ID",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N14_PARTIAL_DRIFT",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N15_SYNTHETIC_NEVER_PRODUCTION",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N16_FLAG_ONLY_CANNOT_OVERRIDE_TEST_DOUBLE",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      },
+      {
+        "id": "N17_FORGED_VERIFY_FLAG_AND_FAKE_LOCATOR",
+        "expected_accept": false,
+        "observed_accept": false,
+        "matched": true
+      }
+    ],
+    "forged_flags_attack": {
+      "initial_engine": "VULNERABLE: untrusted independently_verified=true bypassed nominal PRODUCTION with test_double=false",
+      "independent_BCE_detected": true,
+      "mitigation": "production requires external trusted c.verifyEvidence(id,ev,round), not client flags",
+      "final_observed_accept": false,
+      "fail_closed_errors": [
+        "BL-P1-008:EXTERNAL_TRUSTED_EVIDENCE_VERIFIER_REQUIRED",
+        "BL-P1-010:EXTERNAL_TRUSTED_EVIDENCE_VERIFIER_REQUIRED",
+        "BL-P1-031:EXTERNAL_TRUSTED_EVIDENCE_VERIFIER_REQUIRED"
+      ]
+    }
+  },
+  "separate_attestation": {
+    "node_reproducer_executed": false,
+    "github_actions_run": false,
+    "formal_protected_gate_changed": false,
+    "formal_ci_pass_claim": false,
+    "t006_nine_executable_tests_complete": false,
+    "production_postgres_rls_worker_tested": false,
+    "real_new_task_evidence_available": false,
+    "human_r4_approval": false,
+    "human_ed25519_signatures_verified": 0
+  },
+  "independent_bce_conclusion": "STRUCTURAL_POC_CONDITIONAL_PASS / GOVERNANCE_PRODUCTION_READINESS_BLOCKED. 19/19 confirms isolated model and fail-closed fake claims, but no real independent verifier, executable future owners or constitutional signing. HOLD remains required."
+}
