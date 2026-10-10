@@ -31,7 +31,7 @@ const checkRegistry=(e,p)=>validHex(p.source_registry_sha256)&&validHex(p.target
 const checkRun=(e,r)=>r.repository?.full_name===REPO&&r.path===WORKFLOW&&r.event==='push'&&
  r.head_branch==='main'&&r.head_sha===e.source_sha&&r.run_attempt===e.run_attempt&&
  r.id===e.run_id&&r.status==='completed'&&r.conclusion==='success';
-const requiredSteps=['Execute exact mapped tests','Generate test proof manifest','Attest proof artifact'];
+const requiredSteps=['Verify exact Human-authorized Revalidation Task','Governance Gate','Execute exact mapped tests','Generate test proof manifest','Attest proof artifact'];
 const checkSteps=j=>requiredSteps.every(name=>{
  const matching=(j.steps||[]).filter(s=>s.name===name);
  return matching.length===1&&matching[0].conclusion==='success';
