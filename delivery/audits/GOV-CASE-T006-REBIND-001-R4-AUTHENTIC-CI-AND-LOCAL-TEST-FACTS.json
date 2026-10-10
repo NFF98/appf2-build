@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "evidence_class": "OBSERVED_AUDIT_ONLY_NO_PRODUCT_PROOF",
+  "canonical_build_base": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "results": {
+    "audit_only_ci_refactor": {
+      "source_commit": "b7afb4f29b646a21ee3fc71524af6bde2554325f",
+      "workflow_runs": [
+        {
+          "run_id": 38094131837,
+          "name": "Governance Gate",
+          "conclusion": "success"
+        },
+        {
+          "run_id": 38094131835,
+          "name": "Governance Attack Dry-run",
+          "conclusion": "success"
+        },
+        {
+          "run_id": 38094131830,
+          "name": "CI Gate",
+          "conclusion": "success"
+        },
+        {
+          "run_id": 38094131829,
+          "name": "CodeQL",
+          "conclusion": "success"
+        }
+      ],
+      "ci_job_id": 114336404116,
+      "ci_job_steps": {
+        "governance": "success",
+        "repository_lint": "success",
+        "product_ci_shell_step": "success"
+      },
+      "product_execution_verified": false,
+      "reason": "implementation_enabled=false causes Product CI: HOLD and exit 0; a success step is not a new security Acceptance test result"
+    },
+    "initial_ci_failure": {
+      "source_commit": "e01b81b4b4fe744e0a0d56f0d22ff5eb0e756c46",
+      "run_id": 38093876162,
+      "ci_step": "Repository lint",
+      "conclusion": "failure",
+      "eslint_errors": 6,
+      "repaired_without_lint_exceptions": true
+    },
+    "local_ed25519_ephemeral_fixture": {
+      "exact_source_blob_sha1": "bb75903523a1b178feb191be2b0a1ea550a8bb7f",
+      "sha256": "34f2d79b0cfb47de78ccaf871ccbc2c5584eb49b612836629333c33565958688",
+      "node_version": "v22.16.0",
+      "local_result_json_sha256": "74db371e906beb85662680bc5e8100f685117046d0bdf6fbe827e31d0dbca755",
+      "executed_assertions": 26,
+      "matched_assertions": 26,
+      "synthetic_positive": 2,
+      "negative": 24,
+      "true_human_signature": false,
+      "true_github_attestation": false
+    },
+    "refactored_multi_round_poc": {
+      "exact_source_blob_sha1": "b8133019bf68e1c6a4f49475351f4988168dc802",
+      "executed_method": "V8 evaluation of exact GitHub script extracted scenario functions with fresh canonical 19 JSON inputs",
+      "matched_assertions": 19,
+      "total_assertions": 19,
+      "synthetic_positive": 2,
+      "negative": 17
+    },
+    "historical_t007_trust_probe": {
+      "evidence_id": "EV-SP-P1-003-T007-001",
+      "evidence_source_commit": "61108dabc153985b6689680577188a945153f05b",
+      "referenced_run_id": 37867961823,
+      "observed_run_head_sha": "fe24c8711fa0b36e5c7b05aa404c310af922531a",
+      "observed_conclusion": "success",
+      "observed_event": "pull_request",
+      "observed_workflow_path": ".github/workflows/ci.yml",
+      "observed_artifacts": [],
+      "source_commit_exact_match": false,
+      "interpretation": "The existing historical record's source_commit and its CI run head_sha differ; do not retroactively invalidate closed T007. New rounds need explicit exact proof semantics."
+    }
+  },
+  "independent_bce": {
+    "review_source": "Authenticated GitHub connector + local Node exact Git blob reproducer",
+    "audit_only_pr_ci": "PASS_AT_EXACT_COMMIT_ONLY",
+    "security_revalidation_attested_execution": "NOT_VERIFIED",
+    "protected_l3_real_ci": "NOT_EXECUTED",
+    "human_r4_approved": false,
+    "human_r5_approved": false,
+    "verified_independent_human_ed25519_signatures": 0,
+    "conclusion": "HOLD_UNTIL_TRUSTED_SIGNER_REAL_ACCEPTANCE_TESTS_AND_PROTECTED_CI"
+  }
+}
