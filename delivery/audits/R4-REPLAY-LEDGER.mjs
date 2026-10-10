@@ -4,14 +4,15 @@ const digest=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
 const GENESIS='GENESIS';
 const fail=code=>({ok:false,code});
 const isHex=x=>typeof x==='string'&&/^[0-9a-f]{64}$/.test(x);
-const validEvent=e=>e&&e.repo==='NFF98/appf2-build'&&
+const validRun=e=>e?.repo==='NFF98/appf2-build'&&
  Number.isSafeInteger(e.run_id)&&e.run_id>0&&
- Number.isSafeInteger(e.run_attempt)&&e.run_attempt>0&&
- typeof e.evidence_id==='string'&&e.evidence_id.length>0&&
- typeof e.task_id==='string'&&e.task_id.length>0&&
- e.baseline_id==='BS-P1-025'&&Array.isArray(e.acceptance_ids)&&e.acceptance_ids.length>0&&
+ Number.isSafeInteger(e.run_attempt)&&e.run_attempt>0;
+const validOwnership=e=>typeof e.evidence_id==='string'&&e.evidence_id.length>0&&
+ typeof e.task_id==='string'&&e.task_id.length>0&&e.baseline_id==='BS-P1-025';
+const validAcceptance=e=>Array.isArray(e.acceptance_ids)&&e.acceptance_ids.length>0&&
  e.acceptance_ids.every(a=>typeof a==='string'&&a.length>0)&&
  new Set(e.acceptance_ids).size===e.acceptance_ids.length&&isHex(e.artifact_sha256);
+const validEvent=e=>validRun(e)&&validOwnership(e)&&validAcceptance(e);
 const key=e=>[e.repo,e.run_id,e.run_attempt,e.evidence_id,e.task_id,e.baseline_id,...e.acceptance_ids].join('|');
 const makeEntry=(prev,event)=>({previous:prev,event,key:key(event),digest:digest({previous:prev,event,key:key(event)})});
 export function inspectLedger({entries,externallyTrustedHead}){
