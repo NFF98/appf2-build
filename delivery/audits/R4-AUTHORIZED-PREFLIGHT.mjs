@@ -15,14 +15,13 @@ const runIdentity=(e,env)=>e.repo===REPO&&e.ref===MAIN&&e.workflow===WORKFLOW&&
  env?.GITHUB_REPOSITORY===e.repo&&env.GITHUB_EVENT_NAME==='push'&&
  env.GITHUB_REF===e.ref&&env.GITHUB_SHA===e.source_sha&&
  Number(env.GITHUB_RUN_ID)===e.run_id&&Number(env.GITHUB_RUN_ATTEMPT)===e.run_attempt;
-const activationValid=(s,e)=>s.build?.active_baseline===TARGET&&
- s.build.implementation_enabled===true&&s.manifest?.baseline_id===TARGET&&
- s.manifest.status==='LOCKED'&&s.manifest.approval?.status==='USER_APPROVED'&&
- s.activation?.baseline_id===TARGET&&s.activation.status==='USER_APPROVED'&&
+const buildActive=s=>s.build?.active_baseline===TARGET&&s.build.implementation_enabled===true;
+const baselineApproved=s=>s.manifest?.baseline_id===TARGET&&s.manifest.status==='LOCKED'&&
+ s.manifest.approval?.status==='USER_APPROVED'&&Boolean(s.manifest.approval.decision_ref);
+const activationBound=s=>s.activation?.baseline_id===TARGET&&s.activation.status==='USER_APPROVED'&&
  s.activation.type==='REBASELINE'&&s.activation.previous_baseline==='BS-P1-024'&&
- s.activation.source_working_commit===s.manifest.source_working_commit&&
- s.activation.decision_ref&&s.manifest.approval.decision_ref&&
- e.target_baseline===TARGET;
+ s.activation.source_working_commit===s.manifest.source_working_commit&&Boolean(s.activation.decision_ref);
+const activationValid=(s,e)=>buildActive(s)&&baselineApproved(s)&&activationBound(s)&&e.target_baseline===TARGET;
 const activeSprint=(s,e)=>s.sprint?.status==='ACTIVE'&&s.sprint.active_sprint===e.sprint_id&&
  s.sprint.active_task===e.task_id&&s.sprint.active_build_spec===TARGET;
 const alignedSprint=(s,e)=>s.tasks?.sprint_id===e.sprint_id&&
