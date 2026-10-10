@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import {parseArgs,requireEnv,loadRelease,run,wranglerArgs,statePath,writeJson,outputDir} from "./common.mjs";
+import {parseArgs,requireEnv,loadRelease,run,renderWorkerConfig,wranglerArgs,statePath,writeJson,outputDir} from "./common.mjs";
 
 const a=parseArgs(process.argv.slice(2));
 const releaseId=a.release, environment=a.environment||"production";
@@ -35,8 +35,9 @@ for(const t of [...manifest.targets.filter(x=>x.enabled)].reverse()){
       report.targets.push({target_id:t.target_id,type:t.type,status:"SKIPPED",reason:"TARGET_NOT_DEPLOYED_IN_FAILED_RELEASE"});
       continue;
     }
-    const config=path.resolve(t.config_path), name=requireEnv("CLOUDFLARE_WORKER_NAME");
-    run("npx",[...wranglerArgs(),"rollback","--name",name,"--config",config,"--env","production","--message","Rollback "+releaseId],{env:cfEnv});
+    const name=requireEnv("CLOUDFLARE_WORKER_NAME");
+    const config=renderWorkerConfig(t.config_path,path.join(outputDir(releaseId,environment),"rollback-wrangler.generated.json"),cfEnv);
+    run("npx",[...wranglerArgs(),"rollback","--name",name,"--config",config,"--message","Rollback "+releaseId],{env:cfEnv});
     report.targets.push({target_id:t.target_id,type:t.type,status:"ROLLED_BACK"});
   } else if(t.type==="SUPABASE_MIGRATIONS"){
     report.targets.push({target_id:t.target_id,type:t.type,status:"NOT_ROLLED_BACK",reason:"FORWARD_ONLY_DATABASE"});

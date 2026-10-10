@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  parseArgs,requireEnv,safePath,loadRelease,ensureDir,writeJson,run,
+  parseArgs,requireEnv,safePath,loadRelease,ensureDir,writeJson,run,renderWorkerConfig,
   wranglerArgs,supabaseArgs,parseWranglerOutput,statePath,outputDir
 } from "./common.mjs";
 
@@ -38,18 +38,19 @@ for(const t of manifest.targets.filter(x=>x.enabled)){
     state.targets.push({target_id:t.target_id,type:t.type,status:"DEPLOYED",rollback:"FORWARD_ONLY"});
     writeJson(statePath(releaseId,environment),state);
   } else if(t.type==="CLOUDFLARE_WORKER"){
-    const config=safePath(t.config_path);
-    if(!fs.existsSync(config)) throw new Error("Worker config missing: "+t.config_path);
+    const template=safePath(t.config_path);
+    if(!fs.existsSync(template)) throw new Error("Worker config template missing: "+t.config_path);
     const name=requireEnv("CLOUDFLARE_WORKER_NAME");
     const env=cfEnv();
+    const config=renderWorkerConfig(t.config_path,path.join(outDir,"wrangler.generated.json"),env);
     let previous=null;
     if(environment==="production"){
-      try{previous=JSON.parse(run("npx",[...wranglerArgs(),"deployments","status","--name",name,"--config",config,"--env","production","--json"],{env,capture:true}));}
+      try{previous=JSON.parse(run("npx",[...wranglerArgs(),"deployments","status","--name",name,"--config",config,"--json"],{env,capture:true}));}
       catch{previous=null;}
     }
     const output=path.join(outDir,"worker.ndjson");
     const depEnv={...env,WRANGLER_OUTPUT_FILE_PATH:output};
-    run("npx",[...wranglerArgs(),"deploy","--name",name,"--config",config,"--env",environment],{env:depEnv});
+    run("npx",[...wranglerArgs(),"deploy","--name",name,"--config",config],{env:depEnv});
     const events=parseWranglerOutput(output);
     const deployEvent=[...events].reverse().find(e=>e.type==="deploy" || e.type==="version-deploy");
     state.targets.push({target_id:t.target_id,type:t.type,status:"DEPLOYED",previous_deployment:previous,new_deployment:deployEvent||null});

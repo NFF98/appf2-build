@@ -22,7 +22,7 @@
       "target_id": "edge",
       "type": "CLOUDFLARE_WORKER",
       "enabled": false,
-      "config_path": "wrangler.jsonc"
+      "config_path": "tooling/worker/wrangler.template.json"
     },
     {
       "target_id": "web",
@@ -37,6 +37,17 @@
       "base_url_env": "DEPLOY_BASE_URL",
       "path": "/",
       "expected_status": [200],
+      "attempts": 6,
+      "interval_ms": 5000
+    },
+    {
+      "name": "api-worker-json",
+      "base_url_env": "DEPLOY_BASE_URL",
+      "path": "/api/v1/health",
+      "method": "GET",
+      "expected_status": [200],
+      "expected_content_type": "application/json",
+      "reject_redirects": true,
       "attempts": 6,
       "interval_ms": 5000
     }

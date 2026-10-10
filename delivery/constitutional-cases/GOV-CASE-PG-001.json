@@ -1,0 +1,93 @@
+{
+  "case_id": "GOV-CASE-PG-001",
+  "base_sha": "c4ef766d127dd04ad101e358b52b295beca5ba3f",
+  "constitution_version": "1.0",
+  "exact_changed_paths": [
+    ".github/workflows/release.yml",
+    "delivery/constitutional-dossiers/GOV-CASE-PG-001-R1.md",
+    "delivery/constitutional-dossiers/GOV-CASE-PG-001-R2.md",
+    "delivery/constitutional-dossiers/GOV-CASE-PG-001-R3.md",
+    "delivery/constitutional-dossiers/GOV-CASE-PG-001-R4.md",
+    "delivery/constitutional-dossiers/GOV-CASE-PG-001-R5.md",
+    "deploy/scripts/common.mjs",
+    "deploy/scripts/deploy.mjs",
+    "deploy/scripts/rollback.mjs",
+    "deploy/scripts/smoke.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "package-lock.json",
+    "package.json",
+    "releases/templates/release-manifest.template.json",
+    "src/edge/server-identity.ts",
+    "src/edge/worker-composition.ts",
+    "src/edge/worker-entry.ts",
+    "src/platform/blueprint/worker-postgres-executor.ts",
+    "tests/api/postgres-worker.integration.test.ts",
+    "tests/api/worker-entry.api.test.ts",
+    "tooling/worker/wrangler.template.json"
+  ],
+  "candidate_digest_sha256": "2b9374d37a8ecc471ae902b348a271f0306df8308a2fe4ff8ba4457a283e9cec",
+  "why5": [
+    {
+      "question": "W1 可觀測症狀是什麼？",
+      "answer": "真實 Browser 對 /api/v1/intents 的 POST 無正式 API host，曾回 404/HTML，Playable App vertical proof 無法形成。",
+      "evidence_ref": "GOV-CASE-PG-001-R1.md + Issue #345 R1 record #6091502842"
+    },
+    {
+      "question": "W2 直接原因是什麼？",
+      "answer": "現行 Vite/Pages 路徑只提供靜態 Web；既有 intent-api handler 未被正式 Worker composition/root 掛載。",
+      "evidence_ref": "GOV-CASE-PG-001-R1.md / R2.md; src/edge/intent-api.ts; tooling/web/vite.config.ts"
+    },
+    {
+      "question": "W3 缺少什麼能力？",
+      "answer": "缺正式 Worker host、server-owned continuity context、node-postgres/Hyperdrive transport、production service composition 與可辨識 JSON smoke。",
+      "evidence_ref": "GOV-CASE-PG-001-R2.md / R4.md"
+    },
+    {
+      "question": "W4 最初為何形成缺口？",
+      "answer": "歷史 commit 與 Design 證據不足以確定原始決策原因，維持 UNKNOWN，不編造。",
+      "evidence_ref": "GOV-CASE-PG-001-R1.md / R2.md — WHY4 UNKNOWN"
+    },
+    {
+      "question": "W5 為何不能用正常 T006 權限直接解決？",
+      "answer": "package.json/package-lock、deploy、.github 等受憲法級保護，且 T006 allowed paths 不涵蓋全部候選路徑；必須先完成五審、簽章、CI/BCE 與 Human merge。",
+      "evidence_ref": "APPF2-CONSTITUTION.md §§1,1A,3,5; SP-P1-003 T006 allowed_write_paths"
+    }
+  ],
+  "stages": [
+    {
+      "stage": "R1",
+      "dossier_sha256": "8bb42d9be8cc14ae9b9cfab5b753faf00229cdbc8eb20fcfcff7d86b1d764276",
+      "human_message_ref": "CHATGPT-DIRECT-HUMAN-R1;TRANSCRIPTION=https://github.com/NFF98/appf2-build/issues/345#issuecomment-6091502842",
+      "approved_at_unix": 1791591446,
+      "signature_base64": "Fu1rgoLR4rn0AgrbWBFaImge4N8VxSTJXpVgxsWZflTQTcoLCzQIaw0j1waOEtomPUWWoODW+KcXI64ek+8IAA=="
+    },
+    {
+      "stage": "R2",
+      "dossier_sha256": "f33b7436db9dce4ec69448b38b3fef73396adb838e716c55ec45d07b84abb402",
+      "human_message_ref": "CHATGPT-DIRECT-HUMAN-R2;TRANSCRIPTION=https://github.com/NFF98/appf2-build/issues/345#issuecomment-6091546434",
+      "approved_at_unix": 1791591709,
+      "signature_base64": "hDBtheYBosirQmfKXT/9USje+SJJq0eQzgMlYEBEgTZ1XKnjyTV4ZCs0hC02nKrO3crByvJGVIRdgDagiHoMDQ=="
+    },
+    {
+      "stage": "R3",
+      "dossier_sha256": "b64d433820c0e82ba656d212268022d9462cb5875b6fa282de7e0db01f2573b4",
+      "human_message_ref": "CHATGPT-DIRECT-HUMAN-R3;TRANSCRIPTION=https://github.com/NFF98/appf2-build/issues/345#issuecomment-6091595459",
+      "approved_at_unix": 1791591978,
+      "signature_base64": "NE3n4mSfHBKlIY0Xx2e5D9pNYpOeiAsbBXiDYAf2PIJxs6aJzTbgbafuV6p2ZGD+OPAXW6XNe96x26He1jPrBw=="
+    },
+    {
+      "stage": "R4",
+      "dossier_sha256": "5298b9c900faad05b9842fee6988d122d01df29ec429ba8c795527f7195be0ff",
+      "human_message_ref": "CHATGPT-DIRECT-HUMAN-R4;TRANSCRIPTION=https://github.com/NFF98/appf2-build/issues/345#issuecomment-6092788050",
+      "approved_at_unix": 1791599576,
+      "signature_base64": "kmW0tNj0tfsxAyBjaFnAMbPL0wBkEn7c8ki4vntPIGg5B3Dj93n66UX6rvylYZ0sXfbGbp8aXbs7p3whHVpABw=="
+    },
+    {
+      "stage": "R5",
+      "dossier_sha256": "d20b8a43309e36fba7f044e3474c44e429755986ea0abb358bcbb1bcd8f65c33",
+      "human_message_ref": "CHATGPT-DIRECT-HUMAN-R5;TRANSCRIPTION=https://github.com/NFF98/appf2-build/issues/345#issuecomment-6092890349",
+      "approved_at_unix": 1791600008,
+      "signature_base64": "qi+bCtjD/l7F9r3UicmnbP8AnOzTJy03uB+Jx81C8mSeqfQBBmIW1h6rziLf8mfDf1HKmWoCaMj3aWgKc7b/CQ=="
+    }
+  ]
+}
