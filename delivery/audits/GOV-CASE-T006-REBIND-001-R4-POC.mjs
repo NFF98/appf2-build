@@ -48,7 +48,7 @@ function audit(c,p,rounds,mode){
     if(used.has("ev:"+id))e.push(bid+":EVIDENCE_REPLAY");used.add("ev:"+id);
     const ev=rounds.evidence?.[id];
     if(!ev||ev.status!=="PASS"||ev.owner_task_id!==r.owner_task_id||ev.target_build_spec_id!==r.target_build_spec_id||!seteq(ev.acceptance_ids,r.acceptance_ids)||!seteq(ev.test_ids,r.test_ids)||!ev.trusted_locator||!ev.source_commit)e.push(bid+":EVIDENCE_UNVERIFIED");
-    if(mode==="PRODUCTION"&&(ev?.test_double===true||ev?.independently_verified!==true))e.push(bid+":NO_REAL_INDEPENDENT_EVIDENCE");
+    if(mode==="PRODUCTION"&&(typeof c.verifyEvidence!=="function"||c.verifyEvidence(id,ev,r)!==true))e.push(bid+":EXTERNAL_TRUSTED_EVIDENCE_VERIFIER_REQUIRED");
    }
    cursor=r.target_build_spec_id;
   }
@@ -87,6 +87,7 @@ function scenarios(c,p){
  run("N14_PARTIAL_DRIFT",false,x=>x.rounds["BL-P1-010"][0].acceptance_ids=["F01-AC-013"]);
  run("N15_SYNTHETIC_NEVER_PRODUCTION",false,null,"PRODUCTION");
  run("N16_FLAG_ONLY_CANNOT_OVERRIDE_TEST_DOUBLE",false,x=>x.evidence["POC-ONLY-EV-T008"].independently_verified=true,"PRODUCTION");
+ run("N17_FORGED_VERIFY_FLAG_AND_FAKE_LOCATOR",false,x=>{for(const ev of Object.values(x.evidence)){ev.test_double=false;ev.independently_verified=true;ev.trusted_locator="FORGED-CLAIM-ONLY";}},"PRODUCTION");
  return {total:tests.length,matched:tests.filter(x=>x.match).length,all_expected:tests.every(x=>x.match),tests,warning:"A TEST DOUBLE can mimic a future PASS only in ISOLATED mode. Never production approval."};
 }
 
