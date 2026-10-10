@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-025",
+  "type": "DESIGN_DELTA",
+  "status": "OPEN",
+  "source_finding_ids": [],
+  "source_case_ids": [
+    "GOV-CASE-PG-001"
+  ],
+  "source_issue_refs": [
+    "NFF98/appf2-design#36",
+    "NFF98/appf2-design#37",
+    "NFF98/appf2-build#301",
+    "NFF98/appf2-build#345"
+  ],
+  "affected_build_spec": "BS-P1-024",
+  "affected_tasks": [
+    "T006"
+  ],
+  "revalidation_dependencies": [
+    "T001 F01 PoP / API original-holder read proof / private Blueprint delivery",
+    "F05 Stage B Share mint/read contract; T006 must NOT inherit full F05 implementation"
+  ],
+  "affected_contracts": [
+    "working/common-core/API-CONVENTIONS.md §12.2/§12.3/§13.1",
+    "working/common-core/EXECUTION-ADMISSION.md §8.1/§9.1",
+    "working/detailed-design/functions/F00-EXPERIENCE-SHELL.md F00-UX-017A",
+    "working/detailed-design/functions/F01-INTENT-COMPILATION.md F01-API-ID-001A/001B",
+    "working/detailed-design/functions/F05-SHARE-RESTORE.md F05-API-001A/003A (Stage B; not T006 implementation expansion)",
+    "working/detailed-design/functions/F07-ANONYMOUS-IDENTITY-EVIDENCE.md F07-SEC-003",
+    "working/detailed-design/functions/F12-HUMANIZED-RECOVERY.md F12-RCV-PG001",
+    "working/detailed-design/registries/recovery-registry.json candidate v1.4.0"
+  ],
+  "affected_acceptance": [],
+  "new_test_obligations": [
+    "hash-only read denied uniformly 404; foreign/expired/revoked/incorrect Share denied",
+    "original Intent scoped cookie + fresh P-256 PoP required for exact <=60s hash read grant",
+    "hash-only / arbitrary anonymous UUID cannot mint Share (Stage B, not T006 implementation)",
+    "protected body not publicly cached; no access token leakage; independent fresh execution-admission",
+    "real PostgreSQL authorization and RLS least privilege with positive and negative proof",
+    "T006 existing nine mapped executable tests remain mandatory without claiming PASS"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "design_merge_decision": {
+    "status": "APPROVED_AND_MERGED",
+    "decision_ref": "Human 2026-10-11: 正式批准 PR #37 合併",
+    "design_pr": "NFF98/appf2-design#37",
+    "design_merge_sha": "2e74ea19623c81261bf408856543717e943f6f51"
+  },
+  "user_decision": {
+    "status": "PENDING",
+    "decision_ref": "Human approved DESIGN PR #37 merge only. No explicit Human Build Freeze, scope-clean source, Acceptance/Test projection, or Task rebind approval yet."
+  },
+  "replacement_build_spec_required": true,
+  "replacement_build_spec": "BS-P1-025",
+  "verification": [
+    "Design PR #37 merged; exact current Design Working commit 2e74ea19623c81261bf408856543717e943f6f51, eight changed Working sources.",
+    "Locked BS-P1-024 remains immutable, sourced from derived Design commit 736c757e72734f46407f8c9afcd81580ae75f0ef.",
+    "GitHub compare old-derived...merged-main status=diverged, ahead_by=132, behind_by=72, 43 changed paths: SOURCE_PROVENANCE_BLOCKER for naive FULL main Freeze.",
+    "Design Recovery Registry v1.4.0 has 135 unique IDs but phase_1_freeze_audit.status=PENDING_HUMAN_APPROVAL.",
+    "T006 remains Stage A, current Sprint manifest declares Share restore/durable Share (Stage B) non_scope; no automatic Stage B scope expansion.",
+    "Independent static Design 13/13 conditions were checked, not actual CI/executable contract tests.",
+    "Source-clean candidate, Version Lock/Freeze Audit PASS, per-file hashes, projected immutable BS manifest and Human Freeze approval are NOT YET available."
+  ],
+  "upstream_working_commit": "2e74ea19623c81261bf408856543717e943f6f51",
+  "freeze_source": {
+    "type": "PENDING_SCOPE_CLEAN_DERIVATION",
+    "commit": null,
+    "base_commit": "736c757e72734f46407f8c9afcd81580ae75f0ef",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-025-REBASELINE-CANDIDATE.md"
+  },
+  "implementation_activation_authorized": false,
+  "cursor_lease_authorized_by_this_delta": false,
+  "no_change_to": [
+    "build-spec/baselines/BS-P1-024",
+    "build-spec/CURRENT.json",
+    "delivery/CURRENT-SPRINT.json",
+    "delivery/sprints/SP-P1-003/tasks.json",
+    "production Postgres"
+  ]
+}
