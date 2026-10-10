@@ -1,0 +1,46 @@
+# GOV-CASE-T006-REBIND-001 R4 PROPOSED ONLY.
+# NOT INSTALLED. DO NOT COPY INTO .github until full R1-R5 + Human merge permission.
+name: Revalidation Proof (PROPOSED)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'delivery/sprints/**'
+      - 'delivery/backlog/**'
+      - 'src/**'
+      - 'tests/**'
+permissions:
+  contents: read
+jobs:
+  revalidation-proof:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout canonical source
+        uses: actions/checkout@v4 # MUST PIN reviewed full action SHA before any authorization
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4 # MUST PIN reviewed full action SHA before any authorization
+        with:
+          node-version: '22'
+      - name: Install immutable dependencies
+        run: npm ci
+      - name: Verify exact Human-authorized Revalidation Task
+        run: node harness/scripts/revalidation-proof-preflight.mjs
+      - name: Governance Gate
+        run: npm run gate
+      - name: Execute exact mapped tests
+        run: node harness/scripts/run-revalidation-tests.mjs --json-out /tmp/revalidation-executed-tests.json
+      - name: Generate test proof manifest
+        run: node harness/scripts/emit-revalidation-proof.mjs --results /tmp/revalidation-executed-tests.json --output /tmp/revalidation-proof.json
+      - name: Attest proof artifact
+        uses: actions/attest@v4 # MUST PIN reviewed full action SHA before any authorization
+        with:
+          subject-path: /tmp/revalidation-proof.json
+# FAIL-CLOSED: preflight, runner and issuer above are intentionally NOT IN MAIN.
+# This file is illustrative and cannot be considered ready until these scripts,
+# action pins, workflow permissions, and unit/negative CI are independently approved.
