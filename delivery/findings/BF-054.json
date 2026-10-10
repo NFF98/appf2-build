@@ -16,7 +16,8 @@
     "Four of eight affected source blob SHA identities match original PR37 base (API, Admission, F12, Recovery Registry); F00/F01/F05/F07 source blobs do NOT match and need overlap-aware scope-clean derivation.",
     "Design recovery-registry.json registry_version=1.4.0, phase_1_freeze_audit.status=PENDING_HUMAN_APPROVAL.",
     "delivery/sprints/SP-P1-003/manifest.json explicitly lists Share restore/durable Share as non_scope Stage B, and tasks.json T006 nine stable TEST IDs.",
-    "BD-025 scope-clean candidate Design PR #38 created: base 736c757e72734f46407f8c9afcd81580ae75f0ef, HEAD 22ce2b03a571467401faee8e79b4b0496c97f38f; 24/24 exact PR37 patch hunks applied, GitHub compare exactly eight approved paths, 8 commits ahead/0 behind."
+    "BD-025 scope-clean candidate Design PR #38 created: base 736c757e72734f46407f8c9afcd81580ae75f0ef, HEAD 22ce2b03a571467401faee8e79b4b0496c97f38f; 24/24 exact PR37 patch hunks applied, GitHub compare exactly eight approved paths, 8 commits ahead/0 behind.",
+    "GitHub CI on PR #350 run 38087314218 shows FINDING/DELTA GATE FAIL: BF-054 requires affected Task T006 to be BLOCKED. Candidate PR now proposes T006/CURRENT-SPRINT BLOCKED; not merged, not an independent Human authorization for Code execution."
   ],
   "attempts": [
     {
@@ -33,6 +34,7 @@
     }
   ],
   "requested_planning_action": [
+    "Maintain fail-closed finding quarantine: in the same Draft PR #350 propose T006 BLOCKED and CURRENT-SPRINT BLOCKED, reviewed/merged only under separate Human governance approval; do not hide OPEN finding.",
     "Independent review of already-created scope-clean Design PR #38 (8 exact paths, 24 hunks, 8 commits) for ownership/semantic consistency; DO NOT MERGE into historical freeze base.",
     "Perform new Design Freeze Audit/Version Lock on the scope-clean source; resolve recovery-registry pending state and acceptance IDs/test proof coverage.",
     "Obtain distinct Human Build Freeze approval; generate BS-P1-025 full deterministic 64-entry snapshot and manifest with actual source blob/output SHA256.",
