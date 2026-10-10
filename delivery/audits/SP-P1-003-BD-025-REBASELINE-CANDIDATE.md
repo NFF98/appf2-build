@@ -85,6 +85,17 @@ Recommend **do not move F05 Stage B functionality into T006**. New read security
 5. **Human / Activation:** separately approve active Task/Backlog rebind as warranted; do not silently reopen completed T001–T005, or start next Task.
 6. **Cursor after applicable gates:** one fresh SHA-bound T006 single-use Watcher lease on build Issue #301; execute real F01→F02→F03→S03 interaction and nine required tests. Independent BCE, Human implementation merge/closure later.
 
+## 5.1 Real GitHub CI-driven quarantine correction (DRAFT)
+
+Build PR #350 initial `Governance Gate` and `CI Gate` failed at the first **FINDING/DELTA GATE**, not at Projection, Baseline, Governance Constitution, Activation, Skill, Toolchain, Backlog or Sprint: all previous checks reported PASS. Exact gate: `BF-054 requires affected Task T006 to be BLOCKED`. Independent logs: GitHub Actions run `38087314218` / `38087314217`.
+
+The CI-proven policy requires **no execution of T006 while BF-054 is open**. To reconcile source state *without pretending the blocker is resolved*, this Draft PR now proposes only:
+- `delivery/sprints/SP-P1-003/tasks.json`: `T006.status: IN_PROGRESS → BLOCKED` (other Tasks unchanged).
+- `delivery/CURRENT-SPRINT.json`: `status: ACTIVE → BLOCKED`, retaining exact current Sprint/Build Spec/Task bindings and the prior Human T006 execution intent without invoking it.
+- `build-spec/CURRENT.json`, immutable baselines, activation manifest, production DB and Watcher remain untouched.
+
+This is a **proposed governance quarantine**, not an authorized merge or Task closure. Human must approve PR #350 merge separately if warranted. Restore T006 to ACTIVE only after new Frozen baseline and separate Activation process; never bypass the SPEC_GAP Finding by reclassifying it as RESOLVED merely to make CI green.
+
 ## 6. Independence / protection
 
 This audit names objective blockers, **not** proof of finished tests or a request for more local environment diagnosis. No protected Design main rewrite, production DDL, implementation mutation, PG R4/R5 constitutional signature, Cursor launch, merge or closure is approved by this candidate PR.
