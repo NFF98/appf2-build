@@ -53,6 +53,21 @@ The other **56** old Projection Map entries must remain byte-for-byte accounted 
 | T006 single-use GitHub Watcher lease | **NOT EMITTED**; old `6077067017` already consumed |
 | PG #347 protected Worker L3 / real least-privilege PostgreSQL positive writes | **NOT PROVEN / SEPARATE GATE** |
 
+## 3.1. Deterministic SHA-256 pre-freeze projection dry-run
+
+A new machine-readable evidence artifact has been **created in this governance PR**, not the locked `build-spec/` directory:
+
+`delivery/audits/SP-P1-003-BD-025-PROJECTION-SHA256-DRYRUN.json`
+
+Using the 64-entry `BS-P1-024` Projection Map as the exact extraction skeleton:
+
+- **Old 8/8 FULL_COPY source-text SHA-256 values recalculated and matched the old locked `output_sha256`**. Standard SHA-256 `abc` self-test also matched.
+- Scope-clean Design candidate `22ce2b03a571467401faee8e79b4b0496c97f38f`: exact **8/8 new Git blob SHA values and 8/8 resulting content SHA-256** calculated, including F00/F01/F05/F07 overlaps.
+- Remaining **56/64 projection entries** untouched at candidate planning level; each must still be independently verified on actual full projector dry-run.
+- No false `freeze_audit:PASS`, `USER_APPROVED`, `status:LOCKED`, `BS-P1-025` folder or aggregate `content_sha256` has been created.
+
+The machine-readable hash dry-run is reproducible but **does not replace** Design owner review, new Acceptance Test registry proof, Human Freeze approval, complete manifest computation or harness/CI.
+
 ## 4. Stage boundary (protect schedule without inventing Product)
 
 Current `delivery/sprints/SP-P1-003/manifest.json` explicitly excludes F05 Share restore/durable Share Stage B. `T006` is `IN_PROGRESS`, bound to `BS-P1-024` and its exact **nine** mapped IDs:
