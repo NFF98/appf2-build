@@ -1,0 +1,410 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "task_id": "T006",
+  "artifact_type": "SOURCE_CONTENT_SCAN_RESULT_NO_PRODUCT_PASS",
+  "repository": "NFF98/appf2-build",
+  "canonical_main_commit": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "scan_scope": "Every file in GitHub canonical main under tests/ with suffix .test.ts, .test.tsx, .test.mjs, .test.js, .spec.ts, .spec.tsx, .spec.mjs, or .spec.js",
+  "method": "GitHub recursive tree enumeration and authenticated fetch_file for every enumerated path at exact canonical main sha; exact case-sensitive string match of required Test IDs against each UTF-8 source",
+  "scanned_file_count": 83,
+  "failed_fetch_count": 0,
+  "all_files_fetched": true,
+  "required_test_ids": [
+    {
+      "test_id": "TEST-F03-009",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F03-AC-024",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F00-007",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F00-AC-009",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F00-010",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F00-011",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F00-AC-012",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F00-036",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    },
+    {
+      "test_id": "TEST-F00-037",
+      "source_occurrence_count": 0,
+      "mapped_executable_test_present": false
+    }
+  ],
+  "matched_test_id_count": 0,
+  "required_test_id_count": 9,
+  "note": "No named T006 test in enumerated main test-source files; absence of these literal IDs does not exclude independently named tests, and is not proof of test failures. T006 has no passed nine-Test evidence.",
+  "other_source_fact": {
+    "path": "src/app/shell/App.tsx",
+    "git_blob_sha1": "2e19bb8ba871dc217b67b3a270d8bb98e96d41bc",
+    "observed_surface_type": "DISCOVER | CREATE",
+    "s03_surface_wired": false
+  },
+  "tests_tree_inventory": [
+    {
+      "path": "tests/api/evidence-batch.api.test.ts",
+      "blob": "32a2d3d93d723da6d9cb7d77f38cbab14bd932bb"
+    },
+    {
+      "path": "tests/api/intent-api.api.test.ts",
+      "blob": "505c84d75f25bb91c0fe156446f13cc311108dfe"
+    },
+    {
+      "path": "tests/api/intent-visible-assumption-edit-shape.api.test.ts",
+      "blob": "dee8bdd031493aed60d84c00ea872ab6577c7f46"
+    },
+    {
+      "path": "tests/behavior/anonymous-identity.behavior.test.ts",
+      "blob": "27a8bf2092c2a8d9ca0e4da03e1d12100a59b330"
+    },
+    {
+      "path": "tests/behavior/blueprint-admission-lineage.behavior.test.ts",
+      "blob": "7202cad018f5ce9b240d45da5196ce9e9b7c47b6"
+    },
+    {
+      "path": "tests/behavior/blueprint-cycle-detection.behavior.test.ts",
+      "blob": "aa25231c8674e354441a5552cbe75d62afad9294"
+    },
+    {
+      "path": "tests/behavior/blueprint-degradation.behavior.test.ts",
+      "blob": "d4b5fe624718eb14529589773d2e253371437ec3"
+    },
+    {
+      "path": "tests/behavior/blueprint-execution-safety.behavior.test.ts",
+      "blob": "863c2fac6b16e4a4ae28f96a4a0c9f98b6232557"
+    },
+    {
+      "path": "tests/behavior/blueprint-schema-closure.behavior.test.ts",
+      "blob": "38f97e7e15e6d4f99e979d6284817542ae9b661a"
+    },
+    {
+      "path": "tests/behavior/blueprint-validation-failure.behavior.test.ts",
+      "blob": "d491dc02503eed1ccd7c2a3de46dba0b690d8a9b"
+    },
+    {
+      "path": "tests/behavior/capability-admission.behavior.test.ts",
+      "blob": "2a84c77481c889f3e83cd6d2fa90ada22c4f0508"
+    },
+    {
+      "path": "tests/behavior/capability-coverage.behavior.test.ts",
+      "blob": "c29c1e5d77eb85167f07ce9e277c786d35e196fb"
+    },
+    {
+      "path": "tests/behavior/compiler-evidence.behavior.test.ts",
+      "blob": "54fa18a6862ddaca2dc9afc8b6f0bd7df14cd904"
+    },
+    {
+      "path": "tests/behavior/compiler-gate.behavior.test.ts",
+      "blob": "7c086b06711c96496cade55430a7d4cceec18ce0"
+    },
+    {
+      "path": "tests/behavior/create-progress.behavior.test.ts",
+      "blob": "0e89af7d9c46315ce54d58640890d64da008a64d"
+    },
+    {
+      "path": "tests/behavior/evidence-client-queue.behavior.test.ts",
+      "blob": "2d20de5f38118c3e6897fbd6197c48e0dc0a1477"
+    },
+    {
+      "path": "tests/behavior/evidence-collector.behavior.test.ts",
+      "blob": "5a3b1602e37a936fe1f0aefdeb6f2ca807a12e88"
+    },
+    {
+      "path": "tests/behavior/evidence-debug-only.behavior.test.ts",
+      "blob": "6e51e2c7522d2646e3ce48484e4d0c51d8c425c5"
+    },
+    {
+      "path": "tests/behavior/evidence-observability.behavior.test.ts",
+      "blob": "e57c58f14ed5d6214b26a76cddf401f2a9ce88fc"
+    },
+    {
+      "path": "tests/behavior/evidence-retention.behavior.test.ts",
+      "blob": "7eb938c7a817f69b4273ae69f73c96110858a400"
+    },
+    {
+      "path": "tests/behavior/f00-create-progress.behavior.test.ts",
+      "blob": "984c58e5bf701b92af5dce301bec539e780805e8"
+    },
+    {
+      "path": "tests/behavior/f00-creation-controller.behavior.test.ts",
+      "blob": "cf3020ae0fad8dcdde59147b5cee60ce846cc557"
+    },
+    {
+      "path": "tests/behavior/f00-duplicate-submit.behavior.test.ts",
+      "blob": "4525e63413752af634399a0b8577055ee6b28b7e"
+    },
+    {
+      "path": "tests/behavior/f00-runtime-processing.behavior.test.ts",
+      "blob": "7e86f75d754b5bdbcbaa8883240ec96182659d81"
+    },
+    {
+      "path": "tests/behavior/f00-typed-edit.behavior.test.ts",
+      "blob": "e96f5701e5447467121b766b5f769bc056fdfb1e"
+    },
+    {
+      "path": "tests/behavior/intent-clarification.behavior.test.ts",
+      "blob": "090ec5f5937b7bd42e93bd47ef0afa958dc5a810"
+    },
+    {
+      "path": "tests/behavior/runtime-determinism.behavior.test.ts",
+      "blob": "5bdbd6bcb070c0a039e111304739879009f51c3c"
+    },
+    {
+      "path": "tests/behavior/runtime-hydration-interaction.behavior.test.ts",
+      "blob": "9ed1a3f31be5b563b9d1aaa560d6a83b20ed3f0a"
+    },
+    {
+      "path": "tests/behavior/runtime-operation-timeout.behavior.test.ts",
+      "blob": "206ae6b326e16bc5c67d4f1c0b7762cbb36403f3"
+    },
+    {
+      "path": "tests/contract/anonymous-identity-boundary.contract.test.ts",
+      "blob": "785a6d2456d10a6edbc7f0cb8808b84ead862aa6"
+    },
+    {
+      "path": "tests/contract/blueprint-capability-admission.contract.test.ts",
+      "blob": "4f9fdf2b8bb12b8340ef1949ad660a8c02bd034d"
+    },
+    {
+      "path": "tests/contract/blueprint-capability-eligibility.contract.test.ts",
+      "blob": "2d32cab6ddebaf310699890fac7d0db0c3d7ebde"
+    },
+    {
+      "path": "tests/contract/blueprint-content-identity.contract.test.ts",
+      "blob": "226966d2bb367c9da2ce2b3d83152a75580382db"
+    },
+    {
+      "path": "tests/contract/blueprint-content-persistence.contract.test.ts",
+      "blob": "ca7c27c809e2071a8b46218aec17a0e51b91836c"
+    },
+    {
+      "path": "tests/contract/blueprint-reference-typing.contract.test.ts",
+      "blob": "7831864ea678bdf851ba2285aeef639b14b01912"
+    },
+    {
+      "path": "tests/contract/blueprint-resource-ceilings.contract.test.ts",
+      "blob": "7e428158e90a1853da8b6e8f99ceb581817c548d"
+    },
+    {
+      "path": "tests/contract/blueprint-trust-bypass.contract.test.ts",
+      "blob": "5026b5ce9c173f1994d42a1f06fb3fe64984874d"
+    },
+    {
+      "path": "tests/contract/capability-admission.contract.test.ts",
+      "blob": "c79be72fabac58431c2e9a0a6868028335516fad"
+    },
+    {
+      "path": "tests/contract/capability-coverage.contract.test.ts",
+      "blob": "ccc7593150f9cfaaceb3484ca32f5972d8a1d1c2"
+    },
+    {
+      "path": "tests/contract/capability-registry.contract.test.ts",
+      "blob": "c28496d011d765366242d642dcc4ec9d3c70a6a8"
+    },
+    {
+      "path": "tests/contract/capability-validator-registry.contract.test.ts",
+      "blob": "cef87b4ffa338c65d2702aa6d2509901b4e3908e"
+    },
+    {
+      "path": "tests/contract/compiler-capability.contract.test.ts",
+      "blob": "6ce6f11c8522202c66e5c9fe2fddde28fc7d5068"
+    },
+    {
+      "path": "tests/contract/create-progress.contract.test.ts",
+      "blob": "476f51d46c1fabad27ae1b639449aa50c31e7839"
+    },
+    {
+      "path": "tests/contract/evidence-intake.contract.test.ts",
+      "blob": "60945de10071a3abdac4dfd9cc5528a42f29b524"
+    },
+    {
+      "path": "tests/contract/evidence-registry-v3.contract.test.ts",
+      "blob": "99a807fe60ef364c4ff1cf70118b8c33bcbbf7a6"
+    },
+    {
+      "path": "tests/contract/evidence-retention-sql.contract.test.ts",
+      "blob": "c14c64d7c423f24e7c3b88d68a7768f2e8acc43d"
+    },
+    {
+      "path": "tests/contract/f00-prompt-draft.contract.test.ts",
+      "blob": "f432c3545f4bf35506424138adc0152475f4bf19"
+    },
+    {
+      "path": "tests/contract/f00-runtime-boundary.contract.test.ts",
+      "blob": "45022312ce510640bb57bfa94d14da8dff3559d2"
+    },
+    {
+      "path": "tests/contract/f00-runtime-progress.contract.test.ts",
+      "blob": "912fc0dc69261a787c8b307265fa96f6b4eaf595"
+    },
+    {
+      "path": "tests/contract/intent-clarification-policy.contract.test.ts",
+      "blob": "f12fbc9033dace4daf846096cec289c99c119868"
+    },
+    {
+      "path": "tests/contract/intent-visible-assumption-edit-shape.contract.test.ts",
+      "blob": "3dc5040e66997f1d7a291357989e0133e654cb43"
+    },
+    {
+      "path": "tests/contract/registry-evidence.contract.test.ts",
+      "blob": "a3ec2fb69feacf303d61b7e763097edc55eb0c84"
+    },
+    {
+      "path": "tests/contract/runtime-operation-safety.contract.test.ts",
+      "blob": "f25d5b38bcf908ecd09ce9611840e99402d71578"
+    },
+    {
+      "path": "tests/contract/runtime-state-transaction.contract.test.ts",
+      "blob": "baf0432386959dadba512e969ce072d08c2bc5f9"
+    },
+    {
+      "path": "tests/e2e/f00-assumption-edit.spec.ts",
+      "blob": "cd00359235a4ea7816881f44dc94b367b1e91f92"
+    },
+    {
+      "path": "tests/e2e/f00-create-shell.spec.ts",
+      "blob": "67765efa6cc99ce9b047b745eaf395183ab264b7"
+    },
+    {
+      "path": "tests/e2e/f00-prompt-draft.spec.ts",
+      "blob": "c91c780d74e9589e542f47881aa191b756ecdac7"
+    },
+    {
+      "path": "tests/e2e/f00-provenance.spec.ts",
+      "blob": "2cdec09fd012955fefcc20bf72734dc6a118c476"
+    },
+    {
+      "path": "tests/e2e/f00-runtime-processing.spec.ts",
+      "blob": "8e4ab020074810ed9b39b3347ad719a67890594b"
+    },
+    {
+      "path": "tests/e2e/sp2-production-contract.spec.ts",
+      "blob": "a42afbce2b41badd61899eb935aa6c7280174cd2"
+    },
+    {
+      "path": "tests/regression/anonymous-identity-reset.regression.test.ts",
+      "blob": "09f23985fc353232ba9a0d5fe921408be8164f94"
+    },
+    {
+      "path": "tests/regression/blueprint-candidate-intake.regression.test.ts",
+      "blob": "6d8f1ae04785f37c40dde60181d3615214cd4b35"
+    },
+    {
+      "path": "tests/regression/blueprint-canonical-identity.regression.test.ts",
+      "blob": "0440bc3a042f59f138e38970aa353c55eba08b88"
+    },
+    {
+      "path": "tests/regression/capability-registry-order.regression.test.ts",
+      "blob": "ab6f5c969062cd69ecf4bb04b9877c1df2e18529"
+    },
+    {
+      "path": "tests/regression/evidence-clock-invalid.regression.test.ts",
+      "blob": "c5b41073cb5f0fb48f4ec996221614178c72f136"
+    },
+    {
+      "path": "tests/regression/evidence-durable-dedupe.regression.test.ts",
+      "blob": "8d7f6d794614a4f716d5c101fb3d387d05055493"
+    },
+    {
+      "path": "tests/regression/evidence-durable-queue.regression.test.ts",
+      "blob": "b392a8ed0a8370609fbe755e787409bcba48989e"
+    },
+    {
+      "path": "tests/regression/intent-envelope-invariants.regression.test.ts",
+      "blob": "8db062b8639c763c9dfba1b99ed34f153f11d7b0"
+    },
+    {
+      "path": "tests/regression/intent-stale-proposal-invalidation.regression.test.ts",
+      "blob": "7d4e1a02a3017e6f89d75ea4e7e8c8b8ac68705c"
+    },
+    {
+      "path": "tests/regression/intent-visible-assumption-edit-shape.regression.test.ts",
+      "blob": "9a6e8be3b6215320c924712b7c49ffc9a2db365f"
+    },
+    {
+      "path": "tests/responsive/f00-shell.responsive.spec.ts",
+      "blob": "83d3111cd60f3fc602de16d129399aa1779a3d8c"
+    },
+    {
+      "path": "tests/runtime/blueprint-trust-transition.runtime.test.ts",
+      "blob": "e95e54ad622517ebd873cf0f128eb21e5af2fe29"
+    },
+    {
+      "path": "tests/runtime/blueprint-validation-evidence.runtime.test.ts",
+      "blob": "80af3d7b13fcb4ed5d4b493ed885ebe6017a552b"
+    },
+    {
+      "path": "tests/runtime/capability-dependency.runtime.test.ts",
+      "blob": "0bf17bead39c727846e5b1d409f6255b13f49bc1"
+    },
+    {
+      "path": "tests/runtime/runtime-event-loop.runtime.test.ts",
+      "blob": "b1d01376fe6efc5b316f17ec4ae6f59654593283"
+    },
+    {
+      "path": "tests/runtime/runtime-operation-evidence.runtime.test.ts",
+      "blob": "a93ee755b030670343cb95625bb527e41c4f9bdc"
+    },
+    {
+      "path": "tests/unit/blueprint-canonical-json.unit.test.ts",
+      "blob": "fb1081ce4d1b9d02b23089cdb46084aa85a64ab5"
+    },
+    {
+      "path": "tests/unit/evidence-client-queue.unit.test.ts",
+      "blob": "c0faca035b071cf9a0306ac798d18cc59d34a25d"
+    },
+    {
+      "path": "tests/unit/evidence-collector.unit.test.ts",
+      "blob": "f455ed1eaa359f9410216709bf1c1b514c8404fa"
+    },
+    {
+      "path": "tests/unit/evidence-quality-report.unit.test.ts",
+      "blob": "08f6b9732c7cbd8e14ef2a54434f205aca29e582"
+    },
+    {
+      "path": "tests/unit/identity-last-seen.unit.test.ts",
+      "blob": "4699dde87cca94d0ca76d300e273f09536922a7b"
+    },
+    {
+      "path": "tests/visual/f00-progress.visual.spec.ts",
+      "blob": "c18ecde1e4ca952e7037089b35ec9f2303f481df"
+    },
+    {
+      "path": "tests/visual/f00-shell.visual.spec.ts",
+      "blob": "9abcf045404699a25c0e71444b29de0bb668a5d7"
+    }
+  ],
+  "authority": {
+    "R4": "PENDING",
+    "R5": "NOT_AUTHORIZED",
+    "T006": "BLOCKED",
+    "cursor_execution": "NOT_AUTHORIZED",
+    "main_unchanged": true
+  }
+}
