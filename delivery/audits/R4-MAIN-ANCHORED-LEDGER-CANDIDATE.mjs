@@ -49,16 +49,18 @@ const ancestry=(root,a,b)=>{try{git(root,['merge-base','--is-ancestor',a,b]);ret
  *  This requires GH_TOKEN from an independently trusted Actions job on exact GitHub PR event.
  *  It cannot create a ledger or bootstrap an unsigned genesis state.
  */
-export function inspectGitHubMainLedgerPR({repoRoot=process.cwd(),baseSha,headSha}){
+const authenticatedPrEvent=(baseSha,headSha)=>{
  if(process.env.GITHUB_REPOSITORY!==REPO||process.env.GITHUB_EVENT_NAME!=='pull_request')return fail('UNTRUSTED_GITHUB_EVENT');
  if(!validSHA(baseSha)||!validSHA(headSha))return fail('INVALID_SHA');
  let event;
  try{event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'))}
  catch{return fail('GITHUB_EVENT_NOT_AUTHENTICATED')}
- if(event?.pull_request?.base?.repo?.full_name!==REPO||
-   event?.pull_request?.base?.ref!=='main'||
-   event?.pull_request?.base?.sha!==baseSha||
-   event?.pull_request?.head?.sha!==headSha)return fail('PR_BASE_OR_HEAD_NOT_BOUND_TO_GITHUB_EVENT');
+ const pr=event?.pull_request;
+ const src=pr?.base,tip=pr?.head;
+ if(src?.repo?.full_name!==REPO||src?.ref!=='main'||src?.sha!==baseSha||tip?.sha!==headSha)return fail('PR_BASE_OR_HEAD_NOT_BOUND_TO_GITHUB_EVENT');
+ return {ok:true};
+};
+const inspectTrustedGitHubSnapshot=({repoRoot,baseSha,headSha})=>{
  try{
   const remote=github(['repos/'+REPO+'/branches/main']);
   const ruleset=github(['repos/'+REPO+'/rulesets/'+DEFAULT_RULESET]);
@@ -66,6 +68,11 @@ export function inspectGitHubMainLedgerPR({repoRoot=process.cwd(),baseSha,headSh
   return inspectProposedMainAnchor({repository:REPO,baseSha,headSha,liveMainSha:remote.commit.sha,
    ruleset,baseLedger,proposedLedger,isBaseAncestor:ancestry(repoRoot,baseSha,headSha)});
  }catch{return fail('LIVE_GITHUB_OR_GIT_PROVENANCE_UNAVAILABLE')}
+};
+export function inspectGitHubMainLedgerPR({repoRoot=process.cwd(),baseSha,headSha}){
+ const auth=authenticatedPrEvent(baseSha,headSha);
+ if(!auth.ok)return auth;
+ return inspectTrustedGitHubSnapshot({repoRoot,baseSha,headSha});
 }
 if(process.argv[1]?.endsWith('R4-MAIN-ANCHORED-LEDGER-CANDIDATE.mjs')&&process.argv[2]==='merge'){
  console.error('R4 REVIEW ONLY: GitHub Ruleset and Human merge approval must be independently enforced');
