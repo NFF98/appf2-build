@@ -157,5 +157,31 @@
   "human_R5_approval": "NOT_GRANTED",
   "human_ed25519_independently_verified": "0/5",
   "cursor_execution_allowed": false,
-  "evidence_for_closure_allowed": false
+  "evidence_for_closure_allowed": false,
+  "verified_current_code_gap": {
+    "source": "src/app/shell/App.tsx",
+    "source_git_blob_sha1": "2e19bb8ba871dc217b67b3a270d8bb98e96d41bc",
+    "actual_surface_type": "DISCOVER | CREATE",
+    "actual_app_render_branches": [
+      "CreateWorkspace",
+      "DiscoverScreen"
+    ],
+    "s03_app_surface_in_shell": false,
+    "other_existing_code": "src/app/runtime/RuntimeProcessingLayer.tsx exists as in-place status overlay but is not a standalone S03 App surface",
+    "other_existing_code_blob": "5756c6034656b09522ca7d95c7d39e67b3c2b9c2",
+    "runtime_engine_exists": "src/platform/runtime/runtime-instance.ts and tests/behavior/runtime-hydration-interaction.behavior.test.ts exist; not equivalent to completed full UI vertical proof",
+    "conclusion": "T006 still requires real Cursor implementation after governance activation. Existing F03 engine alone does not close T006."
+  },
+  "cursor_execution_preparation_only": {
+    "recommended_order": [
+      "Bind T006 to BS-P1-025 only after Human approval, activation, and protected governance checks; no changes to nine unchanged contract semantics.",
+      "Implement S03 Runtime App surface wiring and canonical F02 validated/admitted→F03 READY/render plus one local interaction committed state/result",
+      "Implement result.outputs evaluation and sensitivity, explicitly never DOM as source of result",
+      "Implement transparent Share/Remix/Correction entry selection and non-destructive correction/Compare",
+      "Implement S05-origin Inspection Mode session-preserving return",
+      "Add and actually execute all nine named Acceptance/Test IDs and every Task required command",
+      "Cursor evidence handoff → ChatGPT independent BCE → Human merge and Task closure"
+    ],
+    "authorized_to_execute_now": false
+  }
 }
