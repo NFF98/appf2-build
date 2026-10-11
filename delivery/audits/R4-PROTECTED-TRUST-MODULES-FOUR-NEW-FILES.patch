@@ -1,0 +1,253 @@
+diff --git a/harness/scripts/revalidation-attestation-verify.mjs b/harness/scripts/revalidation-attestation-verify.mjs
+new file mode 100644
+--- /dev/null
++++ b/harness/scripts/revalidation-attestation-verify.mjs
+@@ -0,0 +1,91 @@
++// GOV-CASE-T006-REBIND-001 R4; ISOLATED candidate verifier only.
++// DO NOT claim production authorization: the signer workflow and trust ledger do not exist yet.
++import fs from 'node:fs';
++import { createHash } from 'node:crypto';
++import { execFileSync } from 'node:child_process';
++
++const REPO='NFF98/appf2-build';
++const REF='refs/heads/main';
++const WORKFLOW='.github/workflows/revalidation-proof.yml';
++const SIGNER=REPO+'/'+WORKFLOW;
++const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
++const same=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
++const fail=code=>({ok:false,code});
++const cleanIds=a=>Array.isArray(a)&&a.length>0&&a.every(x=>typeof x==='string'&&x.length>0)&&new Set(a).size===a.length;
++const validSHA=s=>typeof s==='string'&&/^[0-9a-f]{40}$/.test(s)&&!/^0+$/.test(s);
++const validHex=s=>typeof s==='string'&&/^[0-9a-f]{64}$/.test(s);
++
++const checkExpected=e=>e.repo===REPO&&e.ref===REF&&e.workflow===WORKFLOW&&validSHA(e.source_sha)&&
++ cleanIds(e.acceptance_ids)&&cleanIds(e.test_ids)&&e.test_ids.length===e.acceptance_ids.length&&
++ Number.isSafeInteger(e.run_id)&&e.run_id>0&&Number.isSafeInteger(e.run_attempt)&&e.run_attempt>0;
++const checkResults=(e,p)=>Array.isArray(p.results)&&p.results.length>0&&
++ same(p.results.map(x=>x.acceptance_id),e.acceptance_ids)&&
++ same(p.results.map(x=>x.test_id),e.test_ids)&&
++ p.results.every(x=>x.status==='PASS'&&x.executed===true&&Number.isSafeInteger(x.assertion_count)&&x.assertion_count>0&&x.skipped===0);
++const checkProofIdentity=(e,p)=>{
++ const keys=['repo','ref','workflow','source_sha','run_id','run_attempt','sprint_id','task_id','baseline_id','evidence_id'];
++ return keys.every(k=>p[k]===e[k]);
++};
++const checkRegistry=(e,p)=>validHex(p.source_registry_sha256)&&validHex(p.target_registry_sha256)&&
++ p.source_registry_sha256===e.source_registry_sha256&&p.target_registry_sha256===e.target_registry_sha256;
++const checkRun=(e,r)=>r.repository?.full_name===REPO&&r.path===WORKFLOW&&r.event==='push'&&
++ r.head_branch==='main'&&r.head_sha===e.source_sha&&r.run_attempt===e.run_attempt&&
++ r.id===e.run_id&&r.status==='completed'&&r.conclusion==='success';
++const requiredSteps=['Verify exact Human-authorized Revalidation Task','Governance Gate','Execute exact mapped tests','Generate test proof manifest','Attest proof artifact'];
++const checkSteps=j=>requiredSteps.every(name=>{
++ const matching=(j.steps||[]).filter(s=>s.name===name);
++ return matching.length===1&&matching[0].conclusion==='success';
++});
++const checkJobs=(e,inventory)=>{
++ if(!Array.isArray(inventory.jobs)||!inventory.jobs.length||inventory.jobs.length!==inventory.total_count)return false;
++ const selected=inventory.jobs.filter(x=>x.name==='revalidation-proof');
++ return selected.length===1&&selected[0].conclusion==='success'&&
++ selected[0].run_attempt===e.run_attempt&&checkSteps(selected[0]);
++};
++const checkVerified=v=>v.length===1&&Boolean(v[0]?.verificationResult&&v[0]?.attestation);
++const checks=[
++ ['UNTRUSTED_EXPECTATION',({expected})=>checkExpected(expected)],
++ ['MISSING_OR_FAILED_TEST_RESULTS',({expected,proof})=>checkResults(expected,proof)],
++ ['PROOF_IDENTITY_MISMATCH',({expected,proof})=>checkProofIdentity(expected,proof)],
++ ['REGISTRY_HASH_MISMATCH',({expected,proof})=>checkRegistry(expected,proof)],
++ ['PRODUCT_NOT_PROVEN',({proof})=>proof.product_ci_mode==='EXECUTED'&&proof.gate_status==='PASS'],
++ ['UNTRUSTED_GITHUB_RUN',({expected,run})=>checkRun(expected,run)],
++ ['UNTRUSTED_JOB',({expected,jobs})=>checkJobs(expected,jobs)],
++ ['NO_VERIFIED_ATTESTATION',({verified})=>checkVerified(verified)]
++];
++export function inspectProof({expected,proof,verified,run,jobs,ledger}){
++ if(!expected||!proof||!run||!jobs||!Array.isArray(verified)||!Array.isArray(ledger))return fail('MISSING_TRUST_INPUT');
++ const context={expected,proof,verified,run,jobs};
++ for(const [code,predicate] of checks){if(!predicate(context))return fail(code)}
++ const replay=[REPO,expected.run_id,expected.run_attempt,expected.evidence_id,expected.task_id,expected.baseline_id,...expected.acceptance_ids].join('|');
++ if(ledger.includes(replay))return fail('REPLAY');
++ return {ok:true,code:'STRUCTURALLY_VALID_TRUST_INPUTS_ONLY',replay_key:replay};
++}
++
++// Only a successful gh attestation verify process counts as cryptographic verification.
++// Never accept a checked-in JSON file claiming to be gh's stdout.
++export function verifyWithTrustedGitHub({artifactPath,expected,ledger,cli=execFileSync}){
++ if(!expected||expected.repo!==REPO||expected.ref!==REF||expected.workflow!==WORKFLOW||!validSHA(expected.source_sha))return fail('UNTRUSTED_EXPECTATION');
++ let data,verified,run,jobs;
++ try{
++  data=fs.readFileSync(artifactPath);
++  if(data.length<16||data.length>1048576)return fail('INVALID_ARTIFACT_SIZE');
++  const digest=sha256(data);
++  if(!validHex(digest))return fail('INVALID_ARTIFACT_DIGEST');
++  const args=['attestation','verify',artifactPath,'--repo',REPO,'--signer-workflow',SIGNER,
++   '--source-digest',expected.source_sha,'--source-ref',REF,'--deny-self-hosted-runners','--format','json'];
++  verified=JSON.parse(cli('gh',args,{encoding:'utf8',maxBuffer:1048576}));
++  run=JSON.parse(cli('gh',['api','--method','GET',`repos/${REPO}/actions/runs/${expected.run_id}`],{encoding:'utf8',maxBuffer:1048576}));
++  jobs=JSON.parse(cli('gh',['api','--method','GET',`repos/${REPO}/actions/runs/${expected.run_id}/attempts/${expected.run_attempt}/jobs?per_page=100`],{encoding:'utf8',maxBuffer:1048576}));
++  const proof=JSON.parse(data.toString('utf8'));
++  const inspected=inspectProof({expected,proof,verified,run,jobs,ledger});
++  if(!inspected.ok)return inspected;
++  return {...inspected,artifact_sha256:digest};
++ }catch{return fail('VERIFICATION_OR_GITHUB_API_FAILED_CLOSED')}
++}
++
++if(process.argv[1]&&process.argv[1].endsWith('R4-ATTESTATION-VERIFIER.mjs')&&process.argv[2]==='verify'){
++ // Fail closed until constitutionally authorized expectation AND replay ledger adapters exist.
++ console.error('R4 ISOLATED: no production expectation / ledger trust adapter. Refusing to certify.');
++ process.exitCode=2;
++}
+diff --git a/harness/scripts/revalidation-ledger.mjs b/harness/scripts/revalidation-ledger.mjs
+new file mode 100644
+--- /dev/null
++++ b/harness/scripts/revalidation-ledger.mjs
+@@ -0,0 +1,47 @@
++// APPf2 R4 replay ledger MODEL; does NOT provide the external immutable CAS store.
++import {createHash} from 'node:crypto';
++const digest=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
++const GENESIS='GENESIS';
++const fail=code=>({ok:false,code});
++const isHex=x=>typeof x==='string'&&/^[0-9a-f]{64}$/.test(x);
++const validRun=e=>e?.repo==='NFF98/appf2-build'&&
++ Number.isSafeInteger(e.run_id)&&e.run_id>0&&
++ Number.isSafeInteger(e.run_attempt)&&e.run_attempt>0;
++const validOwnership=e=>typeof e.evidence_id==='string'&&e.evidence_id.length>0&&
++ typeof e.task_id==='string'&&e.task_id.length>0&&e.baseline_id==='BS-P1-025';
++const validAcceptance=e=>Array.isArray(e.acceptance_ids)&&e.acceptance_ids.length>0&&
++ e.acceptance_ids.every(a=>typeof a==='string'&&a.length>0)&&
++ new Set(e.acceptance_ids).size===e.acceptance_ids.length&&isHex(e.artifact_sha256);
++const validEvent=e=>validRun(e)&&validOwnership(e)&&validAcceptance(e);
++const key=e=>[e.repo,e.run_id,e.run_attempt,e.evidence_id,e.task_id,e.baseline_id,...e.acceptance_ids].join('|');
++const makeEntry=(prev,event)=>({previous:prev,event,key:key(event),digest:digest({previous:prev,event,key:key(event)})});
++export function inspectLedger({entries,externallyTrustedHead}){
++ if(!Array.isArray(entries)||!(externallyTrustedHead===GENESIS||isHex(externallyTrustedHead)))return fail('MISSING_EXTERNAL_ANCHOR');
++ const seen=new Set();let head=GENESIS;
++ for(const row of entries){
++  if(!validEvent(row?.event)||row.previous!==head||row.key!==key(row.event))return fail('BROKEN_LEDGER_CHAIN');
++  if(seen.has(row.key))return fail('REPLAYED_EVENT');
++  const expected=makeEntry(head,row.event);
++  if(row.digest!==expected.digest)return fail('MUTATED_LEDGER_RECORD');
++  seen.add(row.key);head=row.digest;
++ }
++ if(head!==externallyTrustedHead)return fail('UNTRUSTED_LEDGER_HEAD');
++ return {ok:true,head,seen};
++}
++export function proposeAppend({entries,externallyTrustedHead,event,compareAndSet}){
++ const inspected=inspectLedger({entries,externallyTrustedHead});
++ if(!inspected.ok)return inspected;
++ if(!validEvent(event))return fail('INVALID_EVENT');
++ const nextKey=key(event);
++ if(inspected.seen.has(nextKey))return fail('REPLAYED_EVENT');
++ if(typeof compareAndSet!=='function')return fail('MISSING_EXTERNAL_ATOMIC_CAS');
++ const next=makeEntry(inspected.head,event);
++ // Compare-and-swap MUST be implemented by a separate trusted, durable authority;
++ // mock callbacks below are tests, NOT a deployed ledger or replay guarantee.
++ if(compareAndSet({expectedHead:inspected.head,nextHead:next.digest,entry:next})!==true)return fail('ATOMIC_CAS_REJECTED');
++ return {ok:true,code:'TEST_DOUBLE_EXTERNAL_CAS_ONLY',head:next.digest,entry:next};
++}
++if(process.argv[1]?.endsWith('R4-REPLAY-LEDGER.mjs')&&process.argv[2]==='commit'){
++ console.error('R4 ISOLATED LEDGER: no trusted durable CAS backend; FAIL CLOSED');
++ process.exitCode=2;
++}
+diff --git a/harness/scripts/revalidation-closure-trust.mjs b/harness/scripts/revalidation-closure-trust.mjs
+new file mode 100644
+--- /dev/null
++++ b/harness/scripts/revalidation-closure-trust.mjs
+@@ -0,0 +1,56 @@
++// GOV-CASE-T006-REBIND-001: review-only exact closed-round verifier.
++// NEVER install in protected harness without independent R4/R5 and merge approval.
++// This validation is READ-ONLY: CI gates must not consume a replay token on each read.
++import {verifyWithTrustedGitHub} from './revalidation-attestation-verify.mjs';
++import {inspectLedger} from './revalidation-ledger.mjs';
++
++const fail=code=>({ok:false,code});
++const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
++const goodIds=a=>Array.isArray(a)&&a.length>0&&a.every(x=>typeof x==='string'&&x.length>0)&&new Set(a).size===a.length;
++const goodHash=v=>typeof v==='string'&&/^[0-9a-f]{64}$/.test(v);
++const roundMatches=(round,e,proof)=>round.target_build_spec_id===e.baseline_id&&
++ round.sprint_id===e.sprint_id&&round.task_id===e.task_id&&
++ round.source_registry_sha256===e.source_registry_sha256&&
++ round.target_registry_sha256===e.target_registry_sha256&&
++ equal(round.acceptance_ids,e.acceptance_ids)&&equal(round.test_ids,e.test_ids)&&
++ goodIds(e.acceptance_ids)&&goodIds(e.test_ids)&&
++ round.evidence_ids?.includes(e.evidence_id)&&proof.baseline_id===e.baseline_id&&
++ proof.sprint_id===e.sprint_id&&proof.task_id===e.task_id&&
++ proof.evidence_id===e.evidence_id;
++const evidenceValid=(ev,e)=>ev?.kind==='TEST_RESULT'&&ev.status==='PASS'&&
++ ev.source_commit===e.source_sha&&ev.evidence_id===e.evidence_id&&
++ ev.build_spec_id===e.baseline_id&&ev.sprint_id===e.sprint_id&&ev.task_id===e.task_id&&
++ equal(ev.acceptance_ids,e.acceptance_ids)&&equal(ev.test_ids,e.test_ids)&&
++ goodHash(ev.sha256)&&ev.sha256===e.artifact_sha256;
++const expectedKey=e=>[e.repo,e.run_id,e.run_attempt,e.evidence_id,e.task_id,e.baseline_id,...e.acceptance_ids].join('|');
++const matchingLedger=(rows,e)=>rows.filter(x=>x.key===expectedKey(e)&&x.event?.artifact_sha256===e.artifact_sha256&&
++ x.event?.baseline_id===e.baseline_id&&x.event?.run_attempt===e.run_attempt).length===1;
++
++export function inspectClosedRound({round,evidence,expected,artifactPath,verifiedProof,verifyIndependentApproval,readTrustedLedger}){
++ if(!round||!evidence||!expected||typeof artifactPath!=='string')return fail('MISSING_ROUND_TRUST_INPUT');
++ if(!['VERIFIED','CLOSED'].includes(round.status))return fail('ROUND_NOT_READY');
++ if(!goodIds(round.acceptance_ids)||!goodIds(round.test_ids)||!goodIds(round.evidence_ids))return fail('INVALID_ROUND_SET');
++ if(typeof verifyIndependentApproval!=='function'||verifyIndependentApproval(expected)!==true)return fail('INDEPENDENT_HUMAN_APPROVAL_MISSING');
++ if(typeof verifiedProof!=='function')return fail('SIGNED_PROOF_RESOLVER_MISSING');
++ let proof;
++ try{proof=verifiedProof({expected,artifactPath});}catch{return fail('TRUSTED_PROOF_UNAVAILABLE')}
++ if(!proof?.ok||!goodHash(proof.artifact_sha256))return fail('SIGNED_PROOF_NOT_VERIFIED');
++ if(!roundMatches(round,expected,expected))return fail('ROUND_OWNER_AND_REGISTRY_MISMATCH');
++ if(!evidenceValid(evidence,{...expected,artifact_sha256:proof.artifact_sha256}))return fail('EVIDENCE_NOT_BOUND_TO_SIGNED_ARTIFACT');
++ if(typeof readTrustedLedger!=='function')return fail('NO_EXTERNALLY_ANCHORED_LEDGER');
++ let ledger;
++ try{ledger=readTrustedLedger();}catch{return fail('LEDGER_AUTHORITY_UNAVAILABLE')}
++ if(!Array.isArray(ledger?.entries))return fail('LEDGER_SNAPSHOT_INVALID');
++ const verified=inspectLedger({entries:ledger.entries,externallyTrustedHead:ledger.externalHead});
++ if(!verified.ok)return fail('LEDGER_'+verified.code);
++ if(!matchingLedger(ledger.entries,{...expected,artifact_sha256:proof.artifact_sha256}))return fail('SIGNED_EVIDENCE_ABSENT_FROM_LEDGER');
++ return {ok:true,code:'SIGNED_AND_ANCHORED_READ_ONLY',artifact_sha256:proof.artifact_sha256,ledger_head:verified.head};
++}
++
++// Untrusted caller-supplied approval/ledger/gh stubs must never authorize production.
++// Production integration needs fixed protected call sites and independent adapters.
++export function failClosedProductionRound(){return fail('PROTECTED_TRUST_ADAPTER_NOT_DEPLOYED')}
++export {verifyWithTrustedGitHub};
++if(process.argv[1]?.endsWith('R4-CLOSED-ROUND-TRUST-CHECK.mjs')&&process.argv[2]==='authorize'){
++ console.error('R4 review only: no independently deployed trusted Human/CI/CAS adapters');process.exitCode=2;
++}
+diff --git a/harness/scripts/revalidation-proof-authority.mjs b/harness/scripts/revalidation-proof-authority.mjs
+new file mode 100644
+--- /dev/null
++++ b/harness/scripts/revalidation-proof-authority.mjs
+@@ -0,0 +1,39 @@
++// R4 proposed destination: harness/scripts/revalidation-proof-authority.mjs
++// L3 PROTECTED SOURCE CANDIDATE ONLY: this file lives under delivery/audits.
++// Legitimate Governance gates never accept an injected callback as proof of Human identity.
++import {inspectClosedRound} from './revalidation-closure-trust.mjs';
++import {verifyWithTrustedGitHub} from './revalidation-attestation-verify.mjs';
++
++const fail=code=>({ok:false,code});
++const allowedScopes=new Set(['BACKLOG','SCOPE','EVIDENCE']);
++const baseValid=({round,scope})=>allowedScopes.has(scope)&&round!==null&&typeof round==='object'&&
++ ['CLOSED','VERIFIED'].includes(round.status)&&Array.isArray(round.evidence_ids)&&round.evidence_ids.length>0;
++
++/** Pure adapter contract to exercise all three Gate call sites with an isolated test double.
++ *  A reviewer must NEVER wire this dependency-injectable function into a live Gate without
++ *  first installing independent protected authority and a signed immutable expectation.
++ */
++export function inspectProposedProtectedAuthority({round,item,evidence,scope,expected,artifactPath,approvalSigner,ledgerSource,ghCli}){
++ if(!baseValid({round,scope}))return fail('INVALID_CLOSED_ROUND_SCOPE');
++ if(!item||typeof item.backlog_item_id!=='string')return fail('MISSING_BACKLOG_OWNER');
++ if(!expected||typeof artifactPath!=='string'||!artifactPath)return fail('MISSING_SIGNED_EXPECTATION');
++ if(scope==='EVIDENCE'&&(!evidence||!round.evidence_ids.includes(evidence.evidence_id)))return fail('EVIDENCE_NOT_ROUND_OWNED');
++ if(scope!=='EVIDENCE'&&evidence===undefined)return fail('EVIDENCE_LOOKUP_NOT_PROVISIONED');
++ if(typeof approvalSigner!=='function'||typeof ledgerSource!=='function')return fail('INDEPENDENT_TRUST_SERVICES_MISSING');
++ const signed=({expected:ctx,artifactPath:p})=>verifyWithTrustedGitHub({expected:ctx,artifactPath:p,ledger:[],cli:ghCli});
++ return inspectClosedRound({round,evidence,expected,artifactPath,
++  verifiedProof:signed,verifyIndependentApproval:approvalSigner,readTrustedLedger:ledgerSource});
++}
++/** Fixed production entry point used by each protected Gate in the proposed overlay.
++ *  This must remain FAIL-CLOSED until Human-authorized trust adapters are deployed:
++ *  immutable signed expectation lookup, independent signature key, trusted artifact
++ *  fetch, gh runner/attestation verification, and external durable anchored ledger.
++ *  No env var, checked-in JSON, GitHub author label, or caller-provided function is authority.
++ */
++export function verifyClosedRoundForRepo({round,scope}){
++ if(!baseValid({round,scope}))return fail('INVALID_CLOSED_ROUND_SCOPE');
++ return fail('INDEPENDENT_APPROVAL_AND_DURABLE_LEDGER_NOT_PROVISIONED');
++}
++if(process.argv[1]?.endsWith('R4-PROTECTED-AUTHORITY-ENTRY-CANDIDATE.mjs')&&process.argv[2]==='authorize'){
++ console.error('R4 production authority not provisioned; review-only source');process.exitCode=2;
++}
