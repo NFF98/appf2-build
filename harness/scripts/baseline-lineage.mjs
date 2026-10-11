@@ -54,3 +54,46 @@ export const acceptanceSemanticDriftIds=(root,legacyBaselineId,currentBaselineId
 
 export const canPreserveCompletedBaseline=(root,legacyBaselineId,currentBaselineId,acceptanceLinks)=>
   acceptanceSemanticDriftIds(root,legacyBaselineId,currentBaselineId,acceptanceLinks).length===0;
+
+const sameIdSet=(values,expected)=>{
+  const ids=new Set(Array.isArray(values)?values:[]);
+  const wanted=new Set(expected);
+  return ids.size===wanted.size && [...wanted].every(x=>ids.has(x));
+};
+
+// Each record is paired with the chain point it revalidated from: history entries in order, then the current slot.
+export const revalidationRecords=item=>{
+  const out=[];
+  let from=item.build_spec_id;
+  for(const r of Array.isArray(item.revalidation_history)?item.revalidation_history:[]){
+    out.push({r,from});
+    from=r?.target_build_spec_id;
+  }
+  if(item.revalidation) out.push({r:item.revalidation,from});
+  return out;
+};
+
+// Append-only CLOSED revalidations of a DONE item across successive rebaselines; entry k must cover exactly
+// the semantic drift from the previous chain point to its own target. Returns null when no history exists.
+const historyEntryError=(root,item,r,from)=>{
+  const target=r?.target_build_spec_id;
+  if(r?.status!=="CLOSED") return "must be CLOSED";
+  if(!target || target===from || !isBaselineAncestor(root,from,target)) return "target must strictly descend from "+from;
+  const drift=acceptanceSemanticDriftIds(root,from,target,item.acceptance_links);
+  if(!drift.length || !sameIdSet(r.acceptance_ids,drift)) return "must cover exactly the drift "+from+" -> "+target;
+  return null;
+};
+export const revalidationHistoryChain=(root,item,currentBaselineId)=>{
+  const history=item.revalidation_history;
+  if(history===undefined) return null;
+  if(!Array.isArray(history) || !history.length) return {errors:["revalidation_history must be a non-empty array"],end:null,entries:[]};
+  let from=item.build_spec_id;
+  for(const [i,r] of history.entries()){
+    const error=historyEntryError(root,item,r,from);
+    if(error) return {errors:["revalidation_history["+i+"] "+error],end:null,entries:history};
+    from=r.target_build_spec_id;
+  }
+  const errors=from===currentBaselineId || !isBaselineAncestor(root,from,currentBaselineId)
+    ?["revalidation_history must end at a strict ancestor of "+currentBaselineId]:[];
+  return {errors,end:from,entries:history};
+};
