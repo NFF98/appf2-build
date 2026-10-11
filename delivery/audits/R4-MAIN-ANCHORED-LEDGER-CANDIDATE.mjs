@@ -49,15 +49,18 @@ const ancestry=(root,a,b)=>{try{git(root,['merge-base','--is-ancestor',a,b]);ret
  *  This requires GH_TOKEN from an independently trusted Actions job on exact GitHub PR event.
  *  It cannot create a ledger or bootstrap an unsigned genesis state.
  */
+const validGithubPrBinding=(event,baseSha,headSha)=>{
+ const pr=event?.pull_request;
+ const source=pr?.base,tip=pr?.head;
+ return source?.repo?.full_name===REPO&&source?.ref==='main'&&source?.sha===baseSha&&tip?.sha===headSha;
+};
 const authenticatedPrEvent=(baseSha,headSha)=>{
  if(process.env.GITHUB_REPOSITORY!==REPO||process.env.GITHUB_EVENT_NAME!=='pull_request')return fail('UNTRUSTED_GITHUB_EVENT');
  if(!validSHA(baseSha)||!validSHA(headSha))return fail('INVALID_SHA');
  let event;
  try{event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'))}
  catch{return fail('GITHUB_EVENT_NOT_AUTHENTICATED')}
- const pr=event?.pull_request;
- const src=pr?.base,tip=pr?.head;
- if(src?.repo?.full_name!==REPO||src?.ref!=='main'||src?.sha!==baseSha||tip?.sha!==headSha)return fail('PR_BASE_OR_HEAD_NOT_BOUND_TO_GITHUB_EVENT');
+ if(!validGithubPrBinding(event,baseSha,headSha))return fail('PR_BASE_OR_HEAD_NOT_BOUND_TO_GITHUB_EVENT');
  return {ok:true};
 };
 const inspectTrustedGitHubSnapshot=({repoRoot,baseSha,headSha})=>{
