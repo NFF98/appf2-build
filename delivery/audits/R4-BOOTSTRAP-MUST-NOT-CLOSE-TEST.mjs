@@ -8,7 +8,7 @@ const bootstrap={schema_version:1,kind:'TRUST_BOOTSTRAP_ONLY',eligible_for_closu
 const verified=[{attestation:{synthetic:true},verificationResult:{synthetic:true}}];
 const run={id:42,run_attempt:1,status:'completed',conclusion:'success',event:'push',head_sha:H,head_branch:'main',path:bootstrap.workflow,repository:{full_name:bootstrap.repo}};
 const jobs={total_count:1,jobs:[{name:'trust-bootstrap',conclusion:'success',run_attempt:1,steps:[{name:'Attest NON-PRODUCT bootstrap subject',conclusion:'success'}]}]};
-const clone=x=>structuredClone(x),cases=[];
+const clone=x=>JSON.parse(JSON.stringify(x)),cases=[];
 const check=(name,mutate)=>{const input={expected:clone(expected),proof:clone(bootstrap),verified:clone(verified),run:clone(run),jobs:clone(jobs),ledger:[]};mutate?.(input);const result=inspectProof(input);assert.equal(result.ok,false,name);cases.push({name,ok:result.ok,code:result.code});};
 check('N01_REAL_BOOTSTRAP_CANNOT_CLOSE');
 check('N02_FAKE_STATUS_PASS',x=>{x.proof.gate_status='PASS'});
