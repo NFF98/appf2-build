@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "artifact_type": "EXACT_REVIEW_ONLY_PROTECTED_CANDIDATE_READINESS",
+  "canonical_base_sha": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "draft_pr": 364,
+  "decision_authority": {
+    "R1": "Human direct approval, crypto proof pending",
+    "R2": "Human direct approval, crypto proof pending",
+    "R3": "Human Option C isolated POC authorization",
+    "R4": "PENDING",
+    "R5": "NOT_GRANTED",
+    "verified_human_ed25519_signatures": "0/5",
+    "protected_merge_authorized": false,
+    "Cursor_T006_authorized": false
+  },
+  "existing_4file_patch": {
+    "path": "delivery/audits/GOV-CASE-T006-REBIND-001-R4-FOUR-FILE-FAIL-CLOSED-CANDIDATE.patch",
+    "blob": "d8a94354c674fb0c5cce1d558edb0fff4dcdb219",
+    "bytes": 40114,
+    "exact_base_hunks_apply": true,
+    "protected_paths": [
+      {
+        "path": "harness/scripts/validate-backlog.mjs",
+        "current_main_blob": "349906a97ab71c48069208c42874aca9eb290e51",
+        "applies": true
+      },
+      {
+        "path": "harness/scripts/validate-sprint.mjs",
+        "current_main_blob": "d46ed2a4d9eb216ad59ee6d7eb7f0fa1ec0330eb",
+        "applies": true
+      },
+      {
+        "path": "harness/scripts/validate-change-scope.mjs",
+        "current_main_blob": "ce5ce96fd460895f874eb9dae10e81db8b785340",
+        "applies": true
+      },
+      {
+        "path": "harness/scripts/validate-evidence.mjs",
+        "current_main_blob": "de6b12310923ac01989bfa34015c37e9b387a8e5",
+        "applies": true
+      }
+    ],
+    "KNOWN_INCOMPLETE_STUBS": [
+      {
+        "path": "harness/scripts/validate-backlog.mjs",
+        "block": "CLOSED appended round requires externally trusted CI attestation (NOT IMPLEMENTED)"
+      },
+      {
+        "path": "harness/scripts/validate-change-scope.mjs",
+        "block": "do not permit round closure; return false while CI external authority missing"
+      },
+      {
+        "path": "harness/scripts/validate-evidence.mjs",
+        "block": "PASS new security round forbidden until real external verifier"
+      }
+    ],
+    "mergeable_as_complete_amendment": false
+  },
+  "workflow_candidates": [
+    {
+      "proposed_protected_path": ".github/workflows/revalidation-proof.yml",
+      "audit_source": "delivery/audits/R4-REVALIDATION-PROOF-WORKFLOW-CANDIDATE.yml",
+      "blob": "9b412d4a8318a21ee54b56d4dbbd84d353de63ca",
+      "main_only": true,
+      "action_sha_pinned": true,
+      "missing_real_preflight_runner_emitter": true
+    },
+    {
+      "proposed_protected_path": ".github/workflows/revalidation-trust-bootstrap.yml",
+      "audit_source": "delivery/audits/R4-TRUST-BOOTSTRAP-WORKFLOW-CANDIDATE.yml",
+      "blob": "f5fa3125a65eb4f5044b6543888a92d46afcc15e",
+      "main_only": true,
+      "action_sha_pinned": true,
+      "trust_bootstrap_only": true,
+      "cannot_close_tasks": true,
+      "installed": false,
+      "actual_native_signature_verified": false
+    }
+  ],
+  "external_action_sha_pins": {
+    "actions/checkout": "11d5960a326750d5838078e36cf38b85af677262",
+    "actions/setup-node": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+    "actions/attest": "1e69f48acb82d1966a394da916b4c1698aa569d6",
+    "tag_resolution": "GitHub tag refs/tags/v4 read-only REST GitHub API; pins fixed in candidate, tags not used in YAML"
+  },
+  "isolated_executables": [
+    {
+      "path": "delivery/audits/R4-ATTESTATION-VERIFIER.mjs",
+      "blob": "449b06d21a3930e12188a720e248595f44762e7b"
+    },
+    {
+      "path": "delivery/audits/R4-AUTHORIZED-PREFLIGHT.mjs",
+      "blob": "094c0ffdec478b21b091d042d4c1aadc9fd16ead"
+    },
+    {
+      "path": "delivery/audits/R4-REPLAY-LEDGER.mjs",
+      "blob": "3d035633b487fc6dea44d2136e74dd051eb28c6c"
+    },
+    {
+      "path": "delivery/audits/R4-TEST-REPORT-EMITTER.mjs",
+      "blob": "44def52b40c78382c4a7fb5fde920225464c52b3"
+    }
+  ],
+  "test_evidence": {
+    "pre_existing_130_local_cases": "130/130 isolated, synthetic positives only; no GitHub-signed product proof",
+    "cross_module_local_e2e": "30/30, 2 synthetic positives and 28 negative, all four exact GitHub-blob-matched program modules",
+    "cross_module_test_git_blob_only_local": "84f23fe24485e866d017d3adb5807d17eb3a4e85",
+    "cross_module_test_in_repo": false,
+    "cross_module_local_test_sha256": "1a03a459331157835fdd2a2e8d8058c1f6e87015a22b9450bd8355a5f3be5b68",
+    "bootstrap_rejection_test": "10/10 negative; exact GitHub file delivery/audits/R4-BOOTSTRAP-MUST-NOT-CLOSE-TEST.mjs blob d314a69ed2e23f5c9fe37cf7570a120d1d1d585b",
+    "bootstrap_inline_node_execution": "canonical main-push-like env exit 0 subject TRUST_BOOTSTRAP_ONLY no AC; pull_request exit 2 without subject",
+    "new_cumulative_local_cases": 170,
+    "real_attestation_positive": 0,
+    "actual_T006_executable_nine_test_pass": 0
+  },
+  "actual_github_branch_ruleset": {
+    "name": "NFF Build",
+    "ruleset_id": 23969502,
+    "enforcement": "active",
+    "pull_request_required_approving_review_count": 0,
+    "require_code_owner_review": false,
+    "require_last_push_approval": false,
+    "bypass_actors": [],
+    "checks": [
+      "ci",
+      "attack",
+      "governance",
+      "Analyze JavaScript / TypeScript"
+    ],
+    "security_implication": "GitHub ruleset CI status checks do NOT cryptographically establish independent Human R4/R5 approval; Human signing and explicit merge permission still separate"
+  },
+  "twophase_trust_rollout": [
+    {
+      "step": "PRE_HUMAN",
+      "mode": "audit-only exact candidates and local negative tests",
+      "product_status": "HOLD"
+    },
+    {
+      "step": "HUMAN_R4_R5",
+      "mode": "Separate independent stage approvals/signatures; exact candidate reviewed; no implicit merge",
+      "product_status": "HOLD"
+    },
+    {
+      "step": "HUMAN_MERGE_APPROVAL",
+      "mode": "Promote approved protected bootstrap workflow and verified trust adapters only, with exact digest and clean protected CI",
+      "product_status": "HOLD"
+    },
+    {
+      "step": "POST_MERGE_MAIN",
+      "mode": "Trigger main-only bootstrap GitHub attestation of TRUST_BOOTSTRAP_ONLY artifact; independent gh verify; never count as Product PASS",
+      "product_status": "HOLD"
+    },
+    {
+      "step": "POST_AUTHORIZED_BS025_AND_TASK",
+      "mode": "Human-approved L2 Activation/rebind plus separate Cursor T006 execution; real mapped tests on main produce signed per-AC proof; ledger CAS checks",
+      "product_status": "ONLY_AFTER_ACTUAL_EVIDENCE"
+    }
+  ],
+  "not_yet_implemented": [
+    "Human independent Ed25519 signer receipt/docket for R4/R5",
+    "Production trusted expectation input and protected preflight dependency",
+    "Real task-owned Test runner with actual per-Test reports",
+    "Immutable and externally anchored durable compare-and-swap ledger",
+    "Production attestation verifier plugged into all three deliberately fail-closed stubs",
+    "End-to-end full protected code diff in an authorized staging PR",
+    "Live GitHub attestation positive on trusted main after Human approvals"
+  ],
+  "status": "REVIEW_ONLY_NOT_READY_FOR_R4_APPROVAL_OR_R5",
+  "next_action_owner": "ChatGPT Governance",
+  "strict_no_changes": "No main, no protected CI/harness/workflows, no BS025 Activation, no Cursor execution, no T006 status or old T007 mutations"
+}
