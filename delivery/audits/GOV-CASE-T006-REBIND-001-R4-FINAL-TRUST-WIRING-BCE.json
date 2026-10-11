@@ -1,0 +1,154 @@
+{
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "revision": "TRUST_WIRING_INTEGRATION_2026-10-11",
+  "kind": "STRUCTURALLY_INTEGRATED_PROTECTED_CANDIDATE_NOT_AUTHORIZED",
+  "canonical_build_main": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "approval": {
+    "R1": "HUMAN_DIRECT_APPROVED_SIGNATURE_PENDING",
+    "R2": "HUMAN_DIRECT_APPROVED_SIGNATURE_PENDING",
+    "R3": "HUMAN_DIRECT_APPROVED_C_ISOLATED_POC_ONLY",
+    "R4": "PENDING",
+    "R5": "NOT_AUTHORIZED",
+    "human_ed25519_signatures_verified": 0,
+    "protected_approval": false,
+    "task_t006_execution_allowed": false
+  },
+  "patch_sequence": [
+    {
+      "order": 1,
+      "path": "delivery/audits/GOV-CASE-T006-REBIND-001-R4-FOUR-FILE-FAIL-CLOSED-CANDIDATE.patch",
+      "git_blob_sha1": "d8a94354c674fb0c5cce1d558edb0fff4dcdb219",
+      "target": [
+        "harness/scripts/validate-backlog.mjs",
+        "harness/scripts/validate-sprint.mjs",
+        "harness/scripts/validate-change-scope.mjs",
+        "harness/scripts/validate-evidence.mjs"
+      ]
+    },
+    {
+      "order": 2,
+      "path": "delivery/audits/R4-PROTECTED-THREE-GATE-TRUST-WIRING-OVERLAY.patch",
+      "git_blob_sha1": "177a29af578b916efbcce605451aeab7c9684c79",
+      "target": [
+        "harness/scripts/validate-backlog.mjs",
+        "harness/scripts/validate-change-scope.mjs",
+        "harness/scripts/validate-evidence.mjs"
+      ],
+      "wiring": "verifyClosedRoundForRepo mandatory read-only checks in three new-round closure gates"
+    },
+    {
+      "order": 3,
+      "path": "delivery/audits/R4-PROTECTED-TRUST-MODULES-FOUR-NEW-FILES.patch",
+      "git_blob_sha1": "a9d3256ff2eba143a77f326edd09b1d991a4e227",
+      "target": [
+        "harness/scripts/revalidation-attestation-verify.mjs",
+        "harness/scripts/revalidation-ledger.mjs",
+        "harness/scripts/revalidation-closure-trust.mjs",
+        "harness/scripts/revalidation-proof-authority.mjs"
+      ]
+    },
+    {
+      "order": 4,
+      "path": "delivery/audits/R4-REVALIDATION-PROOF-WORKFLOW-CANDIDATE.yml",
+      "git_blob_sha1": "9b412d4a8318a21ee54b56d4dbbd84d353de63ca",
+      "target": [
+        ".github/workflows/revalidation-proof.yml"
+      ],
+      "action_sha_pinned": true
+    },
+    {
+      "order": 5,
+      "path": "delivery/audits/R4-TRUST-BOOTSTRAP-WORKFLOW-CANDIDATE.yml",
+      "git_blob_sha1": "f5fa3125a65eb4f5044b6543888a92d46afcc15e",
+      "target": [
+        ".github/workflows/revalidation-trust-bootstrap.yml"
+      ],
+      "product_pass_claim_allowed": false
+    }
+  ],
+  "proof": {
+    "canonical_source_hunk_replay": {
+      "inputs_verified_exact_base": true,
+      "four_current_main_sources": [
+        {
+          "path": "harness/scripts/validate-backlog.mjs",
+          "original_git_blob": "349906a97ab71c48069208c42874aca9eb290e51",
+          "base_patch_hunks_applied": 1,
+          "trust_overlay_hunks_applied": 2
+        },
+        {
+          "path": "harness/scripts/validate-sprint.mjs",
+          "original_git_blob": "d46ed2a4d9eb216ad59ee6d7eb7f0fa1ec0330eb",
+          "base_patch_hunks_applied": 1,
+          "trust_overlay_hunks_applied": 0
+        },
+        {
+          "path": "harness/scripts/validate-change-scope.mjs",
+          "original_git_blob": "ce5ce96fd460895f874eb9dae10e81db8b785340",
+          "base_patch_hunks_applied": 1,
+          "trust_overlay_hunks_applied": 2
+        },
+        {
+          "path": "harness/scripts/validate-evidence.mjs",
+          "original_git_blob": "de6b12310923ac01989bfa34015c37e9b387a8e5",
+          "base_patch_hunks_applied": 1,
+          "trust_overlay_hunks_applied": 2
+        }
+      ],
+      "all_old_stub_locations_replaced_in_review_only_candidate": true,
+      "original_unapplied_patch_remains_immutable": true
+    },
+    "new_protected_modules": {
+      "temp_git_apply_check": true,
+      "temp_git_apply": true,
+      "all_four_node_check": true,
+      "exact_candidate_patch_blob_sha1": "a9d3256ff2eba143a77f326edd09b1d991a4e227",
+      "source_imports_rewritten_to_protected_relative_paths": true
+    },
+    "new_real_local_attack_tests": [
+      {
+        "module": "R4-CLOSED-ROUND-TRUST-CHECK-TEST.mjs",
+        "module_git_blob": "2fc28789f262bcdeb3f43435e8c0ca9c6afcb0eb",
+        "actual_node_v22_total": 29,
+        "matched": 29,
+        "test_double_positive": 2,
+        "negative": 27
+      },
+      {
+        "module": "R4-PROTECTED-AUTHORITY-ENTRY-TEST.mjs",
+        "module_git_blob": "71c047446b45b970fade959a93c43e7b60ec0b9e",
+        "actual_node_v22_total": 15,
+        "matched": 15,
+        "test_double_positive": 0,
+        "negative": 15
+      }
+    ],
+    "previous_isolated_tests": 188,
+    "cumulative_isolated_tests": 232,
+    "actual_new_closure_signed_attestation": 0,
+    "actual_T006_nine_test_executable_pass": 0
+  },
+  "security": {
+    "gate_reads_do_not_consume_ledger_token": true,
+    "trusted_ledger_writes_require_independent_CAS": true,
+    "unconfigured_production_authority_always_denies": true,
+    "no_synthetic_positive_allowed_to_close_real_round": true,
+    "workflow_proof_signer_not_installed": true,
+    "independent_Human_signatures_absent": true,
+    "external_immutable_replay_store_absent": true,
+    "real_per_Test_issuer_not_installed": true,
+    "actual_GitHub_attestation_positive_missing": true
+  },
+  "code_change_status": {
+    "review_only_files_under_delivery_audits": true,
+    "protected_files_changed": 0,
+    "main_changed": false,
+    "PR_draft": true,
+    "no_merge": true,
+    "no_Cursor_execution": true,
+    "T006": "BLOCKED"
+  },
+  "bce_result": "CANDIDATE_WIRING_COMPLETE_IN_REVIEW_ARTIFACTS_ONLY__PRODUCTION_TRUST_AND_R4_APPROVAL_BLOCKED",
+  "next_action_owner": "ChatGPT Governance"
+}
