@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "artifact_type": "T006_PRE_CURSOR_GOVERNANCE_FACTS_NOT_ACTIVATION",
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "canonical_repository": "NFF98/appf2-build",
+  "canonical_main_commit": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "read_only_sources": {
+    "task": "delivery/sprints/SP-P1-003/tasks.json",
+    "task_blob_sha1": "be439594922f59501e30facb52055929ee32e8f8",
+    "registry_bs024": "build-spec/baselines/BS-P1-024/registries/acceptance-test-registry.json",
+    "registry_bs024_blob_sha1": "505a9f349e1ac245feef0374133acf275fe1db3a",
+    "registry_bs025": "build-spec/baselines/BS-P1-025/registries/acceptance-test-registry.json",
+    "registry_bs025_blob_sha1": "5ba4d4031c6f38e389edd57e306242ac26d63ada",
+    "current_build": "build-spec/CURRENT.json",
+    "current_sprint": "delivery/CURRENT-SPRINT.json"
+  },
+  "task": {
+    "sprint_id": "SP-P1-003",
+    "task_id": "T006",
+    "status": "BLOCKED",
+    "bound_baseline": "BS-P1-024",
+    "title": "Result contract, S03 App surface & Playable App vertical proof",
+    "backlog_item_ids": [
+      "BL-P1-015",
+      "BL-P1-018"
+    ],
+    "dependents": [
+      {
+        "task_id": "T001",
+        "status": "CLOSED"
+      },
+      {
+        "task_id": "T002",
+        "status": "CLOSED"
+      },
+      {
+        "task_id": "T003",
+        "status": "CLOSED"
+      },
+      {
+        "task_id": "T004",
+        "status": "CLOSED"
+      },
+      {
+        "task_id": "T005",
+        "status": "CLOSED"
+      }
+    ],
+    "required_commands": [
+      "npm run gate",
+      "npm run check:types",
+      "npm run check:lint",
+      "npm run build",
+      "npm run test:contract",
+      "npm run test:behavior",
+      "npm run test:runtime",
+      "npm run test:e2e",
+      "npm run test:visual",
+      "npm run test:responsive"
+    ],
+    "allowed_write_paths": [
+      "src/platform/runtime/",
+      "src/app/",
+      "tests/contract/",
+      "tests/behavior/",
+      "tests/runtime/",
+      "tests/e2e/",
+      "tests/visual/",
+      "tests/responsive/",
+      "src/edge/",
+      "src/platform/blueprint/",
+      "tests/api/",
+      "tooling/web/vite.config.ts"
+    ],
+    "parallel_safe": false,
+    "product_decision_allowed": false
+  },
+  "bs025_impact": {
+    "target_baseline": "BS-P1-025",
+    "target_locked": true,
+    "target_activated": false,
+    "canonical_active_baseline": "BS-P1-024",
+    "implementation_enabled": false,
+    "sprint_status": "HOLD",
+    "t006_acceptance_semantic_drift_count": 0,
+    "semantics_comparison": "All 9 exact registry entry JSON objects byte-stable after JSON parse, across BS024 and BS025. Same AC/Test IDs, criterion, proof_scope, required_for_build_freeze, expected_observable.",
+    "requires_new_product_semantics_for_T006_nine": false,
+    "revalidation_rounds_for_other_historical_backlog_items": "SEPARATE: BL008/BL010/BL031, controlled by R4 case; not automatically solved by T006 0-drift"
+  },
+  "t006_nine_acceptances": [
+    {
+      "acceptance_id": "F03-AC-009",
+      "test_id": "TEST-F03-009",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "Result evaluated from result.outputs, not DOM"
+    },
+    {
+      "acceptance_id": "F03-AC-024",
+      "test_id": "TEST-F03-AC-024",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "Result sensitivity available to F16 persistence policy"
+    },
+    {
+      "acceptance_id": "F00-AC-007",
+      "test_id": "TEST-F00-007",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "Validated Blueprint hydrates F03 then APP surface"
+    },
+    {
+      "acceptance_id": "F00-AC-009",
+      "test_id": "TEST-F00-AC-009",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "S03 APP surface exposes Share/Remix/Correction entry"
+    },
+    {
+      "acceptance_id": "F00-AC-010",
+      "test_id": "TEST-F00-010",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "Correction failure preserves current App"
+    },
+    {
+      "acceptance_id": "F00-AC-011",
+      "test_id": "TEST-F00-011",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "Compare accepts New/Keep Previous/Adjust Again"
+    },
+    {
+      "acceptance_id": "F00-AC-012",
+      "test_id": "TEST-F00-AC-012",
+      "proof_scope": "CONTRACT",
+      "criterion": "Keep Previous does not mutate old Blueprint"
+    },
+    {
+      "acceptance_id": "F00-AC-036",
+      "test_id": "TEST-F00-036",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "User chooses modify-this-App or make-my-version; no guessed intent"
+    },
+    {
+      "acceptance_id": "F00-AC-037",
+      "test_id": "TEST-F00-037",
+      "proof_scope": "BEHAVIOR",
+      "criterion": "Inspection Mode returns to same S05 session, context and preview; no nested S05"
+    }
+  ],
+  "acceptance_test_readiness": "REQUIRES_REAL_T006_IMPLEMENTATION_AND_EXECUTABLE_TEST_RESULTS; no GitHub CI proof or 9/9 test status claimed",
+  "strict_promotion_sequence": [
+    "Resolve GOV-CASE-T006-REBIND-001 R4 via independent Human authorization and constitutional trust chain; no self-authorization.",
+    "Complete R5 independent review/approval and exact protected integration separately; no merge without Human approval.",
+    "Activate BS025 using approved Activation Record, with independent governance gate; keep current HOLD until true authorization.",
+    "Governance rebind T006 and Sprint/Task owner without rewriting CLOSED T001-T005 or T007 and without inventing test PASS.",
+    "Human approve Cursor execution separately, then Cursor implement/tests only in allowed paths.",
+    "Run real nine mapped AC/Tests and all required commands, independent BCE implementation audit, Human merge and closure."
+  ],
+  "next_action_owner": "ChatGPT Governance",
+  "human_R4_approval": "PENDING",
+  "human_R5_approval": "NOT_GRANTED",
+  "human_ed25519_independently_verified": "0/5",
+  "cursor_execution_allowed": false,
+  "evidence_for_closure_allowed": false
+}
