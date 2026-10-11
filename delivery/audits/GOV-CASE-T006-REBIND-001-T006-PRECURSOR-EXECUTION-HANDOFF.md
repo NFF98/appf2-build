@@ -47,3 +47,16 @@
 **STOP RULE:** R4/R5/Human signatures 未完備、BS025 Activation 或 Task lease 未成立，T006 不得由 `BLOCKED` 改為執行；不創建實作 PR；不改 T001–T005/T007 CLOSED；不把 Audit-only GitHub Actions SUCCESS 當產品 PASS。
 
 **NEXT ACTION OWNER = ChatGPT Governance。** 這份交接已把 Product 語意重新設計、前置 Task 與測試搜查三種重工排除；真正剩餘工作是可信治理放行與九項產品實作/驗收。
+
+## 核驗現行 Gate 的合法 BS025 Activation 最小構型（**提案，沒有套用**）
+
+來自 exact main `harness/scripts/validate-change-scope.mjs` (blob `ce5ce96fd460895f874eb9dae10e81db8b785340`)、`harness/scripts/validate-sprint.mjs` (blob `d46ed2a4d9eb216ad59ee6d7eb7f0fa1ec0330eb`) 及 `validate-activation.mjs` (blob `9ae99f0f808ab2b97a47304481062150424ba787`) 的直接來源覆核：
+
+- 「HOLD → rebaseline」特例要求 **原** `delivery/CURRENT-SPRINT.json` 為 HOLD、`active_sprint/build_spec/task` 均 null；**新** `build-spec/CURRENT.json` 指向 BS025，並在同一次精確候選變更中出現 `build-spec/activations/BS-P1-025.json`；`delivery/CURRENT-SPRINT.json` 的目標狀態須符合既有 BLOCKED/ACTIVE 守衛。不可只換 baseline 而不寫 Activation Record。
+- 該 rebaseline 允許的控制檔是 `build-spec/CURRENT.json`、`delivery/CURRENT-SPRINT.json`、`delivery/backlog/QUEUE.json`、精確目標 Sprint 的 `manifest.json`／`tasks.json`、`build-spec/activations/BS-P1-025.json`；若含 BD/BF lifecycle，僅限 replacement baseline 實際新增 Delta 及其 source Finding，不能借用一般例外。
+- `validate-activation.mjs` 要求新的 Activation Record 對應已鎖 Baseline、已核准源頭、舊 BS024 → BS025 REBASELINE，以及 exact source commit／approved Delta 的一致性。不可人工把 `implementation_enabled=true` 當核准。
+- `validate-sprint.mjs` 要求新的 active Sprint / manifest / Build CURRENT 同一 BS025，`entry_gate.user_approved===true` 且 `approval_ref` 來自真正 Human；同時最多一個 `IN_PROGRESS/REVIEW` Task。沒有 active Sprint 時 `implementation_enabled` 必須維持 false。
+- `validate-sprint.mjs` 的 CLOSED Task 舊 baseline 容許只在 semantic drift = 0 且所選 Backlog/歷史 revalidation 合法時 preserved；**不能直接把 T001–T005/T007 歷史重寫為 BS025**。
+- 新 Sprint ID／新的執行通道／Task owner 欄位需由正式 Human+Governance 決議，**本審核不創建新 Sprint、不把「SP004/T008」PoC 假代號當真人 Task**。先經 R4/R5 安全授權解決 BL008/BL010/BL031 才能證明 BS025 的 Backlog 完整覆蓋 Gate，不得跳過失敗條件。
+
+**快速結論：** 這是受控且需要 Human approval 的 L2 Activation/rebind，而不是 9 項 AC 語意重設計；它目前不能執行的直接原因是 R4/R5 L3 安全 gate 仍未解、Human 授權鏈與真實 CI trust 待補齊。
