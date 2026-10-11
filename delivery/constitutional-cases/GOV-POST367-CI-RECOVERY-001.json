@@ -1,0 +1,61 @@
+{
+  "case_id": "GOV-POST367-CI-RECOVERY-001",
+  "base_sha": "83323774ec37a4f3307b06478c4bde467552ec8f",
+  "constitution_version": "1.0",
+  "title": "Forward-only lint repair of the constitutional validator after #367",
+  "change_class": "GOVERNANCE_ONLY_SEMANTICS_NEUTRAL",
+  "exact_changed_paths": [
+    "harness/scripts/validate-constitutional-change.mjs"
+  ],
+  "candidate_digest_sha256": "fada681dfec5a900263d38bb2eceef324cdc9ac24c38f6b4e5f5ef47fa0a8853",
+  "candidate_blob_sha1": {
+    "harness/scripts/validate-constitutional-change.mjs": "2c49e5a61849b6f4de62c3f531024f19422ea8d7"
+  },
+  "why5": [
+    {
+      "question": "Why are the ci and governance checks on main 83323774 failing?",
+      "answer": "The push-event `npm run gate` for the #367 merge diffed protected paths without any changed delivery/constitutional-cases docket, so inspectConstitutionalChange reported 'CONSTITUTION: exactly one changed human approval case docket required'.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38140253514/job/114472490430 ; https://github.com/NFF98/appf2-build/actions/runs/38140253434/job/114472490033"
+    },
+    {
+      "question": "Why is a forward-only governance PR required instead of repairing #367 or relaxing the gate?",
+      "answer": "Historical check runs are bound to their own BASE_SHA/HEAD_SHA and cannot be re-satisfied retroactively; ruleset 23969502 requires four checks with no bypass, so the only lawful path is a new PR whose own diff carries a complete docket.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/345#issuecomment-6113687719"
+    },
+    {
+      "question": "Why does the validator file itself need to change?",
+      "answer": "`eslint .` (CI step `npm run check:lint`) reports three no-unused-vars errors in it: RE_SHA256 (line 20), sha (line 25) and the destructured parameter trustPublicKeyB64 (line 108). CI would still fail after the gate step even with a valid docket.",
+      "evidence_ref": "local: git show 83323774:harness/scripts/validate-constitutional-change.mjs | npx eslint --stdin -> 3 errors, EXIT=1 (gov-post367/01-eslint-base.log)"
+    },
+    {
+      "question": "Why is the repair semantics-neutral?",
+      "answer": "The two removed constants had zero references; trustPublicKeyB64 was destructured but never read (Ed25519 attestation is deferred pre-Phase4). Callers may still pass the property, which is ignored exactly as before. A base-vs-candidate differential run over 25 fixtures x 3 key variants produced identical results (0 mismatches) and testConstitutionFailClosed returns 15 for both.",
+      "evidence_ref": "local: gov-post367/02-differential-semantics.log"
+    },
+    {
+      "question": "Why must this be a separate governance-only PR with a docket, not part of #365?",
+      "answer": "harness/ is a constitution-protected governance_only_path, which requires exactly one exact-candidate docket; Sprint is HOLD (active_sprint=null), so validate-change-scope rejects any implementation-root path (src/, tests/, supabase/, package-lock.json) that #365 carries. Mixing them would fail the scope gate and widen the approval surface.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs lines 317-320; harness/scripts/validate-constitutional-change.mjs lines 36-39 and 115-121; delivery/CURRENT-SPRINT.json at 83323774"
+    }
+  ],
+  "negative_tests": [
+    "testConstitutionFailClosed (run by governance-gate): 15 PASS on base and candidate",
+    "differential fixtures: protected change without docket, two dockets, invalid JSON, case id/path mismatch, base SHA mismatch, protocol mismatch, exact-path mismatch, duplicate paths, byte drift, why5 count/evidence, approval missing/null/AI source/wrong decision/wrong scope/blank ref/digest mismatch/zero time/case mismatch all still fail closed with identical errors"
+  ],
+  "rollback": "Revert the merge commit of this PR (git revert <merge-sha>) through a new governance PR carrying its own GOV docket; no data, schema, product or lifecycle state is affected.",
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE_PROVENANCE_REVIEW_REQUIRED",
+  "human_approval": {
+    "case_id": "GOV-POST367-CI-RECOVERY-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "cursor-local-chat c16a61ef-888c-42c2-96d2-fc648fc791e3 transcript line 846 (sha256 a4aa15c774b05448047af300b7d1306c047b05ff71b7f81715b91447a95d0cb5): 'Human: 批准，繼續。' with exact context candidate 1798cce8, BASE 83323774, digest fada681dfec5a900263d38bb2eceef324cdc9ac24c38f6b4e5f5ef47fa0a8853",
+    "candidate_digest_sha256": "fada681dfec5a900263d38bb2eceef324cdc9ac24c38f6b4e5f5ef47fa0a8853",
+    "approved_at_unix": 1791755040
+  },
+  "human_approval_provenance": {
+    "message_timestamp": "2026-10-12T06:44+09:00 (minute precision; seconds unknown, recorded as :00)",
+    "channel": "Local Cursor chat; the message was relayed into the agent session, not posted on GitHub. CI does not authenticate the author.",
+    "independent_check_required": "The reviewer must confirm with the Human that this message is theirs and that it approves this exact digest before merge. Merge needs a separate Human decision."
+  }
+}
