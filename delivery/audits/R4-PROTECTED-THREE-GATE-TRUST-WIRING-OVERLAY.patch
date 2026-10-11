@@ -1,0 +1,46 @@
+diff --git a/harness/scripts/validate-backlog.mjs b/harness/scripts/validate-backlog.mjs
+--- a/harness/scripts/validate-backlog.mjs
++++ b/harness/scripts/validate-backlog.mjs
+@@ -1,1 +1,2 @@
++import { verifyClosedRoundForRepo } from "./revalidation-proof-authority.mjs";
+ import fs from "node:fs";
+@@ -189,5 +190,4 @@
+-    if(r.status==="CLOSED"||r.status==="VERIFIED"){
+-      // There is no independent real-world CI attestation resolver in canon yet.
+-      // Deliberately reject synthetic PASS / JSON / bare hashes.
+-      errors.push(id+" CLOSED appended round requires externally trusted CI attestation (NOT IMPLEMENTED)");
+-    }
++    if(r.status==="CLOSED"||r.status==="VERIFIED"){
++      const trusted=verifyClosedRoundForRepo({round:r,item,scope:"BACKLOG"});
++      if(!trusted.ok) errors.push(id+" new security round lacks independently anchored proof: "+trusted.code);
++    }
+diff --git a/harness/scripts/validate-change-scope.mjs b/harness/scripts/validate-change-scope.mjs
+--- a/harness/scripts/validate-change-scope.mjs
++++ b/harness/scripts/validate-change-scope.mjs
+@@ -1,1 +1,2 @@
++import { verifyClosedRoundForRepo } from "./revalidation-proof-authority.mjs";
+ import fs from "node:fs";
+@@ -128,4 +129,5 @@
+-      if(!exactItemRevalidationClosure(before[j],after[j],ctx))return false;
+-      // BLOCKED: external CI attestation authority is not integrated yet;
+-      // do not permit closed-round changes by merely writing PASS in JSON.
+-      return false;
++      if(!exactItemRevalidationClosure(before[j],after[j],ctx))return false;
++      const trusted=verifyClosedRoundForRepo({round:after[j],item:newItem,scope:"SCOPE"});
++      if(!trusted.ok)return false;
++      restored.push({...newItem,revalidation_rounds:before});closures++;
++      continue;
+diff --git a/harness/scripts/validate-evidence.mjs b/harness/scripts/validate-evidence.mjs
+--- a/harness/scripts/validate-evidence.mjs
++++ b/harness/scripts/validate-evidence.mjs
+@@ -1,1 +1,2 @@
++import { verifyClosedRoundForRepo } from "./revalidation-proof-authority.mjs";
+ import fs from "node:fs";
+@@ -85,3 +86,4 @@
+-    // HARD STOP: no independently authenticated CI attestation trust anchor.
+-    // Never turn a user-controlled status:PASS or locator/hash into CI truth.
+-    if(e.status==="PASS")errors.push(e.evidence_id+" externally trusted CI result NOT IMPLEMENTED for new security round");
++    if(e.status==="PASS"){
++      const trusted=verifyClosedRoundForRepo({round:r,evidence:e,scope:"EVIDENCE"});
++      if(!trusted.ok)errors.push(e.evidence_id+" untrusted new security round PASS: "+trusted.code);
++    }
