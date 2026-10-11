@@ -1,0 +1,89 @@
+{
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "mode": "REVIEW_ONLY",
+  "main_sha": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "repo": "NFF98/appf2-build",
+  "actual_ruleset_observation": {
+    "id": 23969502,
+    "name": "NFF Build",
+    "enforcement": "active",
+    "applies_to_default_branch": true,
+    "no_bypass_actors": true,
+    "requires_pr_merge": true,
+    "no_delete": true,
+    "no_nonfastforward": true,
+    "strict_status_check_policy": true,
+    "status_checks": [
+      "ci",
+      "attack",
+      "governance",
+      "Analyze JavaScript / TypeScript"
+    ],
+    "required_approving_reviews": 0,
+    "not_human_identity_authority": true
+  },
+  "actual_local_git_cas": {
+    "test": "git update-ref refs/heads/main writerA old-main -> success; stale writerB same expected old-main -> failure",
+    "assertion_count": 5,
+    "matched": 5,
+    "results_sha256": "8f817e52e39f1cb0d233b9bb4228095b4c13dec5d23795c589807516d26b70c7",
+    "not_claimed_equivalent_to_github_merge_api": true
+  },
+  "main_ledger_candidate": {
+    "source": "delivery/audits/R4-MAIN-ANCHORED-LEDGER-CANDIDATE.mjs",
+    "source_git_blob": "9e425533953406a53872d3e64c34cc1654da4279",
+    "source_sha256": "10a6f6603f787cd5fd9297090cc8733cd2ec745233557d61fb22a7c05b3546d8",
+    "test_source": "delivery/audits/R4-MAIN-ANCHORED-LEDGER-TEST.mjs",
+    "test_blob": "b699c329f570ade167d7a3a1a7cb875ee657a28c",
+    "node_version": "v22.16.0",
+    "tested": 19,
+    "matched": 19,
+    "synthetic_positive": 1,
+    "negative": 18,
+    "production_merging_cli": "exit 2",
+    "tested_live_github_merge": false,
+    "proposed_path": "delivery/audits/revalidation-proof-ledger.json",
+    "proposed_ledger_currently_installed": false
+  },
+  "bootstrap_minimal_protected_source": {
+    "target": ".github/workflows/revalidation-trust-bootstrap.yml",
+    "source": "delivery/audits/R4-TRUST-BOOTSTRAP-WORKFLOW-CANDIDATE.yml",
+    "source_git_blob": "f5fa3125a65eb4f5044b6543888a92d46afcc15e",
+    "sha256": "f5186b085b7e02a3e8faca28c6c2032518e067ad54ed70b4a53f4c08a8234ade",
+    "protected_single_source_digest_sha256": "aa750e6de97810e61b6b1adb1928b5481b22f9c5d6ece62fe75b085877f1643b",
+    "exact_patch": "delivery/audits/R4-BOOTSTRAP-ONE-FILE-EXACT-CANDIDATE.patch",
+    "patch_git_blob": "38af563878488be9c8f0d22d7120bf2472efea5f",
+    "git_apply_check": true,
+    "git_apply": true,
+    "exact_byte_comparison": true,
+    "not_constitutional_full_digest": true,
+    "live_workflow_installed": false
+  },
+  "constitution_obligation": {
+    "required_docket_path": "delivery/constitutional-cases/GOV-CASE-T006-REBIND-001.json",
+    "required_canonical_stage_dossiers": [
+      "delivery/constitutional-dossiers/GOV-CASE-T006-REBIND-001-R1.md",
+      "delivery/constitutional-dossiers/GOV-CASE-T006-REBIND-001-R2.md",
+      "delivery/constitutional-dossiers/GOV-CASE-T006-REBIND-001-R3.md",
+      "delivery/constitutional-dossiers/GOV-CASE-T006-REBIND-001-R4.md",
+      "delivery/constitutional-dossiers/GOV-CASE-T006-REBIND-001-R5.md"
+    ],
+    "all_exact_changed_paths_in_candidate_digest": true,
+    "case_docket_excluded_from_digest": true,
+    "independent_human_ed25519_signatures_verified": "0/5",
+    "r4_human_approved": false,
+    "r5_human_approved": false
+  },
+  "terminal_state": {
+    "current_baseline": "BS-P1-024",
+    "target_baseline": "BS-P1-025",
+    "sprint": "HOLD",
+    "T006": "BLOCKED",
+    "implementation_enabled": false,
+    "prod_signer_bootstrap_positive": 0,
+    "real_t006_test_positive": 0
+  },
+  "next_owner": "ChatGPT Governance until R4 dossier ready; Human required for any R4/R5 cryptographic authorization",
+  "conclusion": "PROTECTED_MAIN_LEDGER_ARCHITECTURE_LOCAL_FEASIBILITY_CONFIRMED_LIVE_TRUST_NOT_AUTHORIZED"
+}
