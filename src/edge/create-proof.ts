@@ -19,7 +19,6 @@ export const POP_TIMESTAMP_HEADER = "X-Appf2-PoP-Timestamp";
 export const RESERVED_CREATE_KEY_PREFIX = "appf2-create-v1.";
 export const POP_MAX_CLOCK_SKEW_MS = 90_000;
 
-const KEY_THUMBPRINT_TAG = "APPF2_CREATE_KEY_V1\u0000";
 const P256_SPKI_BYTES = 91;
 const P1363_SIGNATURE_BYTES = 64;
 const MAX_SPKI_CHARS = 128;
@@ -38,7 +37,7 @@ export interface MutationProofRequest {
 }
 
 export interface VerifiedMutationProof {
-  /** base64url SHA-256 over the domain tag and the exact SPKI bytes. */
+  /** base64url SHA-256 over the exact SPKI DER bytes. */
   readonly keyThumbprint: string;
 }
 
@@ -65,12 +64,9 @@ async function sha256(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayB
   return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
 }
 
+/** BS-P1-025 F01-API-ID-001A item 2: `base64url(SHA256(public SPKI DER bytes))`, no domain tag. */
 export async function keyThumbprint(spki: Uint8Array<ArrayBuffer>): Promise<string> {
-  const tag = new TextEncoder().encode(KEY_THUMBPRINT_TAG);
-  const material = new Uint8Array(tag.byteLength + spki.byteLength);
-  material.set(tag, 0);
-  material.set(spki, tag.byteLength);
-  return encodeBase64Url(await sha256(material));
+  return encodeBase64Url(await sha256(spki));
 }
 
 export function reservedCreateIdempotencyKey(thumbprint: string): string {
