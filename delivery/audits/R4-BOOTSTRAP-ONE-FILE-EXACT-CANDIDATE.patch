@@ -1,0 +1,49 @@
+diff --git a/.github/workflows/revalidation-trust-bootstrap.yml b/.github/workflows/revalidation-trust-bootstrap.yml
+new file mode 100644
+--- /dev/null
++++ b/.github/workflows/revalidation-trust-bootstrap.yml
+@@ -0,0 +1,44 @@
++# GOV-CASE-T006-REBIND-001 R4 - AUDIT-ONLY CONTENT
++# Proposed protected destination: .github/workflows/revalidation-trust-bootstrap.yml
++# NOT INSTALLED OR ENABLED; requires independent Human R4->R5->merge chain.
++name: Revalidation Trust Bootstrap (proposed only)
++on:
++  push:
++    branches: [main]
++    paths:
++      - '.github/workflows/revalidation-trust-bootstrap.yml'
++      - '.github/workflows/revalidation-proof.yml'
++permissions:
++  contents: read
++jobs:
++  trust-bootstrap:
++    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
++    runs-on: ubuntu-latest
++    permissions:
++      contents: read
++      id-token: write
++      attestations: write
++    steps:
++      - name: Checkout pinned main source
++        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
++      - name: Set up Node 22
++        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
++        with:
++          node-version: '22'
++      - name: Emit non-product trust bootstrap subject
++        shell: bash
++        run: |
++          node --input-type=module <<'NODE'
++          import fs from 'node:fs';
++          const env=process.env;
++          if(env.GITHUB_REPOSITORY!=='NFF98/appf2-build'||env.GITHUB_REF!=='refs/heads/main'||env.GITHUB_EVENT_NAME!=='push'||!/^[0-9a-f]{40}$/.test(env.GITHUB_SHA||''))process.exit(2);
++          const artifact={schema_version:1,kind:'TRUST_BOOTSTRAP_ONLY',eligible_for_closure:false,acceptance_ids:[],test_ids:[],product_ci_mode:'NOT_EXECUTED',repo:env.GITHUB_REPOSITORY,source_sha:env.GITHUB_SHA,ref:env.GITHUB_REF,workflow:'.github/workflows/revalidation-trust-bootstrap.yml',run_id:Number(env.GITHUB_RUN_ID),run_attempt:Number(env.GITHUB_RUN_ATTEMPT)};
++          if(!Number.isSafeInteger(artifact.run_id)||!Number.isSafeInteger(artifact.run_attempt))process.exit(2);
++          fs.writeFileSync('trust-bootstrap.json',JSON.stringify(artifact)+'\n',{flag:'wx'});
++          NODE
++      - name: Attest NON-PRODUCT bootstrap subject
++        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
++        with:
++          subject-path: trust-bootstrap.json
++# A successful bootstrap attestation is NOT a Product or T006 Test PASS.
++# If the workflow is not Human-authorized, no real signature should be generated.
