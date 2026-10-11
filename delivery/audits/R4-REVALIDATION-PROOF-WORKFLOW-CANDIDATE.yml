@@ -20,11 +20,11 @@ jobs:
       attestations: write
     steps:
       - name: Checkout canonical source
-        uses: actions/checkout@v4 # MUST PIN reviewed full action SHA before any authorization
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # reviewed refs/tags/v4 on 2026-10-11
         with:
           fetch-depth: 0
       - name: Setup Node
-        uses: actions/setup-node@v4 # MUST PIN reviewed full action SHA before any authorization
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # reviewed refs/tags/v4 on 2026-10-11
         with:
           node-version: '22'
       - name: Install immutable dependencies
@@ -38,9 +38,9 @@ jobs:
       - name: Generate test proof manifest
         run: node harness/scripts/emit-revalidation-proof.mjs --results /tmp/revalidation-executed-tests.json --output /tmp/revalidation-proof.json
       - name: Attest proof artifact
-        uses: actions/attest@v4 # MUST PIN reviewed full action SHA before any authorization
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # reviewed refs/tags/v4 on 2026-10-11
         with:
           subject-path: /tmp/revalidation-proof.json
 # FAIL-CLOSED: preflight, runner and issuer above are intentionally NOT IN MAIN.
 # This file is illustrative and cannot be considered ready until these scripts,
-# action pins, workflow permissions, and unit/negative CI are independently approved.
+# workflow permissions, proof issuer, and executable negative CI are independently approved.
