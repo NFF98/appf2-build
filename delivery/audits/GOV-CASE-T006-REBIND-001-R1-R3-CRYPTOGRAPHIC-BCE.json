@@ -1,0 +1,89 @@
+{
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "record_type": "INDEPENDENT_HUMAN_ED25519_SIGNATURE_VERIFICATION",
+  "record_version": "1.0",
+  "verified_on": "2026-10-11",
+  "verification_source": "Human-uploaded R1.signature.json, R2.signature.json, R3.signature.json inspected independently; GitHub Actions trusted public-key env (job 114354440983) cross-checked; immutable canonical GitHub dossiers separately compared by source and Draft PR git blob SHA",
+  "repository": "NFF98/appf2-build",
+  "canonical_main_at_verification": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "trust_anchor": {
+    "github_actions_public_key_variable": "APPF2_CONSTITUTION_PUBKEY_B64",
+    "public_key_fingerprint_sha256": "67b77efc92f6e0296ef7841d916fd8bb95eef2a25711cfc31b9e45645e3a0076",
+    "provenance": "GitHub Actions CI job 114354440983 runner environment (verified in GitHub returned logs) and independently matched signer inspect output",
+    "key_type": "Ed25519",
+    "private_key_accessed": false
+  },
+  "cryptographic_verification": {
+    "protocol": "APPF2-CONSTITUTION-1.0",
+    "payload_encoding": "Buffer.from(JSON.stringify(approvalPayload))",
+    "signature_verification": "cryptography Ed25519PublicKey.verify and Node.js crypto.verify (two independent verifiers)",
+    "previous_signature_digest_method": "sha256(decoded_signature_64_bytes)",
+    "chain_order": [
+      "R1",
+      "R2",
+      "R3"
+    ],
+    "times_monotonically_increasing": true,
+    "sha256_of_audit_only_local_verifier": "9a1ec8f37c526d2003ecf504302771b11e6ed28249afeb2546e640fe74b5126a",
+    "local_node_negative_matrix": {
+      "total": 14,
+      "positive": 1,
+      "negative": 13,
+      "matched": 14
+    },
+    "independently_valid_signatures": 3,
+    "required_signatures_for_constitutional_protected_merge": 5,
+    "signature_bytes_in_this_public_audit_record": false
+  },
+  "receipts": [
+    {
+      "stage": "R1",
+      "human_direct_approval_source_commit": "fc538abb9d4f1838c3639e0a7fd818f26aab3ae5",
+      "approved_dossier_sha256": "50f4a19124080876691563f01652ec82a72088afa1b258404ae27d057a43f453",
+      "git_dossier_blob": "1373d7611225436358339fab954a474f719045ad",
+      "human_signed_at_unix": 1791683575,
+      "uploaded_receipt_file_sha256": "3110098ea31eefe825d686e0b916960947c044a7bad165c2cdb623ae1b8456b5",
+      "verified_signature_sha256": "3d68e376ee3fdc977b6eeef1df4be68601ff7a7836a9811e7a47446a636e68f6",
+      "valid": true
+    },
+    {
+      "stage": "R2",
+      "human_direct_approval_source_commit": "17851adaff39bbd004e3235d7ed153edae7315ea",
+      "approved_dossier_sha256": "88134edf64b5ddf2a61c1fed1a56dc73c8a58a32b654276b54380f37101ce141",
+      "git_dossier_blob": "828215d0e889563e30726b0e1573123eb00e2475",
+      "human_signed_at_unix": 1791683665,
+      "uploaded_receipt_file_sha256": "879edd0bd262d867a0855cc6014c549a4f540286581922f9e96e397458676712",
+      "verified_signature_sha256": "8242857c30d2b4c68d8d47e056862680370a4f943ef06946104cc63ab61e7ed9",
+      "valid": true
+    },
+    {
+      "stage": "R3",
+      "human_direct_approval_source_commit": "254c57a924839fb88a39748681ec628f9568dcfa",
+      "approved_dossier_sha256": "c296035868e48fa187d5d089c83fc70ffb4d193d11c5cb3cf1b1ce8ee748be0a",
+      "git_dossier_blob": "022acf7b87fa0cdc01954c478b9ad98dc4875db9",
+      "human_signed_at_unix": 1791683692,
+      "uploaded_receipt_file_sha256": "c4600b6d4fc26340e4404a92a37c34b7c83984ddcd2b82315e721473a0f8a669",
+      "verified_signature_sha256": "02c4aa57d8bf270429341b136bf53e6f6c807d2613b24c1ee065c337eaf21b74",
+      "valid": true
+    }
+  ],
+  "final_chain_head_signature_sha256": "02c4aa57d8bf270429341b136bf53e6f6c807d2613b24c1ee065c337eaf21b74",
+  "source_release_and_privacy": {
+    "raw_signatures_remain_user_uploaded_not_committed_to_public_audit_pr": true,
+    "private_key_and_passphrase_not_collected": true,
+    "this_normalized_report_alone_does_not_fulfill_signed_constitutional_docket": true
+  },
+  "status": {
+    "R1": "INDEPENDENT_ED25519_SIGNATURE_VERIFIED",
+    "R2": "INDEPENDENT_ED25519_SIGNATURE_VERIFIED",
+    "R3": "INDEPENDENT_ED25519_SIGNATURE_VERIFIED",
+    "R4": "HUMAN_DECISION_PENDING",
+    "R5": "NOT_AUTHORIZED",
+    "constitutional_docket_materialized": false,
+    "protected_trust_workflow_installed": false,
+    "t006": "BLOCKED",
+    "sprint": "HOLD",
+    "bs_p1_025_activated": false
+  },
+  "next_action_owner": "ChatGPT Governance to prepare R4 human decision scope and exact trust-bootstrap candidate; Human solely decides R4, then R5, independent protected implementation merge"
+}
