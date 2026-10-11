@@ -43,15 +43,19 @@
     "differential fixtures: protected change without docket, two dockets, invalid JSON, case id/path mismatch, base SHA mismatch, protocol mismatch, exact-path mismatch, duplicate paths, byte drift, why5 count/evidence, approval missing/null/AI source/wrong decision/wrong scope/blank ref/digest mismatch/zero time/case mismatch all still fail closed with identical errors"
   ],
   "rollback": "Revert the merge commit of this PR (git revert <merge-sha>) through a new governance PR carrying its own GOV docket; no data, schema, product or lifecycle state is affected.",
-  "approval_status": "PENDING_HUMAN_EXACT_CANDIDATE_DECISION",
-  "human_approval": null,
-  "human_approval_required_shape": {
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE_PROVENANCE_REVIEW_REQUIRED",
+  "human_approval": {
     "case_id": "GOV-POST367-CI-RECOVERY-001",
     "decision": "APPROVE_EXACT_CANDIDATE",
     "scope": "EXACT_PR_DIFF",
     "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "<URL of the direct Human message approving this exact digest - to be supplied by the Human, not by an agent>",
+    "human_message_ref": "cursor-local-chat c16a61ef-888c-42c2-96d2-fc648fc791e3 transcript line 846 (sha256 a4aa15c774b05448047af300b7d1306c047b05ff71b7f81715b91447a95d0cb5): 'Human: 批准，繼續。' with exact context candidate 1798cce8, BASE 83323774, digest fada681dfec5a900263d38bb2eceef324cdc9ac24c38f6b4e5f5ef47fa0a8853",
     "candidate_digest_sha256": "fada681dfec5a900263d38bb2eceef324cdc9ac24c38f6b4e5f5ef47fa0a8853",
-    "approved_at_unix": "<integer Unix seconds of that Human message>"
+    "approved_at_unix": 1791755040
+  },
+  "human_approval_provenance": {
+    "message_timestamp": "2026-10-12T06:44+09:00 (minute precision; seconds unknown, recorded as :00)",
+    "channel": "Local Cursor chat; the message was relayed into the agent session, not posted on GitHub. CI does not authenticate the author.",
+    "independent_check_required": "The reviewer must confirm with the Human that this message is theirs and that it approves this exact digest before merge. Merge needs a separate Human decision."
   }
 }
