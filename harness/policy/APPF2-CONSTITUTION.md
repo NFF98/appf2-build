@@ -4,6 +4,18 @@
 >
 > Canonical owner：`NFF98/appf2-build/harness/policy/APPF2-CONSTITUTION.md`，上位於 `AGENTS.md` 的一般執行約定；不得推翻 `NFF98/appf2-design/working/` 的 Product Truth、已鎖定的 Build Spec、既有更嚴格的安全 Gate。法律與 Gate 衝突，採較嚴格者並停止執行。
 
+## Phase 1–3 暫行優先條款｜治理密碼學簽章延後至 Phase 4
+
+Human 2026-10-11 明確裁定：**治理用 Ed25519 公私鑰設定、R1–R5 五筆獨立密碼學簽章，以及每關逐次審批程序，從目前產品交付的強制前置條件移至 Phase 4 才開始實施。** 此修訂僅在本治理 PR 經獨立審核及 Human 明確合併、進入 canonical `main` 後生效；未合併前不得自行跳過既有 Gate。
+
+Phase 1–3 的 L3 受保護變更改為：必須提交真實的五個 Why 和反證、精確 changed paths／base SHA／candidate SHA-256、rollback、負面安全測試，以及**一次由 Human 本人明確針對精確候選的審定**。審定來源記在 `delivery/constitutional-cases/GOV-*.json` 的 `human_approval`，包括 `case_id`、`source_kind=DIRECT_HUMAN_MESSAGE`、`human_message_ref`、`approved_at_unix`、`decision=APPROVE_EXACT_CANDIDATE`、`scope=EXACT_PR_DIFF` 與 `candidate_digest_sha256`。R1–R5 的技術面（必要性、事實、替代方案、差異、限制）可在**一份合併審查**完成，不要求五次互動。
+
+**無法用程式驗證人類身分**：上述欄位只能證明候選內容完整性及存在審批參照，無法驗證參照不是 AI 假造。獨立 BCE + Human 手動查驗 Human 自己的決定仍屬強制，不能將 GitHub AI 帳號貼文、Cursor 報告、CI log 或模型填寫欄位冒充真正的 Human approval。不得宣稱達到 Ed25519 等級的不可偽造性。
+
+依舊強制：Human 最終獨立 Merge 核准、全部必要 CI 與測試、BCE、locked Product/Build Spec、真實 Scope Gate、Sprint Activation、單次 Cursor lease；**任何未核准的受保護變更必須 FAIL CLOSED**。這項調整不涉及產品端 **P-256 PoP**（CREATE／answers／compile 防冒用簽章），產品安全絕不因此降級。
+
+Phase 4 需**另案**由 Human 審定新的強身份證明及 Ed25519 遷移／恢復機制，並附測試與回滾，不得自動從本暫行條款假定任何未來的密鑰或核准已存在。Phase 1–3 暫行條款在與下列舊 R1–R5 強制逐關文字衝突時優先；不影響其他保護機制。
+
 ## 0. 制憲權與第一案
 
 Human 2026-10-10 授權啟動本法入庫流程；本次是「制憲候選案」，**不是**未來任一修憲案的豁免先例。制憲候選 PR 必須獲正式 Human merge 核准才生效。制憲流程不能為自身創造額外的 Task/Cursor 實作權限；只准限縮治理檔案。
@@ -28,7 +40,7 @@ Human 2026-10-10 授權啟動本法入庫流程；本次是「制憲候選案」
 | --- | --- | --- | --- |
 | **L1 一般 Build（行政／執行）** | 不改 Product semantics、已鎖定的 SPEC/Acceptance、Agent 權限或安全 Gate；只按既有契約實作、修 Bug、測試 | `NFF98/appf2-build`：active locked Build Spec → 已批准 Sprint/Task → `src/`、`tests/` 等 Task `allowed_write_paths`；`validate-change-scope.mjs` + `validate-sprint.mjs` + CI | Human Sprint/Task 權限；Cursor 執行後獨立 BCE、Evidence、另行 Human merge／closure |
 | **L2 SPEC／REBIND（修法／產品契約）** | 改需求、行為、架構契約、Acceptance／Test 的規範意義、Baseline 綁定或 Design-to-Build 投影；不改上位安全治理 | **先** `NFF98/appf2-design/working/`（Product Truth）→ Human Design/Delta 審查 → Build Freeze → `appf2-build/build-spec/baselines/BS-*` **新建** immutable Baseline → `build-spec/activations/`、Backlog/Sprint 正式 REBIND | Design Human approval + Freeze/Activation Gate + 獨立 CI/BCE；舊 locked baseline 永不改寫 |
-| **L3 憲法級（修憲／上位治理）** | 改 AI/Human 權限、安全政策、Gate、CI 保護、受保護依賴（包含 `package.json`／`package-lock.json`）或憲法本身 | 本檔 `harness/policy/APPF2-CONSTITUTION.md` 為 Build/Delivery 治理 owner，`AGENTS.md` 通知 Agent；`validate-constitutional-change.mjs`、`governance-gate.mjs` 在 CI 執行 | 強制 5 Why + 依序五次 Human 核准 R1–R5 + 獨立 CI/BCE + **另一筆** Human merge approval |
+| **L3 憲法級（修憲／上位治理）** | 改 AI/Human 權限、安全政策、Gate、CI 保護、受保護依賴（包含 `package.json`／`package-lock.json`）或憲法本身 | 本檔 `harness/policy/APPF2-CONSTITUTION.md` 為 Build/Delivery 治理 owner，`AGENTS.md` 通知 Agent；`validate-constitutional-change.mjs`、`governance-gate.mjs` 在 CI 執行 | Phase 1–3：5 Why + 一次精確 Human 決定 + 獨立 CI/BCE + **另一筆** Human merge approval；Phase 4 再啟用五關密碼學簽章 |
 
 **跨層處理**：同一變更若同時涉及 L2 產品契約和 L3 安全規則，**兩組獨立核准鏈均須完成**，不得只走最高層就豁免 Product Design；也不得以一般 REBIND 包裝修憲。L1 實作衍生的 SPEC gap 只能先建 Finding，退回 L2；不能把 code 反向當 Product truth。
 
@@ -37,12 +49,12 @@ Human 2026-10-10 授權啟動本法入庫流程；本次是「制憲候選案」
 ## 2. 五層防 AI 誤判
 
 1. **談論 ≠ 核准**。問題、建議、假設、問句、「OK」「差不多」「那就裝」「核准下一步」「批准執行」等未含特定 Case＋階段＋案卷版本者，一律不算「修憲階段」核准。當人明示「目前沒批准」時，不得反向推論。
-2. **一關一訊息**。R1…R5 必須有五個彼此獨立、按序、人類主動提交的核准。Human 看完當關定稿案卷後，在**後續**訊息批准；不能一次打包、不能事前預批。任一關退回、撤銷則 HARD STOP。
+2. **Phase 1–3 可一次審定**。Human 看完整精確候選及 5 Why 後，一次明確批准該候選即可；不得把較早的架構討論或未固定的差異當作精確 PR 批准。Phase 4 再建立逐關審議與密碼學身分機制。任一退回／撤銷立即 HARD STOP。
 3. **綁定精確標的**。每次 Human 審批明列 `case_id`、`R1..R5`、`dossier_version`、Hash／SHA 或對應 GitHub 審議文件、批准範圍與排除事項。AI 不能只依語感補足，不能把一次核准拿去另一個 Case。
 4. **Human 來源驗證**。AI 用工具貼的 GitHub Issue comment、PR review、Bot/Watcher RESULT、Agent 生成文本，即使使用 Human 的 GitHub 身分，都**不算** Human 獨立核准。模型不准自簽、代簽、代貼後自判；核准須由 Human 的直接訊息或 Human 親自操作的、可與 AI 操作區分的可信身分路徑建立。**GitHub API 的顯示帳號本身無法辨認人類與共用憑證的 AI**，故不得單靠此通過審核。
 5. **失效與重審**。若 dossier、5 Why、依賴版本、路徑、PR diff、base SHA、執行邊界、風險或影響有重大變化，先前適用的許可失效，退回相關關卡；不可由 AI 自判「不重大」。若無法驗明真偽，狀態一律 `BLOCKED`。
 
-## 3. 五次獨立 Human 審議
+## 3. R1–R5 審查重點（Phase 1–3 合併審查；Phase 4 才恢復獨立密碼學簽章）
 
 | 關卡 | 必備案卷、審查目標 | 核准效力 |
 |---|---|---|
@@ -52,7 +64,7 @@ Human 2026-10-10 授權啟動本法入庫流程；本次是「制憲候選案」
 | R4 修訂草案 | 精確檔案 diff、相依/lock、版本與 SHA、回滾方案、負面攻擊測試、獨立 BCE | 同意提交最終審議 |
 | R5 最終授權 | 逐檔限定權限、dossier/PR 的精確版本、時效、允許與禁止事項 | 僅批准提出限縮候選修改 |
 
-**五次批准以外還必須**：GitHub CI 全 PASS、獨立 BCE audit、Human 明確 `merge` 核准、合併後重新驗 canonical main。R5 絕不授權 Cursor 擅自實作、合併、部署、啟動下一 Task、觸碰別案，必須另行具體授權。
+**Phase 1–3 一次精確 Human 審定之外還必須**：GitHub CI 全 PASS、獨立 BCE audit、Human 明確 `merge` 核准、合併後重新驗 canonical main。下列表格是五個內容審查主題，並非當前五次獨立核准的強制流程。單次精確審定也絕不授權 Cursor 擅自實作、合併、部署、啟動下一 Task、觸碰別案，必須另行具體授權。
 
 ## 4. 每案強制 5 WHY 模板
 
@@ -65,8 +77,8 @@ W5 為何現行正常授權流程不能在不放寬保護下解決（引用明�
 
 ## 5. 可機器強制與不可假稱的範圍
 
-- Repo CI 的 constitutional validator 必須偵測 governance-only 變更和 `package-lock.json`，對缺少五關案卷證據的案件一律 FAIL；不可因文件中寫 `APPROVED`、模型產生的五段文字或 Issue 標籤而自動判定 Human 身分。
-- CI 可驗證檔案/範圍、結構、版本、5 個步驟的存在、變更 digest 與 base SHA，**不能**單憑同一個 GitHub 帳號證明審批者不是 AI。對 provenance 有疑慮時必須 Human 親自覆核。未建立可信的獨立簽章/保護規則前，不得宣稱達到不可偽造的人類身分證明。
+- Repo CI 的 constitutional validator 必須偵測 governance-only 變更和 `package-lock.json`。Phase 1–3 對缺少精確內容摘要／變更指紋／Human 決定參照的案件一律 FAIL；五筆 Ed25519 鏈延後 Phase 4。任何模型生成的表面 `APPROVED` 或 Issue 標籤都不能自動證明 Human 身分，必須再由 Human 獨立查驗。
+- CI 可驗證檔案/範圍、結構、版本、變更 digest 與 base SHA，**不能**單憑同一個 GitHub 帳號證明審批者不是 AI。對 provenance 有疑慮時必須 Human 親自覆核。未建立可信的獨立簽章/保護規則前，不得宣稱達到不可偽造的人類身分證明。
 - 一般 ACTIVE Sprint 的 `validate-change-scope.mjs` 限制**繼續有效**；驗完五關也不會自動繞過。需要額外合法治理 transition，絕不可先跳過 Gate。
 - 本制憲候選案的一次性 bootstrap 只限 2026-10-10 指定 main SHA 與有限路徑；**不得**授權後續 `pg` 或 `package.json` 例外。
 - 任何變更本憲法、其 CI Gate、核准身份驗證或安全例外，亦須遵守本法，不能自我赦免。
