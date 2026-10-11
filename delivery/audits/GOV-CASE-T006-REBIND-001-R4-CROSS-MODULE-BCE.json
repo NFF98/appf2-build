@@ -1,0 +1,73 @@
+{
+  "case_id": "GOV-CASE-T006-REBIND-001",
+  "stage": "R4",
+  "type": "REAL_LOCAL_NODE_CROSS_MODULE_BCE_REVIEW_ONLY",
+  "canonical_main": "7bf5c9466e681719463560c2676ccb82ab097f0e",
+  "source_exact": [
+    {
+      "path": "delivery/audits/R4-PROOF-GATE-INTEGRATION-CANDIDATE.mjs",
+      "git_blob_sha1": "b1584b48410bcea91649528c2e53ca907e19b5d4",
+      "local_sha256": "9de7f6c55389917a7ee313045b0fa06783d32a360f5b5180159c0adb2e40a0cc"
+    },
+    {
+      "path": "delivery/audits/R4-PROOF-GATE-INTEGRATION-TEST.mjs",
+      "git_blob_sha1": "3b7608e6ba7f5735859ed4cf98fe799bf7ed5489",
+      "local_sha256": "9ef6d42bdb3e3ea8802e0b48ca64f199961667b2765ae7f6f0119ba7c7a96f50"
+    }
+  ],
+  "local_execution": {
+    "node": "v22.16.0",
+    "command": "node delivery/audits/R4-PROOF-GATE-INTEGRATION-TEST.mjs",
+    "cases": 18,
+    "matched": 18,
+    "synthetic_positive": 1,
+    "adversarial_negative": 17,
+    "result_json_sha256": "7192d6e8cfb353028a129e2d913c515efbb2cc0d20dfff39aa2d5bb29150fb06",
+    "actual_external_github_attestation_verified": 0
+  },
+  "boundary_covers": [
+    "Human independent approval must be external",
+    "git ancestry must be externally verified",
+    "Task+Sprint+registry must be approved",
+    "actual gh attestation verifier called via injected command in local test only",
+    "exact GitHub run/job metadata required",
+    "stable ledger snapshot/externally anchored head required",
+    "atomically append exact artifact digest and reject duplicate/replay",
+    "no production fallback to JSON PASS"
+  ],
+  "production_mode": {
+    "direct_entry": "node delivery/audits/R4-PROOF-GATE-INTEGRATION-CANDIDATE.mjs verify",
+    "actual_exit_code": 2,
+    "external_adapters_replaced_by_trusted_production": false,
+    "authorized_to_change_protected_rules": false
+  },
+  "bootstrap_test": {
+    "path": "delivery/audits/R4-BOOTSTRAP-MUST-NOT-CLOSE-TEST.mjs",
+    "git_blob_sha1": "d314a69ed2e23f5c9fe37cf7570a120d1d1d585b",
+    "actual_node_negative_cases": 10,
+    "matched": 10,
+    "provenance_smoke_may_not_close_T006": true
+  },
+  "full_chain_local_bce_totals": {
+    "legacy_individual_tests": 130,
+    "prior_4_module_integration_tests": 30,
+    "bootstrap_attestation_negative_tests": 10,
+    "additional_full_bridge_integration_tests": 18,
+    "local_tests_total": 188,
+    "new_real_product_nine_tests_pass": 0,
+    "real_human_signed_approval_count": 0,
+    "real_github_attestation_count": 0
+  },
+  "upstream_workflow_candidate_sha1": "9b412d4a8318a21ee54b56d4dbbd84d353de63ca",
+  "bootstrap_workflow_candidate_sha1": "f5fa3125a65eb4f5044b6543888a92d46afcc15e",
+  "resolved_risk": "The three former isolated modules now have an explicit auditable invocation contract; implementation still cannot authorize before externally configured real trust roots and Human R4/R5.",
+  "unresolved_security": [
+    "No independent Human signed approvals 0/5",
+    "No issued GitHub native attestation from protected canonical main",
+    "No external durable atomic compare-and-swap backend",
+    "Three protected patch fail-closed stubs still require real verifier integration",
+    "No actual T006 nine tests / no Human Cursor authorization"
+  ],
+  "status": "ISOLATED_LINKAGE_PASS_FORMAL_R4_TO_R5_BLOCKED",
+  "next_owner": "ChatGPT Governance"
+}
