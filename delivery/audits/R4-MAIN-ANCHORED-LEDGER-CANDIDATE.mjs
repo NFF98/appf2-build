@@ -5,7 +5,6 @@ import fs from 'node:fs';
 import {inspectLedger} from './R4-REPLAY-LEDGER.mjs';
 
 const REPO='NFF98/appf2-build';
-const MAIN='refs/heads/main';
 const DEFAULT_RULESET=23969502;
 const LEDGER_PATH='delivery/audits/revalidation-proof-ledger.json';
 const SHA=/^[0-9a-f]{40}$/;
