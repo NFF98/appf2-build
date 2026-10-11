@@ -17,12 +17,10 @@ export const CONSTITUTION_BOOTSTRAP_FILES=Object.freeze([
 ]);
 export const CONSTITUTION_STAGES=Object.freeze(["R1","R2","R3","R4","R5"]);
 
-const RE_SHA256=/^[0-9a-f]{64}$/;
 const RE_SHA=/^[0-9a-f]{40}$/;
 const RE_CASE=/^GOV-[A-Z0-9-]{3,90}$/;
 const sorted=xs=>[...xs].sort();
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-const sha=bytes=>createHash("sha256").update(bytes).digest("hex");
 const fail=(errors,cond,msg)=>{if(!cond) errors.push("CONSTITUTION: "+msg);};
 
 // Control and evidence record updates (e.g. approved Rebaseline/Activation)
@@ -105,7 +103,7 @@ const checkManualHumanApproval=(docket,digest,errors)=>{
     "pre-Phase4 exact-candidate Human approval evidence required; independent manual provenance check still mandatory");
 };
 
-export function inspectConstitutionalChange({changed,base,cs,build,policy,root,trustPublicKeyB64}){
+export function inspectConstitutionalChange({changed,base,cs,build,policy,root}){
   const errors=[],protectedChanged=changed.filter(p=>isConstitutionProtected(p,policy));
   if(!protectedChanged.length) return {errors,constitutional:false,bootstrap:false};
   if(isOneTimeConstitutionFounding({changed,base,cs,build})){
