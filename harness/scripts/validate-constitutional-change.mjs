@@ -1,6 +1,6 @@
 // GOV-CONST-001: fail-closed constitutional review, real Human signatures,
 // and SHA-locked, exact-path, once-only founding bootstrap.
-import { createHash, createPublicKey, generateKeyPairSync, sign as signApproval, verify as verifySignature } from "node:crypto";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -65,15 +65,6 @@ const loadDocket=(root,rel,errors)=>{
   try{return JSON.parse(readSafe(root,rel)?.toString("utf8")||"");}
   catch{errors.push("CONSTITUTION: docket missing/invalid");return null;}
 };
-const humanKey=(raw,errors)=>{
-  try{
-    if(!raw) throw Error("missing");
-    const key=createPublicKey(Buffer.from(raw,"base64").toString("utf8"));
-    if(key.asymmetricKeyType!=="ed25519") throw Error("not Ed25519");
-    return key;
-  }catch{errors.push("CONSTITUTION: independently configured Human Ed25519 public key missing or invalid");return null;}
-};
-
 const checkIdentity=({docket,changed,casePath,base,root,errors})=>{
   const id=docket.case_id,changedOther=changed.filter(p=>p!==casePath);
   fail(errors,RE_CASE.test(id||"") && casePath==="delivery/constitutional-cases/"+id+".json","case identity/path invalid");
@@ -95,56 +86,23 @@ const checkWhy5=(d,errors)=>{
   fail(errors,valid,"five evidence-linked Why answers required");
 };
 
-const approvalPayload=({docket,rec,stage,i,base,previous,digest})=>({
-  protocol:"APPF2-CONSTITUTION-1.0",
-  case_id:docket.case_id,
-  stage,
-  stage_number:i+1,
-  canonical_base_sha:base,
-  dossier_sha256:rec.dossier_sha256,
-  previous_signature_sha256:previous,
-  candidate_digest_sha256:i===4?digest:null,
-  decision:i===4?"AUTHORIZE_EXACT_CANDIDATE":"CONTINUE_REVIEW",
-  human_message_ref:rec.human_message_ref,
-  approved_at_unix:rec.approved_at_unix
-});
-const checkOneStage=({docket,rec,stage,i,base,previous,digest,key,root,errors})=>{
-  const rel="delivery/constitutional-dossiers/"+docket.case_id+"-"+stage+".md";
-  const blob=readSafe(root,rel);
-  fail(errors,rec.stage===stage &&
-    blob!==null && rec.dossier_sha256===sha(blob) &&
-    RE_SHA256.test(rec.dossier_sha256||"") &&
-    docket.exact_changed_paths?.includes(rel),
-    stage+" must bind an immutable evidence dossier in the exact PR");
-  fail(errors,typeof rec.human_message_ref==="string" && rec.human_message_ref.trim().length>0,
-    stage+" requires separate direct Human evidence reference");
-  fail(errors,Number.isSafeInteger(rec.approved_at_unix) && rec.approved_at_unix>0,
-    stage+" requires chronological signed Human approval time");
-  const sig=typeof rec.signature_base64==="string"?rec.signature_base64:"";
-  const encoded=Buffer.from(JSON.stringify(approvalPayload({
-    docket,rec,stage,i,base,previous,digest
-  })));
-  const validSig=/^[A-Za-z0-9+/=]+$/.test(sig) && Boolean(key) &&
-    verifySignature(null,encoded,key,Buffer.from(sig,"base64"));
-  fail(errors,validSig,stage+" must have a valid independent Human Ed25519 signature");
-  return sha(Buffer.from(sig,"base64"));
-};
-const checkStages=({docket,base,digest,key,root,errors})=>{
-  if(!Array.isArray(docket.stages) || docket.stages.length!==5){
-    errors.push("CONSTITUTION: exactly five signed, independent Human decisions required");
-    return;
-  }
-  let prev="GENESIS",last=0;
-  for(let i=0;i<5;i++){
-    const rec=docket.stages[i]||{};
-    prev=checkOneStage({
-      docket,rec,stage:CONSTITUTION_STAGES[i],i,base,previous:prev,
-      digest,key,root,errors
-    });
-    fail(errors,Number.isSafeInteger(rec.approved_at_unix) &&
-      rec.approved_at_unix>last,CONSTITUTION_STAGES[i]+" approval order must increase");
-    last=rec.approved_at_unix||last;
-  }
+// PRE-PHASE4 (Human 2026-10-11): defer Ed25519 *administrative* signatures
+// and sequential R1-R5 approvals. Preserve exact diff/digest + Human decision
+// evidence and independent final PR merge. CI cannot independently prove
+// that an approval ref comes from a person: a Human reviewer MUST check it.
+// Phase4 requires a separate policy change to restore cryptographic attestation.
+const checkManualHumanApproval=(docket,digest,errors)=>{
+  const approval=docket.human_approval||{};
+  fail(errors,approval.case_id===docket.case_id &&
+    approval.decision==="APPROVE_EXACT_CANDIDATE" &&
+    approval.scope==="EXACT_PR_DIFF" &&
+    approval.source_kind==="DIRECT_HUMAN_MESSAGE" &&
+    typeof approval.human_message_ref==="string" &&
+    approval.human_message_ref.trim().length>0 &&
+    approval.candidate_digest_sha256===digest &&
+    Number.isSafeInteger(approval.approved_at_unix) &&
+    approval.approved_at_unix>0,
+    "pre-Phase4 exact-candidate Human approval evidence required; independent manual provenance check still mandatory");
 };
 
 export function inspectConstitutionalChange({changed,base,cs,build,policy,root,trustPublicKeyB64}){
@@ -162,72 +120,56 @@ export function inspectConstitutionalChange({changed,base,cs,build,policy,root,t
   if(!docket) return {errors,constitutional:true,bootstrap:false};
   const digest=checkIdentity({docket,changed,casePath:cases[0],base,root,errors});
   checkWhy5(docket,errors);
-  const key=humanKey(trustPublicKeyB64,errors);
-  checkStages({docket,base,digest,key,root,errors});
+  checkManualHumanApproval(docket,digest,errors);
   return {errors,constitutional:true,bootstrap:false};
 }
 
-// CI-only ephemeral signing key; never the Human's real private key.
-const testSignedFiveStageCase=()=>{
-  const {publicKey,privateKey}=generateKeyPairSync("ed25519");
-  const trusted=Buffer.from(publicKey.export({format:"pem",type:"spki"})).toString("base64");
-  const root=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-constitutional-test-"));
+// CI-only ephemeral manual-attestation integrity fixture. NOT a Human identity proof.
+const testManualApprovalCase=()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-prephase4-test-"));
   const id="GOV-CASE-TEST-001",base="a".repeat(40);
   const casePath="delivery/constitutional-cases/"+id+".json";
-  const docPaths=CONSTITUTION_STAGES.map(stage=>
-    "delivery/constitutional-dossiers/"+id+"-"+stage+".md");
-  const changed=["package.json",...docPaths,casePath];
-  const makeFile=(p,value)=>{
+  const contentPath="package.json";
+  const write=(p,v)=>{
     fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});
-    fs.writeFileSync(path.join(root,p),value);
+    fs.writeFileSync(path.join(root,p),v);
   };
-  const check=(ok,label)=>{if(!ok) throw Error("CONSTITUTION SIGNATURE TEST FAIL: "+label);};
+  const check=(ok,label)=>{if(!ok)throw Error("PREPHASE4 CASE TEST FAIL: "+label);};
   try{
-    makeFile("package.json",JSON.stringify({name:"test",dependencies:{pg:"8.0.0"}}));
-    for(const [i,p] of docPaths.entries()) makeFile(p,"Human finalised R"+(i+1)+" dossier v1");
-    const digest=contentDigest(root,changed.filter(p=>p!==casePath));
+    write(contentPath,JSON.stringify({name:"test",dependencies:{pg:"8.0.0"}}));
+    const digest=contentDigest(root,[contentPath]);
     const docket={
       case_id:id,base_sha:base,constitution_version:"1.0",
-      exact_changed_paths:changed.filter(p=>p!==casePath),
-      candidate_digest_sha256:digest,
-      why5:CONSTITUTION_STAGES.map(stage=>({
-        question:"Why "+stage+"?",answer:"Evidence-led test",evidence_ref:"CI-ONLY"
-      })),
-      stages:[]
+      exact_changed_paths:[contentPath],candidate_digest_sha256:digest,
+      why5:Array.from({length:5},(_,i)=>({question:"Why "+(i+1)+"?",answer:"Test observation",evidence_ref:"LOCAL-CI"})),
+      human_approval:{
+        case_id:id,source_kind:"DIRECT_HUMAN_MESSAGE",
+        human_message_ref:"CI-ONLY-NONHUMAN-PLACEHOLDER",
+        approved_at_unix:1791600000,decision:"APPROVE_EXACT_CANDIDATE",
+        scope:"EXACT_PR_DIFF",candidate_digest_sha256:digest
+      }
     };
-    let previous="GENESIS";
-    for(let i=0;i<5;i++){
-      const stage=CONSTITUTION_STAGES[i];
-      const rec={
-        stage,
-        dossier_sha256:sha(readSafe(root,docPaths[i])),
-        human_message_ref:"TEST-ONLY-DIRECT-HUMAN-R"+(i+1),
-        approved_at_unix:1791600000+i*120
-      };
-      const payload=approvalPayload({docket,rec,stage,i,base,previous,digest});
-      rec.signature_base64=signApproval(
-        null,Buffer.from(JSON.stringify(payload)),privateKey
-      ).toString("base64");
-      docket.stages.push(rec);
-      previous=sha(Buffer.from(rec.signature_base64,"base64"));
-    }
-    makeFile(casePath,JSON.stringify(docket));
+    write(casePath,JSON.stringify(docket));
     const args={
-      changed,base,policy:{governance_only_paths:["package.json"]},
-      root,trustPublicKeyB64:trusted,cs:null,build:null
+      changed:[contentPath,casePath],base,
+      policy:{governance_only_paths:[contentPath]},root,trustPublicKeyB64:""
     };
     check(inspectConstitutionalChange(args).errors.length===0,
-      "five real independent chained stage signatures must pass");
-    const altered=JSON.parse(JSON.stringify(docket));
-    altered.stages[2].human_message_ref="AI-DESCRIBED-SIGNATURE";
-    makeFile(casePath,JSON.stringify(altered));
-    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("R3")),
-      "AI must not change meaning/evidence of prior Human signature");
-    makeFile(casePath,JSON.stringify(docket));
-    makeFile("package.json",JSON.stringify({name:"test",dependencies:{pg:"9.0.0"}}));
-    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("PR bytes changed after approval")),
-      "candidate dependency drift after R5 signature must fail");
-    return 3;
+      "complete manual-decision metadata passes integrity only, NOT Human provenance");
+    const missing=JSON.parse(JSON.stringify(docket));delete missing.human_approval;
+    write(casePath,JSON.stringify(missing));
+    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("Human approval evidence")),
+      "missing Human decision reference must fail closed");
+    const malformed=JSON.parse(JSON.stringify(docket));
+    malformed.human_approval.source_kind="AI_GENERATED_COMMENT";
+    write(casePath,JSON.stringify(malformed));
+    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("Human approval evidence")),
+      "known AI-authored evidence kind must fail closed");
+    write(casePath,JSON.stringify(docket));
+    write(contentPath,JSON.stringify({name:"test",dependencies:{pg:"9.0.0"}}));
+    check(inspectConstitutionalChange(args).errors.some(x=>x.includes("PR bytes changed")),
+      "candidate byte drift after manual approval must fail closed");
+    return 4;
   }finally{fs.rmSync(root,{recursive:true,force:true});}
 };
 
@@ -264,5 +206,5 @@ export function testConstitutionFailClosed(){
   });
   expect(!routine.constitutional && !routine.errors.length,
     "ordinary control record keeps existing independent governance gates");count++;
-  return count+testSignedFiveStageCase();
+  return count+testManualApprovalCase();
 }

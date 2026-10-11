@@ -59,7 +59,7 @@ if(base && !/^0+$/.test(base)){
   });
   fail.push(...result.errors);
   if(result.bootstrap && !result.errors.length) note.push("GOV-CONST-001 narrow one-time bootstrap verified against exact old main SHA.");
-  if(result.constitutional && !result.bootstrap) note.push("Constitutional amendment: signature-and-digest checks required; current Sprint write scope remains independent.");
+  if(result.constitutional && !result.bootstrap) note.push("Constitutional amendment: pre-Phase4 exact Human-decision reference and byte digest required; Human provenance independently verified by reviewer, NOT authenticated by CI; Sprint scope remains independent.");
 }
 try{ const count=testConstitutionFailClosed(); note.push("Constitution negative-scope self tests: "+count+" PASS."); }
 catch(error){ fail.push(String(error)); }
