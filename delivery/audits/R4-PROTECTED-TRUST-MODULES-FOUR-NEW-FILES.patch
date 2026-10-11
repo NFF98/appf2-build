@@ -150,7 +150,7 @@ diff --git a/harness/scripts/revalidation-closure-trust.mjs b/harness/scripts/re
 new file mode 100644
 --- /dev/null
 +++ b/harness/scripts/revalidation-closure-trust.mjs
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,72 @@
 +// GOV-CASE-T006-REBIND-001: review-only exact closed-round verifier.
 +// NEVER install in protected harness without independent R4/R5 and merge approval.
 +// This validation is READ-ONLY: CI gates must not consume a replay token on each read.
@@ -179,25 +179,41 @@ new file mode 100644
 +const matchingLedger=(rows,e)=>rows.filter(x=>x.key===expectedKey(e)&&x.event?.artifact_sha256===e.artifact_sha256&&
 + x.event?.baseline_id===e.baseline_id&&x.event?.run_attempt===e.run_attempt).length===1;
 +
-+export function inspectClosedRound({round,evidence,expected,artifactPath,verifiedProof,verifyIndependentApproval,readTrustedLedger}){
-+ if(!round||!evidence||!expected||typeof artifactPath!=='string')return fail('MISSING_ROUND_TRUST_INPUT');
-+ if(!['VERIFIED','CLOSED'].includes(round.status))return fail('ROUND_NOT_READY');
-+ if(!goodIds(round.acceptance_ids)||!goodIds(round.test_ids)||!goodIds(round.evidence_ids))return fail('INVALID_ROUND_SET');
-+ if(typeof verifyIndependentApproval!=='function'||verifyIndependentApproval(expected)!==true)return fail('INDEPENDENT_HUMAN_APPROVAL_MISSING');
-+ if(typeof verifiedProof!=='function')return fail('SIGNED_PROOF_RESOLVER_MISSING');
-+ let proof;
-+ try{proof=verifiedProof({expected,artifactPath});}catch{return fail('TRUSTED_PROOF_UNAVAILABLE')}
++const validateAuthorityInputs=x=>{
++ if(!x.round||!x.evidence||!x.expected||typeof x.artifactPath!=='string')return fail('MISSING_ROUND_TRUST_INPUT');
++ if(!['VERIFIED','CLOSED'].includes(x.round.status))return fail('ROUND_NOT_READY');
++ if(!goodIds(x.round.acceptance_ids)||!goodIds(x.round.test_ids)||!goodIds(x.round.evidence_ids))return fail('INVALID_ROUND_SET');
++ if(typeof x.verifyIndependentApproval!=='function'||x.verifyIndependentApproval(x.expected)!==true)return fail('INDEPENDENT_HUMAN_APPROVAL_MISSING');
++ if(typeof x.verifiedProof!=='function')return fail('SIGNED_PROOF_RESOLVER_MISSING');
++ return null;
++};
++const fetchVerifiedArtifact=x=>{
++ try{return x.verifiedProof({expected:x.expected,artifactPath:x.artifactPath})}
++ catch{return fail('TRUSTED_PROOF_UNAVAILABLE')}
++};
++const validateProofBinding=(x,proof)=>{
 + if(!proof?.ok||!goodHash(proof.artifact_sha256))return fail('SIGNED_PROOF_NOT_VERIFIED');
-+ if(!roundMatches(round,expected,expected))return fail('ROUND_OWNER_AND_REGISTRY_MISMATCH');
-+ if(!evidenceValid(evidence,{...expected,artifact_sha256:proof.artifact_sha256}))return fail('EVIDENCE_NOT_BOUND_TO_SIGNED_ARTIFACT');
-+ if(typeof readTrustedLedger!=='function')return fail('NO_EXTERNALLY_ANCHORED_LEDGER');
++ if(!roundMatches(x.round,x.expected,x.expected))return fail('ROUND_OWNER_AND_REGISTRY_MISMATCH');
++ if(!evidenceValid(x.evidence,{...x.expected,artifact_sha256:proof.artifact_sha256}))return fail('EVIDENCE_NOT_BOUND_TO_SIGNED_ARTIFACT');
++ return null;
++};
++const validateAnchoredLedger=(x,proof)=>{
++ if(typeof x.readTrustedLedger!=='function')return fail('NO_EXTERNALLY_ANCHORED_LEDGER');
 + let ledger;
-+ try{ledger=readTrustedLedger();}catch{return fail('LEDGER_AUTHORITY_UNAVAILABLE')}
++ try{ledger=x.readTrustedLedger()}catch{return fail('LEDGER_AUTHORITY_UNAVAILABLE')}
 + if(!Array.isArray(ledger?.entries))return fail('LEDGER_SNAPSHOT_INVALID');
-+ const verified=inspectLedger({entries:ledger.entries,externallyTrustedHead:ledger.externalHead});
-+ if(!verified.ok)return fail('LEDGER_'+verified.code);
-+ if(!matchingLedger(ledger.entries,{...expected,artifact_sha256:proof.artifact_sha256}))return fail('SIGNED_EVIDENCE_ABSENT_FROM_LEDGER');
-+ return {ok:true,code:'SIGNED_AND_ANCHORED_READ_ONLY',artifact_sha256:proof.artifact_sha256,ledger_head:verified.head};
++ const checked=inspectLedger({entries:ledger.entries,externallyTrustedHead:ledger.externalHead});
++ if(!checked.ok)return fail('LEDGER_'+checked.code);
++ if(!matchingLedger(ledger.entries,{...x.expected,artifact_sha256:proof.artifact_sha256}))return fail('SIGNED_EVIDENCE_ABSENT_FROM_LEDGER');
++ return {ok:true,code:'SIGNED_AND_ANCHORED_READ_ONLY',artifact_sha256:proof.artifact_sha256,ledger_head:checked.head};
++};
++export function inspectClosedRound(x){
++ const guard=validateAuthorityInputs(x);
++ if(guard)return guard;
++ const signed=fetchVerifiedArtifact(x);
++ const binding=validateProofBinding(x,signed);
++ if(binding)return binding;
++ return validateAnchoredLedger(x,signed);
 +}
 +
 +// Untrusted caller-supplied approval/ledger/gh stubs must never authorize production.
