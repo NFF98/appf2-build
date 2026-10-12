@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import { AppSession } from "../app-surface/app-session.js";
-import { AppSurface, type AppSurfaceEntry } from "../app-surface/AppSurface.js";
+import { AppSurface, type EntryHandoff } from "../app-surface/AppSurface.js";
 import { CreateWorkspace } from "../create/CreateWorkspace.js";
 import type { CreationController } from "../create/creation-controller.js";
 import type { CreationSession } from "../create/creation-session.js";
@@ -20,8 +20,11 @@ type AppProps = {
   readonly launcher: AppLauncher;
 };
 
-/** S05A / S05B, O01 Share and O02 Correction are not part of this build; their S03 entries leave the App as it is. */
-const handOffUnavailable: (entry: AppSurfaceEntry) => void = () => undefined;
+/**
+ * No owner of S05A / S05B (F06), O01 Share (F05) or O02 Correction (F16) is part of this build, so every S03 entry
+ * is reported unavailable and S03 tells the User so in place, leaving the App as it is.
+ */
+const handOffUnavailable = (): EntryHandoff => "UNAVAILABLE";
 
 type ValidatedTarget = { readonly intentId: string; readonly contentHash: string };
 

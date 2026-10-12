@@ -1348,6 +1348,44 @@ ol {
   display: none;
 }
 
+/* Room below the last App content so the fixed notice never covers it. */
+.s03-with-notice {
+  padding-bottom: 112px;
+}
+
+.s03-notice-region {
+  position: fixed;
+  inset: auto 0 24px;
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.s03-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 560px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+  background: var(--surface-0);
+  box-shadow: var(--elevation-2);
+  color: var(--ink-900);
+  pointer-events: auto;
+}
+
+.s03-notice-text {
+  flex: 1;
+}
+
+.s03-notice-dismiss {
+  flex: none;
+  min-height: var(--touch-target);
+}
+
 .s03-sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -1773,6 +1811,15 @@ ol {
 
   .runtime-frame {
     padding: 16px;
+  }
+
+  .s03-with-notice {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 112px);
+  }
+
+  .s03-notice-region {
+    bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 12px);
+    padding: 0 12px;
   }
 
   .s03-bottom-nav {

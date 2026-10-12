@@ -9,6 +9,18 @@ import { changeEntryFor, type AppSession, type ChangeChoice, type ChangeEntry } 
 /** S03 entries handed to their owning surfaces (S05A / S05B, O01 Share, O02 Correction). */
 export type AppSurfaceEntry = ChangeEntry | { readonly destination: "O01" } | { readonly destination: "O02" };
 
+/** What the owner of an entry did with it; UNAVAILABLE means no owner in this build can take it. */
+export type EntryHandoff = "HANDED_OFF" | "UNAVAILABLE";
+
+type EntryDestination = AppSurfaceEntry["destination"];
+
+const UNAVAILABLE_COPY: Readonly<Record<EntryDestination, string>> = {
+  S05A: "「修改這個 App」目前還不能使用，這個 App 不會被更改。",
+  S05B: "「改成我的版本」目前還不能使用，這個 App 不會被更改。",
+  O01: "「分享」目前還不能使用，你的 App 和目前的結果都還在。",
+  O02: "「調整結果」目前還不能使用，你的 App 和目前的結果都還在。"
+};
+
 /** S05-origin Inspection Mode: S03 only presents the return path; the S05 session itself stays with its owner. */
 export interface InspectionContext {
   readonly origin: "COMPOSER" | "PREVIEW";
@@ -18,9 +30,12 @@ export interface InspectionContext {
 type AppSurfaceProps = {
   readonly session: AppSession;
   readonly onHome: () => void;
-  readonly onEntry: (entry: AppSurfaceEntry) => void;
+  readonly onEntry: (entry: AppSurfaceEntry) => EntryHandoff;
   readonly inspection?: InspectionContext;
 };
+
+/** Bound to the App version it was raised on, so it never outlives that App. */
+type UnavailableNotice = { readonly destination: EntryDestination; readonly sequence: number; readonly contentHash: string };
 
 const RETURN_COPY = {
   COMPOSER: { full: "返回修改畫面", short: "返回修改" },
@@ -128,14 +143,32 @@ function ChangeSheet({ onChoose, onClose }: { readonly onChoose: (choice: Change
   );
 }
 
+/** Polite, non-modal feedback for an entry no owner could take; it sits beside the App and never covers it. */
+function EntryNotice({ notice, onDismiss }: { readonly notice: UnavailableNotice | null; readonly onDismiss: () => void }) {
+  return (
+    <div className="s03-notice-region" role="status" aria-live="polite">
+      {notice === null ? null : (
+        <div key={notice.sequence} className="s03-notice" data-entry-destination={notice.destination}>
+          <p className="s03-notice-text">{UNAVAILABLE_COPY[notice.destination]}</p>
+          <button type="button" className="btn btn-link s03-notice-dismiss" onClick={onDismiss}>
+            知道了
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * S03 APP surface: minimal appf2 Shell chrome around the Generated App, which stays the primary content. The Shell
- * hands Share / Modify / Remix / Correction to their owners and never mutates the Runtime or its Blueprint.
+ * hands Share / Modify / Remix / Correction to their owners and never mutates the Runtime or its Blueprint; an entry
+ * whose owner is unavailable is answered in place and leaves the App, its result and the focused control as they are.
  */
 export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceProps) {
   const { current } = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const { app, contentHash } = current;
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [notice, setNotice] = useState<UnavailableNotice | null>(null);
   const mainRef = useRef<HTMLElement>(null);
   const modifyRef = useRef<HTMLButtonElement>(null);
   const [presenter, setPresenter] = useState<RuntimeProcessingPresenter | null>(null);
@@ -156,15 +189,22 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
     sheetWasOpen.current = sheetOpen;
   }, [sheetOpen]);
 
+  const enter = (entry: AppSurfaceEntry): void => {
+    const handoff = onEntry(entry);
+    setNotice((previous) =>
+      handoff === "UNAVAILABLE" ? { destination: entry.destination, sequence: (previous?.sequence ?? 0) + 1, contentHash } : null
+    );
+  };
+  const visibleNotice = notice?.contentHash === contentHash ? notice : null;
   const choose = (choice: ChangeChoice): void => {
     setSheetOpen(false);
-    onEntry(changeEntryFor(choice, contentHash));
+    enter(changeEntryFor(choice, contentHash));
   };
   const closeSheet = (): void => setSheetOpen(false);
   const returnCopy = inspection === undefined ? null : RETURN_COPY[inspection.origin];
 
   return (
-    <div className="s03">
+    <div className={visibleNotice === null ? "s03" : "s03 s03-with-notice"}>
       <header className="s03-header" inert={sheetOpen}>
         <button type="button" className="s03-home" aria-label="回到首頁" onClick={onHome}>
           <Brand />
@@ -182,7 +222,7 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
               </button>
             </>
           ) : null}
-          <button type="button" className="btn btn-primary s03-action s03-desktop-only" onClick={() => onEntry({ destination: "O01" })}>
+          <button type="button" className="btn btn-primary s03-action s03-desktop-only" onClick={() => enter({ destination: "O01" })}>
             分享
           </button>
           <OverflowMenu onHome={onHome} disabled={sheetOpen} />
@@ -199,7 +239,7 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
       <main className="s03-main" ref={mainRef} tabIndex={-1} aria-label={title} inert={sheetOpen}>
         <div className="s03-processing">{presenter === null ? null : <RuntimeProcessingLayer presenter={presenter} />}</div>
         <GeneratedApp app={app} />
-        <ResultSurface app={app} onCorrection={() => onEntry({ destination: "O02" })} />
+        <ResultSurface app={app} onCorrection={() => enter({ destination: "O02" })} />
       </main>
       <nav className="s03-bottom-nav" aria-label="App 導覽" inert={sheetOpen}>
         <ul className="s03-bottom-list">
@@ -220,12 +260,15 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
             )}
           </li>
           <li>
-            <button type="button" className="s03-nav-item" onClick={() => onEntry({ destination: "O01" })}>
+            <button type="button" className="s03-nav-item" onClick={() => enter({ destination: "O01" })}>
               分享
             </button>
           </li>
         </ul>
       </nav>
+      <div className="s03-notice-host" inert={sheetOpen}>
+        <EntryNotice notice={visibleNotice} onDismiss={() => setNotice(null)} />
+      </div>
       {sheetOpen ? <ChangeSheet onChoose={choose} onClose={closeSheet} /> : null}
     </div>
   );

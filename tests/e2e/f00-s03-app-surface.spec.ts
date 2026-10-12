@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
-import { composer, createButton } from "./support/f00-flow.js";
+import { composer, createButton, press } from "./support/f00-flow.js";
 import { APP_ORIGIN, S03WorkerHost } from "./support/s03-worker-host.js";
 
 const PROMPT = "幫我做一個朋友聚餐依人數分帳的小工具";
@@ -82,38 +82,98 @@ test("TEST-F00-007 VALIDATED Blueprint is delivered, admitted, F03-hydrated and 
   await attachScreenshot(page, testInfo, "s03-after-local-action");
 });
 
+const UNAVAILABLE = {
+  S05A: "「修改這個 App」目前還不能使用，這個 App 不會被更改。",
+  S05B: "「改成我的版本」目前還不能使用，這個 App 不會被更改。",
+  O01: "「分享」目前還不能使用，你的 App 和目前的結果都還在。",
+  O02: "「調整結果」目前還不能使用，你的 App 和目前的結果都還在。"
+} as const;
+
+const noticeRegion = (page: Page): Locator => page.locator(".s03-notice-region");
+
+/** The polite live region names exactly the destination the User asked for and never takes focus itself. */
+async function expectUnavailable(page: Page, destination: keyof typeof UNAVAILABLE): Promise<void> {
+  await expect(noticeRegion(page)).toHaveAttribute("role", "status");
+  await expect(noticeRegion(page)).toHaveAttribute("aria-live", "polite");
+  await expect(noticeRegion(page).locator(".s03-notice")).toHaveAttribute("data-entry-destination", destination);
+  await expect(noticeRegion(page)).toHaveText(`${UNAVAILABLE[destination]}知道了`);
+  await expect(noticeRegion(page).getByRole("button", { name: "知道了" })).not.toBeFocused();
+}
+
 test("TEST-F00-AC-009 S03 reaches the Share / Remix / Correction entries while the current App stays intact", async ({ page }, testInfo) => {
   await openGeneratedApp(page);
-  const settled = host.calls.length;
+  // Committed Runtime state the entries must not touch: 4 → 6 people, 30 → 20 per person.
+  await peopleInput(page).fill("6");
+  await expect(resultValue(page)).toHaveText("20");
+  const settled = { calls: host.calls.length, model: host.backend.modelCalls() };
   const url = page.url();
+  await expect(noticeRegion(page)).toBeEmpty();
 
   if (isMobile(page)) {
     const nav = page.getByRole("navigation", { name: "App 導覽" });
     await expect(nav.getByRole("button", { name: "目前 App" })).toHaveAttribute("aria-current", "page");
-    await nav.getByRole("button", { name: "分享", exact: true }).click();
-    await nav.getByRole("button", { name: "修改", exact: true }).click();
+    const share = nav.getByRole("button", { name: "分享", exact: true });
+    await share.click();
+    await expectUnavailable(page, "O01");
+    const notice = await noticeRegion(page).locator(".s03-notice").boundingBox();
+    const navBox = await nav.boundingBox();
+    expect((notice?.y ?? Infinity) + (notice?.height ?? 0)).toBeLessThanOrEqual(navBox?.y ?? 0);
+
+    const modify = nav.getByRole("button", { name: "修改", exact: true });
+    await modify.click();
     const sheet = page.getByRole("dialog", { name: "你想怎麼改？" });
     await expect(sheet.getByRole("button")).toHaveText(["修改這個 App", "改成我的版本", "取消"]);
+    await expect(noticeRegion(page).locator("..")).toHaveAttribute("inert", "");
     await attachScreenshot(page, testInfo, "s03-mobile-change-sheet");
     await sheet.getByRole("button", { name: "改成我的版本" }).click();
     await expect(sheet).toHaveCount(0);
+    await expectUnavailable(page, "S05B");
+    await expect(modify).toBeFocused();
+
+    // Keyboard only: Enter opens the chooser on its first option, Enter picks it, focus returns to 「修改」.
+    await press(modify, "Enter");
+    await expect(sheet.getByRole("button", { name: "修改這個 App" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(sheet).toHaveCount(0);
+    await expectUnavailable(page, "S05A");
+    await expect(modify).toBeFocused();
   } else {
     const header = page.locator(".s03-header");
     for (const name of ["修改這個 App", "改成我的版本", "分享"]) await expect(header.getByRole("button", { name, exact: true })).toBeEnabled();
-    await header.getByRole("button", { name: "分享", exact: true }).click();
-    await header.getByRole("button", { name: "修改這個 App" }).click();
-    await header.getByRole("button", { name: "改成我的版本" }).click();
-    await attachScreenshot(page, testInfo, "s03-desktop-entries");
+    const share = header.getByRole("button", { name: "分享", exact: true });
+    await share.click();
+    await expectUnavailable(page, "O01");
+    const modify = header.getByRole("button", { name: "修改這個 App" });
+    await modify.click();
+    await expectUnavailable(page, "S05A");
+    // Keyboard only: Enter and Space both activate the entry, each activation is announced, and focus stays put.
+    const remix = header.getByRole("button", { name: "改成我的版本" });
+    await press(remix, "Enter");
+    await expectUnavailable(page, "S05B");
+    await expect(remix).toBeFocused();
+    await press(share, " ");
+    await expectUnavailable(page, "O01");
+    await expect(share).toBeFocused();
+    await attachScreenshot(page, testInfo, "s03-desktop-entry-feedback");
   }
-  const correction = page.locator(".s03-result").getByRole("button", { name: "調整結果" });
-  await expect(correction).toBeVisible();
-  await correction.click();
 
-  // Entries are boundaries only: no request, no navigation, and the same App with the same committed result.
+  // Correction (O02 / F16) is unavailable: the failure keeps the current App, its Blueprint and committed result. The
+  // notice raised above must not cover the result action (the click itself checks the hit target).
+  const correction = page.locator(".s03-result").getByRole("button", { name: "調整結果" });
+  await correction.click();
+  await expectUnavailable(page, "O02");
+  await attachScreenshot(page, testInfo, "s03-correction-unavailable");
+  await noticeRegion(page).getByRole("button", { name: "知道了" }).click();
+  await expect(noticeRegion(page)).toBeEmpty();
+
+  // Keep Previous safety: still the same App and committed state, and it still commits local actions with zero requests.
   await expect(s03(page)).toBeVisible();
-  await expect(resultValue(page)).toHaveText("30");
-  await expect(peopleInput(page)).toHaveValue("4");
+  await expect(page.locator(".s03-title")).toHaveText("聚餐分帳");
+  await expect(peopleInput(page)).toHaveValue("6");
+  await expect(resultValue(page)).toHaveText("20");
+  await peopleInput(page).fill("8");
+  await expect(resultValue(page)).toHaveText("15");
   expect(page.url()).toBe(url);
-  expect(host.calls.length).toBe(settled);
+  expect({ calls: host.calls.length, model: host.backend.modelCalls() }).toEqual(settled);
   expect(host.blocked).toEqual([]);
 });

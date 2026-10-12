@@ -51,6 +51,31 @@ export async function expectBuildValidated(page: Page): Promise<void> {
   await expect(page.getByRole("button", { name: /開啟 App/ })).toHaveCount(0);
 }
 
+/**
+ * BS-P1-025 F01-API-ID-001A/B transport after one logical CREATE reached VALIDATED: CREATE used the reserved key of the
+ * P-256 key whose proof verified, compile was signed by that same key, and the only request after F02 validation is
+ * one read-only, same-key-signed access-grant GET for exactly that intent and content hash. This host issues no
+ * grant, so no body / admission is fetched and the App is never shown; nothing leaves the app origin.
+ */
+export async function expectProvenCreateThenReadOnlyDelivery(page: Page, host: F01BrowserHost): Promise<void> {
+  const [create, compile, ...extraMutations] = host.calls;
+  expect(extraMutations).toEqual([]);
+  const thumbprint = create?.proofThumbprint;
+  expect(thumbprint).toMatch(/^[A-Za-z0-9_-]{43}$/u);
+  expect(create?.idempotencyKey).toBe(`appf2-create-v1.${thumbprint}`);
+  expect(compile?.proofThumbprint).toBe(thumbprint);
+  const { intent_id: intentId, content_hash: contentHash } = responseData(compile);
+  await expect(page.getByText("這個 App 目前無法開啟，你的需求仍然保留。")).toBeVisible();
+  expect(host.deliveryReads).toEqual([{ method: "GET", intentId, contentHash, proofThumbprint: thumbprint, status: 404 }]);
+  expect(host.apiRequests()).toEqual([
+    "POST /api/v1/intents",
+    `POST /api/v1/intents/${String(intentId)}/compile`,
+    `GET /api/v1/intents/${String(intentId)}/blueprint-access-grant`
+  ]);
+  expect(host.requestOrigins()).toEqual([new URL(page.url()).origin]);
+  await expect(page.locator(".s03")).toHaveCount(0);
+}
+
 /** Keyboard-only activation: focus the control, then press a key (no pointer involved). */
 export async function press(control: Locator, key: string): Promise<void> {
   await control.focus();

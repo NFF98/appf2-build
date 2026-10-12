@@ -35,7 +35,10 @@ async function mount(): Promise<void> {
       onHome={() => {
         record.homes += 1;
       }}
-      onEntry={(entry) => record.entries.push(entry)}
+      onEntry={(entry) => {
+        record.entries.push(entry);
+        return "HANDED_OFF";
+      }}
       {...(inspection === undefined ? {} : { inspection })}
     />
   );
