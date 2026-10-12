@@ -55,6 +55,20 @@
     "Dependency install and audit CI must pass at approved exact head.",
     "No claim that PG-001's product integration, database migration, browser S03 or full End-to-End has passed on canonical main."
   ],
-  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
-  "human_approval": null
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE",
+  "human_approval": {
+    "case_id": "GOV-PG001-DEPS-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "User's direct message in current ChatGPT conversation: '批准 GOV-PG001-DEPS-001 精確候選及 #370 Merge。' Immediately follows exact base 0af8d2fb480052e72ddb96897f3aa5857098c753, case GOV-PG001-DEPS-001, digest d30ab5906ab5de85b17a63c5cc2ba2a3afeaceeeaca8dc66fb93a6bae99932df. This GitHub record is an AI relay of a direct Human instruction; it is not an independent GitHub Human signature.",
+    "candidate_digest_sha256": "d30ab5906ab5de85b17a63c5cc2ba2a3afeaceeeaca8dc66fb93a6bae99932df",
+    "approved_at_unix": 1791799796
+  },
+  "human_approval_provenance": {
+    "channel": "Direct user message in ChatGPT conversation, not GitHub",
+    "recorded_at": "2026-10-12T19:09:56+09:00",
+    "precision_note": "recorded_at is transcription/record time obtained immediately after the approval; it is not a claimed exact send-second timestamp",
+    "merge_intent": "The same direct Human message separately and explicitly authorized #370 Merge; merge subject to exact-head CI and independent BCE."
+  }
 }
