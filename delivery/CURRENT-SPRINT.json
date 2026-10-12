@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": null,
-  "active_build_spec": null,
-  "active_task": null,
-  "status": "HOLD",
+  "active_sprint": "SP-P1-003",
+  "active_build_spec": "BS-P1-025",
+  "active_task": "T008",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-11 approved Build Freeze and pre-Cursor governance transition; T006 BLOCKED preserved in Sprint tasks pending BS-P1-025 promotion/rebind. Pause all implementation and Watcher lease issuance until new activation independently audited. No next Task."
+  "reason": "PROPOSED pre-Cursor validation of BS-P1-025 via T008 (F01/F07 drift revalidation); pending Human exact Activation approval and CI; T006 BLOCKED, no lease/deployment."
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-024",
-  "implementation_enabled": false,
-  "reason": "Human 2026-10-11 approved PR39 and BS-P1-025 Build Freeze through pre-Cursor. Temporary governance HOLD while T006 remains BLOCKED; exact Human-approved scope-clean Design freeze source fda9045d0fc1b2b718d56ed49fa09abdce343a5c; no Cursor lease or production DB actions."
+  "active_baseline": "BS-P1-025",
+  "implementation_enabled": true,
+  "reason": "PROPOSED BS-P1-025 atomic rebaseline to Stage A validation task T008; DRAFT ONLY pending exact Human Activation consent and GitHub PASS; product implementation and T006 remain BLOCKED until separately authorized."
 }
