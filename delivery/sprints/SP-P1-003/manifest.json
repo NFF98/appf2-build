@@ -32,8 +32,8 @@
     "build_spec_locked": true,
     "baseline_gate_passed": true,
     "acceptance_mapped": true,
-    "user_approved": false,
-    "approval_ref": "PENDING_HUMAN_EXACT_BS-P1-025_ACTIVATION_APPROVAL; historical Build Freeze and pre-Cursor approval not substituted"
+    "user_approved": true,
+    "approval_ref": "Human 2026-10-12 direct ChatGPT message: 『批准 BS-P1-025 Activation #372 候選，Head `7d0423b8`，允許填入正式 Activation 核准並執行 CI』; activation candidate approval only, #372 final Merge not approved, T006 execution still BLOCKED."
   },
   "backlog_item_ids": [
     "BL-P1-009",
