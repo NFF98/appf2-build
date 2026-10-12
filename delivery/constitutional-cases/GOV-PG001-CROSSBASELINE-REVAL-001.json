@@ -53,6 +53,20 @@
     "Current candidate has human_approval=null; constitutional gate correctly remains FAIL CLOSED until an independent exact-digest Human approval is documented"
   ],
   "rollback": "Revert the merge commit through a new governance PR carrying its own docket. Validators return to dbfdc948 behaviour; no product, schema, data or lifecycle state is changed by this PR.",
-  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
-  "human_approval": null
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE",
+  "human_approval": {
+    "case_id": "GOV-PG001-CROSSBASELINE-REVAL-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "User direct message in current ChatGPT conversation (2026-10-12 JST): '批准 GOV-PG001-CROSSBASELINE-REVAL-001 精確候選 #369 Merge，然後推進 BS-P1-025 Activation。' (Human independently approved candidate; ChatGPT transcription into GitHub is not a Human GitHub signature)",
+    "candidate_digest_sha256": "2732b81a8f8e9bf29a0b86d95411e6bd3fe8628e259e8135c176e8f44ac19e14",
+    "approved_at_unix": 1791798393
+  },
+  "human_approval_provenance": {
+    "channel": "Direct user message in ChatGPT conversation, not GitHub",
+    "recorded_at": "2026-10-12T18:46:33+09:00",
+    "precision_note": "Record time captured just after Human message; actual message timestamp not separately available. This is the record time, not a claimed message send second.",
+    "merge_intent": "Human explicitly approved Merge of #369 in the same direct message; independent BCE, required checks and head SHA verification still required."
+  }
 }
