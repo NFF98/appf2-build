@@ -48,7 +48,22 @@
     "PRODUCT CI N/A is never labeled nine tests PASS; product #374 remains full acceptance gated."
   ],
   "rollback": "Only separately Human-approved revert governance PR with own exact byte-bound docket; do not force push, change closed Task truth or bypass tests.",
-  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
-  "human_approval": null,
-  "supersedes_earlier_approval_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc"
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE_PROVENANCE_REVIEW_REQUIRED",
+  "human_approval": {
+    "case_id": "GOV-T006-R2-MAINT-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "ChatGPT current conversation: direct Human approval message: 「批准 PR #375 新精確候選 SHA-256 e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4；批准記錄 Human 核准證據並重新執行及審核 CI，但不批准 Merge。」",
+    "candidate_digest_sha256": "e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4",
+    "approved_at_unix": 1791843291
+  },
+  "supersedes_earlier_approval_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc",
+  "human_approval_provenance": {
+    "source": "Direct user turn in this ChatGPT conversation; approval is not an AI-generated message or a GitHub comment.",
+    "verbatim_user_message": "批准 PR #375 新精確候選 SHA-256 e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4；批准記錄 Human 核准證據並重新執行及審核 CI，但不批准 Merge。",
+    "timestamp_note": "approved_at_unix is the evidence-recording time; it does not claim the user's actual send time at second-level precision.",
+    "independent_check_required": "Human reviewer to verify exact direct user message and candidate digest prior to any merge; CI cannot authenticate identity.",
+    "merge_approval": "NOT GIVEN. User explicitly withheld Merge approval."
+  }
 }
