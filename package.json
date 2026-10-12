@@ -51,6 +51,7 @@
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
     "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
     "eslint": "10.11.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.1",
@@ -63,6 +64,7 @@
     "node": ">=22.13 <23"
   },
   "dependencies": {
+    "pg": "8.23.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   }
