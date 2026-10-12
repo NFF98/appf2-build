@@ -2,15 +2,16 @@
   "case_id": "GOV-BS025-T006-FOCUS-001",
   "base_sha": "e0018f52388789ba10c3f3b034e701949c2f4564",
   "constitution_version": "1.0",
-  "title": "Single-use T006 focus recovery with fail-closed T008-before-T006 final closure protection",
+  "title": "T006 focus with staged T008 security closure and fail-closed final T006 Close",
   "change_class": "BOUNDED_GOVERNANCE_CONTROL_REPAIR",
   "exact_changed_paths": [
     "delivery/CURRENT-SPRINT.json",
     "delivery/sprints/SP-P1-003/tasks.json",
     "harness/scripts/validate-backlog.mjs",
-    "harness/scripts/validate-change-scope.mjs"
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "64696ec122aaa0e7c7edd74a72be9fdd7d5c3ad1a4c55305a8c9dcd5c9ab2fb0",
+  "candidate_digest_sha256": "afb3cf72af819d0caaf7c0f47dffc8125e7671024e5fb6facb481c1352f72fb4",
   "why5": [
     {
       "question": "Why is T006 still BLOCKED after BS-P1-025 Activation?",
@@ -29,20 +30,21 @@
     },
     {
       "question": "Why does this not authorize unrelated governance or product changes?",
-      "answer": "Change-scope new one-shot escape accepts precisely five file paths including one constitutional docket, exactly base SHA e0018f5, unchanged Build baseline/Sprint manifest/Backlog, byte-identical Task definitions and all other Task states. Validator allows only T008 BLOCKED, with its same four IN_PROGRESS revalidations, while T006 is the active Task at BS-P1-025.",
-      "evidence_ref": "harness/scripts/validate-change-scope.mjs t006FocusSwitch and validate-backlog.mjs boundedPause; GitHub CI required"
+      "answer": "The only accepted one-shot proposal is the exact six-file change against main e0018f5 (including the docket): two Task control files, three narrow validators and constitutional dossier. It leaves Build, Sprint manifest, Backlog/revalidation bindings and CLOSED Task history byte-identical. The new Sprint validator narrowly permits REVIEW/T006 VERIFIED only after T008 is independently CLOSED with exact BS025 backlog revalidations and nonempty completion evidence.",
+      "evidence_ref": "Candidate validate-change-scope.mjs six-path fixed-base exception; validate-sprint.mjs exact terminal wait condition; validate-backlog.mjs T006/T008 closure guard; unchanged QUEUE/manifest/CLOSED history"
     },
     {
       "question": "What is the condition for closing T006?",
-      "answer": "T006 must first complete its nine mapped product tests, S03 browser E2E and independent Review/Evidence. T006 may reach independently VERIFIED without final CLOSED; T008 then resumes under a separate legal control transition, independently proves four BS-P1-025 revalidation ACs, has its own PASS evidence/review and Human Closure; all three backlog revalidations must be CLOSED before T006 final CLOSED. New BS025 fail-closed validator checks both cross-task status and exact ownership; no Human approval or Cursor execution is inferred.",
+      "answer": "T006 must first satisfy nine product Acceptance/Test IDs, real S03 E2E and independent Evidence/Review, then become VERIFIED. T008 becomes the sole active Task under a later separately approved legal control transition and must pass four new BS025 security proofs plus independent Closure. An exact REVIEW state with T006 VERIFIED and T008 CLOSED allows sequential Human T006 Closure rather than illegal Task regression or same-commit closure. Final T006 CLOSED and Sprint closure are separate approved control operations. Neither this PR nor the synthetic checks grant execution or Human approval.",
       "evidence_ref": "SP-P1-003 T006 nine acceptance_links, ci/run-product-ci.mjs required active-task tests; GitHub #372 activation and user focus instruction"
     }
   ],
   "negative_tests": [
-    "Single-use T006 focus switch rejects wrong main base SHA, unexpected changed files, or CLOSED history edits.",
-    "T008 remains BLOCKED while T006 executes/reviews; all four revalidations remain IN_PROGRESS and are not claimed as PASS.",
-    "Cross-task closure/order validator includes 15 synthetic in-memory positive/negative cases for premature T008, premature T006 CLOSED, wrong AC/Test ownership, missing evidence, altered/reopened revalidation and wrong baseline.",
-    "Authentic pre-Phase4 exact Human approval, all required CI/BCE and a separate Merge decision remain mandatory."
+    "Wrong base SHA, changed paths, modified closed history, or old candidate digest rejected by constitution/change-scope.",
+    "T008 BLOCKED while T006 IN_PROGRESS/REVIEW keeps BS025 revalidations truly IN_PROGRESS.",
+    "15 in-memory synthetic T006/T008 order tests: T008-before-product and T006 premature Closure blocked, exact four AC/Test and three CLOSED Backlog revalidations required.",
+    "13 in-memory synthetic Sprint terminal-wait tests: only active T006 VERIFIED, closed T008 with evidence, all three exact CLOSED BS025 revalidations, and Sprint REVIEW allowed; wrong status/owner/branch/evidence rejected.",
+    "Human exact-candidate approval, future transition PR approval, CI, BCE, merge and individual Closure decisions remain separate."
   ],
   "rollback": "Use a new explicitly Human-approved governance PR to return T006 to BLOCKED and T008 to IN_PROGRESS, preserving historical proof. Never rewrite CLOSED records.",
   "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
