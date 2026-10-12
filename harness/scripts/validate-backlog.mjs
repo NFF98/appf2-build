@@ -285,9 +285,33 @@ if(current.active_baseline===null){
 // This only gates *status transitions*. T008's independently checked TEST_RESULT,
 // COMMAND_RESULT and REVIEW Evidence still must pass validate-evidence.mjs.
 // The authentic Human Closure approval and exact PR approval remain separate.
+const t008ExactFourAcceptancePairs=[
+  ["F01-AC-013","TEST-F01-API-001"],
+  ["F01-AC-016","TEST-F01-API-003"],
+  ["F01-AC-017","TEST-F01-SEC-007"],
+  ["F07-AC-004","TEST-F07-004"]
+];
+const t008ExactRevalidations=[
+  ["BL-P1-008",["F01-AC-017"]],
+  ["BL-P1-010",["F01-AC-013","F01-AC-016"]],
+  ["BL-P1-031",["F07-AC-004"]]
+];
+const exactT008AcceptancePairs=links=>{
+  const actual=(links||[]).map(l=>`${l.acceptance_id}::${l.test_id}`);
+  return actual.length===4 && new Set(actual).size===4 &&
+    t008ExactFourAcceptancePairs.every(([aid,tid])=>actual.includes(`${aid}::${tid}`));
+};
+const exactT008ClosedRevalidation=(r,expectedIds)=>
+  r?.target_build_spec_id==="BS-P1-025" &&
+  r.sprint_id==="SP-P1-003" &&
+  r.task_id==="T008" &&
+  r.status==="CLOSED" &&
+  Array.isArray(r.acceptance_ids) &&
+  r.acceptance_ids.length===expectedIds.length &&
+  expectedIds.every(aid=>r.acceptance_ids.includes(aid));
+
 function checkT006T008Order(t006,t008,items) {
   const errors=[];
-  // Distinct Task ownership, no duplicate T008 claims on T006.
   if(["IN_PROGRESS","REVIEW","VERIFIED"].includes(t008?.status) &&
      t006?.status!=="VERIFIED") {
     errors.push("T008 execution/review requires T006 product VERIFIED with independent T006 Evidence");
@@ -301,30 +325,12 @@ function checkT006T008Order(t006,t008,items) {
   if(!Array.isArray(t008?.completion_evidence) || !t008.completion_evidence.length) {
     errors.push("T006 final CLOSED requires T008 completion_evidence; evidence gate validates actual PASS records");
   }
-  const expectedPairs=[
-    ["F01-AC-013","TEST-F01-API-001"],
-    ["F01-AC-016","TEST-F01-API-003"],
-    ["F01-AC-017","TEST-F01-SEC-007"],
-    ["F07-AC-004","TEST-F07-004"]
-  ];
-  const actualPairs=(t008?.acceptance_links||[]).map(l=>`${l.acceptance_id}::${l.test_id}`);
-  if(actualPairs.length!==4 || new Set(actualPairs).size!==4 ||
-    expectedPairs.some(([a,t])=>!actualPairs.includes(`${a}::${t}`))) {
+  if(!exactT008AcceptancePairs(t008?.acceptance_links)) {
     errors.push("T006 final CLOSED requires T008 owning exactly four BS-P1-025 AC/Test pairs");
   }
-  const expected=[
-    ["BL-P1-008",["F01-AC-017"]],
-    ["BL-P1-010",["F01-AC-013","F01-AC-016"]],
-    ["BL-P1-031",["F07-AC-004"]]
-  ];
   const byId=new Map((items||[]).map(x=>[x.backlog_item_id,x]));
-  for(const [id,acceptanceIds] of expected) {
-    const r=byId.get(id)?.revalidation;
-    if(!r || r.target_build_spec_id!=="BS-P1-025" ||
-      r.sprint_id!=="SP-P1-003" || r.task_id!=="T008" ||
-      r.status!=="CLOSED" || !Array.isArray(r.acceptance_ids) ||
-      r.acceptance_ids.length!==acceptanceIds.length ||
-      acceptanceIds.some(aid=>!r.acceptance_ids.includes(aid))) {
+  for(const [id,ids] of t008ExactRevalidations) {
+    if(!exactT008ClosedRevalidation(byId.get(id)?.revalidation,ids)) {
       errors.push("T006 final CLOSED requires exact T008 CLOSED BS-P1-025 revalidation: "+id);
     }
   }
