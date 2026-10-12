@@ -84,7 +84,11 @@ const unchangedRevalidationBinding=(oldR,newR,ctx)=>{
 };
 const exactlyClosingTask=(oldTask,newTask,oldR,newR)=>{
   if(!oldTask || !newTask || oldTask.task_id!==newTask.task_id) return false;
-  return oldTask.status==="IN_PROGRESS" &&
+  // Historical T007 can retain its existing direct closure route; T008 must
+  // first enter REVIEW and produce independent evidence before CLOSED.
+  return (oldTask.status==="IN_PROGRESS" ||
+    (oldTask.task_id==="T008" && oldTask.status==="REVIEW")) &&
+    (oldTask.task_id!=="T008" || oldTask.status==="REVIEW") &&
     newTask.status==="CLOSED" &&
     oldTask.build_spec_id===oldR.target_build_spec_id &&
     newTask.build_spec_id===newR.target_build_spec_id;
@@ -136,6 +140,13 @@ const checkRevalidationClosureGuard=()=>{
   const newTask={...oldTask,status:"CLOSED",completion_evidence:["EV-SP-P1-003-T007-001"]};
   const oldTd={sprint_id:"SP-P1-003",tasks:[oldTask]},newTd={sprint_id:"SP-P1-003",tasks:[newTask]};
   const replace=(base,patch)=>({...base,...patch});
+  const t008R={...revalidation,task_id:"T008",target_build_spec_id:"BS-P1-025"};
+  const t008Q={...oldQueue,build_spec_id:"BS-P1-025",items:[{...item,revalidation:t008R}]};
+  const t008QC={...t008Q,items:[{...item,revalidation:{...t008R,status:"CLOSED"}}]};
+  const t008Before={...oldTask,task_id:"T008",status:"REVIEW",build_spec_id:"BS-P1-025"};
+  const t008After={...t008Before,status:"CLOSED",completion_evidence:["SYNTHETIC-ONLY"]};
+  const t008Td0={sprint_id:"SP-P1-003",tasks:[t008Before]};
+  const t008Td1={sprint_id:"SP-P1-003",tasks:[t008After]};
   const cases=[
     ["valid exact closure",true,oldQueue,newQueue,oldTd,newTd],
     ["no evidence",false,oldQueue,newQueue,oldTd,replace(newTd,{tasks:[replace(newTask,{completion_evidence:[]})]})],
@@ -147,12 +158,14 @@ const checkRevalidationClosureGuard=()=>{
     ["different revalidation Task",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED",task_id:"T006"}}]}),oldTd,newTd],
     ["different acceptance scope",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED",acceptance_ids:["F01-AC-005"]}}]}),oldTd,newTd],
     ["extra edited backlog metadata",false,oldQueue,replace(newQueue,{items:[{...newQueue.items[0],priority:"P0"}]}),oldTd,newTd],
-    ["wrong Sprint identity",false,oldQueue,newQueue,oldTd,replace(newTd,{sprint_id:"SP-P1-004"})]
+    ["wrong Sprint identity",false,oldQueue,newQueue,oldTd,replace(newTd,{sprint_id:"SP-P1-004"})],
+    ["T008 independent REVIEW to CLOSED",true,t008Q,t008QC,t008Td0,t008Td1],
+    ["T008 cannot skip REVIEW",false,t008Q,t008QC,replace(t008Td0,{tasks:[{...t008Before,status:"IN_PROGRESS"}]}),t008Td1]
   ];
   for(const [name,expected,before,after,tasksBefore,tasksAfter] of cases){
     if(exactRevalidationClosures(before,after,tasksBefore,tasksAfter)!==expected) errors.push("Revalidation closure guard self-test failed: "+name);
   }
-  if(!errors.some(e=>e.startsWith("Revalidation closure guard self-test failed:"))) console.log("- Revalidation closure guard: 11 positive/negative regression cases PASS.");
+  if(!errors.some(e=>e.startsWith("Revalidation closure guard self-test failed:"))) console.log("- Revalidation closure guard: 13 positive/negative regression cases PASS.");
 };
 checkRevalidationClosureGuard();
 
