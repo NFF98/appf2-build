@@ -1,0 +1,51 @@
+{
+  "case_id": "GOV-T006-R2-MAINT-001",
+  "base_sha": "67cd2217c7b94cc564c5e730aa03227c2085fb31",
+  "constitution_version": "1.0",
+  "title": "BS-P1-025 T006 R2: exact F00-001/038 fixture maintenance authority and guard-preserving lint refactor",
+  "change_class": "BOUNDED_GOVERNANCE_CONTROL_REPAIR",
+  "exact_changed_paths": [
+    "delivery/sprints/SP-P1-003/tasks.json",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs"
+  ],
+  "candidate_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc",
+  "why5": [
+    {
+      "question": "Why does T006 R2 PR #374 fail CI and Governance Gate despite reported 76 local browser E2E passes?",
+      "answer": "R2 modified two previously owned tests to reflect the locked BS-P1-025 PoP proof and read-only delivery protocol; active T006 lacked the narrow explicit test maintenance authorization. CI rejected both mapped legacy test body changes.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38310603879 ; https://github.com/NFF98/appf2-build/issues/301#issuecomment-6132963624"
+    },
+    {
+      "question": "Why exactly these two maintenance authorizations rather than relaxed validation or test deletion?",
+      "answer": "The gate matches an authorization by original TEST ID and exact test path under mode BASELINE_FIXTURE_REBIND from direct superseded BS-P1-024 to locked BS-P1-025. Preserve legacy blank-prompt, capsule editable, one logical CREATE and no unauthorized admission guarantees. Do not change closed Task definitions.",
+      "evidence_ref": "harness/scripts/validate-test-integrity.mjs and harness/scripts/validate-sprint.mjs; https://github.com/NFF98/appf2-build/pull/374"
+    },
+    {
+      "question": "Why must the protected harness lint refactor be in this separately governed patch?",
+      "answer": "The merged main checkT006T008Order function exceeds ESLint complexity threshold 15; splitting identical checks into helpers preserves test guard predicates and error ordering. Unchanged synthetic T006/T008 order cases must be rerun before approval.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6133117669 ; harness/scripts/validate-backlog.mjs"
+    },
+    {
+      "question": "Why adjust the execution-time scope gate instead of bypassing it?",
+      "answer": "T006 ACTIVE normally rejects delivery/sprints and harness governance-only path changes. An exact four-path, exact old-main-SHA and Task-field-only exception supports this one narrowly authorized correction including its constitutional docket; other governance or Product edits remain forbidden.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs; https://github.com/NFF98/appf2-build/pull/375"
+    },
+    {
+      "question": "What does this PR NOT approve or complete?",
+      "answer": "It cannot validate absent TEST-F00-037, missing live S05 session owner, mobile Inspection CTA mismatch, live-model/real-PG browser path, product PR merge, T008 or T006 closure. No Task status, build baseline or historical CLOSED Task changes. Human exact-byte approval and a separate merge decision are still required.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6133117669"
+    }
+  ],
+  "negative_tests": [
+    "Constitutional candidate bytes bound to SHA-256 over only three changed files; any changed content or base SHA invalidates docket.",
+    "Two exact authorization keys and test paths only; no Task acceptance, status, non-scope or closed Task history edits.",
+    "No product/test files in governed PR; unexpected fourth non-docket path fails scope.",
+    "Reject extra maintenance authorizations, wrong from/to Build Spec, wrong ACTIVE Sprint Task, changed build control.",
+    "Preserve all existing T006-before-T008 and T008-closure negative safety cases; check synthetic suites and CI before merge.",
+    "Approval_status=PENDING_HUMAN_EXACT_DIGEST_APPROVAL; no claim of Human-approved exact digest and no automatic merge."
+  ],
+  "rollback": "Revert through a future separately Human-approved constitutional/governance PR with its own fresh byte-bound docket; never rewrite Task history or bypass gate.",
+  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
+  "human_approval": null
+}

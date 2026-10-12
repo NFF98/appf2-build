@@ -449,7 +449,8 @@ if(t006FocusSwitch) console.log("- Exact Human-directed T006 focus switch recogn
 const t006R2MaintenancePaths=new Set([
   "delivery/sprints/SP-P1-003/tasks.json",
   "harness/scripts/validate-backlog.mjs",
-  "harness/scripts/validate-change-scope.mjs"
+  "harness/scripts/validate-change-scope.mjs",
+  "delivery/constitutional-cases/GOV-T006-R2-MAINT-001.json"
 ]);
 const t006R2ExpectedMaintenance=[
   {test_id:"TEST-F00-001",file:"tests/e2e/f00-create-shell.spec.ts",mode:"BASELINE_FIXTURE_REBIND",from_build_spec:"BS-P1-024",to_build_spec:"BS-P1-025"},
