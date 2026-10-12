@@ -1,0 +1,60 @@
+{
+  "case_id": "GOV-PG001-DEPS-001",
+  "base_sha": "0af8d2fb480052e72ddb96897f3aa5857098c753",
+  "constitution_version": "1.0",
+  "title": "PG-001 exact Postgres dependency-only addition during Sprint HOLD",
+  "change_class": "GOVERNANCE_PROTECTED_DEPENDENCY_ONLY",
+  "exact_changed_paths": [
+    "package-lock.json",
+    "package.json"
+  ],
+  "candidate_digest_sha256": "d30ab5906ab5de85b17a63c5cc2ba2a3afeaceeeaca8dc66fb93a6bae99932df",
+  "candidate_blob_sha1": {
+    "package.json": "08e18bce0f1e597be3475b94e10d80647dde076a",
+    "package-lock.json": "df22b9f04bf9454579718bd82fbae67375b6193e"
+  },
+  "why5": [
+    {
+      "question": "Why is a dependency-only governance change required now?",
+      "answer": "PG-001's existing R1–R4 product candidate requires a PostgreSQL client and its TypeScript types before legal T006 integration, while the canonical Build repo's currently HOLD main lacks both packages.",
+      "evidence_ref": "GitHub #365 old Draft, exact PG-001 local R4 candidate e2de217; main package.json at 0af8d2f lacks pg/@types/pg"
+    },
+    {
+      "question": "Why can these dependencies not be added as an ordinary T006 product change?",
+      "answer": "package.json is a governance-only path barred during active Task execution and package-lock.json is a HOLD-protected implementation root; directly merging #365 also includes unactivated product code. The separately merged #369 governance repair now provides a narrowly defined dependency-only HOLD transition.",
+      "evidence_ref": "GitHub #369 merge 0af8d2f; harness/scripts/validate-change-scope.mjs and harness/scripts/pg001-dependency-hold-path.mjs"
+    },
+    {
+      "question": "What exactly changes, with what preserved?",
+      "answer": "Add exactly pg@8.23.0 to dependencies and @types/pg@8.23.1 to devDependencies, plus the 15 previously absent npm-registry lockfile package records. The package and lock files are byte-identical to the existing #365 source branch blobs; no existing dependency, existing lock entry, scripts, product code, Sprint/Build state or CLOSED Task is changed.",
+      "evidence_ref": "GitHub source branch #365 HEAD 7547d5c; package blob 08e18bce0f1e597be3475b94e10d80647dde076a; lock blob df22b9f04bf9454579718bd82fbae67375b6193e; exact diff 2 files"
+    },
+    {
+      "question": "Why were the packages absent historically?",
+      "answer": "UNKNOWN. Absence on canonical main is observable; no verified original decision record proves why they were previously omitted.",
+      "evidence_ref": "GitHub main package.json at 0af8d2f; #366 R1 dossier explicitly marks origin UNKNOWN"
+    },
+    {
+      "question": "Why is this safer than merging the old PG-001 draft or relaxing normal scope rules?",
+      "answer": "It preserves HOLD and restricts the entire diff to package.json, package-lock.json and one exact-digest Human approval docket. The #369 validation path denies unrelated files, package upgrades, non-registry lock entries, control-state changes and active Sprint use. Merging #365 as-is would mix products and dependencies while T006 is not yet authorized.",
+      "evidence_ref": "Merged #369 pg001-dependency-hold-path.mjs (16 positive/negative built-in scenarios), validate-change-scope.mjs, PR #365 old Draft"
+    }
+  ],
+  "alternatives": [
+    "No change: preserve HOLD, leave PG-001 product integration blocked.",
+    "Out-of-repo isolated PoC: already established product feasibility but not canonical dependencies.",
+    "Minimal exact dependency-only protected PR during HOLD: SELECTED; product source, schema migrations, deployment and activation excluded."
+  ],
+  "negative_tests": [
+    "Bounded PG-001 dependency HOLD path guard has 16 positive/negative self-test fixtures, expected under npm run gate.",
+    "Exact-digest constitutional docket mandatory; null human_approval must FAIL CLOSED until direct Human approval.",
+    "No extra products, scripts, unrelated dependencies, altered existing lock records, Sprint activation, or CLOSED Task changes permitted."
+  ],
+  "rollback": "Before any PG-dependent product merge, revert the two package/lock additions in a new exact-digest governance PR with independently approved Human docket. No remote database, service or runtime state is changed by this PR.",
+  "residual_risks": [
+    "Dependency install and audit CI must pass at approved exact head.",
+    "No claim that PG-001's product integration, database migration, browser S03 or full End-to-End has passed on canonical main."
+  ],
+  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
+  "human_approval": null
+}
