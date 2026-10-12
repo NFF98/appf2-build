@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor } from "./baseline-lineage.mjs";
+import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor, revalidationRecords } from "./baseline-lineage.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -35,29 +35,46 @@ const sameIdSet=(values,expected)=>{
   return ids.size===wanted.size && [...wanted].every(x=>ids.has(x));
 };
 // A CLOSED Task kept at an ancestor Build Spec may keep a claim outside the current selected Backlog only
-// when a DONE Backlog item holds the CLOSED revalidation that Task performed, that revalidation covered exactly
-// the original→target semantic drift, and target→current introduces no further drift.
-const isTaskHistoricalRevalidation=(item,sid,task,currentBaseline)=>{
-  const r=item.revalidation;
-  return item.status==="DONE" && r?.status==="CLOSED" &&
+// when a DONE Backlog item holds (current slot or revalidation_history) the CLOSED revalidation that Task
+// performed, that revalidation covered exactly the from→target semantic drift, and the carried Acceptance
+// has no further drift target→current.
+const isTaskHistoricalRevalidation=(r,from,sid,task,currentBaseline)=>
+  r?.status==="CLOSED" &&
     r.sprint_id===sid && r.task_id===task.task_id && r.target_build_spec_id===task.build_spec_id &&
     r.target_build_spec_id!==currentBaseline &&
-    isBaselineAncestor(root,item.build_spec_id,r.target_build_spec_id) &&
+    isBaselineAncestor(root,from,r.target_build_spec_id) &&
     isBaselineAncestor(root,r.target_build_spec_id,currentBaseline);
-};
 const historicalRevalidationCarryForwardIds=(sid,task,currentBaseline)=>{
   const carried=new Set();
   const claimed=new Set((task.acceptance_links||[]).map(x=>x.acceptance_id));
   for(const item of backlog.items||[]){
-    if(!isTaskHistoricalRevalidation(item,sid,task,currentBaseline)) continue;
-    const r=item.revalidation;
-    const targetDrift=acceptanceSemanticDriftIds(root,item.build_spec_id,r.target_build_spec_id,item.acceptance_links);
-    if(!targetDrift.length || !sameIdSet(r.acceptance_ids,targetDrift) || !targetDrift.every(aid=>claimed.has(aid))) continue;
-    if(acceptanceSemanticDriftIds(root,r.target_build_spec_id,currentBaseline,item.acceptance_links).length) continue;
-    for(const aid of targetDrift) carried.add(aid);
+    if(item.status!=="DONE") continue;
+    for(const {r,from} of revalidationRecords(item)){
+      if(!isTaskHistoricalRevalidation(r,from,sid,task,currentBaseline)) continue;
+      const targetDrift=acceptanceSemanticDriftIds(root,from,r.target_build_spec_id,item.acceptance_links);
+      if(!targetDrift.length || !sameIdSet(r.acceptance_ids,targetDrift) || !targetDrift.every(aid=>claimed.has(aid))) continue;
+      const laterDrift=new Set(acceptanceSemanticDriftIds(root,r.target_build_spec_id,currentBaseline,item.acceptance_links));
+      for(const aid of targetDrift) if(!laterDrift.has(aid)) carried.add(aid);
+    }
   }
   return carried;
 };
+// A CLOSED Task at an ancestor Build Spec whose claims drifted stays byte-identical; each drifted claim is
+// superseded only when a revalidation listed by this Sprint assigns it to a different Task.
+const supersededClosedTaskClaims=(task,sprintBaseline,revalidationByAcceptance)=>{
+  if(task.status!=="CLOSED" || !isBaselineAncestor(root,task.build_spec_id,sprintBaseline)) return null;
+  const drift=acceptanceSemanticDriftIds(root,task.build_spec_id,sprintBaseline,task.acceptance_links);
+  const covered=drift.length>0 && drift.every(aid=>{
+    const owner=revalidationByAcceptance.get(aid)?.task_id;
+    return owner && owner!==task.task_id;
+  });
+  return covered?new Set(drift):null;
+};
+const selfRevalidatedDone=(bi,bid,sid,m)=>
+  bi.status==="DONE" &&
+  (m.revalidation_item_ids||[]).includes(bid) &&
+  bi.revalidation?.target_build_spec_id===m.build_spec_id &&
+  bi.revalidation?.sprint_id===sid;
 const recordHistoricalCarryClaims=(carryClaims,sid,task,currentBaseline)=>{
   for(const aid of historicalRevalidationCarryForwardIds(sid,task,currentBaseline)) carryClaims.set(aid,task.task_id);
 };
@@ -175,7 +192,7 @@ for(const sid of sprintDirs){
     if(!bi){errors.push(sid+" unknown backlog item "+bid); continue;}
     if(bi.build_spec_id!==m.build_spec_id){
       const legacyDone=bi.status==="DONE" && canPreserveCompletedBaseline(root,bi.build_spec_id,m.build_spec_id,bi.acceptance_links);
-      if(!legacyDone) errors.push(sid+" backlog baseline mismatch "+bid);
+      if(!legacyDone && !selfRevalidatedDone(bi,bid,sid,m)) errors.push(sid+" backlog baseline mismatch "+bid);
     }
     if(m.status==="PLANNED"){
       if(bi.status!=="READY") errors.push(sid+" PLANNED backlog must be READY: "+bid+" is "+bi.status);
@@ -199,9 +216,9 @@ for(const sid of sprintDirs){
   for(const bid of m.revalidation_item_ids||[]){
     if(revalidationIds.has(bid)) errors.push(sid+" duplicate revalidation item "+bid);
     revalidationIds.add(bid);
-    if(selectedIds.has(bid)) errors.push(sid+" revalidation item must not duplicate selected backlog item "+bid);
     const bi=backlogById.get(bid);
     if(!bi){ errors.push(sid+" unknown revalidation backlog item "+bid); continue; }
+    const ownLinks=new Set(selectedIds.has(bid)?(bi.acceptance_links||[]).map(x=>x.acceptance_id):[]);
     if(bi.status!=="DONE") errors.push(sid+" revalidation backlog item must preserve DONE history: "+bid);
     const r=bi.revalidation;
     if(!r || r.target_build_spec_id!==m.build_spec_id || r.sprint_id!==sid){
@@ -213,7 +230,7 @@ for(const sid of sprintDirs){
     for(const aid of r.acceptance_ids||[]){
       const a=activeAcceptance.get(aid);
       if(!a){ errors.push(sid+" revalidation "+bid+" unknown/inactive Acceptance "+aid); continue; }
-      if(expectedPairs.has(aid)) errors.push(sid+" revalidation Acceptance duplicates selected backlog coverage: "+aid);
+      if(expectedPairs.has(aid) && !ownLinks.has(aid)) errors.push(sid+" revalidation Acceptance duplicates selected backlog coverage: "+aid);
       expectedPairs.set(aid,a.test_id);
       revalidationByAcceptance.set(aid,{backlog_item_id:bid,task_id:r.task_id,status:r.status});
     }
@@ -227,10 +244,12 @@ for(const sid of sprintDirs){
     if(taskIds.has(t.task_id)) errors.push(sid+" duplicate task ID "+t.task_id); taskIds.add(t.task_id);
     if(!taskStates.has(t.status)) errors.push(sid+"/"+t.task_id+" invalid task status");
     if(m.status==="PLANNED" && t.status!=="PLANNED") errors.push(sid+"/"+t.task_id+" must remain PLANNED before activation");
+    let superseded=null;
     if(t.build_spec_id!==m.build_spec_id){
       const legacyClosed=t.status==="CLOSED" && canPreserveCompletedBaseline(root,t.build_spec_id,m.build_spec_id,t.acceptance_links);
-      if(!legacyClosed) errors.push(sid+"/"+t.task_id+" baseline mismatch");
-      else recordHistoricalCarryClaims(historicalCarryClaims,sid,t,m.build_spec_id);
+      if(legacyClosed) recordHistoricalCarryClaims(historicalCarryClaims,sid,t,m.build_spec_id);
+      else superseded=supersededClosedTaskClaims(t,m.build_spec_id,revalidationByAcceptance);
+      if(!legacyClosed && !superseded) errors.push(sid+"/"+t.task_id+" baseline mismatch");
     }
     if(t.product_decision_allowed!==false) errors.push(sid+"/"+t.task_id+" product_decision_allowed must be false");
     if(!Array.isArray(t.scope)||!t.scope.length || !Array.isArray(t.non_scope)||!t.non_scope.length) errors.push(sid+"/"+t.task_id+" requires scope and non_scope");
@@ -241,6 +260,7 @@ for(const sid of sprintDirs){
     }
     if(!Array.isArray(t.acceptance_links)||!t.acceptance_links.length) errors.push(sid+"/"+t.task_id+" missing Acceptance/Test mapping");
     for(const link of t.acceptance_links||[]){
+      if(superseded?.has(link.acceptance_id)) continue;
       const a=activeAcceptance.get(link.acceptance_id);
       if(!a) errors.push(sid+"/"+t.task_id+" unknown/inactive Acceptance "+link.acceptance_id);
       else if(a.test_id!==link.test_id) errors.push(sid+"/"+t.task_id+" Test ID mismatch for "+link.acceptance_id+": expected "+a.test_id);

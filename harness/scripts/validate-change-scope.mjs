@@ -3,6 +3,7 @@ import { isOneTimeConstitutionFounding } from "./validate-constitutional-change.
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
+import { isExactPg001DependencyHoldUpdate, testPg001DependencyHoldPathGuard, PG001_DEPENDENCY_GATE_MARKER } from "./pg001-dependency-hold-path.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -314,8 +315,68 @@ try {
 } catch(error) { errors.push(String(error)); }
 if(boundedT005PercentRepair) console.log("- "+T005_PERCENT_GATE_MARKER+".");
 
+const pg001DependencyHoldUpdate=isExactPg001DependencyHoldUpdate({root,base:baseSha,changed,cs,build:currentBuild});
+try {
+  const n=testPg001DependencyHoldPathGuard();
+  console.log("- PG-001 dependency HOLD path guard: "+n+" positive/negative regression cases PASS.");
+} catch(error) { errors.push(String(error)); }
+if(pg001DependencyHoldUpdate) console.log("- "+PG001_DEPENDENCY_GATE_MARKER+"; constitutional docket still required.");
+
+// CLOSED Tasks are final: any later diff must keep them byte-identical (canonical JSON) and present.
+const closedTaskViolations=(beforeTd,afterTd)=>{
+  const after=new Map((afterTd?.tasks||[]).map(t=>[t.task_id,t]));
+  return (beforeTd?.tasks||[]).filter(t=>t.status==="CLOSED" && !sameJson(t,after.get(t.task_id))).map(t=>t.task_id);
+};
+// A CLOSED revalidation may only stay in place or be appended unchanged to revalidation_history.
+const revalidationHistoryKept=(b,a)=>{
+  if(!a) return false;
+  const bh=b.revalidation_history||[], ah=a.revalidation_history||[];
+  if(!appendOnly(bh,ah)) return false;
+  return b.revalidation?.status!=="CLOSED" || sameJson(b.revalidation,a.revalidation) || sameJson(b.revalidation,ah[bh.length]);
+};
+const closedRevalidationViolations=(beforeQueue,afterQueue)=>{
+  const after=new Map((afterQueue?.items||[]).map(i=>[i.backlog_item_id,i]));
+  return (beforeQueue?.items||[]).filter(b=>!revalidationHistoryKept(b,after.get(b.backlog_item_id))).map(b=>b.backlog_item_id);
+};
+const checkHistoryGuards=()=>{
+  const closed={task_id:"T001",status:"CLOSED",build_spec_id:"BS-P1-021",acceptance_links:[{acceptance_id:"F01-AC-013",test_id:"TEST-F01-API-001"}]};
+  const td={tasks:[closed,{task_id:"T006",status:"BLOCKED",build_spec_id:"BS-P1-024"}]};
+  const taskCases=[
+    ["CLOSED Task unchanged, open Task rebound",0,{tasks:[closed,{task_id:"T006",status:"BLOCKED",build_spec_id:"BS-P1-025"}]}],
+    ["CLOSED Task rebound",1,{tasks:[{...closed,build_spec_id:"BS-P1-025"},td.tasks[1]]}],
+    ["CLOSED Task acceptance edited",1,{tasks:[{...closed,acceptance_links:[]},td.tasks[1]]}],
+    ["CLOSED Task reopened",1,{tasks:[{...closed,status:"IN_PROGRESS"},td.tasks[1]]}],
+    ["CLOSED Task deleted",1,{tasks:[td.tasks[1]]}]
+  ];
+  for(const [name,n,after] of taskCases) if(closedTaskViolations(td,after).length!==n) errors.push("CLOSED Task guard self-test failed: "+name);
+  const r={target_build_spec_id:"BS-P1-024",status:"CLOSED",sprint_id:"SP-P1-003",task_id:"T007",acceptance_ids:["F01-AC-004"]};
+  const next={target_build_spec_id:"BS-P1-025",status:"IN_PROGRESS",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-017"]};
+  const q={items:[{backlog_item_id:"BL-P1-008",revalidation:r}]};
+  const qCases=[
+    ["CLOSED revalidation unchanged",0,q],
+    ["CLOSED revalidation appended to history",0,{items:[{backlog_item_id:"BL-P1-008",revalidation_history:[r],revalidation:next}]}],
+    ["CLOSED revalidation overwritten",1,{items:[{backlog_item_id:"BL-P1-008",revalidation:next}]}],
+    ["CLOSED revalidation edited into history",1,{items:[{backlog_item_id:"BL-P1-008",revalidation_history:[{...r,acceptance_ids:["F01-AC-017"]}],revalidation:next}]}],
+    ["history entry removed",1,{items:[{backlog_item_id:"BL-P1-008",revalidation:next}]},{items:[{backlog_item_id:"BL-P1-008",revalidation_history:[r],revalidation:next}]}],
+    ["backlog item deleted",1,{items:[]}]
+  ];
+  for(const [name,n,after,before] of qCases) if(closedRevalidationViolations(before||q,after).length!==n) errors.push("CLOSED revalidation guard self-test failed: "+name);
+  if(!errors.some(e=>/guard self-test failed/.test(e))) console.log("- CLOSED Task / CLOSED revalidation history guards: "+(taskCases.length+qCases.length)+" positive/negative regression cases PASS.");
+};
+checkHistoryGuards();
+if(baseSha && !/^0+$/.test(baseSha)){
+  for(const rel of changed.filter(p=>/^delivery\/sprints\/SP-P\d+-\d{3}\/tasks\.json$/.test(p))){
+    for(const id of closedTaskViolations(showBaseJson(rel),readHeadJson(rel))) errors.push("CLOSED Task must remain byte-identical: "+rel+" "+id);
+  }
+  if(changed.includes("delivery/backlog/QUEUE.json")){
+    for(const id of closedRevalidationViolations(showBaseJson("delivery/backlog/QUEUE.json"),readHeadJson("delivery/backlog/QUEUE.json"))){
+      errors.push("CLOSED revalidation must be preserved or appended unchanged to revalidation_history: "+id);
+    }
+  }
+}
+
 if(cs.active_sprint===null){
-  if(!approvedPfr06WebReadinessTransition){
+  if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
 }else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){

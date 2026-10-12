@@ -1,0 +1,72 @@
+{
+  "case_id": "GOV-PG001-CROSSBASELINE-REVAL-001",
+  "base_sha": "dbfdc9487dbed00d9b4e4aa7c81f1f0847774ede",
+  "constitution_version": "1.0",
+  "title": "Narrow governance repair: CLOSED-Task cross-baseline revalidation and PG-001 HOLD dependency path",
+  "change_class": "GOVERNANCE_ONLY_VALIDATOR_REPAIR",
+  "exact_changed_paths": [
+    "harness/scripts/baseline-lineage.mjs",
+    "harness/scripts/pg001-dependency-hold-path.mjs",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-sprint.mjs"
+  ],
+  "candidate_digest_sha256": "2732b81a8f8e9bf29a0b86d95411e6bd3fe8628e259e8135c176e8f44ac19e14",
+  "candidate_blob_sha1": {
+    "harness/scripts/baseline-lineage.mjs": "6326c495b2bf109f3b82179d9ae14589825b9735",
+    "harness/scripts/pg001-dependency-hold-path.mjs": "f6c0dfddfa98479278771c85b92708ee82b0bfe3",
+    "harness/scripts/validate-backlog.mjs": "c0d8ea29db153c35bde27f5e995532018e38d88f",
+    "harness/scripts/validate-change-scope.mjs": "53be506bde7b91cf741c157c92ab4b54dcda6d01",
+    "harness/scripts/validate-sprint.mjs": "8772e34af70e79c162852869748a7f33c09546bd"
+  },
+  "why5": [
+    {
+      "question": "Why can BS-P1-025 not be activated on main dbfdc948 without changing any CLOSED Task?",
+      "answer": "BD-025 changes the criterion/expected_observable of 10 ACTIVE Acceptances (test_id unchanged). Rebinding SP-P1-003 to BS-P1-025 makes CLOSED T001 (BS-P1-021; F01-AC-013/016) fail 'baseline mismatch', DONE BL-P1-010 fail 'backlog baseline mismatch', and BL-P1-008 (already revalidated to BS-P1-024 by CLOSED T007) need a new revalidation whose only slot holds the CLOSED T007 record.",
+      "evidence_ref": "local: drift-report.mjs BS-P1-024 -> BS-P1-025 (changed F01-AC-013, F01-AC-016, F01-AC-017, F05-AC-001/002/008/011/014, F07-AC-004, F12-AC-004); harness/scripts/validate-sprint.mjs lines 176-179, 199-202, 230-234 at dbfdc948"
+    },
+    {
+      "question": "Why is editing the CLOSED Task or overwriting the CLOSED revalidation not acceptable?",
+      "answer": "CLOSED Tasks and CLOSED revalidations are completion history. The only lawful options in dbfdc948 are rebinding T001 to BS-P1-025 (rewrites a CLOSED Task) or replacing BL-P1-008.revalidation (destroys the T007 record); both falsify history. No validator guarded either against a later diff.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs at dbfdc948: immutableTasks() only applies to safeControlTransition, not to rebaseline transitions; validate-backlog.mjs resolveItemRevalidationIds() requires revalidation.target_build_spec_id = current baseline"
+    },
+    {
+      "question": "What exact validator change resolves the cross-baseline case while keeping CLOSED records byte-identical?",
+      "answer": "(1) DONE items may carry an append-only revalidation_history of CLOSED revalidations; each entry must cover exactly the drift of its own step and the new revalidation covers only chain-end -> current drift. (2) A CLOSED Task at an ancestor baseline whose claims drifted stays unchanged; its drifted claims are superseded only when a revalidation listed by the Sprint assigns them to a different Task. (3) A selected DONE item may be revalidated inside its own Sprint. (4) Change-scope now rejects any diff that edits, reopens or deletes a CLOSED Task, or that overwrites/drops a CLOSED revalidation instead of appending it to revalidation_history.",
+      "evidence_ref": "this candidate: baseline-lineage.mjs revalidationRecords/revalidationHistoryChain; validate-backlog.mjs resolveChainedRevalidationIds; validate-sprint.mjs supersededClosedTaskClaims/selfRevalidatedDone; validate-change-scope.mjs closedTaskViolations/closedRevalidationViolations (11 self-test cases)"
+    },
+    {
+      "question": "Why does PG-001 need a dedicated HOLD path for package.json and package-lock.json?",
+      "answer": "package.json is governance_only (forbidden during any active Task and in allowed_write_paths), while package-lock.json is an implementation root that change-scope rejects whenever Sprint is HOLD. So pg@8.23.0 / @types/pg@8.23.1 had no lawful landing state. The new path accepts only: Sprint HOLD, implementation disabled, no control-state change, exactly package.json + package-lock.json + one docket, package.json identical except the two exact additions, every existing lock entry byte-identical, and only allow-listed npm-registry tarballs with sha512 integrity added.",
+      "evidence_ref": "harness/policy/repo-policy.json implementation_roots/governance_only_paths; validate-sprint.mjs protectedPrefixes; #366 GOV-CASE-PG-001-R1 W5; this candidate pg001-dependency-hold-path.mjs (16 self-test cases)"
+    },
+    {
+      "question": "Why is this candidate narrow and not a relaxation of the Constitution or of #366's process?",
+      "answer": "No constitutional, activation, baseline or policy file changes. Every protected path still needs one exact-digest docket and direct Human decision (pre-Phase4 rule from #367/#368), and active Sprint scope remains independently checked. Local simulation records establish 14/14 gates PASS for the complete S1 governance PR diff with SIMULATION-ONLY approval (not a real Human approval); earlier S1–S4 step PASS assertions were seen in the Cursor session but complete per-step gate logs were not preserved. The separate 25-case scenario-negative suite was still running without a completed result log at evidence review time, and therefore is NOT claimed PASS. The built-in change-scope guards include 11 CLOSED-history scenarios and 16 dependency-HOLD scenarios. No product files, CLOSED Tasks or baseline contents are changed by this governance candidate.",
+      "evidence_ref": "local: gov-fasttrack/logs/s1-full-pr-diff.log (S1 exact governance PR diff, SIMULATION-ONLY approval, 14/14); Cursor review packet as of 2026-10-12 07:44 JST (S1-S4 step logs incomplete; 25 external negatives not completed); built-in 11/16 regression cases executed through change-scope gate; candidate branch governed by exact digest"
+    }
+  ],
+  "negative_tests": [
+    "11 built-in CLOSED Task/CLOSED revalidation history guard cases implemented in validate-change-scope.mjs (gate pass reported)",
+    "16 built-in PG dependency HOLD allow/reject cases implemented in pg001-dependency-hold-path.mjs (gate pass reported)",
+    "25 external simulated-activation scenario negatives N00–N24: NOT VERIFIED in the preserved evidence at review time; pending/completed outcome must be evaluated only from a later complete log, not inferred from a running process",
+    "Current candidate has human_approval=null; constitutional gate correctly remains FAIL CLOSED until an independent exact-digest Human approval is documented"
+  ],
+  "rollback": "Revert the merge commit through a new governance PR carrying its own docket. Validators return to dbfdc948 behaviour; no product, schema, data or lifecycle state is changed by this PR.",
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE",
+  "human_approval": {
+    "case_id": "GOV-PG001-CROSSBASELINE-REVAL-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "User direct message in current ChatGPT conversation (2026-10-12 JST): '批准 GOV-PG001-CROSSBASELINE-REVAL-001 精確候選 #369 Merge，然後推進 BS-P1-025 Activation。' (Human independently approved candidate; ChatGPT transcription into GitHub is not a Human GitHub signature)",
+    "candidate_digest_sha256": "2732b81a8f8e9bf29a0b86d95411e6bd3fe8628e259e8135c176e8f44ac19e14",
+    "approved_at_unix": 1791798393
+  },
+  "human_approval_provenance": {
+    "channel": "Direct user message in ChatGPT conversation, not GitHub",
+    "recorded_at": "2026-10-12T18:46:33+09:00",
+    "precision_note": "Record time captured just after Human message; actual message timestamp not separately available. This is the record time, not a claimed message send second.",
+    "merge_intent": "Human explicitly approved Merge of #369 in the same direct message; independent BCE, required checks and head SHA verification still required."
+  }
+}

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor } from "./baseline-lineage.mjs";
+import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor, revalidationHistoryChain } from "./baseline-lineage.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -130,8 +130,27 @@ const historicalRevalidationCarryForwardIds=(item,id,currentBaseline)=>{
   }
   return new Set(targetDrift);
 };
+const resolveChainedRevalidationIds=(item,id,currentBaseline,chain)=>{
+  for(const e of chain.errors) errors.push(id+" "+e);
+  if(chain.errors.length) return new Set();
+  for(const r of chain.entries){
+    const task=resolveHistoricalRevalidationTask(r,id);
+    if(!task){ errors.push(id+" revalidation_history entry must reference an existing CLOSED Task"); continue; }
+    for(const aid of r.acceptance_ids){
+      if(!(task.acceptance_links||[]).some(x=>x.acceptance_id===aid)) errors.push(id+" historical revalidation Task "+r.task_id+" does not claim "+aid);
+    }
+  }
+  const laterDrift=acceptanceSemanticDriftIds(root,chain.end,currentBaseline,item.acceptance_links);
+  if(!laterDrift.length){ errors.push(id+" revalidation_history requires semantic drift after "+chain.end); return new Set(); }
+  const ids=validateRevalidation(item,id,currentBaseline,laterDrift);
+  for(const r of chain.entries) for(const aid of r.acceptance_ids) ids.add(aid);
+  return ids;
+};
 const resolveItemRevalidationIds=(item,id,currentBaseline)=>{
+  if(item.revalidation_history!==undefined && item.status!=="DONE") errors.push(id+" revalidation_history requires DONE");
   if(item.build_spec_id===currentBaseline) return new Set();
+  const chain=item.status==="DONE"?revalidationHistoryChain(root,item,currentBaseline):null;
+  if(chain) return resolveChainedRevalidationIds(item,id,currentBaseline,chain);
   const legacyDone=item.status==="DONE" && canPreserveCompletedBaseline(root,item.build_spec_id,currentBaseline,item.acceptance_links);
   if(legacyDone) return new Set();
   if(item.status==="DONE"){
