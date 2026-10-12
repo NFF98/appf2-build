@@ -2,7 +2,7 @@
   "schema_version": 1,
   "delta_id": "BD-025",
   "type": "DESIGN_DELTA",
-  "status": "APPROVED",
+  "status": "IMPLEMENTING",
   "source_finding_ids": [
     "BF-054"
   ],
@@ -79,7 +79,8 @@
     "Human separately approved Build Freeze 2026-10-11; registry source audit scope/shape completed, no runtime tests asserted.",
     "Design PR37 merged 2e74ea19623c81261bf408856543717e943f6f51; Design PR39 merged 17a3a57f15c17a6240b887ee55a6ded64cdf7106.",
     "Scope-clean 15-commit derived Design Freeze source fda9045d0fc1b2b718d56ed49fa09abdce343a5c changes EXACTLY 9 mapped source files against 736c757e72734f46407f8c9afcd81580ae75f0ef; registry structural 307 unique acceptance / 135 unique recovery, signed audit ref.",
-    "Full immutable candidate Build Spec BS-P1-025 53-file tree from post-HOLD main, source ref pinned, CI/BCE required before merge. Cursor execution not yet allowed."
+    "Full immutable candidate Build Spec BS-P1-025 53-file tree from post-HOLD main, source ref pinned, CI/BCE required before merge. Cursor execution not yet allowed.",
+    "BS-P1-025 atomic Activation proposal, not yet merged; historical Build Freeze approved, exact Activation Human decision still pending; T006 remains BLOCKED while T008 revalidates changed F01/F07 Acceptance."
   ],
   "upstream_working_commit": "17a3a57f15c17a6240b887ee55a6ded64cdf7106",
   "freeze_source": {

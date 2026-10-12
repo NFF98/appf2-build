@@ -2,7 +2,7 @@
   "schema_version": 1,
   "finding_id": "BF-054",
   "classification": "SPEC_AMBIGUITY",
-  "status": "BLOCKED",
+  "status": "RESOLVED",
   "build_spec_id": "BS-P1-024",
   "sprint_id": "SP-P1-003",
   "task_id": "T006",
@@ -19,7 +19,8 @@
     "BD-025 scope-clean candidate Design PR #38 created: base 736c757e72734f46407f8c9afcd81580ae75f0ef, HEAD 22ce2b03a571467401faee8e79b4b0496c97f38f; 24/24 exact PR37 patch hunks applied, GitHub compare exactly eight approved paths, 8 commits ahead/0 behind.",
     "Human 2026-10-11 explicitly approved Design PR39 Merge and Build Freeze up to before Cursor execution; Design PR39 merged SHA 17a3a57f15c17a6240b887ee55a6ded64cdf7106.",
     "Human governance transition PR351 merged 7c7accea6161bd7beed476235c03a0e970a0c628 (T006 BLOCKED); subsequent legal HOLD PR354 merged d01092c5403870e34508535f42840b523263b4ba with 4/4 exact-head CI PASS; T006 still BLOCKED, no implementation enabled.",
-    "Human-approved full BS-P1-025 immutable candidate source fda9045d0fc1b2b718d56ed49fa09abdce343a5c (old frozen base 736c757e72734f46407f8c9afcd81580ae75f0ef), 9 source changes, 51 projected outputs, 64 entries, aggregate f46e8ecdb9f183baf82d4a53e40fb61eaed9d340838373d515d10e7a73d342c5 (Build Freeze PR355 pending CI)."
+    "Human-approved full BS-P1-025 immutable candidate source fda9045d0fc1b2b718d56ed49fa09abdce343a5c (old frozen base 736c757e72734f46407f8c9afcd81580ae75f0ef), 9 source changes, 51 projected outputs, 64 entries, aggregate f46e8ecdb9f183baf82d4a53e40fb61eaed9d340838373d515d10e7a73d342c5 (Build Freeze PR355 pending CI).",
+    "PROPOSED rebaseline remediation uses scope-clean locked BS-P1-025 and new T008 revalidation while preserving T001/T007 CLOSED history; effective only if exact Activation PR receives independent CI/BCE and Human Merge."
   ],
   "attempts": [
     {

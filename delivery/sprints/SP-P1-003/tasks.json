@@ -659,7 +659,7 @@
       ],
       "title": "Result contract, S03 App surface & Playable App vertical proof",
       "status": "BLOCKED",
-      "build_spec_id": "BS-P1-024",
+      "build_spec_id": "BS-P1-025",
       "scope": [
         "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
         "Implement S03 Runtime surface so Generated App is visual/interaction primary content and Shell never wraps/mutates Runtime controls.",
@@ -724,7 +724,10 @@
         "src/edge/",
         "src/platform/blueprint/",
         "tests/api/",
-        "tooling/web/vite.config.ts"
+        "tooling/web/vite.config.ts",
+        "supabase/migrations/",
+        "src/platform/evidence/",
+        "tests/unit/"
       ],
       "required_commands": [
         "npm run gate",
@@ -824,6 +827,80 @@
         "EV-SP-P1-003-T007-010",
         "EV-SP-P1-003-T007-011"
       ]
+    },
+    {
+      "task_id": "T008",
+      "backlog_item_ids": [
+        "BL-P1-010"
+      ],
+      "title": "BS-P1-025 F01 PoP/owner read-grant and F07 identity/evidence cross-baseline revalidation",
+      "status": "IN_PROGRESS",
+      "build_spec_id": "BS-P1-025",
+      "scope": [
+        "Revalidate F01-AC-013/016 read-grant and owner PoP protection after BD-025 on the new locked BS-P1-025 baseline without changing historical T001.",
+        "Revalidate F01-AC-017 identity-bound authorization while preserving BL-P1-008 historical T007 CLOSED revalidation.",
+        "Revalidate F07-AC-004 identity/evidence semantics under the replacement baseline without reopening SP-P1-001 or a CLOSED Task.",
+        "Only verified tests and evidence for the four mapped acceptance IDs; keep Stage A and existing product trust boundaries."
+      ],
+      "non_scope": [
+        "No Stage B F05 Share implementation or full Share/Remix/Correction.",
+        "No new Product semantics or edits to locked Build Spec.",
+        "No change to any CLOSED Task or completed revalidation record.",
+        "No production DB mutation, deploy, T006 execution lease, or unapproved product code merge."
+      ],
+      "acceptance_links": [
+        {
+          "acceptance_id": "F01-AC-013",
+          "test_id": "TEST-F01-API-001"
+        },
+        {
+          "acceptance_id": "F01-AC-016",
+          "test_id": "TEST-F01-API-003"
+        },
+        {
+          "acceptance_id": "F01-AC-017",
+          "test_id": "TEST-F01-SEC-007"
+        },
+        {
+          "acceptance_id": "F07-AC-004",
+          "test_id": "TEST-F07-004"
+        }
+      ],
+      "allowed_write_paths": [
+        "src/edge/",
+        "src/platform/intent/",
+        "src/platform/compiler/",
+        "src/platform/blueprint/",
+        "src/platform/evidence/",
+        "tests/contract/",
+        "tests/behavior/",
+        "tests/api/",
+        "tests/regression/",
+        "tests/unit/"
+      ],
+      "required_commands": [
+        "npm run gate",
+        "npm run check:types",
+        "npm run check:lint",
+        "npm run build",
+        "npm run test:contract",
+        "npm run test:behavior",
+        "npm run test:api",
+        "npm run test:regression",
+        "npm run security:audit"
+      ],
+      "required_skills": [
+        "implementer",
+        "test-builder",
+        "reviewer"
+      ],
+      "parallel_safe": false,
+      "product_decision_allowed": false,
+      "blocked_by": [
+        "T001",
+        "T007"
+      ],
+      "completion_evidence": []
     }
   ]
 }
