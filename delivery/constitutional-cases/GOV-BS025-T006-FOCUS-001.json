@@ -11,7 +11,7 @@
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "afb3cf72af819d0caaf7c0f47dffc8125e7671024e5fb6facb481c1352f72fb4",
+  "candidate_digest_sha256": "68a4590dcedc6cab1677806dd2aea5b28dc075a8d07583b00992d355a39f29fa",
   "why5": [
     {
       "question": "Why is T006 still BLOCKED after BS-P1-025 Activation?",
@@ -36,15 +36,16 @@
     {
       "question": "What is the condition for closing T006?",
       "answer": "T006 must first satisfy nine product Acceptance/Test IDs, real S03 E2E and independent Evidence/Review, then become VERIFIED. T008 becomes the sole active Task under a later separately approved legal control transition and must pass four new BS025 security proofs plus independent Closure. An exact REVIEW state with T006 VERIFIED and T008 CLOSED allows sequential Human T006 Closure rather than illegal Task regression or same-commit closure. Final T006 CLOSED and Sprint closure are separate approved control operations. Neither this PR nor the synthetic checks grant execution or Human approval.",
-      "evidence_ref": "SP-P1-003 T006 nine acceptance_links, ci/run-product-ci.mjs required active-task tests; GitHub #372 activation and user focus instruction"
+      "evidence_ref": "Existing task Evidence gate for all nine T006 tests and four T008 tests; new validate-backlog T006-before-T008 guard, validate-sprint terminal waiting guard, validate-change-scope T008 REVIEW-to-CLOSED exact revalidation closure guard"
     }
   ],
   "negative_tests": [
-    "Wrong base SHA, changed paths, modified closed history, or old candidate digest rejected by constitution/change-scope.",
+    "Wrong base SHA, changed six-path scope, modified closed history, or stale candidate digest rejected by constitution/change-scope.",
     "T008 BLOCKED while T006 IN_PROGRESS/REVIEW keeps BS025 revalidations truly IN_PROGRESS.",
     "15 in-memory synthetic T006/T008 order tests: T008-before-product and T006 premature Closure blocked, exact four AC/Test and three CLOSED Backlog revalidations required.",
     "13 in-memory synthetic Sprint terminal-wait tests: only active T006 VERIFIED, closed T008 with evidence, all three exact CLOSED BS025 revalidations, and Sprint REVIEW allowed; wrong status/owner/branch/evidence rejected.",
-    "Human exact-candidate approval, future transition PR approval, CI, BCE, merge and individual Closure decisions remain separate."
+    "Human exact-candidate approval, future transition PR approval, CI, BCE, merge and individual Closure decisions remain separate.",
+    "Change-scope revalidation closure has 13 synthetic cases: T008 REVIEW→CLOSED permitted only with evidence/bindings; T008 IN_PROGRESS→CLOSED bypass rejected, while old T007 historical direct case remains unchanged."
   ],
   "rollback": "Use a new explicitly Human-approved governance PR to return T006 to BLOCKED and T008 to IN_PROGRESS, preserving historical proof. Never rewrite CLOSED records.",
   "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
