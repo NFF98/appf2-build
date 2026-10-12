@@ -1292,13 +1292,10 @@ ol {
   padding: 32px 24px 64px;
 }
 
-.s03-main:focus {
-  outline: none;
-}
-
+/* Focus moves here on arrival for assistive technology; every control inside keeps its own focus ring. */
+.s03-main:focus,
 .s03-main:focus-visible {
-  outline: 2px solid var(--teal-500);
-  outline-offset: 4px;
+  outline: none;
 }
 
 .s03-processing:empty {
