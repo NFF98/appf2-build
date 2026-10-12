@@ -2,7 +2,7 @@
   "case_id": "GOV-BS025-T006-FOCUS-001",
   "base_sha": "e0018f52388789ba10c3f3b034e701949c2f4564",
   "constitution_version": "1.0",
-  "title": "Single-use T006 focus recovery after #372; pause unapproved T008 without rewriting revalidation evidence",
+  "title": "Single-use T006 focus recovery with fail-closed T008-before-T006 final closure protection",
   "change_class": "BOUNDED_GOVERNANCE_CONTROL_REPAIR",
   "exact_changed_paths": [
     "delivery/CURRENT-SPRINT.json",
@@ -10,7 +10,7 @@
     "harness/scripts/validate-backlog.mjs",
     "harness/scripts/validate-change-scope.mjs"
   ],
-  "candidate_digest_sha256": "cea45592414fb62774b073bd864c02d3b1f7832b7eabcc9339e8829f60f56e52",
+  "candidate_digest_sha256": "64696ec122aaa0e7c7edd74a72be9fdd7d5c3ad1a4c55305a8c9dcd5c9ab2fb0",
   "why5": [
     {
       "question": "Why is T006 still BLOCKED after BS-P1-025 Activation?",
@@ -34,14 +34,15 @@
     },
     {
       "question": "What is the condition for closing T006?",
-      "answer": "None of this claims T006 complete: it merely permits T006 to be active. Existing nine mapped Acceptance/Test IDs and Playable App real interaction E2E must pass executable tests, independent BCE, evidence normalization, Human implementation merge and final closure approval. No Worker or deployment automatically starts.",
+      "answer": "T006 must first complete its nine mapped product tests, S03 browser E2E and independent Review/Evidence. T006 may reach independently VERIFIED without final CLOSED; T008 then resumes under a separate legal control transition, independently proves four BS-P1-025 revalidation ACs, has its own PASS evidence/review and Human Closure; all three backlog revalidations must be CLOSED before T006 final CLOSED. New BS025 fail-closed validator checks both cross-task status and exact ownership; no Human approval or Cursor execution is inferred.",
       "evidence_ref": "SP-P1-003 T006 nine acceptance_links, ci/run-product-ci.mjs required active-task tests; GitHub #372 activation and user focus instruction"
     }
   ],
   "negative_tests": [
-    "Wrong base SHA, different changed files, changed Backlog/manifest/Build, another Task/status, modified Task definition or CLOSED evidence all fail one-shot T006 focus gate.",
-    "T008 is BLOCKED, its four revalidations stay IN_PROGRESS and cannot be considered VERIFIED/CLOSED.",
-    "Constitutional exact digest and direct Human approval required before protected validators may merge."
+    "Single-use T006 focus switch rejects wrong main base SHA, unexpected changed files, or CLOSED history edits.",
+    "T008 remains BLOCKED while T006 executes/reviews; all four revalidations remain IN_PROGRESS and are not claimed as PASS.",
+    "Cross-task closure/order validator includes 15 synthetic in-memory positive/negative cases for premature T008, premature T006 CLOSED, wrong AC/Test ownership, missing evidence, altered/reopened revalidation and wrong baseline.",
+    "Authentic pre-Phase4 exact Human approval, all required CI/BCE and a separate Merge decision remain mandatory."
   ],
   "rollback": "Use a new explicitly Human-approved governance PR to return T006 to BLOCKED and T008 to IN_PROGRESS, preserving historical proof. Never rewrite CLOSED records.",
   "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
