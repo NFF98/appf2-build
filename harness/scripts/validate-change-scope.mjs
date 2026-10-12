@@ -450,6 +450,7 @@ const t006R2MaintenancePaths=new Set([
   "delivery/sprints/SP-P1-003/tasks.json",
   "harness/scripts/validate-backlog.mjs",
   "harness/scripts/validate-change-scope.mjs",
+  "ci/run-product-ci.mjs",
   "delivery/constitutional-cases/GOV-T006-R2-MAINT-001.json"
 ]);
 const t006R2ExpectedMaintenance=[

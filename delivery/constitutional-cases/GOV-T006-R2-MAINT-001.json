@@ -2,65 +2,53 @@
   "case_id": "GOV-T006-R2-MAINT-001",
   "base_sha": "67cd2217c7b94cc564c5e730aa03227c2085fb31",
   "constitution_version": "1.0",
-  "title": "BS-P1-025 T006 R2: exact F00-001/038 fixture maintenance authority and guard-preserving lint refactor",
+  "title": "BS-P1-025 T006 R2 exact fixture rebind, lint cleanup and CI Product N/A guard",
   "change_class": "BOUNDED_GOVERNANCE_CONTROL_REPAIR",
   "exact_changed_paths": [
+    "ci/run-product-ci.mjs",
     "delivery/sprints/SP-P1-003/tasks.json",
     "harness/scripts/validate-backlog.mjs",
     "harness/scripts/validate-change-scope.mjs"
   ],
-  "candidate_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc",
+  "candidate_digest_sha256": "e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4",
   "why5": [
     {
-      "question": "Why does T006 R2 PR #374 fail CI and Governance Gate despite reported 76 local browser E2E passes?",
-      "answer": "R2 modified two previously owned tests to reflect the locked BS-P1-025 PoP proof and read-only delivery protocol; active T006 lacked the narrow explicit test maintenance authorization. CI rejected both mapped legacy test body changes.",
-      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38310603879 ; https://github.com/NFF98/appf2-build/issues/301#issuecomment-6132963624"
+      "question": "Why did approved PR #375 still fail CI Gate?",
+      "answer": "Governance/Attack/CodeQL and repository lint passed. Product CI invoked nine active T006 tests against main-based governance-only changes; the eight implemented tests live in still-unmerged PR #374 and the ninth is still absent. CI Gate failed because none of those nine were present on the governance-only branch.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/375#issuecomment-6133443170"
     },
     {
-      "question": "Why exactly these two maintenance authorizations rather than relaxed validation or test deletion?",
-      "answer": "The gate matches an authorization by original TEST ID and exact test path under mode BASELINE_FIXTURE_REBIND from direct superseded BS-P1-024 to locked BS-P1-025. Preserve legacy blank-prompt, capsule editable, one logical CREATE and no unauthorized admission guarantees. Do not change closed Task definitions.",
-      "evidence_ref": "harness/scripts/validate-test-integrity.mjs and harness/scripts/validate-sprint.mjs; https://github.com/NFF98/appf2-build/pull/374"
+      "question": "Why add a narrow N/A branch instead of marking Product CI PASS?",
+      "answer": "Only exactly five governance and CI files against fixed main SHA can match; independent Change Scope Gate must pass. Product CI explicitly announces GOVERNANCE-ONLY N/A (NOT PASS). Any product/test diff continues full nine mapped test enforcement, preventing false acceptance.",
+      "evidence_ref": "ci/run-product-ci.mjs and harness/scripts/validate-change-scope.mjs candidate"
     },
     {
-      "question": "Why must the protected harness lint refactor be in this separately governed patch?",
-      "answer": "The merged main checkT006T008Order function exceeds ESLint complexity threshold 15; splitting identical checks into helpers preserves test guard predicates and error ordering. Unchanged synthetic T006/T008 order cases must be rerun before approval.",
-      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6133117669 ; harness/scripts/validate-backlog.mjs"
+      "question": "Why preserve the exact F00-001 and F00-038 maintenance records?",
+      "answer": "The previous approved candidate explicitly allowed only BS-P1-024 -> BS-P1-025 PoP and read-only delivery fixture compatibility for two known test IDs; the same Task-only records stay unchanged and the original CLOSED task truth stays immutable.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/375 and initial approved SHA-256 8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc"
     },
     {
-      "question": "Why adjust the execution-time scope gate instead of bypassing it?",
-      "answer": "T006 ACTIVE normally rejects delivery/sprints and harness governance-only path changes. An exact four-path, exact old-main-SHA and Task-field-only exception supports this one narrowly authorized correction including its constitutional docket; other governance or Product edits remain forbidden.",
-      "evidence_ref": "harness/scripts/validate-change-scope.mjs; https://github.com/NFF98/appf2-build/pull/375"
+      "question": "Why is a new exact Human approval needed?",
+      "answer": "Adding ci/run-product-ci.mjs and updating the scope exception changes the candidate's constitutional digest. Old approval was exactly scoped to the prior three governance file bytes. Do not carry that approval to the new candidate; record PENDING, verify exact new digest, then require a fresh explicit Human approval before constitutional CI can pass.",
+      "evidence_ref": "harness/scripts/validate-constitutional-change.mjs (human approval exact-digest validation)"
     },
     {
-      "question": "What does this PR NOT approve or complete?",
-      "answer": "It cannot validate absent TEST-F00-037, missing live S05 session owner, mobile Inspection CTA mismatch, live-model/real-PG browser path, product PR merge, T008 or T006 closure. No Task status, build baseline or historical CLOSED Task changes. Human exact-byte approval and a separate merge decision are still required.",
+      "question": "What work remains excluded from this governance-only change?",
+      "answer": "T006 TEST-F00-037 requires actual S05 owner/session seam; product PR #374 still requires mobile return CTA fix and full independent product BCE. No product test, merge, deploy, T008 or Task closure may be implied by green governance CI.",
       "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6133117669"
     }
   ],
   "negative_tests": [
-    "Constitutional candidate bytes bound to SHA-256 over only three changed files; any changed content or base SHA invalidates docket.",
-    "Two exact authorization keys and test paths only; no Task acceptance, status, non-scope or closed Task history edits.",
-    "No product/test files in governed PR; unexpected fourth non-docket path fails scope.",
-    "Reject extra maintenance authorizations, wrong from/to Build Spec, wrong ACTIVE Sprint Task, changed build control.",
-    "Preserve all existing T006-before-T008 and T008-closure negative safety cases; check synthetic suites and CI before merge.",
-    "Approval_status=PENDING_HUMAN_EXACT_DIGEST_APPROVAL; no claim of Human-approved exact digest and no automatic merge."
+    "Wrong base SHA fails; exact changed paths include only the four governance/control files plus one CI runner file.",
+    "Any test/source/migration/package or extra path forces full product:ci path, never governance N/A.",
+    "Exact T006 maintenance authority and unchanged other Task definitions required by Change Scope Gate.",
+    "If delegated Change Scope Gate rejects candidate, product:ci exits failure; not a skip.",
+    "Original historical T006/T008 closure gate remains fail-closed and its synthetic tests run with npm run gate.",
+    "Constitutional human approval must match new exact digest; prior Human approval for old digest is not reused.",
+    "PRODUCT CI N/A is never labeled nine tests PASS; product #374 remains full acceptance gated."
   ],
-  "rollback": "Revert through a future separately Human-approved constitutional/governance PR with its own fresh byte-bound docket; never rewrite Task history or bypass gate.",
-  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE_PROVENANCE_REVIEW_REQUIRED",
-  "human_approval": {
-    "case_id": "GOV-T006-R2-MAINT-001",
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "ChatGPT current conversation, 2026-10-13 Asia/Tokyo, direct user turn: \"批准 PR #375 精確候選 SHA-256 8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc 的治理修正；批准記錄核准證據並重跑 CI，但不批准 Merge。\"",
-    "candidate_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc",
-    "approved_at_unix": 1791842442
-  },
-  "human_approval_provenance": {
-    "source": "Direct user message in this ChatGPT conversation, not a GitHub comment and not an assistant-authored approval.",
-    "verbatim_user_message": "批准 PR #375 精確候選 SHA-256 8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc 的治理修正；批准記錄核准證據並重跑 CI，但不批准 Merge。",
-    "timestamp_note": "approved_at_unix is the contemporaneous evidence-recording timestamp (2026-10-13 07:00:42 JST), not a second-precision authenticated message timestamp.",
-    "independent_check_required": "Independent Human reviewer must verify the user actually approved this exact SHA-256 of the three candidate files; ChatGPT/GitHub CI cannot authenticate the person by a relayed provenance record.",
-    "merge_approval": "NOT GIVEN: user expressly withheld Merge approval."
-  }
+  "rollback": "Only separately Human-approved revert governance PR with own exact byte-bound docket; do not force push, change closed Task truth or bypass tests.",
+  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
+  "human_approval": null,
+  "supersedes_earlier_approval_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc"
 }
