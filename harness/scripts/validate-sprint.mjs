@@ -91,6 +91,75 @@ const validateActiveTaskDependencies=(active,taskById)=>{
     }
   }
 };
+
+/**
+ * Sole terminal handoff window after independently CLOSED T008, before final
+ * Human-approved T006 Closure. This never marks a test, review or approval PASS.
+ * The backlog and evidence gates still validate the underlying proof.
+ */
+const exactT006TerminalControl=(currentSprint,t006,t008)=>{
+  const expected={active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T006",status:"REVIEW"};
+  const actual={active_sprint:currentSprint?.active_sprint,active_build_spec:currentSprint?.active_build_spec,active_task:currentSprint?.active_task,status:currentSprint?.status};
+  return JSON.stringify(actual)===JSON.stringify(expected) &&
+    t006?.status==="VERIFIED" && t008?.status==="CLOSED" &&
+    Array.isArray(t006.completion_evidence) && !!t006.completion_evidence.length &&
+    Array.isArray(t008.completion_evidence) && !!t008.completion_evidence.length;
+};
+const exactBs025ClosedT008Revalidation=(r,aids)=>
+  r?.status==="CLOSED" &&
+  r.target_build_spec_id==="BS-P1-025" &&
+  r.sprint_id==="SP-P1-003" &&
+  r.task_id==="T008" &&
+  Array.isArray(r.acceptance_ids) &&
+  r.acceptance_ids.length===aids.length &&
+  aids.every(aid=>r.acceptance_ids.includes(aid));
+const isBs025T006ClosureWaiting=({currentSprint,taskDoc,queue})=>{
+  const tasks=taskDoc?.tasks||[];
+  const t006=tasks.find(t=>t.task_id==="T006");
+  const t008=tasks.find(t=>t.task_id==="T008");
+  if(!exactT006TerminalControl(currentSprint,t006,t008)) return false;
+  return [
+    ["BL-P1-008",["F01-AC-017"]],
+    ["BL-P1-010",["F01-AC-013","F01-AC-016"]],
+    ["BL-P1-031",["F07-AC-004"]]
+  ].every(([id,aids])=>
+    exactBs025ClosedT008Revalidation(
+      queue?.items?.find(x=>x.backlog_item_id===id)?.revalidation,aids));
+};
+const testBs025T006ClosureWaiting=()=>{
+  const mk=()=>({
+    currentSprint:{active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T006",status:"REVIEW"},
+    taskDoc:{tasks:[{task_id:"T006",status:"VERIFIED",completion_evidence:["SYNTHETIC-ONLY"]},{task_id:"T008",status:"CLOSED",completion_evidence:["SYNTHETIC-ONLY"]}]},
+    queue:{items:[
+      {backlog_item_id:"BL-P1-008",revalidation:{status:"CLOSED",target_build_spec_id:"BS-P1-025",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-017"]}},
+      {backlog_item_id:"BL-P1-010",revalidation:{status:"CLOSED",target_build_spec_id:"BS-P1-025",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-013","F01-AC-016"]}},
+      {backlog_item_id:"BL-P1-031",revalidation:{status:"CLOSED",target_build_spec_id:"BS-P1-025",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F07-AC-004"]}}
+    ]}
+  });
+  const cases=[
+    ["exact terminal handoff",true,x=>x],
+    ["other Sprint",false,x=>{x.currentSprint.active_sprint="SP-P1-004";return x;}],
+    ["other baseline",false,x=>{x.currentSprint.active_build_spec="BS-P1-024";return x;}],
+    ["wrong current task",false,x=>{x.currentSprint.active_task="T008";return x;}],
+    ["ACTIVE instead of REVIEW",false,x=>{x.currentSprint.status="ACTIVE";return x;}],
+    ["T006 not VERIFIED",false,x=>{x.taskDoc.tasks[0].status="REVIEW";return x;}],
+    ["T008 not CLOSED",false,x=>{x.taskDoc.tasks[1].status="REVIEW";return x;}],
+    ["no T006 evidence",false,x=>{x.taskDoc.tasks[0].completion_evidence=[];return x;}],
+    ["no T008 evidence",false,x=>{x.taskDoc.tasks[1].completion_evidence=[];return x;}],
+    ["one revalidation OPEN",false,x=>{x.queue.items[1].revalidation.status="IN_PROGRESS";return x;}],
+    ["wrong revalidation Task owner",false,x=>{x.queue.items[0].revalidation.task_id="T007";return x;}],
+    ["wrong Acceptance coverage",false,x=>{x.queue.items[2].revalidation.acceptance_ids=["F07-AC-003"];return x;}],
+    ["missing revalidation item",false,x=>{x.queue.items.pop();return x;}]
+  ];
+  for(const [label,expected,mutate] of cases){
+    const input=mutate(mk());
+    const actual=isBs025T006ClosureWaiting(input);
+    if(actual!==expected) throw Error("BS025 closure-wait synthetic guard FAILED: "+label);
+  }
+  return cases.length;
+};
+console.log("- BS025 T006 post-T008 closure-wait synthetic scope tests: "+testBs025T006ClosureWaiting()+"/13 PASS (synthetic, not Product or Human approval).");
+
 const validateActiveTask=td=>{
   const taskById=new Map((td.tasks||[]).map(t=>[t.task_id,t]));
   const active=taskById.get(cs.active_task);
@@ -99,7 +168,10 @@ const validateActiveTask=td=>{
     return;
   }
   const allowed={ACTIVE:new Set(["IN_PROGRESS"]),REVIEW:new Set(["REVIEW"]),BLOCKED:new Set(["BLOCKED"])};
-  if(!allowed[cs.status]?.has(active.status)) errors.push("active_task status "+active.status+" incompatible with Sprint "+cs.status);
+  if(!allowed[cs.status]?.has(active.status) &&
+     !isBs025T006ClosureWaiting({currentSprint:cs,taskDoc:td,queue:backlog})){
+    errors.push("active_task status "+active.status+" incompatible with Sprint "+cs.status);
+  }
   validateActiveTaskDependencies(active,taskById);
 };
 const maintenanceLabel=ctx=>ctx.sid+"/"+ctx.task.task_id;

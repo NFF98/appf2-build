@@ -2,8 +2,8 @@
   "schema_version": 1,
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-025",
-  "active_task": "T008",
+  "active_task": "T006",
   "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "PROPOSED pre-Cursor validation of BS-P1-025 via T008 (F01/F07 drift revalidation); pending Human exact Activation approval and CI; T006 BLOCKED, no lease/deployment."
+  "reason": "Human direction 2026-10-12: prioritize T006 CLOSE; T008 execution paused (BLOCKED), four T008 revalidations stay IN_PROGRESS and unverified; no new Task, no closed-history edit, no deployment."
 }

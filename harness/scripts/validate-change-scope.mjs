@@ -84,7 +84,11 @@ const unchangedRevalidationBinding=(oldR,newR,ctx)=>{
 };
 const exactlyClosingTask=(oldTask,newTask,oldR,newR)=>{
   if(!oldTask || !newTask || oldTask.task_id!==newTask.task_id) return false;
-  return oldTask.status==="IN_PROGRESS" &&
+  // Historical T007 can retain its existing direct closure route; T008 must
+  // first enter REVIEW and produce independent evidence before CLOSED.
+  return (oldTask.status==="IN_PROGRESS" ||
+    (oldTask.task_id==="T008" && oldTask.status==="REVIEW")) &&
+    (oldTask.task_id!=="T008" || oldTask.status==="REVIEW") &&
     newTask.status==="CLOSED" &&
     oldTask.build_spec_id===oldR.target_build_spec_id &&
     newTask.build_spec_id===newR.target_build_spec_id;
@@ -136,6 +140,13 @@ const checkRevalidationClosureGuard=()=>{
   const newTask={...oldTask,status:"CLOSED",completion_evidence:["EV-SP-P1-003-T007-001"]};
   const oldTd={sprint_id:"SP-P1-003",tasks:[oldTask]},newTd={sprint_id:"SP-P1-003",tasks:[newTask]};
   const replace=(base,patch)=>({...base,...patch});
+  const t008R={...revalidation,task_id:"T008",target_build_spec_id:"BS-P1-025"};
+  const t008Q={...oldQueue,build_spec_id:"BS-P1-025",items:[{...item,revalidation:t008R}]};
+  const t008QC={...t008Q,items:[{...item,revalidation:{...t008R,status:"CLOSED"}}]};
+  const t008Before={...oldTask,task_id:"T008",status:"REVIEW",build_spec_id:"BS-P1-025"};
+  const t008After={...t008Before,status:"CLOSED",completion_evidence:["SYNTHETIC-ONLY"]};
+  const t008Td0={sprint_id:"SP-P1-003",tasks:[t008Before]};
+  const t008Td1={sprint_id:"SP-P1-003",tasks:[t008After]};
   const cases=[
     ["valid exact closure",true,oldQueue,newQueue,oldTd,newTd],
     ["no evidence",false,oldQueue,newQueue,oldTd,replace(newTd,{tasks:[replace(newTask,{completion_evidence:[]})]})],
@@ -147,12 +158,14 @@ const checkRevalidationClosureGuard=()=>{
     ["different revalidation Task",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED",task_id:"T006"}}]}),oldTd,newTd],
     ["different acceptance scope",false,oldQueue,replace(newQueue,{items:[{...item,revalidation:{...revalidation,status:"CLOSED",acceptance_ids:["F01-AC-005"]}}]}),oldTd,newTd],
     ["extra edited backlog metadata",false,oldQueue,replace(newQueue,{items:[{...newQueue.items[0],priority:"P0"}]}),oldTd,newTd],
-    ["wrong Sprint identity",false,oldQueue,newQueue,oldTd,replace(newTd,{sprint_id:"SP-P1-004"})]
+    ["wrong Sprint identity",false,oldQueue,newQueue,oldTd,replace(newTd,{sprint_id:"SP-P1-004"})],
+    ["T008 independent REVIEW to CLOSED",true,t008Q,t008QC,t008Td0,t008Td1],
+    ["T008 cannot skip REVIEW",false,t008Q,t008QC,replace(t008Td0,{tasks:[{...t008Before,status:"IN_PROGRESS"}]}),t008Td1]
   ];
   for(const [name,expected,before,after,tasksBefore,tasksAfter] of cases){
     if(exactRevalidationClosures(before,after,tasksBefore,tasksAfter)!==expected) errors.push("Revalidation closure guard self-test failed: "+name);
   }
-  if(!errors.some(e=>e.startsWith("Revalidation closure guard self-test failed:"))) console.log("- Revalidation closure guard: 11 positive/negative regression cases PASS.");
+  if(!errors.some(e=>e.startsWith("Revalidation closure guard self-test failed:"))) console.log("- Revalidation closure guard: 13 positive/negative regression cases PASS.");
 };
 checkRevalidationClosureGuard();
 
@@ -375,11 +388,66 @@ if(baseSha && !/^0+$/.test(baseSha)){
   }
 }
 
+// Exactly one post-#372 correction: pause newly introduced T008 and focus
+// the existing active Sprint on T006 without altering its Task definitions,
+// any revalidation binding/status, or a single CLOSED Task.
+const t006FocusExpectedPaths=[
+  "delivery/CURRENT-SPRINT.json",
+  "delivery/constitutional-cases/GOV-BS025-T006-FOCUS-001.json",
+  "delivery/sprints/SP-P1-003/tasks.json",
+  "harness/scripts/validate-backlog.mjs",
+  "harness/scripts/validate-change-scope.mjs",
+  "harness/scripts/validate-sprint.mjs"
+];
+const exactT006FocusPaths=()=>
+  baseSha==="e0018f52388789ba10c3f3b034e701949c2f4564" &&
+  stable([...changed].sort())===stable([...t006FocusExpectedPaths].sort());
+const exactT006FocusStableRegistry=()=>
+  sameJson(showBaseJson("build-spec/CURRENT.json"),currentBuild) &&
+  sameJson(showBaseJson("delivery/backlog/QUEUE.json"),readHeadJson("delivery/backlog/QUEUE.json")) &&
+  sameJson(showBaseJson("delivery/sprints/SP-P1-003/manifest.json"),
+    readHeadJson("delivery/sprints/SP-P1-003/manifest.json"));
+const exactT006FocusSprint=(before,after)=>{
+  const oldIdentity={sprint:before.active_sprint,build:before.active_build_spec,task:before.active_task,status:before.status};
+  const newIdentity={sprint:after.active_sprint,build:after.active_build_spec,task:after.active_task,status:after.status};
+  return sameJson(oldIdentity,{sprint:"SP-P1-003",build:"BS-P1-025",task:"T008",status:"ACTIVE"}) &&
+    sameJson(newIdentity,{sprint:"SP-P1-003",build:"BS-P1-025",task:"T006",status:"ACTIVE"}) &&
+    sameJson(omit(before,["active_task","reason"]),omit(after,["active_task","reason"]));
+};
+const exactT006FocusTaskStates=(beforeTd,afterTd)=>{
+  if(!sameJson(omit(beforeTd,["tasks"]),omit(afterTd,["tasks"])) ||
+    beforeTd.tasks.length!==afterTd.tasks.length) return false;
+  const expected={T006:["BLOCKED","IN_PROGRESS"],T008:["IN_PROGRESS","BLOCKED"]};
+  const seen=new Set();
+  for(let i=0;i<beforeTd.tasks.length;i++){
+    const prev=beforeTd.tasks[i],next=afterTd.tasks[i];
+    if(prev.task_id!==next.task_id ||
+       !sameJson(omit(prev,["status"]),omit(next,["status"]))) return false;
+    const states=Object.hasOwn(expected,prev.task_id)?expected[prev.task_id]:null;
+    if(!states){
+      if(prev.status!==next.status) return false;
+      continue;
+    }
+    if(prev.status!==states[0] || next.status!==states[1]) return false;
+    seen.add(prev.task_id);
+  }
+  return seen.size===2;
+};
+const t006FocusSwitch=(()=>{
+  if(!exactT006FocusPaths() || !exactT006FocusStableRegistry()) return false;
+  const oldCS=showBaseJson("delivery/CURRENT-SPRINT.json");
+  const oldTD=showBaseJson("delivery/sprints/SP-P1-003/tasks.json");
+  const newTD=readHeadJson("delivery/sprints/SP-P1-003/tasks.json");
+  if(!oldCS || !oldTD || !newTD) return false;
+  return exactT006FocusSprint(oldCS,cs) && exactT006FocusTaskStates(oldTD,newTD);
+})();
+if(t006FocusSwitch) console.log("- Exact Human-directed T006 focus switch recognized: T008 BLOCKED, revalidations still unfinished.");
+
 if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
+}else if(safeControlTransition || t006FocusSwitch || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);
