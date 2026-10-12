@@ -34,7 +34,8 @@ export function assertContinuitySecret(secret: unknown): asserts secret is strin
   }
 }
 
-async function macKey(secret: string): Promise<CryptoKey> {
+/** HMAC-SHA-256 key over the trusted identity secret; every token kind uses its own MAC domain prefix. */
+export async function macKey(secret: string): Promise<CryptoKey> {
   assertContinuitySecret(secret);
   return crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }

@@ -718,7 +718,15 @@ export class RuntimeInstance {
     const tx = new StoreTransaction(index, store, (boundary) => guard.check(boundary));
     try {
       guard.check("OPERATION_ADMISSION");
-      executeAction({ index, tx, action, envelope: { payload: event.payload, scope: event.lexical_scope_bindings }, clock: this.host.services.clock, guard });
+      executeAction({
+        index,
+        tx,
+        action,
+        envelope: { payload: event.payload, scope: event.lexical_scope_bindings },
+        clock: this.host.services.clock,
+        guard,
+        observeTimer: (slot) => this.timers.observe(slot)
+      });
       this.preCommit(guard, index, tx, baseline);
     } catch (error: unknown) {
       this.abandon(error, operation, action.id, baseline);

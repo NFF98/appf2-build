@@ -11,7 +11,7 @@ import {
 } from "./capability-runtime.js";
 import type { ExecutionIndex, NodeExecution } from "./execution-index.js";
 import { evaluateTyped, type EvaluationEnv } from "./expression-vm.js";
-import type { MonotonicClock } from "./monotonic-timer.js";
+import type { MonotonicClock, TimerObservation } from "./monotonic-timer.js";
 import { nodeInstanceKeyId, singletonKey, type NodeInstanceKey } from "./node-instance-key.js";
 import type { StoreTransaction } from "./instance-store.js";
 import { assertLocalStateWithinBudget } from "./resource-guard.js";
@@ -32,6 +32,7 @@ export interface ActionRun {
   readonly envelope: DispatchEnvelope;
   readonly clock: MonotonicClock;
   readonly guard: ActionGuard;
+  readonly observeTimer?: (slot: string) => TimerObservation | undefined;
 }
 
 interface StepContext {
@@ -40,6 +41,7 @@ interface StepContext {
   readonly env: EvaluationEnv;
   readonly clock: MonotonicClock;
   readonly guard: ActionGuard;
+  readonly observeTimer?: (slot: string) => TimerObservation | undefined;
 }
 
 const NO_SCOPE: LexicalScope = new Map();
@@ -90,7 +92,13 @@ function invokeCapability(step: Extract<ActionStep, { type: "INVOKE_CAPABILITY" 
   const slot = tx.readCapability(keyId) ?? invariantBroken(`Capability-local state slot ${keyId} was never initialized.`);
   const props = resolveProps(target, tx.env, NO_SCOPE);
   const node = { node_id: target.node.id, capability: target.node.capability, props };
-  const result = callHandler(target, key, { action: step.capability_action, args, state: slot.state }, { node, rng: tx.rng, clock: context.clock });
+  const timer = context.observeTimer?.(keyId);
+  const result = callHandler(
+    target,
+    key,
+    { action: step.capability_action, args, state: slot.state },
+    { node, rng: tx.rng, clock: context.clock, ...(timer === undefined ? {} : { timer }) }
+  );
   context.guard.check("HANDLER_RETURN");
   const next = applyStatePatch(target, slot.state, result.capability_state_patch);
   checkStateInvariants(target, next, props);
@@ -126,8 +134,8 @@ function executeStep(step: ActionStep, context: StepContext): void {
  * guard runs before and after every step, so a closed / stale / timed-out token never reaches the next step.
  */
 export function executeAction(run: ActionRun): void {
-  const { index, tx, action, envelope, clock, guard } = run;
-  const context: StepContext = { index, tx, clock, guard, env: { ...tx.env, event: envelope.payload, scope: envelope.scope } };
+  const { index, tx, action, envelope, clock, guard, observeTimer } = run;
+  const context: StepContext = { index, tx, clock, guard, observeTimer, env: { ...tx.env, event: envelope.payload, scope: envelope.scope } };
   for (const [stepIndex, step] of action.steps.entries()) {
     try {
       guard.check("STEP_BEFORE");

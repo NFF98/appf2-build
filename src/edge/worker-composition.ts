@@ -1,5 +1,11 @@
 import { VALIDATOR_REGISTRY } from "../../generated/capabilities/validator-registry.js";
+import { createExecutionAdmissionService } from "../platform/blueprint/execution-admission.js";
 import { SplitBlueprintAdmissionRepository } from "../platform/blueprint/f02-admission-port.js";
+import { PostgresOriginalIntentReadRepository } from "../platform/blueprint/original-intent-lineage.js";
+import type { PostgresExecutor } from "../platform/blueprint/postgres-blueprint-repository.js";
+import { createBundledReleaseSource } from "../platform/capabilities/bundled-release.js";
+import { BLUEPRINT_SCHEMA_RANGE, RUNTIME_VERSION } from "../platform/capabilities/registry.js";
+import { CORE_CAPABILITY_HANDLERS } from "../platform/runtime/core-handlers.js";
 import {
   WorkerPostgresExecutor,
   type HyperdrivePostgresBinding,
@@ -20,6 +26,7 @@ import {
 } from "../platform/evidence/postgres-evidence-repository.js";
 import type { EvidenceIngestionDiagnostics } from "../platform/evidence/evidence-repository.js";
 import type { EvidenceRetentionDiagnostics } from "../platform/evidence/evidence-retention-maintenance.js";
+import type { BlueprintDeliveryComposition } from "./blueprint-delivery.js";
 import { createF07EventsBatchHandler } from "./evidence-runtime.js";
 import { createIntentApiHandler } from "./intent-api.js";
 
@@ -128,5 +135,25 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
     },
     intent: createIntentApiHandler({ service, createRequestId: () => crypto.randomUUID() }),
     events: (request) => eventsHandler()(request)
+  };
+}
+
+/** Original-Intent body read + fresh execution admission against the deployment's actual bundled handler catalog. */
+export function createBlueprintDeliveryComposition(env: Appf2WorkerEnv, context: WorkerRequestDbContext): BlueprintDeliveryComposition {
+  return composeBlueprintDelivery(new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH, context));
+}
+
+/** The executor must already be bound to the verified request RLS context. */
+export function composeBlueprintDelivery(executor: PostgresExecutor & ClosableExecutor): BlueprintDeliveryComposition {
+  const lineage = new PostgresOriginalIntentReadRepository(executor);
+  return {
+    executor,
+    lineage,
+    admission: createExecutionAdmissionService({
+      content: lineage,
+      releases: createBundledReleaseSource({ bundledHandlers: CORE_CAPABILITY_HANDLERS }),
+      runtimeVersion: RUNTIME_VERSION,
+      supportedBlueprintSchemaRange: BLUEPRINT_SCHEMA_RANGE
+    })
   };
 }

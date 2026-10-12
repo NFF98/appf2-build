@@ -1,5 +1,5 @@
 /**
- * First-party WebCrypto P-256 proof-of-possession for F01 intent mutations (server verifier only).
+ * First-party WebCrypto P-256 proof-of-possession for F01 intent mutations and original-Intent reads (server verifier).
  *
  * Wire protocol v1 (frozen; the browser client must produce byte-identical transcripts):
  * - `X-Appf2-PoP-Key`: base64url (no padding) SubjectPublicKeyInfo of an uncompressed P-256 ECDSA key (91 bytes).
@@ -108,14 +108,18 @@ async function importP256(spki: Uint8Array<ArrayBuffer>): Promise<CryptoKey | nu
 }
 
 /** Fail-closed verifier: any malformed, duplicated (comma-joined), stale or non-matching input returns null. */
-export async function verifyMutationProof(request: MutationProofRequest, nowMs: number): Promise<VerifiedMutationProof | null> {
-  const spki = decodeBase64Url(request.headers.get(POP_KEY_HEADER) ?? "", MAX_SPKI_CHARS);
-  const signature = decodeBase64Url(request.headers.get(POP_SIGNATURE_HEADER) ?? "", MAX_SIGNATURE_CHARS);
-  const timestamp = freshTimestamp(request.headers.get(POP_TIMESTAMP_HEADER), nowMs);
+async function verifyP256Proof(
+  headers: Headers,
+  nowMs: number,
+  transcriptAt: (timestampMs: number) => Promise<Uint8Array<ArrayBuffer>> | Uint8Array<ArrayBuffer>
+): Promise<VerifiedMutationProof | null> {
+  const spki = decodeBase64Url(headers.get(POP_KEY_HEADER) ?? "", MAX_SPKI_CHARS);
+  const signature = decodeBase64Url(headers.get(POP_SIGNATURE_HEADER) ?? "", MAX_SIGNATURE_CHARS);
+  const timestamp = freshTimestamp(headers.get(POP_TIMESTAMP_HEADER), nowMs);
   if (spki?.byteLength !== P256_SPKI_BYTES || signature?.byteLength !== P1363_SIGNATURE_BYTES || timestamp === null) return null;
   const publicKey = await importP256(spki);
   if (publicKey === null) return null;
-  const transcript = await mutationProofTranscript(request, timestamp);
+  const transcript = await transcriptAt(timestamp);
   let valid: boolean;
   try {
     valid = await crypto.subtle.verify(ECDSA_SHA256, publicKey, signature, transcript);
@@ -123,4 +127,22 @@ export async function verifyMutationProof(request: MutationProofRequest, nowMs: 
     return null;
   }
   return valid ? { keyThumbprint: await keyThumbprint(spki) } : null;
+}
+
+export async function verifyMutationProof(request: MutationProofRequest, nowMs: number): Promise<VerifiedMutationProof | null> {
+  return verifyP256Proof(request.headers, nowMs, (timestamp) => mutationProofTranscript(request, timestamp));
+}
+
+/** F01-API-ID-001B signed GET read proof for the original-Intent Blueprint access grant. */
+export const READ_POP_PROTOCOL_TAG = "APPF2_READ_PoP_V1";
+
+export function readProofTranscript(path: string, contentHash: string, timestampMs: number): Uint8Array<ArrayBuffer> {
+  return new TextEncoder().encode(JSON.stringify([READ_POP_PROTOCOL_TAG, "GET", path, contentHash, timestampMs]));
+}
+
+export async function verifyReadProof(
+  request: { readonly path: string; readonly contentHash: string; readonly headers: Headers },
+  nowMs: number
+): Promise<VerifiedMutationProof | null> {
+  return verifyP256Proof(request.headers, nowMs, (timestamp) => readProofTranscript(request.path, request.contentHash, timestamp));
 }
