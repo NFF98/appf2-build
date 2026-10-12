@@ -384,7 +384,8 @@ const t006FocusSwitch=(()=>{
     "delivery/constitutional-cases/GOV-BS025-T006-FOCUS-001.json",
     "delivery/sprints/SP-P1-003/tasks.json",
     "harness/scripts/validate-backlog.mjs",
-    "harness/scripts/validate-change-scope.mjs"
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-sprint.mjs"
   ];
   if(baseSha!=="e0018f52388789ba10c3f3b034e701949c2f4564" ||
     stable([...changed].sort())!==stable(expected.sort())) return false;
