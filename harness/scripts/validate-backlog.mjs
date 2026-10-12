@@ -7,6 +7,7 @@ const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
 const exists=r=>fs.existsSync(path.join(root,r));
 const current=read("build-spec/CURRENT.json");
 const queue=read("delivery/backlog/QUEUE.json");
+const currentSprint=read("delivery/CURRENT-SPRINT.json");
 const states=new Set(["QUEUED","READY","SPRINTED","BLOCKED","DONE"]);
 const priorities=new Set(["P0","P1","P2","P3"]);
 const validateSprintBinding=(item,id)=>{
@@ -77,7 +78,17 @@ const validateRevalidationAcceptances=(r,task,id,driftIds)=>{
 };
 const validateRevalidationTaskStatus=(r,task,id)=>{
   const allowed=allowedRevalidationTaskStatuses[r.status];
-  if(allowed && !allowed.has(task.status)){
+  // One-time BS-P1-025 T006 recovery: T008 can be BLOCKED while its four
+  // IN_PROGRESS revalidations remain honestly unfinished. This is NOT closure.
+  const boundedPause =
+    r.status==="IN_PROGRESS" && r.task_id==="T008" &&
+    r.sprint_id==="SP-P1-003" && r.target_build_spec_id==="BS-P1-025" &&
+    task.task_id==="T008" && task.status==="BLOCKED" &&
+    current.active_baseline==="BS-P1-025" &&
+    currentSprint.active_sprint==="SP-P1-003" &&
+    currentSprint.active_build_spec==="BS-P1-025" &&
+    currentSprint.active_task==="T006" && currentSprint.status==="ACTIVE";
+  if(allowed && !allowed.has(task.status) && !boundedPause){
     errors.push(id+" revalidation status "+r.status+" incompatible with Task "+r.task_id+" status "+task.status);
   }
 };

@@ -375,11 +375,53 @@ if(baseSha && !/^0+$/.test(baseSha)){
   }
 }
 
+// Exactly one post-#372 correction: pause newly introduced T008 and focus
+// the existing active Sprint on T006 without altering its Task definitions,
+// any revalidation binding/status, or a single CLOSED Task.
+const t006FocusSwitch=(()=>{
+  const expected=[
+    "delivery/CURRENT-SPRINT.json",
+    "delivery/constitutional-cases/GOV-BS025-T006-FOCUS-001.json",
+    "delivery/sprints/SP-P1-003/tasks.json",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs"
+  ];
+  if(baseSha!=="e0018f52388789ba10c3f3b034e701949c2f4564" ||
+    stable([...changed].sort())!==stable(expected.sort())) return false;
+  const oldCS=showBaseJson("delivery/CURRENT-SPRINT.json");
+  const oldTD=showBaseJson("delivery/sprints/SP-P1-003/tasks.json");
+  const newTD=readHeadJson("delivery/sprints/SP-P1-003/tasks.json");
+  if(!oldCS || !oldTD || !newTD) return false;
+  if(!sameJson(showBaseJson("build-spec/CURRENT.json"),currentBuild) ||
+    !sameJson(showBaseJson("delivery/backlog/QUEUE.json"),readHeadJson("delivery/backlog/QUEUE.json")) ||
+    !sameJson(showBaseJson("delivery/sprints/SP-P1-003/manifest.json"),readHeadJson("delivery/sprints/SP-P1-003/manifest.json"))) return false;
+  if(oldCS.active_sprint!=="SP-P1-003" || oldCS.active_build_spec!=="BS-P1-025" ||
+    oldCS.active_task!=="T008" || oldCS.status!=="ACTIVE" ||
+    cs.active_sprint!=="SP-P1-003" || cs.active_build_spec!=="BS-P1-025" ||
+    cs.active_task!=="T006" || cs.status!=="ACTIVE" ||
+    !sameJson(omit(oldCS,["active_task","reason"]),omit(cs,["active_task","reason"]))) return false;
+  if(!sameJson(omit(oldTD,["tasks"]),omit(newTD,["tasks"])) ||
+    oldTD.tasks.length!==newTD.tasks.length) return false;
+  let t006Seen=0,t008Seen=0;
+  for(let i=0;i<oldTD.tasks.length;i++){
+    const before=oldTD.tasks[i],after=newTD.tasks[i];
+    if(before.task_id!==after.task_id ||
+      !sameJson(omit(before,["status"]),omit(after,["status"]))) return false;
+    if(before.task_id==="T006"){
+      t006Seen++;if(before.status!=="BLOCKED"||after.status!=="IN_PROGRESS")return false;
+    }else if(before.task_id==="T008"){
+      t008Seen++;if(before.status!=="IN_PROGRESS"||after.status!=="BLOCKED")return false;
+    }else if(before.status!==after.status) return false;
+  }
+  return t006Seen===1 && t008Seen===1;
+})();
+if(t006FocusSwitch) console.log("- Exact Human-directed T006 focus switch recognized: T008 BLOCKED, revalidations still unfinished.");
+
 if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
+}else if(safeControlTransition || t006FocusSwitch || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);

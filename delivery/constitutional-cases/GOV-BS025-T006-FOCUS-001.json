@@ -1,0 +1,49 @@
+{
+  "case_id": "GOV-BS025-T006-FOCUS-001",
+  "base_sha": "e0018f52388789ba10c3f3b034e701949c2f4564",
+  "constitution_version": "1.0",
+  "title": "Single-use T006 focus recovery after #372; pause unapproved T008 without rewriting revalidation evidence",
+  "change_class": "BOUNDED_GOVERNANCE_CONTROL_REPAIR",
+  "exact_changed_paths": [
+    "delivery/CURRENT-SPRINT.json",
+    "delivery/sprints/SP-P1-003/tasks.json",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs"
+  ],
+  "candidate_digest_sha256": "cea45592414fb62774b073bd864c02d3b1f7832b7eabcc9339e8829f60f56e52",
+  "why5": [
+    {
+      "question": "Why is T006 still BLOCKED after BS-P1-025 Activation?",
+      "answer": "PR #372 activated T008 as the sole IN_PROGRESS task although the Human's goal was T006 closure. T001-T005, T006's dependencies, are all CLOSED; T008 is not among T006 blocked_by dependencies.",
+      "evidence_ref": "Canonical main e0018f5 delivery/sprints/SP-P1-003/tasks.json, delivery/CURRENT-SPRINT.json"
+    },
+    {
+      "question": "Why cannot task focus be changed by existing safe control transition?",
+      "answer": "T008's F01/F07 four revalidations remain IN_PROGRESS; existing backlog validator disallows a BLOCKED owning Task, and change-scope disallows bundling validator change with control files. Faking VERIFIED/CLOSED would falsify missing evidence.",
+      "evidence_ref": "Canonical main validate-backlog.mjs allowedRevalidationTaskStatuses, validate-change-scope.mjs safeControlTransition"
+    },
+    {
+      "question": "How is revalidation history preserved?",
+      "answer": "Do not modify delivery/backlog/QUEUE.json at all. Leave T008's four revalidation claims and prior T007 CLOSED historical record exactly unchanged. Change only T008 status IN_PROGRESS -> BLOCKED (not CLOSED) and T006 BLOCKED -> IN_PROGRESS, plus active_task to T006.",
+      "evidence_ref": "Current candidate exact four paths and committed QUEUE Git blob 549e733b0de1677be192a0946375bba828c6f05e; CLOSED tasks unchanged"
+    },
+    {
+      "question": "Why does this not authorize unrelated governance or product changes?",
+      "answer": "Change-scope new one-shot escape accepts precisely five file paths including one constitutional docket, exactly base SHA e0018f5, unchanged Build baseline/Sprint manifest/Backlog, byte-identical Task definitions and all other Task states. Validator allows only T008 BLOCKED, with its same four IN_PROGRESS revalidations, while T006 is the active Task at BS-P1-025.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs t006FocusSwitch and validate-backlog.mjs boundedPause; GitHub CI required"
+    },
+    {
+      "question": "What is the condition for closing T006?",
+      "answer": "None of this claims T006 complete: it merely permits T006 to be active. Existing nine mapped Acceptance/Test IDs and Playable App real interaction E2E must pass executable tests, independent BCE, evidence normalization, Human implementation merge and final closure approval. No Worker or deployment automatically starts.",
+      "evidence_ref": "SP-P1-003 T006 nine acceptance_links, ci/run-product-ci.mjs required active-task tests; GitHub #372 activation and user focus instruction"
+    }
+  ],
+  "negative_tests": [
+    "Wrong base SHA, different changed files, changed Backlog/manifest/Build, another Task/status, modified Task definition or CLOSED evidence all fail one-shot T006 focus gate.",
+    "T008 is BLOCKED, its four revalidations stay IN_PROGRESS and cannot be considered VERIFIED/CLOSED.",
+    "Constitutional exact digest and direct Human approval required before protected validators may merge."
+  ],
+  "rollback": "Use a new explicitly Human-approved governance PR to return T006 to BLOCKED and T008 to IN_PROGRESS, preserving historical proof. Never rewrite CLOSED records.",
+  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
+  "human_approval": null
+}

@@ -658,7 +658,7 @@
         "BL-P1-018"
       ],
       "title": "Result contract, S03 App surface & Playable App vertical proof",
-      "status": "BLOCKED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-025",
       "scope": [
         "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
@@ -834,7 +834,7 @@
         "BL-P1-010"
       ],
       "title": "BS-P1-025 F01 PoP/owner read-grant and F07 identity/evidence cross-baseline revalidation",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-025",
       "scope": [
         "Revalidate F01-AC-013/016 read-grant and owner PoP protection after BD-025 on the new locked BS-P1-025 baseline without changing historical T001.",
