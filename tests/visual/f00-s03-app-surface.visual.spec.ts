@@ -82,5 +82,8 @@ test("S03 visual: mobile change sheet and Inspection bar use the surface and acc
   await S03SurfaceHarness.open(page, { inspection: "PREVIEW" });
   const inspection = page.getByRole("region", { name: "正在查看原版" });
   expect(await style(inspection, "background-color")).toBe(TEAL_50);
+  const fullReturn = inspection.getByRole("button", { name: "返回新版預覽" });
+  await expect(fullReturn).toBeVisible();
+  expect(await style(fullReturn, "color")).toBe(TEAL_600);
   await attachScreenshot(page, testInfo, "s03-mobile-inspection");
 });

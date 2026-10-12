@@ -72,3 +72,47 @@ test("S03 mobile layout: header keeps only home, title and overflow, actions mov
   const adjustBox = await box(adjust);
   expect(adjustBox.y + adjustBox.height).toBeLessThanOrEqual((await box(nav)).y);
 });
+
+test("S03 Inspection at narrow widths: the context strip keeps the full return wording beside the short navigation slot, and both return", async ({ page }) => {
+  for (const [origin, full, short] of [
+    ["COMPOSER", "返回修改畫面", "返回修改"],
+    ["PREVIEW", "返回新版預覽", "返回預覽"]
+  ] as const) {
+    await page.setViewportSize(DESKTOP);
+    await S03SurfaceHarness.open(page, { inspection: origin });
+    const strip = page.getByRole("region", { name: "正在查看原版" });
+    const cta = strip.getByRole("button", { name: full, exact: true });
+    const nav = page.getByRole("navigation", { name: "App 導覽" });
+    await expect(cta).toBeVisible();
+    await expect(nav).toBeHidden();
+    const [desktopStrip, desktopCta] = await Promise.all([box(strip), box(cta)]);
+    expect(Math.round(desktopCta.y + desktopCta.height)).toBeLessThanOrEqual(Math.round(desktopStrip.y + desktopStrip.height));
+
+    for (const width of [MOBILE.width, 360, 320]) {
+      await page.setViewportSize({ width, height: MOBILE.height });
+      await expect(cta).toBeVisible();
+      await expect(nav.getByRole("button")).toHaveText(["目前 App", short, "分享"]);
+      const [stripBox, ctaBox, headerBox, mainBox, navBox] = await Promise.all([
+        box(strip),
+        box(cta),
+        box(page.locator(".s03-header")),
+        box(page.locator(".s03-main")),
+        box(nav)
+      ]);
+      expect(ctaBox.x).toBeGreaterThanOrEqual(0);
+      expect(ctaBox.x + ctaBox.width).toBeLessThanOrEqual(width);
+      expect(Math.round(ctaBox.height)).toBeGreaterThanOrEqual(TOUCH_TARGET);
+      expect(await cta.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+      expect(stripBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height - 1);
+      expect(stripBox.y + stripBox.height).toBeLessThanOrEqual(mainBox.y + 1);
+      expect(ctaBox.y + ctaBox.height).toBeLessThanOrEqual(navBox.y);
+      await expectVisibleTouchTargets(nav.getByRole("button"));
+      await expectNoHorizontalScroll(page);
+    }
+
+    await cta.focus();
+    await page.keyboard.press("Enter");
+    await nav.getByRole("button", { name: short, exact: true }).click();
+    expect(await S03SurfaceHarness.record(page)).toEqual({ entries: [], returns: 2, homes: 0 });
+  }
+});

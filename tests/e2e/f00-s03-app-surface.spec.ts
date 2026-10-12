@@ -88,13 +88,23 @@ test("TEST-F00-007 VALIDATED Blueprint is delivered, admitted, F03-hydrated and 
 });
 
 const UNAVAILABLE = {
-  S05A: "「修改這個 App」目前還不能使用，這個 App 不會被更改。",
-  S05B: "「改成我的版本」目前還不能使用，這個 App 不會被更改。",
   O01: "「分享」目前還不能使用，你的 App 和目前的結果都還在。",
   O02: "「調整結果」目前還不能使用，你的 App 和目前的結果都還在。"
 } as const;
 
 const noticeRegion = (page: Page): Locator => page.locator(".s03-notice-region");
+
+/** S05A / S05B are handed to the F00 change session: the chosen path opens, and 回原 App leaves it for the same App. */
+async function expectChangePathThenBack(page: Page, path: "S05A" | "S05B", title: string, leave: "click" | "Enter"): Promise<void> {
+  const workspace = page.locator(".s05");
+  await expect(workspace).toHaveAttribute("data-change-path", path);
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeFocused();
+  const back = workspace.getByRole("button", { name: "回原 App" });
+  if (leave === "Enter") await press(back, "Enter");
+  else await back.click();
+  await expect(workspace).toHaveCount(0);
+  await expect(page.locator(".s03-main")).toBeFocused();
+}
 
 /** The polite live region names exactly the destination the User asked for and never takes focus itself. */
 async function expectUnavailable(page: Page, destination: keyof typeof UNAVAILABLE): Promise<void> {
@@ -132,30 +142,27 @@ test("TEST-F00-AC-009 S03 reaches the Share / Remix / Correction entries while t
     await attachScreenshot(page, testInfo, "s03-mobile-change-sheet");
     await sheet.getByRole("button", { name: "改成我的版本" }).click();
     await expect(sheet).toHaveCount(0);
-    await expectUnavailable(page, "S05B");
-    await expect(modify).toBeFocused();
+    await expectChangePathThenBack(page, "S05B", "改成我的版本", "click");
 
-    // Keyboard only: Enter opens the chooser on its first option, Enter picks it, focus returns to 「修改」.
+    // Keyboard only: Enter opens the chooser on its first option, Enter picks it, and 回原 App comes back by keyboard.
     await press(modify, "Enter");
     await expect(sheet.getByRole("button", { name: "修改這個 App" })).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(sheet).toHaveCount(0);
-    await expectUnavailable(page, "S05A");
-    await expect(modify).toBeFocused();
+    await expectChangePathThenBack(page, "S05A", "修改這個 App", "Enter");
+    await expect(noticeRegion(page)).toBeEmpty();
   } else {
     const header = page.locator(".s03-header");
     for (const name of ["修改這個 App", "改成我的版本", "分享"]) await expect(header.getByRole("button", { name, exact: true })).toBeEnabled();
     const share = header.getByRole("button", { name: "分享", exact: true });
     await share.click();
     await expectUnavailable(page, "O01");
-    const modify = header.getByRole("button", { name: "修改這個 App" });
-    await modify.click();
-    await expectUnavailable(page, "S05A");
-    // Keyboard only: Enter and Space both activate the entry, each activation is announced, and focus stays put.
-    const remix = header.getByRole("button", { name: "改成我的版本" });
-    await press(remix, "Enter");
-    await expectUnavailable(page, "S05B");
-    await expect(remix).toBeFocused();
+    await header.getByRole("button", { name: "修改這個 App" }).click();
+    await expectChangePathThenBack(page, "S05A", "修改這個 App", "click");
+    await expect(noticeRegion(page)).toBeEmpty();
+    // Keyboard only: Enter opens the S05B path, and Space announces the Share entry while focus stays put.
+    await press(header.getByRole("button", { name: "改成我的版本" }), "Enter");
+    await expectChangePathThenBack(page, "S05B", "改成我的版本", "Enter");
     await press(share, " ");
     await expectUnavailable(page, "O01");
     await expect(share).toBeFocused();

@@ -1431,6 +1431,101 @@ ol {
   background: var(--teal-50);
 }
 
+/* S05A / S05B Change Composer: a focused workspace without the S03 bottom navigation. */
+.s05 {
+  min-height: 100vh;
+  background: var(--surface-0);
+}
+
+.s05-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 68px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border-200);
+}
+
+.s05-app-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.s05-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+
+.s05-title {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+}
+
+.s05-title:focus {
+  outline: none;
+}
+
+.s05-detail,
+.s05-original-note {
+  color: var(--text-600);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.s05-input {
+  display: block;
+  width: 100%;
+  min-height: 160px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-300);
+  border-radius: var(--radius-12);
+  resize: vertical;
+  background: var(--surface-0);
+  color: var(--ink-900);
+  font: inherit;
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.s05-input:focus-visible {
+  border-color: var(--teal-600);
+  outline: 2px solid var(--teal-600);
+  outline-offset: 0;
+}
+
+.s05-original {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.s05-continue {
+  align-self: flex-end;
+}
+
+.s05-notice-region:empty {
+  display: none;
+}
+
+.s05-notice {
+  padding: 12px 16px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+  background: var(--surface-50);
+  color: var(--ink-900);
+}
+
 /* S03 Generated App Runtime Frame (trusted F04 renderers). */
 .runtime-frame {
   padding: 24px;
@@ -1797,12 +1892,11 @@ ol {
     display: none;
   }
 
+  /* The short nav label alone is not enough here: the strip keeps the full return wording and may wrap to two lines. */
   .s03-inspection {
-    padding: 8px 16px;
-  }
-
-  .s03-inspection-return {
-    display: none;
+    flex-wrap: wrap;
+    gap: 0 12px;
+    padding: 4px 16px;
   }
 
   .s03-main {
@@ -1854,6 +1948,25 @@ ol {
 
   .s03-nav-item.is-active {
     color: var(--teal-600);
+  }
+
+  .s05-header {
+    height: 60px;
+    padding: 0 16px;
+  }
+
+  .s05-main {
+    gap: 20px;
+    padding: 24px 16px calc(32px + env(safe-area-inset-bottom));
+  }
+
+  .s05-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .s05-continue {
+    align-self: stretch;
   }
 }
 

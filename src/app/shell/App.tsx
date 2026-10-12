@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import { AppSession } from "../app-surface/app-session.js";
-import { AppSurface, type EntryHandoff } from "../app-surface/AppSurface.js";
+import { AppSurface, type AppSurfaceEntry, type EntryHandoff } from "../app-surface/AppSurface.js";
+import { ChangeSessionOwner } from "../change/change-session.js";
+import { ChangeWorkspace } from "../change/ChangeWorkspace.js";
 import { CreateWorkspace } from "../create/CreateWorkspace.js";
 import type { CreationController } from "../create/creation-controller.js";
 import type { CreationSession } from "../create/creation-session.js";
@@ -21,10 +23,20 @@ type AppProps = {
 };
 
 /**
- * No owner of S05A / S05B (F06), O01 Share (F05) or O02 Correction (F16) is part of this build, so every S03 entry
- * is reported unavailable and S03 tells the User so in place, leaving the App as it is.
+ * APP surface stage: S03, or the one S05 change session the User opened from it. S05A / S05B choices go to the F00
+ * change-session owner; O01 Share (F05) and O02 Correction (F16) have no owner in this build, so S03 reports them
+ * unavailable in place. While the session inspects the original, S03 runs in Inspection Mode and returns to it.
  */
-const handOffUnavailable = (): EntryHandoff => "UNAVAILABLE";
+function AppStage({ session, onHome }: { readonly session: AppSession; readonly onHome: () => void }) {
+  const [changes] = useState(() => new ChangeSessionOwner());
+  const change = useSyncExternalStore(changes.subscribe, changes.getSnapshot);
+  const { current } = useSyncExternalStore(session.subscribe, session.getSnapshot);
+  const onEntry = useCallback((entry: AppSurfaceEntry): EntryHandoff => ("choice" in entry && changes.open(entry) ? "HANDED_OFF" : "UNAVAILABLE"), [changes]);
+
+  if (change === null) return <AppSurface session={session} onHome={onHome} onEntry={onEntry} />;
+  if (change.view === "COMPOSER") return <ChangeWorkspace change={change} owner={changes} appTitle={current.app.title} />;
+  return <AppSurface session={session} onHome={onHome} onEntry={onEntry} inspection={{ origin: "COMPOSER", onReturn: changes.returnFromOriginal }} />;
+}
 
 type ValidatedTarget = { readonly intentId: string; readonly contentHash: string };
 
@@ -108,7 +120,7 @@ export function App({ controller, drafts, launcher }: AppProps) {
     else returnToDiscover();
   };
 
-  if (showingApp) return <AppSurface session={appSession} onHome={back} onEntry={handOffUnavailable} />;
+  if (showingApp) return <AppStage key={launch.contentHash} session={appSession} onHome={back} />;
   if (surface === "CREATE" && session !== null) {
     return (
       <CreateWorkspace session={session} controller={controller} onBack={back} {...workspaceLaunchProps(launch, validatedHash, launcher)} />
