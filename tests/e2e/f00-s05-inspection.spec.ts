@@ -92,6 +92,8 @@ async function expectInspection(page: Page): Promise<void> {
 test("TEST-F00-037 S05 查看原版 from the Composer keeps the same S05A / S05B session, path and draft through S03 Inspection Mode and returns to it (Preview origin needs an F06 Preview, which this build cannot produce)", async ({
   page
 }, testInfo) => {
+  // Two paths, each with two or three full Inspection round trips through the real Runtime.
+  testInfo.setTimeout(90_000);
   testInfo.annotations.push({
     type: "scope",
     description: "Composer origin only: no F06 child Preview exists in this build, so the Preview origin (返回新版預覽) is not reachable and is not claimed."
