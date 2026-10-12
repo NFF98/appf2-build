@@ -46,6 +46,21 @@
     "Approval_status=PENDING_HUMAN_EXACT_DIGEST_APPROVAL; no claim of Human-approved exact digest and no automatic merge."
   ],
   "rollback": "Revert through a future separately Human-approved constitutional/governance PR with its own fresh byte-bound docket; never rewrite Task history or bypass gate.",
-  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
-  "human_approval": null
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE_PROVENANCE_REVIEW_REQUIRED",
+  "human_approval": {
+    "case_id": "GOV-T006-R2-MAINT-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "ChatGPT current conversation, 2026-10-13 Asia/Tokyo, direct user turn: \"批准 PR #375 精確候選 SHA-256 8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc 的治理修正；批准記錄核准證據並重跑 CI，但不批准 Merge。\"",
+    "candidate_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc",
+    "approved_at_unix": 1791842442
+  },
+  "human_approval_provenance": {
+    "source": "Direct user message in this ChatGPT conversation, not a GitHub comment and not an assistant-authored approval.",
+    "verbatim_user_message": "批准 PR #375 精確候選 SHA-256 8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc 的治理修正；批准記錄核准證據並重跑 CI，但不批准 Merge。",
+    "timestamp_note": "approved_at_unix is the contemporaneous evidence-recording timestamp (2026-10-13 07:00:42 JST), not a second-precision authenticated message timestamp.",
+    "independent_check_required": "Independent Human reviewer must verify the user actually approved this exact SHA-256 of the three candidate files; ChatGPT/GitHub CI cannot authenticate the person by a relayed provenance record.",
+    "merge_approval": "NOT GIVEN: user expressly withheld Merge approval."
+  }
 }
