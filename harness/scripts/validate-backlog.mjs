@@ -87,7 +87,15 @@ const validateRevalidationTaskStatus=(r,task,id)=>{
     current.active_baseline==="BS-P1-025" &&
     currentSprint.active_sprint==="SP-P1-003" &&
     currentSprint.active_build_spec==="BS-P1-025" &&
-    currentSprint.active_task==="T006" && currentSprint.status==="ACTIVE";
+    currentSprint.active_task==="T006" &&
+    // While T006 is in independent REVIEW, its T008 revalidations remain pending.
+    // A REVIEW pause is legal only when T006 itself is the current REVIEW task.
+    (()=>{
+      const tasks=read("delivery/sprints/SP-P1-003/tasks.json").tasks||[];
+      const t006=tasks.find(t=>t.task_id==="T006");
+      return (currentSprint.status==="ACTIVE" && t006?.status==="IN_PROGRESS") ||
+        (currentSprint.status==="REVIEW" && t006?.status==="REVIEW");
+    })();
   if(allowed && !allowed.has(task.status) && !boundedPause){
     errors.push(id+" revalidation status "+r.status+" incompatible with Task "+r.task_id+" status "+task.status);
   }
@@ -272,6 +280,98 @@ if(current.active_baseline===null){
     errors.push("ACTIVE Acceptance coverage mismatch: mapped "+claimed.size+" / required "+activeEntries.length);
   }
 }
+
+// BS-P1-025 single-Sprint T006/T008 sequencing guard.
+// This only gates *status transitions*. T008's independently checked TEST_RESULT,
+// COMMAND_RESULT and REVIEW Evidence still must pass validate-evidence.mjs.
+// The authentic Human Closure approval and exact PR approval remain separate.
+function checkT006T008Order(t006,t008,items) {
+  const errors=[];
+  // Distinct Task ownership, no duplicate T008 claims on T006.
+  if(["IN_PROGRESS","REVIEW","VERIFIED"].includes(t008?.status) &&
+     t006?.status!=="VERIFIED") {
+    errors.push("T008 execution/review requires T006 product VERIFIED with independent T006 Evidence");
+  }
+  if(t008?.status==="CLOSED" &&
+     !["REVIEW","VERIFIED","CLOSED"].includes(t006?.status)) {
+    errors.push("T008 CLOSED requires T006 product already independently reviewed");
+  }
+  if(t006?.status!=="CLOSED") return errors;
+  if(t008?.status!=="CLOSED") errors.push("T006 final CLOSED forbidden until T008 is CLOSED");
+  if(!Array.isArray(t008?.completion_evidence) || !t008.completion_evidence.length) {
+    errors.push("T006 final CLOSED requires T008 completion_evidence; evidence gate validates actual PASS records");
+  }
+  const expectedPairs=[
+    ["F01-AC-013","TEST-F01-API-001"],
+    ["F01-AC-016","TEST-F01-API-003"],
+    ["F01-AC-017","TEST-F01-SEC-007"],
+    ["F07-AC-004","TEST-F07-004"]
+  ];
+  const actualPairs=(t008?.acceptance_links||[]).map(l=>`${l.acceptance_id}::${l.test_id}`);
+  if(actualPairs.length!==4 || new Set(actualPairs).size!==4 ||
+    expectedPairs.some(([a,t])=>!actualPairs.includes(`${a}::${t}`))) {
+    errors.push("T006 final CLOSED requires T008 owning exactly four BS-P1-025 AC/Test pairs");
+  }
+  const expected=[
+    ["BL-P1-008",["F01-AC-017"]],
+    ["BL-P1-010",["F01-AC-013","F01-AC-016"]],
+    ["BL-P1-031",["F07-AC-004"]]
+  ];
+  const byId=new Map((items||[]).map(x=>[x.backlog_item_id,x]));
+  for(const [id,acceptanceIds] of expected) {
+    const r=byId.get(id)?.revalidation;
+    if(!r || r.target_build_spec_id!=="BS-P1-025" ||
+      r.sprint_id!=="SP-P1-003" || r.task_id!=="T008" ||
+      r.status!=="CLOSED" || !Array.isArray(r.acceptance_ids) ||
+      r.acceptance_ids.length!==acceptanceIds.length ||
+      acceptanceIds.some(aid=>!r.acceptance_ids.includes(aid))) {
+      errors.push("T006 final CLOSED requires exact T008 CLOSED BS-P1-025 revalidation: "+id);
+    }
+  }
+  return errors;
+}
+function testT006T008Order() {
+  const ids=[["F01-AC-013","TEST-F01-API-001"],["F01-AC-016","TEST-F01-API-003"],["F01-AC-017","TEST-F01-SEC-007"],["F07-AC-004","TEST-F07-004"]];
+  const base=()=>({
+    t006:{task_id:"T006",status:"CLOSED"},
+    t008:{task_id:"T008",status:"CLOSED",completion_evidence:["SYNTHETIC-ONLY"],acceptance_links:ids.map(([acceptance_id,test_id])=>({acceptance_id,test_id}))},
+    items:[
+      {backlog_item_id:"BL-P1-008",revalidation:{target_build_spec_id:"BS-P1-025",status:"CLOSED",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-017"]}},
+      {backlog_item_id:"BL-P1-010",revalidation:{target_build_spec_id:"BS-P1-025",status:"CLOSED",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-013","F01-AC-016"]}},
+      {backlog_item_id:"BL-P1-031",revalidation:{target_build_spec_id:"BS-P1-025",status:"CLOSED",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F07-AC-004"]}}
+    ]
+  });
+  const cases=[
+    ["valid final CLOSED",true,x=>x],
+    ["T006 product work first, T008 BLOCKED",true,x=>{x.t006.status="IN_PROGRESS";x.t008.status="BLOCKED";return x;}],
+    ["T006 product review first, T008 BLOCKED",true,x=>{x.t006.status="REVIEW";x.t008.status="BLOCKED";return x;}],
+    ["legal T008 active after T006 VERIFIED",true,x=>{x.t006.status="VERIFIED";x.t008.status="IN_PROGRESS";return x;}],
+    ["T008 reopened with T006 BLOCKED",false,x=>{x.t006.status="BLOCKED";x.t008.status="IN_PROGRESS";return x;}],
+    ["T008 closed before T006 product proof",false,x=>{x.t006.status="IN_PROGRESS";return x;}],
+    ["premature T006 CLOSED T008 open",false,x=>{x.t008.status="IN_PROGRESS";return x;}],
+    ["unclosed BL-P1-008",false,x=>{x.items[0].revalidation.status="IN_PROGRESS";return x;}],
+    ["unclosed BL-P1-010",false,x=>{x.items[1].revalidation.status="VERIFIED";return x;}],
+    ["missing BL-P1-031",false,x=>{x.items.pop();return x;}],
+    ["foreign T008 revalidation owner",false,x=>{x.items[0].revalidation.task_id="T007";return x;}],
+    ["wrong revalidation baseline",false,x=>{x.items[1].revalidation.target_build_spec_id="BS-P1-024";return x;}],
+    ["T008 has no evidence",false,x=>{x.t008.completion_evidence=[];return x;}],
+    ["T008 omits one AC/Test",false,x=>{x.t008.acceptance_links.pop();return x;}],
+    ["wrong T008 test ID",false,x=>{x.t008.acceptance_links[0].test_id="WRONG";return x;}]
+  ];
+  for(const [name,shouldPass,modify] of cases){const x=modify(base());const actual=checkT006T008Order(x.t006,x.t008,x.items).length===0;if(actual!==shouldPass)throw Error("T006/T008 order guard synthetic regression FAILED: "+name);}
+  return cases.length;
+}
+
+if(current.active_baseline==="BS-P1-025" &&
+   exists("delivery/sprints/SP-P1-003/tasks.json")){
+  const tasks=read("delivery/sprints/SP-P1-003/tasks.json").tasks||[];
+  const t006=tasks.find(x=>x.task_id==="T006");
+  const t008=tasks.find(x=>x.task_id==="T008");
+  for(const e of checkT006T008Order(t006,t008,queue.items||[])){
+    errors.push("SP-P1-003 BS025 T006/T008 closure order: "+e);
+  }
+}
+console.log("- T006/T008 closure-order fail-closed synthetic regressions: "+testT006T008Order()+"/"+15+" PASS (synthetic, not Task acceptance).");
 
 if(errors.length){
   console.error("BACKLOG GATE: FAIL");
