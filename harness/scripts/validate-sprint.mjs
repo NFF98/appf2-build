@@ -97,29 +97,34 @@ const validateActiveTaskDependencies=(active,taskById)=>{
  * Human-approved T006 Closure. This never marks a test, review or approval PASS.
  * The backlog and evidence gates still validate the underlying proof.
  */
+const exactT006TerminalControl=(currentSprint,t006,t008)=>{
+  const expected={active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T006",status:"REVIEW"};
+  const actual={active_sprint:currentSprint?.active_sprint,active_build_spec:currentSprint?.active_build_spec,active_task:currentSprint?.active_task,status:currentSprint?.status};
+  return JSON.stringify(actual)===JSON.stringify(expected) &&
+    t006?.status==="VERIFIED" && t008?.status==="CLOSED" &&
+    Array.isArray(t006.completion_evidence) && !!t006.completion_evidence.length &&
+    Array.isArray(t008.completion_evidence) && !!t008.completion_evidence.length;
+};
+const exactBs025ClosedT008Revalidation=(r,aids)=>
+  r?.status==="CLOSED" &&
+  r.target_build_spec_id==="BS-P1-025" &&
+  r.sprint_id==="SP-P1-003" &&
+  r.task_id==="T008" &&
+  Array.isArray(r.acceptance_ids) &&
+  r.acceptance_ids.length===aids.length &&
+  aids.every(aid=>r.acceptance_ids.includes(aid));
 const isBs025T006ClosureWaiting=({currentSprint,taskDoc,queue})=>{
   const tasks=taskDoc?.tasks||[];
   const t006=tasks.find(t=>t.task_id==="T006");
   const t008=tasks.find(t=>t.task_id==="T008");
-  if(currentSprint?.active_sprint!=="SP-P1-003" ||
-     currentSprint.active_build_spec!=="BS-P1-025" ||
-     currentSprint.active_task!=="T006" ||
-     currentSprint.status!=="REVIEW" ||
-     t006?.status!=="VERIFIED" || t008?.status!=="CLOSED" ||
-     !Array.isArray(t006.completion_evidence) || !t006.completion_evidence.length ||
-     !Array.isArray(t008.completion_evidence) || !t008.completion_evidence.length) return false;
+  if(!exactT006TerminalControl(currentSprint,t006,t008)) return false;
   return [
     ["BL-P1-008",["F01-AC-017"]],
     ["BL-P1-010",["F01-AC-013","F01-AC-016"]],
     ["BL-P1-031",["F07-AC-004"]]
-  ].every(([id,aids])=>{
-    const r=queue?.items?.find(x=>x.backlog_item_id===id)?.revalidation;
-    return r?.status==="CLOSED" &&
-      r.target_build_spec_id==="BS-P1-025" &&
-      r.sprint_id==="SP-P1-003" && r.task_id==="T008" &&
-      Array.isArray(r.acceptance_ids) && r.acceptance_ids.length===aids.length &&
-      aids.every(aid=>r.acceptance_ids.includes(aid));
-  });
+  ].every(([id,aids])=>
+    exactBs025ClosedT008Revalidation(
+      queue?.items?.find(x=>x.backlog_item_id===id)?.revalidation,aids));
 };
 const testBs025T006ClosureWaiting=()=>{
   const mk=()=>({
