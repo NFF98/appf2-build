@@ -3,8 +3,8 @@
   "baseline_id": "BS-P1-025",
   "previous_baseline": "BS-P1-024",
   "type": "REBASELINE",
-  "status": "PENDING_HUMAN_APPROVAL",
-  "decision_ref": "PENDING_HUMAN_EXACT_ACTIVATION_DECISION",
+  "status": "USER_APPROVED",
+  "decision_ref": "Human 2026-10-12 direct ChatGPT message: 『批准 BS-P1-025 Activation #372 候選，Head `7d0423b8`，允許填入正式 Activation 核准並執行 CI』; explicitly candidate approval ONLY, no Merge approval or Cursor lease. Approved exact prior PR head 7d0423b8ea07d93051b77fd127ce5437bd82a46c and BS-P1-025 rebaseline source fda9045d0fc1b2b718d56ed49fa09abdce343a5c.",
   "approved_delta_ids": [
     "BD-003",
     "BD-004",
@@ -31,5 +31,5 @@
     "BD-025"
   ],
   "source_working_commit": "fda9045d0fc1b2b718d56ed49fa09abdce343a5c",
-  "activated_at": null
+  "activated_at": "2026-10-12T10:43:51.000Z"
 }
