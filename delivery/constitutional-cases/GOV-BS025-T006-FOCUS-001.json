@@ -2,7 +2,7 @@
   "case_id": "GOV-BS025-T006-FOCUS-001",
   "base_sha": "e0018f52388789ba10c3f3b034e701949c2f4564",
   "constitution_version": "1.0",
-  "title": "T006 focus with staged T008 security closure and fail-closed final T006 Close",
+  "title": "T006 focus and T008 safety order with complexity-compliant structural helpers (Draft)",
   "change_class": "BOUNDED_GOVERNANCE_CONTROL_REPAIR",
   "exact_changed_paths": [
     "delivery/CURRENT-SPRINT.json",
@@ -30,8 +30,8 @@
     },
     {
       "question": "Why does this not authorize unrelated governance or product changes?",
-      "answer": "The only accepted one-shot proposal is the exact six-file change against main e0018f5 (including the docket): two Task control files, three narrow validators and constitutional dossier. It leaves Build, Sprint manifest, Backlog/revalidation bindings and CLOSED Task history byte-identical. The new Sprint validator narrowly permits REVIEW/T006 VERIFIED only after T008 is independently CLOSED with exact BS025 backlog revalidations and nonempty completion evidence.",
-      "evidence_ref": "Candidate validate-change-scope.mjs six-path fixed-base exception; validate-sprint.mjs exact terminal wait condition; validate-backlog.mjs T006/T008 closure guard; unchanged QUEUE/manifest/CLOSED history"
+      "answer": "Exact six-path T006 focus change against fixed main, with helper-level fail-closed checks for unchanged product and CLOSED Task history. Three validator functions were split into simpler helpers to satisfy ESLint complexity without broadening permissions, after earlier Human-approved candidate failed lint. Previous exact approval cannot be reused for these changed bytes.",
+      "evidence_ref": "Original #373 approved candidate CI run 38258228898 lint 3 errors; new validator helpers in six-path Draft candidate; baseline and history unmodified."
     },
     {
       "question": "What is the condition for closing T006?",
@@ -45,17 +45,10 @@
     "15 in-memory synthetic T006/T008 order tests: T008-before-product and T006 premature Closure blocked, exact four AC/Test and three CLOSED Backlog revalidations required.",
     "13 in-memory synthetic Sprint terminal-wait tests: only active T006 VERIFIED, closed T008 with evidence, all three exact CLOSED BS025 revalidations, and Sprint REVIEW allowed; wrong status/owner/branch/evidence rejected.",
     "Human exact-candidate approval, future transition PR approval, CI, BCE, merge and individual Closure decisions remain separate.",
-    "Change-scope revalidation closure has 13 synthetic cases: T008 REVIEW→CLOSED permitted only with evidence/bindings; T008 IN_PROGRESS→CLOSED bypass rejected, while old T007 historical direct case remains unchanged."
+    "Change-scope revalidation closure has 13 synthetic cases: T008 REVIEW→CLOSED permitted only with evidence/bindings; T008 IN_PROGRESS→CLOSED bypass rejected, while old T007 historical direct case remains unchanged.",
+    "Refactor complexity/ESLint regressions while preserving 41 synthetic guards, 6 lifecycle stages; do not weaken lint or bypass Human exact digest approval."
   ],
   "rollback": "Use a new explicitly Human-approved governance PR to return T006 to BLOCKED and T008 to IN_PROGRESS, preserving historical proof. Never rewrite CLOSED records.",
-  "approval_status": "USER_APPROVED_EXACT_CANDIDATE",
-  "human_approval": {
-    "case_id": "GOV-BS025-T006-FOCUS-001",
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "Human direct message in current ChatGPT conversation, 2026-10-12 JST, beginning 'Human 批准 PR #373 精確治理候選：Head aea3ec002b9c7d739ee6edce068c7e46b7035028'; verbatim ChatGPT transcription at https://github.com/NFF98/appf2-build/pull/373#issuecomment-6125566610 (secondary record; reviewer must cross-check direct chat)",
-    "candidate_digest_sha256": "68a4590dcedc6cab1677806dd2aea5b28dc075a8d07583b00992d355a39f29fa",
-    "approved_at_unix": 1791812770
-  }
+  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
+  "human_approval": null
 }
