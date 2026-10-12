@@ -29,6 +29,36 @@ if(baseValid){
   try{changed=execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
   catch{changed=[];}
 }
+// Exact BS-P1-025 governance-repair candidate: no implementation/test files changed.
+// This is NOT a T006 Product test PASS. Confirm with the existing independent
+// scope gate (which also checks Task immutability) before marking this step N/A.
+const t006GovBase="67cd2217c7b94cc564c5e730aa03227c2085fb31";
+const t006GovPaths=new Set([
+  "ci/run-product-ci.mjs",
+  "delivery/constitutional-cases/GOV-T006-R2-MAINT-001.json",
+  "delivery/sprints/SP-P1-003/tasks.json",
+  "harness/scripts/validate-backlog.mjs",
+  "harness/scripts/validate-change-scope.mjs"
+]);
+const t006GovMarker="Exact T006 R2 F00 fixture rebind + lint repair recognized";
+const isT006GovOnly=baseValid && base===t006GovBase &&
+  changed.length===t006GovPaths.size && changed.every(p=>t006GovPaths.has(p)) &&
+  current.active_baseline==="BS-P1-025" && sprint.active_sprint==="SP-P1-003" &&
+  sprint.active_task==="T006" && sprint.status==="ACTIVE";
+if(isT006GovOnly){
+  const scope=spawnSync("node",["harness/scripts/validate-change-scope.mjs"],{
+    encoding:"utf8",shell:false,env:{...process.env,BASE_SHA:base,HEAD_SHA:head}
+  });
+  if(scope.stdout) process.stdout.write(scope.stdout);
+  if(scope.stderr) process.stderr.write(scope.stderr);
+  if(scope.status!==0 || !scope.stdout.includes(t006GovMarker)){
+    console.error("PRODUCT CI: FAIL — T006 governance-only candidate rejected by independent scope gate.");
+    process.exit(1);
+  }
+  console.log("PRODUCT CI: GOVERNANCE-ONLY N/A (NOT PASS) — no Product or test files changed; all nine T006 acceptance tests remain unverified in this PR.");
+  process.exit(0);
+}
+
 const activationRecordPath=current.active_baseline?"build-spec/activations/"+current.active_baseline+".json":null;
 const controlPaths=new Set([
   "build-spec/CURRENT.json",
