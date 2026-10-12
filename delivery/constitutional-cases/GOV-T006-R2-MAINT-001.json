@@ -1,0 +1,69 @@
+{
+  "case_id": "GOV-T006-R2-MAINT-001",
+  "base_sha": "67cd2217c7b94cc564c5e730aa03227c2085fb31",
+  "constitution_version": "1.0",
+  "title": "BS-P1-025 T006 R2 exact fixture rebind, lint cleanup and CI Product N/A guard",
+  "change_class": "BOUNDED_GOVERNANCE_CONTROL_REPAIR",
+  "exact_changed_paths": [
+    "ci/run-product-ci.mjs",
+    "delivery/sprints/SP-P1-003/tasks.json",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs"
+  ],
+  "candidate_digest_sha256": "e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4",
+  "why5": [
+    {
+      "question": "Why did approved PR #375 still fail CI Gate?",
+      "answer": "Governance/Attack/CodeQL and repository lint passed. Product CI invoked nine active T006 tests against main-based governance-only changes; the eight implemented tests live in still-unmerged PR #374 and the ninth is still absent. CI Gate failed because none of those nine were present on the governance-only branch.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/375#issuecomment-6133443170"
+    },
+    {
+      "question": "Why add a narrow N/A branch instead of marking Product CI PASS?",
+      "answer": "Only exactly five governance and CI files against fixed main SHA can match; independent Change Scope Gate must pass. Product CI explicitly announces GOVERNANCE-ONLY N/A (NOT PASS). Any product/test diff continues full nine mapped test enforcement, preventing false acceptance.",
+      "evidence_ref": "ci/run-product-ci.mjs and harness/scripts/validate-change-scope.mjs candidate"
+    },
+    {
+      "question": "Why preserve the exact F00-001 and F00-038 maintenance records?",
+      "answer": "The previous approved candidate explicitly allowed only BS-P1-024 -> BS-P1-025 PoP and read-only delivery fixture compatibility for two known test IDs; the same Task-only records stay unchanged and the original CLOSED task truth stays immutable.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/375 and initial approved SHA-256 8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc"
+    },
+    {
+      "question": "Why is a new exact Human approval needed?",
+      "answer": "Adding ci/run-product-ci.mjs and updating the scope exception changes the candidate's constitutional digest. Old approval was exactly scoped to the prior three governance file bytes. Do not carry that approval to the new candidate; record PENDING, verify exact new digest, then require a fresh explicit Human approval before constitutional CI can pass.",
+      "evidence_ref": "harness/scripts/validate-constitutional-change.mjs (human approval exact-digest validation)"
+    },
+    {
+      "question": "What work remains excluded from this governance-only change?",
+      "answer": "T006 TEST-F00-037 requires actual S05 owner/session seam; product PR #374 still requires mobile return CTA fix and full independent product BCE. No product test, merge, deploy, T008 or Task closure may be implied by green governance CI.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6133117669"
+    }
+  ],
+  "negative_tests": [
+    "Wrong base SHA fails; exact changed paths include only the four governance/control files plus one CI runner file.",
+    "Any test/source/migration/package or extra path forces full product:ci path, never governance N/A.",
+    "Exact T006 maintenance authority and unchanged other Task definitions required by Change Scope Gate.",
+    "If delegated Change Scope Gate rejects candidate, product:ci exits failure; not a skip.",
+    "Original historical T006/T008 closure gate remains fail-closed and its synthetic tests run with npm run gate.",
+    "Constitutional human approval must match new exact digest; prior Human approval for old digest is not reused.",
+    "PRODUCT CI N/A is never labeled nine tests PASS; product #374 remains full acceptance gated."
+  ],
+  "rollback": "Only separately Human-approved revert governance PR with own exact byte-bound docket; do not force push, change closed Task truth or bypass tests.",
+  "approval_status": "HUMAN_APPROVED_EXACT_CANDIDATE_PROVENANCE_REVIEW_REQUIRED",
+  "human_approval": {
+    "case_id": "GOV-T006-R2-MAINT-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "ChatGPT current conversation: direct Human approval message: 「批准 PR #375 新精確候選 SHA-256 e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4；批准記錄 Human 核准證據並重新執行及審核 CI，但不批准 Merge。」",
+    "candidate_digest_sha256": "e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4",
+    "approved_at_unix": 1791843291
+  },
+  "supersedes_earlier_approval_digest_sha256": "8138cfb508b4c978bd22a68c5bb29e33aa655a4ad412e5ae156e7f50d25d77cc",
+  "human_approval_provenance": {
+    "source": "Direct user turn in this ChatGPT conversation; approval is not an AI-generated message or a GitHub comment.",
+    "verbatim_user_message": "批准 PR #375 新精確候選 SHA-256 e06f7f89d770b591c7b7f02498595520f3f2dbaf06d6c7fc7fb356db9a5ba9d4；批准記錄 Human 核准證據並重新執行及審核 CI，但不批准 Merge。",
+    "timestamp_note": "approved_at_unix is the evidence-recording time; it does not claim the user's actual send time at second-level precision.",
+    "independent_check_required": "Human reviewer to verify exact direct user message and candidate digest prior to any merge; CI cannot authenticate identity.",
+    "merge_approval": "NOT GIVEN. User explicitly withheld Merge approval."
+  }
+}

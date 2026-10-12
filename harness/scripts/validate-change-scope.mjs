@@ -443,11 +443,52 @@ const t006FocusSwitch=(()=>{
 })();
 if(t006FocusSwitch) console.log("- Exact Human-directed T006 focus switch recognized: T008 BLOCKED, revalidations still unfinished.");
 
+// BS-P1-025: exactly two Human-directed legacy F00 fixture rebinds and one
+// non-semantic lint refactor. Bound to the exact merged main; never a general
+// override for Product tests, Task status, Sprint transitions, or governance.
+const t006R2MaintenancePaths=new Set([
+  "delivery/sprints/SP-P1-003/tasks.json",
+  "harness/scripts/validate-backlog.mjs",
+  "harness/scripts/validate-change-scope.mjs",
+  "ci/run-product-ci.mjs",
+  "delivery/constitutional-cases/GOV-T006-R2-MAINT-001.json"
+]);
+const t006R2ExpectedMaintenance=[
+  {test_id:"TEST-F00-001",file:"tests/e2e/f00-create-shell.spec.ts",mode:"BASELINE_FIXTURE_REBIND",from_build_spec:"BS-P1-024",to_build_spec:"BS-P1-025"},
+  {test_id:"TEST-F00-038",file:"tests/e2e/f00-create-shell.spec.ts",mode:"BASELINE_FIXTURE_REBIND",from_build_spec:"BS-P1-024",to_build_spec:"BS-P1-025"}
+];
+const t006R2MaintenanceTaskShape=(before,after)=>{
+  if(!before || !after || !Array.isArray(before.tasks) || !Array.isArray(after.tasks)) return false;
+  if(before.tasks.length!==after.tasks.length ||
+     !sameJson(omit(before,["tasks"]),omit(after,["tasks"]))) return false;
+  return before.tasks.every((previous,index)=>{
+    const next=after.tasks[index];
+    if(previous.task_id!==next?.task_id) return false;
+    if(previous.task_id!=="T006") return sameJson(previous,next);
+    if(Object.hasOwn(previous,"test_maintenance_authorizations")) return false;
+    return sameJson(omit(previous,["test_maintenance_authorizations"]),omit(next,["test_maintenance_authorizations"])) &&
+      sameJson(next.test_maintenance_authorizations,t006R2ExpectedMaintenance);
+  });
+};
+const t006R2MaintenanceRepair=(()=>{
+  if(baseSha!=="67cd2217c7b94cc564c5e730aa03227c2085fb31") return false;
+  if(changed.length!==t006R2MaintenancePaths.size ||
+     !changed.every(p=>t006R2MaintenancePaths.has(p))) return false;
+  if(!sameJson(baseCurrentSprint,cs) || !sameJson(baseCurrentBuild,currentBuild)) return false;
+  if(cs.status!=="ACTIVE" || cs.active_sprint!=="SP-P1-003" ||
+     cs.active_task!=="T006" || cs.active_build_spec!=="BS-P1-025") return false;
+  return t006R2MaintenanceTaskShape(
+    showBaseJson("delivery/sprints/SP-P1-003/tasks.json"),
+    readHeadJson("delivery/sprints/SP-P1-003/tasks.json")
+  );
+})();
+if(t006R2MaintenanceRepair) console.log("- Exact T006 R2 F00 fixture rebind + lint repair recognized; CLOSED Tasks / Product truth frozen.");
+
 if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || t006FocusSwitch || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
+}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);

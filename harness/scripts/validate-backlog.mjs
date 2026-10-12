@@ -310,7 +310,7 @@ const exactT008ClosedRevalidation=(r,expectedIds)=>
   r.acceptance_ids.length===expectedIds.length &&
   expectedIds.every(aid=>r.acceptance_ids.includes(aid));
 
-function checkT006T008Order(t006,t008,items) {
+function t006T008PreclosureErrors(t006,t008) {
   const errors=[];
   if(["IN_PROGRESS","REVIEW","VERIFIED"].includes(t008?.status) &&
      t006?.status!=="VERIFIED") {
@@ -320,14 +320,10 @@ function checkT006T008Order(t006,t008,items) {
      !["REVIEW","VERIFIED","CLOSED"].includes(t006?.status)) {
     errors.push("T008 CLOSED requires T006 product already independently reviewed");
   }
-  if(t006?.status!=="CLOSED") return errors;
-  if(t008?.status!=="CLOSED") errors.push("T006 final CLOSED forbidden until T008 is CLOSED");
-  if(!Array.isArray(t008?.completion_evidence) || !t008.completion_evidence.length) {
-    errors.push("T006 final CLOSED requires T008 completion_evidence; evidence gate validates actual PASS records");
-  }
-  if(!exactT008AcceptancePairs(t008?.acceptance_links)) {
-    errors.push("T006 final CLOSED requires T008 owning exactly four BS-P1-025 AC/Test pairs");
-  }
+  return errors;
+}
+function t006ClosureRevalidationErrors(items) {
+  const errors=[];
   const byId=new Map((items||[]).map(x=>[x.backlog_item_id,x]));
   for(const [id,ids] of t008ExactRevalidations) {
     if(!exactT008ClosedRevalidation(byId.get(id)?.revalidation,ids)) {
@@ -335,6 +331,21 @@ function checkT006T008Order(t006,t008,items) {
     }
   }
   return errors;
+}
+function t006FinalClosureErrors(t008,items) {
+  const errors=[];
+  if(t008?.status!=="CLOSED") errors.push("T006 final CLOSED forbidden until T008 is CLOSED");
+  if(!Array.isArray(t008?.completion_evidence) || !t008.completion_evidence.length) {
+    errors.push("T006 final CLOSED requires T008 completion_evidence; evidence gate validates actual PASS records");
+  }
+  if(!exactT008AcceptancePairs(t008?.acceptance_links)) {
+    errors.push("T006 final CLOSED requires T008 owning exactly four BS-P1-025 AC/Test pairs");
+  }
+  return errors.concat(t006ClosureRevalidationErrors(items));
+}
+function checkT006T008Order(t006,t008,items) {
+  const errors=t006T008PreclosureErrors(t006,t008);
+  return t006?.status==="CLOSED" ? errors.concat(t006FinalClosureErrors(t008,items)) : errors;
 }
 function testT006T008Order() {
   const ids=[["F01-AC-013","TEST-F01-API-001"],["F01-AC-016","TEST-F01-API-003"],["F01-AC-017","TEST-F01-SEC-007"],["F07-AC-004","TEST-F07-004"]];
