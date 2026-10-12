@@ -13,6 +13,11 @@ const isMobile = (page: Page): boolean => (page.viewportSize()?.width ?? 1280) <
 
 let host: S03WorkerHost;
 
+test.beforeAll(async ({}, testInfo) => {
+  testInfo.setTimeout(180_000);
+  await S03WorkerHost.prepare();
+});
+
 test.beforeEach(async ({ page }, testInfo) => {
   host = await S03WorkerHost.start();
   await host.attach(page);

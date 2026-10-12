@@ -27,6 +27,11 @@ async function expectVisibleTouchTargets(targets: Locator): Promise<void> {
   }
 }
 
+test.beforeAll(async ({}, testInfo) => {
+  testInfo.setTimeout(180_000);
+  await S03SurfaceHarness.prepare();
+});
+
 test.afterAll(async () => {
   await S03SurfaceHarness.shutdown();
 });

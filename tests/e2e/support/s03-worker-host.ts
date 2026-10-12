@@ -63,6 +63,12 @@ export class S03WorkerHost {
     public readonly provenance: string
   ) {}
 
+  /** Builds once per worker; call from `beforeAll` so the build never eats a single test's timeout. */
+  public static async prepare(): Promise<void> {
+    shared ??= buildOnce();
+    await shared;
+  }
+
   public static async start(): Promise<S03WorkerHost> {
     shared ??= buildOnce();
     const { outDir, module } = await shared;

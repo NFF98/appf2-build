@@ -9,6 +9,11 @@ const changeSheet = (page: Page): Locator => page.getByRole("dialog", { name: "�
 const resultValue = (page: Page): Locator => page.locator(".s03-result-item", { hasText: "每人金額" }).locator("dd");
 const contentHash = (page: Page): Promise<string | null> => page.locator("body").getAttribute("data-content-hash");
 
+test.beforeAll(async ({}, testInfo) => {
+  testInfo.setTimeout(180_000);
+  await S03SurfaceHarness.prepare();
+});
+
 test.afterAll(async () => {
   await S03SurfaceHarness.shutdown();
 });

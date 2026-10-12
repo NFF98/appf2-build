@@ -46,6 +46,12 @@ async function buildOnce(): Promise<SharedBuild> {
  * beyond the page itself: every other origin is aborted.
  */
 export const S03SurfaceHarness = {
+  /** Builds once per worker; call from `beforeAll` so the build never eats a single test's timeout. */
+  async prepare(): Promise<void> {
+    shared ??= buildOnce();
+    await shared;
+  },
+
   async open(page: Page, options: { readonly variant?: S03Variant; readonly inspection?: "COMPOSER" | "PREVIEW" } = {}): Promise<void> {
     shared ??= buildOnce();
     const { outDir, module } = await shared;
