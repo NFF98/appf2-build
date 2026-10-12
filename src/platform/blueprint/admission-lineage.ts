@@ -60,7 +60,7 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 }
 
 /** Persisted canonical body still re-hashes to content_hash with its recorded byte_size and version metadata. */
-function bodyIntact(content: LineageContentRow, contentHash: string): boolean {
+export function bodyIntact(content: LineageContentRow, contentHash: string): boolean {
   try {
     const raw = content.canonical_blueprint;
     const body: unknown = typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -77,7 +77,7 @@ function bodyIntact(content: LineageContentRow, contentHash: string): boolean {
   }
 }
 
-function reportMatches(run: LineageRunRow, contentHash: string): boolean {
+export function reportMatches(run: LineageRunRow, contentHash: string): boolean {
   const { report } = run;
   return (
     isRecord(report) &&
