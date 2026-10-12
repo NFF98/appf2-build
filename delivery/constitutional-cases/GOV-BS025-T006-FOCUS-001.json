@@ -11,7 +11,7 @@
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "68a4590dcedc6cab1677806dd2aea5b28dc075a8d07583b00992d355a39f29fa",
+  "candidate_digest_sha256": "96839eaee224eecf845c5df9e038c9e64c0175483e3708496ea003b6c203e94b",
   "why5": [
     {
       "question": "Why is T006 still BLOCKED after BS-P1-025 Activation?",
