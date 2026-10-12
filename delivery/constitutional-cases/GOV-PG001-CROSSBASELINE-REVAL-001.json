@@ -42,14 +42,15 @@
     },
     {
       "question": "Why is this candidate narrow and not a relaxation of the Constitution or of #366's process?",
-      "answer": "No constitutional, activation, baseline or policy file changes. Every protected path still needs exactly one exact-digest docket with a direct Human decision (pre-Phase4 rule from #367/#368); the old R1-R5 five-stage Ed25519 approvals of #366 are not used or relied on. The dependency path is hard-coded to two packages and expires in effect once they exist on main. A local simulation (governance repair -> PG dependency PR -> BS-P1-025 Activation -> R1-R4 product diff under an active Task) passes 14/14 gates at every step with all CLOSED Tasks byte-identical, and 20 scenario negatives fail closed.",
-      "evidence_ref": "local: APPf2-PG001/product-e2e/pg001-f02-fix/gov-fasttrack/ (simulation logs, negative-tests log, SHA256SUMS.txt)"
+      "answer": "No constitutional, activation, baseline or policy file changes. Every protected path still needs one exact-digest docket and direct Human decision (pre-Phase4 rule from #367/#368), and active Sprint scope remains independently checked. Local simulation records establish 14/14 gates PASS for the complete S1 governance PR diff with SIMULATION-ONLY approval (not a real Human approval); earlier S1–S4 step PASS assertions were seen in the Cursor session but complete per-step gate logs were not preserved. The separate 25-case scenario-negative suite was still running without a completed result log at evidence review time, and therefore is NOT claimed PASS. The built-in change-scope guards include 11 CLOSED-history scenarios and 16 dependency-HOLD scenarios. No product files, CLOSED Tasks or baseline contents are changed by this governance candidate.",
+      "evidence_ref": "local: gov-fasttrack/logs/s1-full-pr-diff.log (S1 exact governance PR diff, SIMULATION-ONLY approval, 14/14); Cursor review packet as of 2026-10-12 07:44 JST (S1-S4 step logs incomplete; 25 external negatives not completed); built-in 11/16 regression cases executed through change-scope gate; candidate branch governed by exact digest"
     }
   ],
   "negative_tests": [
-    "change-scope self tests: CLOSED Task rebound / acceptance edited / reopened / deleted; CLOSED revalidation overwritten / edited into history / history entry removed / backlog item deleted",
-    "PG dependency HOLD path self tests: Sprint ACTIVE, implementation enabled, control state changed, product source in diff, no docket, extra file, pg version drift, extra dependency, existing dependency bumped, scripts edited, unlisted lock package, existing lock entry modified, non-registry tarball, missing integrity, lock root mismatch",
-    "scenario negatives on the simulated BS-P1-025 Activation: see gov-fasttrack/negative-tests.log"
+    "11 built-in CLOSED Task/CLOSED revalidation history guard cases implemented in validate-change-scope.mjs (gate pass reported)",
+    "16 built-in PG dependency HOLD allow/reject cases implemented in pg001-dependency-hold-path.mjs (gate pass reported)",
+    "25 external simulated-activation scenario negatives N00–N24: NOT VERIFIED in the preserved evidence at review time; pending/completed outcome must be evaluated only from a later complete log, not inferred from a running process",
+    "Current candidate has human_approval=null; constitutional gate correctly remains FAIL CLOSED until an independent exact-digest Human approval is documented"
   ],
   "rollback": "Revert the merge commit through a new governance PR carrying its own docket. Validators return to dbfdc948 behaviour; no product, schema, data or lifecycle state is changed by this PR.",
   "approval_status": "PENDING_HUMAN_EXACT_DIGEST_APPROVAL",
