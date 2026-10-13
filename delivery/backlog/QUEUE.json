@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "build_spec_id": "BS-P1-025",
+  "build_spec_id": "BS-P1-026",
   "status": "OPEN",
   "generation": {
     "method": "IMPLEMENTATION_CAPABILITY_CLUSTER",
@@ -354,7 +354,7 @@
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure.",
       "sprint_id": "SP-P1-002",
       "revalidation": {
-        "target_build_spec_id": "BS-P1-025",
+        "target_build_spec_id": "BS-P1-026",
         "status": "IN_PROGRESS",
         "sprint_id": "SP-P1-003",
         "task_id": "T008",
@@ -475,7 +475,7 @@
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure.",
       "sprint_id": "SP-P1-003",
       "revalidation": {
-        "target_build_spec_id": "BS-P1-025",
+        "target_build_spec_id": "BS-P1-026",
         "status": "IN_PROGRESS",
         "sprint_id": "SP-P1-003",
         "task_id": "T008",
@@ -706,7 +706,7 @@
       "backlog_item_id": "BL-P1-015",
       "title": "Result evaluation & correction replay support",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-025",
+      "build_spec_id": "BS-P1-026",
       "function_id": "F03",
       "contract_scope": "BS-P1-004/F03",
       "implementation_scope": "Result evaluation & correction replay support",
@@ -839,7 +839,7 @@
       "backlog_item_id": "BL-P1-018",
       "title": "APP surface navigation, compare & inspection continuity",
       "source": "BUILD_SPEC",
-      "build_spec_id": "BS-P1-025",
+      "build_spec_id": "BS-P1-026",
       "function_id": "F00",
       "contract_scope": "BS-P1-004/F00",
       "implementation_scope": "APP surface navigation, compare & inspection continuity",
@@ -869,8 +869,8 @@
           "test_id": "TEST-F00-036"
         },
         {
-          "acceptance_id": "F00-AC-037",
-          "test_id": "TEST-F00-037"
+          "acceptance_id": "F00-AC-039",
+          "test_id": "TEST-F00-039"
         }
       ],
       "dependencies": [
@@ -1445,7 +1445,7 @@
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure.",
       "sprint_id": "SP-P1-001",
       "revalidation": {
-        "target_build_spec_id": "BS-P1-025",
+        "target_build_spec_id": "BS-P1-026",
         "status": "IN_PROGRESS",
         "sprint_id": "SP-P1-003",
         "task_id": "T008",
@@ -2200,6 +2200,28 @@
       "status": "QUEUED",
       "product_decision_allowed": false,
       "completion_condition": "All mapped Acceptance/Test pairs must pass with required Task evidence before closure."
+    },
+    {
+      "backlog_item_id": "BL-P1-047",
+      "title": "F00 Full S05 returnable inspection — Preview origin Stage C F06 Product Proof",
+      "source": "BUILD_SPEC",
+      "build_spec_id": "BS-P1-026",
+      "function_id": "F00",
+      "contract_scope": "BS-P1-026/F00",
+      "implementation_scope": "Stage C F06 Preview-origin full returnable inspection; preserve original F00-AC-037/TEST-F00-037 including Composer+Preview and same session/draft/preview return. No Stage A fake PASS.",
+      "acceptance_links": [
+        {
+          "acceptance_id": "F00-AC-037",
+          "test_id": "TEST-F00-037"
+        }
+      ],
+      "dependencies": [
+        "BL-P1-027"
+      ],
+      "priority": "P1",
+      "status": "QUEUED",
+      "product_decision_allowed": false,
+      "completion_condition": "Full original F00-AC-037 including F06 Preview-origin E2E must genuinely PASS with executable evidence before future Stage C closure."
     }
   ]
 }

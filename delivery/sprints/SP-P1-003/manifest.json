@@ -2,7 +2,7 @@
   "schema_version": 1,
   "sprint_id": "SP-P1-003",
   "status": "BLOCKED",
-  "build_spec_id": "BS-P1-025",
+  "build_spec_id": "BS-P1-026",
   "goal": "完成 Product Proof Stage A — Playable App：一個自然語言 request 必須能經 F01 產生 Blueprint、F02 validate/admit、F03 hydrate READY、在 S03 render，並由 User 做出至少一個真實 local interaction 改變 committed Runtime state/result。",
   "scope": [
     "BL-P1-009 Compiler gating, capability coverage & validation loop",
@@ -33,7 +33,7 @@
     "baseline_gate_passed": true,
     "acceptance_mapped": true,
     "user_approved": true,
-    "approval_ref": "Human 2026-10-12 direct ChatGPT message: 『批准 BS-P1-025 Activation #372 候選，Head `7d0423b8`，允許填入正式 Activation 核准並執行 CI』; activation candidate approval only, #372 final Merge not approved, T006 execution still BLOCKED."
+    "approval_ref": "Human direct ChatGPT messages 2026-10-13: 『execute 1 ,2』 + 『re send execute 1 ,2』, explicitly authorizing step 1 BS026 Freeze/#377 and step 2 BS026 Activation + T006 Composer-only Rebind. No Cursor execution/T008/new Product PASS."
   },
   "backlog_item_ids": [
     "BL-P1-009",

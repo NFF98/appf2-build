@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "active_sprint": "SP-P1-003",
-  "active_build_spec": "BS-P1-025",
+  "active_build_spec": "BS-P1-026",
   "active_task": "T006",
   "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T006 temporary bounded product-proof pause before Human-approved BS-P1-026 Build Freeze/Activation; no T008 execution, no T006 PASS/VERIFIED; resume only on separately approved rebaseline and genuine evidence."
+  "reason": "Human-directed BS026 activation/rebind. Stage A T006 retains BLOCKED pending separate Cursor lease and TEST-F00-039 real execution; F00-AC-037/TEST-F00-037 remains Stage C; T008 BLOCKED."
 }
