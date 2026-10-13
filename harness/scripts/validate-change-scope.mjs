@@ -312,6 +312,90 @@ if(approvedPfr06WebReadinessTransition){
 }
 
 
+// GOV-T006-F06-DEFER-T008-001: exact-once two-rule L3 candidacy, never implicit Human approval.
+const f06DeferL3CasePath="delivery/constitutional-cases/GOV-T006-F06-DEFER-T008-001.json";
+const f06DeferL3RulePaths=["harness/scripts/validate-backlog.mjs","harness/scripts/validate-change-scope.mjs"];
+const f06DeferL3Paths=[...f06DeferL3RulePaths,f06DeferL3CasePath].sort();
+const f06DeferL3Digest=()=>{
+  const h=createHash("sha256");
+  for(const rel of [...f06DeferL3RulePaths].sort()){
+    h.update(rel+"\\0".replace("\\0",String.fromCharCode(0)));
+    h.update(fs.readFileSync(path.join(root,rel)));
+    h.update(String.fromCharCode(0));
+  }
+  return h.digest("hex");
+};
+const exactF06DeferL3Candidate=({base,changedPaths,beforeBuild,afterBuild,beforeSprint,afterSprint,docket,digest})=>{
+  const a=docket?.human_approval||{};
+  return base==="e495237d85ceaa2ae7c2c62d32678dcac4fa133b" &&
+    sameJson([...changedPaths].sort(),f06DeferL3Paths) &&
+    sameJson(beforeBuild,afterBuild) && sameJson(beforeSprint,afterSprint) &&
+    afterBuild?.active_baseline==="BS-P1-025" && afterBuild.implementation_enabled===true &&
+    afterSprint?.active_sprint==="SP-P1-003" && afterSprint.active_task==="T006" &&
+    afterSprint.active_build_spec==="BS-P1-025" && afterSprint.status==="ACTIVE" &&
+    docket?.case_id==="GOV-T006-F06-DEFER-T008-001" && docket.base_sha===base &&
+    sameJson([...(docket.exact_changed_paths||[])].sort(),[...f06DeferL3RulePaths].sort()) &&
+    docket.candidate_digest_sha256===digest &&
+    docket.deferred_acceptance_id==="F00-AC-037" &&
+    docket.deferred_test_id==="TEST-F00-037" &&
+    docket.deferred_scope==="F06_PREVIEW_ORIGIN_ONLY" &&
+    docket.owner_product_progress_value===95 &&
+    a.case_id===docket.case_id && a.source_kind==="DIRECT_HUMAN_MESSAGE" &&
+    a.decision==="APPROVE_EXACT_CANDIDATE" && a.scope==="EXACT_PR_DIFF" &&
+    a.candidate_digest_sha256===digest &&
+    typeof a.human_message_ref==="string" && !!a.human_message_ref.trim() &&
+    Number.isSafeInteger(a.approved_at_unix) && a.approved_at_unix>0;
+};
+const testF06DeferL3Candidate=()=>{
+  const fixture=()=>{
+    const docket={case_id:"GOV-T006-F06-DEFER-T008-001",base_sha:"e495237d85ceaa2ae7c2c62d32678dcac4fa133b",
+      exact_changed_paths:[...f06DeferL3RulePaths],
+      deferred_acceptance_id:"F00-AC-037",deferred_test_id:"TEST-F00-037",
+      deferred_scope:"F06_PREVIEW_ORIGIN_ONLY",owner_product_progress_value:95,
+      candidate_digest_sha256:"f".repeat(64)};
+    docket.human_approval={case_id:docket.case_id,source_kind:"DIRECT_HUMAN_MESSAGE",
+      decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",
+      candidate_digest_sha256:docket.candidate_digest_sha256,
+      human_message_ref:"SYNTHETIC-NON-HUMAN",approved_at_unix:1};
+    const build={active_baseline:"BS-P1-025",implementation_enabled:true};
+    const sprint={active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T006",status:"ACTIVE"};
+    return {base:"e495237d85ceaa2ae7c2c62d32678dcac4fa133b",changedPaths:[...f06DeferL3Paths],
+      beforeBuild:structuredClone(build),afterBuild:structuredClone(build),
+      beforeSprint:structuredClone(sprint),afterSprint:structuredClone(sprint),
+      docket,digest:docket.candidate_digest_sha256};
+  };
+  const cases=[
+    ["exact",true,x=>x],
+    ["approval missing",false,x=>{delete x.docket.human_approval;return x;}],
+    ["bot approval",false,x=>{x.docket.human_approval.source_kind="BOT";return x;}],
+    ["wrong sha",false,x=>{x.base="a".repeat(40);return x;}],
+    ["wrong digest",false,x=>{x.digest="a".repeat(64);return x;}],
+    ["extra protected file",false,x=>{x.changedPaths.push("ci/run-product-ci.mjs");return x;}],
+    ["missing file",false,x=>{x.changedPaths.pop();return x;}],
+    ["Task changed",false,x=>{x.afterSprint.active_task="T008";return x;}],
+    ["Sprint changed",false,x=>{x.afterSprint.active_sprint="SP-P1-004";return x;}],
+    ["Build changed",false,x=>{x.afterBuild.active_baseline="BS-P1-026";return x;}],
+    ["fake F06 PASS",false,x=>{x.docket.deferred_test_id="TEST-F00-039";return x;}],
+    ["fake PPV",false,x=>{x.docket.owner_product_progress_value=100;return x;}],
+    ["approval ref missing",false,x=>{x.docket.human_approval.human_message_ref="";return x;}],
+    ["approval stage wrong",false,x=>{x.docket.human_approval.decision="APPROVE_PLAN";return x;}]
+  ];
+  for(const [label,want,edit] of cases)
+    if(exactF06DeferL3Candidate(edit(fixture()))!==want)
+      throw Error("OWNER L3 CANDIDATE NEGATIVE FAILED: "+label);
+  return cases.length;
+};
+console.log("- F06 defer L3 positive/negative: "+testF06DeferL3Candidate()+"/14 PASS (synthetic).");
+const f06DeferL3Docket=readHeadJson(f06DeferL3CasePath);
+const approvedF06DeferL3Candidate=Boolean(f06DeferL3Docket &&
+  exactF06DeferL3Candidate({
+    base:baseSha,changedPaths:changed,beforeBuild:baseCurrentBuild,afterBuild:currentBuild,
+    beforeSprint:baseCurrentSprint,afterSprint:cs,
+    docket:f06DeferL3Docket,digest:f06DeferL3Digest()
+  }));
+if(approvedF06DeferL3Candidate)
+  console.log("- Exact Human-approved F06/T008 L3 rule candidate recognized; constitutional gate independently required.");
+
 // GOV-T006-F06-PHASED-001: once-only L3 governance candidacy.
 // Do not turn a draft into execution authority: requires exact Human candidate decision,
 // fixed source main SHA, exact five paths, SHA256 of four rule files, unchanged Sprint/Build.
@@ -702,7 +786,7 @@ if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate || bs026ProtectedAmendment || approvedBs026FreezeOnly){
+}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate || approvedF06DeferL3Candidate || bs026ProtectedAmendment || approvedBs026FreezeOnly){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);
