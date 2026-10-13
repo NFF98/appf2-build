@@ -9,8 +9,8 @@
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "a45b2e3a9eb0971b22b4b8340db80b8a8938ed084b7a9819027366b978eeff66",
-  "approval_boundary": "CANDIDATE_PR_ONLY; Human has approved submission of a draft, not exact rule bytes nor Merge.",
+  "candidate_digest_sha256": "05c1f3819dfc549e50fc9f81c8c1f446dbc1c5d41b05379b90703b41f7e46d8a",
+  "approval_boundary": "NEW REFACTORED CANDIDATE: prior Human exact approval applied ONLY to digest a45b2e3a9eb0971b22b4b8340db80b8a8938ed084b7a9819027366b978eeff66 and is not authorization of changed rule bytes. New exact-candidate Human approval required before CI/merge.",
   "why5": [
     {
       "question": "W1 可觀測症狀？",
@@ -61,13 +61,5 @@
     "Other-Sprint/revalidation attack fixtures without SP-P1-003/tasks.json must not crash"
   ],
   "rollback": "Until separate Human Merge approval, close Draft PR without changing main. After merge, rollback requires new exact Human-approved constitutional PR; do not alter completed historical Task/baseline.",
-  "human_approval": {
-    "case_id": "GOV-T006-F06-PHASED-001",
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "Human direct ChatGPT message 2026-10-13 JST: 『正式批准 GOV-T006-F06-PHASED-001 的 PR #376 精確 L3 候選』; approved HEAD 3d80129925a39da091e07a61f62a867db21f80a7; BASE 3c6eb63a009a515d9fa1038ad5cd1a81908469f6; exact 3-rule digest a45b2e3a9eb0971b22b4b8340db80b8a8938ed084b7a9819027366b978eeff66; explicitly excludes Merge #376/#374, Task status, T008 activation, Cursor Lease.",
-    "candidate_digest_sha256": "a45b2e3a9eb0971b22b4b8340db80b8a8938ed084b7a9819027366b978eeff66",
-    "approved_at_unix": 1791856297
-  }
+  "human_approval": null
 }
