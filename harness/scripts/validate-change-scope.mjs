@@ -333,23 +333,28 @@ const p0Digest=()=>{
   }
   return h.digest("hex");
 };
-const isExactP0Candidate=({base,changed,buildBefore,buildAfter,sprintBefore,sprintAfter,docket,digest})=>{
-  const human=docket?.human_approval;
-  return base==="3c6eb63a009a515d9fa1038ad5cd1a81908469f6" &&
-    stable([...changed].sort())===stable(p0AllPaths) &&
-    stable(buildBefore)===stable(buildAfter) && stable(sprintBefore)===stable(sprintAfter) &&
-    sprintAfter?.active_sprint==="SP-P1-003" && sprintAfter.active_task==="T006" &&
-    sprintAfter.active_build_spec==="BS-P1-025" && sprintAfter.status==="ACTIVE" &&
-    buildAfter?.active_baseline==="BS-P1-025" && buildAfter.implementation_enabled===true &&
-    docket?.case_id==="GOV-T006-F06-PHASED-001" && docket.constitution_version==="1.0" &&
-    docket.base_sha===base &&
-    stable([...(docket.exact_changed_paths||[])].sort())===stable([...p0RulePaths].sort()) &&
-    docket.candidate_digest_sha256===digest && digest===human?.candidate_digest_sha256 &&
-    human?.case_id===docket.case_id && human.source_kind==="DIRECT_HUMAN_MESSAGE" &&
-    human.decision==="APPROVE_EXACT_CANDIDATE" && human.scope==="EXACT_PR_DIFF" &&
-    typeof human.human_message_ref==="string" && human.human_message_ref.trim().length>0 &&
-    Number.isSafeInteger(human.approved_at_unix) && human.approved_at_unix>0;
-};
+const matchesExactP0Control=({buildBefore,buildAfter,sprintBefore,sprintAfter})=>
+  stable(buildBefore)===stable(buildAfter) && stable(sprintBefore)===stable(sprintAfter) &&
+  sprintAfter?.active_sprint==="SP-P1-003" && sprintAfter.active_task==="T006" &&
+  sprintAfter.active_build_spec==="BS-P1-025" && sprintAfter.status==="ACTIVE" &&
+  buildAfter?.active_baseline==="BS-P1-025" && buildAfter.implementation_enabled===true;
+const matchesExactP0Docket=({docket,base,digest})=>
+  docket?.case_id==="GOV-T006-F06-PHASED-001" &&
+  docket.constitution_version==="1.0" && docket.base_sha===base &&
+  stable([...(docket.exact_changed_paths||[])].sort())===stable([...p0RulePaths].sort()) &&
+  docket.candidate_digest_sha256===digest;
+const matchesExactP0Human=({human,docket,digest})=>
+  digest===human?.candidate_digest_sha256 &&
+  human?.case_id===docket.case_id && human.source_kind==="DIRECT_HUMAN_MESSAGE" &&
+  human.decision==="APPROVE_EXACT_CANDIDATE" && human.scope==="EXACT_PR_DIFF" &&
+  typeof human.human_message_ref==="string" && human.human_message_ref.trim().length>0 &&
+  Number.isSafeInteger(human.approved_at_unix) && human.approved_at_unix>0;
+const isExactP0Candidate=({base,changed,buildBefore,buildAfter,sprintBefore,sprintAfter,docket,digest})=>
+  base==="3c6eb63a009a515d9fa1038ad5cd1a81908469f6" &&
+  stable([...changed].sort())===stable(p0AllPaths) &&
+  matchesExactP0Control({buildBefore,buildAfter,sprintBefore,sprintAfter}) &&
+  matchesExactP0Docket({docket,base,digest}) &&
+  matchesExactP0Human({human:docket?.human_approval,docket,digest});
 const testExactP0Candidate=()=>{
   const d={case_id:"GOV-T006-F06-PHASED-001",constitution_version:"1.0",base_sha:"3c6eb63a009a515d9fa1038ad5cd1a81908469f6",exact_changed_paths:[...p0RulePaths],candidate_digest_sha256:"SYNTHETIC",
     human_approval:{case_id:"GOV-T006-F06-PHASED-001",source_kind:"DIRECT_HUMAN_MESSAGE",decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",candidate_digest_sha256:"SYNTHETIC",human_message_ref:"SYNTHETIC-NOT-REAL-APPROVAL",approved_at_unix:1}};
