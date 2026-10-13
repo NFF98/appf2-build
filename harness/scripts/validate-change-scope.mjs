@@ -524,6 +524,87 @@ console.log("- BS026 freeze-only guard synthetic: "+testBs026FreezeBoundary()+"/
 if(bs026ProtectedAmendment) console.log("- Exact Human-approved BS026 narrow L3 rule amendment recognized; constitutional audit required.");
 if(approvedBs026FreezeOnly) console.log("- Exact BS026 Human-approved freeze-only diff recognized; immutable Baseline/Delta/Evidence validators remain binding.");
 
+// GOV-T006-BS026-FREEZE-CI-001: one-time constitutional approval route for
+// exact 3-path governance-only CI wiring; never a Product acceptance waiver.
+// The actual 56-file BS026 freeze remains checked by approvedBs026FreezeOnly.
+const bs026CiDocketPath="delivery/constitutional-cases/GOV-T006-BS026-FREEZE-CI-001.json";
+const bs026CiRulePaths=["ci/run-product-ci.mjs","harness/scripts/validate-change-scope.mjs"];
+const bs026CiChanged=[...bs026CiRulePaths,bs026CiDocketPath].sort();
+const bs026CiDocket=readHeadJson(bs026CiDocketPath);
+const bs026CiDigest=()=>{
+  const h=createHash("sha256");
+  for(const rel of [...bs026CiRulePaths].sort()){
+    h.update(rel+String.fromCharCode(0));
+    h.update(fs.readFileSync(path.join(root,rel)));
+    h.update(String.fromCharCode(0));
+  }
+  return h.digest("hex");
+};
+const isBs026CiExactHumanAmendment=({docket,base,changed,sprint,build,previousSprint,previousBuild,digest})=>{
+  const d=docket||{},h=d.human_approval||{},s=sprint||{},b=build||{};
+  return [
+    base==="628d8440e938bd73aa84999baa778f5fbbe1bc39",
+    sameJson([...changed].sort(),bs026CiChanged),
+    sameJson(sprint,previousSprint),
+    sameJson(build,previousBuild),
+    s.active_sprint==="SP-P1-003",
+    s.active_task==="T006",
+    s.active_build_spec==="BS-P1-025",
+    s.status==="BLOCKED",
+    b.active_baseline==="BS-P1-025",
+    b.implementation_enabled===true,
+    d.case_id==="GOV-T006-BS026-FREEZE-CI-001",
+    d.base_sha===base,
+    d.constitution_version==="1.0",
+    sameJson([...(d.exact_changed_paths||[])].sort(),[...bs026CiRulePaths].sort()),
+    d.candidate_digest_sha256===digest,
+    h.case_id===d.case_id,
+    h.source_kind==="DIRECT_HUMAN_MESSAGE",
+    h.decision==="APPROVE_EXACT_CANDIDATE",
+    h.scope==="EXACT_PR_DIFF",
+    h.candidate_digest_sha256===digest,
+    typeof h.human_message_ref==="string",
+    Boolean(typeof h.human_message_ref==="string" && h.human_message_ref.trim()),
+    Number.isSafeInteger(h.approved_at_unix),
+    h.approved_at_unix>0
+  ].every(Boolean);
+};
+const bs026FreezeCiRuleApproved=Boolean(bs026CiDocket && isBs026CiExactHumanAmendment({
+  docket:bs026CiDocket,base:baseSha,changed,sprint:cs,build:currentBuild,
+  previousSprint:baseCurrentSprint,previousBuild:baseCurrentBuild,digest:bs026CiDigest()
+}));
+const testBs026FreezeCiRuleShape=()=>{
+  const sp={active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-025",status:"BLOCKED"};
+  const build={active_baseline:"BS-P1-025",implementation_enabled:true};
+  const d={case_id:"GOV-T006-BS026-FREEZE-CI-001",constitution_version:"1.0",
+    base_sha:"628d8440e938bd73aa84999baa778f5fbbe1bc39",
+    exact_changed_paths:[...bs026CiRulePaths],candidate_digest_sha256:"SYNTHETIC",
+    human_approval:{case_id:"GOV-T006-BS026-FREEZE-CI-001",
+      source_kind:"DIRECT_HUMAN_MESSAGE",decision:"APPROVE_EXACT_CANDIDATE",
+      scope:"EXACT_PR_DIFF",candidate_digest_sha256:"SYNTHETIC",
+      human_message_ref:"SYNTHETIC_NOT_REAL_HUMAN",approved_at_unix:1}};
+  const mk=()=>({docket:JSON.parse(JSON.stringify(d)),base:d.base_sha,changed:[...bs026CiChanged],
+    sprint:{...sp},previousSprint:{...sp},build:{...build},previousBuild:{...build},digest:"SYNTHETIC"});
+  const cases=[
+    ["synthetic exact",true,x=>x],
+    ["wrong base",false,x=>{x.base="a".repeat(40);return x;}],
+    ["wrong digest",false,x=>{x.digest="WRONG";return x;}],
+    ["wrong paths",false,x=>{x.changed.push("src/app/fake.tsx");return x;}],
+    ["no Human source",false,x=>{x.docket.human_approval.human_message_ref="";return x;}],
+    ["wrong Human case",false,x=>{x.docket.human_approval.case_id="GOV-FAKE";return x;}],
+    ["wrong decision",false,x=>{x.docket.human_approval.decision="APPROVE_PLAN";return x;}],
+    ["current Sprint changed",false,x=>{x.previousSprint.status="ACTIVE";return x;}],
+    ["wrong task",false,x=>{x.sprint.active_task="T008";return x;}],
+    ["wrong build",false,x=>{x.build.active_baseline="BS-P1-026";return x;}]
+  ];
+  for(const [label,want,change] of cases)
+    if(isBs026CiExactHumanAmendment(change(mk()))!==want)
+      throw Error("BS026 Freeze CI narrow amendment guard self-test FAIL: "+label);
+  return cases.length;
+};
+console.log("- BS026 Freeze CI L3 amendment shape synthetic: "+testBs026FreezeCiRuleShape()+"/10 PASS (NOT Human approval).");
+if(bs026FreezeCiRuleApproved) console.log("- Human-approved exact BS026 Freeze CI L3 constitutional amendment recognized; independent constitutional gate still mandatory.");
+
 const foundedConstitutionException=isOneTimeConstitutionFounding({
   changed,base:baseSha,cs,build:currentBuild
 });
@@ -702,7 +783,7 @@ if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate || bs026ProtectedAmendment || approvedBs026FreezeOnly){
+}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate || bs026ProtectedAmendment || approvedBs026FreezeOnly || bs026FreezeCiRuleApproved){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);
