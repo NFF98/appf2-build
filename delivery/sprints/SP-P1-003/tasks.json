@@ -658,7 +658,7 @@
         "BL-P1-018"
       ],
       "title": "Result contract, S03 App surface & Playable App vertical proof",
-      "status": "IN_PROGRESS",
+      "status": "BLOCKED",
       "build_spec_id": "BS-P1-025",
       "scope": [
         "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
@@ -756,7 +756,29 @@
         "T004",
         "T005"
       ],
-      "completion_evidence": [],
+      "completion_evidence": [
+        "EV-SP-P1-003-T006-001",
+        "EV-SP-P1-003-T006-002",
+        "EV-SP-P1-003-T006-003",
+        "EV-SP-P1-003-T006-004",
+        "EV-SP-P1-003-T006-005",
+        "EV-SP-P1-003-T006-006",
+        "EV-SP-P1-003-T006-007",
+        "EV-SP-P1-003-T006-008",
+        "EV-SP-P1-003-T006-009",
+        "EV-SP-P1-003-T006-010",
+        "EV-SP-P1-003-T006-011",
+        "EV-SP-P1-003-T006-012",
+        "EV-SP-P1-003-T006-013",
+        "EV-SP-P1-003-T006-014",
+        "EV-SP-P1-003-T006-015",
+        "EV-SP-P1-003-T006-016",
+        "EV-SP-P1-003-T006-017",
+        "EV-SP-P1-003-T006-018",
+        "EV-SP-P1-003-T006-019",
+        "EV-SP-P1-003-T006-020",
+        "EV-SP-P1-003-T006-021"
+      ],
       "test_maintenance_authorizations": [
         {
           "test_id": "TEST-F00-001",
@@ -850,7 +872,7 @@
         "BL-P1-010"
       ],
       "title": "BS-P1-025 F01 PoP/owner read-grant and F07 identity/evidence cross-baseline revalidation",
-      "status": "BLOCKED",
+      "status": "IN_PROGRESS",
       "build_spec_id": "BS-P1-025",
       "scope": [
         "Revalidate F01-AC-013/016 read-grant and owner PoP protection after BD-025 on the new locked BS-P1-025 baseline without changing historical T001.",
