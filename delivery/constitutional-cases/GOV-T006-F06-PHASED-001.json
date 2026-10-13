@@ -9,7 +9,7 @@
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "55da2cb8e091bc6e0a63b31a5b27c1b51b8a7bfef9d57567131ad3151c483814",
+  "candidate_digest_sha256": "36a2f326bf34fcec77077ba1503b7b3708324c22f98c9c091d4ac3d0fb971d5e",
   "approval_boundary": "CANDIDATE_PR_ONLY; Human has approved submission of a draft, not exact rule bytes nor Merge.",
   "why5": [
     {
