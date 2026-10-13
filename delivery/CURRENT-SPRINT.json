@@ -2,8 +2,8 @@
   "schema_version": 1,
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-025",
-  "active_task": "T006",
-  "status": "BLOCKED",
+  "active_task": "T008",
+  "status": "REVIEW",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-13: approve T008 through closure. PR #386 merged at 1919a7225cd80551c7b610afe0bbdae0b185c774, independent GPT BCE PASS, mapped Evidence normalized and T008 CLOSED. T006 remains BLOCKED with original F06 Preview-origin TEST-F00-037 unproven; active_task=T006 is a BLOCKED control marker only, NO Cursor lease/implementation authorization, no BS026, T007 reopen, Sprint close, or next-task activation."
+  "reason": "T008 implementation PR #386 merged 1919a7225cd80551c7b610afe0bbdae0b185c774 and 14 Task Evidence normalized; independent GPT BCE PASS. T008 REVIEW awaiting explicit Human-approved L3 closure-order resolution. Existing validate-backlog prohibits T008 CLOSED while T006 BLOCKED; do NOT misstate T006 F00-AC-037 PASS, do NOT close T008/Sprint yet. No T006 or next-task execution lease."
 }

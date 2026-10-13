@@ -872,7 +872,7 @@
         "BL-P1-010"
       ],
       "title": "BS-P1-025 F01 PoP/owner read-grant and F07 identity/evidence cross-baseline revalidation",
-      "status": "CLOSED",
+      "status": "REVIEW",
       "build_spec_id": "BS-P1-025",
       "scope": [
         "Revalidate F01-AC-013/016 read-grant and owner PoP protection after BD-025 on the new locked BS-P1-025 baseline without changing historical T001.",

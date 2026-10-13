@@ -355,7 +355,7 @@
       "sprint_id": "SP-P1-002",
       "revalidation": {
         "target_build_spec_id": "BS-P1-025",
-        "status": "CLOSED",
+        "status": "IN_PROGRESS",
         "sprint_id": "SP-P1-003",
         "task_id": "T008",
         "acceptance_ids": [
@@ -476,7 +476,7 @@
       "sprint_id": "SP-P1-003",
       "revalidation": {
         "target_build_spec_id": "BS-P1-025",
-        "status": "CLOSED",
+        "status": "IN_PROGRESS",
         "sprint_id": "SP-P1-003",
         "task_id": "T008",
         "acceptance_ids": [
@@ -1446,7 +1446,7 @@
       "sprint_id": "SP-P1-001",
       "revalidation": {
         "target_build_spec_id": "BS-P1-025",
-        "status": "CLOSED",
+        "status": "IN_PROGRESS",
         "sprint_id": "SP-P1-003",
         "task_id": "T008",
         "acceptance_ids": [
