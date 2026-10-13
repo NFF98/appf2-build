@@ -2,8 +2,8 @@
   "schema_version": 1,
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-025",
-  "active_task": "T008",
-  "status": "ACTIVE",
+  "active_task": "T006",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-13 direct ChatGPT instruction: 『批准進入 T008 Activation to Cursor execution start!』. Control-only BS-P1-025 / SP-P1-003 switch after PR #384 L3 F06 deferral: T006 BLOCKED with 21 existing real Evidence IDs (F00-AC-037 F06 Preview-origin remains UNTESTED; owner PPV 95% is not full Product PASS); T008 IN_PROGRESS, exactly four unchanged F01/F07 Acceptance/Test mappings. Separate PR CI/BCE and exact Human Merge approval required before canonical execution authority; Watcher #301 needs independent local safety preflight and fresh one-shot lease. No BS026, T007 reopen, Product/Test/Build Spec changes, or auto-Cursor from this branch."
+  "reason": "Human 2026-10-13: approve T008 through closure. PR #386 merged at 1919a7225cd80551c7b610afe0bbdae0b185c774, independent GPT BCE PASS, mapped Evidence normalized and T008 CLOSED. T006 remains BLOCKED with original F06 Preview-origin TEST-F00-037 unproven; active_task=T006 is a BLOCKED control marker only, NO Cursor lease/implementation authorization, no BS026, T007 reopen, Sprint close, or next-task activation."
 }

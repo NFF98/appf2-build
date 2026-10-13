@@ -872,7 +872,7 @@
         "BL-P1-010"
       ],
       "title": "BS-P1-025 F01 PoP/owner read-grant and F07 identity/evidence cross-baseline revalidation",
-      "status": "IN_PROGRESS",
+      "status": "CLOSED",
       "build_spec_id": "BS-P1-025",
       "scope": [
         "Revalidate F01-AC-013/016 read-grant and owner PoP protection after BD-025 on the new locked BS-P1-025 baseline without changing historical T001.",
@@ -938,7 +938,22 @@
         "T001",
         "T007"
       ],
-      "completion_evidence": []
+      "completion_evidence": [
+        "EV-SP-P1-003-T008-001",
+        "EV-SP-P1-003-T008-002",
+        "EV-SP-P1-003-T008-003",
+        "EV-SP-P1-003-T008-004",
+        "EV-SP-P1-003-T008-005",
+        "EV-SP-P1-003-T008-006",
+        "EV-SP-P1-003-T008-007",
+        "EV-SP-P1-003-T008-008",
+        "EV-SP-P1-003-T008-009",
+        "EV-SP-P1-003-T008-010",
+        "EV-SP-P1-003-T008-011",
+        "EV-SP-P1-003-T008-012",
+        "EV-SP-P1-003-T008-013",
+        "EV-SP-P1-003-T008-014"
+      ]
     }
   ]
 }

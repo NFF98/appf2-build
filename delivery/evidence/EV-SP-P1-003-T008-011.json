@@ -1,0 +1,19 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-025",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T008",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-13T11:51:44.000Z",
+  "blocking_findings": [],
+  "source_commit": "1919a7225cd80551c7b610afe0bbdae0b185c774",
+  "evidence_id": "EV-SP-P1-003-T008-011",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/38389508208/jobs/115269511740#npm-run-test-api-pass",
+  "command": "npm run test:api",
+  "review_checks": null,
+  "notes": "CI Gate SUCCESS; full command output in job 115269511740; external Postgres tests unavailable/skipped and not asserted PASS."
+}
