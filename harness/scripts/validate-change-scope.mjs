@@ -387,19 +387,24 @@ if(approvedP0GovernanceCandidate) console.log("- Exact Human-approved P0 scope c
 // This does NOT approve any Product TEST, activation, Cursor lease, T008, or merge.
 const bs026DocketPath="delivery/constitutional-cases/GOV-T006-BS026-FREEZE-001.json";
 const bs026RulePath="harness/scripts/validate-change-scope.mjs";
+const bs026ProductCiPath="ci/run-product-ci.mjs";
+const bs026GovRulePaths=[bs026ProductCiPath,bs026RulePath].sort();
+const bs026GovAllPaths=[bs026DocketPath,...bs026GovRulePaths].sort();
 const bs026Docket=readHeadJson(bs026DocketPath);
 const bs026RuleDigest=()=>{
   const h=createHash("sha256");
-  h.update(bs026RulePath+String.fromCharCode(0));
-  h.update(fs.readFileSync(path.join(root,bs026RulePath)));
-  h.update(String.fromCharCode(0));
+  for(const rel of bs026GovRulePaths){
+    h.update(rel+String.fromCharCode(0));
+    h.update(fs.readFileSync(path.join(root,rel)));
+    h.update(String.fromCharCode(0));
+  }
   return h.digest("hex");
 };
 const bs026SelfApprovalValid=({docket,digest,base,changed,cs,build,oldSprint,oldBuild})=>{
   const caseFile=docket||{},human=caseFile.human_approval||{},sprint=cs||{},baseline=build||{};
   return [
     base==="c596a657a31d843df070bdfdfed84cc8dc6d7c20",
-    sameJson([...changed].sort(),[bs026DocketPath,bs026RulePath].sort()),
+    sameJson([...changed].sort(),bs026GovAllPaths),
     sameJson(cs,oldSprint),
     sameJson(build,oldBuild),
     sprint.active_sprint==="SP-P1-003",
@@ -410,7 +415,7 @@ const bs026SelfApprovalValid=({docket,digest,base,changed,cs,build,oldSprint,old
     caseFile.case_id==="GOV-T006-BS026-FREEZE-001",
     caseFile.base_sha===base,
     caseFile.constitution_version==="1.0",
-    sameJson(caseFile.exact_changed_paths,[bs026RulePath]),
+    sameJson([...caseFile.exact_changed_paths||[]].sort(),bs026GovRulePaths),
     caseFile.candidate_digest_sha256===digest,
     human.case_id===caseFile.case_id,
     human.source_kind==="DIRECT_HUMAN_MESSAGE",
