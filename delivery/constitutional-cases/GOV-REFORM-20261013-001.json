@@ -99,19 +99,45 @@
     "never_converts_fail_or_untested_to_pass": true,
     "affected_sprint": "SP-P1-003",
     "affected_tasks": [],
-    "covered_gates": ["CHANGE_SCOPE"],
-    "expires_at_unix": null,
-    "expires_at_rule": "由 Human 核准時設定：approved_at_unix 之後、不超過 policy max_ttl_seconds（1209600 秒）。"
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793112600,
+    "expires_at_rule": "Human 未指定較短期限；依 policy max_ttl_seconds（1209600 秒）由 approved_at_unix 推導上限：2026-10-27T14:50:00.000Z。Human 可另以新 docket 縮短或撤銷。"
   },
-  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_DECISION",
+  "approval_status": "HUMAN_EXACT_DIGEST_DECISION_RECORDED_NOT_MERGE_APPROVAL",
   "human_approval": {
     "case_id": "GOV-REFORM-20261013-001",
     "candidate_digest_sha256": "1646de4a87cb7f62b7a48f455bd3fb4af3b2df51fc1804d9af9fc8044994bc03",
-    "source_kind": null,
-    "decision": null,
-    "scope": null,
-    "human_message_ref": null,
-    "approver": null,
-    "approved_at_unix": null
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/390#issuecomment-6148298805",
+    "approver": "NFF98",
+    "approved_at_unix": 1791903000
+  },
+  "approval_provenance": {
+    "github_comment": {
+      "url": "https://github.com/NFF98/appf2-build/pull/390#issuecomment-6148298805",
+      "id": 6148298805,
+      "author": "NFF98",
+      "author_association": "OWNER",
+      "created_at": "2026-10-13T14:50:00Z",
+      "edited": false,
+      "binds": {
+        "head_sha": "9ab88e99184cdf4962c73839afc009308c530f7a",
+        "base_sha": "ec4443d40db8c72e43403adb9f3d9d02e72fbc18",
+        "candidate_digest_sha256": "1646de4a87cb7f62b7a48f455bd3fb4af3b2df51fc1804d9af9fc8044994bc03"
+      }
+    },
+    "direct_human_instruction": "Human 於 Cursor 對話（2026-10-13 23:51 +09:00）直接指示：在本 docket 登錄 Human 核准並綁定 digest 1646de4a87cb7f62b7a48f455bd3fb4af3b2df51fc1804d9af9fc8044994bc03，核准來源使用上述 GitHub 紀錄。",
+    "approved_at_basis": "GitHub 留言 created_at（可驗證的最早時間點）；Human 原始回覆「批准繼續」的確切時間無法由 CI 驗證。",
+    "expires_at_basis": "Human 未指定；採 policy 上限推導，非 Human 指定值。",
+    "caveats": [
+      "該留言自述：不得把留言本身當作 ChatGPT 訊息來源的證明；CI 只能驗證帳號、位元組、範圍與期限，無法證明核准者是人。",
+      "本核准不是 Merge 核准；Merge 仍須 Human 另一筆對精確 HEAD 的核准。",
+      "未授權修改 Phase 1 產品驗收、啟動 Sprint／Task、放寬 Ruleset 或把未執行／失敗測試寫成 PASS。"
+    ],
+    "recorded_by": "Cursor（依 Human 直接指示轉錄；Cursor 未自行產生核准）"
   }
 }
