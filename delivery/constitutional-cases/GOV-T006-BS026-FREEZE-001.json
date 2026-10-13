@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-T006-BS026-FREEZE-001",
+  "constitution_version": "1.0",
+  "stage": "DRAFT_AWAITING_HUMAN_EXACT_CANDIDATE_APPROVAL",
+  "base_sha": "c596a657a31d843df070bdfdfed84cc8dc6d7c20",
+  "exact_changed_paths": [
+    "harness/scripts/validate-change-scope.mjs"
+  ],
+  "candidate_digest_sha256": "5fa56a1357efc2d644d540fc147e93b3317783b7197a8296ef8d292985c913a9",
+  "approval_boundary": "Product 95% goal approves PREPARATION only, not independent constitutional L3 exact-candidate approval, Freeze, Merge, Activation, Cursor, T008 or Product PASS. This Docket is NOT Human-approved.",
+  "why5": [
+    {
+      "question": "W1 症狀？",
+      "answer": "Human-approved Design #42 new Composer-only F00-AC-039 cannot be frozen to BS026 because active Sprint scope gate rejects added immutable baseline files.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/377"
+    },
+    {
+      "question": "W2 直接原因？",
+      "answer": "Change Scope validator ACTIVE denies build-spec/ changes; BLOCKED denies them except evidence/finding side effects. BS026 fresh Freeze candidate is not an authorized recognized path.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs"
+    },
+    {
+      "question": "W3 為何原回復策略不夠？",
+      "answer": "Even with safe-control-only T006 pause #378, BLOCKED state still forbids Freeze candidate, so granting pause-only Merge would not deliver product progress.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/378"
+    },
+    {
+      "question": "W4 最早失誤位置？",
+      "answer": "UNKNOWN: no supported evidence identifying original author or earliest review miss; repair only proven present deadlock.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs"
+    },
+    {
+      "question": "W5 為何採最小一次性修正？",
+      "answer": "Need exactly one bounded BS026 initial Freeze path: 53 new immutable files plus BD026/BF055/source audit, matching known source SHA and inventory hash, explicit Human Freeze and Delta decisions. All release/activation/product evidence gates continue fail closed. Broad governance refactor deferred until after T006 closure.",
+      "evidence_ref": "https://github.com/NFF98/appf2-design/pull/42"
+    }
+  ],
+  "changed_behavior": [
+    "Allow one exact source-pinned BS026 immutable Freeze snapshot added while T006 is ACTIVE/BLOCKED only with 53 exact new frozen files, named BD026/BF055/audit provenance, unchanged Sprint/Build, Human-approved LOCKED manifest and Delta, known SHA256 and independent existing Baseline/Projection/Governance validators.",
+    "Enable one protected L3 amendment with fixed original main base SHA, 2-path diff and Human exact candidate digest for this file; no autonomous Human approval inference. Constitutional validation remains mandatory.",
+    "All other Product/Task/CI/release changes remain forbidden, original 9 T006 tests unchanged until separately approved BS026 Activation/Rebind."
+  ],
+  "no_change": [
+    "No T006 product code or new feature, no F06 Preview implementation",
+    "No TEST-F00-037 full PASS claim; F00-AC-039 requires new real executable test under approved BS026",
+    "No Sprint/T006/T008 status transition or Cursor lease; no Merge",
+    "No waiver of normal CI Product tests, L3 constitutional validation, Human Freeze/Merge approval or immutable baseline hashes"
+  ],
+  "negative_test_plan": [
+    "Synthetic guard tests positive exact and negative wrong source, hash, path, Task, Sprint status, unauthorized Delta, unresolved Finding, missing provenance audit",
+    "Constitution gate rejects missing exact Human source, wrong digest, wrong base SHA or extra protected path",
+    "Independent CI, Governance Attack, CodeQL and BCE plus Human exact-candidate then distinct Human Merge approval",
+    "On actual Freeze, verifiers must confirm 64/64 source blobs, full inventory SHA, 308 unique AC/Test IDs; on Activation all task/revalidation gates remain enforced"
+  ],
+  "rollback": "Before approval, abandon Draft only; after Merge, one-time candidate still admits ONLY source-locked BS026 Freeze with Human approval. Permanent generic governance rule planned after T006 closure under separate Human authority.",
+  "human_approval": {
+    "status": "PENDING_HUMAN_APPROVAL",
+    "note": "No independent exact constitutional amendment approval obtained. Never treat GPT/candidate/PR comment as Human decision."
+  }
+}
