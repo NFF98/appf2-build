@@ -5,5 +5,5 @@
   "active_task": "T006",
   "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human direction 2026-10-12: prioritize T006 CLOSE; T008 execution paused (BLOCKED), four T008 revalidations stay IN_PROGRESS and unverified; no new Task, no closed-history edit, no deployment."
+  "reason": "Human 2026-10-13 direct execution direction ('then do it! i want see you fix it and cursor running'): T006-only temporary resume under already activated BS-P1-025 to unblock existing unmerged #374 genuine PRODUCT CI. No BS026 Activation/Freeze claim, no T008 activation, no Product Merge approval from this candidate."
 }

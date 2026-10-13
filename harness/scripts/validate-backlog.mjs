@@ -76,26 +76,71 @@ const validateRevalidationAcceptances=(r,task,id,driftIds)=>{
   }
   return ids;
 };
+const t006T008PermittedBaselines=new Set(["BS-P1-025","BS-P1-026"]);
+const t008PendingIds=new Set(["BL-P1-008","BL-P1-010","BL-P1-031"]);
+// Only the original SP-P1-003 T006/T008 unfinished revalidations may remain IN_PROGRESS.
+// A BLOCKED pause is never a test/review/closure PASS and cannot activate T008.
+const matchesT006PausePhase=(sprint,t006)=>
+  (sprint?.status==="ACTIVE" && t006?.status==="IN_PROGRESS") ||
+  (sprint?.status==="REVIEW" && t006?.status==="REVIEW") ||
+  (sprint?.status==="BLOCKED" && t006?.status==="BLOCKED");
+const matchesPendingT008Binding=({id,r,task,baseline})=>
+  t006T008PermittedBaselines.has(baseline) &&
+  t008PendingIds.has(id) && r?.status==="IN_PROGRESS" &&
+  r.sprint_id==="SP-P1-003" && r.task_id==="T008" && r.target_build_spec_id===baseline &&
+  task?.task_id==="T008" && task.status==="BLOCKED";
+const matchesT006PauseContext=({sprint,t006,baseline})=>
+  sprint?.active_sprint==="SP-P1-003" &&
+  sprint.active_task==="T006" &&
+  sprint.active_build_spec===baseline &&
+  matchesT006PausePhase(sprint,t006);
+const exactPendingT008Pause=({id,r,task,t006,current,sprint})=>{
+  const baseline=current?.active_baseline;
+  return matchesPendingT008Binding({id,r,task,baseline}) &&
+    matchesT006PauseContext({sprint,t006,baseline});
+};
+const testExactPendingT008Pause=()=>{
+  const fixture=()=>({
+    id:"BL-P1-008",r:{status:"IN_PROGRESS",sprint_id:"SP-P1-003",task_id:"T008",target_build_spec_id:"BS-P1-025"},
+    task:{task_id:"T008",status:"BLOCKED"},t006:{status:"IN_PROGRESS"},
+    current:{active_baseline:"BS-P1-025"},
+    sprint:{active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-025",status:"ACTIVE"}
+  });
+  const tests=[
+    ["BS025 current",true,x=>x],
+    ["BS025 blocked",true,x=>{x.sprint.status="BLOCKED";x.t006.status="BLOCKED";return x;}],
+    ["BS026 blocked",true,x=>{x.sprint.status="BLOCKED";x.t006.status="BLOCKED";x.sprint.active_build_spec="BS-P1-026";x.current.active_baseline="BS-P1-026";x.r.target_build_spec_id="BS-P1-026";return x;}],
+    ["BS025 review",true,x=>{x.sprint.status="REVIEW";x.t006.status="REVIEW";return x;}],
+    ["foreign Sprint",false,x=>{x.sprint.active_sprint="SP-P1-004";return x;}],
+    ["foreign baseline",false,x=>{x.current.active_baseline="BS-P1-027";return x;}],
+    ["foreign backlog",false,x=>{x.id="BL-P1-027";return x;}],
+    ["unblocked T008",false,x=>{x.task.status="IN_PROGRESS";return x;}],
+    ["fake completed revalidation",false,x=>{x.r.status="CLOSED";return x;}],
+    ["stale target",false,x=>{x.r.target_build_spec_id="BS-P1-024";return x;}],
+    ["T006 not blocked",false,x=>{x.sprint.status="BLOCKED";return x;}],
+    ["T006 prematurely verified",false,x=>{x.sprint.status="BLOCKED";x.t006.status="VERIFIED";return x;}],
+    ["wrong active Task",false,x=>{x.sprint.active_task="T008";return x;}]
+  ];
+  for(const [name,want,change] of tests)if(exactPendingT008Pause(change(fixture()))!==want)throw Error("P0 pause synthetic FAIL "+name);
+  return tests.length;
+};
+console.log("- P0 T006/T008 BS025/026 bounded pause synthetic: "+testExactPendingT008Pause()+"/13 PASS (synthetic only).");
+const isPendingT008PauseCandidate=({id,r,task,current,sprint})=>
+  t008PendingIds.has(id) && r?.status==="IN_PROGRESS" &&
+  r.task_id==="T008" && r.sprint_id==="SP-P1-003" &&
+  task?.task_id==="T008" && task.status==="BLOCKED" &&
+  t006T008PermittedBaselines.has(current.active_baseline) &&
+  r.target_build_spec_id===current.active_baseline &&
+  sprint.active_sprint==="SP-P1-003" && sprint.active_task==="T006";
 const validateRevalidationTaskStatus=(r,task,id)=>{
   const allowed=allowedRevalidationTaskStatuses[r.status];
-  // One-time BS-P1-025 T006 recovery: T008 can be BLOCKED while its four
-  // IN_PROGRESS revalidations remain honestly unfinished. This is NOT closure.
-  const boundedPause =
-    r.status==="IN_PROGRESS" && r.task_id==="T008" &&
-    r.sprint_id==="SP-P1-003" && r.target_build_spec_id==="BS-P1-025" &&
-    task.task_id==="T008" && task.status==="BLOCKED" &&
-    current.active_baseline==="BS-P1-025" &&
-    currentSprint.active_sprint==="SP-P1-003" &&
-    currentSprint.active_build_spec==="BS-P1-025" &&
-    currentSprint.active_task==="T006" &&
-    // While T006 is in independent REVIEW, its T008 revalidations remain pending.
-    // A REVIEW pause is legal only when T006 itself is the current REVIEW task.
-    (()=>{
-      const tasks=read("delivery/sprints/SP-P1-003/tasks.json").tasks||[];
-      const t006=tasks.find(t=>t.task_id==="T006");
-      return (currentSprint.status==="ACTIVE" && t006?.status==="IN_PROGRESS") ||
-        (currentSprint.status==="REVIEW" && t006?.status==="REVIEW");
-    })();
+  // Unrelated fixture/sprint revalidations must never dereference a missing T006 tasks file.
+  // Only the three exact pending T008 records need the T006 companion status.
+  const pauseCandidate=isPendingT008PauseCandidate({id,r,task,current,sprint:currentSprint});
+  const taskPath="delivery/sprints/SP-P1-003/tasks.json";
+  const t006=pauseCandidate && exists(taskPath)
+    ? (read(taskPath).tasks||[]).find(t=>t.task_id==="T006") : null;
+  const boundedPause=pauseCandidate && exactPendingT008Pause({id,r,task,t006,current,sprint:currentSprint});
   if(allowed && !allowed.has(task.status) && !boundedPause){
     errors.push(id+" revalidation status "+r.status+" incompatible with Task "+r.task_id+" status "+task.status);
   }
@@ -301,8 +346,8 @@ const exactT008AcceptancePairs=links=>{
   return actual.length===4 && new Set(actual).size===4 &&
     t008ExactFourAcceptancePairs.every(([aid,tid])=>actual.includes(`${aid}::${tid}`));
 };
-const exactT008ClosedRevalidation=(r,expectedIds)=>
-  r?.target_build_spec_id==="BS-P1-025" &&
+const exactT008ClosedRevalidation=(r,expectedIds,baseline)=>
+  r?.target_build_spec_id===baseline &&
   r.sprint_id==="SP-P1-003" &&
   r.task_id==="T008" &&
   r.status==="CLOSED" &&
@@ -322,17 +367,17 @@ function t006T008PreclosureErrors(t006,t008) {
   }
   return errors;
 }
-function t006ClosureRevalidationErrors(items) {
+function t006ClosureRevalidationErrors(items,baseline) {
   const errors=[];
   const byId=new Map((items||[]).map(x=>[x.backlog_item_id,x]));
   for(const [id,ids] of t008ExactRevalidations) {
-    if(!exactT008ClosedRevalidation(byId.get(id)?.revalidation,ids)) {
+    if(!exactT008ClosedRevalidation(byId.get(id)?.revalidation,ids,baseline)) {
       errors.push("T006 final CLOSED requires exact T008 CLOSED BS-P1-025 revalidation: "+id);
     }
   }
   return errors;
 }
-function t006FinalClosureErrors(t008,items) {
+function t006FinalClosureErrors(t008,items,baseline) {
   const errors=[];
   if(t008?.status!=="CLOSED") errors.push("T006 final CLOSED forbidden until T008 is CLOSED");
   if(!Array.isArray(t008?.completion_evidence) || !t008.completion_evidence.length) {
@@ -341,11 +386,11 @@ function t006FinalClosureErrors(t008,items) {
   if(!exactT008AcceptancePairs(t008?.acceptance_links)) {
     errors.push("T006 final CLOSED requires T008 owning exactly four BS-P1-025 AC/Test pairs");
   }
-  return errors.concat(t006ClosureRevalidationErrors(items));
+  return errors.concat(t006ClosureRevalidationErrors(items,baseline));
 }
-function checkT006T008Order(t006,t008,items) {
+function checkT006T008Order(t006,t008,items,baseline) {
   const errors=t006T008PreclosureErrors(t006,t008);
-  return t006?.status==="CLOSED" ? errors.concat(t006FinalClosureErrors(t008,items)) : errors;
+  return t006?.status==="CLOSED" ? errors.concat(t006FinalClosureErrors(t008,items,baseline)) : errors;
 }
 function testT006T008Order() {
   const ids=[["F01-AC-013","TEST-F01-API-001"],["F01-AC-016","TEST-F01-API-003"],["F01-AC-017","TEST-F01-SEC-007"],["F07-AC-004","TEST-F07-004"]];
@@ -373,22 +418,24 @@ function testT006T008Order() {
     ["wrong revalidation baseline",false,x=>{x.items[1].revalidation.target_build_spec_id="BS-P1-024";return x;}],
     ["T008 has no evidence",false,x=>{x.t008.completion_evidence=[];return x;}],
     ["T008 omits one AC/Test",false,x=>{x.t008.acceptance_links.pop();return x;}],
-    ["wrong T008 test ID",false,x=>{x.t008.acceptance_links[0].test_id="WRONG";return x;}]
+    ["wrong T008 test ID",false,x=>{x.t008.acceptance_links[0].test_id="WRONG";return x;}],
+    ["BS026 closed exact bindings",true,x=>{x.baseline="BS-P1-026";for(const i of x.items)i.revalidation.target_build_spec_id=x.baseline;return x;}],
+    ["BS026 stale target must fail",false,x=>{x.baseline="BS-P1-026";return x;}]
   ];
-  for(const [name,shouldPass,modify] of cases){const x=modify(base());const actual=checkT006T008Order(x.t006,x.t008,x.items).length===0;if(actual!==shouldPass)throw Error("T006/T008 order guard synthetic regression FAILED: "+name);}
+  for(const [name,shouldPass,modify] of cases){const x=modify(base());const actual=checkT006T008Order(x.t006,x.t008,x.items,x.baseline||"BS-P1-025").length===0;if(actual!==shouldPass)throw Error("T006/T008 order guard synthetic regression FAILED: "+name);}
   return cases.length;
 }
 
-if(current.active_baseline==="BS-P1-025" &&
+if(t006T008PermittedBaselines.has(current.active_baseline) &&
    exists("delivery/sprints/SP-P1-003/tasks.json")){
   const tasks=read("delivery/sprints/SP-P1-003/tasks.json").tasks||[];
   const t006=tasks.find(x=>x.task_id==="T006");
   const t008=tasks.find(x=>x.task_id==="T008");
-  for(const e of checkT006T008Order(t006,t008,queue.items||[])){
+  for(const e of checkT006T008Order(t006,t008,queue.items||[],current.active_baseline)){
     errors.push("SP-P1-003 BS025 T006/T008 closure order: "+e);
   }
 }
-console.log("- T006/T008 closure-order fail-closed synthetic regressions: "+testT006T008Order()+"/"+15+" PASS (synthetic, not Task acceptance).");
+console.log("- T006/T008 closure-order fail-closed synthetic regressions: "+testT006T008Order()+"/"+17+" PASS (synthetic, not Task acceptance).");
 
 if(errors.length){
   console.error("BACKLOG GATE: FAIL");
