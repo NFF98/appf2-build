@@ -415,7 +415,7 @@ const bs026SelfApprovalValid=({docket,digest,base,changed,cs,build,oldSprint,old
     caseFile.case_id==="GOV-T006-BS026-FREEZE-001",
     caseFile.base_sha===base,
     caseFile.constitution_version==="1.0",
-    sameJson([...caseFile.exact_changed_paths||[]].sort(),bs026GovRulePaths),
+    sameJson([...(caseFile.exact_changed_paths||[])].sort(),bs026GovRulePaths),
     caseFile.candidate_digest_sha256===digest,
     human.case_id===caseFile.case_id,
     human.source_kind==="DIRECT_HUMAN_MESSAGE",
