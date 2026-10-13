@@ -31,7 +31,7 @@
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-evidence.mjs"
   ],
-  "candidate_digest_sha256": "2ab4b316d98a66c245eeea8718ef9927993e4f071d2c633eb1be8eb24d208ec9",
+  "candidate_digest_sha256": "83a33ee4627217a8eb7a948119f1ed4a7a0ed74f52dd5fb61d634ae403df9c7c",
   "why5": [
     {
       "question": "為什麼要改革？",
@@ -93,7 +93,7 @@
   "approval_status": "PENDING_HUMAN_EXACT_DIGEST_DECISION",
   "human_approval": {
     "case_id": "GOV-REFORM-20261013-001",
-    "candidate_digest_sha256": "2ab4b316d98a66c245eeea8718ef9927993e4f071d2c633eb1be8eb24d208ec9",
+    "candidate_digest_sha256": "83a33ee4627217a8eb7a948119f1ed4a7a0ed74f52dd5fb61d634ae403df9c7c",
     "source_kind": null,
     "decision": null,
     "scope": null,
