@@ -2,13 +2,13 @@
   "schema_version": 1,
   "case_id": "GOV-T006-BS026-FREEZE-001",
   "constitution_version": "1.0",
-  "stage": "REVISED_CANDIDATE_AWAITING_NEW_HUMAN_EXACT_APPROVAL",
+  "stage": "REVISED_LINT_SAFE_CANDIDATE_AWAITING_HUMAN_EXACT_APPROVAL",
   "base_sha": "c596a657a31d843df070bdfdfed84cc8dc6d7c20",
   "exact_changed_paths": [
     "harness/scripts/validate-change-scope.mjs"
   ],
-  "candidate_digest_sha256": "2af1e474037885d26bb340cc7dfd4ccf56b34dc5a9c233a1ae2bb597370ef951",
-  "approval_boundary": "Prior Human approval for #379 original rule digest 5fa56a13 is preserved in previous_approval_history, but DOES NOT apply after lint-complexity refactor. Revised candidate digest requires NEW separate exact Human approval, independent CI/BCE, separate Merge. All other scope and authority boundaries unchanged.",
+  "candidate_digest_sha256": "c7ad13d56c9f26235a5a3df882701cb69ee83a212fc7d27a42c22bcc15bbcaca",
+  "approval_boundary": "Original Human-approved exact digest 5fa56a... remains recorded in previous_approval_history, but it cannot apply to the revised lint-safe code; separate exact Human reapproval and Merge approval are required.",
   "why5": [
     {
       "question": "W1 症狀？",
@@ -56,7 +56,7 @@
   "rollback": "Before approval, abandon Draft only; after Merge, one-time candidate still admits ONLY source-locked BS026 Freeze with Human approval. Permanent generic governance rule planned after T006 closure under separate Human authority.",
   "human_approval": {
     "status": "PENDING_HUMAN_REAPPROVAL",
-    "note": "Prior exact code-approved HEAD 7870536e / digest 5fa56a13 failed npm lint complexity at lines 398, 428. Rule refactored without intended semantic changes; old approval cannot be reused. No Merge authorized."
+    "note": "Revised original two complexity errors using predicate-array refactor; two type checks made fail-closed on malformed Human approval strings. Prior #379 exact approval digest 5fa56a... invalid for revised c7ad13d56c9f26235a5a3df882701cb69ee83a212fc7d27a42c22bcc15bbcaca. Product CI/Constitution remains fail-closed until new Human exact decision."
   },
   "previous_approval_history": [
     {
