@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-T006-F06-DEFER-T008-001",
+  "constitution_version": "1.0",
+  "stage": "HUMAN_EXACT_CANDIDATE_APPROVED_PENDING_FULL_CI_BCE",
+  "base_sha": "e495237d85ceaa2ae7c2c62d32678dcac4fa133b",
+  "exact_changed_paths": [
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs"
+  ],
+  "candidate_digest_sha256": "0eb3b7aaa86823bda92c7f2a95a8a34adb821d4a6d78cade55d61ad0c1243ed1",
+  "deferred_acceptance_id": "F00-AC-037",
+  "deferred_test_id": "TEST-F00-037",
+  "deferred_scope": "F06_PREVIEW_ORIGIN_ONLY",
+  "owner_product_progress_value": 95,
+  "scope": "One-time BS-P1-025 SP-P1-003 governance sequence for T006 BLOCKED with 21 real Evidence refs and T008 IN_PROGRESS; requires separate Human approval and later activation, not Product PASS.",
+  "why5": [
+    {
+      "question": "W1 可觀測症狀？",
+      "answer": "已交付 S03 主產品與 8/9 真正 Acceptance；F06 Preview-origin 尚無可測功能，T008 四項安全重新驗證卻因現行 T006 VERIFIED 依賴遭阻擋。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374"
+    },
+    {
+      "question": "W2 直接原因？",
+      "answer": "validate-backlog.mjs 的 t006T008PreclosureErrors 強制 T006 VERIFIED 才能執行 T008，而 validate-evidence.mjs 因 F00-AC-037 Preview-origin 未 PASS 無法誠實 VERIFIED。",
+      "evidence_ref": "harness/scripts/validate-backlog.mjs:358"
+    },
+    {
+      "question": "W3 必須保留哪些防護？",
+      "answer": "保留 F06 未測真相、T008 四項精確 Acceptance/安全檢查、Evidence PASS 規則、單一 active Task、既有 CLOSED Task／revalidation、Cursor lease 與 Human Merge 邊界。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/383"
+    },
+    {
+      "question": "W4 最初何時產生？",
+      "answer": "UNKNOWN：現有資料無法證明最早設計／審核失誤的具體時間或責任者，僅確認 BS025 現行驗收及治理規則有時序衝突。",
+      "evidence_ref": "harness/scripts/validate-evidence.mjs"
+    },
+    {
+      "question": "W5 為何採 L3 精確例外？",
+      "answer": "Owner 已明確裁定 PPV 95%、F06 Preview 後測並將產品焦點轉 T008；不能虛構 F00-AC-037 PASS 或原地改 locked Build Spec，必須限縮調整上位安全啟動規則。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6141078349"
+    }
+  ],
+  "changed_behavior": [
+    "僅允許本 Case 經 Human 精確批准後，在 BS025/SP-P1-003 下 T006 BLOCKED＋T008 IN_PROGRESS/REVIEW 的專用時序；T006 需明列 21 筆已存在 Evidence IDs，F06 Preview 仍 INFO。",
+    "維持 T008 既定四組 AC/Test 完整映射與獨立 Evidence/Review，絕不允許 T008 CLOSED 無審核或改動 T007 CLOSED。",
+    "僅有兩個受保護 rule paths 加本 Case 的精確 L3 候選可獲 scope recognition；人類精確候選批准前拒絕，Human Merge 另行保留。",
+    "Product CI、Evidence Gate、Activation Gate、locked baseline 和原 F00-AC-037 完整 PASS 條件維持。"
+  ],
+  "no_change": [
+    "不改 src/、tests/、F06 Product semantics 或 locked BS-P1-025",
+    "不把 TEST-F00-037/Owner 95% 等同 PASS",
+    "不更動 T006/T008 Task status 於本 Draft；T008 只在未來單獨批准的控制 PR 啟用",
+    "不改 T008 四項實測、Evidence Gate、Task Closure 規則",
+    "不動已 CLOSED 的 T007、其他 Sprint，也不核准新 Cursor lease、Merge 或部署"
+  ],
+  "negative_test_plan": [
+    "scope L3: 14 個 synthetic 正反測試，包含 no Human/AI source/wrong digest/SHA/Task/changed paths/BS026/F06 fake",
+    "backlog: 18 個 synthetic 正反測試，包含 no Human/wrong ID/status/evidence/T008 four Test/PPV",
+    "CI/Constitution 必須 fail closed，直到另筆 Human 精確核准候選 Digest 和另筆 Human Merge",
+    "Owner 之後控制 PR 必須只切換 ACTIVE T006 → BLOCKED、BLOCKED T008 → IN_PROGRESS，並引用現有 T006 21 筆真 Evidence；再經四個 GitHub workflows 真綠"
+  ],
+  "alternatives": [
+    {
+      "option": "NO CHANGE",
+      "tradeoff": "維持 T008 BLOCKED，產品安全驗證無法開始"
+    },
+    {
+      "option": "BS026 REBASELINE",
+      "tradeoff": "額外非產品價值 Freeze/Activation/TEST039 重新綁定，Owner 已要求停止"
+    },
+    {
+      "option": "MINIMAL EXACT L3",
+      "tradeoff": "一筆受控安全啟動例外，必須有可信 Human 精確批准及獨立 CI/BCE，保留未測債務"
+    }
+  ],
+  "rollback": "候選未 Merge 直接關閉 Draft；Merge 後需新經 Human 核准的反向 L3，禁止直接改歷史或繞過憲法 Gate。",
+  "human_approval": {
+    "status": "APPROVED",
+    "case_id": "GOV-T006-F06-DEFER-T008-001",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "human_message_ref": "Human direct ChatGPT message, 2026-10-13 JST: 『正式批准 GOV-T006-F06-DEFER-T008-001 的新版 L3 精確候選：PR #384，BASE=e495237d85ceaa2ae7c2c62d32678dcac4fa133b，HEAD=e9293a4b1a68efddeed858c24901c48836ba9f3b，兩個治理規則檔合計 SHA256=0eb3b7aaa86823bda92c7f2a95a8a34adb821d4a6d78cade55d61ad0c1243ed1。僅批准 GPT 登錄此新版 Human 精確候選決定、重新執行完整 CI/Governance/Attack/CodeQL、32 項正反測試及獨立 BCE。不得修改 Rule bytes、Product、Test 或 Task/Sprint 映射。CI/BCE 全 PASS 後停在另一筆 Human Merge 核准前；不得 Merge #384、啟動 T008 或發 Cursor lease。』",
+    "candidate_digest_sha256": "0eb3b7aaa86823bda92c7f2a95a8a34adb821d4a6d78cade55d61ad0c1243ed1",
+    "approved_at_unix": 1791883620
+  },
+  "owner_decision_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6141078349",
+  "source_evidence_pr": "https://github.com/NFF98/appf2-build/pull/383",
+  "previous_approval_history": [
+    {
+      "status": "SUPERSEDED_BY_HUMAN_APPROVED_LINT_ONLY_REFACTOR_NOT_APPLICABLE_TO_NEW_RULE_BYTES",
+      "previous_candidate_head": "325b1cd87b306e039e6026fe460356dead579fe0",
+      "previous_approved_rule_digest": "bd8b6a5865bdec7ca8427f0c8d2befa201cbe71e3cd15b7b7af7eccd882493fb",
+      "human_approval": {
+        "case_id": "GOV-T006-F06-DEFER-T008-001",
+        "source_kind": "DIRECT_HUMAN_MESSAGE",
+        "decision": "APPROVE_EXACT_CANDIDATE",
+        "scope": "EXACT_PR_DIFF",
+        "human_message_ref": "Human direct ChatGPT message, 2026-10-13 JST: 『正式批准 GOV-T006-F06-DEFER-T008-001 的 L3 精確候選：PR #384、BASE=e495237d85ceaa2ae7c2c62d32678dcac4fa133b、HEAD=325b1cd87b306e039e6026fe460356dead579fe0、兩個治理規則檔合計 SHA256=bd8b6a5865bdec7ca8427f0c8d2befa201cbe71e3cd15b7b7af7eccd882493fb。批准只登錄本次 Human 精確候選決定、重新跑完整 CI、32 項負向測試與 GPT 獨立 BCE；不得改 Rule bytes、產品規格或任務映射。CI/BCE 全 PASS 後停在另一筆 Human Merge 核准前；不得 Merge、啟動 T008 或發 Cursor lease。』",
+        "candidate_digest_sha256": "bd8b6a5865bdec7ca8427f0c8d2befa201cbe71e3cd15b7b7af7eccd882493fb",
+        "approved_at_unix": 1791881517
+      }
+    }
+  ],
+  "approval_boundary": "New exact Human candidate approved for PR #384 at original HEAD e9293a4b1a68efddeed858c24901c48836ba9f3b and rule digest 0eb3b7aaa86823bda92c7f2a95a8a34adb821d4a6d78cade55d61ad0c1243ed1. Full CI and independent BCE pending. No merge, T008 activation or Cursor lease."
+}

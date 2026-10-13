@@ -355,10 +355,96 @@ const exactT008ClosedRevalidation=(r,expectedIds,baseline)=>
   r.acceptance_ids.length===expectedIds.length &&
   expectedIds.every(aid=>r.acceptance_ids.includes(aid));
 
-function t006T008PreclosureErrors(t006,t008) {
+// GOV-T006-F06-DEFER-T008-001: owner-approved F06 Preview deferral for T008 execution only.
+// No F00-AC-037 PASS waiver; T008 four mapped acceptance checks stay mandatory.
+const f06DeferCasePath="delivery/constitutional-cases/GOV-T006-F06-DEFER-T008-001.json";
+const f06DeferEvidence=Array.from({length:21},(_,i)=>
+  "EV-SP-P1-003-T006-"+String(i+1).padStart(3,"0"));
+const ownerF06DeferSprintMatches=(t008,baseline,sprint)=>
+  baseline==="BS-P1-025" && sprint?.active_sprint==="SP-P1-003" &&
+  sprint.active_build_spec==="BS-P1-025" && sprint.active_task==="T008" &&
+  ((sprint.status==="ACTIVE"&&t008?.status==="IN_PROGRESS") ||
+    (sprint.status==="REVIEW"&&t008?.status==="REVIEW"));
+const ownerF06DeferEvidenceMatches=t006=>
+  Array.isArray(t006?.completion_evidence) &&
+  t006.completion_evidence.length===f06DeferEvidence.length &&
+  new Set(t006.completion_evidence).size===f06DeferEvidence.length &&
+  f06DeferEvidence.every(e=>t006.completion_evidence.includes(e));
+const ownerF06DeferCaseMatches=docket=>
+  docket?.case_id==="GOV-T006-F06-DEFER-T008-001" &&
+  docket.base_sha==="e495237d85ceaa2ae7c2c62d32678dcac4fa133b" &&
+  docket.deferred_acceptance_id==="F00-AC-037" &&
+  docket.deferred_test_id==="TEST-F00-037" &&
+  docket.deferred_scope==="F06_PREVIEW_ORIGIN_ONLY" &&
+  docket.owner_product_progress_value===95 &&
+  /^[a-f0-9]{64}$/.test(docket.candidate_digest_sha256||"");
+const ownerF06DeferApprovalMatches=docket=>{
+  const a=docket?.human_approval||{};
+  return a.case_id===docket?.case_id &&
+    a.decision==="APPROVE_EXACT_CANDIDATE" &&
+    a.scope==="EXACT_PR_DIFF" && a.source_kind==="DIRECT_HUMAN_MESSAGE" &&
+    a.candidate_digest_sha256===docket.candidate_digest_sha256 &&
+    typeof a.human_message_ref==="string" && !!a.human_message_ref.trim();
+};
+const ownerF06DeferAllowsT008=(t006,t008,baseline,sprint,docket)=>
+  ownerF06DeferSprintMatches(t008,baseline,sprint) &&
+  t006?.status==="BLOCKED" && t006.build_spec_id==="BS-P1-025" &&
+  t008.build_spec_id==="BS-P1-025" &&
+  exactT008AcceptancePairs(t008.acceptance_links) &&
+  ownerF06DeferEvidenceMatches(t006) &&
+  ownerF06DeferCaseMatches(docket) &&
+  ownerF06DeferApprovalMatches(docket);
+const testOwnerF06DeferT008=()=>{
+  const fixture=()=>{
+    const d={case_id:"GOV-T006-F06-DEFER-T008-001",base_sha:"e495237d85ceaa2ae7c2c62d32678dcac4fa133b",
+      deferred_acceptance_id:"F00-AC-037",deferred_test_id:"TEST-F00-037",
+      deferred_scope:"F06_PREVIEW_ORIGIN_ONLY",owner_product_progress_value:95,
+      candidate_digest_sha256:"f".repeat(64)};
+    d.human_approval={case_id:d.case_id,decision:"APPROVE_EXACT_CANDIDATE",
+      scope:"EXACT_PR_DIFF",source_kind:"DIRECT_HUMAN_MESSAGE",
+      candidate_digest_sha256:d.candidate_digest_sha256,
+      human_message_ref:"SYNTHETIC-NOT-REAL-APPROVAL"};
+    return {baseline:"BS-P1-025",docket:d,
+      sprint:{active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T008",status:"ACTIVE"},
+      t006:{status:"BLOCKED",build_spec_id:"BS-P1-025",completion_evidence:[...f06DeferEvidence]},
+      t008:{status:"IN_PROGRESS",build_spec_id:"BS-P1-025",
+        acceptance_links:t008ExactFourAcceptancePairs.map(([acceptance_id,test_id])=>({acceptance_id,test_id}))}};
+  };
+  const cases=[
+    ["exact",true,x=>x],
+    ["review stage",true,x=>{x.sprint.status="REVIEW";x.t008.status="REVIEW";return x;}],
+    ["pending approval",false,x=>{delete x.docket.human_approval;return x;}],
+    ["bot impersonation",false,x=>{x.docket.human_approval.source_kind="BOT";return x;}],
+    ["digest tamper",false,x=>{x.docket.human_approval.candidate_digest_sha256="a".repeat(64);return x;}],
+    ["wrong base",false,x=>{x.docket.base_sha="a".repeat(40);return x;}],
+    ["other task",false,x=>{x.sprint.active_task="T009";return x;}],
+    ["other sprint",false,x=>{x.sprint.active_sprint="SP-P1-004";return x;}],
+    ["other baseline",false,x=>{x.baseline="BS-P1-026";return x;}],
+    ["T006 not blocked",false,x=>{x.t006.status="VERIFIED";return x;}],
+    ["T008 not active",false,x=>{x.t008.status="BLOCKED";return x;}],
+    ["T008 falsely closed",false,x=>{x.t008.status="CLOSED";return x;}],
+    ["wrong T008 test",false,x=>{x.t008.acceptance_links[0].test_id="FAKE";return x;}],
+    ["missing evidence",false,x=>{x.t006.completion_evidence.pop();return x;}],
+    ["duplicate evidence",false,x=>{x.t006.completion_evidence[0]=x.t006.completion_evidence[1];return x;}],
+    ["fake F06 test switch",false,x=>{x.docket.deferred_test_id="TEST-F00-039";return x;}],
+    ["fake PPV",false,x=>{x.docket.owner_product_progress_value=100;return x;}],
+    ["wrong stage",false,x=>{x.sprint.status="BLOCKED";return x;}]
+  ];
+  for(const [label,want,edit] of cases){
+    const x=edit(fixture());
+    if(ownerF06DeferAllowsT008(x.t006,x.t008,x.baseline,x.sprint,x.docket)!==want)
+      throw Error("OWNER F06/T008 CASE FAILED: "+label);
+  }
+  return cases.length;
+};
+console.log("- F06 defer T008 bounded positive/negative: "+testOwnerF06DeferT008()+"/18 PASS (synthetic).");
+const f06DeferDocket=exists(f06DeferCasePath)?read(f06DeferCasePath):null;
+
+function t006T008PreclosureErrors(t006,t008,baseline) {
   const errors=[];
   if(["IN_PROGRESS","REVIEW","VERIFIED"].includes(t008?.status) &&
-     t006?.status!=="VERIFIED") {
+     t006?.status!=="VERIFIED" &&
+      !ownerF06DeferAllowsT008(t006,t008,baseline,currentSprint,f06DeferDocket)) {
     errors.push("T008 execution/review requires T006 product VERIFIED with independent T006 Evidence");
   }
   if(t008?.status==="CLOSED" &&
@@ -389,7 +475,7 @@ function t006FinalClosureErrors(t008,items,baseline) {
   return errors.concat(t006ClosureRevalidationErrors(items,baseline));
 }
 function checkT006T008Order(t006,t008,items,baseline) {
-  const errors=t006T008PreclosureErrors(t006,t008);
+  const errors=t006T008PreclosureErrors(t006,t008,baseline);
   return t006?.status==="CLOSED" ? errors.concat(t006FinalClosureErrors(t008,items,baseline)) : errors;
 }
 function testT006T008Order() {
