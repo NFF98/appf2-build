@@ -1,5 +1,9 @@
+import { createHmac } from "node:crypto";
+
 import { describe, expect, test } from "vitest";
 
+import { INTENT_CONTINUITY_COOKIE } from "../../src/edge/server-identity.js";
+import type { BlueprintContentRecord } from "../../src/platform/blueprint/blueprint-admission.js";
 import { mergeReanalysis } from "../../src/platform/intent/analysis-merge.js";
 import { submitClarificationAnswers } from "../../src/platform/intent/answer-merge.js";
 import { evaluateClarificationPolicy } from "../../src/platform/intent/clarification-policy.js";
@@ -9,6 +13,20 @@ import { questionIdFor } from "../../src/platform/intent/question-projection.js"
 import { admitResolvedIntent, isResolvedIntentAdmission, parseCompileRequest } from "../../src/platform/intent/resolved-intent-gate.js";
 import type { JsonValue } from "../../src/platform/intent/json-value.js";
 import { createF01Harness, dataOf, errorOf, succeeded, type F01Harness } from "../api/f01-harness.js";
+import {
+  createBody,
+  createOriginalHolderWorld,
+  dataOfRaw,
+  denial,
+  grantUrl,
+  issuedCookie,
+  readProofBy,
+  signedCreate,
+  UNIFORM_NOT_FOUND,
+  type Holder,
+  type OriginalHolderWorld,
+  type RawResponse
+} from "../api/original-holder-world.js";
 import {
   ADD_ON_OPTIONS,
   MENU_EDIT,
@@ -650,5 +668,117 @@ describe("F01-AC-017 Client cannot bypass the policy with resolved_intent or ser
     expect(() => submitClarificationAnswers(state, answersBody([{ question_id: questionFor(state, "date").question_id, value: 7 }]))).toThrowError(
       contractError("F01-ERR-003", "ANSWER_TYPE_MISMATCH")
     );
+  });
+});
+
+/** Independent F01-API-ID-001B grant wire: base64url(JSON claims) "." base64url(HMAC-SHA-256(domain || payload)). */
+const GRANT_MAC_DOMAIN = "APPF2_BLUEPRINT_ACCESS_GRANT_V1.";
+
+function grantClaims(token: string): unknown[] {
+  return JSON.parse(Buffer.from(token.split(".")[0] ?? "", "base64url").toString("utf8")) as unknown[];
+}
+
+function macGrant(secret: string, claims: readonly unknown[]): string {
+  const payload = Buffer.from(JSON.stringify(claims), "utf8").toString("base64url");
+  return `${payload}.${createHmac("sha256", secret).update(`${GRANT_MAC_DOMAIN}${payload}`, "utf8").digest("base64url")}`;
+}
+
+const bearer = (token: string): Record<string, string> => ({ Authorization: `Bearer ${token}`, "Sec-Fetch-Site": "same-origin" });
+const admissionPath = (contentHash: string): string => `/api/v1/blueprints/${contentHash}/execution-admission`;
+
+async function issuedGrant(world: OriginalHolderWorld, holder: Holder): Promise<{ token: string; data: Record<string, unknown> }> {
+  const issued = await world.get(grantUrl(holder.intentId, holder.contentHash), await world.grantHeaders(holder));
+  expect(issued.status).toBe(200);
+  const data = dataOfRaw(issued);
+  return { token: String(data.intent_blueprint_access_grant), data };
+}
+
+describe("F01-AC-017 BS-P1-025 client-held identifiers are never private-Intent authority and a read grant is never F03 admission", () => {
+  test("TEST-F01-SEC-007 a client-supplied anonymous_id, resolved_intent or public content_hash never authorizes another holder's private Intent", async () => {
+    const world = createOriginalHolderWorld();
+    const victim = await world.validatedHolder();
+    const victimAnonymousId = world.anonymousIdOf(victim.intentId);
+    const attacker = await world.key();
+
+    const smuggled = JSON.stringify({ ...(JSON.parse(createBody(victimAnonymousId)) as object), resolved_intent: { goal: "victim" } });
+    const bypass = await world.handle(await signedCreate(attacker, smuggled));
+    expect([bypass.status, (denial(bypass).error as { code: string }).code]).toEqual([400, "F01-ERR-001"]);
+
+    world.queueReadyAnalysis();
+    const created = await world.handle(await signedCreate(attacker, createBody(victimAnonymousId, "attacker request")));
+    expect(created.status).toBe(200);
+    expect(dataOfRaw(created).intent_id).not.toBe(victim.intentId);
+    const attackerCookie = issuedCookie(created);
+    const victimGrantPath = grantUrl(victim.intentId, victim.contentHash);
+    const attackerProof = await readProofBy(attacker, victim.intentId, victim.contentHash);
+    const attempts: Record<string, () => Promise<RawResponse>> = {
+      "attacker cookie + attacker key on the victim Intent": () => world.get(victimGrantPath, { "Sec-Fetch-Site": "same-origin", Cookie: attackerCookie, ...attackerProof }),
+      "victim anonymous_id presented as the scoped cookie": () =>
+        world.get(victimGrantPath, { "Sec-Fetch-Site": "same-origin", Cookie: `${INTENT_CONTINUITY_COOKIE}=${victimAnonymousId}`, ...attackerProof }),
+      "victim anonymous_id as a bearer grant": () => world.get(`/b/${victim.contentHash}`, bearer(victimAnonymousId)),
+      "public content_hash as a bearer grant": () => world.get(`/b/${victim.contentHash}`, bearer(victim.contentHash)),
+      "public content_hash as execution-admission authority": () => world.get(admissionPath(victim.contentHash), bearer(victim.contentHash))
+    };
+    for (const [name, attempt] of Object.entries(attempts)) {
+      expect({ name, ...denial(await attempt()) }).toEqual({ name, ...UNIFORM_NOT_FOUND });
+    }
+    expect((await issuedGrant(world, victim)).token).not.toBe("");
+  });
+
+  test("TEST-F01-SEC-007 every read re-verifies grant audience, ≤60 s lifetime, exact original hash and Intent lineage even under a valid server MAC", async () => {
+    const world = createOriginalHolderWorld();
+    const holder = await world.validatedHolder();
+    const secret = world.backend.env.APPF2_IDENTITY_COOKIE_SECRET;
+    const { token } = await issuedGrant(world, holder);
+    const claims = grantClaims(token);
+    const at = (index: number, value: unknown): string => macGrant(secret, claims.map((claim, position) => (position === index ? value : claim)));
+    const nowSeconds = Math.floor(world.now() / 1000);
+    const readAndAdmit = async (grant: string): Promise<number[]> => [
+      (await world.get(`/b/${holder.contentHash}`, bearer(grant))).status,
+      (await world.get(admissionPath(holder.contentHash), bearer(grant))).status
+    ];
+
+    expect(await readAndAdmit(macGrant(secret, claims))).toEqual([200, 200]);
+    const forged: Record<string, string> = {
+      "share:create audience only": at(6, ["share:create"]),
+      "lifetime longer than 60 s": macGrant(secret, [...claims.slice(0, 7), nowSeconds, nowSeconds + 61]),
+      "already expired": macGrant(secret, [...claims.slice(0, 7), nowSeconds - 61, nowSeconds - 1]),
+      "rebound to another content hash": at(4, `sha256:${"1".repeat(64)}`),
+      "rebound to another Intent": at(2, crypto.randomUUID()),
+      "rebound to another anonymous_id": at(3, crypto.randomUUID())
+    };
+    for (const [name, grant] of Object.entries(forged)) {
+      for (const path of [`/b/${holder.contentHash}`, admissionPath(holder.contentHash)]) {
+        expect({ name, path, ...denial(await world.get(path, bearer(grant))) }).toEqual({ name, path, ...UNIFORM_NOT_FOUND });
+      }
+    }
+
+    world.advance(59_000);
+    expect(await readAndAdmit(token)).toEqual([200, 200]);
+    world.advance(2_000);
+    expect(denial(await world.get(`/b/${holder.contentHash}`, bearer(token)))).toEqual(UNIFORM_NOT_FOUND);
+  });
+
+  test("TEST-F01-SEC-007 a valid read grant never stands in for F03 execution admission, which is decided fresh on every request", async () => {
+    const world = createOriginalHolderWorld();
+    const holder = await world.validatedHolder();
+    const { token, data } = await issuedGrant(world, holder);
+    expect(data.audience).toEqual(["blueprint:read", "share:create"]);
+    expect(data).not.toHaveProperty("executable");
+    expect(data).not.toHaveProperty("admission");
+
+    const contents = world.backend.harness.db.blueprint.contents;
+    const record = contents.get(holder.contentHash);
+    if (record === undefined) throw new Error("validated content missing");
+    const admit = () => world.get(admissionPath(holder.contentHash), bearer(token));
+    expect(dataOfRaw(await admit())).toMatchObject({ executable: true, content_hash: holder.contentHash });
+
+    contents.set(holder.contentHash, { ...record, trust_status: "REVOKED" } as unknown as BlueprintContentRecord);
+    const revoked = await admit();
+    expect([revoked.status, (denial(revoked).error as { code: string }).code]).toEqual([410, "F02-ERR-016"]);
+    expect(revoked.body).not.toContain('"executable":true');
+
+    contents.set(holder.contentHash, record);
+    expect(dataOfRaw(await admit())).toMatchObject({ executable: true });
   });
 });
