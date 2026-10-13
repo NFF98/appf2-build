@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-T006-BS026-FREEZE-CI-001",
+  "constitution_version": "1.0",
+  "stage": "DRAFT_AWAITING_HUMAN_EXACT_RULE_APPROVAL",
+  "base_sha": "628d8440e938bd73aa84999baa778f5fbbe1bc39",
+  "exact_changed_paths": [
+    "ci/run-product-ci.mjs",
+    "harness/scripts/validate-change-scope.mjs"
+  ],
+  "candidate_digest_sha256": "2d4f9b28a0686735a3523e714deeee101548defbbb34cd3bdc9120369d249cb0",
+  "approval_boundary": "Human 2026-10-13 authorized execution of BS026 Freeze and Activation/Rebind, but did NOT see or approve these new exact constitutional rule bytes/digest. HUMAN_EXACT_CANDIDATE_APPROVAL and separate Human Merge approval remain PENDING. Goal 5/5 approval interactions cannot override the constitutional Gate.",
+  "why5": [
+    {
+      "question": "W1 Observable product-blocking symptom?",
+      "answer": "Human-approved BS026 immutable Freeze candidate #377 passes Projection, Baseline, Governance, Attack and CodeQL, but Product CI fails on nine executable active T006 tests absent from main; those tests live in unmerged product #374.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/377"
+    },
+    {
+      "question": "W2 Direct cause?",
+      "answer": "ci/run-product-ci.mjs normally enforces all active Task executable tests for any change while implementation_enabled=true; the exact 56-file immutable Freeze governance-only diff has no Product test changes.",
+      "evidence_ref": "ci/run-product-ci.mjs; https://github.com/NFF98/appf2-build/pull/377"
+    },
+    {
+      "question": "W3 Why can't previously approved narrow scope resolve?",
+      "answer": "#379 deliberately authorized only its own 3-path L3 governance-only CI N/A. It cannot skip tests on BS026 Freeze 56-path candidate, and #377 cannot add ci/run-product-ci under the exact 56-path scope.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/379"
+    },
+    {
+      "question": "W4 Which historical review first omitted exception?",
+      "answer": "UNKNOWN; cannot assign responsibility without review evidence. Address only verified present deadlock.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/379"
+    },
+    {
+      "question": "W5 Smallest safe fix?",
+      "answer": "Add one exact 56-path Build Freeze-only Product CI N/A (NOT PASS) recognized by pre-existing Build Freeze approved scope/manifest/Delta/Source checks, plus one exact Human-approved, digest-locked 3-path constitutional amendment guard. All actual Product branches still execute nine tests.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs; https://github.com/NFF98/appf2-build/pull/374"
+    }
+  ],
+  "changed_behavior": [
+    "One-time 56-path BS026 immutable Freeze diff is eligible for Product CI GOVERNANCE-ONLY N/A (NOT PASS), conditional on current BS025/Task T006, approved locked manifest source/hash, 53 exact added frozen blobs plus 3 provenance/delta/finding files, and existing independent exact freeze scope marker.",
+    "Approve only one exact 3-path L3 constitutional amendment with a fresh Human code/digest decision and no automatic merge authority.",
+    "For #374 or any product/test code change, and any unrelated/changed Build or Sprint scope, Product CI still runs executable mapped tests."
+  ],
+  "no_change": [
+    "No Product code/test changed or executed by L3 candidate.",
+    "No waiver on any of nine actual T006 Product Test IDs, including new TEST-F00-039; no TEST-F00-037 full PASS.",
+    "No BS026 Freeze/Activation self-approval, no Merge authorization.",
+    "No Cursor lease, no T008 execution, no T006 VERIFIED/CLOSED, no closed Task history changes.",
+    "No generic cross-Sprint governance relaxation; promised general reusable rule after T006 closure remains separate."
+  ],
+  "negative_test_plan": [
+    "12 Product CI Freeze-only shape positive/negative cases: missing path, extra Product/test files, invalid baseline, Sprint, manifest approval, source/hash, Delta/Finding; fail closed on independently failed freeze scope gate.",
+    "10 Constitutional exact-case shape positive/negative cases: wrong base, path, digest, Human proof, Sprint and Task.",
+    "All four GitHub checks after separate Human exact-candidate approval; L3 distinct Human Merge approval, then rebuild #377 Freeze candidate against latest main and rerun four CI checks."
+  ],
+  "rollback": "Abandon Draft before approval; after Merge one-shot freeze-only gate cannot affect unrelated Product or Test branches, and immutable Baseline/Sprint/Activation validators continue. Reversion requires separate authorized governance transition.",
+  "human_approval": {
+    "status": "PENDING_HUMAN_EXACT_CANDIDATE_APPROVAL",
+    "note": "User did NOT approve this exact 3-path rule digest. No virtual approval or no-CI-waiver permitted."
+  }
+}
