@@ -395,26 +395,34 @@ const bs026RuleDigest=()=>{
   h.update(String.fromCharCode(0));
   return h.digest("hex");
 };
-const bs026SelfApprovalValid=({docket,digest,base,changed,cs,build,oldSprint,oldBuild})=>
-  base==="c596a657a31d843df070bdfdfed84cc8dc6d7c20" &&
-  sameJson([...changed].sort(),[bs026DocketPath,bs026RulePath].sort()) &&
-  sameJson(cs,oldSprint) && sameJson(build,oldBuild) &&
-  cs?.active_sprint==="SP-P1-003" && cs?.active_task==="T006" &&
-  cs?.active_build_spec==="BS-P1-025" && cs?.status==="ACTIVE" &&
-  build?.active_baseline==="BS-P1-025" &&
-  docket?.case_id==="GOV-T006-BS026-FREEZE-001" &&
-  docket.base_sha===base && docket.constitution_version==="1.0" &&
-  sameJson(docket.exact_changed_paths,[bs026RulePath]) &&
-  docket.candidate_digest_sha256===digest &&
-  docket.human_approval?.case_id===docket.case_id &&
-  docket.human_approval?.source_kind==="DIRECT_HUMAN_MESSAGE" &&
-  docket.human_approval?.decision==="APPROVE_EXACT_CANDIDATE" &&
-  docket.human_approval?.scope==="EXACT_PR_DIFF" &&
-  docket.human_approval?.candidate_digest_sha256===digest &&
-  typeof docket.human_approval?.human_message_ref==="string" &&
-  docket.human_approval.human_message_ref.trim().length>0 &&
-  Number.isSafeInteger(docket.human_approval?.approved_at_unix) &&
-  docket.human_approval.approved_at_unix>0;
+const bs026SelfApprovalValid=({docket,digest,base,changed,cs,build,oldSprint,oldBuild})=>{
+  const caseFile=docket||{},human=caseFile.human_approval||{},sprint=cs||{},baseline=build||{};
+  return [
+    base==="c596a657a31d843df070bdfdfed84cc8dc6d7c20",
+    sameJson([...changed].sort(),[bs026DocketPath,bs026RulePath].sort()),
+    sameJson(cs,oldSprint),
+    sameJson(build,oldBuild),
+    sprint.active_sprint==="SP-P1-003",
+    sprint.active_task==="T006",
+    sprint.active_build_spec==="BS-P1-025",
+    sprint.status==="ACTIVE",
+    baseline.active_baseline==="BS-P1-025",
+    caseFile.case_id==="GOV-T006-BS026-FREEZE-001",
+    caseFile.base_sha===base,
+    caseFile.constitution_version==="1.0",
+    sameJson(caseFile.exact_changed_paths,[bs026RulePath]),
+    caseFile.candidate_digest_sha256===digest,
+    human.case_id===caseFile.case_id,
+    human.source_kind==="DIRECT_HUMAN_MESSAGE",
+    human.decision==="APPROVE_EXACT_CANDIDATE",
+    human.scope==="EXACT_PR_DIFF",
+    human.candidate_digest_sha256===digest,
+    typeof human.human_message_ref==="string",
+    Boolean(human.human_message_ref?.trim()),
+    Number.isSafeInteger(human.approved_at_unix),
+    human.approved_at_unix>0
+  ].every(Boolean);
+};
 const bs026ProtectedAmendment=Boolean(bs026Docket && bs026SelfApprovalValid({
   docket:bs026Docket,digest:bs026RuleDigest(),base:baseSha,changed,
   cs,build:currentBuild,oldSprint:baseCurrentSprint,oldBuild:baseCurrentBuild
@@ -427,32 +435,42 @@ const bs026AllowedExtra=new Set([bs026DeltaPath,bs026FindingPath,bs026AuditPath]
 const bs026KnownHash="481599d68791b7bb1e19525f141e6b46f5c93755fbdef9744fda20b74271a536";
 const exactBs026FreezeOnly=({paths,sprint,current,previousSprint,previousBuild,manifest,delta,finding,auditPresent})=>{
   const outputPaths=paths.filter(p=>p.startsWith(bs026NewPathPrefix));
-  const exactTargets=outputPaths.length===53 && paths.length===56 &&
-    paths.every(p=>p.startsWith(bs026NewPathPrefix) || bs026AllowedExtra.has(p)) &&
-    [...bs026AllowedExtra].every(p=>paths.includes(p)) &&
-    outputPaths.every(p=>p!==bs026NewPathPrefix && !p.includes(".."));
-  return exactTargets &&
-    (sprint?.status==="ACTIVE" || sprint?.status==="BLOCKED") &&
-    sprint?.active_sprint==="SP-P1-003" &&
-    sprint?.active_task==="T006" && sprint?.active_build_spec==="BS-P1-025" &&
-    sameJson(sprint,previousSprint) && sameJson(current,previousBuild) &&
-    current?.active_baseline==="BS-P1-025" && current.implementation_enabled===true &&
-    manifest?.baseline_id==="BS-P1-026" &&
-    manifest.status==="LOCKED" && manifest.supersedes==="BS-P1-025" &&
-    manifest.source_working_commit==="7129e16a7110b40d009b963d9937e41c83cadb02" &&
-    manifest.content_sha256===bs026KnownHash && manifest.acceptance_count===308 &&
-    manifest.approval?.status==="USER_APPROVED" &&
-    typeof manifest.approval?.decision_ref==="string" &&
-    manifest.approval.decision_ref.trim().length>0 &&
-    (manifest.approved_delta_ids||[]).includes("BD-026") &&
-    delta?.delta_id==="BD-026" && delta.type==="DESIGN_DELTA" &&
-    ["APPROVED","IMPLEMENTING"].includes(delta.status) &&
-    delta.user_decision?.status==="APPROVED" &&
-    delta.affected_build_spec==="BS-P1-025" &&
-    delta.replacement_build_spec==="BS-P1-026" &&
-    finding?.finding_id==="BF-055" &&
-    ["RESOLVED","CLOSED"].includes(finding.status) &&
-    auditPresent===true;
+  const s=sprint||{},b=current||{},m=manifest||{},approved=m.approval||{},designDelta=delta||{},bf=finding||{},deltaDecision=designDelta.user_decision||{};
+  return [
+    outputPaths.length===53,
+    paths.length===56,
+    paths.every(p=>p.startsWith(bs026NewPathPrefix) || bs026AllowedExtra.has(p)),
+    [...bs026AllowedExtra].every(p=>paths.includes(p)),
+    outputPaths.every(p=>p!==bs026NewPathPrefix && !p.includes("..")),
+    ["ACTIVE","BLOCKED"].includes(s.status),
+    s.active_sprint==="SP-P1-003",
+    s.active_task==="T006",
+    s.active_build_spec==="BS-P1-025",
+    sameJson(sprint,previousSprint),
+    sameJson(current,previousBuild),
+    b.active_baseline==="BS-P1-025",
+    b.implementation_enabled===true,
+    m.baseline_id==="BS-P1-026",
+    m.status==="LOCKED",
+    m.supersedes==="BS-P1-025",
+    m.source_working_commit==="7129e16a7110b40d009b963d9937e41c83cadb02",
+    m.content_sha256===bs026KnownHash,
+    m.acceptance_count===308,
+    approved.status==="USER_APPROVED",
+    typeof approved.decision_ref==="string",
+    Boolean(approved.decision_ref?.trim()),
+    Array.isArray(m.approved_delta_ids),
+    (m.approved_delta_ids||[]).includes("BD-026"),
+    designDelta.delta_id==="BD-026",
+    designDelta.type==="DESIGN_DELTA",
+    ["APPROVED","IMPLEMENTING"].includes(designDelta.status),
+    deltaDecision.status==="APPROVED",
+    designDelta.affected_build_spec==="BS-P1-025",
+    designDelta.replacement_build_spec==="BS-P1-026",
+    bf.finding_id==="BF-055",
+    ["RESOLVED","CLOSED"].includes(bf.status),
+    auditPresent===true
+  ].every(Boolean);
 };
 const approvedBs026FreezeOnly=exactBs026FreezeOnly({
   paths:changed,sprint:cs,current:currentBuild,
