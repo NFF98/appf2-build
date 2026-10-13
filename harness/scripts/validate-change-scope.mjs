@@ -325,27 +325,33 @@ const f06DeferL3Digest=()=>{
   }
   return h.digest("hex");
 };
-const exactF06DeferL3Candidate=({base,changedPaths,beforeBuild,afterBuild,beforeSprint,afterSprint,docket,digest})=>{
+const f06DeferL3ControlMatches=({base,changedPaths,beforeBuild,afterBuild,beforeSprint,afterSprint})=>
+  base==="e495237d85ceaa2ae7c2c62d32678dcac4fa133b" &&
+  sameJson([...changedPaths].sort(),f06DeferL3Paths) &&
+  sameJson(beforeBuild,afterBuild) && sameJson(beforeSprint,afterSprint) &&
+  afterBuild?.active_baseline==="BS-P1-025" && afterBuild.implementation_enabled===true &&
+  afterSprint?.active_sprint==="SP-P1-003" && afterSprint.active_task==="T006" &&
+  afterSprint.active_build_spec==="BS-P1-025" && afterSprint.status==="ACTIVE";
+const f06DeferL3DocketMatches=(docket,base,digest)=>
+  docket?.case_id==="GOV-T006-F06-DEFER-T008-001" && docket.base_sha===base &&
+  sameJson([...(docket.exact_changed_paths||[])].sort(),[...f06DeferL3RulePaths].sort()) &&
+  docket.candidate_digest_sha256===digest &&
+  docket.deferred_acceptance_id==="F00-AC-037" &&
+  docket.deferred_test_id==="TEST-F00-037" &&
+  docket.deferred_scope==="F06_PREVIEW_ORIGIN_ONLY" &&
+  docket.owner_product_progress_value===95;
+const f06DeferL3ApprovalMatches=(docket,digest)=>{
   const a=docket?.human_approval||{};
-  return base==="e495237d85ceaa2ae7c2c62d32678dcac4fa133b" &&
-    sameJson([...changedPaths].sort(),f06DeferL3Paths) &&
-    sameJson(beforeBuild,afterBuild) && sameJson(beforeSprint,afterSprint) &&
-    afterBuild?.active_baseline==="BS-P1-025" && afterBuild.implementation_enabled===true &&
-    afterSprint?.active_sprint==="SP-P1-003" && afterSprint.active_task==="T006" &&
-    afterSprint.active_build_spec==="BS-P1-025" && afterSprint.status==="ACTIVE" &&
-    docket?.case_id==="GOV-T006-F06-DEFER-T008-001" && docket.base_sha===base &&
-    sameJson([...(docket.exact_changed_paths||[])].sort(),[...f06DeferL3RulePaths].sort()) &&
-    docket.candidate_digest_sha256===digest &&
-    docket.deferred_acceptance_id==="F00-AC-037" &&
-    docket.deferred_test_id==="TEST-F00-037" &&
-    docket.deferred_scope==="F06_PREVIEW_ORIGIN_ONLY" &&
-    docket.owner_product_progress_value===95 &&
-    a.case_id===docket.case_id && a.source_kind==="DIRECT_HUMAN_MESSAGE" &&
+  return a.case_id===docket?.case_id && a.source_kind==="DIRECT_HUMAN_MESSAGE" &&
     a.decision==="APPROVE_EXACT_CANDIDATE" && a.scope==="EXACT_PR_DIFF" &&
     a.candidate_digest_sha256===digest &&
     typeof a.human_message_ref==="string" && !!a.human_message_ref.trim() &&
     Number.isSafeInteger(a.approved_at_unix) && a.approved_at_unix>0;
 };
+const exactF06DeferL3Candidate=ctx=>
+  f06DeferL3ControlMatches(ctx) &&
+  f06DeferL3DocketMatches(ctx.docket,ctx.base,ctx.digest) &&
+  f06DeferL3ApprovalMatches(ctx.docket,ctx.digest);
 const testF06DeferL3Candidate=()=>{
   const fixture=()=>{
     const docket={case_id:"GOV-T006-F06-DEFER-T008-001",base_sha:"e495237d85ceaa2ae7c2c62d32678dcac4fa133b",
@@ -360,8 +366,8 @@ const testF06DeferL3Candidate=()=>{
     const build={active_baseline:"BS-P1-025",implementation_enabled:true};
     const sprint={active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T006",status:"ACTIVE"};
     return {base:"e495237d85ceaa2ae7c2c62d32678dcac4fa133b",changedPaths:[...f06DeferL3Paths],
-      beforeBuild:structuredClone(build),afterBuild:structuredClone(build),
-      beforeSprint:structuredClone(sprint),afterSprint:structuredClone(sprint),
+      beforeBuild:JSON.parse(JSON.stringify(build)),afterBuild:JSON.parse(JSON.stringify(build)),
+      beforeSprint:JSON.parse(JSON.stringify(sprint)),afterSprint:JSON.parse(JSON.stringify(sprint)),
       docket,digest:docket.candidate_digest_sha256};
   };
   const cases=[

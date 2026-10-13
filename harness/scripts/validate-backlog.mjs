@@ -360,29 +360,40 @@ const exactT008ClosedRevalidation=(r,expectedIds,baseline)=>
 const f06DeferCasePath="delivery/constitutional-cases/GOV-T006-F06-DEFER-T008-001.json";
 const f06DeferEvidence=Array.from({length:21},(_,i)=>
   "EV-SP-P1-003-T006-"+String(i+1).padStart(3,"0"));
-const ownerF06DeferAllowsT008=(t006,t008,baseline,sprint,docket)=>{
+const ownerF06DeferSprintMatches=(t008,baseline,sprint)=>
+  baseline==="BS-P1-025" && sprint?.active_sprint==="SP-P1-003" &&
+  sprint.active_build_spec==="BS-P1-025" && sprint.active_task==="T008" &&
+  ((sprint.status==="ACTIVE"&&t008?.status==="IN_PROGRESS") ||
+    (sprint.status==="REVIEW"&&t008?.status==="REVIEW"));
+const ownerF06DeferEvidenceMatches=t006=>
+  Array.isArray(t006?.completion_evidence) &&
+  t006.completion_evidence.length===f06DeferEvidence.length &&
+  new Set(t006.completion_evidence).size===f06DeferEvidence.length &&
+  f06DeferEvidence.every(e=>t006.completion_evidence.includes(e));
+const ownerF06DeferCaseMatches=docket=>
+  docket?.case_id==="GOV-T006-F06-DEFER-T008-001" &&
+  docket.base_sha==="e495237d85ceaa2ae7c2c62d32678dcac4fa133b" &&
+  docket.deferred_acceptance_id==="F00-AC-037" &&
+  docket.deferred_test_id==="TEST-F00-037" &&
+  docket.deferred_scope==="F06_PREVIEW_ORIGIN_ONLY" &&
+  docket.owner_product_progress_value===95 &&
+  /^[a-f0-9]{64}$/.test(docket.candidate_digest_sha256||"");
+const ownerF06DeferApprovalMatches=docket=>{
   const a=docket?.human_approval||{};
-  return baseline==="BS-P1-025" && sprint?.active_sprint==="SP-P1-003" &&
-    sprint.active_build_spec==="BS-P1-025" && sprint.active_task==="T008" &&
-    ((sprint.status==="ACTIVE"&&t008?.status==="IN_PROGRESS") ||
-      (sprint.status==="REVIEW"&&t008?.status==="REVIEW")) &&
-    t006?.status==="BLOCKED" && t006.build_spec_id==="BS-P1-025" &&
-    t008.build_spec_id==="BS-P1-025" && exactT008AcceptancePairs(t008.acceptance_links) &&
-    Array.isArray(t006.completion_evidence) &&
-    t006.completion_evidence.length===f06DeferEvidence.length &&
-    new Set(t006.completion_evidence).size===f06DeferEvidence.length &&
-    f06DeferEvidence.every(e=>t006.completion_evidence.includes(e)) &&
-    docket?.case_id==="GOV-T006-F06-DEFER-T008-001" && docket.base_sha==="e495237d85ceaa2ae7c2c62d32678dcac4fa133b" &&
-    docket.deferred_acceptance_id==="F00-AC-037" &&
-    docket.deferred_test_id==="TEST-F00-037" &&
-    docket.deferred_scope==="F06_PREVIEW_ORIGIN_ONLY" &&
-    docket.owner_product_progress_value===95 &&
-    /^[a-f0-9]{64}$/.test(docket.candidate_digest_sha256||"") &&
-    a.case_id===docket.case_id && a.decision==="APPROVE_EXACT_CANDIDATE" &&
+  return a.case_id===docket?.case_id &&
+    a.decision==="APPROVE_EXACT_CANDIDATE" &&
     a.scope==="EXACT_PR_DIFF" && a.source_kind==="DIRECT_HUMAN_MESSAGE" &&
     a.candidate_digest_sha256===docket.candidate_digest_sha256 &&
     typeof a.human_message_ref==="string" && !!a.human_message_ref.trim();
 };
+const ownerF06DeferAllowsT008=(t006,t008,baseline,sprint,docket)=>
+  ownerF06DeferSprintMatches(t008,baseline,sprint) &&
+  t006?.status==="BLOCKED" && t006.build_spec_id==="BS-P1-025" &&
+  t008.build_spec_id==="BS-P1-025" &&
+  exactT008AcceptancePairs(t008.acceptance_links) &&
+  ownerF06DeferEvidenceMatches(t006) &&
+  ownerF06DeferCaseMatches(docket) &&
+  ownerF06DeferApprovalMatches(docket);
 const testOwnerF06DeferT008=()=>{
   const fixture=()=>{
     const d={case_id:"GOV-T006-F06-DEFER-T008-001",base_sha:"e495237d85ceaa2ae7c2c62d32678dcac4fa133b",
