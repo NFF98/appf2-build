@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-025",
   "active_task": "T006",
-  "status": "BLOCKED",
+  "status": "ACTIVE",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "T006 temporary bounded product-proof pause before Human-approved BS-P1-026 Build Freeze/Activation; no T008 execution, no T006 PASS/VERIFIED; resume only on separately approved rebaseline and genuine evidence."
+  "reason": "Human 2026-10-13 direct execution direction ('then do it! i want see you fix it and cursor running'): T006-only temporary resume under already activated BS-P1-025 to unblock existing unmerged #374 genuine PRODUCT CI. No BS026 Activation/Freeze claim, no T008 activation, no Product Merge approval from this candidate."
 }
