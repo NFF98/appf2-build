@@ -179,6 +179,103 @@ if(baseValid && matchesBs026GovShape({base,changed,current,sprint})){
   process.exit(0);
 }
 
+// BS026 Human-approved immutable Build Freeze (53 source snapshot blobs +
+// exactly BF055 / BD026 / audited provenance). This is Product CI N/A only,
+// NOT a test waiver on implementation PRs, and not a full T006 Product PASS.
+// Require independently PASSING change-scope / baseline / Human Freeze gates.
+const bs026FreezePrefix="build-spec/baselines/BS-P1-026/";
+const bs026FreezeSideEffects=new Set([
+  "delivery/audits/SP-P1-003-BD-026-FREEZE-CANDIDATE.md",
+  "delivery/deltas/BD-026.json",
+  "delivery/findings/BF-055.json"
+]);
+const bs026FreezeGateMarker="Exact BS026 Human-approved freeze-only diff recognized";
+const shapeBs026FreezeOnly=({changed,current,sprint,manifest,delta,finding})=>{
+  const frozen=changed.filter(p=>p.startsWith(bs026FreezePrefix));
+  const m=manifest||{},a=m.approval||{},d=delta||{},u=d.user_decision||{},f=finding||{};
+  return [
+    changed.length===56,
+    new Set(changed).size===56,
+    frozen.length===53,
+    changed.every(p=>p.startsWith(bs026FreezePrefix) || bs026FreezeSideEffects.has(p)),
+    [...bs026FreezeSideEffects].every(p=>changed.includes(p)),
+    frozen.every(p=>p!==bs026FreezePrefix && !p.includes("..")),
+    current?.active_baseline==="BS-P1-025",
+    current?.implementation_enabled===true,
+    sprint?.active_sprint==="SP-P1-003",
+    sprint?.active_task==="T006",
+    sprint?.active_build_spec==="BS-P1-025",
+    ["ACTIVE","BLOCKED"].includes(sprint?.status),
+    m.baseline_id==="BS-P1-026",
+    m.supersedes==="BS-P1-025",
+    m.status==="LOCKED",
+    m.source_working_commit==="7129e16a7110b40d009b963d9937e41c83cadb02",
+    m.content_sha256==="481599d68791b7bb1e19525f141e6b46f5c93755fbdef9744fda20b74271a536",
+    m.acceptance_count===308,
+    a.status==="USER_APPROVED",
+    typeof a.decision_ref==="string",
+    Boolean(typeof a.decision_ref==="string" && a.decision_ref.trim()),
+    (m.approved_delta_ids||[]).includes("BD-026"),
+    d.delta_id==="BD-026",
+    d.type==="DESIGN_DELTA",
+    ["APPROVED","IMPLEMENTING"].includes(d.status),
+    u.status==="APPROVED",
+    f.finding_id==="BF-055",
+    ["RESOLVED","CLOSED"].includes(f.status)
+  ].every(Boolean);
+};
+const testBs026FreezeOnlyShape=()=>{
+  const side=[...bs026FreezeSideEffects];
+  const files=Array.from({length:53},(_,i)=>bs026FreezePrefix+"file-"+i+".md").concat(side);
+  const sprint={active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-025",status:"BLOCKED"};
+  const current={active_baseline:"BS-P1-025",implementation_enabled:true};
+  const manifest={baseline_id:"BS-P1-026",supersedes:"BS-P1-025",status:"LOCKED",
+    source_working_commit:"7129e16a7110b40d009b963d9937e41c83cadb02",
+    content_sha256:"481599d68791b7bb1e19525f141e6b46f5c93755fbdef9744fda20b74271a536",
+    acceptance_count:308,approval:{status:"USER_APPROVED",decision_ref:"SYNTHETIC_NOT_HUMAN"},
+    approved_delta_ids:["BD-026"]};
+  const delta={delta_id:"BD-026",type:"DESIGN_DELTA",status:"APPROVED",user_decision:{status:"APPROVED"}};
+  const finding={finding_id:"BF-055",status:"RESOLVED"};
+  const mk=()=>({changed:[...files],sprint:{...sprint},current:{...current},
+    manifest:JSON.parse(JSON.stringify(manifest)),delta:JSON.parse(JSON.stringify(delta)),finding:{...finding}});
+  const cases=[
+    ["synthetic exact",true,x=>x],
+    ["one less path",false,x=>{x.changed.pop();return x;}],
+    ["test smuggled",false,x=>{x.changed.push("tests/e2e/test.spec.ts");return x;}],
+    ["Product smuggled",false,x=>{x.changed.push("src/app/shell.ts");return x;}],
+    ["wrong baseline",false,x=>{x.current.active_baseline="BS-P1-026";return x;}],
+    ["wrong sprint task",false,x=>{x.sprint.active_task="T008";return x;}],
+    ["no lock",false,x=>{x.manifest.status="PENDING";return x;}],
+    ["wrong source",false,x=>{x.manifest.source_working_commit="a".repeat(40);return x;}],
+    ["wrong content hash",false,x=>{x.manifest.content_sha256="b".repeat(64);return x;}],
+    ["no Freeze approval",false,x=>{x.manifest.approval.status="PENDING";return x;}],
+    ["delta not approved",false,x=>{x.delta.user_decision.status="PENDING";return x;}],
+    ["finding unresolved",false,x=>{x.finding.status="OPEN";return x;}]
+  ];
+  for(const [label,want,change] of cases)
+    if(shapeBs026FreezeOnly(change(mk()))!==want) throw Error("BS026 Freeze Product CI N/A guard FAIL: "+label);
+  return cases.length;
+};
+console.log("- BS026 Freeze Product CI N/A shape synthetic: "+testBs026FreezeOnlyShape()+"/12 PASS (NOT Product evidence).");
+if(baseValid && changed.length===56){
+  const fm=JSON.parse(fs.readFileSync(bs026FreezePrefix+"manifest.json","utf8"));
+  const delta=JSON.parse(fs.readFileSync("delivery/deltas/BD-026.json","utf8"));
+  const finding=JSON.parse(fs.readFileSync("delivery/findings/BF-055.json","utf8"));
+  if(shapeBs026FreezeOnly({changed,current,sprint,manifest:fm,delta,finding})){
+    const guard=spawnSync("node",["harness/scripts/validate-change-scope.mjs"],{
+      encoding:"utf8",shell:false,env:{...process.env,BASE_SHA:base,HEAD_SHA:head}
+    });
+    if(guard.stdout)process.stdout.write(guard.stdout);
+    if(guard.stderr)process.stderr.write(guard.stderr);
+    if(guard.status!==0 || !guard.stdout.includes(bs026FreezeGateMarker)){
+      console.error("PRODUCT CI: FAIL — BS026 Freeze N/A requires independent exact freeze-scope approval.");
+      process.exit(1);
+    }
+    console.log("PRODUCT CI: BUILD FREEZE GOVERNANCE-ONLY N/A (NOT PASS) — 56 immutable source/BD026/BF055/audit files, no changed Product/test code. T006 nine executable tests remain required on #374 Product branch.");
+    process.exit(0);
+  }
+}
+
 const activationRecordPath=current.active_baseline?"build-spec/activations/"+current.active_baseline+".json":null;
 const controlPaths=new Set([
   "build-spec/CURRENT.json",
