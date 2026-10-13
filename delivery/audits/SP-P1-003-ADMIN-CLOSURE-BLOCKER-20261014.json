@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "audit_id": "SP-P1-003-ADMIN-CLOSURE-BLOCKER-20261014",
+  "governance_auth_id": "GOV-AUTH-20261014-SP3-CLOSE-01",
+  "auth_digest": "sha256:06ad8a9bcc24ce193efb124dbfb5967918be71e672c671c70f9c9ce1c360cb4d",
+  "base_sha": "38d2f8a3bbd484b98795f5140afcca29eb4bfa07",
+  "branch": "governance/sp-p1-003-admin-closure-20261014",
+  "author": "CURSOR_EXECUTION_AGENT",
+  "status": "HARD_STOP_SPRINT_CLOSURE_NOT_LEGAL_AT_BASE",
+  "is_human_approval": false,
+  "is_closure_fact": false,
+  "never_converts_fail_or_untested_to_pass": true,
+  "observed_state": {
+    "build_current": { "active_baseline": "BS-P1-025", "implementation_enabled": true },
+    "current_sprint": { "active_sprint": "SP-P1-003", "active_build_spec": "BS-P1-025", "active_task": "T008", "status": "REVIEW" },
+    "manifest_status": "ACTIVE",
+    "tasks": { "T001": "CLOSED", "T002": "CLOSED", "T003": "CLOSED", "T004": "CLOSED", "T005": "CLOSED", "T006": "BLOCKED", "T007": "CLOSED", "T008": "REVIEW" },
+    "selected_backlog_not_done": { "BL-P1-015": "SPRINTED", "BL-P1-018": "SPRINTED" },
+    "revalidation_not_complete": { "BL-P1-008": "IN_PROGRESS", "BL-P1-010": "IN_PROGRESS", "BL-P1-031": "IN_PROGRESS" }
+  },
+  "sprint_closure_blockers": [
+    { "rule": "harness/scripts/validate-sprint.mjs#L15", "detail": "No administrative / carry-forward Sprint state exists." },
+    { "rule": "harness/scripts/validate-sprint.mjs#L406-L408", "violations": ["T006 is BLOCKED", "T008 is REVIEW"] },
+    { "rule": "harness/scripts/validate-sprint.mjs#L409-L412", "violations": ["BL-P1-015 is SPRINTED", "BL-P1-018 is SPRINTED"] },
+    { "rule": "harness/scripts/validate-sprint.mjs#L413-L416", "violations": ["BL-P1-008 IN_PROGRESS", "BL-P1-010 IN_PROGRESS", "BL-P1-031 IN_PROGRESS"] },
+    { "rule": "harness/scripts/validate-sprint.mjs#L417", "detail": "CLOSED Sprint cannot remain CURRENT active_sprint." },
+    { "rule": "harness/scripts/validate-sprint.mjs#L421-L425", "detail": "active_sprint=null requires HOLD and build-spec/CURRENT.json implementation_enabled=false; build-spec/ is outside lease ALLOWED_PATHS." },
+    { "rule": "harness/policy/governance-reform.json#L29-L31", "detail": "Only BACKLOG_T008_CLOSE_AFTER_T006_REVIEW is deferrable; no Sprint-close gate is deferrable." }
+  ],
+  "t006_cannot_close": [
+    { "rule": "harness/scripts/validate-evidence.mjs#L100-L106", "detail": "F00-AC-037::TEST-F00-037 has only INFO evidence EV-SP-P1-003-T006-009." },
+    { "rule": "harness/scripts/validate-evidence.mjs#L116-L119", "detail": "No REVIEW PASS evidence among the 21 T006 evidence refs." },
+    { "rule": "harness/scripts/validate-backlog.mjs#L467-L477", "detail": "T006 final CLOSED requires T008 CLOSED and BL-P1-008/010/031 revalidation CLOSED." }
+  ],
+  "t008_closure_deferral_docket": {
+    "prepared": false,
+    "reason": "A CLOSURE_DEFERRAL docket cannot share a PR with delivery/audits/ changes under BASE policy; splitting into a separate PR and choosing the post-T008 CURRENT-SPRINT control state are Planning/Human decisions not specified by the lease.",
+    "constraints": [
+      "harness/scripts/human-exception.mjs#L389 exactly one exception docket per PR",
+      "harness/scripts/human-exception.mjs#L62-L71 exact_changed_paths must equal all other changed paths; digest binds their bytes",
+      "harness/scripts/human-exception.mjs#L120-L133 + harness/policy/governance-reform.json#L128-L146 lane allowlist excludes delivery/audits/ and delivery/PROJECT-OPEN-ITEMS.json",
+      "harness/scripts/human-exception.mjs#L82-L89 PENDING human_message_ref is rejected as placeholder",
+      "harness/scripts/human-exception.mjs#L92-L97 + max_ttl_seconds=1209600 expiry re-checked on every gate run (validate-backlog.mjs#L481-L488)"
+    ],
+    "required_shape_if_separately_authorized": {
+      "lane": "CLOSURE_DEFERRAL",
+      "covered_gates": ["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"],
+      "affected_sprint": "SP-P1-003",
+      "affected_tasks": ["T008"],
+      "affected_build_spec": "BS-P1-025",
+      "exact_changed_paths": ["delivery/sprints/SP-P1-003/tasks.json", "delivery/backlog/QUEUE.json", "delivery/CURRENT-SPRINT.json"],
+      "t008_evidence_unchanged": [
+        "EV-SP-P1-003-T008-001", "EV-SP-P1-003-T008-002", "EV-SP-P1-003-T008-003", "EV-SP-P1-003-T008-004",
+        "EV-SP-P1-003-T008-005", "EV-SP-P1-003-T008-006", "EV-SP-P1-003-T008-007", "EV-SP-P1-003-T008-008",
+        "EV-SP-P1-003-T008-009", "EV-SP-P1-003-T008-010", "EV-SP-P1-003-T008-011", "EV-SP-P1-003-T008-012",
+        "EV-SP-P1-003-T008-013", "EV-SP-P1-003-T008-014"
+      ],
+      "unresolved_control_choice": "CURRENT-SPRINT after T008 CLOSED: the only validator-compatible state with T006 BLOCKED is active_task=T006,status=BLOCKED; not chosen by Cursor.",
+      "human_approval": "PENDING"
+    },
+    "residual_risk": "After docket expiry (max 14 days) validate-backlog.mjs#L451-L454 re-fails on main if T006 has not reached REVIEW/VERIFIED/CLOSED."
+  },
+  "t006_preserved": {
+    "status": "BLOCKED",
+    "acceptance_links_unchanged": [
+      ["F03-AC-009", "TEST-F03-009"], ["F03-AC-024", "TEST-F03-AC-024"], ["F00-AC-007", "TEST-F00-007"],
+      ["F00-AC-009", "TEST-F00-AC-009"], ["F00-AC-010", "TEST-F00-010"], ["F00-AC-011", "TEST-F00-011"],
+      ["F00-AC-012", "TEST-F00-AC-012"], ["F00-AC-036", "TEST-F00-036"], ["F00-AC-037", "TEST-F00-037"]
+    ],
+    "completion_evidence_count_unchanged": 21,
+    "untested": [{ "acceptance_id": "F00-AC-037", "test_id": "TEST-F00-037", "evidence": "EV-SP-P1-003-T006-009", "evidence_status": "INFO", "record": "UNTESTED" }]
+  },
+  "carry_forward_gaps": [
+    { "id": "GAP-T006-01", "item": "F00-AC-037 / TEST-F00-037 full PASS incl. F06 Preview-origin", "status": "UNTESTED" },
+    { "id": "GAP-T006-02", "item": "T006 Engineering/Semantic REVIEW PASS evidence", "status": "BLOCKED" },
+    { "id": "GAP-T006-03", "item": "T006 REVIEW -> VERIFIED -> CLOSED lifecycle", "status": "BLOCKED" },
+    { "id": "GAP-BL-015", "item": "BL-P1-015 SPRINTED -> DONE", "status": "BLOCKED" },
+    { "id": "GAP-BL-018", "item": "BL-P1-018 SPRINTED -> DONE (includes F00-AC-037)", "status": "BLOCKED" },
+    { "id": "GAP-REVAL", "item": "BL-P1-008/010/031 revalidation IN_PROGRESS -> CLOSED (owner T008)", "status": "BLOCKED" }
+  ],
+  "minimal_rule_amendment_required_L3": [
+    "harness/policy/governance-reform.json: add Sprint-close procedural gate(s) or a dedicated lane with mandatory carry-forward fields and a defined post-expiry behaviour",
+    "harness/scripts/validate-sprint.mjs#L405-L418: honour a merged, exact, Human-approved Sprint-close waiver; waived Tasks stay BLOCKED with evidence and AC/Test bytes unchanged",
+    "Sprint close to HOLD must be allowed to set build-spec/CURRENT.json implementation_enabled=false (validate-sprint.mjs#L421-L425)",
+    "harness/scripts/validate-backlog.mjs#L444-L456,L481-L488: define permanent handling once T008 closure-order docket expires",
+    "harness/policy/APPF2-CONSTITUTION.md section 7 text, governance-reform-selftest.mjs and attack/run-dry-run.mjs negative cases"
+  ],
+  "untouched": ["T007", "build-spec/", "harness/", "src/", "tests/", "delivery/evidence/", "delivery/CURRENT-SPRINT.json", "delivery/sprints/", "delivery/backlog/", "delivery/PROJECT-OPEN-ITEMS.json", "delivery/constitutional-cases/"],
+  "known_gate_consequence": "harness/scripts/validate-change-scope.mjs#L823-L833 rejects delivery/audits/ during Sprint REVIEW (not in T008 allowed_write_paths, not a side-effect path) unless a Human-approved governance lane covers it."
+}
