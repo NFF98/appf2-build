@@ -418,7 +418,7 @@ const bs026SelfApprovalValid=({docket,digest,base,changed,cs,build,oldSprint,old
     human.scope==="EXACT_PR_DIFF",
     human.candidate_digest_sha256===digest,
     typeof human.human_message_ref==="string",
-    Boolean(human.human_message_ref?.trim()),
+    Boolean(typeof human.human_message_ref==="string" && human.human_message_ref.trim()),
     Number.isSafeInteger(human.approved_at_unix),
     human.approved_at_unix>0
   ].every(Boolean);
@@ -458,7 +458,7 @@ const exactBs026FreezeOnly=({paths,sprint,current,previousSprint,previousBuild,m
     m.acceptance_count===308,
     approved.status==="USER_APPROVED",
     typeof approved.decision_ref==="string",
-    Boolean(approved.decision_ref?.trim()),
+    Boolean(typeof approved.decision_ref==="string" && approved.decision_ref.trim()),
     Array.isArray(m.approved_delta_ids),
     (m.approved_delta_ids||[]).includes("BD-026"),
     designDelta.delta_id==="BD-026",
