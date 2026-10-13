@@ -80,17 +80,24 @@ const t006T008PermittedBaselines=new Set(["BS-P1-025","BS-P1-026"]);
 const t008PendingIds=new Set(["BL-P1-008","BL-P1-010","BL-P1-031"]);
 // Only the original SP-P1-003 T006/T008 unfinished revalidations may remain IN_PROGRESS.
 // A BLOCKED pause is never a test/review/closure PASS and cannot activate T008.
+const matchesT006PausePhase=(sprint,t006)=>
+  (sprint?.status==="ACTIVE" && t006?.status==="IN_PROGRESS") ||
+  (sprint?.status==="REVIEW" && t006?.status==="REVIEW") ||
+  (sprint?.status==="BLOCKED" && t006?.status==="BLOCKED");
+const matchesPendingT008Binding=({id,r,task,baseline})=>
+  t006T008PermittedBaselines.has(baseline) &&
+  t008PendingIds.has(id) && r?.status==="IN_PROGRESS" &&
+  r.sprint_id==="SP-P1-003" && r.task_id==="T008" && r.target_build_spec_id===baseline &&
+  task?.task_id==="T008" && task.status==="BLOCKED";
+const matchesT006PauseContext=({sprint,t006,baseline})=>
+  sprint?.active_sprint==="SP-P1-003" &&
+  sprint.active_task==="T006" &&
+  sprint.active_build_spec===baseline &&
+  matchesT006PausePhase(sprint,t006);
 const exactPendingT008Pause=({id,r,task,t006,current,sprint})=>{
   const baseline=current?.active_baseline;
-  const phase=(sprint?.status==="ACTIVE" && t006?.status==="IN_PROGRESS") ||
-    (sprint?.status==="REVIEW" && t006?.status==="REVIEW") ||
-    (sprint?.status==="BLOCKED" && t006?.status==="BLOCKED");
-  return t006T008PermittedBaselines.has(baseline) &&
-    t008PendingIds.has(id) && r?.status==="IN_PROGRESS" &&
-    r.sprint_id==="SP-P1-003" && r.task_id==="T008" && r.target_build_spec_id===baseline &&
-    task?.task_id==="T008" && task.status==="BLOCKED" &&
-    sprint?.active_sprint==="SP-P1-003" && sprint.active_task==="T006" &&
-    sprint.active_build_spec===baseline && phase;
+  return matchesPendingT008Binding({id,r,task,baseline}) &&
+    matchesT006PauseContext({sprint,t006,baseline});
 };
 const testExactPendingT008Pause=()=>{
   const fixture=()=>({
@@ -118,17 +125,18 @@ const testExactPendingT008Pause=()=>{
   return tests.length;
 };
 console.log("- P0 T006/T008 BS025/026 bounded pause synthetic: "+testExactPendingT008Pause()+"/13 PASS (synthetic only).");
+const isPendingT008PauseCandidate=({id,r,task,current,sprint})=>
+  t008PendingIds.has(id) && r?.status==="IN_PROGRESS" &&
+  r.task_id==="T008" && r.sprint_id==="SP-P1-003" &&
+  task?.task_id==="T008" && task.status==="BLOCKED" &&
+  t006T008PermittedBaselines.has(current.active_baseline) &&
+  r.target_build_spec_id===current.active_baseline &&
+  sprint.active_sprint==="SP-P1-003" && sprint.active_task==="T006";
 const validateRevalidationTaskStatus=(r,task,id)=>{
   const allowed=allowedRevalidationTaskStatuses[r.status];
   // Unrelated fixture/sprint revalidations must never dereference a missing T006 tasks file.
   // Only the three exact pending T008 records need the T006 companion status.
-  const pauseCandidate=t008PendingIds.has(id) && r?.status==="IN_PROGRESS" &&
-    r.task_id==="T008" && r.sprint_id==="SP-P1-003" &&
-    task?.task_id==="T008" && task.status==="BLOCKED" &&
-    t006T008PermittedBaselines.has(current.active_baseline) &&
-    r.target_build_spec_id===current.active_baseline &&
-    currentSprint.active_sprint==="SP-P1-003" &&
-    currentSprint.active_task==="T006";
+  const pauseCandidate=isPendingT008PauseCandidate({id,r,task,current,sprint:currentSprint});
   const taskPath="delivery/sprints/SP-P1-003/tasks.json";
   const t006=pauseCandidate && exists(taskPath)
     ? (read(taskPath).tasks||[]).find(t=>t.task_id==="T006") : null;
