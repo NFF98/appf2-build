@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 
+import { routeBlueprintDelivery, type BlueprintDeliveryComposition } from "../../src/edge/blueprint-delivery.js";
+import { encodeBase64Url, POP_KEY_HEADER, POP_SIGNATURE_HEADER, reservedCreateIdempotencyKey } from "../../src/edge/create-proof.js";
 import { INTENT_API_MAX_BODY_BYTES } from "../../src/edge/intent-api.js";
 import { POSTGRES_TRANSITION_INTENT_SQL } from "../../src/platform/compiler/postgres-compiler-repository.js";
 import type { StructuredIntentEnvelope } from "../../src/platform/intent/intent-contract.js";
@@ -24,6 +26,19 @@ import {
   succeeded,
   type F01Harness
 } from "./f01-harness.js";
+import {
+  createBody,
+  createOriginalHolderWorld,
+  dataOfRaw,
+  denial,
+  firstPartyPost,
+  grantUrl,
+  signedCreate,
+  signedMutationHeaders,
+  UNIFORM_NOT_FOUND,
+  type RawResponse
+} from "./original-holder-world.js";
+import { FIRST_PARTY_ORIGIN, grantPathOf } from "./s03-first-party-client.js";
 
 const CREATE_ROUTE = "POST /api/v1/intents";
 const COMPILE_ROUTE = "POST /api/v1/intents/{intent_id}/compile";
@@ -511,5 +526,148 @@ describe("F01-AC-020 timeout keeps the Intent and the logical operation retryabl
     expect(composes[1]?.input_payload.ephemeral_resolved_context).toEqual({ inputs: [expect.objectContaining({ id: DNP_ID, value: DNP_SECRET })] });
     expect(h.db.operationFor(COMPILE_ROUTE, "compile-1")).toMatchObject({ status: "SUCCEEDED", attempt_no: 2 });
     expectNoSecret(h.durableText());
+  });
+});
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const INTENTS_PATH = "/api/v1/intents";
+/** F01-API-ID-001A item 7: a failed PoP keeps the existing malformed / security classification. */
+const PROOF_REJECTIONS = [JSON.stringify([400, "F01-ERR-001"]), JSON.stringify([422, "F01-ERR-012"])];
+
+const errorCodeOf = (response: RawResponse): string => (denial(response).error as { code: string }).code;
+
+describe("F01-AC-013 BS-P1-025 per-Intent P-256 CREATE proof keeps one logical CREATE to one intent and never writes unproven", () => {
+  test("TEST-F01-API-001 a valid signed retry within 24h reuses the P-256 key, derived Idempotency-Key and body and returns the one intent", async () => {
+    const world = createOriginalHolderWorld();
+    const { db, gateway } = world.backend.harness;
+    const key = await world.key();
+    const anonymousId = crypto.randomUUID();
+    const body = createBody(anonymousId);
+    const first = await world.handle(await signedCreate(key, body));
+    expect(first.status).toBe(200);
+    const intentId = String(dataOfRaw(first).intent_id);
+
+    world.advance(DAY_MS - 60_000);
+    const retry = await world.handle(await signedCreate(key, body));
+    expect(retry.status).toBe(200);
+    expect(dataOfRaw(retry).intent_id).toBe(intentId);
+    expect(retry.headers.getSetCookie()[0]).toContain(`Path=/api/v1/intents/${intentId}/`);
+
+    const changedBody = await world.handle(await signedCreate(key, createBody(anonymousId, "另一個需求")));
+    expect([changedBody.status, errorCodeOf(changedBody)]).toEqual([409, "API-IDEMPOTENCY-CONFLICT"]);
+    expect(changedBody.headers.getSetCookie()).toEqual([]);
+    expect(db.intents.size).toBe(1);
+    expect(gateway.calls("INTENT_ANALYSIS")).toHaveLength(1);
+  });
+
+  test("TEST-F01-API-001 missing, forged, stale, wrong-key, edited or non-P-256 proofs are refused before any intent INSERT", async () => {
+    const world = createOriginalHolderWorld();
+    const { db, gateway } = world.backend.harness;
+    const key = await world.key();
+    const other = await world.key();
+    const stale = await world.key(() => world.now() - 91_000);
+    const body = createBody(crypto.randomUUID());
+    const reserved = reservedCreateIdempotencyKey(key.thumbprint);
+    const valid = await signedMutationHeaders(key, INTENTS_PATH, body, reserved);
+    const p384 = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-384" }, false, ["sign", "verify"]);
+    const p384Spki = encodeBase64Url(new Uint8Array(await crypto.subtle.exportKey("spki", p384.publicKey)));
+    const attempts: Record<string, Request> = {
+      "missing proof": firstPartyPost(INTENTS_PATH, body, { "Idempotency-Key": reserved }),
+      "forged signature": firstPartyPost(INTENTS_PATH, body, { ...valid, [POP_SIGNATURE_HEADER]: encodeBase64Url(new Uint8Array(64)) }),
+      "stale signature": await signedCreate(stale, body),
+      "another key signing this key's derived Idempotency-Key": firstPartyPost(INTENTS_PATH, body, await signedMutationHeaders(other, INTENTS_PATH, body, reserved)),
+      "body edited after signing": firstPartyPost(INTENTS_PATH, `${body} `, valid),
+      "non-P-256 public key": firstPartyPost(INTENTS_PATH, body, { ...valid, [POP_KEY_HEADER]: p384Spki })
+    };
+    for (const [name, request] of Object.entries(attempts)) {
+      const response = await world.handle(request);
+      expect(PROOF_REJECTIONS, name).toContain(JSON.stringify([response.status, errorCodeOf(response)]));
+      expect(response.headers.getSetCookie(), name).toEqual([]);
+    }
+    expect({ intents: db.intents.size, statements: db.statements.length, modelCalls: gateway.requests.length }).toEqual({ intents: 0, statements: 0, modelCalls: 0 });
+
+    const accepted = await world.handle(firstPartyPost(INTENTS_PATH, body, valid));
+    expect(accepted.status).toBe(200);
+    expect(db.intents.size).toBe(1);
+  });
+});
+
+describe("F01-AC-016 BS-P1-025 holder-only original-Intent read grant fails closed without disclosing private existence", () => {
+  test("TEST-F01-API-003 only scoped cookie + same-key fresh signed GET + exact F01→F02 lineage issues a grant; every other combination is one indistinguishable 404", async () => {
+    const world = createOriginalHolderWorld();
+    const holder = await world.validatedHolder();
+    const stranger = await world.validatedHolder();
+    const { intentId, contentHash } = holder;
+    const path = grantUrl(intentId, contentHash);
+    const good = await world.grantHeaders(holder);
+    const { Cookie: cookie = "", ...proofOnly } = good;
+    const unknownHash = `sha256:${"0".repeat(64)}`;
+    const attempts: Record<string, () => Promise<RawResponse>> = {
+      "cookie only": () => world.get(path, { "Sec-Fetch-Site": "same-origin", Cookie: cookie }),
+      "PoP only": () => world.get(path, proofOnly),
+      "another Intent's scoped cookie": () => world.get(path, { ...good, Cookie: stranger.browser.cookieFor(grantPathOf(stranger.intentId)) }),
+      "another Intent's key": async () => world.get(path, { ...good, ...(await stranger.browser.readProof(stranger.intentId, contentHash, grantPathOf(intentId))) }),
+      "cross-origin": () => world.get(path, { ...good, "Sec-Fetch-Site": "cross-site", Origin: "https://evil.example" }),
+      "hash without this Intent's lineage": async () => world.get(grantUrl(intentId, unknownHash), { ...good, ...(await holder.browser.readProof(intentId, unknownHash)) }),
+      "bare hash body read": () => world.get(`/b/${contentHash}`, { "Sec-Fetch-Site": "same-origin" }),
+      "bare hash execution admission": () => world.get(`/api/v1/blueprints/${contentHash}/execution-admission`, { "Sec-Fetch-Site": "same-origin" }),
+      "unknown hash body read": () => world.get(`/b/${unknownHash}`, { "Sec-Fetch-Site": "same-origin" })
+    };
+    for (const [name, attempt] of Object.entries(attempts)) {
+      const response = await attempt();
+      expect({ name, ...denial(response) }).toEqual({ name, ...UNIFORM_NOT_FOUND });
+      expect(response.body).not.toContain(intentId);
+    }
+
+    const issued = await world.get(path, good);
+    expect([issued.status, issued.headers.get("Cache-Control")]).toEqual([200, "private, no-store"]);
+    const bearer = { Authorization: `Bearer ${String(dataOfRaw(issued).intent_blueprint_access_grant)}`, "Sec-Fetch-Site": "same-origin" };
+    expect((await world.get(`/b/${contentHash}`, bearer)).status).toBe(200);
+
+    world.advance(61_000);
+    expect(denial(await world.get(`/b/${contentHash}`, bearer))).toEqual(UNIFORM_NOT_FOUND);
+    const staleProof = await world.grantHeaders(holder);
+    world.advance(91_000);
+    expect(denial(await world.get(path, staleProof))).toEqual(UNIFORM_NOT_FOUND);
+    expect((await world.get(path, await world.grantHeaders(holder))).status).toBe(200);
+  });
+
+  test("TEST-F01-API-003 a trusted lineage-store outage is 503 API-ADMISSION-TEMPORARILY-UNAVAILABLE on grant, body and admission, never a false 404 or a grant", async () => {
+    const world = createOriginalHolderWorld();
+    const holder = await world.validatedHolder();
+    const issued = await world.get(grantUrl(holder.intentId, holder.contentHash), await world.grantHeaders(holder));
+    const bearer = { Authorization: `Bearer ${String(dataOfRaw(issued).intent_blueprint_access_grant)}`, "Sec-Fetch-Site": "same-origin" };
+    const outage = (): Promise<never> => Promise.reject(new Error("trusted store unavailable"));
+    const composition = {
+      executor: { close: async () => undefined },
+      lineage: { verifyLineage: outage, readCanonicalBody: outage },
+      admission: { admit: outage }
+    } as unknown as BlueprintDeliveryComposition;
+    const routed = async (path: string, headers: Record<string, string>): Promise<RawResponse> => {
+      const url = new URL(path, FIRST_PARTY_ORIGIN);
+      const response = await routeBlueprintDelivery({ request: new Request(url, { headers }), url, env: world.backend.env, nowMs: world.now(), factory: () => composition });
+      if (response === undefined) throw new Error(`delivery route not matched: ${path}`);
+      return { status: response.status, body: await response.text(), headers: response.headers };
+    };
+    const reads: Record<string, () => Promise<RawResponse>> = {
+      grant: async () => routed(grantUrl(holder.intentId, holder.contentHash), await world.grantHeaders(holder)),
+      body: () => routed(`/b/${holder.contentHash}`, bearer),
+      admission: () => routed(`/api/v1/blueprints/${holder.contentHash}/execution-admission`, bearer)
+    };
+    for (const [name, read] of Object.entries(reads)) {
+      const response = await read();
+      expect({ name, ...denial(response) }).toEqual({
+        name,
+        status: 503,
+        error: {
+          code: "API-ADMISSION-TEMPORARILY-UNAVAILABLE",
+          message_key: "recovery.api.admission_temporarily_unavailable",
+          retryable: true,
+          retry_after_seconds: null,
+          details: {}
+        },
+        cacheControl: "private, no-store"
+      });
+    }
   });
 });
