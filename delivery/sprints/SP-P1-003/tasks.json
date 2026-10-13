@@ -659,7 +659,7 @@
       ],
       "title": "Result contract, S03 App surface & Playable App vertical proof",
       "status": "BLOCKED",
-      "build_spec_id": "BS-P1-025",
+      "build_spec_id": "BS-P1-026",
       "scope": [
         "Implement canonical result evaluation from F03 result.outputs with sensitivity metadata for future F16 policy.",
         "Implement S03 Runtime surface so Generated App is visual/interaction primary content and Shell never wraps/mutates Runtime controls.",
@@ -708,8 +708,8 @@
           "test_id": "TEST-F00-036"
         },
         {
-          "acceptance_id": "F00-AC-037",
-          "test_id": "TEST-F00-037"
+          "acceptance_id": "F00-AC-039",
+          "test_id": "TEST-F00-039"
         }
       ],
       "allowed_write_paths": [
@@ -756,23 +756,7 @@
         "T004",
         "T005"
       ],
-      "completion_evidence": [],
-      "test_maintenance_authorizations": [
-        {
-          "test_id": "TEST-F00-001",
-          "file": "tests/e2e/f00-create-shell.spec.ts",
-          "mode": "BASELINE_FIXTURE_REBIND",
-          "from_build_spec": "BS-P1-024",
-          "to_build_spec": "BS-P1-025"
-        },
-        {
-          "test_id": "TEST-F00-038",
-          "file": "tests/e2e/f00-create-shell.spec.ts",
-          "mode": "BASELINE_FIXTURE_REBIND",
-          "from_build_spec": "BS-P1-024",
-          "to_build_spec": "BS-P1-025"
-        }
-      ]
+      "completion_evidence": []
     },
     {
       "task_id": "T007",
@@ -851,7 +835,7 @@
       ],
       "title": "BS-P1-025 F01 PoP/owner read-grant and F07 identity/evidence cross-baseline revalidation",
       "status": "BLOCKED",
-      "build_spec_id": "BS-P1-025",
+      "build_spec_id": "BS-P1-026",
       "scope": [
         "Revalidate F01-AC-013/016 read-grant and owner PoP protection after BD-025 on the new locked BS-P1-025 baseline without changing historical T001.",
         "Revalidate F01-AC-017 identity-bound authorization while preserving BL-P1-008 historical T007 CLOSED revalidation.",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "active_baseline": "BS-P1-025",
+  "active_baseline": "BS-P1-026",
   "implementation_enabled": true,
-  "reason": "PROPOSED BS-P1-025 atomic rebaseline to Stage A validation task T008; DRAFT ONLY pending exact Human Activation consent and GitHub PASS; product implementation and T006 remain BLOCKED until separately authorized."
+  "reason": "BS-P1-026 Human-directed activation / T006 Stage A Composer-only Test039 rebind candidate. T006 remains BLOCKED until separate Cursor execution lease. T008 remains BLOCKED."
 }
