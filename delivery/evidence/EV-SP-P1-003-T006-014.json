@@ -1,0 +1,19 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-025",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T006",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-13T07:58:00.000Z",
+  "blocking_findings": [],
+  "source_commit": "62408f29834d0bff4234a51fc3aaf753954cebe7",
+  "evidence_id": "EV-SP-P1-003-T006-014",
+  "kind": "COMMAND_RESULT",
+  "acceptance_ids": [],
+  "test_ids": [],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/38359395372/jobs/115169737234#test:contract",
+  "command": "npm run test:contract",
+  "review_checks": null,
+  "notes": "main GitHub Actions 原始 CI job log 明確執行此 command 並在 PRODUCT CI: PASS 結束；此為重新整理既存測試證據，不是重新執行 Cursor。"
+}

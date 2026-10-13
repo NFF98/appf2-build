@@ -1,0 +1,23 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-025",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T006",
+  "status": "INFO",
+  "sha256": null,
+  "recorded_at": "2026-10-13T07:58:00.000Z",
+  "blocking_findings": [],
+  "source_commit": "62408f29834d0bff4234a51fc3aaf753954cebe7",
+  "evidence_id": "EV-SP-P1-003-T006-009",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F00-AC-037"
+  ],
+  "test_ids": [
+    "TEST-F00-037"
+  ],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/38359395372/jobs/115169737234#TEST-F00-037",
+  "command": null,
+  "review_checks": null,
+  "notes": "PARTIAL：Composer-origin 在 Chromium/Firefox/WebKit/Mobile Chromium PASS；F06 Preview-origin 不存在且未驗。Human Owner 已批准延至 F06 開發完成後再測，參照 https://github.com/NFF98/appf2-build/pull/374#issuecomment-6141078349。INFO 不是完整 PASS。"
+}
