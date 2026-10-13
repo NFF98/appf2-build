@@ -119,6 +119,66 @@ if(baseValid && matchesP0GovOnlyShape({base,changed,build:current,sprint})){
   process.exit(0);
 }
 
+// GOV-T006-BS026-FREEZE-001: one-time, exact L3 administrative amendment only.
+// This is a Product CI N/A, NOT test PASS; #374 owns executable T006 tests.
+// Require independent constitutional and scope gates to validate actual Human
+// exact candidate approval, same source bytes, unchanged Sprint and Build state.
+const bs026GovBase="c596a657a31d843df070bdfdfed84cc8dc6d7c20";
+const bs026GovOnlyPaths=new Set([
+  "ci/run-product-ci.mjs",
+  "delivery/constitutional-cases/GOV-T006-BS026-FREEZE-001.json",
+  "harness/scripts/validate-change-scope.mjs"
+]);
+const bs026GovMarker="Exact Human-approved BS026 narrow L3 rule amendment recognized";
+const matchesBs026GovShape=({base,changed,current,sprint})=>[
+  base===bs026GovBase,
+  changed.length===bs026GovOnlyPaths.size,
+  new Set(changed).size===bs026GovOnlyPaths.size,
+  changed.every(p=>bs026GovOnlyPaths.has(p)),
+  current?.active_baseline==="BS-P1-025",
+  current?.implementation_enabled===true,
+  sprint?.active_sprint==="SP-P1-003",
+  sprint?.active_task==="T006",
+  sprint?.active_build_spec==="BS-P1-025",
+  sprint?.status==="ACTIVE"
+].every(Boolean);
+const testBs026GovShape=()=>{
+  const build={active_baseline:"BS-P1-025",implementation_enabled:true};
+  const sp={active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-025",status:"ACTIVE"};
+  const mk=()=>({base:bs026GovBase,changed:[...bs026GovOnlyPaths],current:{...build},sprint:{...sp}});
+  const cases=[
+    ["exact one-time governance path",true,x=>x],
+    ["wrong base",false,x=>{x.base="a".repeat(40);return x;}],
+    ["missing docket",false,x=>{x.changed.pop();return x;}],
+    ["extra Product file",false,x=>{x.changed.push("src/app/fake.tsx");return x;}],
+    ["extra Product TEST",false,x=>{x.changed.push("tests/e2e/fake.spec.ts");return x;}],
+    ["duplicate file",false,x=>{x.changed[0]=x.changed[1];return x;}],
+    ["wrong baseline",false,x=>{x.current.active_baseline="BS-P1-026";return x;}],
+    ["disabled implementation",false,x=>{x.current.implementation_enabled=false;return x;}],
+    ["wrong Task",false,x=>{x.sprint.active_task="T008";return x;}],
+    ["BLOCKED Sprint",false,x=>{x.sprint.status="BLOCKED";return x;}],
+    ["wrong Sprint",false,x=>{x.sprint.active_sprint="SP-P1-004";return x;}],
+    ["wrong Sprint Build",false,x=>{x.sprint.active_build_spec="BS-P1-024";return x;}]
+  ];
+  for(const [name,want,change] of cases)
+    if(matchesBs026GovShape(change(mk()))!==want) throw Error("BS026 governance-only CI shape regression: "+name);
+  return cases.length;
+};
+console.log("- BS026 governance-only CI shape synthetic: "+testBs026GovShape()+"/12 PASS (NOT Product PASS).");
+if(baseValid && matchesBs026GovShape({base,changed,current,sprint})){
+  const scope=spawnSync("node",["harness/scripts/validate-change-scope.mjs"],{
+    encoding:"utf8",shell:false,env:{...process.env,BASE_SHA:base,HEAD_SHA:head}
+  });
+  if(scope.stdout) process.stdout.write(scope.stdout);
+  if(scope.stderr) process.stderr.write(scope.stderr);
+  if(scope.status!==0 || !scope.stdout.includes(bs026GovMarker)){
+    console.error("PRODUCT CI: FAIL — BS026 one-shot L3 approval / exact diff not accepted by scope gate.");
+    process.exit(1);
+  }
+  console.log("PRODUCT CI: GOVERNANCE-ONLY N/A (NOT PASS) — exact approved #379 L3 rule amendment only. T006 nine mapped tests remain unexecuted in this PR, and no product proof is waived.");
+  process.exit(0);
+}
+
 const activationRecordPath=current.active_baseline?"build-spec/activations/"+current.active_baseline+".json":null;
 const controlPaths=new Set([
   "build-spec/CURRENT.json",
