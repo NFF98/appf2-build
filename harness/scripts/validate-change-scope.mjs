@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import { isOneTimeConstitutionFounding } from "./validate-constitutional-change.mjs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
@@ -310,6 +311,77 @@ if(approvedPfr06WebReadinessTransition){
   console.log("- Human-approved PFR-06 web readiness transition recognized; Product source remains forbidden while Sprint HOLD.");
 }
 
+
+// GOV-T006-F06-PHASED-001: once-only L3 governance candidacy.
+// Do not turn a draft into execution authority: requires exact Human candidate decision,
+// fixed source main SHA, exact five paths, SHA256 of four rule files, unchanged Sprint/Build.
+// Constitutional validator independently verifies the same signed-off dossier contract.
+const p0DocketPath="delivery/constitutional-cases/GOV-T006-F06-PHASED-001.json";
+const p0RulePaths=[
+  "ci/run-product-ci.mjs",
+  "harness/scripts/validate-backlog.mjs",
+  "harness/scripts/validate-change-scope.mjs",
+  "harness/scripts/validate-sprint.mjs"
+];
+const p0AllPaths=[...p0RulePaths,p0DocketPath].sort();
+const p0Docket=readHeadJson(p0DocketPath);
+const p0Digest=()=>{
+  const h=createHash("sha256");
+  for(const rel of [...p0RulePaths].sort()){
+    h.update(rel+String.fromCharCode(0));
+    h.update(fs.readFileSync(path.join(root,rel)));
+    h.update(String.fromCharCode(0));
+  }
+  return h.digest("hex");
+};
+const matchesExactP0Control=({buildBefore,buildAfter,sprintBefore,sprintAfter})=>
+  stable(buildBefore)===stable(buildAfter) && stable(sprintBefore)===stable(sprintAfter) &&
+  sprintAfter?.active_sprint==="SP-P1-003" && sprintAfter.active_task==="T006" &&
+  sprintAfter.active_build_spec==="BS-P1-025" && sprintAfter.status==="ACTIVE" &&
+  buildAfter?.active_baseline==="BS-P1-025" && buildAfter.implementation_enabled===true;
+const matchesExactP0Docket=({docket,base,digest})=>
+  docket?.case_id==="GOV-T006-F06-PHASED-001" &&
+  docket.constitution_version==="1.0" && docket.base_sha===base &&
+  stable([...(docket.exact_changed_paths||[])].sort())===stable([...p0RulePaths].sort()) &&
+  docket.candidate_digest_sha256===digest;
+const matchesExactP0Human=({human,docket,digest})=>
+  digest===human?.candidate_digest_sha256 &&
+  human?.case_id===docket.case_id && human.source_kind==="DIRECT_HUMAN_MESSAGE" &&
+  human.decision==="APPROVE_EXACT_CANDIDATE" && human.scope==="EXACT_PR_DIFF" &&
+  typeof human.human_message_ref==="string" && human.human_message_ref.trim().length>0 &&
+  Number.isSafeInteger(human.approved_at_unix) && human.approved_at_unix>0;
+const isExactP0Candidate=({base,changed,buildBefore,buildAfter,sprintBefore,sprintAfter,docket,digest})=>
+  base==="3c6eb63a009a515d9fa1038ad5cd1a81908469f6" &&
+  stable([...changed].sort())===stable(p0AllPaths) &&
+  matchesExactP0Control({buildBefore,buildAfter,sprintBefore,sprintAfter}) &&
+  matchesExactP0Docket({docket,base,digest}) &&
+  matchesExactP0Human({human:docket?.human_approval,docket,digest});
+const testExactP0Candidate=()=>{
+  const d={case_id:"GOV-T006-F06-PHASED-001",constitution_version:"1.0",base_sha:"3c6eb63a009a515d9fa1038ad5cd1a81908469f6",exact_changed_paths:[...p0RulePaths],candidate_digest_sha256:"SYNTHETIC",
+    human_approval:{case_id:"GOV-T006-F06-PHASED-001",source_kind:"DIRECT_HUMAN_MESSAGE",decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",candidate_digest_sha256:"SYNTHETIC",human_message_ref:"SYNTHETIC-NOT-REAL-APPROVAL",approved_at_unix:1}};
+  const f=()=>({base:"3c6eb63a009a515d9fa1038ad5cd1a81908469f6",changed:[...p0AllPaths],buildBefore:{active_baseline:"BS-P1-025",implementation_enabled:true},buildAfter:{active_baseline:"BS-P1-025",implementation_enabled:true},sprintBefore:{active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-025",status:"ACTIVE"},sprintAfter:{active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-025",status:"ACTIVE"},docket:JSON.parse(JSON.stringify(d)),digest:"SYNTHETIC"});
+  const cases=[
+    ["exact synthetic",true,x=>x],["approval missing",false,x=>{delete x.docket.human_approval;return x;}],
+    ["extra changed path",false,x=>{x.changed.push("src/app/evil.ts");return x;}],
+    ["wrong baseline",false,x=>{x.buildAfter.active_baseline="BS-P1-026";return x;}],
+    ["wrong Sprint",false,x=>{x.sprintAfter.active_task="T008";return x;}],
+    ["wrong base SHA",false,x=>{x.base="a".repeat(40);return x;}],
+    ["wrong digest",false,x=>{x.digest="WRONG";return x;}],
+    ["fake source kind",false,x=>{x.docket.human_approval.source_kind="BOT_COMMENT";return x;}],
+    ["unauthorized decision",false,x=>{x.docket.human_approval.decision="APPROVE_PLAN";return x;}],
+    ["missing human source",false,x=>{x.docket.human_approval.human_message_ref="";return x;}]
+  ];
+  for(const [name,want,edit] of cases)if(isExactP0Candidate(edit(f()))!==want)throw Error("P0 scope negative guard FAIL: "+name);
+  return cases.length;
+};
+console.log("- P0 scope synthetic positive/negative guard: "+testExactP0Candidate()+"/10 PASS (synthetic, NOT Human approval).");
+const approvedP0GovernanceCandidate=Boolean(
+  p0Docket &&
+  isExactP0Candidate({base:baseSha,changed,buildBefore:baseCurrentBuild,buildAfter:currentBuild,
+    sprintBefore:baseCurrentSprint,sprintAfter:cs,docket:p0Docket,digest:p0Digest()})
+);
+if(approvedP0GovernanceCandidate) console.log("- Exact Human-approved P0 scope candidate recognized; independent constitutional gate remains mandatory.");
+
 const foundedConstitutionException=isOneTimeConstitutionFounding({
   changed,base:baseSha,cs,build:currentBuild
 });
@@ -488,7 +560,7 @@ if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException){
+}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);

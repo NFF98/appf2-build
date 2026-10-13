@@ -98,16 +98,17 @@ const validateActiveTaskDependencies=(active,taskById)=>{
  * The backlog and evidence gates still validate the underlying proof.
  */
 const exactT006TerminalControl=(currentSprint,t006,t008)=>{
-  const expected={active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T006",status:"REVIEW"};
+  if(!["BS-P1-025","BS-P1-026"].includes(currentSprint?.active_build_spec)) return false;
+  const expected={active_sprint:"SP-P1-003",active_build_spec:currentSprint.active_build_spec,active_task:"T006",status:"REVIEW"};
   const actual={active_sprint:currentSprint?.active_sprint,active_build_spec:currentSprint?.active_build_spec,active_task:currentSprint?.active_task,status:currentSprint?.status};
   return JSON.stringify(actual)===JSON.stringify(expected) &&
     t006?.status==="VERIFIED" && t008?.status==="CLOSED" &&
     Array.isArray(t006.completion_evidence) && !!t006.completion_evidence.length &&
     Array.isArray(t008.completion_evidence) && !!t008.completion_evidence.length;
 };
-const exactBs025ClosedT008Revalidation=(r,aids)=>
+const exactBs025ClosedT008Revalidation=(r,aids,baseline)=>
   r?.status==="CLOSED" &&
-  r.target_build_spec_id==="BS-P1-025" &&
+  r.target_build_spec_id===baseline &&
   r.sprint_id==="SP-P1-003" &&
   r.task_id==="T008" &&
   Array.isArray(r.acceptance_ids) &&
@@ -124,16 +125,16 @@ const isBs025T006ClosureWaiting=({currentSprint,taskDoc,queue})=>{
     ["BL-P1-031",["F07-AC-004"]]
   ].every(([id,aids])=>
     exactBs025ClosedT008Revalidation(
-      queue?.items?.find(x=>x.backlog_item_id===id)?.revalidation,aids));
+      queue?.items?.find(x=>x.backlog_item_id===id)?.revalidation,aids,currentSprint.active_build_spec));
 };
 const testBs025T006ClosureWaiting=()=>{
-  const mk=()=>({
-    currentSprint:{active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T006",status:"REVIEW"},
+  const mk=(baseline)=>({
+    currentSprint:{active_sprint:"SP-P1-003",active_build_spec:baseline,active_task:"T006",status:"REVIEW"},
     taskDoc:{tasks:[{task_id:"T006",status:"VERIFIED",completion_evidence:["SYNTHETIC-ONLY"]},{task_id:"T008",status:"CLOSED",completion_evidence:["SYNTHETIC-ONLY"]}]},
     queue:{items:[
-      {backlog_item_id:"BL-P1-008",revalidation:{status:"CLOSED",target_build_spec_id:"BS-P1-025",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-017"]}},
-      {backlog_item_id:"BL-P1-010",revalidation:{status:"CLOSED",target_build_spec_id:"BS-P1-025",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-013","F01-AC-016"]}},
-      {backlog_item_id:"BL-P1-031",revalidation:{status:"CLOSED",target_build_spec_id:"BS-P1-025",sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F07-AC-004"]}}
+      {backlog_item_id:"BL-P1-008",revalidation:{status:"CLOSED",target_build_spec_id:baseline,sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-017"]}},
+      {backlog_item_id:"BL-P1-010",revalidation:{status:"CLOSED",target_build_spec_id:baseline,sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F01-AC-013","F01-AC-016"]}},
+      {backlog_item_id:"BL-P1-031",revalidation:{status:"CLOSED",target_build_spec_id:baseline,sprint_id:"SP-P1-003",task_id:"T008",acceptance_ids:["F07-AC-004"]}}
     ]}
   });
   const cases=[
@@ -151,14 +152,16 @@ const testBs025T006ClosureWaiting=()=>{
     ["wrong Acceptance coverage",false,x=>{x.queue.items[2].revalidation.acceptance_ids=["F07-AC-003"];return x;}],
     ["missing revalidation item",false,x=>{x.queue.items.pop();return x;}]
   ];
-  for(const [label,expected,mutate] of cases){
-    const input=mutate(mk());
+  for(const baseline of ["BS-P1-025","BS-P1-026"]){
+    for(const [label,expected,mutate] of cases){
+    const input=mutate(mk(baseline));
     const actual=isBs025T006ClosureWaiting(input);
-    if(actual!==expected) throw Error("BS025 closure-wait synthetic guard FAILED: "+label);
+    if(actual!==expected) throw Error("BS025/026 closure-wait synthetic guard FAILED: "+baseline+" "+label);
+    }
   }
-  return cases.length;
+  return cases.length*2;
 };
-console.log("- BS025 T006 post-T008 closure-wait synthetic scope tests: "+testBs025T006ClosureWaiting()+"/13 PASS (synthetic, not Product or Human approval).");
+console.log("- BS025 T006 post-T008 closure-wait synthetic scope tests: "+testBs025T006ClosureWaiting()+"/26 PASS (synthetic, not Product or Human approval).");
 
 const validateActiveTask=td=>{
   const taskById=new Map((td.tasks||[]).map(t=>[t.task_id,t]));

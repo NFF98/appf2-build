@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-T006-F06-PHASED-001",
+  "constitution_version": "1.0",
+  "stage": "DRAFT_AWAITING_HUMAN_EXACT_CANDIDATE_APPROVAL",
+  "base_sha": "3c6eb63a009a515d9fa1038ad5cd1a81908469f6",
+  "exact_changed_paths": [
+    "ci/run-product-ci.mjs",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-sprint.mjs"
+  ],
+  "candidate_digest_sha256": "ad27bd13b28fd2f9db940dc892014c9886252f9ad2c6ff919dcf6ee6c79871d6",
+  "approval_boundary": "REVISED P0 FIVE-PATH CANDIDATE: Human approved only creation of bounded governance-only Product CI N/A branch, not these exact code bytes or merge. Previous approval SHA256 05c1f3819dfc549e50fc9f81c8c1f446dbc1c5d41b05379b90703b41f7e46d8a is NOT valid for this new candidate; new Human exact-candidate approval required.",
+  "why5": [
+    {
+      "question": "W1 可觀測症狀？",
+      "answer": "PR #374 的 TEST-F00-037 僅涵蓋 Composer origin，原 F00-AC-037 同時包含未實作的 Preview-origin，T006 無法誠實宣稱九項全部 PASS。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6134299436"
+    },
+    {
+      "question": "W2 直接原因？",
+      "answer": "T006 Sprint 明確將完整 F06 排除，卻認領含 Preview return 的原 F00-AC-037。",
+      "evidence_ref": "delivery/sprints/SP-P1-003/tasks.json; delivery/sprints/SP-P1-003/manifest.json"
+    },
+    {
+      "question": "W3 流程缺口？",
+      "answer": "Sprint 驗收歸屬沒有分離當期 Composer 真實證據與 F06 未來 Preview 真實證據。",
+      "evidence_ref": "delivery/backlog/QUEUE.json BL-P1-018 / BL-P1-027"
+    },
+    {
+      "question": "W4 最初在哪一輪漏掉？",
+      "answer": "UNKNOWN：現有可核對紀錄不足以斷言首次漏檢人員及審查環節，不推測責任。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6134299436"
+    },
+    {
+      "question": "W5 原規則為何不能安全直接解決？",
+      "answer": "Evidence Gate 禁止無真實 PASS 的 T006 REVIEW/VERIFIED；Rebaseline 前須 Sprint BLOCKED；BS025 的 T008 未完成 revalidation 特例不容許 T006 BLOCKED；ACTIVE 狀態亦禁止沒有精確 L3 核准的治理檔寫入。",
+      "evidence_ref": "harness/scripts/validate-evidence.mjs; harness/scripts/validate-activation.mjs; harness/scripts/validate-backlog.mjs; harness/scripts/validate-change-scope.mjs"
+    }
+  ],
+  "changed_behavior": [
+    "Exact T006 BLOCKED / T008 BLOCKED pause can retain three original IN_PROGRESS revalidations for BS025, with BS026 predeclared by exact scope. No PASS manufactured.",
+    "Retain T006 VERIFIED before T008 activation and T008 CLOSED before T006 final CLOSED for BS025 and future BS026.",
+    "Recognize precisely this four-path protected P0 candidate only after Human approved exact base SHA/rules digest; independent constitutional approval gate remains unchanged.",
+    "Exactly this five-path main-based P0 constitutional governance PR may report Product CI GOVERNANCE-ONLY N/A (NOT PASS) after independent constitutional/Change Scope approval; no T006 Product PASS and no future branch bypass."
+  ],
+  "no_change": [
+    "No file outside exact five paths (ci/run-product-ci.mjs plus previous four governed paths)",
+    "No Product code",
+    "No Test/Evidence PASS waiver",
+    "No Sprint/Task status change",
+    "No Cursor lease",
+    "No Build Freeze/Activation",
+    "No modification to immutable baseline or CLOSED history"
+  ],
+  "negative_test_plan": [
+    "Missing exact Human approval or wrong digest/base/path must fail",
+    "Wrong Sprint/Task/baseline or T008 prematurely active must fail",
+    "Fake VERIFIED revalidation or missing T008 required pairs must fail",
+    "BS025 and BS026 positive/negative synthetic sequencing must run",
+    "PR CI/Governance/Attack/CodeQL must be independently reviewed before separate Human Merge approval",
+    "Other-Sprint/revalidation attack fixtures without SP-P1-003/tasks.json must not crash",
+    "P0 Product CI N/A branch requires exact 5 changed paths, original base SHA, T006 ACTIVE, unchanged locked controls, proper Human-approved rule digest and independent Change Scope marker; wrong paths/BASE/Task/status must fail.",
+    "No other product CI branch, including PR #374, may take this one-time P0 N/A route; Product tests remain required there."
+  ],
+  "rollback": "Until separate Human Merge approval, close Draft PR without changing main. After merge, rollback requires new exact Human-approved constitutional PR; do not alter completed historical Task/baseline.",
+  "human_approval": {
+    "case_id": "GOV-T006-F06-PHASED-001",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "Human direct ChatGPT message 2026-10-13 JST: 『正式批准 GOV-T006-F06-PHASED-001 PR #376 新精確候選』. Approved HEAD e6fd0bf6199ba2febf6e42dd7f08a8a3a0842546, BASE 3c6eb63a009a515d9fa1038ad5cd1a81908469f6, five-file diff and SHA256 four-rule digest ad27bd13b28fd2f9db940dc892014c9886252f9ad2c6ff919dcf6ee6c79871d6; approve ONLY human_approval field, CI/Governance/Attack/CodeQL and independent GPT BCE. No Merge, Task changes, T008 activation or Cursor Lease.",
+    "candidate_digest_sha256": "ad27bd13b28fd2f9db940dc892014c9886252f9ad2c6ff919dcf6ee6c79871d6",
+    "approved_at_unix": 1791857847
+  }
+}
