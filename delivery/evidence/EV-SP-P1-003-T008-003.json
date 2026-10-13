@@ -1,0 +1,23 @@
+{
+  "schema_version": 2,
+  "build_spec_id": "BS-P1-025",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T008",
+  "status": "PASS",
+  "sha256": null,
+  "recorded_at": "2026-10-13T11:51:44.000Z",
+  "blocking_findings": [],
+  "source_commit": "1919a7225cd80551c7b610afe0bbdae0b185c774",
+  "evidence_id": "EV-SP-P1-003-T008-003",
+  "kind": "TEST_RESULT",
+  "acceptance_ids": [
+    "F01-AC-017"
+  ],
+  "test_ids": [
+    "TEST-F01-SEC-007"
+  ],
+  "locator": "github-actions://NFF98/appf2-build/actions/runs/38389508208/jobs/115269511740#TEST-F01-SEC-007",
+  "command": null,
+  "review_checks": null,
+  "notes": "Verified executable mapped tests in CI Gate SUCCESS for PR #386 HEAD 6d38adb0413ae4ab76a69b59de7c2cceeaf27213; Node-based production handlers with in-memory SQL fakes, not real PostgreSQL; 44 PG tests skipped."
+}
