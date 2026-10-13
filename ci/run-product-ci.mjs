@@ -59,6 +59,66 @@ if(isT006GovOnly){
   process.exit(0);
 }
 
+
+// Exact one-time GOV-T006-F06-PHASED-001 P0 governance-only Product CI branch.
+// This is N/A (NOT product PASS): real mapped T006 tests remain owned by unmerged PR #374.
+// All original governance, constitution, scope, lint, attack and CodeQL gates stay enforced.
+const p0GovBase="3c6eb63a009a515d9fa1038ad5cd1a81908469f6";
+const p0GovFiles=new Set([
+  "ci/run-product-ci.mjs",
+  "delivery/constitutional-cases/GOV-T006-F06-PHASED-001.json",
+  "harness/scripts/validate-backlog.mjs",
+  "harness/scripts/validate-change-scope.mjs",
+  "harness/scripts/validate-sprint.mjs"
+]);
+const p0GovScopeMarker="Exact Human-approved P0 scope candidate recognized";
+const matchesP0GovOnlyShape=({base,changed,build,sprint})=>
+  base===p0GovBase && changed.length===p0GovFiles.size &&
+  new Set(changed).size===p0GovFiles.size && changed.every(p=>p0GovFiles.has(p)) &&
+  build.active_baseline==="BS-P1-025" && build.implementation_enabled===true &&
+  sprint.active_sprint==="SP-P1-003" && sprint.active_task==="T006" &&
+  sprint.active_build_spec==="BS-P1-025" && sprint.status==="ACTIVE";
+const testP0GovOnlyShape=()=>{
+  const f=()=>({
+    base:p0GovBase,changed:[...p0GovFiles],
+    build:{active_baseline:"BS-P1-025",implementation_enabled:true},
+    sprint:{active_sprint:"SP-P1-003",active_task:"T006",active_build_spec:"BS-P1-025",status:"ACTIVE"}
+  });
+  const cases=[
+    ["exact P0-only diff",true,x=>x],
+    ["another base",false,x=>{x.base="a".repeat(40);return x;}],
+    ["product smuggling",false,x=>{x.changed.push("src/app/shell/App.tsx");return x;}],
+    ["test smuggling",false,x=>{x.changed.push("tests/e2e/fake.spec.ts");return x;}],
+    ["missing docket",false,x=>{x.changed=x.changed.filter(p=>!p.startsWith("delivery/constitutional-cases/"));return x;}],
+    ["duplicate changed file",false,x=>{x.changed[0]=x.changed[1];return x;}],
+    ["wrong baseline",false,x=>{x.build.active_baseline="BS-P1-026";return x;}],
+    ["inactive implementation",false,x=>{x.build.implementation_enabled=false;return x;}],
+    ["wrong task",false,x=>{x.sprint.active_task="T008";return x;}],
+    ["blocked sprint",false,x=>{x.sprint.status="BLOCKED";return x;}],
+    ["wrong sprint baseline",false,x=>{x.sprint.active_build_spec="BS-P1-024";return x;}]
+  ];
+  for(const [label,expected,mutate] of cases){
+    if(matchesP0GovOnlyShape(mutate(f()))!==expected) throw Error("P0 Product CI one-shot shape regression: "+label);
+  }
+  return cases.length;
+};
+console.log("- P0 governance-only Product CI exact-shape negative tests: "+testP0GovOnlyShape()+"/11 PASS (synthetic, not Product PASS).");
+if(baseValid && matchesP0GovOnlyShape({base,changed,build:current,sprint})){
+  // Require the already-present fail-closed scope validator to verify the exact
+  // Human case, digest of all four protected rule files, unchanged controls, and paths.
+  const guard=spawnSync("node",["harness/scripts/validate-change-scope.mjs"],{
+    encoding:"utf8",shell:false,env:{...process.env,BASE_SHA:base,HEAD_SHA:head}
+  });
+  if(guard.stdout) process.stdout.write(guard.stdout);
+  if(guard.stderr) process.stderr.write(guard.stderr);
+  if(guard.status!==0 || !guard.stdout.includes(p0GovScopeMarker)){
+    console.error("PRODUCT CI: FAIL — P0 exact constitutional governance-only approval/scope not recognized.");
+    process.exit(1);
+  }
+  console.log("PRODUCT CI: GOVERNANCE-ONLY N/A (NOT PASS) — exact approved P0 rule changes only; T006's nine executable Product tests not present or claimed here. PR #374 needs its own Product CI.");
+  process.exit(0);
+}
+
 const activationRecordPath=current.active_baseline?"build-spec/activations/"+current.active_baseline+".json":null;
 const controlPaths=new Set([
   "build-spec/CURRENT.json",
