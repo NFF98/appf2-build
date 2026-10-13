@@ -18,19 +18,21 @@ export class CanonicalJsonError extends TypeError {
   }
 }
 
-function compareUnicodeCodePoints(left: string, right: string): number {
-  const leftPoints = Array.from(left, (character) => character.codePointAt(0)!);
-  const rightPoints = Array.from(right, (character) => character.codePointAt(0)!);
-  const sharedLength = Math.min(leftPoints.length, rightPoints.length);
-
-  for (let index = 0; index < sharedLength; index += 1) {
-    const difference = leftPoints[index]! - rightPoints[index]!;
-    if (difference !== 0) {
-      return difference;
+/** Code point order (a lone surrogate is its own code point, as in the string iterator); allocation-free. */
+export function compareUnicodeCodePoints(left: string, right: string): number {
+  let leftIndex = 0;
+  let rightIndex = 0;
+  while (leftIndex < left.length && rightIndex < right.length) {
+    const leftPoint = left.codePointAt(leftIndex)!;
+    const rightPoint = right.codePointAt(rightIndex)!;
+    if (leftPoint !== rightPoint) {
+      return leftPoint - rightPoint;
     }
+    leftIndex += leftPoint > 0xffff ? 2 : 1;
+    rightIndex += rightPoint > 0xffff ? 2 : 1;
   }
 
-  return leftPoints.length - rightPoints.length;
+  return (left.length - leftIndex) - (right.length - rightIndex);
 }
 
 function childPath(parent: string, key: string): string {

@@ -8,6 +8,7 @@ import {
   composer,
   createButton,
   expectBuildValidated,
+  expectProvenCreateThenReadOnlyDelivery,
   fourQuestionAnalysis,
   openDiscover,
   questionsOf,
@@ -32,12 +33,24 @@ test("TEST-F00-001 a blank prompt never submits; a typed prompt actually enters 
   await expectBuildValidated(page);
   const [create] = host.callsTo("/api/v1/intents");
   expect(create?.body).toEqual({ anonymous_id: ANON, intent_kind: "CREATE", raw_intent: "幫我做一個公司聚餐分帳工具", source: { type: "DIRECT_PROMPT", capsule_id: null } });
-  expect(create?.idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
   expect(host.calls.map((call) => [call.path.split("/").at(-1), call.status])).toEqual([
     ["intents", 200],
     ["compile", 200]
   ]);
   expect(responseData(host.callsTo("/compile")[0]).status).toBe("VALIDATED");
+  await expectProvenCreateThenReadOnlyDelivery(page, host);
+
+  // The pre-BS-P1-025 shape (UUID key, no proof) is refused before F01 and costs no model call: the host is no bypass.
+  const modelCalls = host.harness.gateway.requests.length;
+  const legacyStatus = await page.evaluate(
+    async (body) =>
+      (await fetch("/api/v1/intents", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() }, body: JSON.stringify(body) }))
+        .status,
+    create?.body
+  );
+  expect(host.calls.at(-1)).toMatchObject({ path: "/api/v1/intents", proofThumbprint: null, status: legacyStatus, response: { error: { code: "F01-ERR-001" } } });
+  expect(legacyStatus).toBeGreaterThanOrEqual(400);
+  expect(host.harness.gateway.requests.length).toBe(modelCalls);
 });
 
 test("TEST-F00-AC-002 a capsule prefill stays editable and the edited text of the User is what F01 receives", async ({ page }) => {
@@ -204,7 +217,12 @@ test("TEST-F00-038 Try on a capsule only prefills the editable composer and Crea
   host.queueAnalysis(readyAnalysis()).queueValidBlueprint();
   await createButton(page).click();
   await expectBuildValidated(page);
-  expect(requests).toEqual(["POST /api/v1/intents", expect.stringMatching(/^POST \/api\/v1\/intents\/[^/]+\/compile$/)]);
+  await expectProvenCreateThenReadOnlyDelivery(page, host);
+  expect(requests).toEqual([
+    "POST /api/v1/intents",
+    expect.stringMatching(/^POST \/api\/v1\/intents\/[^/]+\/compile$/),
+    expect.stringMatching(/^GET \/api\/v1\/intents\/[^/]+\/blueprint-access-grant$/)
+  ]);
   const [create] = host.calls;
   expect(isCreate(create?.path ?? "")).toBe(true);
   expect(create?.body).toEqual({ anonymous_id: ANON, intent_kind: "CREATE", raw_intent: `${prefill}服務費 10%。` });

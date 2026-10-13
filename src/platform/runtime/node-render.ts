@@ -1,5 +1,5 @@
 import type { CapabilityRef } from "../blueprint/validation-types.js";
-import { parentInstanceKey, resolveProps, type ConcreteNodeInstance } from "./capability-runtime.js";
+import { parentInstanceKey, resolveBindings, resolveProps, type ConcreteNodeInstance } from "./capability-runtime.js";
 import type { ExecutionIndex } from "./execution-index.js";
 import type { EvaluationEnv } from "./expression-vm.js";
 import { nodeInstanceKeyId, type NodeInstanceKey } from "./node-instance-key.js";
@@ -24,6 +24,7 @@ export interface NodeRenderInput<T> {
   readonly node_id: string;
   readonly capability: CapabilityRef;
   readonly props: RuntimeRecord;
+  readonly bindings: RuntimeRecord;
   readonly lifecycle_generation: number;
   readonly children: readonly T[];
 }
@@ -79,12 +80,14 @@ export function renderNodeTree<T>(host: RenderPassHost, renderer: RuntimeNodeRen
     try {
       const execution = host.index.nodeById.get(instance.key.node_id) ?? invariantBroken(`Node ${instance.key.node_id} is not indexed.`);
       const props = resolveProps(execution, host.env, instance.scope);
+      const bindings = resolveBindings(execution, host.env, instance.scope);
       const rendered = (children.get(keyId) ?? []).map(visit);
       return renderer.render({
         node_instance_key: instance.key,
         node_id: execution.node.id,
         capability: execution.node.capability,
         props,
+        bindings,
         lifecycle_generation: host.generation(keyId),
         children: rendered
       });

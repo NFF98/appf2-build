@@ -1,4 +1,7 @@
+import type { ExecutionAdmission } from "../blueprint/execution-admission.js";
+import type { ResultOutput } from "../blueprint/validation-types.js";
 import { RuntimeFailure } from "./runtime-errors.js";
+import type { RuntimeStatus } from "./runtime-evidence.js";
 
 /** F03 §37 Phase 1 synchronous Action policy: warning after 50 ms, recovery after 250 ms (F03-POL-001). */
 export const SOFT_DEADLINE_MS = 50;
@@ -41,6 +44,46 @@ export interface RuntimeOperationProjection {
 }
 
 export type OperationListener = (projection: RuntimeOperationProjection) => void;
+
+interface RuntimeResultViewBase {
+  readonly id: string;
+  readonly label: string;
+  readonly sensitivity: ResultOutput["sensitivity"];
+}
+
+/** F03 §28 evaluated output, formatted by F03 for Shell chrome; an ERROR output carries no value at all. */
+export type RuntimeResultView =
+  | (RuntimeResultViewBase & { readonly status: "AVAILABLE"; readonly display: string })
+  | (RuntimeResultViewBase & { readonly status: "ERROR" });
+
+/**
+ * F00-UX-014 hosting contract for one admitted App. F03 renders the Generated App into the element the Shell gives it
+ * and keeps the Instance; the Shell reads operation projections, commit ticks, the title and the evaluated Result,
+ * and may only release the App it was handed. Nothing here dispatches, writes state or exposes the Blueprint.
+ */
+export interface RuntimeAppHandle {
+  readonly contentHash: string;
+  readonly title: string;
+  subscribeOperations(listener: OperationListener): () => void;
+  subscribeCommits(listener: () => void): () => void;
+  committedSequence(): number;
+  result(): readonly RuntimeResultView[];
+  mount(container: HTMLElement): () => void;
+  release(): void;
+}
+
+/** Secure delivery output for the F03 host: the fresh admission and the exact delivered canonical body. */
+export interface RuntimeAppDelivery {
+  readonly admission: ExecutionAdmission;
+  readonly body: string;
+}
+
+export type RuntimeAppLaunch = { readonly ok: true; readonly app: RuntimeAppHandle } | { readonly ok: false; readonly status: RuntimeStatus };
+
+/** F03 browser host: hydrates a delivered Blueprint into a fresh Instance and hands back only its App handle. */
+export interface RuntimeAppHost {
+  launch(delivery: RuntimeAppDelivery): Promise<RuntimeAppLaunch>;
+}
 
 export interface RuntimeOperationHandle {
   readonly operation_token: string;

@@ -5,6 +5,7 @@ import {
   EvidenceRetentionMaintenance,
   type EvidenceRetentionDiagnostics
 } from "../platform/evidence/evidence-retention-maintenance.js";
+import { F07EventExecutor } from "../platform/evidence/f07-event-executor.js";
 import { PostgresEvidenceQualitySourceRepository } from "../platform/evidence/postgres-evidence-quality-repository.js";
 import {
   PostgresAnonymousIdentityRepository,
@@ -33,17 +34,16 @@ function runtimeUuid(dependencies: EvidenceRuntimeDependencies): () => string {
   return dependencies.randomUUID ?? (() => globalThis.crypto.randomUUID());
 }
 
-// Production composition root for /api/v1/events/batch: the appf2-owned EvidenceQualityRecorder is
-// always wired to durable Postgres quality sources; there is no optional/null observer path.
-export function createProductionEventsBatchHandler(
-  dependencies: EvidenceRuntimeDependencies
+function eventsBatchHandler(
+  dependencies: EvidenceRuntimeDependencies,
+  ingestionExecutor: PostgresExecutor
 ): (request: EventsBatchHttpRequest) => Promise<EventsBatchHttpResponse> {
   const now = runtimeClock(dependencies);
   const randomUUID = runtimeUuid(dependencies);
   return createEventsBatchHandler({
     ingestion: new EvidenceIngestionService({
-      anonymousIdentities: new PostgresAnonymousIdentityRepository(dependencies.executor),
-      evidence: new PostgresEvidenceRepository(dependencies.executor),
+      anonymousIdentities: new PostgresAnonymousIdentityRepository(ingestionExecutor),
+      evidence: new PostgresEvidenceRepository(ingestionExecutor),
       diagnostics: dependencies.diagnostics,
       now
     }),
@@ -55,6 +55,30 @@ export function createProductionEventsBatchHandler(
     }),
     createRequestId: randomUUID
   });
+}
+
+// T008 composition root for /api/v1/events/batch: the appf2-owned EvidenceQualityRecorder is
+// always wired to durable Postgres quality sources; there is no optional/null observer path.
+export function createProductionEventsBatchHandler(
+  dependencies: EvidenceRuntimeDependencies
+): (request: EventsBatchHttpRequest) => Promise<EventsBatchHttpResponse> {
+  return eventsBatchHandler(dependencies, dependencies.executor);
+}
+
+export interface F07EventsRuntimeDependencies extends EvidenceRuntimeDependencies {
+  /** F07-EVENT-001: required dedicated Event-only channel; the general Worker executor is not assignable here. */
+  readonly eventExecutor: F07EventExecutor;
+}
+
+// PG-001 Worker composition root for /api/v1/events/batch: anonymous_identity + product_event go only through the
+// F07 Event-only channel; quality sources stay on `executor`. No fallback.
+export function createF07EventsBatchHandler(
+  dependencies: F07EventsRuntimeDependencies
+): (request: EventsBatchHttpRequest) => Promise<EventsBatchHttpResponse> {
+  if (!(dependencies.eventExecutor instanceof F07EventExecutor)) {
+    throw new Error("F07 events require the dedicated F07 Event-only executor.");
+  }
+  return eventsBatchHandler(dependencies, dependencies.eventExecutor);
 }
 
 // Production retention owner over every Evidence source class; a scheduler only calls run().

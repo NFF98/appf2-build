@@ -18,6 +18,8 @@ type WorkspaceProps = {
   readonly onBack: () => void;
   /** F03 Runtime Instance status of the validated App; absent until F03 hydration is mounted for it. */
   readonly runtimeStatus?: RuntimeStatus;
+  /** The validated App could not be opened; the S02 content stays as it is and only retryable failures offer retry. */
+  readonly launchFailure?: { readonly onRetry: (() => void) | null };
 };
 
 type BodyProps = WorkspaceProps & { readonly onEditIntent: () => void };
@@ -172,7 +174,20 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
   );
 }
 
-function StatusBody({ session, controller }: BodyProps) {
+function LaunchFailureNotice({ onRetry }: { readonly onRetry: (() => void) | null }) {
+  return (
+    <div className="workspace-launch-failure">
+      <p className="workspace-detail">{onRetry === null ? "這個 App 目前無法開啟，你的需求仍然保留。" : "暫時無法開啟這個 App，你的需求仍然保留。"}</p>
+      {onRetry === null ? null : (
+        <button type="button" className="btn btn-primary" onClick={onRetry}>
+          再試一次
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StatusBody({ session, controller, launchFailure }: BodyProps) {
   const kind = session.phase.kind;
   if (kind !== "ANALYZING" && kind !== "BUILDING" && kind !== "BUILD_VALIDATED" && kind !== "INTERRUPTED") return null;
   const copy = STATUS_COPY[kind];
@@ -182,6 +197,7 @@ function StatusBody({ session, controller }: BodyProps) {
         {copy.title}
       </h1>
       <p className="workspace-detail">{copy.detail}</p>
+      {kind === "BUILD_VALIDATED" && launchFailure !== undefined ? <LaunchFailureNotice onRetry={launchFailure.onRetry} /> : null}
       {kind === "INTERRUPTED" ? (
         <button type="button" className="btn btn-primary" onClick={() => controller.retry()}>
           繼續

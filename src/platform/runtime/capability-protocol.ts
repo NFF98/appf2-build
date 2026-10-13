@@ -1,5 +1,5 @@
 import type { CapabilityRef } from "../blueprint/validation-types.js";
-import type { MonotonicClock, MonotonicTimerState } from "./monotonic-timer.js";
+import type { MonotonicClock, MonotonicTimerState, TimerObservation } from "./monotonic-timer.js";
 import type { NodeInstanceKey } from "./node-instance-key.js";
 import type { RngService } from "./prng.js";
 import type { RuntimeRecord, RuntimeValue } from "./runtime-value.js";
@@ -23,6 +23,8 @@ export interface CapabilityInvokeContext {
   readonly node: CapabilityNodeDefinition;
   readonly rng: RngService;
   readonly clock: MonotonicClock;
+  /** Read-only observation of this node's Runtime-owned armed timer slot; absent when no timer is armed. */
+  readonly timer?: TimerObservation;
 }
 
 export interface CapabilityEmittedEvent {

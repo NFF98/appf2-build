@@ -1,3 +1,4 @@
+import { mutationProofTranscript, reservedCreateIdempotencyKey } from "../../edge/create-proof.js";
 import {
   readCompileOutcome,
   readDecision,
@@ -9,6 +10,7 @@ import {
   type F01Result,
   type IntentDecision
 } from "./f01-wire.js";
+import type { PopKey, PopKeyring } from "./pop-keyring.js";
 
 export type FetchLike = (input: string, init: RequestInit) => Promise<Response>;
 
@@ -36,13 +38,36 @@ async function readJson(response: Response): Promise<unknown> {
   }
 }
 
-async function post<T>(fetchImpl: FetchLike, path: string, body: unknown, call: F01Call, read: (data: unknown) => T | null): Promise<F01Result<T>> {
+interface Signed {
+  readonly key: PopKey;
+  readonly idempotencyKey: string;
+}
+
+/** F01-API-ID-001A: the exact bytes sent are the bytes signed, with the Idempotency-Key actually sent. */
+async function proofHeaders(path: string, body: string, signed: Signed | null): Promise<Record<string, string>> {
+  if (signed === null) return {};
+  const bytes = new TextEncoder().encode(body);
+  return signed.key.proofHeaders((timestampMs) =>
+    mutationProofTranscript({ method: "POST", path, body: bytes, idempotencyKey: signed.idempotencyKey }, timestampMs)
+  );
+}
+
+interface PostRequest {
+  readonly path: string;
+  readonly body: unknown;
+  readonly call: F01Call;
+  readonly signed?: Signed | null;
+}
+
+async function post<T>(fetchImpl: FetchLike, { path, body, call, signed = null }: PostRequest, read: (data: unknown) => T | null): Promise<F01Result<T>> {
   let response: Response;
   try {
+    const text = JSON.stringify(body);
+    const idempotencyKey = signed?.idempotencyKey ?? call.idempotencyKey;
     response = await fetchImpl(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Idempotency-Key": call.idempotencyKey },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey, ...(await proofHeaders(path, text, signed)) },
+      body: text,
       credentials: "same-origin",
       ...(call.signal === undefined ? {} : { signal: call.signal })
     });
@@ -55,11 +80,33 @@ async function post<T>(fetchImpl: FetchLike, path: string, body: unknown, call: 
   return data === null ? { ok: false, failure: { kind: "MALFORMED_RESPONSE" } } : { ok: true, data };
 }
 
-export function createF01Client(fetchImpl: FetchLike): F01Client {
+/**
+ * With a keyring, every F01 mutation carries a P-256 PoP: CREATE uses the reserved `appf2-create-v1.<thumbprint>` key
+ * of its logical-operation key, answers / compile are signed by the key bound to that intent at CREATE.
+ */
+export function createF01Client(fetchImpl: FetchLike, keyring?: PopKeyring): F01Client {
   const scoped = (intentId: string, action: "answers" | "compile"): string => `${INTENTS_PATH}/${encodeURIComponent(intentId)}/${action}`;
+  const intentSigner = (intentId: string, call: F01Call): Signed | null => {
+    const key = keyring?.keyForIntent(intentId);
+    return key === undefined ? null : { key, idempotencyKey: call.idempotencyKey };
+  };
   return {
-    createIntent: (body, call) => post(fetchImpl, INTENTS_PATH, body, call, readDecision),
-    submitAnswers: (intentId, body, call) => post(fetchImpl, scoped(intentId, "answers"), body, call, readDecision),
-    compile: (intentId, body, call) => post(fetchImpl, scoped(intentId, "compile"), body, call, readCompileOutcome)
+    createIntent: async (body, call) => {
+      if (keyring === undefined) return post(fetchImpl, { path: INTENTS_PATH, body, call }, readDecision);
+      let key: PopKey;
+      try {
+        key = await keyring.keyForCreate(call.idempotencyKey);
+      } catch {
+        return { ok: false, failure: { kind: "IDENTITY_UNAVAILABLE" } };
+      }
+      const signed = { key, idempotencyKey: reservedCreateIdempotencyKey(key.thumbprint) };
+      const result = await post(fetchImpl, { path: INTENTS_PATH, body, call, signed }, readDecision);
+      if (result.ok) keyring.bindIntent(call.idempotencyKey, result.data.intentId, key);
+      return result;
+    },
+    submitAnswers: (intentId, body, call) =>
+      post(fetchImpl, { path: scoped(intentId, "answers"), body, call, signed: intentSigner(intentId, call) }, readDecision),
+    compile: (intentId, body, call) =>
+      post(fetchImpl, { path: scoped(intentId, "compile"), body, call, signed: intentSigner(intentId, call) }, readCompileOutcome)
   };
 }

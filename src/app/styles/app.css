@@ -1170,6 +1170,563 @@ ol {
   border-color: var(--border-300);
 }
 
+/* S03 APP surface: minimal Shell chrome; the Generated App stays the primary content. */
+.s03 {
+  min-height: 100vh;
+  background: var(--surface-50);
+}
+
+.s03-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 68px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border-200);
+  background: var(--surface-0);
+}
+
+.s03-home {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.s03-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-200);
+}
+
+.s03-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.s03-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.s03-overflow {
+  position: relative;
+}
+
+.s03-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 1px solid transparent;
+  border-radius: var(--radius-12);
+  background: transparent;
+  color: var(--ink-900);
+  cursor: pointer;
+}
+
+.s03-icon-button:hover:not(:disabled) {
+  background: var(--teal-50);
+}
+
+.s03-overflow-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+  background: var(--surface-0);
+  box-shadow: var(--elevation-2);
+}
+
+.s03-menu-item {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--ink-900);
+  text-align: left;
+  cursor: pointer;
+}
+
+.s03-menu-item:hover {
+  background: var(--teal-50);
+}
+
+.s03-inspection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 32px;
+  border-bottom: 1px solid var(--border-200);
+  background: var(--teal-50);
+  color: var(--ink-900);
+}
+
+.s03-inspection-label {
+  font-weight: 600;
+}
+
+.s03-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* Focus moves here on arrival for assistive technology; every control inside keeps its own focus ring. */
+.s03-main:focus,
+.s03-main:focus-visible {
+  outline: none;
+}
+
+.s03-processing:empty {
+  display: none;
+}
+
+.s03-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-16);
+  background: var(--surface-0);
+}
+
+.s03-result-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.s03-result-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.s03-result-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.s03-result-item dt {
+  color: var(--text-600);
+}
+
+.s03-result-item dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.s03-result-action {
+  align-self: flex-start;
+}
+
+.s03-bottom-nav {
+  display: none;
+}
+
+/* Room below the last App content so the fixed notice never covers it. */
+.s03-with-notice {
+  padding-bottom: 112px;
+}
+
+.s03-notice-region {
+  position: fixed;
+  inset: auto 0 24px;
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.s03-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 560px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+  background: var(--surface-0);
+  box-shadow: var(--elevation-2);
+  color: var(--ink-900);
+  pointer-events: auto;
+}
+
+.s03-notice-text {
+  flex: 1;
+}
+
+.s03-notice-dismiss {
+  flex: none;
+  min-height: var(--touch-target);
+}
+
+.s03-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(16 33 36 / 40%);
+}
+
+.s03-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: var(--radius-20) var(--radius-20) 0 0;
+  background: var(--surface-0);
+  box-shadow: var(--elevation-2);
+}
+
+.s03-sheet-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.s03-sheet-option {
+  min-height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+  background: var(--surface-0);
+  color: var(--ink-900);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.s03-sheet-option:hover {
+  border-color: var(--teal-500);
+  background: var(--teal-50);
+}
+
+/* S05A / S05B Change Composer: a focused workspace without the S03 bottom navigation. */
+.s05 {
+  min-height: 100vh;
+  background: var(--surface-0);
+}
+
+.s05-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 68px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border-200);
+}
+
+.s05-app-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.s05-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+
+.s05-title {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+}
+
+.s05-title:focus {
+  outline: none;
+}
+
+.s05-detail,
+.s05-original-note {
+  color: var(--text-600);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.s05-input {
+  display: block;
+  width: 100%;
+  min-height: 160px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-300);
+  border-radius: var(--radius-12);
+  resize: vertical;
+  background: var(--surface-0);
+  color: var(--ink-900);
+  font: inherit;
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.s05-input:focus-visible {
+  border-color: var(--teal-600);
+  outline: 2px solid var(--teal-600);
+  outline-offset: 0;
+}
+
+.s05-original {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.s05-continue {
+  align-self: flex-end;
+}
+
+.s05-notice-region:empty {
+  display: none;
+}
+
+.s05-notice {
+  padding: 12px 16px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+  background: var(--surface-50);
+  color: var(--ink-900);
+}
+
+/* S03 Generated App Runtime Frame (trusted F04 renderers). */
+.runtime-frame {
+  padding: 24px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-16);
+  background: var(--surface-0);
+  box-shadow: var(--elevation-1);
+}
+
+.rt-node {
+  display: contents;
+}
+
+.rt-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rt-dir-ROW {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.rt-gap-NONE {
+  gap: 0;
+}
+
+.rt-gap-XS {
+  gap: 4px;
+}
+
+.rt-gap-SM {
+  gap: 8px;
+}
+
+.rt-gap-LG {
+  gap: 24px;
+}
+
+.rt-gap-XL {
+  gap: 32px;
+}
+
+.rt-align-START {
+  align-items: flex-start;
+}
+
+.rt-align-CENTER {
+  align-items: center;
+}
+
+.rt-align-END {
+  align-items: flex-end;
+}
+
+.rt-text-HEADING {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.rt-text-CAPTION,
+.rt-text-LABEL {
+  color: var(--text-600);
+  font-size: 14px;
+}
+
+.rt-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+}
+
+.rt-card-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.rt-card-description {
+  color: var(--text-600);
+}
+
+.rt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.rt-button {
+  min-height: var(--touch-target);
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-12);
+  background: var(--teal-600);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rt-button:hover:not(:disabled) {
+  background: var(--teal-500);
+}
+
+.rt-button:disabled {
+  background: var(--surface-50);
+  color: var(--text-600);
+  cursor: not-allowed;
+}
+
+.rt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rt-field-label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rt-input {
+  min-height: var(--touch-target);
+  padding: 0 12px;
+  border: 1px solid var(--border-300);
+  border-radius: var(--radius-8);
+  background: var(--surface-0);
+  color: var(--ink-900);
+  font-size: 16px;
+}
+
+.rt-toggle {
+  width: 44px;
+  height: 24px;
+  accent-color: var(--teal-600);
+}
+
+.rt-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rt-stat-label {
+  color: var(--text-600);
+  font-size: 14px;
+}
+
+.rt-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.rt-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rt-table th,
+.rt-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-200);
+  text-align: left;
+}
+
+.rt-notice {
+  padding: 12px 16px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-12);
+  background: var(--teal-50);
+}
+
+.rt-notice-ERROR,
+.rt-notice-WARNING {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-700);
+}
+
+.rt-notice-title {
+  font-weight: 700;
+}
+
+.rt-output,
+.rt-timer {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rt-fallback {
+  padding: 12px 16px;
+  border: 1px dashed var(--border-300);
+  border-radius: var(--radius-12);
+  color: var(--text-600);
+}
+
 /* Tablet */
 @media (max-width: 1023px) {
   .capsule-grid {
@@ -1318,6 +1875,98 @@ ol {
 
   .node-body {
     padding-left: 8px;
+  }
+
+  .s03 {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .s03-header {
+    gap: 12px;
+    height: 60px;
+    padding: 0 16px;
+  }
+
+  .s03-home .brand-name,
+  .s03-desktop-only {
+    display: none;
+  }
+
+  /* The short nav label alone is not enough here: the strip keeps the full return wording and may wrap to two lines. */
+  .s03-inspection {
+    flex-wrap: wrap;
+    gap: 0 12px;
+    padding: 4px 16px;
+  }
+
+  .s03-main {
+    padding: 16px 12px 32px;
+  }
+
+  .runtime-frame {
+    padding: 16px;
+  }
+
+  .s03-with-notice {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 112px);
+  }
+
+  .s03-notice-region {
+    bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 12px);
+    padding: 0 12px;
+  }
+
+  .s03-bottom-nav {
+    display: block;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--border-200);
+    background: var(--surface-0);
+  }
+
+  .s03-bottom-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: var(--bottom-nav-height);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .s03-nav-item {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--text-600);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .s03-nav-item.is-active {
+    color: var(--teal-600);
+  }
+
+  .s05-header {
+    height: 60px;
+    padding: 0 16px;
+  }
+
+  .s05-main {
+    gap: 20px;
+    padding: 24px 16px calc(32px + env(safe-area-inset-bottom));
+  }
+
+  .s05-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .s05-continue {
+    align-self: stretch;
   }
 }
 

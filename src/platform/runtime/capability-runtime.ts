@@ -110,6 +110,15 @@ export function resolveProps(execution: NodeExecution, env: EvaluationEnv, scope
   return props;
 }
 
+/** F03 §25 step 3: committed binding values for presentation; a STATE binding is still written only through declared events. */
+export function resolveBindings(execution: NodeExecution, env: EvaluationEnv, scope: LexicalScope): RuntimeRecord {
+  const bindings: Record<string, RuntimeValue> = Object.create(null) as Record<string, RuntimeValue>;
+  for (const [key, source] of Object.entries(execution.node.bindings)) {
+    bindings[key] = evaluateTyped(source, { ...env, scope });
+  }
+  return bindings;
+}
+
 function capabilityFailure(execution: NodeExecution, message: string): never {
   return runtimeFail("F03-ERR-011", message, execution.node.capability.id);
 }

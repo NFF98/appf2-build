@@ -3,7 +3,8 @@ import { describe, expect, test } from "vitest";
 import {
   canonicalBlueprintBytes,
   canonicalizeJson,
-  CanonicalJsonError
+  CanonicalJsonError,
+  compareUnicodeCodePoints
 } from "../../src/platform/blueprint/canonical-json.js";
 
 describe("Blueprint canonical JSON", () => {
@@ -69,5 +70,30 @@ describe("Blueprint canonical JSON", () => {
       expect.objectContaining({ code: "ACCESSOR_PROPERTY" })
     );
     expect(getterExecuted).toBe(false);
+  });
+
+  test("orders object keys by Unicode code point, identically to the string-iterator reference", () => {
+    const reference = (left: string, right: string): number => {
+      const a = Array.from(left, (character) => character.codePointAt(0)!);
+      const b = Array.from(right, (character) => character.codePointAt(0)!);
+      for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+        if (a[index] !== b[index]) return a[index]! - b[index]!;
+      }
+      return a.length - b.length;
+    };
+    const alphabet = ["a", "b", "z", "\u00e9", "\uffff", "\u{10000}", "\u{1f600}", "\ud800", "\udc00", "\ud83d", "\ude00", ""];
+    let seed = 0x5eed;
+    const next = (bound: number) => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed % bound;
+    };
+    const word = () => Array.from({ length: next(5) }, () => alphabet[next(alphabet.length)]).join("");
+    for (let round = 0; round < 5000; round += 1) {
+      const left = word();
+      const right = word();
+      expect(Math.sign(compareUnicodeCodePoints(left, right)), JSON.stringify([left, right])).toBe(Math.sign(reference(left, right)));
+    }
+
+    expect(canonicalizeJson({ "\u{10000}": 2, "\uffff": 1, "a\ud800": 3, a: 0 })).toBe('{"a":0,"a\\ud800":3,"\uffff":1,"\u{10000}":2}');
   });
 });
