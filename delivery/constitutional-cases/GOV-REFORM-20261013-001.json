@@ -1,0 +1,104 @@
+{
+  "case_id": "GOV-REFORM-20261013-001",
+  "base_sha": "ec4443d40db8c72e43403adb9f3d9d02e72fbc18",
+  "constitution_version": "1.0",
+  "title": "治理改革 V2：一個 Task 一個 PR、精簡 Activation／Rebind／Closure、相關測試快速迴圈、Final Ready 完整 CI、通用 Human 特批通道",
+  "change_class": "L3_CONSTITUTIONAL",
+  "exact_changed_paths": [
+    ".cursor/rules/40-write-scope.mdc",
+    ".github/pull_request_template.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/governance-gate.yml",
+    "AGENTS.md",
+    "delivery/EXECUTION-HANDOFF-PROTOCOL.md",
+    "delivery/GOV-REFORM-20261013-PLAN.md",
+    "delivery/OPERATING-MODEL.md",
+    "delivery/audits/GOV-REFORM-20261013-METRICS-BASELINE.json",
+    "harness/GATE-MATRIX.md",
+    "harness/attack/run-dry-run.mjs",
+    "harness/policy/APPF2-CONSTITUTION.md",
+    "harness/policy/governance-reform.json",
+    "harness/scripts/evidence-ledger.mjs",
+    "harness/scripts/governance-gate.mjs",
+    "harness/scripts/governance-metrics.mjs",
+    "harness/scripts/governance-reform-selftest.mjs",
+    "harness/scripts/gpt-preflight.mjs",
+    "harness/scripts/human-exception.mjs",
+    "harness/scripts/select-impacted-tests.mjs",
+    "harness/scripts/task-pr-lifecycle.mjs",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-evidence.mjs"
+  ],
+  "candidate_digest_sha256": "2ab4b316d98a66c245eeea8718ef9927993e4f071d2c633eb1be8eb24d208ec9",
+  "why5": [
+    {
+      "question": "為什麼要改革？",
+      "answer": "自 2026-09-01 起，每個 Task 平均產生 17.89 個 PR（T006 達 37 個），Activation／Rebind／核准反覆發生，完整 CI 在每次 push 都跑，交付速度與 Human 注意力被程序消耗。",
+      "evidence_ref": "delivery/audits/GOV-REFORM-20261013-METRICS-BASELINE.json"
+    },
+    {
+      "question": "為什麼不能直接在 T008 REVIEW 期間修改治理規則？",
+      "answer": "validate-change-scope.mjs 在 ACTIVE／REVIEW 期間一律阻擋治理路徑，既有例外只能寫死在程式中且綁定單一 SHA，每次治理修正都需要再改 Gate 本身。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389"
+    },
+    {
+      "question": "為什麼不刪除或放寬 Scope Gate？",
+      "answer": "Scope Gate 是防止 AI 越權寫入的主要機器邊界；刪除或全面放行會同時開放 src、build-spec、release 路徑。改為由 BASE policy 定義的固定通道，並綁定精確 bytes、base SHA、期限與 Human 決定。",
+      "evidence_ref": "harness/policy/APPF2-CONSTITUTION.md#7-通用-human-特批通道gov-reform-20261013"
+    },
+    {
+      "question": "為什麼 Draft PR 的 required ci／CodeQL 要明確失敗而不是 skip？",
+      "answer": "GitHub 把 job 層級 skipped 的 required check 視為成功，若 Draft 時 skip，Ready 後到新 run 排入前會出現可合併窗口；明確 NOT_READY 失敗則 Ruleset 23969502 的四個 context 名稱與保護不變。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/390"
+    },
+    {
+      "question": "為什麼這些改革不會造成假綠燈或產品語意漂移？",
+      "answer": "所有特批必須宣告 never_converts_fail_or_untested_to_pass；Evidence PASS、Product CI、Security、CodeQL、Attack、Baseline、Activation、Human Merge 不可 waive；fast-loop／NOT_RUN／SKIPPED／stale HEAD 一律 NOT_PASS；未修改任何 build-spec、Task 狀態或 Phase 1 驗收語意。127 個 synthetic 正反案例與 attack dry-run 149/149 驗證。",
+      "evidence_ref": "harness/scripts/governance-reform-selftest.mjs"
+    }
+  ],
+  "alternatives": [
+    "維持現狀：每次治理修正都需另寫一次性例外，PR 數持續膨脹。",
+    "暫時把 Sprint 設為 HOLD 再修改治理：會改動 T008 REVIEW／T006 BLOCKED 狀態，違反本次指示。",
+    "刪除 Scope Gate 或對 #390 永久例外：被 Human 明確禁止。"
+  ],
+  "no_change": "若不採用：T008 REVIEW 期間任何治理修正都會被 Change Scope Gate 擋下；每個 Task 的多 PR、重複核准與每次 push 跑完整 CI 的成本持續。",
+  "rollback": "以 Human 核准的 revert PR 還原本 PR 的精確 25 個路徑；本 docket 為 append-only 記錄不刪除。Ruleset 未變更，無需設定還原。",
+  "negative_tests": [
+    "harness/scripts/governance-reform-selftest.mjs（127 案例，含缺核准、佔位符、偽造 digest、過期、replay、跨通道、不可 waive Gate、自我放寬 policy）",
+    "harness/attack/run-dry-run.mjs（GOV-REFORM 段：14 個 git E2E 案例，負向案例斷言精確拒絕原因）"
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Human 2026-10-13 批准治理改革 V2 全部 16 項，需在 SP-P1-003 T008 REVIEW 期間修改治理規則與 workflows。",
+    "risk": "CI 只能驗證位元組、範圍、期限與通道規則，無法證明核准者是人；本 PR 透過 HEAD bootstrap policy 建立通道（BASE 尚無 policy），因此 Human 必須審定整份精確差異。",
+    "owner": "Human（NFF98）",
+    "follow_up": "Merge 後以 governance-metrics.mjs 每個 Sprint 對比基準；Phase 4 恢復 Ed25519 簽章後，通道核准改為密碼學驗證。",
+    "residual_gaps": [
+      "CI 無法證明 human_approval 來自真人，需 Human 親自查核來源。",
+      "Draft → Ready for review 按鈕無法機器限制只能由 Human 點擊。",
+      "Draft PR 上 required ci／CodeQL 會顯示紅色 NOT_READY（設計如此，非產品失敗）。",
+      "T008 結案順序延後（CLOSURE_DEFERRAL）尚未申請，需另一份 Human 精確核准 docket。"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": ["CHANGE_SCOPE"],
+    "expires_at_unix": null,
+    "expires_at_rule": "由 Human 核准時設定：approved_at_unix 之後、不超過 policy max_ttl_seconds（1209600 秒）。"
+  },
+  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_DECISION",
+  "human_approval": {
+    "case_id": "GOV-REFORM-20261013-001",
+    "candidate_digest_sha256": "2ab4b316d98a66c245eeea8718ef9927993e4f071d2c633eb1be8eb24d208ec9",
+    "source_kind": null,
+    "decision": null,
+    "scope": null,
+    "human_message_ref": null,
+    "approver": null,
+    "approved_at_unix": null
+  }
+}
