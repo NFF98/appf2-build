@@ -3,7 +3,7 @@
   "active_sprint": "SP-P1-003",
   "active_build_spec": "BS-P1-025",
   "active_task": "T006",
-  "status": "ACTIVE",
+  "status": "BLOCKED",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human direction 2026-10-12: prioritize T006 CLOSE; T008 execution paused (BLOCKED), four T008 revalidations stay IN_PROGRESS and unverified; no new Task, no closed-history edit, no deployment."
+  "reason": "T006 temporary bounded product-proof pause before Human-approved BS-P1-026 Build Freeze/Activation; no T008 execution, no T006 PASS/VERIFIED; resume only on separately approved rebaseline and genuine evidence."
 }
