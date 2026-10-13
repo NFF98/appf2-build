@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { canPreserveCompletedBaseline } from "../scripts/baseline-lineage.mjs";
 
 const source=process.cwd();
@@ -766,6 +767,221 @@ write("delivery/CURRENT-SPRINT.json",{
 write("harness/unauthorized-during-activation.txt","must remain blocked\n");
 const maliciousActivation=commit("attack: activation edits unrelated governance");
 expectFail("Sprint Activation cannot smuggle unrelated governance edits","harness/scripts/validate-change-scope.mjs",{base:activationBase,head:maliciousActivation});
+
+// GOV-REFORM-20261013 generic Human exception lane over real git diffs during an ACTIVE Sprint.
+// Approval metadata below is synthetic: it exercises machine checks only and is NOT Human approval.
+const exceptionDigestOf=paths=>{
+  const h=crypto.createHash("sha256");
+  for(const p of [...paths].sort()){h.update(p+"\0");h.update(fs.readFileSync(path.join(repo,p)));h.update("\0");}
+  return h.digest("hex");
+};
+function writeExceptionDocket(id,{base,paths,lane="GOVERNANCE_REFORM",scope={},mutate=x=>x}){
+  const now=Math.floor(Date.now()/1000),digest=exceptionDigestOf(paths);
+  write("delivery/constitutional-cases/"+id+".json",mutate({
+    case_id:id,base_sha:base,constitution_version:"1.0",
+    why5:[1,2,3,4,5].map(i=>({question:"dry-run why "+i,evidence_ref:"DRYRUN-EVIDENCE-"+i,answer:"dry-run answer "+i})),
+    exact_changed_paths:[...paths].sort(),candidate_digest_sha256:digest,
+    scope_exception:{schema:"APPF2-HUMAN-EXCEPTION-1",lane,reason:"dry-run",risk:"dry-run",owner:"Human",
+      follow_up:"none",residual_gaps:["dry-run only"],never_converts_fail_or_untested_to_pass:true,
+      affected_sprint:"SP-P9-001",affected_tasks:[],covered_gates:["CHANGE_SCOPE"],expires_at_unix:now+3600,...scope},
+    human_approval:{case_id:id,source_kind:"DIRECT_HUMAN_MESSAGE",decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",
+      candidate_digest_sha256:digest,human_message_ref:"DRYRUN-HUMAN-DECISION-REF",approver:"NFF98",approved_at_unix:now-60}
+  }));
+}
+const scopeAndConstitution=["harness/scripts/validate-change-scope.mjs","harness/scripts/governance-gate.mjs"];
+const reformNote="harness/reports/DRYRUN-GOV-REFORM-NOTE.md";
+// The reason must come from the exception validator; a generic ACTIVE-Sprint governance
+// block alone would hide a broken exception check.
+function exceptionAttack(name,{id="GOV-DRYRUN-EXCEPTION-001",extra={},mutate,afterDocket,reason}){
+  cleanTo(fixtureBase);
+  write(reformNote,"# dry-run governance reform note\n");
+  for(const [p,v] of Object.entries(extra)) write(p,v);
+  writeExceptionDocket(id,{base:fixtureBase,paths:[reformNote,...Object.keys(extra)],mutate});
+  afterDocket?.();
+  const head=commit("attack: "+name);
+  const r=run("node",["harness/scripts/validate-change-scope.mjs"],{env:{BASE_SHA:fixtureBase,HEAD_SHA:head}});
+  const out=r.stdout+r.stderr;
+  const ok=r.status!==0 && out.includes("Human exception lane rejected") && out.includes(reason);
+  results.push({name,expected:"FAIL: "+reason,actual:ok?"FAIL: "+reason:"OTHER",ok,detail:out.trim().split("\n").slice(0,4).join(" | ")});
+  if(!ok) throw new Error("Exception attack did not fail for the expected reason: "+name+"\n"+out);
+}
+
+cleanTo(fixtureBase);
+write(reformNote,"# dry-run governance reform note\n");
+writeExceptionDocket("GOV-DRYRUN-EXCEPTION-001",{base:fixtureBase,paths:[reformNote]});
+const approvedException=commit("positive: exact Human exception lane during ACTIVE sprint");
+for(const script of scopeAndConstitution) expectPass("Exact GOVERNANCE_REFORM exception passes "+path.basename(script),"node",[script],{base:fixtureBase,head:approvedException});
+exceptionAttack("Exception without Human approval stays blocked",{mutate:d=>{delete d.human_approval;return d;},reason:"approval source_kind not accepted"});
+exceptionAttack("Exception with placeholder Human reference stays blocked",{mutate:d=>{d.human_approval.human_message_ref="PENDING_HUMAN";return d;},reason:"Human decision reference missing or placeholder"});
+exceptionAttack("Exception bytes changed after approval stay blocked",{afterDocket:()=>write(reformNote,"# drifted after approval\n"),reason:"PR bytes differ from approved candidate digest"});
+exceptionAttack("Exception cannot smuggle Product src",{extra:{"src/demo/smuggled.ts":"export const smuggled=true;\n"},reason:"path forbidden in lane GOVERNANCE_REFORM: src/demo/smuggled.ts"});
+exceptionAttack("Exception cannot touch build-spec CURRENT",{extra:{"build-spec/CURRENT.json":JSON.stringify({schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"SMUGGLED"},null,2)+"\n"},reason:"build-spec/CURRENT.json must stay unchanged"});
+exceptionAttack("Expired exception stays blocked",{mutate:d=>{d.human_approval.approved_at_unix-=7200;d.scope_exception.expires_at_unix-=7200;return d;},reason:"exception expired"});
+exceptionAttack("Exception bound to another base stays blocked",{mutate:d=>{d.base_sha="f".repeat(40);return d;},reason:"stale or mismatched base SHA"});
+exceptionAttack("Exception cannot waive a non-waivable gate",{mutate:d=>{d.scope_exception.covered_gates=["CHANGE_SCOPE","EVIDENCE_PASS"];return d;},reason:"non-waivable gate cannot be covered: EVIDENCE_PASS"});
+const widened=JSON.parse(fs.readFileSync(path.join(repo,"harness/policy/governance-reform.json"),"utf8"));
+widened.exception.lanes.GOVERNANCE_REFORM.allowed_paths.push("src/");
+widened.exception.lanes.GOVERNANCE_REFORM.forbidden_paths=widened.exception.lanes.GOVERNANCE_REFORM.forbidden_paths.filter(p=>p!=="src/");
+exceptionAttack("PR cannot widen its own exception lane (BASE policy governs)",{extra:{
+  "harness/policy/governance-reform.json":JSON.stringify(widened,null,2)+"\n","src/demo/smuggled.ts":"export const smuggled=true;\n"
+},reason:"(BASE policy): path forbidden in lane GOVERNANCE_REFORM: src/demo/smuggled.ts"});
+cleanTo(approvedException);
+const reused=JSON.parse(fs.readFileSync(path.join(repo,"delivery/constitutional-cases/GOV-DRYRUN-EXCEPTION-001.json"),"utf8"));
+reused.exact_changed_paths=["harness/reports/DRYRUN-SECOND.md"];
+write("harness/reports/DRYRUN-SECOND.md","# second change\n");
+write("delivery/constitutional-cases/GOV-DRYRUN-EXCEPTION-001.json",reused);
+const editedDocket=commit("attack: reuse an already-merged exception docket");
+const reuseRun=run("node",["harness/scripts/validate-change-scope.mjs"],{env:{BASE_SHA:approvedException,HEAD_SHA:editedDocket}});
+const reuseOk=reuseRun.status!==0 && (reuseRun.stdout+reuseRun.stderr).includes("exception docket already exists at base and is append-only");
+results.push({name:"Merged exception docket is append-only (no reuse)",expected:"FAIL: append-only",actual:reuseOk?"FAIL: append-only":"OTHER",ok:reuseOk,detail:""});
+if(!reuseOk) throw new Error("Docket reuse not rejected for the expected reason\n"+reuseRun.stdout+reuseRun.stderr);
+
+// Closure simplification: one control transition may carry its own Evidence/Finding records.
+cleanTo(fixtureBase);
+const reviewTasks=read("delivery/sprints/SP-P9-001/tasks.json"); reviewTasks.tasks[0].status="REVIEW";
+write("delivery/sprints/SP-P9-001/tasks.json",reviewTasks);
+write("delivery/evidence/SP-P9-001/T001/EV-DRYRUN-CLOSE.json",{evidence_id:"EV-DRYRUN-CLOSE",note:"dry-run side effect"});
+const closeWithEvidence=commit("positive: control transition with its evidence record");
+expectPass("Control transition may carry Evidence side effects","node",["harness/scripts/validate-change-scope.mjs"],{base:fixtureBase,head:closeWithEvidence});
+cleanTo(fixtureBase);
+write("delivery/sprints/SP-P9-001/tasks.json",reviewTasks);
+write("delivery/evidence/SP-P9-001/T001/EV-DRYRUN-CLOSE.json",{evidence_id:"EV-DRYRUN-CLOSE",note:"dry-run side effect"});
+write("src/unauthorized/smuggled.ts","export const smuggled=true;\n");
+const closeWithCode=commit("attack: control transition smuggles code");
+expectFail("Control transition cannot carry out-of-scope code","harness/scripts/validate-change-scope.mjs",{base:fixtureBase,head:closeWithCode});
+cleanTo(fixtureBase);
+
+// GOV-REFORM-20261013 BCE R2: Human-approved mid-Sprint SSOT/Build Spec change in two governed stages.
+// Stage 1 merges a NEW immutable baseline (old one untouched); stage 2 activates it while the Sprint stays ACTIVE.
+const stagedSince=base=>{
+  must(git("add",".").status===0,"git add failed");
+  return git("diff","--cached","--name-only",base).stdout.trim().split("\n").filter(Boolean);
+};
+const midSprintDesignRef="NFF98/appf2-design@"+sourceB+" + BD-999 (dry-run)";
+const ssotScope={semantic_class:"MATERIAL_PRODUCT_SEMANTIC",design_change_ref:midSprintDesignRef,
+  impact_audit:["F99-AC-001/TEST-F99-001 carried; T001 rebinds in stage 2"],affected_tasks:["T001"]};
+const activationScope={activation:{from_baseline:"BS-P9-001",to_baseline:"BS-P9-002"},design_change_ref:midSprintDesignRef,
+  impact_audit:["T001 build_spec_id BS-P9-001 -> BS-P9-002; AC/Test mapping unchanged"],
+  covered_gates:["CHANGE_SCOPE","ACTIVATION_SPRINT_PAUSE_PRECONDITION"]};
+function writeMidSprintFreeze(){
+  write("delivery/findings/BF-999.json",{
+    schema_version:1,finding_id:"BF-999",classification:"DESIGN_DELTA_CANDIDATE",status:"RESOLVED",
+    build_spec_id:"BS-P9-001",sprint_id:"SP-P9-001",task_id:"T001",expected:"old",actual:"Human-approved mid-Sprint change",
+    evidence:["dry-run"],attempts:[],contract_affecting:true,delta_id:"BD-999"
+  });
+  write("delivery/deltas/BD-999.json",{
+    schema_version:1,delta_id:"BD-999",type:"DESIGN_DELTA",status:"APPROVED",source_finding_ids:["BF-999"],
+    affected_build_spec:"BS-P9-001",affected_tasks:["T001"],affected_contracts:["functions/demo.md"],affected_acceptance:["F99-AC-001"],
+    changes_contract_semantics:true,owner:"HUMAN_GOVERNANCE",user_decision_required:true,
+    user_decision:{status:"APPROVED",decision_ref:"DRYRUN-MIDSPRINT-DELTA"},replacement_build_spec_required:true,
+    upstream_working_commit:sourceB,replacement_build_spec:"BS-P9-002",verification:[]
+  });
+  makeBaseline("BS-P9-002",{sourceCommit:sourceB,supersedes:"BS-P9-001",deltas:["BD-999"],decisionRef:"DRYRUN-MIDSPRINT-FREEZE"});
+}
+const rebindJson=(rel,fn)=>{const j=read(rel);fn(j);write(rel,j);};
+function writeMidSprintActivation(){
+  makeActivation("BS-P9-002",{previous:"BS-P9-001",type:"REBASELINE",sourceCommit:sourceB,deltas:["BD-999"],decisionRef:"DRYRUN-MIDSPRINT-ACTIVATION"});
+  rebindJson("build-spec/CURRENT.json",j=>{j.active_baseline="BS-P9-002";});
+  rebindJson("delivery/CURRENT-SPRINT.json",j=>{j.active_build_spec="BS-P9-002";});
+  rebindJson("delivery/sprints/SP-P9-001/manifest.json",j=>{j.build_spec_id="BS-P9-002";});
+  rebindJson("delivery/sprints/SP-P9-001/tasks.json",j=>{j.tasks[0].build_spec_id="BS-P9-002";});
+  rebindJson("delivery/backlog/QUEUE.json",j=>{j.build_spec_id="BS-P9-002";j.items[0].build_spec_id="BS-P9-002";});
+}
+function laneAttack(name,{base,setup,lane,scope,mutate,id="GOV-DRYRUN-LANE-001",script="harness/scripts/validate-change-scope.mjs",reason}){
+  cleanTo(base);
+  setup();
+  writeExceptionDocket(id,{base,paths:stagedSince(base),lane,scope,mutate});
+  const head=commit("attack: "+name);
+  const r=run("node",[script],{env:{BASE_SHA:base,HEAD_SHA:head}});
+  const out=r.stdout+r.stderr;
+  const ok=r.status!==0 && out.includes(reason);
+  results.push({name,expected:"FAIL: "+reason,actual:ok?"FAIL: "+reason:"OTHER",ok,detail:out.trim().split("\n").slice(0,4).join(" | ")});
+  if(!ok) throw new Error("Lane attack did not fail for the expected reason: "+name+"\n"+out);
+}
+
+cleanTo(fixtureBase);
+writeMidSprintFreeze();
+writeExceptionDocket("GOV-DRYRUN-SSOT-001",{base:fixtureBase,paths:stagedSince(fixtureBase),lane:"PROTECTED_SSOT_AMENDMENT",scope:ssotScope});
+const midSprintFrozen=commit("positive: stage 1 mid-Sprint immutable baseline under Human exception");
+expectHarnessPass("Mid-Sprint stage 1: new immutable baseline (PROTECTED_SSOT_AMENDMENT)",governanceHarness,{base:fixtureBase,head:midSprintFrozen});
+writeMidSprintActivation();
+writeExceptionDocket("GOV-DRYRUN-ACTIVATION-001",{base:midSprintFrozen,paths:stagedSince(midSprintFrozen),lane:"BUILD_SPEC_ACTIVATION",scope:activationScope});
+const midSprintActivated=commit("positive: stage 2 mid-Sprint activation under Human exception");
+expectHarnessPass("Mid-Sprint stage 2: activation while Sprint stays ACTIVE (BUILD_SPEC_ACTIVATION)",governanceHarness,{base:midSprintFrozen,head:midSprintActivated});
+must(read("delivery/CURRENT-SPRINT.json").status==="ACTIVE" && read("delivery/sprints/SP-P9-001/tasks.json").tasks[0].status==="IN_PROGRESS","mid-Sprint activation must not change Sprint/Task state");
+
+const ssotLane={base:fixtureBase,lane:"PROTECTED_SSOT_AMENDMENT",scope:ssotScope};
+laneAttack("Mid-Sprint stage 1 cannot rewrite the old locked baseline",{...ssotLane,
+  setup:()=>{writeMidSprintFreeze();write("build-spec/baselines/BS-P9-001/functions/demo.md","# rewritten\n");},
+  reason:"existing locked baseline is immutable: build-spec/baselines/BS-P9-001/functions/demo.md"});
+laneAttack("Mid-Sprint stage 1 cannot also move CURRENT",{...ssotLane,
+  setup:()=>{writeMidSprintFreeze();writeMidSprintActivation();},
+  reason:"path forbidden in lane PROTECTED_SSOT_AMENDMENT: build-spec/CURRENT.json"});
+laneAttack("Material change without a new baseline version is rejected",{...ssotLane,
+  setup:()=>{write("delivery/audits/DRYRUN-MATERIAL.md","# material change without baseline\n");},
+  reason:"material Product semantic change requires approved Design reference and a NEW immutable baseline version"});
+
+const activationLane={base:midSprintFrozen,lane:"BUILD_SPEC_ACTIVATION",scope:activationScope,id:"GOV-DRYRUN-ACTIVATION-002"};
+laneAttack("Activation cannot freeze and activate in one PR",{...activationLane,base:fixtureBase,
+  setup:()=>{writeMidSprintFreeze();writeMidSprintActivation();},
+  reason:"to_baseline must already be merged, LOCKED and supersede from_baseline"});
+laneAttack("Activation cannot switch the active Task",{...activationLane,
+  setup:()=>{writeMidSprintActivation();rebindJson("delivery/CURRENT-SPRINT.json",j=>{j.active_task="T002";});},
+  reason:"active Sprint/Task/status must stay unchanged during BUILD_SPEC_ACTIVATION"});
+laneAttack("Activation cannot change Task status",{...activationLane,
+  setup:()=>{writeMidSprintActivation();rebindJson("delivery/sprints/SP-P9-001/tasks.json",j=>{j.tasks[0].status="REVIEW";});},
+  reason:"Task T001 may change only build_spec_id/acceptance_links"});
+laneAttack("Activation cannot smuggle Product src",{...activationLane,
+  setup:()=>{writeMidSprintActivation();write("src/demo/smuggled.ts","export const smuggled=true;\n");},
+  reason:"path forbidden in lane BUILD_SPEC_ACTIVATION: src/demo/smuggled.ts"});
+laneAttack("Activation cannot edit the newly frozen baseline",{...activationLane,
+  setup:()=>{writeMidSprintActivation();write("build-spec/baselines/BS-P9-002/functions/demo.md","# edited after freeze\n");},
+  reason:"path forbidden in lane BUILD_SPEC_ACTIVATION: build-spec/baselines/BS-P9-002/functions/demo.md"});
+laneAttack("Activation Record lineage must match the declared transition",{...activationLane,
+  setup:()=>{writeMidSprintActivation();rebindJson("build-spec/activations/BS-P9-002.json",j=>{j.type="INITIAL_FREEZE";});},
+  reason:"Activation Record must be REBASELINE from_baseline -> to_baseline"});
+laneAttack("Expired activation exception is rejected",{...activationLane,setup:writeMidSprintActivation,
+  mutate:d=>{d.human_approval.approved_at_unix-=7200;d.scope_exception.expires_at_unix-=7200;return d;},reason:"exception expired"});
+laneAttack("Activation Gate keeps Sprint-pause rule unless the exception covers it",{...activationLane,setup:writeMidSprintActivation,
+  scope:{...activationScope,covered_gates:["CHANGE_SCOPE"]},script:"harness/scripts/validate-activation.mjs",
+  reason:"Rebaseline while a Sprint exists requires previous Sprint state BLOCKED"});
+laneAttack("Activation Gate independently rejects an unapproved exception",{...activationLane,setup:writeMidSprintActivation,
+  mutate:d=>{delete d.human_approval;return d;},script:"harness/scripts/validate-activation.mjs",
+  reason:"Rebaseline while a Sprint exists requires previous Sprint state BLOCKED"});
+cleanTo(fixtureBase);
+
+// Merged CLOSURE_DEFERRAL waivers are re-validated at every use (expiry, revocation, replay, scope).
+const { findPersistentProceduralWaivers }=await import(pathToFileURL(path.join(repo,"harness/scripts/human-exception.mjs")).href);
+const closureNote="delivery/audits/DRYRUN-CLOSURE-DEFERRAL.md";
+write(closureNote,"# dry-run closure deferral\n");
+writeExceptionDocket("GOV-DRYRUN-CLOSURE-001",{base:fixtureBase,paths:[closureNote],lane:"CLOSURE_DEFERRAL",scope:{
+  affected_sprint:"SP-P1-003",affected_tasks:["T008"],affected_build_spec:"BS-P1-025",covered_gates:["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"]}});
+const closureQuery={root:repo,gateId:"BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",taskId:"T008",sprintId:"SP-P1-003",buildSpecId:"BS-P1-025"};
+const closureExpiry=read("delivery/constitutional-cases/GOV-DRYRUN-CLOSURE-001.json").scope_exception.expires_at_unix;
+function waiverCase(name,{query={},prepare=()=>{},reason}){
+  prepare();
+  const r=findPersistentProceduralWaivers({...closureQuery,...query});
+  const errs=r.rejected.flatMap(x=>x.errors);
+  const ok=reason ? r.valid.length===0 && errs.some(e=>e.includes(reason)) : r.valid.length===1;
+  const expected=reason?"REJECT: "+reason:"VALID";
+  results.push({name,expected,actual:ok?expected:"OTHER",ok,detail:errs.join(" | ")});
+  if(!ok) throw new Error("Persistent waiver case mismatch: "+name+"\n"+JSON.stringify(r));
+}
+waiverCase("Merged CLOSURE_DEFERRAL valid within its window",{});
+waiverCase("Merged CLOSURE_DEFERRAL rejected after expiry",{query:{now:closureExpiry+1},reason:"exception expired"});
+waiverCase("Merged CLOSURE_DEFERRAL rejected for another Build Spec",{query:{buildSpecId:"BS-P1-026"},reason:"Build Spec BS-P1-026 out of scope"});
+waiverCase("Merged CLOSURE_DEFERRAL rejected for another Task",{query:{taskId:"T006"},reason:"Task T006 out of scope"});
+waiverCase("Merged CLOSURE_DEFERRAL rejected when digest is replayed",{
+  prepare:()=>{const d=read("delivery/constitutional-cases/GOV-DRYRUN-CLOSURE-001.json");d.case_id="GOV-DRYRUN-CLOSURE-002";d.human_approval.case_id=d.case_id;write("delivery/constitutional-cases/GOV-DRYRUN-CLOSURE-002.json",d);},
+  reason:"replay: digest bound by more than one docket"});
+fs.rmSync(path.join(repo,"delivery/constitutional-cases/GOV-DRYRUN-CLOSURE-002.json"));
+waiverCase("Merged CLOSURE_DEFERRAL rejected after Human revocation",{
+  prepare:()=>write("delivery/constitutional-cases/GOV-DRYRUN-REVOKE-001.json",{case_id:"GOV-DRYRUN-REVOKE-001",revokes_exception_case_ids:["GOV-DRYRUN-CLOSURE-001"]}),
+  reason:"revoked"});
+waiverCase("Forged CLOSURE_DEFERRAL (no Human approval) rejected",{
+  prepare:()=>{fs.rmSync(path.join(repo,"delivery/constitutional-cases/GOV-DRYRUN-REVOKE-001.json"));rebindJson("delivery/constitutional-cases/GOV-DRYRUN-CLOSURE-001.json",d=>{delete d.human_approval;});},
+  reason:"approval source_kind not accepted"});
+cleanTo(fixtureBase);
 
 const passed=results.filter(x=>x.ok).length;
 console.log("\nATTACK DRY-RUN RESULT: "+passed+"/"+results.length+" expected outcomes observed");

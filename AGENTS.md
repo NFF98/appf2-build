@@ -17,6 +17,13 @@
 - 跨層時需**完成每層自己的核准鏈**，不得以 REBIND 假裝修憲，不得用 L3 取代 Product Truth 審議；分類不清時 HARD STOP 交 Human。
 - 此為 Build Repo 執行路由；Design Repo 機器約束必須經獨立 Design governance PR 才能生效。
 
+## Lean Task Lifecycle（GOV-REFORM-20261013）
+
+- 一個 Task 一個 Draft PR；同一 Task lease 內的 Bugfix／測試／Evidence 持續 commit，不重複要求 Activation 或核准。
+- 每次修正先跑相關測試（`harness/scripts/select-impacted-tests.mjs`）；Draft 結果不是 full-gate PASS，完整 CI 只在 Human Final Ready 後的精確 HEAD 執行。
+- Sprint 中的治理／SSOT／Closure 延後／Hotfix 例外只能走憲法 §7 的通用 Human 特批通道（精確 docket），不得自行擴張 scope 或宣稱已核准。
+- 細則：[`delivery/EXECUTION-HANDOFF-PROTOCOL.md` §18](delivery/EXECUTION-HANDOFF-PROTOCOL.md#18-lean-task-lifecyclegov-reform-20261013)。
+
 ## Absolute Rules
 
 - Product truth 不在本 Repo 產生；來源是已批准的 locked Build Spec。

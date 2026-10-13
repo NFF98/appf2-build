@@ -12,6 +12,13 @@
 | Backlog ↔ Build Spec binding | FULL AUTO | Backlog Gate |
 | Sprint ↔ Build Spec binding | FULL AUTO | Sprint Gate |
 | One active Task + write-path scope | FULL AUTO | Scope Gate |
+| Generic Human exception lane (exact bytes/base/expiry/replay/lane scope) | FULL AUTO + HUMAN provenance check | Scope Gate + `human-exception.mjs` |
+| Human approver identity / provenance | HUMAN ONLY | Human manual check (CI cannot prove a person) |
+| One Task → one open PR | FULL AUTO | Governance Gate PR guard (`gpt-preflight.mjs`) |
+| Draft fast loop (impacted tests, NOT full PASS) | FULL AUTO, non-required | CI `fast-loop` job |
+| Full required checks on exact Final Ready HEAD | FULL AUTO after Human Ready | CI / CodeQL (Draft = NOT_READY failure) |
+| Change routing (Bugfix/Evidence/Closure/Activation/Governance/Hotfix) | FULL AUTO, informational | `task-pr-lifecycle.mjs classify` |
+| Final Ready / Merge approval | HUMAN ONLY | User |
 | Type correctness | FULL AUTO | TypeScript |
 | Static code quality | FULL AUTO | ESLint |
 | Unit / contract / runtime deterministic tests | FULL AUTO | Vitest |

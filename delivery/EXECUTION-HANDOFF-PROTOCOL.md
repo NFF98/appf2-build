@@ -769,3 +769,61 @@ broad approval
 
 The second pattern is prohibited when the first can accomplish the same governed result.
 
+## 18. Lean Task Lifecycle（GOV-REFORM-20261013）
+
+本節把 16 項治理改革落實為可機器檢查的流程。機器規則：`harness/policy/governance-reform.json`；授權邊界不變：Human 批准、ChatGPT 規劃／稽核、Cursor 實作。
+
+### 18.1 一個 Task 一個 PR（狀態機）
+
+`AUTHORIZED_TASK → DRAFT_DEVELOPMENT → LOCAL_AC_TESTS_PASS → GPT_BCE_PASS → HUMAN_FINAL_INTEGRATION_READY → EXACT_HEAD_FULL_GATES_PASS → HUMAN_MERGE_APPROVED → MERGED → EVIDENCE_AND_CLOSURE`（`harness/scripts/task-pr-lifecycle.mjs`）。
+
+- 同一 Task 的實作、Bugfix、測試修正、Review 回饋，全部留在**同一個 Draft PR、同一分支**持續 commit。
+- 任何新 commit 都會使 HEAD 綁定的狀態（Local PASS、BCE、Final Ready、Full Gate、Merge Approval）回到 `DRAFT_DEVELOPMENT`；Merge 後的 commit 不繼承任何授權。
+- `HUMAN_FINAL_INTEGRATION_READY`、`HUMAN_MERGE_APPROVED`、`MERGED`、`EVIDENCE_AND_CLOSURE` 只有 Human 能設定；GPT 只能給 BCE；CI 只能給 Full Gate 結果。
+
+### 18.2 禁止重複核准、Bugfix 持續執行
+
+- 同一有效 Task lease、同一 Sprint／Build／scope：Bugfix、測試、Evidence 直接繼續，**不得**再要求 Activation 或核准（`leaseDecision` = `CONTINUE_SAME_LEASE`）。
+- Task、Sprint、Build Spec 或 `allowed_write_paths` 任一改變 → 需要新的 Human 授權，不繼承。
+- Activation 只在執行權改變時需要（active Sprint／Task／Build、baseline、`implementation_enabled`、從非執行狀態恢復）。
+- Rebind 只在 baseline 或 AC／Test／Backlog mapping 改變時需要；程式修正永遠不需要 Rebind。
+
+### 18.3 測試分層：Draft 快速迴圈 vs Final Ready 完整 CI
+
+- Draft PR：`fast-loop` job 依 `select-impacted-tests.mjs` 只跑相關測試；無法判定或共用路徑一律退回全套。結果明列 `NOT_RUN`，**永遠不是 full-gate PASS**。
+- Draft PR 上的 required `ci` 與 `Analyze JavaScript / TypeScript` 會明確 FAIL 為 `NOT_READY`（不可 skip，因為 skipped 會被 GitHub 視為成功）。`governance` 與 `attack` 每次照跑。
+- Human 按下 Ready for review（Final Ready）後，四個 required checks 在精確 HEAD 上完整執行；`finalGateVerdict` 只接受 mode FULL、conclusion success、同一 HEAD。
+- 本機開發：每修一次 bug，先跑 `BASE_SHA=<base> node harness/scripts/select-impacted-tests.mjs --run`。
+
+### 18.4 Evidence 自動整理與 Closure 精簡
+
+- `node harness/scripts/evidence-ledger.mjs --sprint <SP> --task <T>` 自動列出缺少的 AC／Test PASS、required command、Reviewer、重複、過期（source SHA 不在 main 歷史）、未引用與懸空引用，並產生建議的 `completion_evidence`。它只整理、不判定 PASS。
+- 選填欄位 `proof_level`（STATIC／MOCK／API_IN_PROCESS／REAL_POSTGRES／REAL_BROWSER／EXTERNAL_RUNTIME）讓 Mock、API、真實 PostgreSQL、真實瀏覽器證明分開標示；不改變 Phase 1 驗收語意。
+- Closure 精簡：同一個控制轉換 PR 可以同時帶入該 Task 的 Evidence／Finding 記錄；Evidence Gate 仍獨立驗證每一筆。
+
+### 18.5 Human 通用特批與 Sprint 中修改 SSOT
+
+依憲法 §7 的五種通道（`GOVERNANCE_REFORM`、`PROTECTED_SSOT_AMENDMENT`、`BUILD_SPEC_ACTIVATION`、`CLOSURE_DEFERRAL`、`HOTFIX`）。特批只能 waive 程序 Gate，絕不把 FAIL／UNTESTED 變成 PASS，也不取代 Human Merge 核准。
+
+- Sprint 進行中變更 Product／Build Spec：先在 Design Repo 經 Human 批准，再依序開兩個 PR：(1) `PROTECTED_SSOT_AMENDMENT` 新增 immutable baseline、Delta、Finding 與影響分析；合併後 (2) `BUILD_SPEC_ACTIVATION` 新增 Activation 記錄、移動 `CURRENT.json` 並把 Sprint／Task／Backlog 的 `build_spec_id` 重新綁定。Sprint 與 Task 狀態保持不變，舊 baseline 永不改寫。
+- 已合併的 `CLOSURE_DEFERRAL` 每次 Gate 執行都重新驗證期限、範圍（含 Build Spec）、Human 核准欄位、撤銷與重放；過期或不符即失效。延長或替換須開新 docket，撤銷用另一份 docket 的 `revokes_exception_case_ids`。
+
+### 18.6 GPT 執行前檢查與 PR 新增限制
+
+- ChatGPT 在建立 PR、請求 Activation、核准或 Rebind 前，必須先跑 `node harness/scripts/gpt-preflight.mjs state --task Txxx --intent <INTENT> --open-prs <file>`，並在回覆中引用輸出。結果為 `REDUNDANT_*`、`REBIND_NOT_REQUIRED`、`REUSE_EXISTING_PR` 或 `STOP` 時不得提出該請求。
+- PR body 必須以 `Task: Txxx` 宣告 Task。同一 Task 已有 open PR 時，Governance Gate 會 FAIL，除非 body 有 `PR-Justification: <NONCOMBINABLE_AUTHORITY_BOUNDARY|CONTROL_TRANSITION_AFTER_MERGE|HOTFIX|SUPERSEDES_CLOSED_PR> <說明>`。
+
+### 18.7 禁止假綠燈
+
+- NOT_RUN、UNTESTED、SKIPPED、Draft／fast-loop 結果、過期 HEAD 的結果都不是 PASS。
+- 不得用 `.skip/.only/.todo`、`@ts-ignore`、blanket `eslint-disable`、mock 冒充真實 PostgreSQL／瀏覽器證明。
+- 任何特批都必須聲明 `never_converts_fail_or_untested_to_pass: true`。
+
+### 18.8 Governance／Hotfix 分流
+
+`task-pr-lifecycle.mjs classify` 把每個 diff 歸類為 BUGFIX／TEST（同 lease）、EVIDENCE、CLOSURE／STATE CONTROL、ACTIVATION、FREEZE／REBASELINE、GOVERNANCE、HOTFIX、OUT_OF_TASK_SCOPE 或 MIXED_FORBIDDEN，並在 Governance Gate 中輸出（僅供參考，合法性仍由各 Gate 判定）。治理與產品碼混在同一 PR 一律需要拆分或精確特批。
+
+### 18.9 改革成效統計
+
+`node harness/scripts/governance-metrics.mjs --runs <runs.json> --open-prs <prs.json> --out <file>` 產出：每個 Task 的 PR 數、Human 核准數與重複核准、完整 CI 執行次數與同 HEAD 重跑、返工 commit 比例、open PR 數。基準值：`delivery/audits/GOV-REFORM-20261013-METRICS-BASELINE.json`。
+

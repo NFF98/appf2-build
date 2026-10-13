@@ -5,6 +5,7 @@ alwaysApply: true
 
 - The active Task allowed_write_paths is a hard allowlist, not a suggestion.
 - Never edit governance-only paths during an ACTIVE or REVIEW Sprint: build-spec/, harness/, .cursor/, .github/, AGENTS.md, delivery/templates/.
+- Sole exception: an explicit Human instruction for a generic Human exception lane (Constitution §7). Its docket human_approval stays PENDING until the Human approves the exact digest; Cursor never fills, forges or claims that approval.
 - delivery/deltas/ is human-governed. Cursor may create/update Findings, but must not approve or author a DESIGN_DELTA decision.
 - When the active Sprint is BLOCKED, do not change src/ or tests/.
 - If required work falls outside allowed_write_paths, create a Finding instead of expanding the Task yourself.

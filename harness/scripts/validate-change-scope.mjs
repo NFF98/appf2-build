@@ -5,6 +5,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
 import { isExactPg001DependencyHoldUpdate, testPg001DependencyHoldPathGuard, PG001_DEPENDENCY_GATE_MARKER } from "./pg001-dependency-hold-path.mjs";
+import { resolveRepoException, HUMAN_EXCEPTION_SCOPE_MARKER } from "./human-exception.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -30,7 +31,9 @@ const getChanged=()=>{
 const changed=getChanged();
 const isImpl=p=>(policy.implementation_roots||[]).some(prefix=>p.startsWith(prefix)) && !holdExceptions.has(p);
 const isGov=p=>(policy.governance_only_paths||[]).some(prefix=>prefix.endsWith("/")?p.startsWith(prefix):p===prefix);
-const isSideEffect=p=>sideEffectPrefixes.some(prefix=>p.startsWith(prefix));
+// A verified CLOSURE_DEFERRAL docket is an append-only governance record, not Task scope.
+const exceptionRecordPaths=new Set();
+const isSideEffect=p=>sideEffectPrefixes.some(prefix=>p.startsWith(prefix)) || exceptionRecordPaths.has(p);
 const pathAllowed=(p,allowed)=>allowed.some(a=>a.endsWith("/")?p.startsWith(a):p===a);
 
 const baseSha=process.env.BASE_SHA;
@@ -172,6 +175,24 @@ checkRevalidationClosureGuard();
 
 const baseCurrentSprint=showBaseJson("delivery/CURRENT-SPRINT.json");
 const baseCurrentBuild=showBaseJson("build-spec/CURRENT.json");
+
+// GOV-REFORM-20261013 generic Human exception lane. Lane rules come from the BASE
+// policy (no self-widening); bytes, paths, base, expiry and replay are exact.
+// Evidence/Test/Product CI/Constitution/Activation gates still run independently.
+const humanException=resolveRepoException({
+  root,base:baseSha,changed,
+  state:{baseSprint:baseCurrentSprint,headSprint:cs,baseBuild:baseCurrentBuild,headBuild:currentBuild}
+});
+if(humanException.applies && !humanException.ok){
+  for(const e of humanException.errors) errors.push("Human exception lane rejected ("+humanException.policySource+" policy): "+e);
+}
+const humanExceptionScope=humanException.ok && humanException.coveredGates.includes("CHANGE_SCOPE");
+if(humanException.ok && humanException.lane==="CLOSURE_DEFERRAL") exceptionRecordPaths.add(humanException.docketPath);
+if(humanException.ok){
+  console.log("- "+HUMAN_EXCEPTION_SCOPE_MARKER+": "+humanException.lane+" "+humanException.caseId+
+    " covers "+humanException.coveredGates.join(",")+" ("+humanException.policySource+" policy); Human provenance must still be verified manually.");
+}
+
 const targetSprint=cs.active_sprint || baseCurrentSprint?.active_sprint;
 const controlAllowed=new Set([
   "build-spec/CURRENT.json",
@@ -180,7 +201,10 @@ const controlAllowed=new Set([
   ...(targetSprint?["delivery/sprints/"+targetSprint+"/manifest.json","delivery/sprints/"+targetSprint+"/tasks.json"]:[])
 ]);
 let safeControlTransition=false;
-if(changed.length && changed.every(p=>controlAllowed.has(p)) && baseSha && !/^0+$/.test(baseSha)){
+// Closure simplification: one control PR may also carry its Evidence/Finding side effects;
+// the Evidence Gate independently verifies every referenced record.
+const controlChanged=changed.filter(p=>!isSideEffect(p));
+if(controlChanged.length && controlChanged.every(p=>controlAllowed.has(p)) && baseSha && !/^0+$/.test(baseSha)){
   const oldBuild=showBaseJson("build-spec/CURRENT.json");
   const oldCurrent=showBaseJson("delivery/CURRENT-SPRINT.json");
   const oldBacklog=showBaseJson("delivery/backlog/QUEUE.json");
@@ -789,10 +813,10 @@ const t006R2MaintenanceRepair=(()=>{
 if(t006R2MaintenanceRepair) console.log("- Exact T006 R2 F00 fixture rebind + lint repair recognized; CLOSED Tasks / Product truth frozen.");
 
 if(cs.active_sprint===null){
-  if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate){
+  if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate && !humanExceptionScope){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
-}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate || approvedF06DeferL3Candidate || bs026ProtectedAmendment || approvedBs026FreezeOnly){
+}else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate || approvedF06DeferL3Candidate || bs026ProtectedAmendment || approvedBs026FreezeOnly || humanExceptionScope){
   // Structural/activation validators decide whether the governance transition itself is legal.
 }else if(cs.status==="BLOCKED"){
   for(const p of changed) if(!isSideEffect(p)) errors.push("Sprint BLOCKED: only Finding/Evidence side effects are allowed outside an approved rebaseline transition: "+p);

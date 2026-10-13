@@ -12,6 +12,9 @@ const statuses=new Set(["PASS","FAIL","INFO"]);
 const ciPolicy=read("ci/policy.json");
 const qualityPolicy=read("harness/policy/engineering-quality.json");
 const requiredReviewChecks=qualityPolicy.required_review_checks||[];
+// Optional proof label keeps Mock / API / real PostgreSQL / real browser proofs distinct;
+// it never changes which Acceptance a PASS satisfies (Phase 1 REAL policy is a separate Human decision).
+const proofLevels=new Set(read("harness/policy/governance-reform.json").evidence_proof_levels||[]);
 const seen=new Set(), evidence=new Map(), taskMap=new Map();
 const validateReviewEvidence=e=>{
   if(e.kind!=="REVIEW") return;
@@ -50,6 +53,7 @@ for(const file of files){
   if(seen.has(e.evidence_id)) errors.push("Duplicate evidence_id: "+e.evidence_id); seen.add(e.evidence_id);
   if(!kinds.has(e.kind)) errors.push(e.evidence_id+" invalid kind");
   if(!statuses.has(e.status)) errors.push(e.evidence_id+" invalid status");
+  if(Object.hasOwn(e,"proof_level") && !proofLevels.has(e.proof_level)) errors.push(e.evidence_id+" invalid proof_level: "+e.proof_level);
   for(const k of ["build_spec_id","sprint_id","task_id","locator","recorded_at","source_commit"]) if(!e[k]) errors.push(e.evidence_id+" missing "+k);
   if(!Array.isArray(e.acceptance_ids)) errors.push(e.evidence_id+" acceptance_ids must be array");
   if(!Array.isArray(e.test_ids)) errors.push(e.evidence_id+" test_ids must be array");

@@ -2,6 +2,7 @@ name: CI Gate
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
@@ -13,6 +14,13 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
+      # GOV-REFORM-20261013: full CI runs only after Human Final Ready. A Draft PR must
+      # FAIL (never skip) because a skipped required job is reported as success.
+      - name: Draft PR — full CI deferred (NOT_READY, never PASS)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
+        run: |
+          echo "::error::NOT_READY — Draft PR: full required CI is deferred to Human Final Ready (ready_for_review). See the non-required fast-loop job for impacted tests."
+          exit 1
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -52,3 +60,31 @@ jobs:
           else
             npm run product:ci
           fi
+
+  # Non-required Draft fast loop: impacted tests only. Its PASS is never a full-gate PASS.
+  fast-loop:
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Plan impacted tests
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node harness/scripts/select-impacted-tests.mjs
+      - name: Install Playwright browsers (browser-impacted diffs only)
+        if: ${{ steps.plan.outputs.needs_browsers == 'true' }}
+        run: npx --no -- playwright install --with-deps chromium firefox webkit
+      - name: Impacted tests (fast loop, NOT a full-gate PASS)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: node harness/scripts/select-impacted-tests.mjs --run

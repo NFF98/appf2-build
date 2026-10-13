@@ -164,6 +164,8 @@ IMPLEMENTATION_BUG / TEST_BUG
 
 同策略最多失敗兩次。
 
+同一 Task 的 Fast Loop 一律在同一個 Draft PR 內持續 commit，不重複要求 Activation／核准；每次修正先跑相關測試（`select-impacted-tests.mjs`），完整 CI 只在 Human Final Ready 後於精確 HEAD 執行。完整流程見 `delivery/EXECUTION-HANDOFF-PROTOCOL.md` §18。
+
 ## 7. Slow Loop
 
 ```text

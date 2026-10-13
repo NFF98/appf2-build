@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { inspectConstitutionalChange, testConstitutionFailClosed } from "./validate-constitutional-change.mjs";
+import { runGovernanceReformSelfTests } from "./governance-reform-selftest.mjs";
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -63,6 +64,10 @@ if(base && !/^0+$/.test(base)){
 }
 try{ const count=testConstitutionFailClosed(); note.push("Constitution negative-scope self tests: "+count+" PASS."); }
 catch(error){ fail.push(String(error)); }
+try{
+  const reform=runGovernanceReformSelfTests(root);
+  note.push("GOV-REFORM-20261013 positive/negative matrix: "+reform.total+" PASS (synthetic, NOT Human approval) "+JSON.stringify(reform.counts)+".");
+}catch(error){ fail.push(String(error)); }
 
 if(fail.length){console.error('GOVERNANCE GATE: FAIL'); fail.forEach(x=>console.error('- '+x)); process.exit(1);}
 console.log('GOVERNANCE GATE: PASS'); note.forEach(x=>console.log('- '+x));
