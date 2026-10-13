@@ -89,5 +89,20 @@ W5 為何現行正常授權流程不能在不放寬保護下解決（引用明�
 Human 可以否決、退回任何一關。GitHub 唯一 canonical source，不把 Chat、Issue、草稿 PR 當成已合併法律。
 
 - 制憲來源：Issue #344，制憲 Human 授權：本案對話中的 2026-10-10「批准，執行啊！」，只授權建立本候選案，**不表示已批准 merge**。
+
+## 7. 通用 Human 特批通道（GOV-REFORM-20261013）
+
+本節取代「每次治理例外都寫死一筆 SHA 綁定例外」的作法，但**不刪除、不放寬** Change Scope Gate。機器規則唯一來源：`harness/policy/governance-reform.json`；驗證器：`harness/scripts/human-exception.mjs`（由 `validate-change-scope.mjs` 呼叫）。
+
+- **通道（lane）固定四種**，各自有 allowlist／forbidden list，且只能 waive 該通道列明的程序 Gate：
+  - `GOVERNANCE_REFORM`（L3）：Sprint ACTIVE／REVIEW 期間修改治理規則；不得碰 `src/`、`tests/`、`build-spec/`、`package*.json`、Sprint 控制檔。
+  - `PROTECTED_SSOT_AMENDMENT`（L2）：Sprint 中特批修改 Backlog／Task 綁定／Delta／新 baseline；不得改既有 locked baseline、不得改 Task 狀態或 Evidence、不得新增或刪除 Task；Product 語意變更必須另附已批准 Design 參照並建立**新的** immutable baseline。
+  - `CLOSURE_DEFERRAL`（程序延後）：只可延後 policy 列明的程序順序 Gate（目前僅 `BACKLOG_T008_CLOSE_AFTER_T006_REVIEW`），不得改變任何 PASS／FAIL／UNTESTED。
+  - `HOTFIX`：限 `src/`、`tests/`、forward-only migration；必須保留全部四個 required checks，並附 incident 與 retrospective 期限。
+- **一律不可 waive**：Evidence PASS、Test Integrity、Engineering Quality、Product CI、Security Audit、CodeQL、Attack Dry-run、Baseline 不可變、Activation、本憲法 Gate、已結案 Task 不可變、Human Merge。`build-spec/CURRENT.json`、Activation 記錄、release／deploy 與機密檔永遠不在任何通道內。
+- **docket 必要條件**（`delivery/constitutional-cases/GOV-*.json`，append-only）：`scope_exception`（schema、lane、reason、risk、owner、follow_up、residual_gaps、`never_converts_fail_or_untested_to_pass: true`、affected_sprint、affected_tasks、covered_gates、expires_at_unix）＋精確 base SHA＋精確路徑＋位元組 digest＋`human_approval`（DIRECT_HUMAN_MESSAGE、APPROVE_EXACT_CANDIDATE、EXACT_PR_DIFF、非佔位符的 Human 訊息參照、已登錄 Human 帳號、核准時間）。
+- **防偽造**：通道規則讀取 **BASE** 版本的 policy，PR 不能放寬自己的通道；同一 digest 不得重用、已存在 docket 不得修改、過期即失效（TTL 上限依 policy）、每個 PR 只能有一份 docket。
+- **CI 不能證明核准者是人**：通道通過只代表「位元組、範圍、期限、通道規則一致」。Human 仍須親自查核核准來源，並**另一筆**核准精確 HEAD 的 Merge。AI、Issue 標籤或 PR 留言宣稱「已核准」一律無效。
+- 本通道本身屬 L3：修改 policy、驗證器或本節，仍須依本法完成 5 Why 與一次 Human 精確差異審定。
 - pg 第一案：Issue #345；截至本文件入庫候選時 R1…R5 **0 / 5**，NOT APPROVED。
 - 唯一 T006 執行通道：Issue #301；Cursor 原 lease 已使用，不得重用。

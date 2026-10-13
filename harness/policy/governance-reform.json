@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "reform_id": "GOV-REFORM-20261013",
+  "status": "CANDIDATE_EFFECTIVE_ONLY_AFTER_HUMAN_MERGE",
+  "human_authority_accounts": ["NFF98"],
+  "exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "docket_dir": "delivery/constitutional-cases/",
+    "max_ttl_seconds": 1209600,
+    "max_clock_skew_seconds": 300,
+    "accepted_source_kinds": ["DIRECT_HUMAN_MESSAGE"],
+    "required_decision": "APPROVE_EXACT_CANDIDATE",
+    "required_scope": "EXACT_PR_DIFF",
+    "placeholder_ref_pattern": "SYNTHETIC|PLACEHOLDER|PENDING|TBD|TODO|NOT[-_ ]?HUMAN",
+    "non_waivable_gates": [
+      "EVIDENCE_PASS",
+      "TEST_INTEGRITY",
+      "ENGINEERING_QUALITY",
+      "PRODUCT_CI",
+      "SECURITY_AUDIT",
+      "CODEQL",
+      "ATTACK_DRY_RUN",
+      "BASELINE_IMMUTABILITY",
+      "ACTIVATION",
+      "CONSTITUTION",
+      "CLOSED_TASK_IMMUTABILITY",
+      "HUMAN_MERGE"
+    ],
+    "deferrable_procedural_gates": [
+      "BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"
+    ],
+    "global_forbidden_paths": [
+      "build-spec/CURRENT.json",
+      "build-spec/activations/",
+      "releases/",
+      "deploy/",
+      ".github/workflows/release.yml",
+      ".github/workflows/promote-release.yml",
+      ".github/workflows/rollback-production.yml",
+      "**/.env",
+      "**/.env.*",
+      "**/*.pem",
+      "**/*.key"
+    ],
+    "lanes": {
+      "GOVERNANCE_REFORM": {
+        "change_class": "GOVERNANCE",
+        "waivable_gates": ["CHANGE_SCOPE"],
+        "allowed_paths": [
+          "harness/",
+          "ci/",
+          "skills/",
+          ".cursor/rules/",
+          ".github/",
+          "AGENTS.md",
+          "delivery/templates/",
+          "delivery/audits/",
+          "delivery/findings/",
+          "delivery/*.md"
+        ],
+        "forbidden_paths": [
+          "src/",
+          "tests/",
+          "supabase/",
+          "generated/",
+          "package.json",
+          "package-lock.json",
+          "tooling/",
+          "build-spec/",
+          "delivery/CURRENT-SPRINT.json",
+          "delivery/sprints/",
+          "delivery/backlog/",
+          "delivery/deltas/",
+          "delivery/evidence/"
+        ]
+      },
+      "PROTECTED_SSOT_AMENDMENT": {
+        "change_class": "SSOT_AMENDMENT",
+        "waivable_gates": ["CHANGE_SCOPE"],
+        "allowed_paths": [
+          "delivery/backlog/QUEUE.json",
+          "delivery/sprints/{affected_sprint}/tasks.json",
+          "delivery/sprints/{affected_sprint}/manifest.json",
+          "delivery/deltas/",
+          "delivery/findings/",
+          "delivery/audits/",
+          "build-spec/baselines/"
+        ],
+        "forbidden_paths": [
+          "src/",
+          "tests/",
+          "harness/",
+          ".github/",
+          "ci/",
+          "package.json",
+          "package-lock.json",
+          "delivery/CURRENT-SPRINT.json"
+        ]
+      },
+      "CLOSURE_DEFERRAL": {
+        "change_class": "CLOSURE",
+        "waivable_gates": [],
+        "allowed_paths": [
+          "delivery/CURRENT-SPRINT.json",
+          "delivery/backlog/QUEUE.json",
+          "delivery/sprints/{affected_sprint}/tasks.json",
+          "delivery/sprints/{affected_sprint}/manifest.json",
+          "delivery/evidence/",
+          "delivery/findings/"
+        ],
+        "forbidden_paths": [
+          "src/",
+          "tests/",
+          "harness/",
+          ".github/",
+          "ci/",
+          "build-spec/"
+        ]
+      },
+      "HOTFIX": {
+        "change_class": "HOTFIX",
+        "waivable_gates": ["CHANGE_SCOPE"],
+        "allowed_paths": [
+          "src/",
+          "tests/",
+          "supabase/migrations/",
+          "delivery/evidence/",
+          "delivery/findings/"
+        ],
+        "forbidden_paths": [
+          "harness/",
+          ".github/",
+          "ci/",
+          "build-spec/",
+          "package.json",
+          "package-lock.json",
+          "delivery/CURRENT-SPRINT.json",
+          "delivery/sprints/",
+          "delivery/backlog/"
+        ],
+        "required_full_gates": ["ci", "attack", "governance", "Analyze JavaScript / TypeScript"]
+      }
+    }
+  },
+  "lifecycle": {
+    "states": [
+      "AUTHORIZED_TASK",
+      "DRAFT_DEVELOPMENT",
+      "LOCAL_AC_TESTS_PASS",
+      "GPT_BCE_PASS",
+      "HUMAN_FINAL_INTEGRATION_READY",
+      "EXACT_HEAD_FULL_GATES_PASS",
+      "HUMAN_MERGE_APPROVED",
+      "MERGED",
+      "EVIDENCE_AND_CLOSURE"
+    ],
+    "head_bound_states": [
+      "LOCAL_AC_TESTS_PASS",
+      "GPT_BCE_PASS",
+      "HUMAN_FINAL_INTEGRATION_READY",
+      "EXACT_HEAD_FULL_GATES_PASS",
+      "HUMAN_MERGE_APPROVED"
+    ],
+    "human_only_events": ["MARK_FINAL_READY", "APPROVE_MERGE", "APPROVE_CLOSURE"]
+  },
+  "full_gate_contexts": ["ci", "attack", "governance", "Analyze JavaScript / TypeScript"],
+  "pr_guard": {
+    "task_declaration_pattern": "^Task:\\s*(T\\d{3})\\b",
+    "title_task_pattern": "^(T\\d{3})[：:\\s]",
+    "justification_pattern": "^PR-Justification:\\s*(NONCOMBINABLE_AUTHORITY_BOUNDARY|CONTROL_TRANSITION_AFTER_MERGE|HOTFIX|SUPERSEDES_CLOSED_PR)\\b\\s*\\S"
+  },
+  "evidence_proof_levels": ["STATIC", "MOCK", "API_IN_PROCESS", "REAL_POSTGRES", "REAL_BROWSER", "EXTERNAL_RUNTIME"],
+  "impacted_tests": {
+    "always_on_code_change": ["check:types", "check:lint"],
+    "gate_only_prefixes": ["harness/", "delivery/", ".cursor/", ".github/", "skills/", "AGENTS.md", "README.md", "ci/README.md", "tooling/README.md"],
+    "full_fallback_prefixes": ["package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json", "vitest.config.ts", "playwright.config.ts", "eslint.config.mjs", "tooling/", "ci/", "build-spec/"],
+    "rules": [
+      { "prefix": "src/platform/compiler/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
+      { "prefix": "src/platform/intent/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
+      { "prefix": "src/platform/blueprint/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
+      { "prefix": "src/platform/evidence/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
+      { "prefix": "src/platform/runtime/", "scripts": ["test:contract", "test:behavior", "test:runtime", "test:state-machine", "test:regression", "test:unit"] },
+      { "prefix": "src/edge/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression"] },
+      { "prefix": "src/app/", "scripts": ["test:behavior", "test:e2e", "test:visual", "test:responsive", "test:a11y"] },
+      { "prefix": "supabase/migrations/", "scripts": ["test:api", "test:regression"] },
+      { "prefix": "tests/unit/", "scripts": ["test:unit"] },
+      { "prefix": "tests/contract/", "scripts": ["test:contract"] },
+      { "prefix": "tests/behavior/", "scripts": ["test:behavior"] },
+      { "prefix": "tests/api/", "scripts": ["test:api"] },
+      { "prefix": "tests/runtime/", "scripts": ["test:runtime"] },
+      { "prefix": "tests/state-machine/", "scripts": ["test:state-machine"] },
+      { "prefix": "tests/regression/", "scripts": ["test:regression"] },
+      { "prefix": "tests/e2e/", "scripts": ["test:e2e"] },
+      { "prefix": "tests/visual/", "scripts": ["test:visual"] },
+      { "prefix": "tests/responsive/", "scripts": ["test:responsive"] },
+      { "prefix": "tests/accessibility/", "scripts": ["test:a11y"] }
+    ],
+    "browser_scripts": ["test:e2e", "test:a11y", "test:responsive", "test:visual"],
+    "full_suite": ["check:types", "check:lint", "build", "test:unit", "test:contract", "test:behavior", "test:api", "test:runtime", "test:state-machine", "test:regression", "test:e2e", "test:a11y", "test:responsive", "test:visual"]
+  }
+}

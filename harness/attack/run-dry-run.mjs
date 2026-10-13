@@ -767,6 +767,89 @@ write("harness/unauthorized-during-activation.txt","must remain blocked\n");
 const maliciousActivation=commit("attack: activation edits unrelated governance");
 expectFail("Sprint Activation cannot smuggle unrelated governance edits","harness/scripts/validate-change-scope.mjs",{base:activationBase,head:maliciousActivation});
 
+// GOV-REFORM-20261013 generic Human exception lane over real git diffs during an ACTIVE Sprint.
+// Approval metadata below is synthetic: it exercises machine checks only and is NOT Human approval.
+const exceptionDigestOf=paths=>{
+  const h=crypto.createHash("sha256");
+  for(const p of [...paths].sort()){h.update(p+"\0");h.update(fs.readFileSync(path.join(repo,p)));h.update("\0");}
+  return h.digest("hex");
+};
+function writeExceptionDocket(id,{base,paths,mutate=x=>x}){
+  const now=Math.floor(Date.now()/1000),digest=exceptionDigestOf(paths);
+  write("delivery/constitutional-cases/"+id+".json",mutate({
+    case_id:id,base_sha:base,constitution_version:"1.0",
+    why5:[1,2,3,4,5].map(i=>({question:"dry-run why "+i,evidence_ref:"DRYRUN-EVIDENCE-"+i,answer:"dry-run answer "+i})),
+    exact_changed_paths:[...paths].sort(),candidate_digest_sha256:digest,
+    scope_exception:{schema:"APPF2-HUMAN-EXCEPTION-1",lane:"GOVERNANCE_REFORM",reason:"dry-run",risk:"dry-run",owner:"Human",
+      follow_up:"none",residual_gaps:["dry-run only"],never_converts_fail_or_untested_to_pass:true,
+      affected_sprint:"SP-P9-001",affected_tasks:[],covered_gates:["CHANGE_SCOPE"],expires_at_unix:now+3600},
+    human_approval:{case_id:id,source_kind:"DIRECT_HUMAN_MESSAGE",decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",
+      candidate_digest_sha256:digest,human_message_ref:"DRYRUN-HUMAN-DECISION-REF",approver:"NFF98",approved_at_unix:now-60}
+  }));
+}
+const scopeAndConstitution=["harness/scripts/validate-change-scope.mjs","harness/scripts/governance-gate.mjs"];
+const reformNote="harness/reports/DRYRUN-GOV-REFORM-NOTE.md";
+// The reason must come from the exception validator; a generic ACTIVE-Sprint governance
+// block alone would hide a broken exception check.
+function exceptionAttack(name,{id="GOV-DRYRUN-EXCEPTION-001",extra={},mutate,afterDocket,reason}){
+  cleanTo(fixtureBase);
+  write(reformNote,"# dry-run governance reform note\n");
+  for(const [p,v] of Object.entries(extra)) write(p,v);
+  writeExceptionDocket(id,{base:fixtureBase,paths:[reformNote,...Object.keys(extra)],mutate});
+  afterDocket?.();
+  const head=commit("attack: "+name);
+  const r=run("node",["harness/scripts/validate-change-scope.mjs"],{env:{BASE_SHA:fixtureBase,HEAD_SHA:head}});
+  const out=r.stdout+r.stderr;
+  const ok=r.status!==0 && out.includes("Human exception lane rejected") && out.includes(reason);
+  results.push({name,expected:"FAIL: "+reason,actual:ok?"FAIL: "+reason:"OTHER",ok,detail:out.trim().split("\n").slice(0,4).join(" | ")});
+  if(!ok) throw new Error("Exception attack did not fail for the expected reason: "+name+"\n"+out);
+}
+
+cleanTo(fixtureBase);
+write(reformNote,"# dry-run governance reform note\n");
+writeExceptionDocket("GOV-DRYRUN-EXCEPTION-001",{base:fixtureBase,paths:[reformNote]});
+const approvedException=commit("positive: exact Human exception lane during ACTIVE sprint");
+for(const script of scopeAndConstitution) expectPass("Exact GOVERNANCE_REFORM exception passes "+path.basename(script),"node",[script],{base:fixtureBase,head:approvedException});
+exceptionAttack("Exception without Human approval stays blocked",{mutate:d=>{delete d.human_approval;return d;},reason:"approval source_kind not accepted"});
+exceptionAttack("Exception with placeholder Human reference stays blocked",{mutate:d=>{d.human_approval.human_message_ref="PENDING_HUMAN";return d;},reason:"Human decision reference missing or placeholder"});
+exceptionAttack("Exception bytes changed after approval stay blocked",{afterDocket:()=>write(reformNote,"# drifted after approval\n"),reason:"PR bytes differ from approved candidate digest"});
+exceptionAttack("Exception cannot smuggle Product src",{extra:{"src/demo/smuggled.ts":"export const smuggled=true;\n"},reason:"path forbidden in lane GOVERNANCE_REFORM: src/demo/smuggled.ts"});
+exceptionAttack("Exception cannot touch build-spec CURRENT",{extra:{"build-spec/CURRENT.json":JSON.stringify({schema_version:1,active_baseline:"BS-P9-001",implementation_enabled:false,reason:"SMUGGLED"},null,2)+"\n"},reason:"build-spec/CURRENT.json must stay unchanged"});
+exceptionAttack("Expired exception stays blocked",{mutate:d=>{d.human_approval.approved_at_unix-=7200;d.scope_exception.expires_at_unix-=7200;return d;},reason:"exception expired"});
+exceptionAttack("Exception bound to another base stays blocked",{mutate:d=>{d.base_sha="f".repeat(40);return d;},reason:"stale or mismatched base SHA"});
+exceptionAttack("Exception cannot waive a non-waivable gate",{mutate:d=>{d.scope_exception.covered_gates=["CHANGE_SCOPE","EVIDENCE_PASS"];return d;},reason:"non-waivable gate cannot be covered: EVIDENCE_PASS"});
+const widened=JSON.parse(fs.readFileSync(path.join(repo,"harness/policy/governance-reform.json"),"utf8"));
+widened.exception.lanes.GOVERNANCE_REFORM.allowed_paths.push("src/");
+widened.exception.lanes.GOVERNANCE_REFORM.forbidden_paths=widened.exception.lanes.GOVERNANCE_REFORM.forbidden_paths.filter(p=>p!=="src/");
+exceptionAttack("PR cannot widen its own exception lane (BASE policy governs)",{extra:{
+  "harness/policy/governance-reform.json":JSON.stringify(widened,null,2)+"\n","src/demo/smuggled.ts":"export const smuggled=true;\n"
+},reason:"(BASE policy): path forbidden in lane GOVERNANCE_REFORM: src/demo/smuggled.ts"});
+cleanTo(approvedException);
+const reused=JSON.parse(fs.readFileSync(path.join(repo,"delivery/constitutional-cases/GOV-DRYRUN-EXCEPTION-001.json"),"utf8"));
+reused.exact_changed_paths=["harness/reports/DRYRUN-SECOND.md"];
+write("harness/reports/DRYRUN-SECOND.md","# second change\n");
+write("delivery/constitutional-cases/GOV-DRYRUN-EXCEPTION-001.json",reused);
+const editedDocket=commit("attack: reuse an already-merged exception docket");
+const reuseRun=run("node",["harness/scripts/validate-change-scope.mjs"],{env:{BASE_SHA:approvedException,HEAD_SHA:editedDocket}});
+const reuseOk=reuseRun.status!==0 && (reuseRun.stdout+reuseRun.stderr).includes("exception docket already exists at base and is append-only");
+results.push({name:"Merged exception docket is append-only (no reuse)",expected:"FAIL: append-only",actual:reuseOk?"FAIL: append-only":"OTHER",ok:reuseOk,detail:""});
+if(!reuseOk) throw new Error("Docket reuse not rejected for the expected reason\n"+reuseRun.stdout+reuseRun.stderr);
+
+// Closure simplification: one control transition may carry its own Evidence/Finding records.
+cleanTo(fixtureBase);
+const reviewTasks=read("delivery/sprints/SP-P9-001/tasks.json"); reviewTasks.tasks[0].status="REVIEW";
+write("delivery/sprints/SP-P9-001/tasks.json",reviewTasks);
+write("delivery/evidence/SP-P9-001/T001/EV-DRYRUN-CLOSE.json",{evidence_id:"EV-DRYRUN-CLOSE",note:"dry-run side effect"});
+const closeWithEvidence=commit("positive: control transition with its evidence record");
+expectPass("Control transition may carry Evidence side effects","node",["harness/scripts/validate-change-scope.mjs"],{base:fixtureBase,head:closeWithEvidence});
+cleanTo(fixtureBase);
+write("delivery/sprints/SP-P9-001/tasks.json",reviewTasks);
+write("delivery/evidence/SP-P9-001/T001/EV-DRYRUN-CLOSE.json",{evidence_id:"EV-DRYRUN-CLOSE",note:"dry-run side effect"});
+write("src/unauthorized/smuggled.ts","export const smuggled=true;\n");
+const closeWithCode=commit("attack: control transition smuggles code");
+expectFail("Control transition cannot carry out-of-scope code","harness/scripts/validate-change-scope.mjs",{base:fixtureBase,head:closeWithCode});
+cleanTo(fixtureBase);
+
 const passed=results.filter(x=>x.ok).length;
 console.log("\nATTACK DRY-RUN RESULT: "+passed+"/"+results.length+" expected outcomes observed");
 for(const r of results) console.log((r.ok?"PASS":"FAIL")+" | "+r.name+" | expected "+r.expected+" got "+r.actual);

@@ -1,6 +1,6 @@
 # GOV-REFORM-20261013 — consolidated governance reform execution plan
 
-Status: **HUMAN PROGRAM APPROVED / IMPLEMENTATION DRAFT / NOT MERGE APPROVED**  
+Status: **HUMAN PROGRAM APPROVED / IMPLEMENTATION CANDIDATE COMPLETE / EXACT-DIGEST APPROVAL PENDING / NOT MERGE APPROVED**  
 Docket: [Issue #389](https://github.com/NFF98/appf2-build/issues/389)  
 Baseline: `ec4443d40db8c72e43403adb9f3d9d02e72fbc18` (verify afresh before code updates)
 
@@ -60,6 +60,29 @@ F. GPT no invented governance steps, preflight and auditable proof.
 - No Task lease, changed Task, changed Baseline mapping → no inherited authorization.
 - Repeated Task fixes reuse same PR; no unaudited fresh PR proliferation.
 - Existing T006 BLOCKED and T008 REVIEW remain unchanged until independently approved closure governance.
+
+## Implementation status（PR #390 候選；未經 Human 精確核准與 Merge 前不生效）
+
+| # | 項目 | 機器落點 | 驗證 |
+|---|---|---|---|
+| 1 | 一個 Task 一個 PR | `task-pr-lifecycle.mjs`（狀態機、HEAD 失效）＋ Handoff §18.1 | selftest lifecycle 10 |
+| 2 | 禁止重複核准 | `leaseDecision`、`gpt-preflight.mjs` `REDUNDANT_APPROVAL_DENIED` | selftest authority／preflight |
+| 3 | Bugfix 持續執行 | `classifyChange` → `SAME_TASK_LEASE`；`CONTINUE_SAME_LEASE` | selftest routing／authority |
+| 4 | 自動選擇相關測試 | `select-impacted-tests.mjs`（保守 fallback、NOT_RUN 明列） | selftest impacted 7 |
+| 5 | 完整 CI 留到 Final Ready | `ci.yml`／`codeql.yml` Draft = NOT_READY 失敗＋非必要 `fast-loop` job；`finalGateVerdict` | selftest final_gate 6 |
+| 6 | 精簡 Activation | `requiresActivation`（只在執行權改變時） | selftest authority |
+| 7 | 精簡 Rebind | `requiresRebind`（只在 baseline／mapping 改變時） | selftest authority |
+| 8 | Evidence 自動整理 | `evidence-ledger.mjs`；`proof_level` 列舉驗證 | selftest evidence_ledger 6 |
+| 9 | Closure 精簡 | Scope Gate：控制轉換可同帶 Evidence／Finding | attack 正反各 1 |
+| 10 | Human 通用特批 | `human-exception.mjs`＋`governance-reform.json`＋憲法 §7 | selftest 47＋attack 12 |
+| 11 | Sprint 中特批修改 SSOT／Design／Build Spec | `PROTECTED_SSOT_AMENDMENT` lane（新 baseline、Task 狀態不可動） | selftest human_exception |
+| 12 | GPT 執行前檢查 | `gpt-preflight.mjs state` | selftest metrics_preflight |
+| 13 | PR 新增限制 | Governance Gate `pr-guard`（fail-closed、PR-Justification） | selftest metrics_preflight |
+| 14 | 禁止假綠燈 | NOT_RUN／SKIPPED／Draft／stale HEAD ≠ PASS；`never_converts_fail_or_untested_to_pass` | selftest final_gate／lifecycle |
+| 15 | 改革成效統計 | `governance-metrics.mjs`；基準 `delivery/audits/GOV-REFORM-20261013-METRICS-BASELINE.json` | selftest metrics |
+| 16 | Governance／Hotfix 分流 | `GOVERNANCE_REFORM`／`HOTFIX` lane＋`classify` 輸出 | selftest routing／human_exception |
+
+T008 維持 REVIEW、T006 維持 BLOCKED；`CLOSURE_DEFERRAL` 只提供機制，實際延後 T008 結案順序須另一份 Human 精確核准 docket。
 
 ## CI and Human decision gates
 - Before protected rule/code change: prepare complete candidate, independent reviewer/negative tests, document any necessary constitutional L3 authorization.

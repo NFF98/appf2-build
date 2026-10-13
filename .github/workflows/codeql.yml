@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: "23 18 * * 1"
   workflow_dispatch:
@@ -20,6 +21,13 @@ jobs:
     name: Analyze JavaScript / TypeScript
     runs-on: ubuntu-latest
     steps:
+      # GOV-REFORM-20261013: full security analysis runs after Human Final Ready.
+      # A Draft PR must FAIL (never skip): a skipped required check is reported as success.
+      - name: Draft PR — CodeQL deferred (NOT_READY, never PASS)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
+        run: |
+          echo "::error::NOT_READY — Draft PR: CodeQL is deferred to Human Final Ready (ready_for_review)."
+          exit 1
       - uses: actions/checkout@v4
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4

@@ -1,0 +1,71 @@
+{
+  "since": "2026-09-01",
+  "generated_at": "2026-10-13T13:57:13.943Z",
+  "limitations": [
+    "Task keys come from first-parent commit subjects; the same Txxx in different Sprints is aggregated.",
+    "Run export reached --run-limit 1000; CI counts are a lower bound."
+  ],
+  "task_pr": {
+    "tasks": 9,
+    "task_prs": 161,
+    "prs_per_task_avg": 17.89,
+    "prs_per_task_max": 37,
+    "by_task": [
+      {
+        "task": "T006",
+        "prs": 37
+      },
+      {
+        "task": "T004",
+        "prs": 28
+      },
+      {
+        "task": "T003",
+        "prs": 21
+      },
+      {
+        "task": "T002",
+        "prs": 18
+      },
+      {
+        "task": "T009",
+        "prs": 13
+      },
+      {
+        "task": "T005",
+        "prs": 13
+      },
+      {
+        "task": "T007",
+        "prs": 11
+      },
+      {
+        "task": "T001",
+        "prs": 11
+      },
+      {
+        "task": "T008",
+        "prs": 9
+      }
+    ]
+  },
+  "human_approval": {
+    "dockets": 8,
+    "human_exact_approvals": 7,
+    "redundant_reapprovals": 3
+  },
+  "ci": {
+    "full_ci_runs": 417,
+    "distinct_heads": 417,
+    "repeated_full_runs_same_head": 0,
+    "full_runs_per_branch_avg": 6.95
+  },
+  "rework": {
+    "task_rework_commits": 5,
+    "ratio_of_task_commits": 0.02
+  },
+  "open_prs": {
+    "open": 14,
+    "draft": 6
+  }
+}
