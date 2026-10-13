@@ -314,10 +314,11 @@ if(approvedPfr06WebReadinessTransition){
 
 // GOV-T006-F06-PHASED-001: once-only L3 governance candidacy.
 // Do not turn a draft into execution authority: requires exact Human candidate decision,
-// fixed source main SHA, exact four paths, SHA256 of three rule files, unchanged Sprint/Build.
+// fixed source main SHA, exact five paths, SHA256 of four rule files, unchanged Sprint/Build.
 // Constitutional validator independently verifies the same signed-off dossier contract.
 const p0DocketPath="delivery/constitutional-cases/GOV-T006-F06-PHASED-001.json";
 const p0RulePaths=[
+  "ci/run-product-ci.mjs",
   "harness/scripts/validate-backlog.mjs",
   "harness/scripts/validate-change-scope.mjs",
   "harness/scripts/validate-sprint.mjs"
