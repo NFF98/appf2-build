@@ -109,7 +109,7 @@ function ssotClosureHotfixCases(policy){
   };
   const material=extra=>ssot(x=>x,{semantic_class:"MATERIAL_PRODUCT_SEMANTIC",design_change_ref:"NFF98/appf2-design@0123abc"},extra);
   const closure=scope=>fixture(policy,{lane:"CLOSURE_DEFERRAL",files:{[tasksPath]:baseTasks,"delivery/evidence/EV-SP-P9-001-T001-001.json":"{}"},
-    scope:{affected_tasks:["T001"],covered_gates:["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"],...scope}});
+    scope:{affected_tasks:["T001"],affected_build_spec:"BS-P9-001",covered_gates:["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"],...scope}});
   const hotfix=(scope={},files={"src/edge/fix.ts":"export const fixed=true;\n"},baseExists=[])=>fixture(policy,{lane:"HOTFIX",files,baseExists,
     scope:{incident_ref:"INC-SYN-1",retrospective_due_unix:NOW+86400,required_full_gates:[...RULESET_CONTEXTS],...scope}});
   return [
@@ -125,6 +125,8 @@ function ssotClosureHotfixCases(policy){
     ["CLOSURE_DEFERRAL unknown gate",false,closure({covered_gates:["EVIDENCE_LATER"]})],
     ["CLOSURE_DEFERRAL claims CHANGE_SCOPE",false,closure({covered_gates:["CHANGE_SCOPE"]})],
     ["CLOSURE_DEFERRAL without Task",false,closure({affected_tasks:[]})],
+    ["CLOSURE_DEFERRAL bound to another Build Spec",false,closure({affected_build_spec:"BS-P9-002"})],
+    ["SSOT lane cannot move CURRENT",false,withPath(material({"build-spec/baselines/BS-P9-002/manifest.json":"{}"}),"build-spec/CURRENT.json","{}")],
     ["HOTFIX with full gates",true,hotfix()],
     ["HOTFIX drops CodeQL",false,hotfix({required_full_gates:["ci","attack","governance"]})],
     ["HOTFIX rewrites existing migration",false,hotfix({},{"supabase/migrations/1_old.sql":"--"},["supabase/migrations/1_old.sql"])],
@@ -132,20 +134,101 @@ function ssotClosureHotfixCases(policy){
   ];
 }
 
+// Use-time checks for a MERGED CLOSURE_DEFERRAL docket: every gate run re-validates it.
 function persistentWaiverCases(policy){
-  const valid=fixture(policy,{lane:"CLOSURE_DEFERRAL",scope:{affected_tasks:["T008"],affected_sprint:"SP-P1-003",covered_gates:["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"]}}).docket;
-  const q={policy:policy.exception,accounts:policy.human_authority_accounts,gateId:"BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",taskId:"T008",sprintId:"SP-P1-003"};
+  const valid=fixture(policy,{lane:"CLOSURE_DEFERRAL",scope:{affected_tasks:["T008"],affected_sprint:"SP-P1-003",
+    affected_build_spec:"BS-P1-025",covered_gates:["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"]}}).docket;
+  const expires=valid.scope_exception.expires_at_unix;
+  const q={policy:policy.exception,accounts:policy.human_authority_accounts,gateId:"BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",
+    taskId:"T008",sprintId:"SP-P1-003",buildSpecId:"BS-P1-025",now:NOW,fileName:"GOV-TEST-EXCEPTION-001.json",
+    revokedIds:new Set(),digestCounts:new Map([[valid.candidate_digest_sha256,1]])};
   const edit=fn=>{const d=clone(valid);fn(d);return d;};
   return expectCases("persistent waiver",[
     ["merged exact waiver",true,[valid,q]],
+    ["valid one second before expiry",true,[valid,{...q,now:expires-1}]],
+    ["expired at use time",false,[valid,{...q,now:expires+1}]],
+    ["TTL longer than policy",false,[edit(d=>{d.scope_exception.expires_at_unix=d.human_approval.approved_at_unix+policy.exception.max_ttl_seconds+1;}),q]],
+    ["expiry missing",false,[edit(d=>{delete d.scope_exception.expires_at_unix;}),q]],
+    ["approval dated after use time",false,[edit(d=>{d.human_approval.approved_at_unix=NOW+86400;}),q]],
+    ["placeholder Human reference",false,[edit(d=>{d.human_approval.human_message_ref="PENDING Human decision";}),q]],
+    ["unregistered approver",false,[edit(d=>{d.human_approval.approver="cursor-bot";}),q]],
+    ["AI-generated source kind",false,[edit(d=>{d.human_approval.source_kind="AI_GENERATED_COMMENT";}),q]],
+    ["revoked by later docket",false,[valid,{...q,revokedIds:new Set([valid.case_id])}]],
+    ["digest replayed by another docket",false,[valid,{...q,digestCounts:new Map([[valid.candidate_digest_sha256,2]])}]],
+    ["docket renamed / file mismatch",false,[valid,{...q,fileName:"GOV-OTHER-001.json"}]],
     ["other gate",false,[valid,{...q,gateId:"EVIDENCE_PASS"}]],
+    ["non-waivable gate smuggled into covered_gates",false,[edit(d=>{d.scope_exception.covered_gates.push("EVIDENCE_PASS");}),q]],
     ["other Task",false,[valid,{...q,taskId:"T006"}]],
     ["other Sprint",false,[valid,{...q,sprintId:"SP-P1-004"}]],
+    ["other Build Spec after rebaseline",false,[valid,{...q,buildSpecId:"BS-P1-026"}]],
     ["not a closure lane",false,[edit(d=>{d.scope_exception.lane="GOVERNANCE_REFORM";}),q]],
     ["approval stripped",false,[edit(d=>{delete d.human_approval;}),q]],
     ["approval digest mismatch",false,[edit(d=>{d.human_approval.candidate_digest_sha256="c".repeat(64);}),q]],
-    ["residual GAP removed",false,[edit(d=>{d.scope_exception.residual_gaps=[];}),q]]
+    ["residual GAP removed",false,[edit(d=>{d.scope_exception.residual_gaps=[];}),q]],
+    ["fake-green declaration removed",false,[edit(d=>{d.scope_exception.never_converts_fail_or_untested_to_pass=false;}),q]]
   ],([d,query])=>isPersistentProceduralWaiver(d,query));
+}
+
+// Stage 2 of a Human-approved mid-Sprint rebaseline: move control pointers to an already-merged LOCKED baseline.
+function buildSpecActivationCases(policy){
+  const T="delivery/sprints/SP-P9-001/tasks.json",M="delivery/sprints/SP-P9-001/manifest.json",Q="delivery/backlog/QUEUE.json";
+  const AR="build-spec/activations/BS-P9-002.json",NEW_MANIFEST="build-spec/baselines/BS-P9-002/manifest.json";
+  const task=(id,status,bs="BS-P9-001")=>({task_id:id,status,build_spec_id:bs,acceptance_links:[{acceptance_id:"F99-AC-001",test_id:"TEST-F99-001"}],allowed_write_paths:["src/demo/"],completion_evidence:[]});
+  const baseTasks={sprint_id:"SP-P9-001",tasks:[task("T000","CLOSED"),task("T001","REVIEW"),task("T002","BLOCKED")]};
+  const baseManifest={sprint_id:"SP-P9-001",build_spec_id:"BS-P9-001",status:"ACTIVE"};
+  const baseQueue={build_spec_id:"BS-P9-001",items:[{backlog_item_id:"BL-1",status:"SPRINTED",sprint_id:"SP-P9-001",build_spec_id:"BS-P9-001",revalidation:{status:"CLOSED",target_build_spec_id:"BS-P9-001"}}]};
+  const make=(mutate=()=>{})=>{
+    const head={tasks:clone(baseTasks),manifest:{...baseManifest,build_spec_id:"BS-P9-002"},queue:clone(baseQueue),
+      record:{baseline_id:"BS-P9-002",previous_baseline:"BS-P9-001",type:"REBASELINE"},
+      build:{active_baseline:"BS-P9-002",implementation_enabled:true},
+      sprint:{active_sprint:"SP-P9-001",active_build_spec:"BS-P9-002",active_task:"T001",status:"REVIEW"},
+      baseJson:{[T]:baseTasks,[M]:baseManifest,[Q]:baseQueue,[NEW_MANIFEST]:{status:"LOCKED",supersedes:"BS-P9-001"}},
+      baseExists:[NEW_MANIFEST],extra:{},
+      scope:{activation:{from_baseline:"BS-P9-001",to_baseline:"BS-P9-002"},design_change_ref:"NFF98/appf2-design@0123abc + BD-999",
+        impact_audit:["T001/T002 rebind only; T000 CLOSED unchanged"],covered_gates:["CHANGE_SCOPE","ACTIVATION_SPRINT_PAUSE_PRECONDITION"]}};
+    for(const t of head.tasks.tasks) if(t.status!=="CLOSED") t.build_spec_id="BS-P9-002";
+    head.queue.build_spec_id="BS-P9-002";head.queue.items[0].build_spec_id="BS-P9-002";
+    mutate(head);
+    const c=fixture(policy,{lane:"BUILD_SPEC_ACTIVATION",scope:head.scope,baseJson:head.baseJson,baseExists:head.baseExists,files:{
+      "build-spec/CURRENT.json":head.build,[AR]:head.record,"delivery/CURRENT-SPRINT.json":head.sprint,[T]:head.tasks,[M]:head.manifest,[Q]:head.queue,...head.extra}});
+    c.state={baseSprint:{active_sprint:"SP-P9-001",active_build_spec:"BS-P9-001",active_task:"T001",status:"REVIEW"},headSprint:head.sprint,
+      baseBuild:{active_baseline:"BS-P9-001",implementation_enabled:true},headBuild:head.build};
+    if(head.dropRecord){c.changed=c.changed.filter(p=>p!==AR);rebindDigest(c);}
+    return c;
+  };
+  const t1=h=>h.tasks.tasks[1];
+  return expectCases("build spec activation",[
+    ["mid-Sprint activation of merged LOCKED baseline",true,make()],
+    ["AC/Test remap of affected Task",true,make(h=>{t1(h).acceptance_links.push({acceptance_id:"F99-AC-002",test_id:"TEST-F99-002"});h.scope.affected_tasks=["T001"];})],
+    ["AC/Test remap of unaffected Task",false,make(h=>{t1(h).acceptance_links.push({acceptance_id:"F99-AC-002",test_id:"TEST-F99-002"});})],
+    ["target baseline created in same PR (not yet merged)",false,make(h=>{h.baseJson[NEW_MANIFEST]=null;h.baseExists=[];})],
+    ["target baseline not LOCKED",false,make(h=>{h.baseJson[NEW_MANIFEST]={status:"DRAFT",supersedes:"BS-P9-001"};})],
+    ["target does not supersede active baseline",false,make(h=>{h.baseJson[NEW_MANIFEST]={status:"LOCKED",supersedes:"BS-P9-000"};})],
+    ["CURRENT points elsewhere than declared",false,make(h=>{h.build.active_baseline="BS-P9-003";})],
+    ["implementation_enabled flipped",false,make(h=>{h.build.implementation_enabled=false;})],
+    ["Activation Record missing",false,make(h=>{h.dropRecord=true;})],
+    ["Activation Record already at base",false,make(h=>{h.baseExists.push(AR);})],
+    ["Activation Record wrong lineage",false,make(h=>{h.record.previous_baseline="BS-P9-000";})],
+    ["Task switched during activation",false,make(h=>{h.sprint.active_task="T002";})],
+    ["Sprint status changed during activation",false,make(h=>{h.sprint.status="ACTIVE";})],
+    ["Task status changed",false,make(h=>{t1(h).status="CLOSED";})],
+    ["Task write scope widened",false,make(h=>{t1(h).allowed_write_paths.push("src/other/");})],
+    ["CLOSED Task rebound",false,make(h=>{h.tasks.tasks[0].build_spec_id="BS-P9-002";})],
+    ["Task rebound to undeclared baseline",false,make(h=>{t1(h).build_spec_id="BS-P9-003";})],
+    ["Task added",false,make(h=>{h.tasks.tasks.push(task("T003","PLANNED","BS-P9-002"));})],
+    ["Sprint manifest status changed",false,make(h=>{h.manifest.status="CLOSED";})],
+    ["Backlog item lifecycle changed",false,make(h=>{h.queue.items[0].status="DONE";})],
+    ["existing revalidation rewritten",false,make(h=>{h.queue.items[0].revalidation.status="IN_PROGRESS";})],
+    ["new baseline bytes smuggled",false,make(h=>{h.extra["build-spec/baselines/BS-P9-002/functions/demo.md"]="# changed";})],
+    ["old locked baseline rewritten",false,make(h=>{h.extra["build-spec/baselines/BS-P9-001/manifest.json"]="{}";})],
+    ["Delta rewritten during activation",false,make(h=>{h.extra["delivery/deltas/BD-999.json"]="{}";})],
+    ["Product source smuggled",false,make(h=>{h.extra["src/demo/x.ts"]="export const x=1;";})],
+    ["Design/Delta reference missing",false,make(h=>{delete h.scope.design_change_ref;})],
+    ["impact audit missing",false,make(h=>{h.scope.impact_audit=[];})],
+    ["from == to",false,make(h=>{h.scope.activation.to_baseline="BS-P9-001";})],
+    ["ACTIVATION gate itself claimed",false,make(h=>{h.scope.covered_gates.push("ACTIVATION");})],
+    ["GOVERNANCE lane cannot activate",false,make(h=>{h.scope.lane="GOVERNANCE_REFORM";})]
+  ],ok);
 }
 
 function policyInvariantCases(policy){
@@ -158,7 +241,10 @@ function policyInvariantCases(policy){
     ["max TTL <= 30 days",true,ex.max_ttl_seconds<=30*86400],
     ["security/evidence gates non-waivable",true,["EVIDENCE_PASS","PRODUCT_CI","CODEQL","SECURITY_AUDIT","HUMAN_MERGE","BASELINE_IMMUTABILITY","ACTIVATION"].every(g=>ex.non_waivable_gates.includes(g))],
     ["no lane may waive a non-waivable gate",true,lanesWaivable.every(g=>!ex.non_waivable_gates.includes(g))],
-    ["activation/CURRENT/release forbidden everywhere",true,["build-spec/activations/","build-spec/CURRENT.json","releases/","deploy/"].every(p=>ex.global_forbidden_paths.includes(p))],
+    ["release/deploy forbidden everywhere",true,["releases/","deploy/",".github/workflows/release.yml"].every(p=>ex.global_forbidden_paths.includes(p))],
+    ["only BUILD_SPEC_ACTIVATION may move CURRENT/Activation",true,Object.entries(ex.lanes).every(([n,l])=>n==="BUILD_SPEC_ACTIVATION" ||
+      l.forbidden_paths.includes("build-spec/") || ["build-spec/CURRENT.json","build-spec/activations/"].every(p=>l.forbidden_paths.includes(p)))],
+    ["BUILD_SPEC_ACTIVATION cannot touch baselines/Deltas/Evidence",true,["build-spec/baselines/","delivery/deltas/","delivery/evidence/"].every(p=>ex.lanes.BUILD_SPEC_ACTIVATION.forbidden_paths.includes(p))],
     ["only HOTFIX may touch Product source",true,Object.entries(ex.lanes).every(([n,l])=>n==="HOTFIX" || l.forbidden_paths.includes("src/"))]
   ],x=>x);
 }
@@ -303,6 +389,7 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
   const counts={
     human_exception:expectCases("human exception",[...governanceLaneCases(policy),...ssotClosureHotfixCases(policy)],ok),
     persistent_waiver:persistentWaiverCases(policy),
+    build_spec_activation:buildSpecActivationCases(policy),
     policy_invariants:policyInvariantCases(policy),
     lifecycle:lifecycleCases(),
     final_gate:finalGateCases(),

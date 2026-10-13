@@ -27,6 +27,7 @@
     "harness/scripts/human-exception.mjs",
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/task-pr-lifecycle.mjs",
+    "harness/scripts/validate-activation.mjs",
     "harness/scripts/validate-backlog.mjs",
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-evidence.mjs"
@@ -55,7 +56,7 @@
     },
     {
       "question": "為什麼這些改革不會造成假綠燈或產品語意漂移？",
-      "answer": "所有特批必須宣告 never_converts_fail_or_untested_to_pass；Evidence PASS、Product CI、Security、CodeQL、Attack、Baseline、Activation、Human Merge 不可 waive；fast-loop／NOT_RUN／SKIPPED／stale HEAD 一律 NOT_PASS；未修改任何 build-spec、Task 狀態或 Phase 1 驗收語意。127 個 synthetic 正反案例與 attack dry-run 149/149 驗證。",
+      "answer": "所有特批必須宣告 never_converts_fail_or_untested_to_pass；Evidence PASS、Product CI、Security、CodeQL、Attack、Baseline、Activation、Human Merge 不可 waive；fast-loop／NOT_RUN／SKIPPED／stale HEAD 一律 NOT_PASS；未修改任何 build-spec、Task 狀態或 Phase 1 驗收語意。BCE R2 後：已合併 CLOSURE_DEFERRAL 每次使用重驗期限／範圍／核准／撤銷／重放；Sprint 中 Build Spec 變更改為兩階段（PROTECTED_SSOT_AMENDMENT 新 baseline → BUILD_SPEC_ACTIVATION 啟用），只 waive CHANGE_SCOPE 與 Sprint 須先 BLOCKED 的程序前提。175 個 synthetic 正反案例與 attack dry-run 192/192 驗證。",
       "evidence_ref": "harness/scripts/governance-reform-selftest.mjs"
     }
   ],
@@ -65,10 +66,20 @@
     "刪除 Scope Gate 或對 #390 永久例外：被 Human 明確禁止。"
   ],
   "no_change": "若不採用：T008 REVIEW 期間任何治理修正都會被 Change Scope Gate 擋下；每個 Task 的多 PR、重複核准與每次 push 跑完整 CI 的成本持續。",
-  "rollback": "以 Human 核准的 revert PR 還原本 PR 的精確 25 個路徑；本 docket 為 append-only 記錄不刪除。Ruleset 未變更，無需設定還原。",
+  "rollback": "以 Human 核准的 revert PR 還原本 PR 的精確 26 個路徑；本 docket 為 append-only 記錄不刪除。Ruleset 未變更，無需設定還原。",
   "negative_tests": [
-    "harness/scripts/governance-reform-selftest.mjs（127 案例，含缺核准、佔位符、偽造 digest、過期、replay、跨通道、不可 waive Gate、自我放寬 policy）",
-    "harness/attack/run-dry-run.mjs（GOV-REFORM 段：14 個 git E2E 案例，負向案例斷言精確拒絕原因）"
+    "harness/scripts/governance-reform-selftest.mjs（175 案例，含缺核准、佔位符、偽造 digest、過期、replay、跨通道、不可 waive Gate、自我放寬 policy；BCE R2 新增 persistent_waiver 22、build_spec_activation 30）",
+    "harness/attack/run-dry-run.mjs（GOV-REFORM 段：git E2E 案例，負向案例斷言精確拒絕原因；BCE R2 新增 Sprint ACTIVE 中兩階段 Build Spec 變更完整 Harness E2E、12 個通道負向、7 個已合併 CLOSURE_DEFERRAL 使用時驗證）"
+  ],
+  "bce_rounds": [
+    {
+      "round": "R2",
+      "source": "https://github.com/NFF98/appf2-build/pull/390#issuecomment-6147483824",
+      "fixes": [
+        "BLOCKER 1：已合併 CLOSURE_DEFERRAL 每次使用重驗 Human 核准欄位、到期／TTL、Gate／Task／Sprint／Build Spec 範圍、檔名、撤銷與 digest 重放。",
+        "BLOCKER 2：新增 BUILD_SPEC_ACTIVATION 通道與 validate-activation 獨立重驗，使 Sprint 中經 Human 特批的新 Build Spec 可合法啟用；舊 baseline 不可改、Sprint／Task 狀態不變、其他 Activation 檢查照常。"
+      ]
+    }
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -81,7 +92,9 @@
       "CI 無法證明 human_approval 來自真人，需 Human 親自查核來源。",
       "Draft → Ready for review 按鈕無法機器限制只能由 Human 點擊。",
       "Draft PR 上 required ci／CodeQL 會顯示紅色 NOT_READY（設計如此，非產品失敗）。",
-      "T008 結案順序延後（CLOSURE_DEFERRAL）尚未申請，需另一份 Human 精確核准 docket。"
+      "T008 結案順序延後（CLOSURE_DEFERRAL）尚未申請，需另一份 Human 精確核准 docket。",
+      "已合併 CLOSURE_DEFERRAL 過期後即 fail-closed，延長須新 docket 與新 Human 核准。",
+      "Sprint 中 Build Spec 變更需兩個 PR（新 baseline 先合併，再啟用），各自需要 Human 精確審定。"
     ],
     "never_converts_fail_or_untested_to_pass": true,
     "affected_sprint": "SP-P1-003",

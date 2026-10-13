@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor, revalidationHistoryChain } from "./baseline-lineage.mjs";
-import { hasPersistentProceduralWaiver } from "./human-exception.mjs";
+import { findPersistentProceduralWaivers } from "./human-exception.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -475,11 +475,17 @@ function t006FinalClosureErrors(t008,items,baseline) {
   }
   return errors.concat(t006ClosureRevalidationErrors(items,baseline));
 }
-// GOV-REFORM-20261013: only a merged, exact Human CLOSURE_DEFERRAL docket may defer this
-// procedural ordering rule; Evidence PASS, AC/Test mapping and revalidation rules still apply.
-const t008CloseOrderWaived=()=>hasPersistentProceduralWaiver({
-  root,gateId:"BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",taskId:"T008",sprintId:"SP-P1-003"
-});
+// GOV-REFORM-20261013: only a merged, exact, unexpired, unrevoked Human CLOSURE_DEFERRAL docket
+// may defer this procedural ordering rule, re-checked on every run; Evidence PASS, AC/Test
+// mapping and revalidation rules still apply.
+const t008CloseOrderWaived=()=>{
+  const found=findPersistentProceduralWaivers({
+    root,gateId:"BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",taskId:"T008",sprintId:"SP-P1-003",
+    buildSpecId:currentSprint.active_build_spec
+  });
+  for(const r of found.rejected) console.log("- CLOSURE_DEFERRAL "+r.case_id+" not applicable: "+r.errors.join("; "));
+  return found.valid.length>0;
+};
 function checkT006T008Order(t006,t008,items,baseline,closeOrderWaived=false) {
   const errors=t006T008PreclosureErrors(t006,t008,baseline,closeOrderWaived);
   return t006?.status==="CLOSED" ? errors.concat(t006FinalClosureErrors(t008,items,baseline)) : errors;

@@ -74,8 +74,8 @@ F. GPT no invented governance steps, preflight and auditable proof.
 | 7 | 精簡 Rebind | `requiresRebind`（只在 baseline／mapping 改變時） | selftest authority |
 | 8 | Evidence 自動整理 | `evidence-ledger.mjs`；`proof_level` 列舉驗證 | selftest evidence_ledger 6 |
 | 9 | Closure 精簡 | Scope Gate：控制轉換可同帶 Evidence／Finding | attack 正反各 1 |
-| 10 | Human 通用特批 | `human-exception.mjs`＋`governance-reform.json`＋憲法 §7 | selftest 47＋attack 12 |
-| 11 | Sprint 中特批修改 SSOT／Design／Build Spec | `PROTECTED_SSOT_AMENDMENT` lane（新 baseline、Task 狀態不可動） | selftest human_exception |
+| 10 | Human 通用特批 | `human-exception.mjs`＋`governance-reform.json`＋憲法 §7；已合併 `CLOSURE_DEFERRAL` 每次使用重驗期限／範圍／核准／撤銷／重放（BCE R2） | selftest human_exception 49＋persistent_waiver 22＋attack 12＋attack waiver 7 |
+| 11 | Sprint 中特批修改 SSOT／Design／Build Spec | 兩階段：`PROTECTED_SSOT_AMENDMENT`（新 immutable baseline）→ `BUILD_SPEC_ACTIVATION`（Activation＋CURRENT＋Sprint/Task/Backlog REBIND，Sprint 保持 ACTIVE）；`validate-activation.mjs` 獨立重驗（BCE R2） | selftest build_spec_activation 30＋attack 兩階段 E2E 24＋負向 12 |
 | 12 | GPT 執行前檢查 | `gpt-preflight.mjs state` | selftest metrics_preflight |
 | 13 | PR 新增限制 | Governance Gate `pr-guard`（fail-closed、PR-Justification） | selftest metrics_preflight |
 | 14 | 禁止假綠燈 | NOT_RUN／SKIPPED／Draft／stale HEAD ≠ PASS；`never_converts_fail_or_untested_to_pass` | selftest final_gate／lifecycle |

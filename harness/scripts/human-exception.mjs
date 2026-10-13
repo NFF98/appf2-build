@@ -178,27 +178,109 @@ const hotfixLaneErrors=ctx=>{
   return errors;
 };
 
-const sprintBindingErrors=(state,s,laneName)=>{
-  const sprintId=state.headSprint?.active_sprint??null,errors=[];
-  if((s.affected_sprint??null)!==sprintId) errors.push("exception is bound to a different Sprint than the active Sprint");
-  if(laneName!=="CLOSURE_DEFERRAL"){
-    return sameJson(state.baseSprint,state.headSprint)?errors:
-      [...errors,"delivery/CURRENT-SPRINT.json must stay unchanged in lane "+laneName];
-  }
+// BUILD_SPEC_ACTIVATION: second stage of a Human-approved mid-Sprint rebaseline. The new
+// baseline must already be merged and LOCKED (stage 1 = PROTECTED_SSOT_AMENDMENT); this stage
+// only moves the control pointers. validate-activation still checks the record, approvals,
+// Deltas and lineage; only its "Sprint BLOCKED first" precondition is covered.
+const RE_BASELINE=/^BS-P\d+-\d{3}$/;
+const ACTIVATION_RECORD_RE=/^build-spec\/activations\/[^/]+\.json$/;
+const omitKeys=(obj,keys)=>Object.fromEntries(Object.entries(obj||{}).filter(([k])=>!keys.includes(k)));
+
+const activationPointerErrors=(ctx,t)=>{
+  const {baseBuild,headBuild}=ctx.state,errors=[];
+  if(baseBuild?.active_baseline!==t.from_baseline || headBuild?.active_baseline!==t.to_baseline) errors.push("CURRENT.json must move exactly from_baseline -> to_baseline");
+  if(!sameJson(omitKeys(baseBuild,["active_baseline","reason"]),omitKeys(headBuild,["active_baseline","reason"]))) errors.push("CURRENT.json may change only active_baseline (and reason)");
+  const manifest=ctx.readBaseJson("build-spec/baselines/"+t.to_baseline+"/manifest.json");
+  if(manifest?.status!=="LOCKED" || manifest.supersedes!==t.from_baseline) errors.push("to_baseline must already be merged, LOCKED and supersede from_baseline (freeze it first)");
+  return errors;
+};
+const activationRecordErrors=(ctx,t)=>{
+  const rel="build-spec/activations/"+t.to_baseline+".json",records=ctx.changed.filter(p=>ACTIVATION_RECORD_RE.test(p));
+  if(records.length!==1 || records[0]!==rel) return ["exactly one Activation Record for to_baseline required: "+rel];
+  if(ctx.existsAtBase(rel)) return ["Activation Record already exists at base and is append-only: "+rel];
+  const a=ctx.readHeadJson(rel);
+  const ok=a?.baseline_id===t.to_baseline && a.previous_baseline===t.from_baseline && a.type==="REBASELINE";
+  return ok?[]:["Activation Record must be REBASELINE from_baseline -> to_baseline"];
+};
+const activationSprintErrors=(ctx,t)=>{
+  const {baseSprint,headSprint}=ctx.state,errors=[];
+  if(!baseSprint?.active_sprint) return ["BUILD_SPEC_ACTIVATION needs an existing Sprint; use the ordinary Activation flow while HOLD"];
+  if(baseSprint.active_build_spec!==t.from_baseline || headSprint?.active_build_spec!==t.to_baseline) errors.push("CURRENT-SPRINT active_build_spec must move from_baseline -> to_baseline");
+  if(!sameJson(omitKeys(baseSprint,["active_build_spec","reason"]),omitKeys(headSprint,["active_build_spec","reason"]))) errors.push("active Sprint/Task/status must stay unchanged during BUILD_SPEC_ACTIVATION");
+  return errors;
+};
+const REBIND_FIELDS=["build_spec_id","acceptance_links"];
+const taskRebindError=(t,next,affected,{from_baseline,to_baseline})=>{
+  if(!next) return "Task removed: "+t.task_id;
+  if(t.status==="CLOSED") return sameJson(t,next)?null:"CLOSED Task is immutable: "+t.task_id;
+  if(!sameJson(omitKeys(t,REBIND_FIELDS),omitKeys(next,REBIND_FIELDS))) return "Task "+t.task_id+" may change only build_spec_id/acceptance_links";
+  const rebound=next.build_spec_id===t.build_spec_id || (t.build_spec_id===from_baseline && next.build_spec_id===to_baseline);
+  if(!rebound) return "Task "+t.task_id+" may only rebind from_baseline -> to_baseline";
+  const mappingChanged=!sameJson(t.acceptance_links,next.acceptance_links);
+  return mappingChanged && !affected.includes(t.task_id)?"AC/Test mapping change requires Task in affected_tasks: "+t.task_id:null;
+};
+const activationTaskErrors=(ctx,t,s)=>{
+  const rel="delivery/sprints/"+s.affected_sprint+"/tasks.json";
+  if(!ctx.changed.includes(rel)) return [];
+  const before=ctx.readBaseJson(rel)?.tasks||[],afterList=ctx.readHeadJson(rel)?.tasks||[];
+  const after=new Map(afterList.map(x=>[x.task_id,x]));
+  const errors=before.map(x=>taskRebindError(x,after.get(x.task_id),s.affected_tasks||[],t)).filter(Boolean);
+  if(before.length!==afterList.length) errors.push("Task count changed; Task creation/removal needs Planning + Activation");
+  return errors;
+};
+const activationManifestErrors=(ctx,t,s)=>{
+  const rel="delivery/sprints/"+s.affected_sprint+"/manifest.json";
+  if(!ctx.changed.includes(rel)) return [];
+  const before=ctx.readBaseJson(rel),after=ctx.readHeadJson(rel);
+  const ok=before?.build_spec_id===t.from_baseline && after?.build_spec_id===t.to_baseline &&
+    sameJson(omitKeys(before,["build_spec_id"]),omitKeys(after,["build_spec_id"]));
+  return ok?[]:["Sprint manifest may change only build_spec_id from_baseline -> to_baseline"];
+};
+const activationBacklogErrors=ctx=>{
+  const rel="delivery/backlog/QUEUE.json";
+  if(!ctx.changed.includes(rel)) return [];
+  const before=ctx.readBaseJson(rel)?.items||[],after=ctx.readHeadJson(rel)?.items||[];
+  const lifecycle=i=>({id:i.backlog_item_id,status:i.status,sprint:i.sprint_id});
+  if(!sameJson(before.map(lifecycle),after.map(lifecycle))) return ["BUILD_SPEC_ACTIVATION cannot change Backlog item status/sprint"];
+  const afterById=new Map(after.map(i=>[i.backlog_item_id,i]));
+  const rewritten=before.filter(i=>i.revalidation && !sameJson(i.revalidation,afterById.get(i.backlog_item_id)?.revalidation));
+  return rewritten.map(i=>"existing revalidation record is immutable: "+i.backlog_item_id);
+};
+const buildSpecActivationLaneErrors=ctx=>{
+  const s=ctx.docket.scope_exception||{},t=s.activation||{},errors=[];
+  if(!RE_BASELINE.test(t.from_baseline||"") || !RE_BASELINE.test(t.to_baseline||"") || t.from_baseline===t.to_baseline) errors.push("activation.from_baseline/to_baseline must be two distinct baseline IDs");
+  if(!nonEmptyString(s.design_change_ref)) errors.push("approved Design/Delta reference (design_change_ref) required");
+  if(!nonEmptyStrings(s.impact_audit)) errors.push("impact_audit (affected AC/Test/Task bindings) required");
+  if(errors.length) return errors;
+  return [...activationPointerErrors(ctx,t),...activationRecordErrors(ctx,t),...activationSprintErrors(ctx,t),
+    ...activationTaskErrors(ctx,t,s),...activationManifestErrors(ctx,t,s),...activationBacklogErrors(ctx)];
+};
+
+const closureBindingErrors=(state,s)=>{
+  const errors=[],sprintId=state.headSprint?.active_sprint??null;
   if(!nonEmptyStrings(s.affected_tasks)) errors.push("CLOSURE_DEFERRAL requires affected_tasks");
+  if(s.affected_build_spec!==state.headSprint?.active_build_spec) errors.push("CLOSURE_DEFERRAL requires affected_build_spec equal to the active Build Spec");
   const sameBinding=state.baseSprint?.active_sprint===sprintId &&
     state.baseSprint?.active_build_spec===state.headSprint?.active_build_spec;
   if(!sameBinding) errors.push("CLOSURE_DEFERRAL cannot switch Sprint/Build binding");
   return errors;
 };
+const sprintBindingErrors=(state,s,laneName)=>{
+  const errors=(s.affected_sprint??null)!==(state.headSprint?.active_sprint??null)?["exception is bound to a different Sprint than the active Sprint"]:[];
+  if(laneName==="BUILD_SPEC_ACTIVATION") return errors;
+  if(laneName==="CLOSURE_DEFERRAL") return [...errors,...closureBindingErrors(state,s)];
+  return sameJson(state.baseSprint,state.headSprint)?errors:
+    [...errors,"delivery/CURRENT-SPRINT.json must stay unchanged in lane "+laneName];
+};
 const laneSpecificErrors={
   GOVERNANCE_REFORM:ctx=>(ctx.docket.scope_exception?.affected_tasks||[]).length?["GOVERNANCE_REFORM cannot claim Task authority"]:[],
   PROTECTED_SSOT_AMENDMENT:ssotLaneErrors,
+  BUILD_SPEC_ACTIVATION:buildSpecActivationLaneErrors,
   HOTFIX:hotfixLaneErrors
 };
 const checkLaneState=(ctx,laneName)=>{
   const {state,docket}=ctx,s=docket.scope_exception||{},errors=[];
-  if(!sameJson(state.baseBuild,state.headBuild)) errors.push("build-spec/CURRENT.json must stay unchanged; Activation is a separate authority");
+  if(laneName!=="BUILD_SPEC_ACTIVATION" && !sameJson(state.baseBuild,state.headBuild)) errors.push("build-spec/CURRENT.json must stay unchanged; only BUILD_SPEC_ACTIVATION may move it");
   errors.push(...sprintBindingErrors(state,s,laneName));
   errors.push(...(laneSpecificErrors[laneName]?.(ctx)||[]));
   return errors;
@@ -217,23 +299,36 @@ export function evaluateHumanException(ctx){
     docketPath:ctx.docketPath,coveredGates:covered,errors};
 }
 
-const approvalComplete=(d,policy,accounts)=>{
-  const a=d?.human_approval||{};
-  return a.case_id===d.case_id && (policy.accepted_source_kinds||[]).includes(a.source_kind) &&
-    a.decision===policy.required_decision && a.scope===policy.required_scope &&
-    RE_DIGEST.test(d.candidate_digest_sha256||"") && a.candidate_digest_sha256===d.candidate_digest_sha256 &&
-    nonEmptyString(a.human_message_ref) && (accounts||[]).includes(a.approver) && isUnix(a.approved_at_unix);
+const waiverScopeErrors=(s,{policy,gateId,taskId,sprintId,buildSpecId})=>{
+  const errors=[];
+  if(!(policy.deferrable_procedural_gates||[]).includes(gateId) || !(s.covered_gates||[]).includes(gateId)) errors.push("gate "+gateId+" not covered");
+  if(!(s.affected_tasks||[]).includes(taskId)) errors.push("Task "+taskId+" out of scope");
+  if(s.affected_sprint!==sprintId) errors.push("Sprint "+sprintId+" out of scope");
+  if(s.affected_build_spec!==buildSpecId) errors.push("Build Spec "+buildSpecId+" out of scope");
+  if(s.never_converts_fail_or_untested_to_pass!==true || !nonEmptyStrings(s.residual_gaps)) errors.push("fake-green / residual GAP declaration missing");
+  return errors;
 };
-/** A merged CLOSURE_DEFERRAL docket keeps deferring exactly its named procedural gate for its named Task. */
-export const isPersistentProceduralWaiver=(d,{policy,accounts,gateId,taskId,sprintId})=>{
+const waiverRegistryErrors=(d,{fileName,revokedIds,digestCounts})=>{
+  const errors=[];
+  if(fileName!==undefined && fileName!==d.case_id+".json") errors.push("docket file name does not match case_id");
+  if(!RE_DIGEST.test(d.candidate_digest_sha256||"")) errors.push("candidate digest missing");
+  if(revokedIds?.has(d.case_id)) errors.push("revoked");
+  if((digestCounts?.get(d.candidate_digest_sha256)||0)>1) errors.push("replay: digest bound by more than one docket");
+  return errors;
+};
+/**
+ * Use-time validation of a merged CLOSURE_DEFERRAL docket. Re-checked on every gate run:
+ * a docket that is expired, revoked, replayed, out of scope or not exactly Human-approved
+ * defers nothing.
+ */
+export function persistentWaiverErrors(d,query){
   const s=d?.scope_exception||{};
-  return s.schema===HUMAN_EXCEPTION_SCHEMA && s.lane==="CLOSURE_DEFERRAL" &&
-    (policy.deferrable_procedural_gates||[]).includes(gateId) &&
-    Array.isArray(s.covered_gates) && s.covered_gates.includes(gateId) &&
-    Array.isArray(s.affected_tasks) && s.affected_tasks.includes(taskId) &&
-    s.affected_sprint===sprintId && s.never_converts_fail_or_untested_to_pass===true &&
-    nonEmptyStrings(s.residual_gaps) && approvalComplete(d,policy,accounts);
-};
+  if(s.schema!==HUMAN_EXCEPTION_SCHEMA || s.lane!=="CLOSURE_DEFERRAL") return ["not a CLOSURE_DEFERRAL docket"];
+  const ctx={docket:d,policy:query.policy,now:query.now,humanAccounts:query.accounts};
+  return [...waiverScopeErrors(s,query),...waiverRegistryErrors(d,query),
+    ...checkApproval(ctx),...checkExpiry(ctx),...checkCoveredGates(query.policy,"CLOSURE_DEFERRAL",s.covered_gates)];
+}
+export const isPersistentProceduralWaiver=(d,query)=>persistentWaiverErrors(d,query).length===0;
 
 const readJsonFile=abs=>{
   try{return JSON.parse(fs.readFileSync(abs,"utf8"));}catch{return null;}
@@ -241,15 +336,22 @@ const readJsonFile=abs=>{
 export function loadGovernanceReformPolicy(root){
   return readJsonFile(path.join(root,GOVERNANCE_REFORM_POLICY_PATH));
 }
-export function hasPersistentProceduralWaiver({root,gateId,taskId,sprintId}){
+const loadDockets=dir=>fs.existsSync(dir)?
+  fs.readdirSync(dir).filter(f=>f.endsWith(".json")).map(fileName=>({fileName,docket:readJsonFile(path.join(dir,fileName))})).filter(x=>x.docket):[];
+/** Returns valid and rejected CLOSURE_DEFERRAL dockets for one gate/Task/Sprint/Build at time `now`. */
+export function findPersistentProceduralWaivers({root,gateId,taskId,sprintId,buildSpecId,now=Math.floor(Date.now()/1000)}){
   const full=loadGovernanceReformPolicy(root);
-  if(!full?.exception) return false;
-  const dir=path.join(root,full.exception.docket_dir);
-  if(!fs.existsSync(dir)) return false;
-  return fs.readdirSync(dir).filter(f=>f.endsWith(".json")).some(f=>isPersistentProceduralWaiver(
-    readJsonFile(path.join(dir,f)),
-    {policy:full.exception,accounts:full.human_authority_accounts,gateId,taskId,sprintId}));
+  if(!full?.exception) return {valid:[],rejected:[]};
+  const entries=loadDockets(path.join(root,full.exception.docket_dir));
+  const revokedIds=new Set(entries.flatMap(x=>Array.isArray(x.docket.revokes_exception_case_ids)?x.docket.revokes_exception_case_ids:[]));
+  const digestCounts=new Map();
+  for(const {docket} of entries) if(docket.candidate_digest_sha256) digestCounts.set(docket.candidate_digest_sha256,(digestCounts.get(docket.candidate_digest_sha256)||0)+1);
+  const candidates=entries.filter(x=>x.docket.scope_exception?.lane==="CLOSURE_DEFERRAL" && (x.docket.scope_exception.covered_gates||[]).includes(gateId));
+  const query={policy:full.exception,accounts:full.human_authority_accounts,gateId,taskId,sprintId,buildSpecId,now,revokedIds,digestCounts};
+  const results=candidates.map(x=>({case_id:x.docket.case_id,errors:persistentWaiverErrors(x.docket,{...query,fileName:x.fileName})}));
+  return {valid:results.filter(r=>!r.errors.length).map(r=>r.case_id),rejected:results.filter(r=>r.errors.length)};
 }
+export const hasPersistentProceduralWaiver=query=>findPersistentProceduralWaivers(query).valid.length>0;
 
 const gitShow=(base,rel)=>{
   if(!RE_SHA.test(base||"") || !SAFE_REL.test(rel)) return null;

@@ -30,8 +30,6 @@
       "BACKLOG_T008_CLOSE_AFTER_T006_REVIEW"
     ],
     "global_forbidden_paths": [
-      "build-spec/CURRENT.json",
-      "build-spec/activations/",
       "releases/",
       "deploy/",
       ".github/workflows/release.yml",
@@ -94,7 +92,37 @@
           "ci/",
           "package.json",
           "package-lock.json",
-          "delivery/CURRENT-SPRINT.json"
+          "delivery/CURRENT-SPRINT.json",
+          "build-spec/CURRENT.json",
+          "build-spec/activations/"
+        ]
+      },
+      "BUILD_SPEC_ACTIVATION": {
+        "change_class": "SPEC_ACTIVATION",
+        "waivable_gates": ["CHANGE_SCOPE", "ACTIVATION_SPRINT_PAUSE_PRECONDITION"],
+        "allowed_paths": [
+          "build-spec/CURRENT.json",
+          "build-spec/activations/",
+          "delivery/CURRENT-SPRINT.json",
+          "delivery/backlog/QUEUE.json",
+          "delivery/sprints/{affected_sprint}/tasks.json",
+          "delivery/sprints/{affected_sprint}/manifest.json",
+          "delivery/findings/",
+          "delivery/audits/"
+        ],
+        "forbidden_paths": [
+          "src/",
+          "tests/",
+          "supabase/",
+          "generated/",
+          "harness/",
+          ".github/",
+          "ci/",
+          "package.json",
+          "package-lock.json",
+          "build-spec/baselines/",
+          "delivery/deltas/",
+          "delivery/evidence/"
         ]
       },
       "CLOSURE_DEFERRAL": {

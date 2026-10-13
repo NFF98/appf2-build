@@ -803,7 +803,10 @@ The second pattern is prohibited when the first can accomplish the same governed
 
 ### 18.5 Human 通用特批與 Sprint 中修改 SSOT
 
-依憲法 §7 的四種通道（`GOVERNANCE_REFORM`、`PROTECTED_SSOT_AMENDMENT`、`CLOSURE_DEFERRAL`、`HOTFIX`）。特批只能 waive 程序 Gate，絕不把 FAIL／UNTESTED 變成 PASS，也不取代 Human Merge 核准。
+依憲法 §7 的五種通道（`GOVERNANCE_REFORM`、`PROTECTED_SSOT_AMENDMENT`、`BUILD_SPEC_ACTIVATION`、`CLOSURE_DEFERRAL`、`HOTFIX`）。特批只能 waive 程序 Gate，絕不把 FAIL／UNTESTED 變成 PASS，也不取代 Human Merge 核准。
+
+- Sprint 進行中變更 Product／Build Spec：先在 Design Repo 經 Human 批准，再依序開兩個 PR：(1) `PROTECTED_SSOT_AMENDMENT` 新增 immutable baseline、Delta、Finding 與影響分析；合併後 (2) `BUILD_SPEC_ACTIVATION` 新增 Activation 記錄、移動 `CURRENT.json` 並把 Sprint／Task／Backlog 的 `build_spec_id` 重新綁定。Sprint 與 Task 狀態保持不變，舊 baseline 永不改寫。
+- 已合併的 `CLOSURE_DEFERRAL` 每次 Gate 執行都重新驗證期限、範圍（含 Build Spec）、Human 核准欄位、撤銷與重放；過期或不符即失效。延長或替換須開新 docket，撤銷用另一份 docket 的 `revokes_exception_case_ids`。
 
 ### 18.6 GPT 執行前檢查與 PR 新增限制
 

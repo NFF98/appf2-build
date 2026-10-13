@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { resolveRepoException } from "./human-exception.mjs";
 
 const root=process.cwd(), errors=[];
 const readJson=p=>JSON.parse(fs.readFileSync(path.join(root,p),"utf8"));
@@ -44,13 +45,32 @@ const activationTouched=(base,head,baselineId)=>{
   const touched=diff.split("\n").some(line=>line.split("\t").slice(1).includes(activationPath));
   if(!touched) errors.push("CURRENT transition requires Activation Record in the same change: "+activationPath);
 };
-const validateRebaseline=(base,oldCurrent,current,a)=>{
+// GOV-REFORM-20261013: a verified BUILD_SPEC_ACTIVATION Human exception (exact bytes, base,
+// expiry, lane rules) may cover ONLY the "Sprint BLOCKED first" precondition. Every other
+// Activation check in this file still applies.
+const gitLines=args=>{
+  try{return execFileSync("git",args,{encoding:"utf8",stdio:["ignore","pipe","ignore"]}).trim().split("\n").filter(Boolean);}
+  catch{return null;}
+};
+const midSprintActivationCovered=(base,head,oldCurrent,oldSprint)=>{
+  const baseSha=gitLines(["rev-parse","--verify",base+"^{commit}"])?.[0];
+  const changed=baseSha ? gitLines(["diff","--name-only",baseSha,head]) : null;
+  if(!changed) return false;
+  const r=resolveRepoException({root,base:baseSha,changed,state:{
+    baseSprint:oldSprint,headSprint:readJson("delivery/CURRENT-SPRINT.json"),baseBuild:oldCurrent,headBuild:current
+  }});
+  const covered=r.ok && r.lane==="BUILD_SPEC_ACTIVATION" && r.coveredGates.includes("ACTIVATION_SPRINT_PAUSE_PRECONDITION");
+  if(covered) console.log("- Mid-Sprint rebaseline: Sprint-pause precondition covered by verified Human exception "+r.caseId+"; all other Activation checks enforced.");
+  return covered;
+};
+const validateRebaseline=(base,head,oldCurrent,current,a)=>{
   if(a.type!=="REBASELINE" || a.previous_baseline!==oldCurrent.active_baseline){
     errors.push("CURRENT rebaseline must supersede previous active baseline");
   }
   const oldSprint=showJsonAt(base,"delivery/CURRENT-SPRINT.json");
-  if(oldSprint && oldSprint.active_sprint!==null && oldSprint.status!=="BLOCKED"){
-    errors.push("Rebaseline while a Sprint exists requires previous Sprint state BLOCKED");
+  if(oldSprint && oldSprint.active_sprint!==null && oldSprint.status!=="BLOCKED" &&
+     !midSprintActivationCovered(base,head,oldCurrent,oldSprint)){
+    errors.push("Rebaseline while a Sprint exists requires previous Sprint state BLOCKED (or a verified BUILD_SPEC_ACTIVATION Human exception)");
   }
 };
 const validateCurrentTransition=(base,head,current)=>{
@@ -66,7 +86,7 @@ const validateCurrentTransition=(base,head,current)=>{
   if(!a||!m) errors.push("CURRENT transition requires valid Activation Record and baseline");
   else if(oldCurrent.active_baseline===null){
     if(a.type!=="INITIAL_FREEZE" || a.previous_baseline!==null) errors.push("First CURRENT activation must be INITIAL_FREEZE");
-  }else validateRebaseline(base,oldCurrent,current,a);
+  }else validateRebaseline(base,head,oldCurrent,current,a);
   activationTouched(base,head,current.active_baseline);
 };
 
