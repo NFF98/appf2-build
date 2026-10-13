@@ -2,7 +2,7 @@
   "schema_version": 1,
   "case_id": "GOV-T006-F06-DEFER-T008-001",
   "constitution_version": "1.0",
-  "stage": "DRAFT_PENDING_HUMAN_EXACT_CANDIDATE_APPROVAL",
+  "stage": "HUMAN_EXACT_CANDIDATE_APPROVED_PENDING_CI_AND_BCE_SEPARATE_MERGE_REQUIRED",
   "base_sha": "e495237d85ceaa2ae7c2c62d32678dcac4fa133b",
   "exact_changed_paths": [
     "harness/scripts/validate-backlog.mjs",
@@ -76,14 +76,13 @@
   ],
   "rollback": "候選未 Merge 直接關閉 Draft；Merge 後需新經 Human 核准的反向 L3，禁止直接改歷史或繞過憲法 Gate。",
   "human_approval": {
-    "status": "PENDING_HUMAN_EXACT_CANDIDATE_APPROVAL",
     "case_id": "GOV-T006-F06-DEFER-T008-001",
-    "source_kind": null,
-    "decision": null,
-    "scope": null,
-    "human_message_ref": null,
-    "candidate_digest_sha256": null,
-    "approved_at_unix": null
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "human_message_ref": "Human direct ChatGPT message, 2026-10-13 JST: 『正式批准 GOV-T006-F06-DEFER-T008-001 的 L3 精確候選：PR #384、BASE=e495237d85ceaa2ae7c2c62d32678dcac4fa133b、HEAD=325b1cd87b306e039e6026fe460356dead579fe0、兩個治理規則檔合計 SHA256=bd8b6a5865bdec7ca8427f0c8d2befa201cbe71e3cd15b7b7af7eccd882493fb。批准只登錄本次 Human 精確候選決定、重新跑完整 CI、32 項負向測試與 GPT 獨立 BCE；不得改 Rule bytes、產品規格或任務映射。CI/BCE 全 PASS 後停在另一筆 Human Merge 核准前；不得 Merge、啟動 T008 或發 Cursor lease。』",
+    "candidate_digest_sha256": "bd8b6a5865bdec7ca8427f0c8d2befa201cbe71e3cd15b7b7af7eccd882493fb",
+    "approved_at_unix": 1791881517
   },
   "owner_decision_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6141078349",
   "source_evidence_pr": "https://github.com/NFF98/appf2-build/pull/383"
