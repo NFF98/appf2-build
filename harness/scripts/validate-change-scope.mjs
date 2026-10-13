@@ -327,9 +327,9 @@ const p0Docket=readHeadJson(p0DocketPath);
 const p0Digest=()=>{
   const h=createHash("sha256");
   for(const rel of [...p0RulePaths].sort()){
-    h.update(rel+"\\0");
+    h.update(rel+String.fromCharCode(0));
     h.update(fs.readFileSync(path.join(root,rel)));
-    h.update("\\0");
+    h.update(String.fromCharCode(0));
   }
   return h.digest("hex");
 };
