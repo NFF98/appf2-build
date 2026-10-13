@@ -253,10 +253,10 @@ export function hasPersistentProceduralWaiver({root,gateId,taskId,sprintId}){
 
 const gitShow=(base,rel)=>{
   if(!RE_SHA.test(base||"") || !SAFE_REL.test(rel)) return null;
-  try{return execFileSync("git",["show",base+":"+rel],{maxBuffer:64*1024*1024});}catch{return null;}
+  try{return execFileSync("git",["show",base+":"+rel],{maxBuffer:64*1024*1024,stdio:["ignore","pipe","ignore"]});}catch{return null;}
 };
 const gitListDir=(base,dir)=>{
-  try{return execFileSync("git",["ls-tree","--name-only",base,dir],{encoding:"utf8"}).trim().split("\n").filter(Boolean);}
+  try{return execFileSync("git",["ls-tree","--name-only",base,dir],{encoding:"utf8",stdio:["ignore","pipe","ignore"]}).trim().split("\n").filter(Boolean);}
   catch{return [];}
 };
 const parseJson=buf=>{
