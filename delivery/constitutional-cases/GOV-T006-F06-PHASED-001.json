@@ -9,7 +9,7 @@
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "36a2f326bf34fcec77077ba1503b7b3708324c22f98c9c091d4ac3d0fb971d5e",
+  "candidate_digest_sha256": "a45b2e3a9eb0971b22b4b8340db80b8a8938ed084b7a9819027366b978eeff66",
   "approval_boundary": "CANDIDATE_PR_ONLY; Human has approved submission of a draft, not exact rule bytes nor Merge.",
   "why5": [
     {
@@ -57,7 +57,8 @@
     "Wrong Sprint/Task/baseline or T008 prematurely active must fail",
     "Fake VERIFIED revalidation or missing T008 required pairs must fail",
     "BS025 and BS026 positive/negative synthetic sequencing must run",
-    "PR CI/Governance/Attack/CodeQL must be independently reviewed before separate Human Merge approval"
+    "PR CI/Governance/Attack/CodeQL must be independently reviewed before separate Human Merge approval",
+    "Other-Sprint/revalidation attack fixtures without SP-P1-003/tasks.json must not crash"
   ],
   "rollback": "Until separate Human Merge approval, close Draft PR without changing main. After merge, rollback requires new exact Human-approved constitutional PR; do not alter completed historical Task/baseline.",
   "human_approval": null
