@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "case_id": "GOV-T006-F06-PHASED-001",
+  "constitution_version": "1.0",
+  "stage": "DRAFT_AWAITING_HUMAN_EXACT_CANDIDATE_APPROVAL",
+  "base_sha": "3c6eb63a009a515d9fa1038ad5cd1a81908469f6",
+  "exact_changed_paths": [
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-sprint.mjs"
+  ],
+  "candidate_digest_sha256": "55da2cb8e091bc6e0a63b31a5b27c1b51b8a7bfef9d57567131ad3151c483814",
+  "approval_boundary": "CANDIDATE_PR_ONLY; Human has approved submission of a draft, not exact rule bytes nor Merge.",
+  "why5": [
+    {
+      "question": "W1 可觀測症狀？",
+      "answer": "PR #374 的 TEST-F00-037 僅涵蓋 Composer origin，原 F00-AC-037 同時包含未實作的 Preview-origin，T006 無法誠實宣稱九項全部 PASS。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6134299436"
+    },
+    {
+      "question": "W2 直接原因？",
+      "answer": "T006 Sprint 明確將完整 F06 排除，卻認領含 Preview return 的原 F00-AC-037。",
+      "evidence_ref": "delivery/sprints/SP-P1-003/tasks.json; delivery/sprints/SP-P1-003/manifest.json"
+    },
+    {
+      "question": "W3 流程缺口？",
+      "answer": "Sprint 驗收歸屬沒有分離當期 Composer 真實證據與 F06 未來 Preview 真實證據。",
+      "evidence_ref": "delivery/backlog/QUEUE.json BL-P1-018 / BL-P1-027"
+    },
+    {
+      "question": "W4 最初在哪一輪漏掉？",
+      "answer": "UNKNOWN：現有可核對紀錄不足以斷言首次漏檢人員及審查環節，不推測責任。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/374#issuecomment-6134299436"
+    },
+    {
+      "question": "W5 原規則為何不能安全直接解決？",
+      "answer": "Evidence Gate 禁止無真實 PASS 的 T006 REVIEW/VERIFIED；Rebaseline 前須 Sprint BLOCKED；BS025 的 T008 未完成 revalidation 特例不容許 T006 BLOCKED；ACTIVE 狀態亦禁止沒有精確 L3 核准的治理檔寫入。",
+      "evidence_ref": "harness/scripts/validate-evidence.mjs; harness/scripts/validate-activation.mjs; harness/scripts/validate-backlog.mjs; harness/scripts/validate-change-scope.mjs"
+    }
+  ],
+  "changed_behavior": [
+    "Exact T006 BLOCKED / T008 BLOCKED pause can retain three original IN_PROGRESS revalidations for BS025, with BS026 predeclared by exact scope. No PASS manufactured.",
+    "Retain T006 VERIFIED before T008 activation and T008 CLOSED before T006 final CLOSED for BS025 and future BS026.",
+    "Recognize precisely this four-path protected P0 candidate only after Human approved exact base SHA/rules digest; independent constitutional approval gate remains unchanged."
+  ],
+  "no_change": [
+    "No file outside exact four paths",
+    "No Product code",
+    "No Test/Evidence PASS waiver",
+    "No Sprint/Task status change",
+    "No Cursor lease",
+    "No Build Freeze/Activation",
+    "No modification to immutable baseline or CLOSED history"
+  ],
+  "negative_test_plan": [
+    "Missing exact Human approval or wrong digest/base/path must fail",
+    "Wrong Sprint/Task/baseline or T008 prematurely active must fail",
+    "Fake VERIFIED revalidation or missing T008 required pairs must fail",
+    "BS025 and BS026 positive/negative synthetic sequencing must run",
+    "PR CI/Governance/Attack/CodeQL must be independently reviewed before separate Human Merge approval"
+  ],
+  "rollback": "Until separate Human Merge approval, close Draft PR without changing main. After merge, rollback requires new exact Human-approved constitutional PR; do not alter completed historical Task/baseline.",
+  "human_approval": null
+}
