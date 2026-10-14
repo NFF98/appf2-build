@@ -75,8 +75,8 @@
     "covered_gates": [
       "CHANGE_SCOPE"
     ],
-    "expires_at_unix": null,
-    "expires_at_rule": "尚無 Human 核准；登錄核准時依 policy max_ttl_seconds 由 approved_at_unix 推導上限，或採 Human 指定的較短期限。"
+    "expires_at_unix": 1793188993,
+    "expires_at_rule": "Policy max TTL 1209600 seconds after GPT-transcribed Human decision record at GitHub #392 comment 6167889238; this URL is a GPT transcription, not independently verified Human-authored GitHub comment."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -88,5 +88,15 @@
     "既有 POI-002..006 舊列維持原格式，不受嚴格欄位檢查，只受不可刪除與 ID 唯一檢查。",
     "admin-closure-cross-gate-test.mjs 需要本機 git clone，不在 npm run gate 內，需人工或 BCE 執行。"
   ],
-  "approval_status": "PENDING_HUMAN_EXACT_DIGEST_DECISION_NOT_APPROVED"
+  "approval_status": "HUMAN_EXACT_CANDIDATE_APPROVED_PR_ONLY_MERGE_NOT_APPROVED",
+  "human_approval": {
+    "case_id": "GOV-392-CARRY-FORWARD-001",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "https://github.com/NFF98/appf2-build/issues/392#issuecomment-6167889238",
+    "approver": "NFF98",
+    "approved_at_unix": 1791979393,
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "17f9ab5d65969847873bee09153b5c0f08eca902d077bb3e4a1c4c1a5b60c112"
+  }
 }
