@@ -7,13 +7,15 @@
   "exact_changed_paths": [
     "harness/policy/APPF2-CONSTITUTION.md",
     "harness/policy/governance-reform.json",
+    "harness/scripts/admin-closure-cross-gate-test.mjs",
     "harness/scripts/carry-forward-selftest.mjs",
     "harness/scripts/governance-gate.mjs",
     "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-special-approvals-and-carry-forward.mjs",
     "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "afff20b75be4488f8e0e118aed9be98f7a9aebdbf42a4da6b48283e527b9aa34",
+  "candidate_digest_sha256": "17f9ab5d65969847873bee09153b5c0f08eca902d077bb3e4a1c4c1a5b60c112",
   "why5": [
     {
       "question": "為什麼 Sprint3（SP-P1-003）無法結案？",
@@ -48,12 +50,13 @@
     "另建新的登錄冊：與既有 PROJECT-OPEN-ITEMS.json 重複，被 Issue #392 禁止。"
   ],
   "no_change": "若不採用：SP-P1-003 維持 REVIEW／ACTIVE，無法 HOLD；特批與未完成事項沒有強制登錄，下一個 Sprint 也沒有 Product Alignment 前置條件。",
-  "rollback": "以 Human 核准的 revert PR 還原本 PR 的精確 7 個路徑；本 docket 為 append-only 記錄不刪除。若已有依本規則建立的行政結案，revert 前必須先由 Human 決定該 Sprint 的處置。",
+  "rollback": "以 Human 核准的 revert PR 還原本 PR 的精確 9 個路徑；本 docket 為 append-only 記錄不刪除。若已有依本規則建立的行政結案，revert 前必須先由 Human 決定該 Sprint 的處置。",
   "negative_tests": [
     "harness/scripts/carry-forward-selftest.mjs（108 案例：register 28、register_diff 12、docket 13、administrative_closure 27、product_alignment 6、change_review 22；每個負向案例斷言精確拒絕原因）",
     "harness/scripts/validate-backlog.mjs T006/T008 順序回歸 20 案例（新增 2：行政結案凍結 T008 REVIEW 合法；該處置不允許 T008 CLOSED）",
     "BCE 包 governance/tools/carry-forward-mutation.mjs：38/38 mutants killed",
     "BCE 包 governance/tools/run-e2e.ps1：真實 SP-P1-003 資料的拋棄式 E2E，合法 1 例 ACCEPTED、負向 5 例 REJECTED（缺核准、漏列 T008、HOLD 但 implementation_enabled=true、T006 假 CLOSED、默默遺漏 GAP），+60 天後 main 狀態 PASS",
+    "harness/scripts/admin-closure-cross-gate-test.mjs（GPT BCE #6164737627 修正）：在一次性 clone 以真實 SP-P1-003 資料建立行政結案 commit，實際執行 validate-change-scope.mjs、governance-gate.mjs、validate-sprint.mjs；合法 1 例三關皆 PASS，負向 6 例（缺 GAP、未獲 Human 核准、AI 來源核准、額外路徑、T006 假 PASS、HOLD 但 implementation_enabled=true）皆由 validate-change-scope.mjs 本身以精確原因拒絕；額外路徑一例僅 Change Scope Gate 攔下",
     "harness/attack/run-dry-run.mjs：NOT_RUN（會呼叫 ci/run-product-ci.mjs，Human 已要求停止產品測試迴圈）"
   ],
   "scope_exception": {
@@ -82,7 +85,8 @@
   "known_limitations": [
     "CI 無法證明 human_approval 來自真人，需 Human 親自查核來源。",
     "harness/attack/run-dry-run.mjs 未新增 GOV-392 attack 案例，也未執行（會跑產品 CI）。",
-    "既有 POI-002..006 舊列維持原格式，不受嚴格欄位檢查，只受不可刪除與 ID 唯一檢查。"
+    "既有 POI-002..006 舊列維持原格式，不受嚴格欄位檢查，只受不可刪除與 ID 唯一檢查。",
+    "admin-closure-cross-gate-test.mjs 需要本機 git clone，不在 npm run gate 內，需人工或 BCE 執行。"
   ],
   "approval_status": "PENDING_HUMAN_EXACT_DIGEST_DECISION_NOT_APPROVED"
 }
