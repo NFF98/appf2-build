@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import { inspectConstitutionalChange, testConstitutionFailClosed } from "./validate-constitutional-change.mjs";
 import { runGovernanceReformSelfTests } from "./governance-reform-selftest.mjs";
+import { inspectRepoCarryForwardChange, validateRepoCarryForwardRegister, CARRY_FORWARD_GATE_MARKER } from "./validate-special-approvals-and-carry-forward.mjs";
+import { runCarryForwardSelfTests } from "./carry-forward-selftest.mjs";
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -62,6 +64,16 @@ if(base && !/^0+$/.test(base)){
   if(result.bootstrap && !result.errors.length) note.push("GOV-CONST-001 narrow one-time bootstrap verified against exact old main SHA.");
   if(result.constitutional && !result.bootstrap) note.push("Constitutional amendment: pre-Phase4 exact Human-decision reference and byte digest required; Human provenance independently verified by reviewer, NOT authenticated by CI; Sprint scope remains independent.");
 }
+// GOV-392: every Change Review re-checks the permanent carry-forward register; the BASE policy
+// decides enforcement so a PR cannot disable its own review (inspectCarryForwardChange).
+fail.push(...validateRepoCarryForwardRegister(root));
+if(base && !/^0+$/.test(base)){
+  const review=inspectRepoCarryForwardChange({root,base,changed:[...new Set(constitutionalChanged)]});
+  fail.push(...review.errors.map(e=>"CARRY-FORWARD: "+e));
+  note.push(CARRY_FORWARD_GATE_MARKER+": "+(review.enforced?"enforced by BASE policy":"not yet enforced by BASE policy (bootstrap; enforced after merge)")+".");
+}
+try{ const cf=runCarryForwardSelfTests(root); note.push("GOV-392 carry-forward positive/negative matrix: "+cf.total+" PASS (synthetic, NOT Human approval) "+JSON.stringify(cf.counts)+"."); }
+catch(error){ fail.push(String(error)); }
 try{ const count=testConstitutionFailClosed(); note.push("Constitution negative-scope self tests: "+count+" PASS."); }
 catch(error){ fail.push(String(error)); }
 try{

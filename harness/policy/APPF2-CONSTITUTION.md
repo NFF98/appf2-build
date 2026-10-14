@@ -108,3 +108,24 @@ Human 可以否決、退回任何一關。GitHub 唯一 canonical source，不�
 - 本通道本身屬 L3：修改 policy、驗證器或本節，仍須依本法完成 5 Why 與一次 Human 精確差異審定。
 - pg 第一案：Issue #345；截至本文件入庫候選時 R1…R5 **0 / 5**，NOT APPROVED。
 - 唯一 T006 執行通道：Issue #301；Cursor 原 lease 已使用，不得重用。
+
+## 8. 特批與未完成事項永久登錄（Carry-Forward）及行政結案（GOV-392）
+
+機器規則唯一來源：`harness/policy/governance-reform.json` 的 `carry_forward` 與 `administrative_closure`；驗證器：`harness/scripts/validate-special-approvals-and-carry-forward.mjs`（由 `governance-gate.mjs`、`validate-sprint.mjs`、`validate-backlog.mjs` 呼叫）；正反矩陣：`harness/scripts/carry-forward-selftest.mjs`。
+
+- **永久登錄冊**：`delivery/PROJECT-OPEN-ITEMS.json`。新列一律採 `APPF2-CARRY-FORWARD-1`（`GAP-*`），欄位含來源（PR／Issue／Sprint／Task／Backlog）、Acceptance／Test 與 Evidence 狀態、原因、風險、Owner、Human 決定參照、下一階段、完成條件、append-only 歷史與解決 Evidence。既有 `POI-*` 舊列保留原格式，但不得刪除。
+- **不可默默帶過**：任何新增的 docket 只要建立、延後或 waive 義務（`scope_exception`、`deferred_acceptance_id`、`closure_disposition`），就必須列出互相連結的 `GAP-*` 列；或以 `zero_gap` 明確宣告零缺口（限 `residual_gaps` 恰為 `["NONE"]`，且不得用於延後 Acceptance、`CLOSURE_DEFERRAL` 或結案 docket）。
+- **登錄冊不可竄改**：不得刪列；`RESOLVED` 列不可再改；`id`／來源／Human 決定／waived Gate／原因／Acceptance 集合不可改；狀態變更必須附加新的歷史紀錄。`RESOLVED` 必須有解決 Evidence，且每個 Acceptance 都是 `PASS`。
+- **真實性檢查**：Acceptance 必須確實映射到來源 Task（不可虛構）；Task 若是 CLOSED／Backlog 若是 DONE／revalidation 若已完成，而對應缺口仍開放，一律失敗（防止假結案）。
+- **期限**：`CLOSURE_DEFERRAL` 等暫時特批到期後即失效，不會自動變成永久許可。登錄冊中以期限 waive 的 Gate，到期後只能在列 RESOLVED 或另有永久 Human 決定時才通過。
+- **`ADMINISTRATIVE_WITH_CARRY_FORWARD` 行政結案**：只代表「行政程序結束，未完成事項已逐項移入登錄冊」，**不是 Product PASS**，也不得把 FAIL／UNTESTED／BLOCKED 寫成 PASS。必要條件：
+  - 同一 PR 新增的 Human 精確核准 docket（`closure_disposition`、`sprint_id`、`build_spec_id`、5 Why、`never_converts_fail_or_untested_to_pass: true`、DIRECT_HUMAN_MESSAGE／APPROVE_EXACT_CANDIDATE／EXACT_PR_DIFF、非佔位符參照、已登錄 Human 帳號）；該 docket 不得是有期限的 `scope_exception`。
+  - Manifest 的 `administrative_closure` 與 docket 完全一致，並逐一列出所有未結案的 Task（含狀態與 AC／Test／Evidence 快照 digest）、Backlog 與 revalidation；沒有列出的、狀態改變的或快照位元組改變的，一律失敗。
+  - 每一個開放項目都有同一 Sprint 的 `GAP-*` 列；不得遺漏同一 Sprint 的其他開放列。
+  - 同一 PR 只可把 `delivery/CURRENT-SPRINT.json` 改為 HOLD（不綁定任何 Sprint／Build Spec／Task），並把 `build-spec/CURRENT.json` 的 `implementation_enabled` 改為 `false`（可同時改 `reason`）；PR 位元組、路徑、base SHA 必須與核准 digest 一致，且 digest 不得重複使用。
+  - 結案後該 Sprint 的 manifest、tasks 與結案 docket 永久不可變。
+  - 一般 CLOSED（所有 Task CLOSED、Backlog DONE、revalidation 完成）的原有規則完全不變。
+- **歷史程序處置**：只有 policy `historical_dispositionable_gates` 列出的程序順序 Gate（目前為 `BACKLOG_T008_CLOSE_AFTER_T006_REVIEW` 與 `BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED`），才可在有效的行政結案中記為該 Sprint 的永久歷史處置；Evidence PASS 等不可 waive 的 Gate 不在此列。後者只讓已凍結的 T008 REVIEW 在 HOLD 後維持真實狀態，**不允許** T008 CLOSED。
+- **下一個 Sprint**：只要有任何 Sprint 以行政結案關閉，之後的 Sprint 在 ACTIVE 前，manifest 的 `entry_gate.product_alignment` 必須附 Human 決定參照，並逐一審視每一個仍未 RESOLVED 的缺口。Cursor 不得自行決定 Sprint4 或下一階段內容。
+- **防關閉**：是否強制以 **BASE** policy 的 `carry_forward.enforced` 為準；HEAD 移除強制、刪除驗證器或解除 Gate 串接，都會被判定為 suppression 而失敗。首次引入本節的 PR 因 BASE 尚無此 policy，只能依 §7 的 `GOVERNANCE_REFORM` 通道與 Human 精確審定合併。
+- **CI 不能證明核准者是人**：本節所有通過都只代表結構、連結、位元組與不可變性一致。Human 來源查核、獨立 BCE 與 Human 對精確 HEAD 的 Merge 核准，仍然必須另外取得。

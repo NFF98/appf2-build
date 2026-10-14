@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor, revalidationRecords } from "./baseline-lineage.mjs";
+import { closedSprintErrors, productAlignmentErrors, loadCarryForwardPolicy, loadAdminClosureDocket } from "./validate-special-approvals-and-carry-forward.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -17,6 +18,9 @@ const taskStates=new Set(["PLANNED","IN_PROGRESS","BLOCKED","REVIEW","VERIFIED",
 const protectedPrefixes=["build-spec/","harness/","ci/","deploy/","releases/","skills/",".cursor/",".github/","delivery/backlog/","delivery/sprints/","delivery/CURRENT-SPRINT.json","delivery/templates/","delivery/deltas/","package.json","tsconfig.build.json"];
 const testMaintenanceModes=new Set(["BASELINE_FIXTURE_REBIND"]);
 const backlogById=new Map((backlog.items||[]).map(x=>[x.backlog_item_id,x]));
+const carryForwardPolicy=loadCarryForwardPolicy(root);
+const carryForwardRegister=carryForwardPolicy?.carry_forward && exists(carryForwardPolicy.carry_forward.register_path)
+  ? read(carryForwardPolicy.carry_forward.register_path) : null;
 const pathAllowed=(p,allowed)=>allowed.some(a=>a.endsWith("/")?p.startsWith(a):p===a);
 
 const registryFor=baselineId=>{
@@ -243,6 +247,7 @@ const validateActiveSprint=v=>{
   if(m.status==="PLANNED") errors.push("Active Sprint manifest may not remain PLANNED");
   if(m.entry_gate?.user_approved!==true || !m.entry_gate?.approval_ref) errors.push("Active Sprint requires Human approval reference");
   validateActiveTask(td);
+  errors.push(...productAlignmentErrors({activeSid:cs.active_sprint,activeManifest:m,sprints:validated,register:carryForwardRegister,full:carryForwardPolicy}));
   const activeCount=(td.tasks||[]).filter(t=>["IN_PROGRESS","REVIEW"].includes(t.status)).length;
   if(activeCount>1) errors.push("Only one Task may be IN_PROGRESS/REVIEW at a time");
 };
@@ -402,20 +407,11 @@ for(const sid of sprintDirs){
   };
   for(const id of taskIds) visit(id);
 
-  if(m.status==="CLOSED"){
-    for(const t of td.tasks||[]){
-      if(t.status!=="CLOSED") errors.push(sid+" CLOSED Sprint requires every Task CLOSED: "+t.task_id+" is "+t.status);
-    }
-    for(const bid of selectedIds){
-      const bi=backlogById.get(bid);
-      if(bi && bi.status!=="DONE") errors.push(sid+" CLOSED Sprint requires every selected Backlog DONE: "+bid+" is "+bi.status);
-    }
-    for(const bid of revalidationIds){
-      const bi=backlogById.get(bid);
-      if(bi && !["VERIFIED","CLOSED"].includes(bi.revalidation?.status)) errors.push(sid+" CLOSED Sprint requires revalidation complete: "+bid+" is "+bi.revalidation?.status);
-    }
-    if(cs.active_sprint===sid) errors.push(sid+" CLOSED Sprint cannot remain CURRENT active_sprint");
-  }
+  // Ordinary CLOSED keeps every original condition; ADMINISTRATIVE_WITH_CARRY_FORWARD needs an exact
+  // Human closure docket, an enumerated open-item whitelist and registered carry-forward rows.
+  errors.push(...closedSprintErrors({sid,m,td,backlogById,selectedIds,revalidationIds,
+    docket:loadAdminClosureDocket(root,carryForwardPolicy,m),full:carryForwardPolicy,register:carryForwardRegister}));
+  if(m.status==="CLOSED" && cs.active_sprint===sid) errors.push(sid+" CLOSED Sprint cannot remain CURRENT active_sprint");
 }
 
 if(cs.active_sprint===null){
