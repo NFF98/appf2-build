@@ -115,41 +115,25 @@ const changedFromEnv=()=>{
   return execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
 };
 
-function cli(argv){
-  selectionSelfTest();
-  if(argv.includes("--selftest")) return 0;
-  const cfg=JSON.parse(fs.readFileSync(GOVERNANCE_REFORM_POLICY_PATH,"utf8")).impacted_tests;
-  const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
-  // Every real CI invocation audits the complete on-disk test inventory, even
-  // when the current PR uses a GATE_ONLY selection. No tests are marked PASS.
-  let fullInventory;
-  try{
-    fullInventory=resolveRunnablePlan({
-      mode:"FULL_FALLBACK",scripts:[...cfg.full_suite],not_run:[],reasons:[]
-    },pkg);
-  }catch(e){console.error(e.message);return 1;}
+const printFullInventory=(cfg,pkg)=>{
+  const full=resolveRunnablePlan({
+    mode:"FULL_FALLBACK",scripts:[...cfg.full_suite],not_run:[],reasons:[]
+  },pkg);
   console.log("FAST-LOOP FULL INVENTORY: files-backed suites: "+
-    fullInventory.scripts.filter(s=>s.startsWith("test:")).join(", "));
-  for(const absent of fullInventory.absent_suites)
+    full.scripts.filter(s=>s.startsWith("test:")).join(", "));
+  for(const absent of full.absent_suites)
     console.log("NOT_RUN_NO_TEST_FILES [REAL REPO INVENTORY] | "+absent.script+
       " | "+absent.directory+" | matching files=0; NEVER PASS");
-  if(argv.includes("--inventory-only")) return 0;
-  let plan;
-  try{plan=resolveRunnablePlan(selectImpactedTests(changedFromEnv(),cfg),pkg);}
-  catch(e){console.error(e.message);return 1;}
+};
+const printPlan=plan=>{
   console.log("FAST-LOOP PLAN: "+plan.mode+" | run: "+(plan.scripts.join(", ")||"-")+
     " | NOT_RUN: "+(plan.not_run.join(", ")||"-"));
-  for(const r of plan.reasons) console.log("- "+r);
-  for(const suite of plan.absent_suites){
+  for(const reason of plan.reasons) console.log("- "+reason);
+  for(const suite of plan.absent_suites)
     console.log("NOT_RUN_NO_TEST_FILES | "+suite.script+" | "+suite.directory+
       " | matching test files: 0 (NOT PASS)");
-  }
-  if(process.env.GITHUB_OUTPUT){
-    const needsBrowsers=plan.scripts.some(s=>(cfg.browser_scripts||[]).includes(s));
-    fs.appendFileSync(process.env.GITHUB_OUTPUT,
-      "mode="+plan.mode+"\nneeds_browsers="+needsBrowsers+"\n");
-  }
-  if(!argv.includes("--run")) return 0;
+};
+const runPlannedScripts=plan=>{
   const results=plan.scripts.map(script=>{
     console.log("\n> npm run "+script);
     const r=spawnSync("npm",["run",script],{stdio:"inherit",shell:process.platform==="win32"});
@@ -163,5 +147,24 @@ function cli(argv){
   console.log("FAST-LOOP RESULT: "+verdict+" ("+plan.mode+
     "). This is NOT a full-gate PASS; NOT_RUN: "+(plan.not_run.join(", ")||"-"));
   return failed.length?1:0;
+};
+function cli(argv){
+  selectionSelfTest();
+  if(argv.includes("--selftest")) return 0;
+  const cfg=JSON.parse(fs.readFileSync(GOVERNANCE_REFORM_POLICY_PATH,"utf8")).impacted_tests;
+  const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
+  let plan;
+  try{
+    printFullInventory(cfg,pkg);
+    if(argv.includes("--inventory-only")) return 0;
+    plan=resolveRunnablePlan(selectImpactedTests(changedFromEnv(),cfg),pkg);
+  }catch(e){console.error(e.message);return 1;}
+  printPlan(plan);
+  if(process.env.GITHUB_OUTPUT){
+    const needsBrowsers=plan.scripts.some(s=>(cfg.browser_scripts||[]).includes(s));
+    fs.appendFileSync(process.env.GITHUB_OUTPUT,
+      "mode="+plan.mode+"\nneeds_browsers="+needsBrowsers+"\n");
+  }
+  return argv.includes("--run")?runPlannedScripts(plan):0;
 }
 if(import.meta.url===pathToFileURL(process.argv[1]||"").href) process.exit(cli(process.argv.slice(2)));
