@@ -48,8 +48,3 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: node harness/scripts/task-pr-lifecycle.mjs classify
-      - name: Final Ready attestation AFTER real required checks (Ready PR only)
-        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash harness/scripts/run-final-ready-preflight.sh

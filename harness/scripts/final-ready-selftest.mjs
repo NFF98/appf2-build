@@ -100,15 +100,13 @@ for(const [file,required] of requiredWorkflows){
   const source=readFileSync(".github/workflows/"+file,"utf8");
   const actual=source.indexOf(required);
   const mainGuard=source.indexOf("- name: Main-only merge provenance guard");
-  const finalGuard=source.indexOf("- name: Final Ready attestation AFTER real required checks");
   assert.ok(actual>mainGuard && mainGuard>=0,"mandatory real gate missing or wrong position: "+file);
-  assert.ok(finalGuard>actual,"Ready-only Human gate MUST run AFTER actual tests: "+file);
   assert.ok(source.includes("if: ${{ github.event_name != 'pull_request' }}"),
-    "main provenance must remain fail-closed: "+file);
-  assert.ok(source.includes("if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}"),
-    "Ready-only attestation cannot block Draft testing: "+file);
+    "main push provenance must remain fail-closed: "+file);
   assert.ok(source.includes("run: bash harness/scripts/run-final-ready-preflight.sh"),
-    "Final Ready/main branch provenance guard missing: "+file);
+    "main push provenance guard missing: "+file);
+  assert.ok(!source.includes("- name: Final Ready attestation AFTER real required checks"),
+    "post-BCE/Human readiness gate cannot be inside a required check: "+file);
 }
 const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
 const ciRequiredJob=ciGeneric.slice(ciGeneric.indexOf("\n  ci:\n"),
@@ -118,14 +116,20 @@ const ciEvidenceJob=cloudEvidenceWorkflow.slice(cloudEvidenceWorkflow.indexOf("\
 assert.ok(ciRequiredJob.indexOf("- name: Install locked dependencies")>=0 &&
   ciRequiredJob.indexOf("- name: Repository lint")>ciRequiredJob.indexOf("- name: Install locked dependencies") &&
   ciRequiredJob.indexOf("- name: Product CI")>ciRequiredJob.indexOf("- name: Repository lint") &&
-  ciRequiredJob.indexOf("- name: Governance / traceability gates")>ciRequiredJob.indexOf("- name: Product CI") &&
-  ciRequiredJob.indexOf("- name: Final Ready attestation AFTER real required checks")>
-    ciRequiredJob.indexOf("- name: Governance / traceability gates"),
-  "CI must execute genuine dependency/lint/Product checks before Human-bound governance");
+  ciRequiredJob.indexOf("- name: Governance / traceability gates")>ciRequiredJob.indexOf("- name: Product CI"),
+  "CI must execute genuine dependency/lint/Product checks before constitutional/governance");
+assert.ok(!ciRequiredJob.includes("Final Ready attestation") &&
+  !ciRequiredJob.includes("Verify ordered Local tests"),
+  "required ci may not depend on post-BCE/Human Final Ready");
 
-assert.ok(ciRequiredJob.includes("- name: Final Ready attestation AFTER real required checks") &&
-  !ciEvidenceJob.includes("- name: Final Ready attestation AFTER real required checks"),
-  "Required CI must own its Ready guard; optional cloud evidence may not own it");
+const finalAuditJob=ciGeneric.slice(ciGeneric.indexOf("\n  final-ready-audit:\n"),
+  ciGeneric.indexOf("\n  fast-loop:\n"));
+assert.ok(finalAuditJob.startsWith("\n  final-ready-audit:\n") &&
+  finalAuditJob.includes("needs: ci") &&
+  finalAuditJob.includes("if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}") &&
+  finalAuditJob.includes("run: bash harness/scripts/run-final-ready-preflight.sh") &&
+  !ciEvidenceJob.includes("Verify ordered Local tests"),
+  "Human Final Ready attestation must be separate from four required gates and cloud evidence");
 
 assert.ok(!ciGeneric.includes("cloud-evidence-admission:") &&
   !ciGeneric.includes("cloud-evidence-mirror:") &&

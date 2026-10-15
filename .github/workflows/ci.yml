@@ -63,8 +63,27 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: npm run gate
-      - name: Final Ready attestation AFTER real required checks (Ready PR only)
-        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+
+  # Non-required Final Ready audit. The four mandated status checks must be able
+  # to PASS before GPT BCE and Human Final Ready; never bind post-test approvals
+  # into their success condition. Main provenance remains protected independently.
+  final-ready-audit:
+    name: Final Ready evidence (not one of four required checks)
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify ordered Local tests, independent BCE, Human Final Ready
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash harness/scripts/run-final-ready-preflight.sh

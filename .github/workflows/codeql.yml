@@ -41,8 +41,3 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:javascript-typescript"
-      - name: Final Ready attestation AFTER real required checks (Ready PR only)
-        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash harness/scripts/run-final-ready-preflight.sh

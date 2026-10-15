@@ -32,8 +32,3 @@ jobs:
           node-version: 22
       - name: Attack governance guardrails
         run: npm run dry-run:attack
-      - name: Final Ready attestation AFTER real required checks (Ready PR only)
-        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash harness/scripts/run-final-ready-preflight.sh

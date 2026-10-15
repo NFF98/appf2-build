@@ -13,7 +13,7 @@
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "8ea6dc73a8ef5db678928eb74fe5193c88b793f54a915a259b8e2ff7d32d5a9c",
+  "candidate_digest_sha256": "7624f1a6207e391f997b20faa0324aca54f641ac84f26a930604f56a96d24a1d",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -59,7 +59,8 @@
     "Required CI orders npm ci, lint and Product CI BEFORE Human-bound governance/constitutional gates; governance still fails closed on a missing Human decision, but no longer suppresses earlier test results.",
     "Cloud evidence triggers in a dedicated opt-in workflow, while required CI excludes labeled events; no extra required check from a label-only update.",
     "Evidence mirror: exit-0 Product CI HOLD/N/A is recorded NOT_RUN; explicit PRODUCT CI: PASS is required, and FAIL still stays FAIL. New regression cases for HOLD, governance-only, control-only, real Product PASS, bad exit status.",
-    "Cloud evidence manifest.not_run includes both previously attempted non-PASS Product HOLD/N/A stages and unexecuted future commands; stage-specific exit codes and logs are preserved."
+    "Cloud evidence manifest.not_run includes both previously attempted non-PASS Product HOLD/N/A stages and unexecuted future commands; stage-specific exit codes and logs are preserved.",
+    "Four required CI/Governance/Attack/CodeQL checks no longer depend on post-test GPT BCE/Human Final Ready; separate non-required final-ready-audit validates ordered attestations after CI, preserves main-push provenance and independent Human Merge."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -67,7 +68,7 @@
     "reason": "Direct Human request 2026-10-15 to immediately fix test-first deadlock and PR395-only runner; prepare candidate without opening a PR or merging.",
     "risk": "Removing pre-test Final Ready admission may allow CI to execute unapproved candidate source; PR checks run with read-only permissions and no release/deploy step, while independent Human final Merge remains mandatory. Real failures are never converted to PASS.",
     "owner": "Human merge approver; GPT candidate author and evidence reviewer",
-    "follow_up": "Full required CI/Governance/Attack/CodeQL still mandatory. Dedicated cloud evidence runs only on a Draft PR with cloud-evidence label, including fresh commits, never triggering full required CI for unrelated labels. Human exact approval, independent BCE and final Merge remain separately required.",
+    "follow_up": "Preliminary exact Human candidate approval remains mandatory for constitutional/Governance scope. Required four status jobs can PASS before GPT BCE and final Human Ready; the separate non-required Final Ready audit may be rerun after comment attestations, with independent Human Merge approval still needed. Main push provenance guard remains in all four mandatory workflows.",
     "affected_sprint": "SP-P1-003",
     "affected_tasks": [],
     "covered_gates": [
