@@ -20,6 +20,11 @@ const validUrl=(s,repo)=>{
   if(!s.startsWith(prefix)) return false;
   return /^(?:issues|pull)\/\d+(?:#issuecomment-\d+)?$|^actions\/runs\/\d+(?:\/job\/\d+)?$|^commit\/[0-9a-f]{40}$/.test(s.slice(prefix.length));
 };
+// Only a specific immutable workflow job or referenced GitHub comment can serve as a log pointer.
+// SHA256 strings are structurally checked here; independent BCE must verify actual linked log bytes.
+const specificEvidenceUrl=(s,repo)=>validUrl(s,repo) &&
+  (s.includes("/actions/runs/") && /\/job\/\d+$/.test(s) ||
+   /#issuecomment-\d+$/.test(s));
 const stamp=s=>typeof s==="string" && Number.isFinite(Date.parse(s));
 const nonEmpty=s=>typeof s==="string" && s.trim().length>0;
 const isRepoOwner=(c,owner)=>c?.user?.login===owner && c?.user?.type==="User" && c?.author_association==="OWNER";
@@ -66,7 +71,10 @@ const localEvidenceErrors=(record,ctx)=>{
   }
   for(const run of runs){
     assertion(numericPass(run),"local test skipped/failed or missing immutable log digest: "+run?.command,e);
-    assertion(validUrl(run?.log_url,ctx.repo),"local test evidence link is not repository-scoped: "+run?.command,e);
+    assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
+      "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
+    assertion(run?.head_sha===ctx.head && run?.base_sha===ctx.base,
+      "local test log must bind current exact HEAD and BASE: "+run?.command,e);
     assertion(Date.parse(run?.completed_at)<=Date.parse(ctx.localCommentCreatedAt),
       "local run completed after its claimed attestation comment: "+run?.command,e);
   }
@@ -78,7 +86,7 @@ const bceEvidenceErrors=(r,ctx)=>{
     "GPT BCE requires separate scope and execution-evidence PASS",e);
   assertion(r.reviewer_role==="GPT_INDEPENDENT" && nonEmpty(r.independent_review_note),
     "GPT BCE reviewer declaration/review note missing; role remains manually verified",e);
-  assertion(validUrl(r.review_url,ctx.repo) && HEX64.test(r.review_sha256||""),
+  assertion(specificEvidenceUrl(r.review_url,ctx.repo) && HEX64.test(r.review_sha256||""),
     "GPT BCE immutable review reference/digest missing",e);
   return e;
 };
@@ -114,9 +122,13 @@ const orderErrors=records=>{
   return e;
 };
 const fastLoopErrors=(checks,head)=>{
-  const rows=safeArray(checks?.check_runs).filter(x=>x.name==="fast-loop" && x.head_sha===head);
-  const good=rows.some(r=>r.status==="completed" && r.conclusion==="success");
-  return good?[]:["missing independent successful current-HEAD GitHub fast-loop; skipped is not PASS"];
+  const runs=safeArray(checks?.check_runs).filter(x=>x.name==="fast-loop" && x.head_sha===head);
+  const rows=runs.filter(x=>Number.isSafeInteger(x.id) && x.id>0).sort((a,b)=>b.id-a.id);
+  // Old PASS must not mask a newer failed/re-run attempt for the same HEAD.
+  if(rows.length!==runs.length || !rows.length) return ["missing complete ID-bound current-HEAD fast-loop result"];
+  const latest=rows[0];
+  return latest.status==="completed" && latest.conclusion==="success"?[]:
+    ["latest exact-HEAD fast-loop failed, skipped or is still running; older PASS cannot override"];
 };
 const prIdentityMatches=(pr,live,head,base)=>
   pr.number===live.number && pr.head?.sha===head && pr.base?.sha===base;

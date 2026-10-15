@@ -67,7 +67,8 @@
     "harness/scripts/admin-closure-cross-gate-test.mjs（GPT BCE #6164737627 修正）：在一次性 clone 以真實 SP-P1-003 資料建立行政結案 commit，實際執行 validate-change-scope.mjs、governance-gate.mjs、validate-sprint.mjs；合法 1 例三關皆 PASS，負向 6 例（缺 GAP、未獲 Human 核准、AI 來源核准、額外路徑、T006 假 PASS、HOLD 但 implementation_enabled=true）皆由 validate-change-scope.mjs 本身以精確原因拒絕；額外路徑一例僅 Change Scope Gate 攔下",
     "harness/attack/run-dry-run.mjs：NOT_RUN（會呼叫 ci/run-product-ci.mjs，Human 已要求停止產品測試迴圈）",
     "harness/scripts/final-ready-selftest.mjs：ordered LOCAL_TESTS→GPT_BCE→HUMAN_FINAL_READY 正向、Draft／未具證據／BCE 不一致／bot-origin／過時 HEAD／未授權保護流程共同變更／無關直推等負向 synthetic assertion；不冒充 Human 核准。",
-    "GitHub fast-loop (Draft) checks check:lint plus final-ready synthetic suite; full GCCA on this unapproved HEAD MUST remain NOT_READY. Historical Attack PASS on old HEAD cannot count as final GCCA PASS."
+    "GitHub fast-loop (Draft) checks check:lint plus final-ready synthetic suite; full GCCA on this unapproved HEAD MUST remain NOT_READY. Historical Attack PASS on old HEAD cannot count as final GCCA PASS.",
+    "final-ready-selftest.mjs: newer fast-loop failure/in_progress after old PASS MUST block; local log wrong HEAD or mutable issue root MUST block. These are synthetic-only, not real engineering acceptance."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -99,22 +100,15 @@
     "admin-closure-cross-gate-test.mjs 需要本機 git clone，不在 npm run gate 內，需人工或 BCE 執行。",
     "Final Ready 工作流程目前以 PR HEAD 執行；同一 PR 共同修改 Workflow／Guard 的保護依賴 L3 精確候選、GitHub Ruleset 及 Human 人工驗證，不宣稱機器本身能防所有自我修改。",
     "GitHub 共享 OWNER 帳號無法在機器上區分真人與使用相同授權的 GPT/Codex；已收到直接 Chat 條件式精確候選批准並由 GPT 轉錄，Human 必須親自確認該來源。Final Ready、Merge、Sprint3 結案仍 PENDING。",
-    "Human direct Chat 2026-10-15 decision is transcribed by GPT at https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765; this GitHub comment is not Human-authored, not independently authenticatable, and not an electronic signature. Human must verify original direct decision and final HEAD before merge."
+    "Human direct Chat 2026-10-15 decision is transcribed by GPT at https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765; this GitHub comment is not Human-authored, not independently authenticatable, and not an electronic signature. Human must verify original direct decision and final HEAD before merge.",
+    "2026-10-15 BCE found stale successful fast-loop could mask a newer failed attempt on same HEAD; repaired with greatest check-run id fail-closed and synthetic negative regressions. Earlier Human exact candidate approval invalidated. Actual full local mirror and independent test logs still pending.",
+    "Test log URL/hash validation is structural only; requires specific job/comment and per-command HEAD/BASE binding, while independent BCE must verify raw linked logs and SHA256. No automatic cryptographic authentication of shared owner account."
   ],
-  "approval_status": "HUMAN_CHAT_EXACT_CANDIDATE_APPROVED_NOT_FINAL_READY_NOT_MERGE_APPROVED",
-  "human_approval": {
-    "case_id": "GOV-392-CARRY-FORWARD-001",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
-    "approver": "NFF98",
-    "approved_at_unix": 1792027261,
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "candidate_digest_sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288"
-  },
+  "approval_status": "PENDING_NEW_HUMAN_EXACT_CANDIDATE_APPROVAL_POST_BCE_REPAIR",
+  "human_approval": null,
   "historical_candidate_approval": {
-    "sha256": "17f9ab5d65969847873bee09153b5c0f08eca902d077bb3e4a1c4c1a5b60c112",
-    "ref": "https://github.com/NFF98/appf2-build/issues/392#issuecomment-6167889238",
-    "status": "STALE_HEAD_ONLY_NOT_AUTHORITY_FOR_CURRENT_BYTES"
+    "sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
+    "ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
+    "status": "SUPERSEDED_BY_POST_APPROVAL_BCE_FINDINGS_NO_LONGER_AUTHORITATIVE"
   }
 }
