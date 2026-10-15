@@ -15,7 +15,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "e8c841f750f6c59e3734da45422a622da274bad798f595a77972ce4f4ebfde97",
+  "candidate_digest_sha256": "a3591cada50d565911fc64764633bf8f918385c0896a3f710b1b1da0cebe17dc",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -66,7 +66,8 @@
     "Job-aware synthetic audit extracts required ci only until separate final-ready-audit job, never misclassifies downstream non-required job text as an in-gate Human condition.",
     "Single exact GOV-392 PR-test-only lane: Human approval and TTL remain PENDING; only the two approval-only blockages are deferred. Real byte/path/BASE/Why5/ChangeScope/CI/Product/Attack/CodeQL checks remain enforced. Push/main fails closed.",
     "One-shot GOV392 lane synthetic six-case test covers exact PR, rogue Product file, stale BASE, Main push, tampered byte, and fabricated Human approval.",
-    "Four real required GitHub workflows run on exact isolated repair branch push, with canonical fixed BASE SHA and main-push merge provenance protected. Arbitrary branch/main push cannot invoke GOV392 test-only exception."
+    "Four real required GitHub workflows run on exact isolated repair branch push, with canonical fixed BASE SHA and main-push merge provenance protected. Arbitrary branch/main push cannot invoke GOV392 test-only exception.",
+    "GOV392 exact test lane factored into small guards to satisfy ESLint complexity 15; unchanged checks reject Main push, other branch, tampered bytes and fabricated Human approval."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",

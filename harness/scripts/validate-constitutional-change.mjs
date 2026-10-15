@@ -101,22 +101,25 @@ export const GOV392_TEST_ONLY_PATHS=Object.freeze([
   "harness/scripts/validate-constitutional-change.mjs",
   "harness/scripts/w1-01-evidence-mirror.mjs"
 ]);
-export function isGov392TestOnly({changed,base,root}){
+const gov392ScopedRun=()=>{
   const event=process.env.GITHUB_EVENT_NAME;
-  const scopedRun=event==="pull_request" ||
+  return event==="pull_request" ||
     (event==="push" && process.env.GITHUB_REF==="refs/heads/fix/gate-first-generic-evidence-20261015");
-  if(!scopedRun ||
+};
+const gov392PendingDocketValid=(docket,errors)=>Boolean(docket) && errors.length===0 &&
+  docket.case_id==="GOV-392-TEST-FIRST-001" &&
+  docket.human_approval===null &&
+  docket.approval_status==="PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE" &&
+  docket.scope_exception?.lane==="GOVERNANCE_REFORM" &&
+  equal(docket.scope_exception?.covered_gates,["CHANGE_SCOPE"]) &&
+  docket.scope_exception?.never_converts_fail_or_untested_to_pass===true;
+export function isGov392TestOnly({changed,base,root}){
+  if(!gov392ScopedRun() ||
     process.env.APPF2_GOV392_TEST_PHASE!=="1" ||
     base!==GOV392_TEST_ONLY_BASE ||
     !equal(sorted(changed),sorted([...GOV392_TEST_ONLY_PATHS,GOV392_TEST_ONLY_DOCKET]))) return false;
-  const errors=[];
-  const docket=loadDocket(root,GOV392_TEST_ONLY_DOCKET,errors);
-  if(!docket || errors.length || docket.case_id!=="GOV-392-TEST-FIRST-001" ||
-    docket.human_approval!==null ||
-    docket.approval_status!=="PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE" ||
-    docket.scope_exception?.lane!=="GOVERNANCE_REFORM" ||
-    !equal(docket.scope_exception?.covered_gates,["CHANGE_SCOPE"]) ||
-    docket.scope_exception?.never_converts_fail_or_untested_to_pass!==true) return false;
+  const errors=[],docket=loadDocket(root,GOV392_TEST_ONLY_DOCKET,errors);
+  if(!gov392PendingDocketValid(docket,errors))return false;
   checkIdentity({docket,changed,casePath:GOV392_TEST_ONLY_DOCKET,base,root,errors});
   checkWhy5(docket,errors);
   return errors.length===0;
