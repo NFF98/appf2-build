@@ -20,13 +20,15 @@ export function prCreationDecision({taskKey,openPrs,guard,selfNumber=null,justif
   return {decision:justified?"NEW_PR_ALLOWED_WITH_JUSTIFICATION":"REUSE_EXISTING_PR",existing};
 }
 
+const validTaskLease=({build,sprint,task,taskId})=>
+  sprint.active_task===taskId &&
+  ["ACTIVE","REVIEW"].includes(sprint.status) &&
+  ["IN_PROGRESS","REVIEW"].includes(task?.status) &&
+  task?.build_spec_id===build.active_baseline &&
+  sprint.active_build_spec===build.active_baseline &&
+  Boolean(sprint.active_sprint);
 const intentDecision=({intent,build,sprint,task,taskId})=>{
-  const isActive=sprint.active_task===taskId &&
-    ["ACTIVE","REVIEW"].includes(sprint.status) &&
-    ["IN_PROGRESS","REVIEW"].includes(task?.status) &&
-    task?.build_spec_id===build.active_baseline &&
-    sprint.active_build_spec===build.active_baseline &&
-    Boolean(sprint.active_sprint);
+  const isActive=validTaskLease({build,sprint,task,taskId});
   switch(intent){
     case "CONTINUE_TASK_WORK":
       return isActive && build.implementation_enabled?{decision:"CONTINUE_SAME_LEASE",reason:"same active Task; no new approval needed"}:

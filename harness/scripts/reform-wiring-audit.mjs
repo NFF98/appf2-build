@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 const EXPECTED=Object.freeze([
- ["1","Task one-PR lifecycle","harness/scripts/task-pr-lifecycle.mjs","prCreationDecision"],
+ ["1","Task one-PR lifecycle","harness/scripts/task-pr-lifecycle.mjs","DRAFT_DEVELOPMENT"],
  ["2","same lease / no redundant approval","harness/scripts/gpt-preflight.mjs","REDUNDANT_APPROVAL_DENIED"],
  ["3","impacted-test fast loop","harness/scripts/select-impacted-tests.mjs","resolveRunnablePlan"],
  ["4","Activation when authority changes","harness/scripts/task-pr-lifecycle.mjs","requiresActivation"],

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { inspectConstitutionalChange, testConstitutionFailClosed } from "./validate-constitutional-change.mjs";
 import { runGovernanceReformSelfTests } from "./governance-reform-selftest.mjs";
 import { runConditionalApprovalSelfTests } from "./conditional-task-approval-selftest.mjs";
-import { auditReformWiring, testReformWiring } from "./reform-wiring-audit.mjs";
+import { testReformWiring } from "./reform-wiring-audit.mjs";
 import { inspectRepoCarryForwardChange, validateRepoCarryForwardRegister, CARRY_FORWARD_GATE_MARKER } from "./validate-special-approvals-and-carry-forward.mjs";
 import { runCarryForwardSelfTests } from "./carry-forward-selftest.mjs";
 import path from 'node:path';
@@ -78,11 +78,8 @@ try{ const cf=runCarryForwardSelfTests(root); note.push("GOV-392 carry-forward p
 catch(error){ fail.push(String(error)); }
 try{ const count=testConstitutionFailClosed(); note.push("Constitution negative-scope self tests: "+count+" PASS."); }
 catch(error){ fail.push(String(error)); }
-try{
-  const {checks}=auditReformWiring(root);
-  note.push("GOV-REFORM original 9+6+16: "+checks.length+" STATIC_WIRED (NOT actual E2E implementation proof).");
-  note.push("GOV-REFORM wiring fail-closed attack cases: "+testReformWiring()+" PASS (synthetic).");
-}catch(error){fail.push(String(error));}
+try{note.push("GOV-REFORM wiring fail-closed attack cases: "+testReformWiring()+" PASS (synthetic).");}
+catch(error){fail.push(String(error));}
 try{
   const count=runConditionalApprovalSelfTests();
   note.push("ONE-APPROVAL conditional Task auth negative/positive: "+count+" PASS (synthetic; requires external genuine Human provenance).");

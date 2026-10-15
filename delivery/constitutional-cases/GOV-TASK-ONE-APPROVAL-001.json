@@ -28,7 +28,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "861a867bcc4813e28aa71dba7e1fd80c204432092813a6baf30f633e9f1eb795",
+  "candidate_digest_sha256": "f13f11272875bc4be78f157d8b1d0f13920aad9e1dda33313fd6f21d01664dc7",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -73,7 +73,8 @@
     "Evidence is collected as read-only canonical-ledger artifact; missing proof never becomes PASS or auto Task Closure.",
     "Weekly measurements are sourced from real GitHub API, not fictitious metrics; workflow only effective after merge.",
     "GPT preflight fails closed for no live PR inventory, wrong Task/Build binding and CLOSED/BLOCKED state.",
-    "Trusted independent Human identity, cross-repo Design enforcement, and external GPT tool action pre-creation permissions are NOT implemented by repo scripts."
+    "Trusted independent Human identity, cross-repo Design enforcement, and external GPT tool action pre-creation permissions are NOT implemented by repo scripts.",
+    "First real push identified ESLint complexity 28/30/18 and a static-wiring checker poisoning attack sandbox. Corrected without weakening gates; rerun mandatory."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -102,7 +103,7 @@
   "human_approval": null,
   "rollout_truth": {
     "main_effective": false,
-    "candidate_real_four_gates": "NOT_RUN",
+    "candidate_real_four_gates": "PREVIOUS_HEAD_FAILED; UPDATED_HEAD_NOT_RUN",
     "exact_human_approval": "PENDING",
     "synthetic_regressions": "46 conditional Task cases and 17 wiring cases (not real integration)",
     "incomplete_external_dependencies": [

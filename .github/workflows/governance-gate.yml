@@ -36,6 +36,13 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || (github.ref == 'refs/heads/governance/task-one-approval-20261016' && '8a471763ab762cf486e42dd9efd52d9195113a97') || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: npm run gate
+      - name: Verify all original 16 reform entrypoints in the real checkout
+        run: |
+          node --input-type=module -e '
+            import {auditReformWiring} from "./harness/scripts/reform-wiring-audit.mjs";
+            const report=auditReformWiring();
+            console.log("GOV-REFORM original 16: "+report.checks.length+" STATIC_WIRED (NOT complete E2E)");
+          '
       # GOV-REFORM-20261013: one Task -> one open PR unless a recorded PR-Justification exists.
       - name: PR proliferation guard (fail closed)
         if: ${{ github.event_name == 'pull_request' }}

@@ -21,25 +21,28 @@ const mappedPass=rows=>Array.isArray(rows)&&rows.length>0&&
   rows.every(x=>x.status==="PASS"&&!x.blocked);
 const matchScope=(g,c)=>["task_id","sprint_id","build_spec_id","scope_sha256"].every(k=>
   same(g[k],c[k]));
+const grantScopeOK=(g,c)=>
+  ["task_id","sprint_id","build_spec_id"].every(k=>nonempty(g?.[k]))&&
+  HEX64.test(g?.scope_sha256||"")&&matchScope(g,c);
+const grantTimeOK=(g,c)=>Number.isSafeInteger(g?.approved_at_unix)&&
+  Number.isSafeInteger(g?.expires_at_unix)&&
+  g.expires_at_unix>g.approved_at_unix &&
+  g.expires_at_unix-g.approved_at_unix<=30*86400 &&
+  c.now>=g.approved_at_unix && c.now<=g.expires_at_unix;
+const grantOriginShapeOK=g=>g?.human?.source_kind==="DIRECT_HUMAN_MESSAGE"&&
+  g.human?.decision==="AUTHORIZE_TASK_CONDITIONAL_EXECUTION"&&
+  g.human?.approver==="NFF98"&&nonempty(g.human?.human_message_ref);
 const checkGrant=(g,c,e)=>{
   fail(e,g?.schema==="APPF2-TASK-ONE-APPROVAL-1","wrong authorization schema");
   fail(e,g?.change_class==="L1_TASK"&&c.change_class==="L1_TASK","L2/L3 or undefined task change cannot delegate");
   fail(e,exactList(g?.actions,ACTIONS),"grant must explicitly cover precisely Final Ready, Merge and Closure");
-  fail(e,["task_id","sprint_id","build_spec_id"].every(k=>nonempty(g?.[k]))&&
-    HEX64.test(g?.scope_sha256||"")&&matchScope(g,c),"Task/Sprint/Build/scope mismatch");
+  fail(e,grantScopeOK(g,c),"Task/Sprint/Build/scope mismatch");
   fail(e,HEX40.test(g?.base_sha||"")&&g.base_sha===c.base_sha,"approved BASE mismatch");
-  fail(e,Number.isSafeInteger(g?.approved_at_unix)&&Number.isSafeInteger(g?.expires_at_unix)&&
-    g.expires_at_unix>g.approved_at_unix &&
-    g.expires_at_unix-g.approved_at_unix<=30*86400 &&
-    c.now>=g.approved_at_unix && c.now<=g.expires_at_unix,"grant missing, expired or excessive TTL");
-  fail(e,g?.human?.source_kind==="DIRECT_HUMAN_MESSAGE"&&
-    g.human?.decision==="AUTHORIZE_TASK_CONDITIONAL_EXECUTION"&&
-    g.human?.approver==="NFF98"&&nonempty(g.human?.human_message_ref),
-    "no explicit genuine Human grant reference");
+  fail(e,grantTimeOK(g,c),"grant missing, expired or excessive TTL");
+  fail(e,grantOriginShapeOK(g),"no explicit genuine Human grant reference");
   fail(e,c.provenance_checked_by_trusted_executor===true,
     "independent Human-origin check required; GitHub shared identity/AI comment is not proof");
-  fail(e,c.authority_revoked!==true&&c.scope_changed!==true,
-    "revoked authorization or changed scope");
+  fail(e,c.authority_revoked!==true&&c.scope_changed!==true,"revoked authorization or changed scope");
 };
 const checkEvidence=(c,e)=>{
   fail(e,HEX40.test(c.head_sha||"")&&validatedChecks(c.checks,c.head_sha),
@@ -52,28 +55,27 @@ const checkEvidence=(c,e)=>{
   fail(e,c.product_truth_changed!==true&&c.security_exception!==true,
     "unapproved Product truth or security exception");
 };
+const readyPr=(c)=>c.pr?.state==="open"&&c.pr?.draft===false&&
+  c.pr?.base_ref==="main"&&c.pr?.head_sha===c.head_sha;
+const verifiedMerged=(c)=>c.pr?.merged===true&&
+  HEX40.test(c.pr?.merge_commit_sha||"")&&c.canonical_main_contains_merge===true;
+const verifiedClosure=(c)=>c.closure?.verdict==="PASS"&&
+  c.closure?.head_sha===c.head_sha&&c.closure?.no_unmapped_gaps===true&&
+  c.closure?.carry_forward_verified===true;
 const checkStage=(action,c,e)=>{
   fail(e,ACTIONS.includes(action),"unknown conditional action");
-  fail(e,c.sprint_status==="ACTIVE"||c.sprint_status==="REVIEW",
-    "Sprint not active/review");
-  fail(e,c.task_status==="IN_PROGRESS"||c.task_status==="REVIEW",
+  fail(e,["ACTIVE","REVIEW"].includes(c.sprint_status),"Sprint not active/review");
+  fail(e,["IN_PROGRESS","REVIEW"].includes(c.task_status),
     "Task not active/review; CLOSED/BLOCKED cannot be activated");
-  if(action==="MARK_FINAL_READY"||action==="APPROVE_MERGE"){
-    fail(e,c.pr?.state==="open"&&c.pr?.draft===false&&
-      c.pr?.base_ref==="main"&&c.pr?.head_sha===c.head_sha,
-      "live Ready PR on exact HEAD required");
-  }
-  if(action==="APPROVE_MERGE"){
+  if(["MARK_FINAL_READY","APPROVE_MERGE"].includes(action))
+    fail(e,readyPr(c),"live Ready PR on exact HEAD required");
+  if(action==="APPROVE_MERGE")
     fail(e,c.pr?.mergeable===true&&c.branch_protection_pass===true,
       "normal GitHub protection and mergeability must pass; no bypass");
-  }
-  if(action==="RECORD_MERGE"||action==="APPROVE_CLOSURE"){
-    fail(e,c.pr?.merged===true&&HEX40.test(c.pr?.merge_commit_sha||"")&&
-      c.canonical_main_contains_merge===true,"verified merged commit on canonical main required");
-    if(action==="APPROVE_CLOSURE")fail(e,c.closure?.verdict==="PASS"&&c.closure?.head_sha===c.head_sha&&
-      c.closure?.no_unmapped_gaps===true&&c.closure?.carry_forward_verified===true,
-      "independent closure evidence and carry-forward checks required");
-  }
+  if(["RECORD_MERGE","APPROVE_CLOSURE"].includes(action))
+    fail(e,verifiedMerged(c),"verified merged commit on canonical main required");
+  if(action==="APPROVE_CLOSURE")
+    fail(e,verifiedClosure(c),"independent closure evidence and carry-forward checks required");
 };
 /** Data-only eligibility; not a self-service grant or trusted executor. */
 export function evaluateTaskConditionalApproval({grant,action,context}={}){
