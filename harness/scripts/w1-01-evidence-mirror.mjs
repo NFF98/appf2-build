@@ -1,4 +1,4 @@
-// W1-01 #395: exact-HEAD, Human-gated GH runner; not GCCA and never a PASS proxy.
+// Generic exact-HEAD GitHub-hosted execution evidence, not GCCA, not Human approval, and never a merge proxy.
 import fs from "node:fs";
 import assert from "node:assert/strict";
 import path from "node:path";
@@ -6,7 +6,6 @@ import crypto from "node:crypto";
 import {execFileSync,spawn} from "node:child_process";
 import {finished} from "node:stream/promises";
 import {candidateDigestOf} from "./final-ready-preflight.mjs";
-const docket="delivery/constitutional-cases/GOV-392-CARRY-FORWARD-001.json";
 const sha=b=>crypto.createHash("sha256").update(b).digest("hex");
 const json=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 const git=(...x)=>execFileSync("git",x,{encoding:"utf8"}).trim();
@@ -19,57 +18,37 @@ const jobs=[
   ["npm run dry-run:attack","npm",["run","dry-run:attack"],900],
   ["npm run product:ci","npm",["run","product:ci"],1050]
 ];
-const isPr=p=>Boolean(p)&&[
-  p.number===395,p.draft===true,p.state==="open",p.base?.ref==="main",
+const isPr=p=>Boolean(p) && [
+  Number.isSafeInteger(p.number) && p.number>0,
+  p.draft===true,p.state==="open",p.base?.ref==="main",
   p.head?.repo?.full_name==="NFF98/appf2-build"
 ].every(Boolean);
 const sourceOk=(h,b)=>[
   /^[0-9a-f]{40}$/.test(h||""),/^[0-9a-f]{40}$/.test(b||""),
   git("rev-parse","HEAD")===h
 ].every(Boolean);
-const pathsOk=paths=>[
-  paths.includes(docket),paths.length>=2,new Set(paths).size===paths.length
-].every(Boolean);
-const bytesOk=(d,paths,base,digest)=>[
-  Boolean(digest),d.base_sha===base,d.candidate_digest_sha256===digest,
-  JSON.stringify(paths.filter(x=>x!==docket).sort())===
-    JSON.stringify([...(d.exact_changed_paths||[])].sort())
-].every(Boolean);
-const approvalMetaOk=(a,d,digest)=>[
-  a.case_id===d.case_id,a.approver==="NFF98",
-  a.source_kind==="DIRECT_HUMAN_MESSAGE",a.decision==="APPROVE_EXACT_CANDIDATE",
-  a.scope==="EXACT_PR_DIFF",a.candidate_digest_sha256===digest,
-  /^https:\/\/github\.com\/NFF98\/appf2-build\/pull\/395#issuecomment-[0-9]+$/.test(a.human_message_ref||""),
-  d.scope_exception?.lane==="GOVERNANCE_REFORM"
-].every(Boolean);
-const approvalTimeOk=(a,d)=>{
-  const now=Math.floor(Date.now()/1000),expiry=d.scope_exception?.expires_at_unix;
-  return [
-    Number.isSafeInteger(a.approved_at_unix),a.approved_at_unix>0,
-    a.approved_at_unix<=now+300,Number.isSafeInteger(expiry),
-    expiry>now,expiry-a.approved_at_unix>0,
-    expiry-a.approved_at_unix<=1209600
-  ].every(Boolean);
-};
+const pathsOk=paths=>paths.length>0 && new Set(paths).size===paths.length;
 function admission(){
   if(process.env.GITHUB_EVENT_NAME!=="pull_request"||
     process.env.GITHUB_REPOSITORY!=="NFF98/appf2-build")
     return {ok:false,reason:"wrong event or repo"};
   const p=json(process.env.GITHUB_EVENT_PATH).pull_request;
-  if(!isPr(p))return {ok:false,reason:"not same-repo Draft PR #395"};
+  if(!isPr(p))return {ok:false,reason:"not an open same-repo Draft PR"};
   const head=p.head.sha,base=p.base.sha;
   if(!sourceOk(head,base))return {ok:false,reason:"not actual PR source HEAD"};
   const paths=git("diff","--name-only",base,head).split("\n").filter(Boolean);
-  if(!pathsOk(paths))return {ok:false,reason:"missing docket or duplicate diff paths"};
-  const d=json(docket),digest=candidateDigestOf(paths.map(filename=>({filename})),
-    filename=>fs.readFileSync(filename));
-  if(!bytesOk(d,paths,base,digest))
-    return {ok:false,reason:"unapproved exact candidate diff",head,base,digest};
-  const a=d.human_approval||{};
-  if(!approvalMetaOk(a,d,digest)||!approvalTimeOk(a,d))
-    return {ok:false,reason:"fresh exact SHA256 Human decision pending",head,base,digest};
+  if(!pathsOk(paths))return {ok:false,reason:"empty/duplicated PR diff",head,base};
+  let digest;
+  try{
+    digest=candidateDigestOf(paths.map(filename=>({filename})),
+      filename=>fs.readFileSync(filename));
+  }catch{
+    return {ok:false,reason:"cannot read exact changed Git bytes",head,base};
+  }
+  if(!digest)return {ok:false,reason:"cannot compute exact candidate digest",head,base};
   if(git("status","--porcelain"))return {ok:false,reason:"checkout dirty"};
-  return {ok:true,head,base,digest,paths,approval_ref:a.human_message_ref};
+  return {ok:true,pr:p.number,head,base,digest,paths,
+    approval_status:"NOT_REQUIRED_TO_RUN_TESTS",merge_authorized:false};
 }
 // Attack Dry-run constructs its own temporary Git repositories. Inheriting the
 // parent PR's BASE_SHA/HEAD_SHA makes positive fixtures fail with "bad object".
@@ -96,11 +75,16 @@ const testChildEnvironment=()=>{
   assert.equal(Object.hasOwn(attack,"BASE_SHA"),false);
   assert.equal(Object.hasOwn(attack,"HEAD_SHA"),false);
   assert.equal(binding.base.length,40);
-  console.log("W1-01 child env isolation selftest: PASS (synthetic, NOT Attack PASS).");
+  const good={number:499,draft:true,state:"open",base:{ref:"main"},head:{repo:{full_name:"NFF98/appf2-build"}}};
+  assert.equal(isPr(good),true);
+  assert.equal(isPr({...good,number:500}),true);
+  assert.equal(isPr({...good,draft:false}),false);
+  assert.equal(isPr({...good,head:{repo:{full_name:"fork/repo"}}}),false);
+  console.log("Generic evidence admission and child env isolation: PASS (synthetic, NOT GCCA).");
 };
 async function once(spec,index,env){
   const [command,bin,args,seconds]=spec,name=String(index+1).padStart(2,"0");
-  const dir="w1-01-evidence";
+  const dir="cloud-evidence";
   const stdoutPath=path.join(dir,name+"-stdout.log"),stderrPath=path.join(dir,name+"-stderr.log");
   const out=fs.createWriteStream(stdoutPath),err=fs.createWriteStream(stderrPath);
   const start=Date.now();let startError=null;
@@ -127,13 +111,14 @@ async function once(spec,index,env){
   return row;
 }
 const buildManifest=a=>({
-  schema:"APPF2-W1-01-CLOUD-EVIDENCE-1",pr:395,
-  run_type:"NON_REQUIRED_CLOUD_LOCAL_MIRROR_NOT_GCCA",
+  schema:"APPF2-GENERIC-CLOUD-EVIDENCE-1",pr:a.pr,
+  run_type:"NON_REQUIRED_CLOUD_EXECUTION_EVIDENCE_NOT_GCCA",
   source_head_sha:a.head||null,base_sha:a.base||null,digest_sha256:a.digest||null,
   github_run_id:process.env.GITHUB_RUN_ID,node_version:process.version,
   environment:process.platform,
   package_lock_sha256:fs.existsSync("package-lock.json")?
     sha(fs.readFileSync("package-lock.json")):null,
+  prior_human_approval_required:false,merge_authorized:false,
   stages:[],not_run:jobs.map(j=>j[0]),verdict:"NOT_ADMITTED"
 });
 const save=m=>fs.writeFileSync("w1-01-evidence/raw-evidence-manifest.json",
@@ -153,7 +138,7 @@ const finish=m=>{
   if(m.verdict!=="ALL_STAGES_PASS")process.exitCode=1;
 };
 async function runMirror(a){
-  fs.mkdirSync("w1-01-evidence",{recursive:true});
+  fs.mkdirSync("cloud-evidence",{recursive:true});
   const m=buildManifest(a);save(m);
   if(!a.ok){process.exitCode=2;return;}
   fs.writeFileSync("w1-01-evidence/source.json",JSON.stringify(a,null,2)+"\n");
@@ -163,10 +148,10 @@ async function main(){
   const mode=process.argv[2];
   if(mode==="env-selftest"){testChildEnvironment();return;}
   const a=admission();
-  console.log("W1-01 "+(a.ok?"ADMITTED":"NOT_ADMITTED")+" "+(a.reason||a.digest));
+  console.log("CLOUD EVIDENCE "+(a.ok?"ADMITTED":"NOT_ADMITTED")+" "+(a.reason||a.digest));
   if(mode==="admit"){
     if(process.env.GITHUB_OUTPUT)
-      fs.appendFileSync(process.env.GITHUB_OUTPUT,"approved="+(a.ok?"true":"false")+"\n");
+      fs.appendFileSync(process.env.GITHUB_OUTPUT,"admitted="+(a.ok?"true":"false")+"\n");
     return;
   }
   if(mode!=="run")throw Error("Unknown mode");

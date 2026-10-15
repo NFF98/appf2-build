@@ -87,3 +87,28 @@ assert.match(ciWorkflow,/^ {4}if: \$\{\{ github\.event_name == 'pull_request' &&
   "fast-loop must remain draft-only (not a required full gate)");
 console.log("FINAL READY trigger graph and Draft->Ready check-name separation: PASS (static, NOT real full-gate execution).");
 console.log("FINAL READY synthetic positive/negative: PASS (NOT Human approval or real local PASS).");
+
+/* The real GitHub workflow MUST run all four security/quality jobs before any
+   Human approval. This is a static invariant, not a substitute for execution. */
+const requiredWorkflows=[
+  ["ci.yml","npm run gate"],
+  ["governance-gate.yml","npm run gate"],
+  ["attack-dry-run.yml","npm run dry-run:attack"],
+  ["codeql.yml","github/codeql-action/analyze@v4"]
+];
+for(const [file,required] of requiredWorkflows){
+  const source=readFileSync(".github/workflows/"+file,"utf8");
+  assert.ok(source.includes(required),"mandatory real gate missing: "+file);
+  assert.ok(!source.includes("run: bash harness/scripts/run-final-ready-preflight.sh"),
+    "Human Final Ready must NOT block actual safety tests: "+file);
+}
+const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
+assert.ok(ciGeneric.includes("cloud-evidence-admission:") && ciGeneric.includes("cloud-evidence-mirror:"),
+  "generic real-cloud evidence jobs missing");
+assert.ok(!ciGeneric.includes("github.event.pull_request.number == 395"),
+  "cloud evidence must not be hardcoded to an old PR");
+const genericRunner=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
+assert.ok(genericRunner.includes("Number.isSafeInteger(p.number)") &&
+  genericRunner.includes("NOT_REQUIRED_TO_RUN_TESTS") && !genericRunner.includes("p.number===395"),
+  "generic cloud runner must accept all same-repository draft PRs");
+console.log("Required real GitHub gates are test-first and evidence runner accepts all PRs: PASS (static).");

@@ -13,16 +13,14 @@ permissions:
   pull-requests: read
 
 jobs:
+  # Required security and functional gates run before Human Final Ready.
+  # Final Ready/BCE still govern merge; they must not suppress genuine test results.
   ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash harness/scripts/run-final-ready-preflight.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -111,16 +109,17 @@ jobs:
         run: node harness/scripts/select-impacted-tests.mjs --run
 
 
-  # W1-01 independent evidence, NOT a required check and never a GCCA waiver.
-  w1-01-admission:
-    name: W1-01 PR395 cheap exact-byte approval check
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 395 && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+  # Non-required, generic GitHub-hosted real-command evidence. No Human approval is
+  # necessary to RUN tests. This job never approves, merges, or waives required GCCA.
+  cloud-evidence-admission:
+    name: Cloud Evidence source binding (not GCCA)
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     permissions:
       contents: read
     outputs:
-      approved: ${{ steps.check.outputs.approved }}
+      admitted: ${{ steps.check.outputs.admitted }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -130,20 +129,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check HEAD/BASE/17 plus files byte-digest and fresh Human approval
+      - name: Verify exact PR HEAD/BASE and source bytes; no prior approval required
         id: check
         run: node harness/scripts/w1-01-evidence-mirror.mjs admit
 
-  w1-01-evidence-mirror:
-    name: W1-01 PR395 seven-stage true logs (NOT GCCA)
-    needs: w1-01-admission
-    if: ${{ needs.w1-01-admission.outputs.approved == 'true' }}
+  cloud-evidence-mirror:
+    name: Cloud Evidence seven real commands (not GCCA)
+    needs: cloud-evidence-admission
+    if: ${{ needs.cloud-evidence-admission.outputs.admitted == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     permissions:
       contents: read
     concurrency:
-      group: w1-01-395-${{ github.event.pull_request.head.sha }}
+      group: cloud-evidence-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -160,7 +159,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: W1-01-395-one-shot-raw-evidence
-          path: w1-01-evidence/
+          name: cloud-evidence-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: cloud-evidence/
           if-no-files-found: warn
           retention-days: 30
