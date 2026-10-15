@@ -110,15 +110,18 @@ const fastLoopErrors=(checks,head)=>{
   const good=rows.some(r=>r.status==="completed" && r.conclusion==="success");
   return good?[]:["missing independent successful current-HEAD GitHub fast-loop; skipped is not PASS"];
 };
+const prIdentityMatches=(pr,live,head,base)=>
+  pr.number===live.number && pr.head?.sha===head && pr.base?.sha===base;
+const prHeadAndBaseValid=(head,base)=>HEX40.test(head||"") && HEX40.test(base||"");
+const prOpenReady=(pr,live)=>live.state==="open" && !live.draft && !pr.draft;
+const prIsSameRepo=(live,repo)=>live.base?.ref==="main" && live.head?.repo?.full_name===repo;
 const prMetadataErrors=(event,live,repo)=>{
   const e=[],pr=event?.pull_request,head=live?.head?.sha,base=live?.base?.sha;
   if(!pr || !live) return ["missing live PR metadata"];
-  assertion(pr.number===live.number && pr.head?.sha===head && pr.base?.sha===base,
-    "PR event stale or missing fields vs live PR",e);
-  assertion(HEX40.test(head||"") && HEX40.test(base||""),"missing exact HEAD/BASE",e);
-  assertion(live.state==="open" && !live.draft && !pr.draft,"NOT_READY: PR is Draft or closed",e);
-  assertion(live.base?.ref==="main" && live.head?.repo?.full_name===repo,
-    "unexpected PR base or fork",e);
+  assertion(prIdentityMatches(pr,live,head,base),"PR event stale or missing fields vs live PR",e);
+  assertion(prHeadAndBaseValid(head,base),"missing exact HEAD/BASE",e);
+  assertion(prOpenReady(pr,live),"NOT_READY: PR is Draft or closed",e);
+  assertion(prIsSameRepo(live,repo),"unexpected PR base or fork",e);
   return e;
 };
 const stageEvidenceErrors=(x,ctx)=>{
