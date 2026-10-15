@@ -113,7 +113,8 @@ for(const [file,required] of requiredWorkflows){
 const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
 const ciRequiredJob=ciGeneric.slice(ciGeneric.indexOf("\n  ci:\n"),
   ciGeneric.indexOf("\n  fast-loop:\n"));
-const ciEvidenceJob=ciGeneric.slice(ciGeneric.indexOf("\n  cloud-evidence-mirror:\n"));
+const cloudEvidenceWorkflow=readFileSync(".github/workflows/cloud-evidence.yml","utf8");
+const ciEvidenceJob=cloudEvidenceWorkflow.slice(cloudEvidenceWorkflow.indexOf("\n  cloud-evidence-mirror:\n"));
 assert.ok(ciRequiredJob.indexOf("- name: Install locked dependencies")>=0 &&
   ciRequiredJob.indexOf("- name: Repository lint")>ciRequiredJob.indexOf("- name: Install locked dependencies") &&
   ciRequiredJob.indexOf("- name: Product CI")>ciRequiredJob.indexOf("- name: Repository lint") &&
@@ -126,13 +127,20 @@ assert.ok(ciRequiredJob.includes("- name: Final Ready attestation AFTER real req
   !ciEvidenceJob.includes("- name: Final Ready attestation AFTER real required checks"),
   "Required CI must own its Ready guard; optional cloud evidence may not own it");
 
-assert.ok(ciGeneric.includes("cloud-evidence-admission:") && ciGeneric.includes("cloud-evidence-mirror:"),
-  "generic real-cloud evidence jobs missing");
-assert.ok(!ciGeneric.includes("github.event.pull_request.number == 395"),
-  "cloud evidence must not be hardcoded to an old PR");
-assert.ok(ciGeneric.includes("ready_for_review, labeled") &&
-  ciGeneric.includes("contains(github.event.pull_request.labels.*.name, 'cloud-evidence')"),
-  "expensive cloud mirror must be explicitly opt-in and re-trigger on label");
+assert.ok(!ciGeneric.includes("cloud-evidence-admission:") &&
+  !ciGeneric.includes("cloud-evidence-mirror:") &&
+  !ciGeneric.includes("ready_for_review, labeled"),
+  "required CI cannot re-run for optional evidence labels");
+assert.ok(cloudEvidenceWorkflow.includes("cloud-evidence-admission:") &&
+  cloudEvidenceWorkflow.includes("cloud-evidence-mirror:") &&
+  cloudEvidenceWorkflow.includes("types: [opened, reopened, synchronize, labeled]"),
+  "dedicated cloud workflow missing");
+assert.ok(cloudEvidenceWorkflow.includes("contains(github.event.pull_request.labels.*.name, 'cloud-evidence')") &&
+  cloudEvidenceWorkflow.includes("github.event.label.name == 'cloud-evidence'") &&
+  cloudEvidenceWorkflow.includes("persist-credentials: false"),
+  "cloud evidence must be opt-in, not rerun for other labels, and read-only");
+assert.ok(!cloudEvidenceWorkflow.includes("github.event.pull_request.number == 395"),
+  "cloud evidence must not be pinned to PR #395");
 const genericRunner=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
 assert.ok(genericRunner.includes("Number.isSafeInteger(p.number)") &&
   genericRunner.includes("NOT_REQUIRED_TO_RUN_TESTS") && !genericRunner.includes("p.number===395"),

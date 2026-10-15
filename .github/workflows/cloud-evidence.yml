@@ -1,0 +1,65 @@
+name: Optional Cloud Evidence (non-required)
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  # Non-required real cloud evidence runs only when the PR gets the 'cloud-evidence'
+  # label; no Human approval needed to execute, no unrequested seven-stage GH costs.
+  cloud-evidence-admission:
+    name: Cloud Evidence source binding (not GCCA)
+    if: ${{ github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'cloud-evidence') && (github.event.action != 'labeled' || github.event.label.name == 'cloud-evidence') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+    outputs:
+      admitted: ${{ steps.check.outputs.admitted }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact PR HEAD/BASE and source bytes; no prior approval required
+        id: check
+        run: node harness/scripts/w1-01-evidence-mirror.mjs admit
+
+  cloud-evidence-mirror:
+    name: Cloud Evidence seven real commands (not GCCA)
+    needs: cloud-evidence-admission
+    if: ${{ needs.cloud-evidence-admission.outputs.admitted == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    concurrency:
+      group: cloud-evidence-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seven real commands with bounded time, exit codes, stdout, stderr and SHA256
+        run: node harness/scripts/w1-01-evidence-mirror.mjs run
+      - name: Preserve evidence even for failed commands
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-evidence-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: cloud-evidence/
+          if-no-files-found: warn
+          retention-days: 30

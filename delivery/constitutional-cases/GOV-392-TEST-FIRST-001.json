@@ -6,13 +6,14 @@
   "exact_changed_paths": [
     ".github/workflows/attack-dry-run.yml",
     ".github/workflows/ci.yml",
+    ".github/workflows/cloud-evidence.yml",
     ".github/workflows/codeql.yml",
     ".github/workflows/governance-gate.yml",
     "harness/scripts/final-ready-selftest.mjs",
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "135755157f86c08716150ab0335d1c8f3d00c38c0550ff077d71658385a36e97",
+  "candidate_digest_sha256": "2b1ecc47333b5d23564293c08990e5ee2e48f0b4800264f20870f0eeb82be44f",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -55,7 +56,8 @@
     "Human approval/TTL absent in this source-only candidate; subsequent merge is NOT authorized by this commit.",
     "Cloud mirror save()/source.json output paths exactly match its created cloud-evidence/ directory and upload-artifact path.",
     "Required CI job owns its Ready-only Final Ready guard; cloud evidence job does not, avoiding false pass from textual grep across jobs.",
-    "Required CI orders npm ci, lint and Product CI BEFORE Human-bound governance/constitutional gates; governance still fails closed on a missing Human decision, but no longer suppresses earlier test results."
+    "Required CI orders npm ci, lint and Product CI BEFORE Human-bound governance/constitutional gates; governance still fails closed on a missing Human decision, but no longer suppresses earlier test results.",
+    "Cloud evidence triggers in a dedicated opt-in workflow, while required CI excludes labeled events; no extra required check from a label-only update."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -63,7 +65,7 @@
     "reason": "Direct Human request 2026-10-15 to immediately fix test-first deadlock and PR395-only runner; prepare candidate without opening a PR or merging.",
     "risk": "Removing pre-test Final Ready admission may allow CI to execute unapproved candidate source; PR checks run with read-only permissions and no release/deploy step, while independent Human final Merge remains mandatory. Real failures are never converted to PASS.",
     "owner": "Human merge approver; GPT candidate author and evidence reviewer",
-    "follow_up": "Real checks execute on every PR before Ready attestation; non-PR main provenance remains protected. Costly seven-stage evidence is explicit opt-in label only. No Human approval asserted; Sprint3 unaffected.",
+    "follow_up": "Full required CI/Governance/Attack/CodeQL still mandatory. Dedicated cloud evidence runs only on a Draft PR with cloud-evidence label, including fresh commits, never triggering full required CI for unrelated labels. Human exact approval, independent BCE and final Merge remain separately required.",
     "affected_sprint": "SP-P1-003",
     "affected_tasks": [],
     "covered_gates": [
