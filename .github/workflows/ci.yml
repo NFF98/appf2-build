@@ -237,3 +237,58 @@ jobs:
           path: w1-01-evidence/
           if-no-files-found: warn
           retention-days: 14
+
+
+  # W1-01 independent evidence, NOT a required check and never a GCCA waiver.
+  w1-01-admission:
+    name: W1-01 PR395 cheap exact-byte approval check
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 395 && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+    outputs:
+      approved: ${{ steps.check.outputs.approved }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check HEAD/BASE/17 plus files byte-digest and fresh Human approval
+        id: check
+        run: node harness/scripts/w1-01-evidence-mirror.mjs admit
+
+  w1-01-evidence-mirror:
+    name: W1-01 PR395 seven-stage true logs (NOT GCCA)
+    needs: w1-01-admission
+    if: ${{ needs.w1-01-admission.outputs.approved == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    concurrency:
+      group: w1-01-395-${{ github.event.pull_request.head.sha }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seven real commands with bounded time, exit codes, stdout, stderr and SHA256
+        run: node harness/scripts/w1-01-evidence-mirror.mjs run
+      - name: Preserve evidence even for failed commands
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: W1-01-395-one-shot-raw-evidence
+          path: w1-01-evidence/
+          if-no-files-found: warn
+          retention-days: 30
