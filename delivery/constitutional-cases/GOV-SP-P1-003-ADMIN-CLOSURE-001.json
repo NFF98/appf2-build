@@ -76,9 +76,9 @@
     "delivery/PROJECT-OPEN-ITEMS.json",
     "delivery/sprints/SP-P1-003/manifest.json"
   ],
-  "candidate_digest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "candidate_digest_sha256": "85c09e2e1bc0ae767839ae14ed5f2703c9cd5481c2c1df43cb7381d3a319c8f2",
   "human_approval": null,
-  "status": "DRAFT_AWAIT_HUMAN_EXACT_CANDIDATE_APPROVAL",
+  "status": "PREPARED_EXACT_CANDIDATE_PENDING_HUMAN_APPROVAL",
   "why5": [
     {
       "question": "Why close Sprint3 administratively now?",
@@ -106,5 +106,5 @@
       "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
     }
   ],
-  "notes": "This proposed five-path transition is NOT approved at a byte-exact SHA256 level. All non-docket bytes require new Human exact candidate approval and required gates before Merge; never claim closure in draft."
+  "notes": "Exact four-file SHA256 independently calculated from GitHub candidate UTF-8 bytes using path + NUL + bytes + NUL digest, then inserted into append-only closure docket. THIS DOES NOT CONSTITUTE HUMAN APPROVAL. Need new Human byte-exact decision and required gate tests before merge. No Task/Sprint activation."
 }
