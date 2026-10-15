@@ -86,7 +86,7 @@
       "CHANGE_SCOPE"
     ],
     "expires_at_unix": 1793188993,
-    "expires_at_rule": "HISTORICAL TTL only; current HEAD and digest require a fresh exact Human decision, revised approval and expiry BEFORE any governance PASS."
+    "expires_at_rule": "Expiry 2026-10-28T12:03:13Z is within 14 days after 2026-10-15T01:21:01Z conditional direct Human chat decision (GPT transcription in PR #395; Human verification mandatory). This is not an SSH signer, cryptographic signature or watcher lease."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -98,10 +98,20 @@
     "既有 POI-002..006 舊列維持原格式，不受嚴格欄位檢查，只受不可刪除與 ID 唯一檢查。",
     "admin-closure-cross-gate-test.mjs 需要本機 git clone，不在 npm run gate 內，需人工或 BCE 執行。",
     "Final Ready 工作流程目前以 PR HEAD 執行；同一 PR 共同修改 Workflow／Guard 的保護依賴 L3 精確候選、GitHub Ruleset 及 Human 人工驗證，不宣稱機器本身能防所有自我修改。",
-    "GitHub 共享 OWNER 帳號無法在機器上區分真人與使用相同授權的 GPT/Codex；Human 必須親自確認來源。當前所有核准均 PENDING，不得沿用舊候選摘要。"
+    "GitHub 共享 OWNER 帳號無法在機器上區分真人與使用相同授權的 GPT/Codex；已收到直接 Chat 條件式精確候選批准並由 GPT 轉錄，Human 必須親自確認該來源。Final Ready、Merge、Sprint3 結案仍 PENDING。",
+    "Human direct Chat 2026-10-15 decision is transcribed by GPT at https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765; this GitHub comment is not Human-authored, not independently authenticatable, and not an electronic signature. Human must verify original direct decision and final HEAD before merge."
   ],
-  "approval_status": "PENDING_NEW_HUMAN_EXACT_CANDIDATE_APPROVAL_NO_MERGE_AUTHORITY",
-  "human_approval": null,
+  "approval_status": "HUMAN_CHAT_EXACT_CANDIDATE_APPROVED_NOT_FINAL_READY_NOT_MERGE_APPROVED",
+  "human_approval": {
+    "case_id": "GOV-392-CARRY-FORWARD-001",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
+    "approver": "NFF98",
+    "approved_at_unix": 1792027261,
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288"
+  },
   "historical_candidate_approval": {
     "sha256": "17f9ab5d65969847873bee09153b5c0f08eca902d077bb3e4a1c4c1a5b60c112",
     "ref": "https://github.com/NFF98/appf2-build/issues/392#issuecomment-6167889238",
