@@ -831,23 +831,50 @@ const isAdminClosureAttempt=({changed,readBaseJson,readHeadJson})=>changed.some(
   return p.startsWith(ADMIN_CLOSE_DOCKET_DIR) && p.endsWith(".json") &&
     readHeadJson(p)?.closure_disposition!==undefined && !readBaseJson(p);
 });
-const adminClosureStateErrors=({sid,before,after,baseSprint,headSprint,baseBuild,headBuild})=>{
-  const e=[];
+const adminClosureManifestErrors=({sid,before,after})=>{
   if(!before || !ADMIN_CLOSE_OPEN_STATUSES.includes(before.status) || after?.status!=="CLOSED" ||
      !sameJson(omit(before,ADMIN_CLOSE_MANIFEST_KEYS),omit(after,ADMIN_CLOSE_MANIFEST_KEYS))){
-    e.push(sid+" manifest may only move an open Sprint to CLOSED adding closure_disposition/administrative_closure");
+    return [sid+" manifest may only move an open Sprint to CLOSED adding closure_disposition/administrative_closure"];
   }
+  return [];
+};
+const adminClosureSprintErrors=({sid,baseSprint,headSprint})=>{
+  const e=[];
   if(baseSprint?.active_sprint!==sid || !ADMIN_CLOSE_OPEN_STATUSES.includes(baseSprint?.status)) e.push("only the BASE active Sprint can be administratively closed: "+sid);
   const hold=headSprint?.status==="HOLD" && headSprint.active_sprint===null &&
     headSprint.active_build_spec===null && headSprint.active_task===null;
   if(!hold || !sameJson(omit(baseSprint,ADMIN_CLOSE_SPRINT_KEYS),omit(headSprint,ADMIN_CLOSE_SPRINT_KEYS))){
     e.push("delivery/CURRENT-SPRINT.json must move to HOLD with no Sprint/Build Spec/Task binding and nothing else changed");
   }
+  return e;
+};
+const adminClosureBuildErrors=({baseBuild,headBuild})=>{
   if(headBuild?.implementation_enabled!==false ||
      !sameJson(omit(baseBuild,["implementation_enabled","reason"]),omit(headBuild,["implementation_enabled","reason"]))){
-    e.push("build-spec/CURRENT.json may only set implementation_enabled=false (and reason)");
+    return ["build-spec/CURRENT.json may only set implementation_enabled=false (and reason)"];
   }
-  return e;
+  return [];
+};
+const adminClosureStateErrors=ctx=>[
+  ...adminClosureManifestErrors(ctx),
+  ...adminClosureSprintErrors(ctx),
+  ...adminClosureBuildErrors(ctx)
+];
+const adminClosureRequiredPathErrors=(changed,required)=>[
+  ...required.filter(p=>!changed.includes(p)).map(p=>"required closure path missing: "+p),
+  ...changed.filter(p=>!required.includes(p)).map(p=>"path outside the exact closure set: "+p)
+];
+const adminClosureApprovalTimeErrors=(docket,full,now)=>{
+  const approvedAt=docket?.human_approval?.approved_at_unix;
+  return Number.isSafeInteger(approvedAt) && approvedAt>now+(full.exception?.max_clock_skew_seconds||0)?
+    ["Human closure approval timestamp is in the future"]:[];
+};
+const adminClosureSprintProofErrors=({sid,after,docket,full,readHeadJson,registerPath})=>{
+  const queue=readHeadJson("delivery/backlog/QUEUE.json");
+  return closedSprintErrors({sid,m:after,td:readHeadJson("delivery/sprints/"+sid+"/tasks.json")||{tasks:[]},
+    backlogById:new Map((queue?.items||[]).map(i=>[i.backlog_item_id,i])),
+    selectedIds:new Set(after.backlog_item_ids||[]),revalidationIds:new Set(after.revalidation_item_ids||[]),
+    docket,full,register:readHeadJson(registerPath)});
 };
 const adminClosureTransitionErrors=ctx=>{
   const {base,changed,readBaseJson,readHeadJson,now}=ctx;
@@ -861,23 +888,16 @@ const adminClosureTransitionErrors=ctx=>{
   const manifestPath=manifests[0],sid=ADMIN_CLOSE_MANIFEST_RE.exec(manifestPath)[1],after=readHeadJson(manifestPath);
   const docketPath=cf.docket_dir+after.administrative_closure?.case_id+".json",docket=readHeadJson(docketPath);
   const required=[docketPath,cf.register_path,manifestPath,"delivery/CURRENT-SPRINT.json","build-spec/CURRENT.json"];
-  const e=[
-    ...required.filter(p=>!changed.includes(p)).map(p=>"required closure path missing: "+p),
-    ...changed.filter(p=>!required.includes(p)).map(p=>"path outside the exact closure set: "+p),
+  return [
+    ...adminClosureRequiredPathErrors(changed,required),
     ...adminClosureStateErrors({sid,before:readBaseJson(manifestPath),after,
       baseSprint:readBaseJson("delivery/CURRENT-SPRINT.json"),headSprint:readHeadJson("delivery/CURRENT-SPRINT.json"),
-      baseBuild:readBaseJson("build-spec/CURRENT.json"),headBuild:readHeadJson("build-spec/CURRENT.json")})
+      baseBuild:readBaseJson("build-spec/CURRENT.json"),headBuild:readHeadJson("build-spec/CURRENT.json")}),
+    ...adminClosureApprovalTimeErrors(docket,full,now),
+    ...inspectCarryForwardChange({...ctx,basePolicyFull:full,headPolicyFull:readHeadJson(GOVERNANCE_REFORM_POLICY_PATH)}).errors,
+    ...adminClosureSprintProofErrors({sid,after,docket,full,readHeadJson,registerPath:cf.register_path}),
+    ...ctx.headRegisterErrors()
   ];
-  const approvedAt=docket?.human_approval?.approved_at_unix;
-  if(Number.isSafeInteger(approvedAt) && approvedAt>now+(full.exception?.max_clock_skew_seconds||0)) e.push("Human closure approval timestamp is in the future");
-  e.push(...inspectCarryForwardChange({...ctx,basePolicyFull:full,headPolicyFull:readHeadJson(GOVERNANCE_REFORM_POLICY_PATH)}).errors);
-  const queue=readHeadJson("delivery/backlog/QUEUE.json");
-  e.push(...closedSprintErrors({sid,m:after,td:readHeadJson("delivery/sprints/"+sid+"/tasks.json")||{tasks:[]},
-    backlogById:new Map((queue?.items||[]).map(i=>[i.backlog_item_id,i])),
-    selectedIds:new Set(after.backlog_item_ids||[]),revalidationIds:new Set(after.revalidation_item_ids||[]),
-    docket,full,register:readHeadJson(cf.register_path)}));
-  e.push(...ctx.headRegisterErrors());
-  return e;
 };
 if(isAdminClosureAttempt({changed,readBaseJson:showBaseJson,readHeadJson})){
   const readHeadBytes=rel=>{
