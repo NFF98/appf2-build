@@ -1,5 +1,6 @@
 // W1-01 #395: exact-HEAD, Human-gated GH runner; not GCCA and never a PASS proxy.
 import fs from "node:fs";
+import assert from "node:assert/strict";
 import path from "node:path";
 import crypto from "node:crypto";
 import {execFileSync,spawn} from "node:child_process";
@@ -70,6 +71,33 @@ function admission(){
   if(git("status","--porcelain"))return {ok:false,reason:"checkout dirty"};
   return {ok:true,head,base,digest,paths,approval_ref:a.human_message_ref};
 }
+// Attack Dry-run constructs its own temporary Git repositories. Inheriting the
+// parent PR's BASE_SHA/HEAD_SHA makes positive fixtures fail with "bad object".
+// Preserve exact source bindings in the immutable manifest, not fixture env.
+const childEnvironment=(command,binding)=>{
+  const values={...process.env};
+  if(command==="npm run dry-run:attack"){
+    delete values.BASE_SHA;
+    delete values.HEAD_SHA;
+  }else{
+    values.BASE_SHA=binding.base;
+    values.HEAD_SHA=binding.head;
+  }
+  return values;
+};
+const testChildEnvironment=()=>{
+  const binding={base:"a".repeat(40),head:"b".repeat(40)};
+  for(const command of ["npm run gate","npm run product:ci"]){
+    const x=childEnvironment(command,binding);
+    assert.equal(x.BASE_SHA,binding.base);
+    assert.equal(x.HEAD_SHA,binding.head);
+  }
+  const attack=childEnvironment("npm run dry-run:attack",binding);
+  assert.equal(Object.hasOwn(attack,"BASE_SHA"),false);
+  assert.equal(Object.hasOwn(attack,"HEAD_SHA"),false);
+  assert.equal(binding.base.length,40);
+  console.log("W1-01 child env isolation selftest: PASS (synthetic, NOT Attack PASS).");
+};
 async function once(spec,index,env){
   const [command,bin,args,seconds]=spec,name=String(index+1).padStart(2,"0");
   const dir="w1-01-evidence";
@@ -77,7 +105,7 @@ async function once(spec,index,env){
   const out=fs.createWriteStream(stdoutPath),err=fs.createWriteStream(stderrPath);
   const start=Date.now();let startError=null;
   const proc=spawn("timeout",["--signal=TERM","--kill-after=10s",seconds+"s",bin,...args],
-    {env:{...process.env,BASE_SHA:env.base,HEAD_SHA:env.head},stdio:["ignore","pipe","pipe"]});
+    {env:childEnvironment(command,env),stdio:["ignore","pipe","pipe"]});
   proc.stdout.pipe(out);proc.stderr.pipe(err);
   const result=await new Promise(resolve=>{
     proc.on("error",e=>{startError=e;});
@@ -132,7 +160,9 @@ async function runMirror(a){
   await executeAll(m,a);finish(m);
 }
 async function main(){
-  const mode=process.argv[2],a=admission();
+  const mode=process.argv[2];
+  if(mode==="env-selftest"){testChildEnvironment();return;}
+  const a=admission();
   console.log("W1-01 "+(a.ok?"ADMITTED":"NOT_ADMITTED")+" "+(a.reason||a.digest));
   if(mode==="admit"){
     if(process.env.GITHUB_OUTPUT)
