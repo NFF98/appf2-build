@@ -87,3 +87,102 @@ assert.match(ciWorkflow,/^ {4}if: \$\{\{ github\.event_name == 'pull_request' &&
   "fast-loop must remain draft-only (not a required full gate)");
 console.log("FINAL READY trigger graph and Draft->Ready check-name separation: PASS (static, NOT real full-gate execution).");
 console.log("FINAL READY synthetic positive/negative: PASS (NOT Human approval or real local PASS).");
+
+/* The real GitHub workflow MUST run all four security/quality jobs before any
+   Human approval. This is a static invariant, not a substitute for execution. */
+const requiredWorkflows=[
+  ["ci.yml","npm run gate"],
+  ["governance-gate.yml","npm run gate"],
+  ["attack-dry-run.yml","npm run dry-run:attack"],
+  ["codeql.yml","github/codeql-action/analyze@v4"]
+];
+for(const [file,required] of requiredWorkflows){
+  const source=readFileSync(".github/workflows/"+file,"utf8");
+  const actual=source.indexOf(required);
+  const mainGuard=source.indexOf("- name: Main-only merge provenance guard");
+  assert.ok(actual>mainGuard && mainGuard>=0,"mandatory real gate missing or wrong position: "+file);
+  assert.ok(source.includes("if: ${{ github.event_name != 'pull_request' }}"),
+    "main push provenance must remain fail-closed: "+file);
+  assert.ok(source.includes("run: bash harness/scripts/run-final-ready-preflight.sh"),
+    "main push provenance guard missing: "+file);
+  assert.ok(!source.includes("- name: Final Ready attestation AFTER real required checks"),
+    "post-BCE/Human readiness gate cannot be inside a required check: "+file);
+}
+const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
+const ciRequiredJob=ciGeneric.slice(ciGeneric.indexOf("\n  ci:\n"),
+  ciGeneric.indexOf("\n  final-ready-audit:\n"));
+const cloudEvidenceWorkflow=readFileSync(".github/workflows/cloud-evidence.yml","utf8");
+const ciEvidenceJob=cloudEvidenceWorkflow.slice(cloudEvidenceWorkflow.indexOf("\n  cloud-evidence-mirror:\n"));
+assert.ok(ciRequiredJob.indexOf("- name: Install locked dependencies")>=0 &&
+  ciRequiredJob.indexOf("- name: Repository lint")>ciRequiredJob.indexOf("- name: Install locked dependencies") &&
+  ciRequiredJob.indexOf("- name: Product CI")>ciRequiredJob.indexOf("- name: Repository lint") &&
+  ciRequiredJob.indexOf("- name: Governance / traceability gates")>ciRequiredJob.indexOf("- name: Product CI"),
+  "CI must execute genuine dependency/lint/Product checks before constitutional/governance");
+assert.ok(!ciRequiredJob.includes("Final Ready attestation") &&
+  !ciRequiredJob.includes("Verify ordered Local tests"),
+  "required ci may not depend on post-BCE/Human Final Ready");
+
+const finalAuditJob=ciGeneric.slice(ciGeneric.indexOf("\n  final-ready-audit:\n"),
+  ciGeneric.indexOf("\n  fast-loop:\n"));
+assert.ok(finalAuditJob.startsWith("\n  final-ready-audit:\n") &&
+  finalAuditJob.includes("needs: ci") &&
+  finalAuditJob.includes("if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}") &&
+  finalAuditJob.includes("run: bash harness/scripts/run-final-ready-preflight.sh") &&
+  !ciEvidenceJob.includes("Verify ordered Local tests"),
+  "Human Final Ready attestation must be separate from four required gates and cloud evidence");
+
+assert.ok(!ciGeneric.includes("cloud-evidence-admission:") &&
+  !ciGeneric.includes("cloud-evidence-mirror:") &&
+  !ciGeneric.includes("ready_for_review, labeled"),
+  "required CI cannot re-run for optional evidence labels");
+assert.ok(cloudEvidenceWorkflow.includes("cloud-evidence-admission:") &&
+  cloudEvidenceWorkflow.includes("cloud-evidence-mirror:") &&
+  cloudEvidenceWorkflow.includes("types: [opened, reopened, synchronize, labeled]"),
+  "dedicated cloud workflow missing");
+assert.ok(cloudEvidenceWorkflow.includes("contains(github.event.pull_request.labels.*.name, 'cloud-evidence')") &&
+  cloudEvidenceWorkflow.includes("github.event.label.name == 'cloud-evidence'") &&
+  cloudEvidenceWorkflow.includes("persist-credentials: false"),
+  "cloud evidence must be opt-in, not rerun for other labels, and read-only");
+assert.ok(!cloudEvidenceWorkflow.includes("github.event.pull_request.number == 395"),
+  "cloud evidence must not be pinned to PR #395");
+const genericRunner=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
+assert.ok(genericRunner.includes("Number.isSafeInteger(p.number)") &&
+  genericRunner.includes("NOT_REQUIRED_TO_RUN_TESTS") && !genericRunner.includes("p.number===395"),
+  "generic cloud runner must accept all same-repository draft PRs");
+console.log("Required real GitHub gates are test-first and evidence runner accepts all PRs: PASS (static).");
+
+const evidenceSource=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
+assert.ok(evidenceSource.includes('fs.mkdirSync("cloud-evidence"') &&
+  evidenceSource.includes('"cloud-evidence/raw-evidence-manifest.json"') &&
+  evidenceSource.includes('"cloud-evidence/source.json"') &&
+  !evidenceSource.includes('"w1-01-evidence/'),
+  "cloud evidence source and manifest must use the same existing directory");
+console.log("Cloud evidence artifact paths: PASS (static, NOT real cloud execution).");
+
+const mirrorStatusSource=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
+assert.ok(mirrorStatusSource.includes("const stageStatus=") &&
+  mirrorStatusSource.includes('stageStatus(command,exit,stdout)') &&
+  mirrorStatusSource.includes('INCOMPLETE_NOT_RUN') &&
+  mirrorStatusSource.includes("PRODUCT CI: PASS"),
+  "cloud evidence must never convert Product HOLD/N/A (exit 0) to Product PASS");
+console.log("Cloud Product HOLD/N/A cannot silently become PASS: PASS (static policy assertion).");
+assert.ok(mirrorStatusSource.includes("const notRunCommands=") &&
+  mirrorStatusSource.includes("m.not_run=notRunCommands(m.stages,jobs.slice(i+1))"),
+  "cloud manifest must include completed-but-NOT_RUN Product CI and unexecuted remaining stages");
+console.log("Cloud NOT_RUN manifest completeness: PASS (static, NOT actual cloud execution).");
+
+
+// GOV-392 structural test-only phase MUST NOT claim Human approval or alter
+// protected Main, and is only for the exact candidate BASE/path/byte digest.
+for(const wf of [".github/workflows/ci.yml",".github/workflows/governance-gate.yml"]){
+  const source=readFileSync(wf,"utf8");
+  assert.ok(source.includes("APPF2_GOV16_TEST_PHASE: '1'"),
+    "exact test-only lane missing in "+wf);
+}
+const constitutionalSource=readFileSync("harness/scripts/validate-constitutional-change.mjs","utf8");
+const scopeSource=readFileSync("harness/scripts/validate-change-scope.mjs","utf8");
+assert.ok(constitutionalSource.includes("isGov392TestOnly") &&
+  constitutionalSource.includes("pendingHumanApproval:true") &&
+  scopeSource.includes("gov16MissingApprovalOnly") &&
+  scopeSource.includes("PENDING_HUMAN_APPROVAL"),
+  "test-only must keep exact structural validation without invented Human approval");

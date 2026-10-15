@@ -2,18 +2,33 @@
   "case_id": "GOV-TASK-ONE-APPROVAL-001",
   "base_sha": "8a471763ab762cf486e42dd9efd52d9195113a97",
   "constitution_version": "1.0",
-  "title": "One conditional Human authorization per L1 Task; preserve checks, BCE and independent provenance",
+  "title": "Original Human-approved pre-W01 GOV-REFORM-20261013 9+6+mid-Sprint implementation repair, plus bounded once-per-Task conditional authority",
   "exact_changed_paths": [
+    ".github/workflows/attack-dry-run.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/cloud-evidence.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/governance-gate.yml",
+    ".github/workflows/governance-metrics.yml",
     "AGENTS.md",
     "delivery/EXECUTION-HANDOFF-PROTOCOL.md",
     "harness/policy/APPF2-CONSTITUTION.md",
     "harness/policy/governance-reform.json",
     "harness/scripts/conditional-task-approval-selftest.mjs",
     "harness/scripts/conditional-task-approval.mjs",
+    "harness/scripts/evidence-ledger-report.mjs",
+    "harness/scripts/final-ready-selftest.mjs",
     "harness/scripts/governance-gate.mjs",
-    "harness/scripts/task-pr-lifecycle.mjs"
+    "harness/scripts/governance-reform-selftest.mjs",
+    "harness/scripts/gpt-preflight.mjs",
+    "harness/scripts/reform-wiring-audit.mjs",
+    "harness/scripts/select-impacted-tests.mjs",
+    "harness/scripts/task-pr-lifecycle.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-constitutional-change.mjs",
+    "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "abb84b1249b623067096eb1cfbe19d4e08e5925b2f34fbc77f6e080d8ad2e6b3",
+  "candidate_digest_sha256": "861a867bcc4813e28aa71dba7e1fd80c204432092813a6baf30f633e9f1eb795",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -49,18 +64,24 @@
   "no_change": "Existing lifecycle still requires independent Human events and creates repeated interruptions on routine unchanged Task work.",
   "rollback": "Human-governed revert of this eight-file L3 amendment only; restore Human-only transition actors and policy; never rewrite closed Sprint or Product truth.",
   "negative_tests": [
-    "39 conditional authorization positive/negative cases and seven lifecycle cases: Task/Sprint/Build/base/scope binding, stale HEAD/BCE, incomplete AC, skipped/failed gates, revoked/expired/fake Human, GitHub protection, closure before merge, no next Sprint.",
-    "Current Human-only lifecycle remains legal and effective unless this exact L3 candidate is approved and merged.",
-    "Trusted external Human provenance remains a prerequisite; AI cannot set its own grant.",
-    "This candidate creates no GitHub merge service, releases, Task or Sprint activation."
+    "Issue #389 original 9+6 and Human-added mid-Sprint exception must be audited, not replaced by assistant-invented requirements.",
+    "16 item fail-closed STATIC_WIRED audit and 17 negative controls; do NOT call STATIC_WIRED an E2E success.",
+    "46 synthetic scoped one-approval L1 Task lifecycle cases; not a Human-origin proof or GitHub Merge authorization.",
+    "Real required GitHub CI/Governance/Attack/CodeQL and Product CI run on exact isolated branch push, no new PR required.",
+    "One exact branch/BASE/path/byte digest special test lane only; Human exact candidate approval remains PENDING; no bypass on Main.",
+    "Draft Fast Loop reports NOT_RUN_NO_TEST_FILES when there are zero actual tests; never promotes it to PASS.",
+    "Evidence is collected as read-only canonical-ledger artifact; missing proof never becomes PASS or auto Task Closure.",
+    "Weekly measurements are sourced from real GitHub API, not fictitious metrics; workflow only effective after merge.",
+    "GPT preflight fails closed for no live PR inventory, wrong Task/Build binding and CLOSED/BLOCKED state.",
+    "Trusted independent Human identity, cross-repo Design enforcement, and external GPT tool action pre-creation permissions are NOT implemented by repo scripts."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
     "lane": "GOVERNANCE_REFORM",
-    "reason": "Human requested future Task one-approval workflow and to prepare precise rule candidate before approving.",
+    "reason": "User demands full real implementation audit and remediation of the original sixteen pre-W01 GOV-REFORM-20261013 requirements in Issue #389; test-first isolated consolidated L3 candidate.",
     "risk": "Improper trusted-executor implementation could spoof Human source; fail closed until trust is configured and verified. Repository rule changes remain L3.",
     "owner": "Human governance owner; GPT rule candidate/BCE only",
-    "follow_up": "After exact Human L3 approval, independent CI/BCE and normal protected Merge, configure separate trusted executor/provenance before permitting unattended action. No automatic Sprint3 special closure or next Task.",
+    "follow_up": "Human approval on exact new digest, independent full CI and BCE, then normal protected PR Merge. Missing trusted Human authentication, GPT pre-creation tool permissions, Design repo integration and Phase1 all-real acceptance policy need explicit remaining work; NEVER claim full deployment before those are closed.",
     "affected_sprint": "SP-P1-003",
     "affected_tasks": [],
     "covered_gates": [
@@ -78,5 +99,18 @@
     "justification": "Governance eligibility rule only; no Product AC, Task, Sprint or existing obligation is waived."
   },
   "approval_status": "PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE",
-  "human_approval": null
+  "human_approval": null,
+  "rollout_truth": {
+    "main_effective": false,
+    "candidate_real_four_gates": "NOT_RUN",
+    "exact_human_approval": "PENDING",
+    "synthetic_regressions": "46 conditional Task cases and 17 wiring cases (not real integration)",
+    "incomplete_external_dependencies": [
+      "GPT plugin/tool permission boundary before PR creation",
+      "verified real Human direct-source authentication for one-time delegated approval",
+      "independent appf2-design policy and cross-repo enforcement",
+      "Phase1 detailed all-real acceptance policy requires separate Human review"
+    ],
+    "measured_after_main_merge": false
+  }
 }

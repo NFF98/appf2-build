@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [main]
+    branches: [main, governance/task-one-approval-20261016]
   workflow_dispatch:
 
 permissions:
@@ -12,13 +12,18 @@ permissions:
   issues: read
 
 jobs:
+  # Required security and functional gates run before Human Final Ready.
+  # Final Ready/BCE still govern merge; they must not suppress genuine test results.
   governance:
+    env:
+      APPF2_GOV16_TEST_PHASE: '1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
+      - name: Main-only merge provenance guard (PR tests never pre-blocked)
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/governance/task-one-approval-20261016' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash harness/scripts/run-final-ready-preflight.sh
@@ -28,7 +33,7 @@ jobs:
       - name: Run repository gates
         env:
           APPF2_CONSTITUTION_PUBKEY_B64: ${{ vars.APPF2_CONSTITUTION_PUBKEY_B64 }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || (github.ref == 'refs/heads/governance/task-one-approval-20261016' && '8a471763ab762cf486e42dd9efd52d9195113a97') || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: npm run gate
       # GOV-REFORM-20261013: one Task -> one open PR unless a recorded PR-Justification exists.
@@ -45,3 +50,28 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: node harness/scripts/task-pr-lifecycle.mjs classify
+
+  evidence-ledger-report:
+    name: Task Evidence automatic ledger (report only; NOT Product PASS)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Aggregate live Task evidence without modifying canonical records
+        run: |
+          node harness/scripts/evidence-ledger-report.mjs \
+            --event "$GITHUB_EVENT_PATH" --out "$RUNNER_TEMP/task-evidence-report.json"
+      - name: Upload canonical-reference ledger (NOT automatic Task Closure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-evidence-ledger
+          path: ${{ runner.temp }}/task-evidence-report.json
+          if-no-files-found: warn

@@ -21,7 +21,12 @@ export function prCreationDecision({taskKey,openPrs,guard,selfNumber=null,justif
 }
 
 const intentDecision=({intent,build,sprint,task,taskId})=>{
-  const isActive=sprint.active_task===taskId && ["ACTIVE","REVIEW"].includes(sprint.status);
+  const isActive=sprint.active_task===taskId &&
+    ["ACTIVE","REVIEW"].includes(sprint.status) &&
+    ["IN_PROGRESS","REVIEW"].includes(task?.status) &&
+    task?.build_spec_id===build.active_baseline &&
+    sprint.active_build_spec===build.active_baseline &&
+    Boolean(sprint.active_sprint);
   switch(intent){
     case "CONTINUE_TASK_WORK":
       return isActive && build.implementation_enabled?{decision:"CONTINUE_SAME_LEASE",reason:"same active Task; no new approval needed"}:
@@ -47,7 +52,10 @@ export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId}){
     task_status:task?.status||null,task_build_spec:task?.build_spec_id||null,
     open_prs_for_task:prCreationDecision({taskKey:taskId,openPrs,guard}).existing
   };
-  const result=intent==="NEW_PR"?prCreationDecision({taskKey:taskId,openPrs,guard}):intentDecision({intent,build,sprint,task,taskId});
+  const result=intent==="NEW_PR" && !Array.isArray(openPrs)?
+    {decision:"STOP",reason:"cannot prove no existing PR without live complete inventory"}:
+    intent==="NEW_PR"?prCreationDecision({taskKey:taskId,openPrs,guard}):
+      intentDecision({intent,build,sprint,task,taskId});
   return {facts,intent,task_id:taskId,...result,denied:DENIED.has(result.decision)};
 }
 
@@ -69,7 +77,7 @@ function stateCli({arg,guard,openPrs}){
   if(!openPrs) console.error("PREFLIGHT WARNING: no --open-prs inventory; PR reuse cannot be proven (treat as NOT_READY for NEW_PR).");
   const sprint=readJson("delivery/CURRENT-SPRINT.json");
   const tasks=sprint.active_sprint?readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
-  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs:openPrs||[],guard,intent:arg("intent")||"CONTINUE_TASK_WORK",taskId:arg("task")||sprint.active_task});
+  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs,guard,intent:arg("intent")||"CONTINUE_TASK_WORK",taskId:arg("task")||sprint.active_task});
   console.log(JSON.stringify(out,null,2));
   return out.denied || (!openPrs && out.intent==="NEW_PR")?3:0;
 }

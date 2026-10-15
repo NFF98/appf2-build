@@ -362,7 +362,7 @@ function metricsPreflightCases(guard){
   });
   const open=[{number:386,title:"T008：impl",body:""},{number:390,title:"gov",body:"Task: T009"}];
   const build={active_baseline:"BS-P1-025",implementation_enabled:true};
-  const sprint={active_sprint:"SP-P1-003",active_task:"T008",status:"REVIEW"};
+  const sprint={active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T008",status:"REVIEW"};
   const tasks=[{task_id:"T008",status:"REVIEW",build_spec_id:"BS-P1-025"},{task_id:"T006",status:"BLOCKED",build_spec_id:"BS-P1-025"}];
   const pf=(intent,taskId)=>preflight({build,sprint,tasks,openPrs:open,guard,intent,taskId}).decision;
   return expectCases("metrics/preflight/pr-guard",[
@@ -379,7 +379,11 @@ function metricsPreflightCases(guard){
     ["redundant approval denied",true,()=>pf("REQUEST_APPROVAL","T008")==="REDUNDANT_APPROVAL_DENIED"],
     ["unneeded Rebind denied",true,()=>pf("REQUEST_REBIND","T008")==="REBIND_NOT_REQUIRED"],
     ["BLOCKED Task cannot continue",true,()=>pf("CONTINUE_TASK_WORK","T006")==="STOP"],
-    ["REVIEW Task fix continues same lease",true,()=>pf("CONTINUE_TASK_WORK","T008")==="CONTINUE_SAME_LEASE"]
+    ["REVIEW Task fix continues same lease",true,()=>pf("CONTINUE_TASK_WORK","T008")==="CONTINUE_SAME_LEASE"],
+    ["missing PR inventory fails closed",true,()=>preflight({build,sprint,tasks,openPrs:null,guard,intent:"NEW_PR",taskId:"T008"}).decision==="STOP"],
+    ["CLOSED active Task cannot continue",true,()=>preflight({build,sprint,tasks:[{...tasks[0],status:"CLOSED"},tasks[1]],openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"],
+    ["Task Build mismatch cannot continue",true,()=>preflight({build,sprint,tasks:[{...tasks[0],build_spec_id:"BS-P1-026"},tasks[1]],openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"],
+    ["Sprint binding mismatch cannot continue",true,()=>preflight({build,sprint:{...sprint,active_build_spec:"BS-P1-026"},tasks,openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"]
   ],fn=>fn());
 }
 
