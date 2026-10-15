@@ -1,0 +1,158 @@
+{
+  "case_id": "GOV-392-CARRY-FORWARD-001",
+  "base_sha": "38d2f8a3bbd484b98795f5140afcca29eb4bfa07",
+  "constitution_version": "1.0",
+  "title": "特批／未完成事項永久登錄（Carry-Forward）每次 Change Review 強制檢查，及 Sprint 行政結案 ADMINISTRATIVE_WITH_CARRY_FORWARD 規則（僅規則；Sprint3 結案為後續獨立控制轉換）",
+  "change_class": "L3_CONSTITUTIONAL",
+  "exact_changed_paths": [
+    ".github/workflows/attack-dry-run.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/governance-gate.yml",
+    "harness/attack/run-dry-run.mjs",
+    "harness/policy/APPF2-CONSTITUTION.md",
+    "harness/policy/governance-reform.json",
+    "harness/scripts/admin-closure-cross-gate-test.mjs",
+    "harness/scripts/carry-forward-selftest.mjs",
+    "harness/scripts/final-ready-preflight.mjs",
+    "harness/scripts/final-ready-selftest.mjs",
+    "harness/scripts/governance-gate.mjs",
+    "harness/scripts/run-final-ready-preflight.sh",
+    "harness/scripts/validate-backlog.mjs",
+    "harness/scripts/validate-change-scope.mjs",
+    "harness/scripts/validate-special-approvals-and-carry-forward.mjs",
+    "harness/scripts/validate-sprint.mjs",
+    "harness/scripts/w1-01-evidence-mirror.mjs"
+  ],
+  "candidate_digest_sha256": "a15648812861557bf5f0d61437fcbef089b095b95c02bb490d414b31c3534021",
+  "why5": [
+    {
+      "question": "為什麼 Sprint3（SP-P1-003）無法結案？",
+      "answer": "validate-sprint.mjs 的 CLOSED 條件要求所有 Task CLOSED、所選 Backlog DONE、revalidation 完成；實際 T006 BLOCKED、T008 REVIEW、BL-P1-015／018 SPRINTED、BL-P1-008／010／031 revalidation IN_PROGRESS，且沒有任何誠實的非產品成功結案狀態。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392#issuecomment-6157869863"
+    },
+    {
+      "question": "為什麼不能把 T006／T008 直接標成完成？",
+      "answer": "TEST-F00-037（F06 Preview-origin）仍 UNTESTED、T006 沒有 REVIEW PASS；直接標完成就是假綠燈，違反 Evidence PASS 不可 waive 的憲法規則。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/391#issuecomment-6157763900"
+    },
+    {
+      "question": "為什麼現有 CLOSURE_DEFERRAL 不夠？",
+      "answer": "CLOSURE_DEFERRAL 只延後 BACKLOG_T008_CLOSE_AFTER_T006_REVIEW，TTL 最長 14 天且每次執行重驗；過期後 main 會重新變紅，也無法表達「行政結案但仍有未完成事項」。",
+      "evidence_ref": "harness/policy/governance-reform.json"
+    },
+    {
+      "question": "為什麼需要每次 Change Review 強制登錄？",
+      "answer": "delivery/PROJECT-OPEN-ITEMS.json 已存在，但沒有任何 Gate 要求特批、延後或結案必須逐項登錄並互相連結，未完成事項可能被默默帶過。 同時，過往四個 GCCA Workflow 沒有統一驗證同一 HEAD 的本機測試→GPT BCE→Human Final Ready 三步權限鏈；Draft 雖有部分限制，但 non-Draft 可能在未獲真實證據與 Human Final Ready 前直接跑完整四關。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    },
+    {
+      "question": "為什麼這些規則不會造成假綠燈或讓 PR 關掉自己的檢查？",
+      "answer": "行政結案必須逐項列出開放 Task（含 AC／Test／Evidence 快照 digest）、Backlog、revalidation 與 GAP 列，宣告 never_converts_fail_or_untested_to_pass，且只能轉 HOLD 並關閉 implementation；一般 CLOSED 規則逐字保留。是否強制以 BASE policy 為準，HEAD 移除強制或解除 Gate 串接即判定 suppression。108 個 synthetic 正反案例（負向案例皆斷言精確拒絕原因）、38/38 mutation killed、真實資料 E2E（1 個合法、5 個負向）與 +60 天過期後 main 狀態驗證。",
+      "evidence_ref": "harness/scripts/carry-forward-selftest.mjs"
+    }
+  ],
+  "alternatives": [
+    "維持現狀：Sprint3 無法誠實結案，CLOSURE_DEFERRAL 到期後 main 失敗。",
+    "把 T006／T008 標成 CLOSED：假綠燈，被憲法禁止。",
+    "放寬一般 CLOSED 條件：會削弱所有 Sprint 的結案標準，被 Issue #392 禁止。",
+    "另建新的登錄冊：與既有 PROJECT-OPEN-ITEMS.json 重複，被 Issue #392 禁止。"
+  ],
+  "no_change": "若不採用：SP-P1-003 維持 REVIEW／ACTIVE，無法 HOLD；特批與未完成事項沒有強制登錄，下一個 Sprint 也沒有 Product Alignment 前置條件。",
+  "rollback": "以 Human 核准的 revert PR 還原本 PR 的精確 9 個路徑；本 docket 為 append-only 記錄不刪除。若已有依本規則建立的行政結案，revert 前必須先由 Human 決定該 Sprint 的處置。",
+  "negative_tests": [
+    "harness/scripts/carry-forward-selftest.mjs（108 案例：register 28、register_diff 12、docket 13、administrative_closure 27、product_alignment 6、change_review 22；每個負向案例斷言精確拒絕原因）",
+    "harness/scripts/validate-backlog.mjs T006/T008 順序回歸 20 案例（新增 2：行政結案凍結 T008 REVIEW 合法；該處置不允許 T008 CLOSED）",
+    "BCE 包 governance/tools/carry-forward-mutation.mjs：38/38 mutants killed",
+    "BCE 包 governance/tools/run-e2e.ps1：真實 SP-P1-003 資料的拋棄式 E2E，合法 1 例 ACCEPTED、負向 5 例 REJECTED（缺核准、漏列 T008、HOLD 但 implementation_enabled=true、T006 假 CLOSED、默默遺漏 GAP），+60 天後 main 狀態 PASS",
+    "harness/scripts/admin-closure-cross-gate-test.mjs（GPT BCE #6164737627 修正）：在一次性 clone 以真實 SP-P1-003 資料建立行政結案 commit，實際執行 validate-change-scope.mjs、governance-gate.mjs、validate-sprint.mjs；合法 1 例三關皆 PASS，負向 6 例（缺 GAP、未獲 Human 核准、AI 來源核准、額外路徑、T006 假 PASS、HOLD 但 implementation_enabled=true）皆由 validate-change-scope.mjs 本身以精確原因拒絕；額外路徑一例僅 Change Scope Gate 攔下",
+    "harness/attack/run-dry-run.mjs：NOT_RUN（會呼叫 ci/run-product-ci.mjs，Human 已要求停止產品測試迴圈）",
+    "harness/scripts/final-ready-selftest.mjs：ordered LOCAL_TESTS→GPT_BCE→HUMAN_FINAL_READY 正向、Draft／未具證據／BCE 不一致／bot-origin／過時 HEAD／未授權保護流程共同變更／無關直推等負向 synthetic assertion；不冒充 Human 核准。",
+    "GitHub fast-loop (Draft) checks check:lint plus final-ready synthetic suite; full GCCA on this unapproved HEAD MUST remain NOT_READY. Historical Attack PASS on old HEAD cannot count as final GCCA PASS.",
+    "final-ready-selftest.mjs: newer fast-loop failure/in_progress after old PASS MUST block; local log wrong HEAD or mutable issue root MUST block. These are synthetic-only, not real engineering acceptance.",
+    "final-ready-selftest.mjs tests all four pull_request ready_for_review triggers, Draft->Ready distinct fast-loop skipped job name, and preserves draft-only non-required Fast-loop behavior. Static checks, not real full GCCA."
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Issue #392：在 SP-P1-003 REVIEW 期間新增特批／Carry-Forward 永久登錄、每次 Change Review 強制檢查與行政結案規則。；同一 L3 PR 另修補四關 Final Ready exact-HEAD machine preflight，禁止省略 Local／BCE／Human 順序、跳過昂貴 CI 前置審核。",
+    "risk": "CI 只能驗證位元組、範圍、連結與不可變性，無法證明核准者是人；BASE 尚無 carry_forward policy，本 PR 不受自身新規則強制，Human 必須審定整份精確差異。",
+    "owner": "Human（NFF98）",
+    "follow_up": "Merge 後另一個 Human 精確核准的控制轉換 PR：登錄 Sprint3 六個 GAP（GAP-T006-01／02／03、GAP-BL-015、GAP-BL-018、GAP-REVAL）、SP-P1-003 行政結案、CURRENT-SPRINT HOLD、implementation_enabled=false；之後 Product Alignment，Sprint4 須 Human 另行批准。",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793262568,
+    "expires_at_rule": "Only 14 days from direct Human Chat approval; GitHub comment https://github.com/NFF98/appf2-build/pull/395#issuecomment-6187875167 is GPT transcription, NOT Human-authored, manual provenance check still required. Does not authorize Final Ready, Merge, or next Task/Sprint."
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "本 PR 只新增規則與驗證器，不建立、延後或 waive 任何 Product 義務；Sprint3 未完成事項於後續控制轉換 PR 逐項登錄。"
+  },
+  "known_limitations": [
+    "CI 無法證明 human_approval 來自真人，需 Human 親自查核來源。",
+    "harness/attack/run-dry-run.mjs 未新增 GOV-392 attack 案例，也未執行（會跑產品 CI）。",
+    "既有 POI-002..006 舊列維持原格式，不受嚴格欄位檢查，只受不可刪除與 ID 唯一檢查。",
+    "admin-closure-cross-gate-test.mjs 需要本機 git clone，不在 npm run gate 內，需人工或 BCE 執行。",
+    "Final Ready 工作流程目前以 PR HEAD 執行；同一 PR 共同修改 Workflow／Guard 的保護依賴 L3 精確候選、GitHub Ruleset 及 Human 人工驗證，不宣稱機器本身能防所有自我修改。",
+    "GitHub 共享 OWNER 帳號無法在機器上區分真人與使用相同授權的 GPT/Codex；已收到直接 Chat 條件式精確候選批准並由 GPT 轉錄，Human 必須親自確認該來源。Final Ready、Merge、Sprint3 結案仍 PENDING。",
+    "Human direct Chat 2026-10-15 decision is transcribed by GPT at https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765; this GitHub comment is not Human-authored, not independently authenticatable, and not an electronic signature. Human must verify original direct decision and final HEAD before merge.",
+    "2026-10-15 BCE found stale successful fast-loop could mask a newer failed attempt on same HEAD; repaired with greatest check-run id fail-closed and synthetic negative regressions. Earlier Human exact candidate approval invalidated. Actual full local mirror and independent test logs still pending.",
+    "Test log URL/hash validation is structural only; requires specific job/comment and per-command HEAD/BASE binding, while independent BCE must verify raw linked logs and SHA256. No automatic cryptographic authentication of shared owner account.",
+    "Candidate digest eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 is computed from GitHub Actions 2026-10-15 on the 17 exact non-docket paths; full Local mirror, independent BCE execution evidence, Human Final Ready and four full GCCA checks still NOT_RUN/NOT_READY.",
+    "2026-10-15 user's direct Chat instruction approves exact candidate eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 for verification only. GPT transcript: https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952 (not Human-authored GitHub comment). Previous superseded digests remain historical. Independent BCE execution review, Final Ready, full GCCA and separate Merge approval pending.",
+    "2026-10-15 Static audit: governance and attack workflow lacked ready_for_review event; Draft-only fast-loop job would be SKIPPED under the same name after Ready, and strict newest-check preflight would fail forever. Fixed by adding ready_for_review to all four required workflows and conditional fast-loop-ready-skipped check name. New L3 digest and Human approval required; full mirror/GCCA remain NOT_RUN.",
+    "Updated exact SHA256 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 independently printed by GitHub Draft Fast-loop 2026-10-15 after ready_for_review scheduling fix and lint clean; applies to all 17 non-docket changed path bytes. Still PENDING fresh Human exact candidate approval and full execution tests; prior digests/approvals historical.",
+    "2026-10-15 direct Chat 'approve! continue push to 100% complete!' is interpreted in immediate context as approval of exact 17-file digest 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 for continued verification only; GPT transcription https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298; not Final Ready, full GCCA, BCE execution PASS or merge. Human-origin manual check still required.",
+    "2026-10-15 User authorized new cloud workflow scope on PR #395 without PC B. A gated non-required Draft-only W1 evidence mirror job is present but MUST NOT execute its expensive tests until fresh Human approval binds its new exact digest; old approved bytes are historical. Raw numeric exit-code/stdout/stderr/log SHA256 artifact, independently reviewed. Not full GCCA.",
+    "2026-10-15 GitHub Actions exact HEAD f8b68efdd4af301d52c5cd929e324e46c49c1c5c Fast-loop PASS: new non-docket SHA256 028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d for 18 changed non-docket paths. W1-01 admission check succeeded but expensive 7-stage mirror safely SKIPPED because fresh Human exact candidate approval is absent. Current scope-approval to implement automation is NOT byte approval. One direct Human exact digest decision required before actual tests.",
+    "2026-10-15 fresh Human Chat approval of exact HEAD 102362ac81d89344903a6b30ab3a414cf5acc8c7 and SHA256 028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d (18 non-docket paths) permits GH Actions automatic seven-stage mirror and independent GPT BCE only. GPT-transcribed comment #6187147338; no Human Final Ready/Merge, no fabricated PASS.",
+    "2026-10-15 independent cloud BCE of run 38700994206: 6/7 tests PASS, one Attack Dry-run FAIL because runner inherited parent BASE_SHA and HEAD_SHA into temp fixture Git repository; 21/21 raw hashes MATCH and numeric exit evidence complete, so verdict remains FAIL (see PR #395 issuecomment-6187244633). Small repair isolates Attack child env only; Fast-loop synthetic isolation selftest PASS and ESLint PASS at HEAD 8f9b11cb; this changes approved bytes and requires fresh Human exact SHA256 approval. Never relabel old FAIL.",
+    "2026-10-15 exact Human direct Chat decision permits retry of seven GitHub-hosted real tests and independent GPT BCE only, at candidate a15648812861557bf5f0d61437fcbef089b095b95c02bb490d414b31c3534021, direct approval GPT transcript https://github.com/NFF98/appf2-build/pull/395#issuecomment-6187875167; earlier cloud six-PASS/one-FAIL remains immutable, not overwritten."
+  ],
+  "approval_status": "HUMAN_EXACT_CANDIDATE_APPROVED_CLOUD_SEVEN_STAGE_RETEST_AND_INDEPENDENT_GPT_BCE_ONLY",
+  "human_approval": {
+    "case_id": "GOV-392-CARRY-FORWARD-001",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6187875167",
+    "approver": "NFF98",
+    "approved_at_unix": 1792052968,
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "a15648812861557bf5f0d61437fcbef089b095b95c02bb490d414b31c3534021"
+  },
+  "historical_candidate_approval": {
+    "sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
+    "ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
+    "status": "SUPERSEDED_BY_POST_APPROVAL_BCE_FINDINGS_NO_LONGER_AUTHORITATIVE"
+  },
+  "superseded_approved_candidates": [
+    {
+      "sha256": "eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1",
+      "source_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952",
+      "decision": "APPROVE_EXACT_CANDIDATE",
+      "status": "HISTORICAL_SUPERSEDED_BY_FINAL_READY_EVENT_WIRING_FIX",
+      "authorized_scope": "CONTINUE_VERIFICATION_ONLY_NOT_MERGE"
+    },
+    {
+      "sha256": "02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1",
+      "source_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298",
+      "decision": "APPROVE_EXACT_CANDIDATE",
+      "status": "SUPERSEDED_BY_CLOUD_EVIDENCE_WORKFLOW_EDIT",
+      "authorized_scope": "VERIFICATION_ONLY_OLD_BYTES"
+    },
+    {
+      "sha256": "028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d",
+      "source_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6187147338",
+      "decision": "APPROVE_EXACT_CANDIDATE",
+      "status": "HISTORICAL_SUPERSEDED_BY_ATTACK_FIX_A1564881",
+      "authorized_scope": "VERIFICATION_ONLY_OLD_BYTES"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { canPreserveCompletedBaseline, acceptanceSemanticDriftIds, isBaselineAncestor, revalidationHistoryChain } from "./baseline-lineage.mjs";
 import { findPersistentProceduralWaivers } from "./human-exception.mjs";
+import { administrativeHistoricalDisposition } from "./validate-special-approvals-and-carry-forward.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -441,10 +442,10 @@ const testOwnerF06DeferT008=()=>{
 console.log("- F06 defer T008 bounded positive/negative: "+testOwnerF06DeferT008()+"/18 PASS (synthetic).");
 const f06DeferDocket=exists(f06DeferCasePath)?read(f06DeferCasePath):null;
 
-function t006T008PreclosureErrors(t006,t008,baseline,closeOrderWaived=false) {
+function t006T008PreclosureErrors(t006,t008,baseline,closeOrderWaived=false,reviewOrderDisposed=false) {
   const errors=[];
   if(["IN_PROGRESS","REVIEW","VERIFIED"].includes(t008?.status) &&
-     t006?.status!=="VERIFIED" &&
+     t006?.status!=="VERIFIED" && !reviewOrderDisposed &&
       !ownerF06DeferAllowsT008(t006,t008,baseline,currentSprint,f06DeferDocket)) {
     errors.push("T008 execution/review requires T006 product VERIFIED with independent T006 Evidence");
   }
@@ -478,7 +479,16 @@ function t006FinalClosureErrors(t008,items,baseline) {
 // GOV-REFORM-20261013: only a merged, exact, unexpired, unrevoked Human CLOSURE_DEFERRAL docket
 // may defer this procedural ordering rule, re-checked on every run; Evidence PASS, AC/Test
 // mapping and revalidation rules still apply.
+// GOV-392: after a valid ADMINISTRATIVE_WITH_CARRY_FORWARD closure of SP-P1-003 that lists this
+// gate for T008, the ordering is a permanent historical disposition (no TTL); T006 stays BLOCKED.
 const t008CloseOrderWaived=()=>{
+  const historical=administrativeHistoricalDisposition({
+    root,sprintId:"SP-P1-003",gateId:"BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",taskId:"T008"
+  });
+  if(historical.valid){
+    console.log("- BACKLOG_T008_CLOSE_AFTER_T006_REVIEW: permanent historical disposition of administratively CLOSED SP-P1-003 (not Product PASS).");
+    return true;
+  }
   const found=findPersistentProceduralWaivers({
     root,gateId:"BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",taskId:"T008",sprintId:"SP-P1-003",
     buildSpecId:currentSprint.active_build_spec
@@ -486,8 +496,18 @@ const t008CloseOrderWaived=()=>{
   for(const r of found.rejected) console.log("- CLOSURE_DEFERRAL "+r.case_id+" not applicable: "+r.errors.join("; "));
   return found.valid.length>0;
 };
-function checkT006T008Order(t006,t008,items,baseline,closeOrderWaived=false) {
-  const errors=t006T008PreclosureErrors(t006,t008,baseline,closeOrderWaived);
+// GOV-392: a T008 REVIEW frozen by a valid administrative closure of SP-P1-003 is a historical
+// record (no execution), so main stays truthful after HOLD; it never permits T008 CLOSED.
+const t008ReviewOrderDisposed=()=>{
+  const historical=administrativeHistoricalDisposition({
+    root,sprintId:"SP-P1-003",gateId:"BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED",taskId:"T008"
+  });
+  if(historical.valid) console.log("- BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED: T008 REVIEW frozen by administratively CLOSED SP-P1-003 (carried forward, not Product PASS).");
+  return historical.valid;
+};
+function checkT006T008Order(t006,t008,items,baseline,flags={}) {
+  const {closeOrderWaived=false,reviewOrderDisposed=false}=flags;
+  const errors=t006T008PreclosureErrors(t006,t008,baseline,closeOrderWaived,reviewOrderDisposed);
   return t006?.status==="CLOSED" ? errors.concat(t006FinalClosureErrors(t008,items,baseline)) : errors;
 }
 function testT006T008Order() {
@@ -509,6 +529,8 @@ function testT006T008Order() {
     ["T008 reopened with T006 BLOCKED",false,x=>{x.t006.status="BLOCKED";x.t008.status="IN_PROGRESS";return x;}],
     ["T008 closed before T006 product proof",false,x=>{x.t006.status="IN_PROGRESS";return x;}],
     ["T008 closed while T006 BLOCKED under merged Human CLOSURE_DEFERRAL",true,x=>{x.t006.status="BLOCKED";x.waived=true;return x;}],
+    ["T008 REVIEW frozen by administrative closure, T006 BLOCKED",true,x=>{x.t006.status="BLOCKED";x.t008.status="REVIEW";x.frozen=true;return x;}],
+    ["administrative REVIEW disposition never permits T008 CLOSED",false,x=>{x.t006.status="BLOCKED";x.frozen=true;return x;}],
     ["premature T006 CLOSED T008 open",false,x=>{x.t008.status="IN_PROGRESS";return x;}],
     ["unclosed BL-P1-008",false,x=>{x.items[0].revalidation.status="IN_PROGRESS";return x;}],
     ["unclosed BL-P1-010",false,x=>{x.items[1].revalidation.status="VERIFIED";return x;}],
@@ -521,7 +543,7 @@ function testT006T008Order() {
     ["BS026 closed exact bindings",true,x=>{x.baseline="BS-P1-026";for(const i of x.items)i.revalidation.target_build_spec_id=x.baseline;return x;}],
     ["BS026 stale target must fail",false,x=>{x.baseline="BS-P1-026";return x;}]
   ];
-  for(const [name,shouldPass,modify] of cases){const x=modify(base());const actual=checkT006T008Order(x.t006,x.t008,x.items,x.baseline||"BS-P1-025",x.waived===true).length===0;if(actual!==shouldPass)throw Error("T006/T008 order guard synthetic regression FAILED: "+name);}
+  for(const [name,shouldPass,modify] of cases){const x=modify(base());const actual=checkT006T008Order(x.t006,x.t008,x.items,x.baseline||"BS-P1-025",{closeOrderWaived:x.waived===true,reviewOrderDisposed:x.frozen===true}).length===0;if(actual!==shouldPass)throw Error("T006/T008 order guard synthetic regression FAILED: "+name);}
   return cases.length;
 }
 
@@ -530,11 +552,11 @@ if(t006T008PermittedBaselines.has(current.active_baseline) &&
   const tasks=read("delivery/sprints/SP-P1-003/tasks.json").tasks||[];
   const t006=tasks.find(x=>x.task_id==="T006");
   const t008=tasks.find(x=>x.task_id==="T008");
-  for(const e of checkT006T008Order(t006,t008,queue.items||[],current.active_baseline,t008CloseOrderWaived())){
+  for(const e of checkT006T008Order(t006,t008,queue.items||[],current.active_baseline,{closeOrderWaived:t008CloseOrderWaived(),reviewOrderDisposed:t008ReviewOrderDisposed()})){
     errors.push("SP-P1-003 BS025 T006/T008 closure order: "+e);
   }
 }
-console.log("- T006/T008 closure-order fail-closed synthetic regressions: "+testT006T008Order()+"/"+18+" PASS (synthetic, not Task acceptance).");
+console.log("- T006/T008 closure-order fail-closed synthetic regressions: "+testT006T008Order()+"/"+20+" PASS (synthetic, not Task acceptance).");
 
 if(errors.length){
   console.error("BACKLOG GATE: FAIL");

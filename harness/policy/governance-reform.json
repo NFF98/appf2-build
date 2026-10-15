@@ -170,6 +170,25 @@
       }
     }
   },
+  "carry_forward": {
+    "schema": "APPF2-CARRY-FORWARD-1",
+    "enforced": true,
+    "register_path": "delivery/PROJECT-OPEN-ITEMS.json",
+    "docket_dir": "delivery/constitutional-cases/",
+    "id_pattern": "^GAP-[A-Z0-9][A-Z0-9-]{1,60}$",
+    "row_statuses": ["OPEN", "BLOCKED", "UNTESTED", "RESOLVED"],
+    "evidence_statuses": ["UNTESTED", "BLOCKED", "PARTIAL", "FAIL", "PASS"],
+    "source_kinds": ["SPRINT_CLOSURE", "TASK", "BACKLOG", "REVALIDATION", "HUMAN_EXCEPTION", "CHANGE_REVIEW"],
+    "obligation_docket_markers": ["scope_exception", "deferred_acceptance_id", "closure_disposition"]
+  },
+  "administrative_closure": {
+    "schema": "APPF2-ADMIN-CLOSURE-1",
+    "disposition": "ADMINISTRATIVE_WITH_CARRY_FORWARD",
+    "permitted_open_task_statuses": ["PLANNED", "IN_PROGRESS", "BLOCKED", "REVIEW"],
+    "permitted_open_backlog_statuses": ["SPRINTED", "BLOCKED"],
+    "historical_dispositionable_gates": ["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW", "BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED"],
+    "next_sprint_requires_product_alignment": true
+  },
   "lifecycle": {
     "states": [
       "AUTHORIZED_TASK",

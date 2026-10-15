@@ -9,21 +9,20 @@ on:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      # GOV-REFORM-20261013: full CI runs only after Human Final Ready. A Draft PR must
-      # FAIL (never skip) because a skipped required job is reported as success.
-      - name: Draft PR — full CI deferred (NOT_READY, never PASS)
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
-        run: |
-          echo "::error::NOT_READY — Draft PR: full required CI is deferred to Human Final Ready (ready_for_review). See the non-required fast-loop job for impacted tests."
-          exit 1
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -63,6 +62,9 @@ jobs:
 
   # Non-required Draft fast loop: impacted tests only. Its PASS is never a full-gate PASS.
   fast-loop:
+    # Keep the exact-head Draft PASS named fast-loop. A later Ready event skips
+    # this job under a DIFFERENT check name, so it cannot shadow PASS as SKIPPED.
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && 'fast-loop' || 'fast-loop-ready-skipped' }}
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:
@@ -74,6 +76,25 @@ jobs:
           node-version: 22
       - name: Install locked dependencies
         run: npm ci
+      - name: Final Ready exact-HEAD synthetic attack and positive tests (not Human approval)
+        run: node harness/scripts/final-ready-selftest.mjs
+      - name: Attack fixture environment isolation (synthetic, NOT Attack PASS)
+        run: node harness/scripts/w1-01-evidence-mirror.mjs env-selftest
+      - name: Exact candidate digest preview (informational, NOT approval)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import {execFileSync} from "node:child_process";
+            import {candidateDigestOf} from "./harness/scripts/final-ready-preflight.mjs";
+            const files=execFileSync("git",["diff","--name-only",process.env.BASE_SHA,"HEAD"],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
+            const digest=candidateDigestOf(files.map(filename=>({filename})),rel=>fs.readFileSync(rel));
+            if(!digest) process.exit(1);
+            console.log("EXACT_CANDIDATE_BASE="+process.env.BASE_SHA);
+            console.log("EXACT_CANDIDATE_DIGEST_SHA256="+digest);
+            console.log("EXACT_CANDIDATE_PATHS="+JSON.stringify(files));
+          '
       - name: Plan impacted tests
         id: plan
         env:
@@ -88,3 +109,58 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: node harness/scripts/select-impacted-tests.mjs --run
+
+
+  # W1-01 independent evidence, NOT a required check and never a GCCA waiver.
+  w1-01-admission:
+    name: W1-01 PR395 cheap exact-byte approval check
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 395 && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      contents: read
+    outputs:
+      approved: ${{ steps.check.outputs.approved }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check HEAD/BASE/17 plus files byte-digest and fresh Human approval
+        id: check
+        run: node harness/scripts/w1-01-evidence-mirror.mjs admit
+
+  w1-01-evidence-mirror:
+    name: W1-01 PR395 seven-stage true logs (NOT GCCA)
+    needs: w1-01-admission
+    if: ${{ needs.w1-01-admission.outputs.approved == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    permissions:
+      contents: read
+    concurrency:
+      group: w1-01-395-${{ github.event.pull_request.head.sha }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seven real commands with bounded time, exit codes, stdout, stderr and SHA256
+        run: node harness/scripts/w1-01-evidence-mirror.mjs run
+      - name: Preserve evidence even for failed commands
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: W1-01-395-one-shot-raw-evidence
+          path: w1-01-evidence/
+          if-no-files-found: warn
+          retention-days: 30

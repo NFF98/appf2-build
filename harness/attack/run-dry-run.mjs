@@ -781,8 +781,9 @@ function writeExceptionDocket(id,{base,paths,lane="GOVERNANCE_REFORM",scope={},m
     case_id:id,base_sha:base,constitution_version:"1.0",
     why5:[1,2,3,4,5].map(i=>({question:"dry-run why "+i,evidence_ref:"DRYRUN-EVIDENCE-"+i,answer:"dry-run answer "+i})),
     exact_changed_paths:[...paths].sort(),candidate_digest_sha256:digest,
+    carry_forward:{zero_gap:true,justification:"Synthetic governance-only scope fixture has no deferred Acceptance or carry-forward obligations."},
     scope_exception:{schema:"APPF2-HUMAN-EXCEPTION-1",lane,reason:"dry-run",risk:"dry-run",owner:"Human",
-      follow_up:"none",residual_gaps:["dry-run only"],never_converts_fail_or_untested_to_pass:true,
+      follow_up:"none",residual_gaps:["NONE"],never_converts_fail_or_untested_to_pass:true,
       affected_sprint:"SP-P9-001",affected_tasks:[],covered_gates:["CHANGE_SCOPE"],expires_at_unix:now+3600,...scope},
     human_approval:{case_id:id,source_kind:"DIRECT_HUMAN_MESSAGE",decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",
       candidate_digest_sha256:digest,human_message_ref:"DRYRUN-HUMAN-DECISION-REF",approver:"NFF98",approved_at_unix:now-60}
@@ -811,6 +812,17 @@ write(reformNote,"# dry-run governance reform note\n");
 writeExceptionDocket("GOV-DRYRUN-EXCEPTION-001",{base:fixtureBase,paths:[reformNote]});
 const approvedException=commit("positive: exact Human exception lane during ACTIVE sprint");
 for(const script of scopeAndConstitution) expectPass("Exact GOVERNANCE_REFORM exception passes "+path.basename(script),"node",[script],{base:fixtureBase,head:approvedException});
+// New negative test: fail closed when the synthetic docket omits mandatory carry_forward.
+// This is intentionally a governance-gate proof, not a claim of Human approval.
+cleanTo(fixtureBase);
+write(reformNote,"# dry-run governance reform note\n");
+writeExceptionDocket("GOV-DRYRUN-EXCEPTION-001",{base:fixtureBase,paths:[reformNote],mutate:d=>{delete d.carry_forward;return d;}});
+const noCarryForward=commit("attack: Human exception lacks mandatory carry-forward declaration");
+const noCarryCheck=run("node",["harness/scripts/governance-gate.mjs"],{env:{BASE_SHA:fixtureBase,HEAD_SHA:noCarryForward}});
+const noCarryOut=noCarryCheck.stdout+noCarryCheck.stderr;
+const noCarryDenied=noCarryCheck.status!==0 && noCarryOut.includes("without a carry_forward declaration");
+results.push({name:"Exception without carry_forward fails closed",expected:"FAIL: silent carry-forward",actual:noCarryDenied?"FAIL: silent carry-forward":"OTHER",ok:noCarryDenied,detail:noCarryOut.trim().split("\n").slice(0,4).join(" | ")});
+if(!noCarryDenied) throw new Error("Silent carry-forward was not rejected for the exact reason\n"+noCarryOut);
 exceptionAttack("Exception without Human approval stays blocked",{mutate:d=>{delete d.human_approval;return d;},reason:"approval source_kind not accepted"});
 exceptionAttack("Exception with placeholder Human reference stays blocked",{mutate:d=>{d.human_approval.human_message_ref="PENDING_HUMAN";return d;},reason:"Human decision reference missing or placeholder"});
 exceptionAttack("Exception bytes changed after approval stay blocked",{afterDocket:()=>write(reformNote,"# drifted after approval\n"),reason:"PR bytes differ from approved candidate digest"});

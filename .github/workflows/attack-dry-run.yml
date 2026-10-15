@@ -3,12 +3,15 @@ name: Governance Attack Dry-run
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   attack:
@@ -17,6 +20,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22

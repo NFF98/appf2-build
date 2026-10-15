@@ -5,7 +5,8 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
 import { isExactPg001DependencyHoldUpdate, testPg001DependencyHoldPathGuard, PG001_DEPENDENCY_GATE_MARKER } from "./pg001-dependency-hold-path.mjs";
-import { resolveRepoException, HUMAN_EXCEPTION_SCOPE_MARKER } from "./human-exception.mjs";
+import { resolveRepoException, HUMAN_EXCEPTION_SCOPE_MARKER, GOVERNANCE_REFORM_POLICY_PATH } from "./human-exception.mjs";
+import { inspectCarryForwardChange, closedSprintErrors, validateRepoCarryForwardRegister, ADMIN_CLOSURE } from "./validate-special-approvals-and-carry-forward.mjs";
 
 const root=process.cwd(), errors=[];
 const read=r=>JSON.parse(fs.readFileSync(path.join(root,r),"utf8"));
@@ -811,6 +812,110 @@ const t006R2MaintenanceRepair=(()=>{
   );
 })();
 if(t006R2MaintenanceRepair) console.log("- Exact T006 R2 F00 fixture rebind + lint repair recognized; CLOSED Tasks / Product truth frozen.");
+
+// GOV-392 ADMINISTRATIVE_WITH_CARRY_FORWARD: the only Sprint closure that may leave open work.
+// Recognized solely as one exact, Human-bound control transition judged by the BASE policy and
+// the strict carry-forward/closure validator. Any other closure-shaped diff fails closed here,
+// independently of the HOLD branch below and of the governance/Sprint gates.
+const ADMIN_CLOSE_DOCKET_DIR="delivery/constitutional-cases/";
+const ADMIN_CLOSE_MANIFEST_RE=/^delivery\/sprints\/(SP-P\d+-\d{3})\/manifest\.json$/;
+const ADMIN_CLOSE_OPEN_STATUSES=["ACTIVE","REVIEW","BLOCKED"];
+const ADMIN_CLOSE_MANIFEST_KEYS=["status","closure_disposition","administrative_closure"];
+const ADMIN_CLOSE_SPRINT_KEYS=["active_sprint","active_build_spec","active_task","status","reason"];
+const isAdminClosureAttempt=({changed,readBaseJson,readHeadJson})=>changed.some(p=>{
+  if(ADMIN_CLOSE_MANIFEST_RE.test(p)){
+    const after=readHeadJson(p)||{};
+    return (after.closure_disposition===ADMIN_CLOSURE || Object.hasOwn(after,"administrative_closure")) &&
+      readBaseJson(p)?.closure_disposition!==ADMIN_CLOSURE;
+  }
+  return p.startsWith(ADMIN_CLOSE_DOCKET_DIR) && p.endsWith(".json") &&
+    readHeadJson(p)?.closure_disposition!==undefined && !readBaseJson(p);
+});
+const adminClosureManifestErrors=({sid,before,after})=>{
+  if(!before || !ADMIN_CLOSE_OPEN_STATUSES.includes(before.status) || after?.status!=="CLOSED" ||
+     !sameJson(omit(before,ADMIN_CLOSE_MANIFEST_KEYS),omit(after,ADMIN_CLOSE_MANIFEST_KEYS))){
+    return [sid+" manifest may only move an open Sprint to CLOSED adding closure_disposition/administrative_closure"];
+  }
+  return [];
+};
+const adminClosureSprintErrors=({sid,baseSprint,headSprint})=>{
+  const e=[];
+  if(baseSprint?.active_sprint!==sid || !ADMIN_CLOSE_OPEN_STATUSES.includes(baseSprint?.status)) e.push("only the BASE active Sprint can be administratively closed: "+sid);
+  const hold=headSprint?.status==="HOLD" && headSprint.active_sprint===null &&
+    headSprint.active_build_spec===null && headSprint.active_task===null;
+  if(!hold || !sameJson(omit(baseSprint,ADMIN_CLOSE_SPRINT_KEYS),omit(headSprint,ADMIN_CLOSE_SPRINT_KEYS))){
+    e.push("delivery/CURRENT-SPRINT.json must move to HOLD with no Sprint/Build Spec/Task binding and nothing else changed");
+  }
+  return e;
+};
+const adminClosureBuildErrors=({baseBuild,headBuild})=>{
+  if(headBuild?.implementation_enabled!==false ||
+     !sameJson(omit(baseBuild,["implementation_enabled","reason"]),omit(headBuild,["implementation_enabled","reason"]))){
+    return ["build-spec/CURRENT.json may only set implementation_enabled=false (and reason)"];
+  }
+  return [];
+};
+const adminClosureStateErrors=ctx=>[
+  ...adminClosureManifestErrors(ctx),
+  ...adminClosureSprintErrors(ctx),
+  ...adminClosureBuildErrors(ctx)
+];
+const adminClosureRequiredPathErrors=(changed,required)=>[
+  ...required.filter(p=>!changed.includes(p)).map(p=>"required closure path missing: "+p),
+  ...changed.filter(p=>!required.includes(p)).map(p=>"path outside the exact closure set: "+p)
+];
+const adminClosureApprovalTimeErrors=(docket,full,now)=>{
+  const approvedAt=docket?.human_approval?.approved_at_unix;
+  return Number.isSafeInteger(approvedAt) && approvedAt>now+(full.exception?.max_clock_skew_seconds||0)?
+    ["Human closure approval timestamp is in the future"]:[];
+};
+const adminClosureSprintProofErrors=({sid,after,docket,full,readHeadJson,registerPath})=>{
+  const queue=readHeadJson("delivery/backlog/QUEUE.json");
+  return closedSprintErrors({sid,m:after,td:readHeadJson("delivery/sprints/"+sid+"/tasks.json")||{tasks:[]},
+    backlogById:new Map((queue?.items||[]).map(i=>[i.backlog_item_id,i])),
+    selectedIds:new Set(after.backlog_item_ids||[]),revalidationIds:new Set(after.revalidation_item_ids||[]),
+    docket,full,register:readHeadJson(registerPath)});
+};
+const adminClosureTransitionErrors=ctx=>{
+  const {base,changed,readBaseJson,readHeadJson,now}=ctx;
+  if(!/^[0-9a-f]{40}$/.test(base||"")) return ["requires an exact BASE_SHA"];
+  const full=readBaseJson(GOVERNANCE_REFORM_POLICY_PATH),cf=full?.carry_forward;
+  if(cf?.enforced!==true || full?.administrative_closure?.disposition!==ADMIN_CLOSURE){
+    return ["BASE policy does not enforce carry_forward/administrative_closure (rules and closure cannot share one PR)"];
+  }
+  const manifests=changed.filter(p=>ADMIN_CLOSE_MANIFEST_RE.test(p) && readHeadJson(p)?.closure_disposition===ADMIN_CLOSURE);
+  if(manifests.length!==1) return ["exactly one Sprint manifest must move to "+ADMIN_CLOSURE+" (found "+manifests.length+")"];
+  const manifestPath=manifests[0],sid=ADMIN_CLOSE_MANIFEST_RE.exec(manifestPath)[1],after=readHeadJson(manifestPath);
+  const docketPath=cf.docket_dir+after.administrative_closure?.case_id+".json",docket=readHeadJson(docketPath);
+  const required=[docketPath,cf.register_path,manifestPath,"delivery/CURRENT-SPRINT.json","build-spec/CURRENT.json"];
+  return [
+    ...adminClosureRequiredPathErrors(changed,required),
+    ...adminClosureStateErrors({sid,before:readBaseJson(manifestPath),after,
+      baseSprint:readBaseJson("delivery/CURRENT-SPRINT.json"),headSprint:readHeadJson("delivery/CURRENT-SPRINT.json"),
+      baseBuild:readBaseJson("build-spec/CURRENT.json"),headBuild:readHeadJson("build-spec/CURRENT.json")}),
+    ...adminClosureApprovalTimeErrors(docket,full,now),
+    ...inspectCarryForwardChange({...ctx,basePolicyFull:full,headPolicyFull:readHeadJson(GOVERNANCE_REFORM_POLICY_PATH)}).errors,
+    ...adminClosureSprintProofErrors({sid,after,docket,full,readHeadJson,registerPath:cf.register_path}),
+    ...ctx.headRegisterErrors()
+  ];
+};
+if(isAdminClosureAttempt({changed,readBaseJson:showBaseJson,readHeadJson})){
+  const readHeadBytes=rel=>{
+    if(!/^[a-zA-Z0-9/_.@-]+$/.test(rel) || rel.includes("..")) return null;
+    try{return fs.readFileSync(path.join(root,rel));}catch{return null;}
+  };
+  const baseDocketDigests=new Set();
+  if(baseSha && !/^0+$/.test(baseSha)){
+    let names;
+    try{names=execFileSync("git",["ls-tree","--name-only",baseSha,ADMIN_CLOSE_DOCKET_DIR],{encoding:"utf8",stdio:["ignore","pipe","ignore"]}).trim().split("\n").filter(Boolean);}
+    catch{names=[];}
+    for(const rel of names){const d=showBaseJson(rel); if(d?.candidate_digest_sha256) baseDocketDigests.add(d.candidate_digest_sha256);}
+  }
+  const adminErrors=adminClosureTransitionErrors({base:baseSha,changed,readHead:readHeadBytes,readHeadJson,readBaseJson:showBaseJson,
+    baseDocketDigests,now:Math.floor(Date.now()/1000),headRegisterErrors:()=>validateRepoCarryForwardRegister(root)});
+  for(const x of adminErrors) errors.push("ADMINISTRATIVE_WITH_CARRY_FORWARD control transition rejected: "+x);
+  if(!adminErrors.length) console.log("- Exact Human-bound "+ADMIN_CLOSURE+" control transition recognized (BASE policy, exact paths/bytes); NOT Product PASS; Human provenance must still be verified manually.");
+}
 
 if(cs.active_sprint===null){
   if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate && !humanExceptionScope){
