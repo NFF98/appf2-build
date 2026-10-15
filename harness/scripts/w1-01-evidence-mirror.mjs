@@ -91,6 +91,16 @@ const testChildEnvironment=()=>{
   assert.equal(stageStatus("npm run product:ci",1,
     Buffer.from("PRODUCT CI: PASS\n")),"FAIL");
   assert.equal(stageStatus("npm run gate",0,Buffer.from("")),"PASS");
+  assert.deepEqual(notRunCommands([
+    {command:"npm run gate",status:"PASS"},
+    {command:"npm run product:ci",status:"NOT_RUN"}
+  ],[]),["npm run product:ci"]);
+  assert.deepEqual(notRunCommands([
+    {command:"npm ci",status:"FAIL"}
+  ],jobs.slice(1)),jobs.slice(1).map(x=>x[0]));
+  assert.deepEqual(notRunCommands([
+    {command:"npm run product:ci",status:"PASS"}
+  ],[]),[]);
   console.log("Generic evidence admission and child env isolation: PASS (synthetic, NOT GCCA).");
 };
 async function once(spec,index,env){
@@ -129,6 +139,12 @@ const stageStatus=(command,exit,stdout)=>{
   return /(?:^|\r?\n)PRODUCT CI: PASS(?:\r?\n|$)/.test(stdout.toString("utf8"))?
     "PASS":"NOT_RUN";
 };
+// Keep an honest inventory: NOT_RUN includes both skipped future stages and
+// already-invoked stages that returned exit 0 without real Product PASS.
+const notRunCommands=(stages,remaining)=>[
+  ...stages.filter(x=>x.status==="NOT_RUN").map(x=>x.command),
+  ...remaining.map(x=>x[0])
+];
 const buildManifest=a=>({
   schema:"APPF2-GENERIC-CLOUD-EVIDENCE-1",pr:a.pr,
   run_type:"NON_REQUIRED_CLOUD_EXECUTION_EVIDENCE_NOT_GCCA",
@@ -145,7 +161,7 @@ const save=m=>fs.writeFileSync("cloud-evidence/raw-evidence-manifest.json",
 async function executeAll(m,a){
   for(let i=0;i<jobs.length;i++){
     m.stages.push(await once(jobs[i],i,a));
-    m.not_run=jobs.slice(i+1).map(j=>j[0]);m.verdict="RUNNING";save(m);
+    m.not_run=notRunCommands(m.stages,jobs.slice(i+1));m.verdict="RUNNING";save(m);
     if(i===0&&m.stages[0].exit_code!==0)break;
   }
 }

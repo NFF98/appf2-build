@@ -13,7 +13,7 @@
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "3419a47455d207b254bd632de083ceac95f8f4586649086cb52fe8caaa214387",
+  "candidate_digest_sha256": "8ea6dc73a8ef5db678928eb74fe5193c88b793f54a915a259b8e2ff7d32d5a9c",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -58,7 +58,8 @@
     "Required CI job owns its Ready-only Final Ready guard; cloud evidence job does not, avoiding false pass from textual grep across jobs.",
     "Required CI orders npm ci, lint and Product CI BEFORE Human-bound governance/constitutional gates; governance still fails closed on a missing Human decision, but no longer suppresses earlier test results.",
     "Cloud evidence triggers in a dedicated opt-in workflow, while required CI excludes labeled events; no extra required check from a label-only update.",
-    "Evidence mirror: exit-0 Product CI HOLD/N/A is recorded NOT_RUN; explicit PRODUCT CI: PASS is required, and FAIL still stays FAIL. New regression cases for HOLD, governance-only, control-only, real Product PASS, bad exit status."
+    "Evidence mirror: exit-0 Product CI HOLD/N/A is recorded NOT_RUN; explicit PRODUCT CI: PASS is required, and FAIL still stays FAIL. New regression cases for HOLD, governance-only, control-only, real Product PASS, bad exit status.",
+    "Cloud evidence manifest.not_run includes both previously attempted non-PASS Product HOLD/N/A stages and unexecuted future commands; stage-specific exit codes and logs are preserved."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",

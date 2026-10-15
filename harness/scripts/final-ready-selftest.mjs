@@ -162,3 +162,8 @@ assert.ok(mirrorStatusSource.includes("const stageStatus=") &&
   mirrorStatusSource.includes("PRODUCT CI: PASS"),
   "cloud evidence must never convert Product HOLD/N/A (exit 0) to Product PASS");
 console.log("Cloud Product HOLD/N/A cannot silently become PASS: PASS (static policy assertion).");
+assert.ok(mirrorStatusSource.includes("const notRunCommands=") &&
+  mirrorStatusSource.includes("m.not_run=notRunCommands(m.stages,jobs.slice(i+1))"),
+  "cloud manifest must include completed-but-NOT_RUN Product CI and unexecuted remaining stages");
+console.log("Cloud NOT_RUN manifest completeness: PASS (static, NOT actual cloud execution).");
+
