@@ -63,6 +63,12 @@ jobs:
             npm run product:ci
           fi
 
+      - name: Final Ready attestation AFTER real required checks (Ready PR only)
+        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh
+
   # Non-required Draft fast loop: impacted tests only. Its PASS is never a full-gate PASS.
   fast-loop:
     # Keep the exact-head Draft PASS named fast-loop. A later Ready event skips
@@ -168,8 +174,3 @@ jobs:
           path: cloud-evidence/
           if-no-files-found: warn
           retention-days: 30
-      - name: Final Ready attestation AFTER real required checks (Ready PR only)
-        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash harness/scripts/run-final-ready-preflight.sh

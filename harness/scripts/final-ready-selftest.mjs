@@ -111,6 +111,13 @@ for(const [file,required] of requiredWorkflows){
     "Final Ready/main branch provenance guard missing: "+file);
 }
 const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
+const ciRequiredJob=ciGeneric.slice(ciGeneric.indexOf("\n  ci:\n"),
+  ciGeneric.indexOf("\n  fast-loop:\n"));
+const ciEvidenceJob=ciGeneric.slice(ciGeneric.indexOf("\n  cloud-evidence-mirror:\n"));
+assert.ok(ciRequiredJob.includes("- name: Final Ready attestation AFTER real required checks") &&
+  !ciEvidenceJob.includes("- name: Final Ready attestation AFTER real required checks"),
+  "Required CI must own its Ready guard; optional cloud evidence may not own it");
+
 assert.ok(ciGeneric.includes("cloud-evidence-admission:") && ciGeneric.includes("cloud-evidence-mirror:"),
   "generic real-cloud evidence jobs missing");
 assert.ok(!ciGeneric.includes("github.event.pull_request.number == 395"),
