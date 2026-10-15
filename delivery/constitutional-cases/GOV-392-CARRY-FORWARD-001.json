@@ -87,8 +87,8 @@
     "covered_gates": [
       "CHANGE_SCOPE"
     ],
-    "expires_at_unix": 1793188993,
-    "expires_at_rule": "Prior Chat approval for old digest is superseded by real Ready-event wiring fix. A new exact candidate SHA256 and fresh Human decision/time are mandatory before any formal Governance PASS. No SSH/Ed25519 setup."
+    "expires_at_unix": 1793250970,
+    "expires_at_rule": "Within 14 days of direct Chat Human exact-candidate verification-only approval (2026-10-15). GPT-transcribed GitHub comment https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298 is NOT Human-authored; independent manual provenance check mandatory. Human explicitly did not approve Final Ready or Merge."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -107,10 +107,20 @@
     "Candidate digest eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 is computed from GitHub Actions 2026-10-15 on the 17 exact non-docket paths; full Local mirror, independent BCE execution evidence, Human Final Ready and four full GCCA checks still NOT_RUN/NOT_READY.",
     "2026-10-15 user's direct Chat instruction approves exact candidate eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 for verification only. GPT transcript: https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952 (not Human-authored GitHub comment). Previous superseded digests remain historical. Independent BCE execution review, Final Ready, full GCCA and separate Merge approval pending.",
     "2026-10-15 Static audit: governance and attack workflow lacked ready_for_review event; Draft-only fast-loop job would be SKIPPED under the same name after Ready, and strict newest-check preflight would fail forever. Fixed by adding ready_for_review to all four required workflows and conditional fast-loop-ready-skipped check name. New L3 digest and Human approval required; full mirror/GCCA remain NOT_RUN.",
-    "Updated exact SHA256 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 independently printed by GitHub Draft Fast-loop 2026-10-15 after ready_for_review scheduling fix and lint clean; applies to all 17 non-docket changed path bytes. Still PENDING fresh Human exact candidate approval and full execution tests; prior digests/approvals historical."
+    "Updated exact SHA256 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 independently printed by GitHub Draft Fast-loop 2026-10-15 after ready_for_review scheduling fix and lint clean; applies to all 17 non-docket changed path bytes. Still PENDING fresh Human exact candidate approval and full execution tests; prior digests/approvals historical.",
+    "2026-10-15 direct Chat 'approve! continue push to 100% complete!' is interpreted in immediate context as approval of exact 17-file digest 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 for continued verification only; GPT transcription https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298; not Final Ready, full GCCA, BCE execution PASS or merge. Human-origin manual check still required."
   ],
-  "approval_status": "PENDING_FRESH_EXACT_HUMAN_CANDIDATE_DECISION_AFTER_READY_TRIGGER_FIX",
-  "human_approval": null,
+  "approval_status": "HUMAN_DIRECT_CHAT_EXACT_CANDIDATE_APPROVED_FOR_VERIFICATION_ONLY_LOCAL_BCE_FINAL_READY_GCCA_PENDING",
+  "human_approval": {
+    "case_id": "GOV-392-CARRY-FORWARD-001",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298",
+    "approver": "NFF98",
+    "approved_at_unix": 1792041370,
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1"
+  },
   "historical_candidate_approval": {
     "sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
     "ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
