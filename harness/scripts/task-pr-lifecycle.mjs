@@ -6,7 +6,6 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { matchesPathRule, sameJson, GOVERNANCE_REFORM_POLICY_PATH, HUMAN_EXCEPTION_SCHEMA } from "./human-exception.mjs";
-import { evaluateTaskConditionalApproval } from "./conditional-task-approval.mjs";
 
 export const LIFECYCLE_STATES=Object.freeze([
   "AUTHORIZED_TASK","DRAFT_DEVELOPMENT","LOCAL_AC_TESTS_PASS","GPT_BCE_PASS",
@@ -35,25 +34,14 @@ const ACTOR_FOR={
   MERGED:["HUMAN"],
   EVIDENCE_AND_CLOSURE:["HUMAN"]
 };
-const DELEGATED_EVENT={
-  HUMAN_FINAL_INTEGRATION_READY:"MARK_FINAL_READY",
-  HUMAN_MERGE_APPROVED:"APPROVE_MERGE",
-  MERGED:"RECORD_MERGE",
-  EVIDENCE_AND_CLOSURE:"APPROVE_CLOSURE"
-};
-const delegationErrors=({record,to,actor,head,grant,context})=>{
-  if(actor!=="GPT_DELEGATED" || !Object.hasOwn(DELEGATED_EVENT,to)) return null;
-  const errors=[];
-  if(context?.head_sha!==head || context?.task_id!==record.task_id ||
-    context?.sprint_id!==record.sprint_id ||
-    context?.build_spec_id!==record.build_spec_id ||
-    context?.scope_sha256!==record.scope_sha256)
-    errors.push("delegated Task/Sprint/Build/scope or HEAD must bind immutable lifecycle record");
-  const proof=evaluateTaskConditionalApproval({
-    grant,action:DELEGATED_EVENT[to],context
-  });
-  return errors.concat(proof.errors);
-};
+// The prior prototype trusted caller-supplied provenance_checked_by_trusted_executor=true.
+// A caller can forge that Boolean; no independent verifier is wired to canonical Human
+// authority. Delegated Human-only lifecycle steps are therefore ALWAYS denied until
+// a separately reviewed trusted verifier is implemented and tested.
+const delegationErrors=({actor})=>
+  actor==="GPT_DELEGATED"?
+    ["TRUSTED_HUMAN_APPROVAL_VERIFIER_NOT_CONNECTED: AI cannot self-certify Human authority"]:
+    null;
 
 
 /** Any new commit invalidates every HEAD-bound claim; post-merge commits never inherit authority. */

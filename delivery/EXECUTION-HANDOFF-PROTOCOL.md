@@ -780,7 +780,7 @@ The second pattern is prohibited when the first can accomplish the same governed
 - 同一 Task 的實作、Bugfix、測試修正、Review 回饋，全部留在**同一個 Draft PR、同一分支**持續 commit。
 - 任何新 commit 都會使 HEAD 綁定的狀態（Local PASS、BCE、Final Ready、Full Gate、Merge Approval）回到 `DRAFT_DEVELOPMENT`；Merge 後的 commit 不繼承任何授權。
 - `HUMAN_FINAL_INTEGRATION_READY`、`HUMAN_MERGE_APPROVED`、`MERGED`、`EVIDENCE_AND_CLOSURE` 只有 Human 能設定；GPT 只能給 BCE；CI 只能給 Full Gate 結果。
-- **L3 修法候選（待正式 Merge）**：新的一般 L1 Task 只需 Human 一次直接、精確、限時條件授權；可信 Human 來源驗證和同 HEAD 四項真 CI、AC、獨立 BCE、Scope／Evidence 全 PASS 後，GPT_DELEGATED 可依現有狀態順序執行 Final Ready → 合併授權 → 正常 GitHub Merge 確認 → 一般 Task Closure。任何 HEAD 改動重新測；Task/Sprint/Build/scope 改變、FAIL、revoked、過期或身份不可信立即 HARD STOP。L2/L3、部署、Sprint 行政結案及下一 Task 不含在內。
+- **一次授權候選真實狀態：BLOCKED_NOT_IMPLEMENTED（不得宣稱已生效）**。原型接受呼叫者自己填 `provenance_checked_by_trusted_executor=true`，這不能證明 Human 身分；已改為 `GPT_DELEGATED` 的 Human-only Final Ready／Merge／Closure 一律 HARD STOP。正式 Human 的原有權限不受影響。必須先配置獨立不可由 AI 偽造的 Human 核准驗證路徑與受保護 GitHub 執行器、完成真實端到端／負向實測、由 Human 依法批准並 Merge，才可另案討論啟用。一般 4/4 CI PASS 或 46 項 synthetic test 不構成授權。
 
 ### 18.2 禁止重複核准、Bugfix 持續執行
 
@@ -828,3 +828,9 @@ The second pattern is prohibited when the first can accomplish the same governed
 
 `node harness/scripts/governance-metrics.mjs --runs <runs.json> --open-prs <prs.json> --out <file>` 產出：每個 Task 的 PR 數、Human 核准數與重複核准、完整 CI 執行次數與同 HEAD 重跑、返工 commit 比例、open PR 數。基準值：`delivery/audits/GOV-REFORM-20261013-METRICS-BASELINE.json`。
 
+### 18.10 GOV-REFORM-20261013 原始十六項的真實落地驗收（不得假結案）
+- 唯一需求來源：Human 於 2026-10-13 批准的 Issue #389 九項、六項補強，以及 Human 另要求的 ACTIVE Sprint 中 SSOT／Design／Build Spec 精確特批（第十六項）。不可把後來新增 W01 專案或單純的程式變更冒充這十六項完成。
+- `harness/scripts/reform-wiring-audit.mjs` 的 16 項都是 **STATIC_WIRED 入口診斷**。該工具另列逐項 `UNVERIFIED_E2E` 的具體缺口；不得把 16/16 靜態字串存在、synthetic 46 PASS 或 GitHub 四 Gate PASS 對外改稱 16/16 實施。
+- 任何「全部完成／正式頒布實施」聲明必須：真實 GitHub 主分支已合併、每項 E2E 正反測試證據、獨立 BCE、可信 Human 核准來源、工具呼叫前的 PR 權限邊界，以及 Design Repo 自身強制測試。缺其中任何條件只能標 PARTIAL 或 BLOCKED。
+- Evidence 自動化目前是唯讀彙整報告，非自動寫入 canonical Evidence；週報 workflow 合併前未啟用、合併後還須取得一次真實運行證據；Phase 1 全真實驗收政策仍為待獨立 Human 決定。
+- **正式語言遵守**：上位 `NFF98/appf2-design/SSOT.md` 的 Official Language Rule 要求 Human-facing／治理說明以繁體中文為唯一 authoritative 語言。ChatGPT 實際回覆不能靠 repository CI 保證，需每次直接遵守；一旦使用英文主導回覆即明確紀錄違規與更正，不能以文件存在冒充執行。

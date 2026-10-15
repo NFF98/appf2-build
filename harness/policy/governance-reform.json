@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "reform_id": "GOV-REFORM-20261013",
-  "status": "CANDIDATE_EFFECTIVE_ONLY_AFTER_HUMAN_MERGE",
+  "status": "PR390_MERGED_20261013_ORIGINAL_16_NOT_E2E_VERIFIED",
   "human_authority_accounts": [
     "NFF98"
   ],
@@ -266,7 +266,7 @@
     ],
     "conditional_task_approval": {
       "schema": "APPF2-TASK-ONE-APPROVAL-1",
-      "status": "PROPOSED_L3_NOT_EFFECTIVE_UNTIL_MERGED_TO_MAIN",
+      "status": "BLOCKED_TRUSTED_HUMAN_IDENTITY_VERIFIER_NOT_WIRED",
       "eligible_change_classes": [
         "L1_TASK"
       ],
@@ -304,7 +304,7 @@
       "merge_rule": "ONLY_VERIFIED_READY_PR_WITH_BRANCH_PROTECTION_NO_BYPASS",
       "closure_rule": "ONLY_AFTER_VERIFIED_MERGE_AND_INDEPENDENT_CLOSURE_CARRY_FORWARD_GATES",
       "external_executor_required": true,
-      "permission_note": "Eligibility validator has NO GitHub merge/write authority; genuine Human source must be authenticated by an independent trusted executor. Until that exists, no unattended auto-merge claim."
+      "permission_note": "Eligibility tests are synthetic only. Caller-provided Boolean is forgeable. GPT_DELEGATED always HARD_STOP for Human Final Ready / Merge / Closure until independent trusted verifier, real GitHub implementation and Human L3 approval."
     }
   },
   "full_gate_contexts": [
@@ -521,5 +521,13 @@
       "test:responsive",
       "test:visual"
     ]
+  },
+  "original_human_approved_reform_20261013": {
+    "issue": 389,
+    "items": 16,
+    "static_wiring_not_e2e": true,
+    "full_e2e_verified": false,
+    "authoritative_human_facing_language": "繁體中文",
+    "claims_of_total_implementation_permitted": false
   }
 }

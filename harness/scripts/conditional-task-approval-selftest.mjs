@@ -71,36 +71,35 @@ export function runConditionalApprovalSelfTests(){
     const got=evaluate({grant:fixture.grant,action,context:fixture.context});
     if(got.ok!==expected)throw Error("ONE APPROVAL SELFTEST "+label+": "+got.decision+" "+got.errors.join(";"));
   }
+  // Previous "positive" delegation checks accepted a Boolean pretending to authenticate
+  // Human. They were fake proof. Until a separate independent verifier is connected,
+  // even seemingly complete inputs must NOT move Human-only lifecycle states.
   const c=make();
   const record={state:"GPT_BCE_PASS",head:HEAD,task_id:c.grant.task_id,
     sprint_id:c.grant.sprint_id,build_spec_id:c.grant.build_spec_id,scope_sha256:DIGEST};
   const evidence={bce_head:HEAD,approved_head:HEAD,
     final_gate:{verdict:"PASS"},mapped_tests:[{id:"AC1",status:"PASS"}]};
-  const act=(r,to,actor,context=c.context,grant=c.grant)=>
-    advance(r,{to,actor,head:HEAD,evidence,conditional_grant:grant,conditional_context:context});
-  const first=act(record,"HUMAN_FINAL_INTEGRATION_READY","GPT_DELEGATED");
-  if(!first.ok)throw Error("lifecycle should permit bounded Final Ready: "+first.errors);
-  const gates=act(first.record,"EXACT_HEAD_FULL_GATES_PASS","CI");
-  if(!gates.ok)throw Error("lifecycle must retain exact-head full-gates state");
-  const mergeApproval=act(gates.record,"HUMAN_MERGE_APPROVED","GPT_DELEGATED");
-  if(!mergeApproval.ok)throw Error("lifecycle should permit conditional merge after full PASS");
-  const beforeMerge=act(mergeApproval.record,"MERGED","GPT_DELEGATED");
-  if(beforeMerge.ok)throw Error("lifecycle allowed MERGED before GitHub confirmation");
-  c.context.pr.merged=true;c.context.pr.merge_commit_sha="d".repeat(40);
-  c.context.canonical_main_contains_merge=true;
-  const merged=act(mergeApproval.record,"MERGED","GPT_DELEGATED");
-  if(!merged.ok)throw Error("lifecycle rejected verified merge: "+merged.errors);
-  const closed=act(merged.record,"EVIDENCE_AND_CLOSURE","GPT_DELEGATED");
-  if(!closed.ok)throw Error("lifecycle rejected verified conditional closure: "+closed.errors);
-  const stale=onNewHead(first.record,"f".repeat(40));
-  if(stale.record.state!=="DRAFT_DEVELOPMENT")throw Error("new HEAD inherits prior delegation");
-  const fake=make();
-  fake.context.provenance_checked_by_trusted_executor=false;
-  if(act(record,"HUMAN_FINAL_INTEGRATION_READY","GPT_DELEGATED",fake.context,fake.grant).ok)
-    throw Error("unverified Human origin delegated authority");
-  const skipped=act(record,"HUMAN_MERGE_APPROVED","GPT_DELEGATED");
-  if(skipped.ok)throw Error("delegation may not skip lifecycle stages");
+  const act=(r,to,actor,context=c.context)=>
+    advance(r,{to,actor,head:HEAD,evidence,
+      conditional_grant:c.grant,conditional_context:context});
+  const denied=act(record,"HUMAN_FINAL_INTEGRATION_READY","GPT_DELEGATED");
+  if(denied.ok || !denied.errors.some(e=>e.includes("TRUSTED_HUMAN_APPROVAL_VERIFIER_NOT_CONNECTED")))
+    throw Error("caller-supplied true Boolean granted fake Human authority");
+  const human=act(record,"HUMAN_FINAL_INTEGRATION_READY","HUMAN");
+  if(!human.ok)throw Error("legitimate Human workflow regressed");
+  const gates=act(human.record,"EXACT_HEAD_FULL_GATES_PASS","CI");
+  if(!gates.ok)throw Error("actual CI gate transition regressed");
+  if(act(gates.record,"HUMAN_MERGE_APPROVED","GPT_DELEGATED").ok)
+    throw Error("AI masqueraded as Human merge approver");
+  const authorized=act(gates.record,"HUMAN_MERGE_APPROVED","HUMAN");
+  if(!authorized.ok)throw Error("legitimate Human merge approval regressed");
+  if(act(authorized.record,"MERGED","GPT_DELEGATED").ok)
+    throw Error("AI masqueraded as verified Human merge");
+  if(act({...record,state:"MERGED"},"EVIDENCE_AND_CLOSURE","GPT_DELEGATED").ok)
+    throw Error("AI masqueraded as Human closure approver");
+  if(onNewHead(human.record,"f".repeat(40)).record.state!=="DRAFT_DEVELOPMENT")
+    throw Error("HEAD change failed to invalidate readiness");
   return tests.length+7;
 }
 if(process.argv[1]?.endsWith("/conditional-task-approval-selftest.mjs"))
-  console.log("ONE APPROVAL: "+runConditionalApprovalSelfTests()+"/37 PASS (synthetic, NOT Human provenance or real GitHub check)");
+  console.log("ONE APPROVAL: "+runConditionalApprovalSelfTests()+"/46 PASS (synthetic; delegated Human authority deliberately BLOCKED)");

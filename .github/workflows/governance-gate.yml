@@ -41,7 +41,8 @@ jobs:
           node --input-type=module -e '
             import {auditReformWiring} from "./harness/scripts/reform-wiring-audit.mjs";
             const report=auditReformWiring();
-            console.log("GOV-REFORM original 16: "+report.checks.length+" STATIC_WIRED (NOT complete E2E)");
+            console.log("原始改革："+report.checks.length+" 個靜態入口存在；真實 E2E 未完成，不得宣稱已實施。");
+            console.log("驗收結果："+report.acceptance.decision+"／已確認真實 E2E "+report.acceptance.verified_end_to_end+" 項；詳細缺口見 reform-wiring-audit.mjs");
           '
       # GOV-REFORM-20261013: one Task -> one open PR unless a recorded PR-Justification exists.
       - name: PR proliferation guard (fail closed)

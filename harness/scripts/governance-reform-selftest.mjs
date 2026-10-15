@@ -14,7 +14,7 @@ import {
 import { selectImpactedTests } from "./select-impacted-tests.mjs";
 import { buildEvidenceLedger } from "./evidence-ledger.mjs";
 import { computeGovernanceMetrics } from "./governance-metrics.mjs";
-import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification } from "./gpt-preflight.mjs";
+import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 
 const NOW=1792000000,BASE="a".repeat(40),DOCKET="delivery/constitutional-cases/GOV-TEST-EXCEPTION-001.json";
 const RULESET_CONTEXTS=["ci","attack","governance","Analyze JavaScript / TypeScript"];
@@ -374,13 +374,22 @@ function metricsPreflightCases(guard){
     ["duplicate Task PR must reuse",true,()=>prCreationDecision({taskKey:"T008",openPrs:open,guard}).decision==="REUSE_EXISTING_PR"],
     ["justified new PR allowed",true,()=>prCreationDecision({taskKey:"T008",openPrs:open,guard,justified:hasPrJustification({body:"PR-Justification: CONTROL_TRANSITION_AFTER_MERGE closure after #386"},guard)}).decision==="NEW_PR_ALLOWED_WITH_JUSTIFICATION"],
     ["bare justification keyword rejected",false,()=>hasPrJustification({body:"PR-Justification: HOTFIX"},guard)],
-    ["own PR excluded from duplicates",true,()=>prCreationDecision({taskKey:"T009",openPrs:open,guard,selfNumber:390}).decision==="NEW_PR_ALLOWED"],
+    ["own PR excluded from duplicates",true,()=>prCreationDecision({taskKey:"T009",openPrs:open,guard,selfNumber:390}).decision==="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY"],
+    ["unidentified PR denied",true,()=>prCreationDecision({taskKey:null,openPrs:open,guard}).decision==="BLOCKED_MISSING_TASK_OR_GOVERNANCE_CASE"],
+    ["unverified PR inventory denied",true,()=>prCreationDecision({taskKey:"T008",openPrs:null,guard}).decision==="BLOCKED_NO_LIVE_PR_INVENTORY"],
+    ["governance docket recognized",true,()=>governanceCaseOfPr({body:"Governance-Case: GOV-REFORM-20261013-001"})==="GOV-REFORM-20261013-001"],
+    ["English-only Human PR explanation fails language guard",false,()=>hasHumanFacingChinese({title:"fix title",body:"Some English only"})],
+    ["Human PR contains Chinese explanation",true,()=>hasHumanFacingChinese({title:"修復：檢查流程",body:"Governance-Case: GOV-REFORM-20261013-001"})],
+    ["duplicate governance docket PR denied",true,()=>prCreationDecision({openPrs:[{number:89,body:"Governance-Case: GOV-REFORM-20261013-001"}],
+      taskKey:null,governanceCase:"GOV-REFORM-20261013-001",guard}).decision==="REUSE_EXISTING_PR"],
+    ["unknown product Task new PR denied",true,()=>preflight({build,sprint,tasks,openPrs:[],guard,intent:"NEW_PR",taskId:"T099"}).decision==="STOP"],
+    ["CLOSED Task new PR denied",true,()=>preflight({build,sprint,tasks:[{...tasks[0],status:"CLOSED"},tasks[1]],openPrs:[],guard,intent:"NEW_PR",taskId:"T008"}).decision==="STOP"],
     ["redundant Activation denied",true,()=>pf("REQUEST_ACTIVATION","T008")==="REDUNDANT_ACTIVATION_DENIED"],
     ["redundant approval denied",true,()=>pf("REQUEST_APPROVAL","T008")==="REDUNDANT_APPROVAL_DENIED"],
     ["unneeded Rebind denied",true,()=>pf("REQUEST_REBIND","T008")==="REBIND_NOT_REQUIRED"],
     ["BLOCKED Task cannot continue",true,()=>pf("CONTINUE_TASK_WORK","T006")==="STOP"],
     ["REVIEW Task fix continues same lease",true,()=>pf("CONTINUE_TASK_WORK","T008")==="CONTINUE_SAME_LEASE"],
-    ["missing PR inventory fails closed",true,()=>preflight({build,sprint,tasks,openPrs:null,guard,intent:"NEW_PR",taskId:"T008"}).decision==="STOP"],
+    ["missing PR inventory fails closed",true,()=>preflight({build,sprint,tasks,openPrs:null,guard,intent:"NEW_PR",taskId:"T008"}).decision==="BLOCKED_NO_LIVE_PR_INVENTORY"],
     ["CLOSED active Task cannot continue",true,()=>preflight({build,sprint,tasks:[{...tasks[0],status:"CLOSED"},tasks[1]],openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"],
     ["Task Build mismatch cannot continue",true,()=>preflight({build,sprint,tasks:[{...tasks[0],build_spec_id:"BS-P1-026"},tasks[1]],openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"],
     ["Sprint binding mismatch cannot continue",true,()=>preflight({build,sprint:{...sprint,active_build_spec:"BS-P1-026"},tasks,openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"]

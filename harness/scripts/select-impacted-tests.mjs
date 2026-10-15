@@ -53,8 +53,11 @@ const isTestFile=(filename,runner)=>runner==="vitest"?
   /\.(?:test|spec)\.(?:ts|tsx)$/.test(filename):/\.spec\.ts$/.test(filename);
 const testFileCount=(root,dir,runner)=>{
   const folder=path.join(root,"tests",dir);
-  if(!fs.existsSync(folder)||!fs.statSync(folder).isDirectory())
-    throw Error("FAST-LOOP: FAIL — expected test directory missing: "+folder);
+  // Human 2026-10-15: a genuinely missing test family has ZERO files, hence NOT_RUN;
+  // it must never block running the other real families or become a fake PASS.
+  if(!fs.existsSync(folder)) return 0;
+  if(!fs.statSync(folder).isDirectory())
+    throw Error("FAST-LOOP: FAIL — tests path exists but is not a directory: "+folder);
   let count=0;
   const walk=where=>{
     for(const item of fs.readdirSync(where,{withFileTypes:true})){
@@ -106,7 +109,11 @@ const selectionSelfTest=()=>{
   assert.equal(isTestFile("actual.test.ts","vitest"),true);
   assert.equal(isTestFile("actual.spec.ts","playwright"),true);
   assert.equal(isTestFile("README.md","playwright"),false);
-  console.log("FAST-LOOP suite inventory regression: PASS (synthetic, not actual test PASS)");
+  const absent=resolveRunnablePlan({mode:"IMPACTED",scripts:["test:unit"],
+    not_run:[],reasons:[]},cfg,".",()=>0);
+  assert.deepEqual(absent.not_run,["test:unit"]);
+  assert.deepEqual(absent.scripts,[]);
+  console.log("FAST-LOOP suite inventory regression: PASS (synthetic, never actual test PASS)");
 };
 
 const changedFromEnv=()=>{
