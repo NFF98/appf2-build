@@ -110,22 +110,22 @@ const fastLoopErrors=(checks,head)=>{
   const good=rows.some(r=>r.status==="completed" && r.conclusion==="success");
   return good?[]:["missing independent successful current-HEAD GitHub fast-loop; skipped is not PASS"];
 };
-/** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
-export function inspectPrReadiness({event,live,comments,checks,repo}){
-  const errors=[],pr=event?.pull_request;
-  if(!pr || !live) return {ok:false,errors:["missing live PR metadata"]};
-  const head=live.head?.sha,base=live.base?.sha;
+const prMetadataErrors=(event,live,repo)=>{
+  const e=[],pr=event?.pull_request,head=live?.head?.sha,base=live?.base?.sha;
+  if(!pr || !live) return ["missing live PR metadata"];
   assertion(pr.number===live.number && pr.head?.sha===head && pr.base?.sha===base,
-    "PR event stale or missing fields vs live PR",errors);
-  assertion(HEX40.test(head||"") && HEX40.test(base||""),"missing exact HEAD/BASE",errors);
-  assertion(live.state==="open" && !live.draft && !pr.draft,"NOT_READY: PR is Draft or closed",errors);
+    "PR event stale or missing fields vs live PR",e);
+  assertion(HEX40.test(head||"") && HEX40.test(base||""),"missing exact HEAD/BASE",e);
+  assertion(live.state==="open" && !live.draft && !pr.draft,"NOT_READY: PR is Draft or closed",e);
   assertion(live.base?.ref==="main" && live.head?.repo?.full_name===repo,
-    "unexpected PR base or fork",errors);
-  const owner=repo.split("/")[0],ctx={head,base,live,repo,owner};
+    "unexpected PR base or fork",e);
+  return e;
+};
+const currentReadinessErrors=({comments,ctx})=>{
   const decoded=safeArray(comments).flat().map(comment=>({comment,record:parseReadinessComment(comment)}))
     .filter(x=>x.record!==null);
-  const {current,e}=uniqueStageErrors(decoded,head);
-  errors.push(...e,...orderErrors(current));
+  const {current,e}=uniqueStageErrors(decoded,ctx.head);
+  const errors=[...e,...orderErrors(current)];
   for(const x of current){
     if(x.record.invalid){errors.push("malformed readiness proof");continue;}
     errors.push(...commonErrors(x.comment,x.record,ctx));
@@ -133,7 +133,13 @@ export function inspectPrReadiness({event,live,comments,checks,repo}){
     if(x.record.kind==="GPT_BCE") errors.push(...bceEvidenceErrors(x.record,ctx));
     if(x.record.kind==="HUMAN_FINAL_READY") errors.push(...humanEvidenceErrors(x.record,x.comment,ctx));
   }
-  errors.push(...fastLoopErrors(checks,head));
+  return errors;
+};
+/** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
+export function inspectPrReadiness({event,live,comments,checks,repo}){
+  const errors=prMetadataErrors(event,live,repo),head=live?.head?.sha,base=live?.base?.sha;
+  const ctx={head,base,live,repo,owner:repo.split("/")[0]};
+  errors.push(...currentReadinessErrors({comments,ctx}),...fastLoopErrors(checks,head));
   return {ok:errors.length===0,head,errors,manual_provenance_required:true};
 }
 /** On push, require an associated merged PR: a direct main push cannot greenwash gates. */
