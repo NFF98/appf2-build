@@ -24,7 +24,7 @@
     "harness/scripts/validate-sprint.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d",
+  "candidate_digest_sha256": "a15648812861557bf5f0d61437fcbef089b095b95c02bb490d414b31c3534021",
   "why5": [
     {
       "question": "為什麼 Sprint3（SP-P1-003）無法結案？",
@@ -89,7 +89,7 @@
       "CHANGE_SCOPE"
     ],
     "expires_at_unix": 1793259926,
-    "expires_at_rule": "Within 14 days of 2026-10-15 direct Human Chat exact candidate approval as GPT-transcribed at https://github.com/NFF98/appf2-build/pull/395#issuecomment-6187147338. Approved solely for Cloud Runner and GPT BCE, not Final Ready or Merge; comment is NOT Human-authored GitHub provenance; manual origin verification required."
+    "expires_at_rule": "Old Human direct Chat approval of 028b6b51... was byte-exact and is superseded by the attack mirror environment isolation fix; the new SHA256 a1564881... needs independent fresh Human exact-candidate approval before the nonrequired cloud mirror can re-run."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -112,19 +112,11 @@
     "2026-10-15 direct Chat 'approve! continue push to 100% complete!' is interpreted in immediate context as approval of exact 17-file digest 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 for continued verification only; GPT transcription https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298; not Final Ready, full GCCA, BCE execution PASS or merge. Human-origin manual check still required.",
     "2026-10-15 User authorized new cloud workflow scope on PR #395 without PC B. A gated non-required Draft-only W1 evidence mirror job is present but MUST NOT execute its expensive tests until fresh Human approval binds its new exact digest; old approved bytes are historical. Raw numeric exit-code/stdout/stderr/log SHA256 artifact, independently reviewed. Not full GCCA.",
     "2026-10-15 GitHub Actions exact HEAD f8b68efdd4af301d52c5cd929e324e46c49c1c5c Fast-loop PASS: new non-docket SHA256 028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d for 18 changed non-docket paths. W1-01 admission check succeeded but expensive 7-stage mirror safely SKIPPED because fresh Human exact candidate approval is absent. Current scope-approval to implement automation is NOT byte approval. One direct Human exact digest decision required before actual tests.",
-    "2026-10-15 fresh Human Chat approval of exact HEAD 102362ac81d89344903a6b30ab3a414cf5acc8c7 and SHA256 028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d (18 non-docket paths) permits GH Actions automatic seven-stage mirror and independent GPT BCE only. GPT-transcribed comment #6187147338; no Human Final Ready/Merge, no fabricated PASS."
+    "2026-10-15 fresh Human Chat approval of exact HEAD 102362ac81d89344903a6b30ab3a414cf5acc8c7 and SHA256 028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d (18 non-docket paths) permits GH Actions automatic seven-stage mirror and independent GPT BCE only. GPT-transcribed comment #6187147338; no Human Final Ready/Merge, no fabricated PASS.",
+    "2026-10-15 independent cloud BCE of run 38700994206: 6/7 tests PASS, one Attack Dry-run FAIL because runner inherited parent BASE_SHA and HEAD_SHA into temp fixture Git repository; 21/21 raw hashes MATCH and numeric exit evidence complete, so verdict remains FAIL (see PR #395 issuecomment-6187244633). Small repair isolates Attack child env only; Fast-loop synthetic isolation selftest PASS and ESLint PASS at HEAD 8f9b11cb; this changes approved bytes and requires fresh Human exact SHA256 approval. Never relabel old FAIL."
   ],
-  "approval_status": "HUMAN_EXACT_CANDIDATE_APPROVED_VERIFICATION_GITHUB_MIRROR_AND_GPT_BCE_ONLY",
-  "human_approval": {
-    "case_id": "GOV-392-CARRY-FORWARD-001",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6187147338",
-    "approver": "NFF98",
-    "approved_at_unix": 1792050326,
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "candidate_digest_sha256": "028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d"
-  },
+  "approval_status": "PENDING_FRESH_HUMAN_EXACT_SHA256_FOR_ATTACK_RUNNER_ISOLATION_RETEST",
+  "human_approval": null,
   "historical_candidate_approval": {
     "sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
     "ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
@@ -143,6 +135,13 @@
       "source_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298",
       "decision": "APPROVE_EXACT_CANDIDATE",
       "status": "SUPERSEDED_BY_CLOUD_EVIDENCE_WORKFLOW_EDIT",
+      "authorized_scope": "VERIFICATION_ONLY_OLD_BYTES"
+    },
+    {
+      "sha256": "028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d",
+      "source_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6187147338",
+      "decision": "APPROVE_EXACT_CANDIDATE",
+      "status": "HISTORICAL_SUPERSEDED_BY_ATTACK_FIX_A1564881",
       "authorized_scope": "VERIFICATION_ONLY_OLD_BYTES"
     }
   ]
