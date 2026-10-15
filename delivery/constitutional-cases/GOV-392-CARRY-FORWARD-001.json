@@ -68,7 +68,8 @@
     "harness/attack/run-dry-run.mjs：NOT_RUN（會呼叫 ci/run-product-ci.mjs，Human 已要求停止產品測試迴圈）",
     "harness/scripts/final-ready-selftest.mjs：ordered LOCAL_TESTS→GPT_BCE→HUMAN_FINAL_READY 正向、Draft／未具證據／BCE 不一致／bot-origin／過時 HEAD／未授權保護流程共同變更／無關直推等負向 synthetic assertion；不冒充 Human 核准。",
     "GitHub fast-loop (Draft) checks check:lint plus final-ready synthetic suite; full GCCA on this unapproved HEAD MUST remain NOT_READY. Historical Attack PASS on old HEAD cannot count as final GCCA PASS.",
-    "final-ready-selftest.mjs: newer fast-loop failure/in_progress after old PASS MUST block; local log wrong HEAD or mutable issue root MUST block. These are synthetic-only, not real engineering acceptance."
+    "final-ready-selftest.mjs: newer fast-loop failure/in_progress after old PASS MUST block; local log wrong HEAD or mutable issue root MUST block. These are synthetic-only, not real engineering acceptance.",
+    "final-ready-selftest.mjs tests all four pull_request ready_for_review triggers, Draft->Ready distinct fast-loop skipped job name, and preserves draft-only non-required Fast-loop behavior. Static checks, not real full GCCA."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -87,7 +88,7 @@
       "CHANGE_SCOPE"
     ],
     "expires_at_unix": 1793188993,
-    "expires_at_rule": "Within 14-day TTL of the 2026-10-15T01:41:13Z GPT-transcribed direct Human chat exact-candidate decision, reference https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952. Chat speaker origin requires direct Human manual verification; no cryptographic signature or WATCHER authorization asserted."
+    "expires_at_rule": "Prior Chat approval for old digest is superseded by real Ready-event wiring fix. A new exact candidate SHA256 and fresh Human decision/time are mandatory before any formal Governance PASS. No SSH/Ed25519 setup."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -104,22 +105,23 @@
     "2026-10-15 BCE found stale successful fast-loop could mask a newer failed attempt on same HEAD; repaired with greatest check-run id fail-closed and synthetic negative regressions. Earlier Human exact candidate approval invalidated. Actual full local mirror and independent test logs still pending.",
     "Test log URL/hash validation is structural only; requires specific job/comment and per-command HEAD/BASE binding, while independent BCE must verify raw linked logs and SHA256. No automatic cryptographic authentication of shared owner account.",
     "Candidate digest eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 is computed from GitHub Actions 2026-10-15 on the 17 exact non-docket paths; full Local mirror, independent BCE execution evidence, Human Final Ready and four full GCCA checks still NOT_RUN/NOT_READY.",
-    "2026-10-15 user's direct Chat instruction approves exact candidate eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 for verification only. GPT transcript: https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952 (not Human-authored GitHub comment). Previous superseded digests remain historical. Independent BCE execution review, Final Ready, full GCCA and separate Merge approval pending."
+    "2026-10-15 user's direct Chat instruction approves exact candidate eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 for verification only. GPT transcript: https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952 (not Human-authored GitHub comment). Previous superseded digests remain historical. Independent BCE execution review, Final Ready, full GCCA and separate Merge approval pending.",
+    "2026-10-15 Static audit: governance and attack workflow lacked ready_for_review event; Draft-only fast-loop job would be SKIPPED under the same name after Ready, and strict newest-check preflight would fail forever. Fixed by adding ready_for_review to all four required workflows and conditional fast-loop-ready-skipped check name. New L3 digest and Human approval required; full mirror/GCCA remain NOT_RUN."
   ],
-  "approval_status": "HUMAN_CHAT_EXACT_CANDIDATE_APPROVED_ONLY_TESTS_BCE_AND_FINAL_READY_PENDING",
-  "human_approval": {
-    "case_id": "GOV-392-CARRY-FORWARD-001",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952",
-    "approver": "NFF98",
-    "approved_at_unix": 1792028473,
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "candidate_digest_sha256": "eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1"
-  },
+  "approval_status": "PENDING_FRESH_EXACT_HUMAN_CANDIDATE_DECISION_AFTER_READY_TRIGGER_FIX",
+  "human_approval": null,
   "historical_candidate_approval": {
     "sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
     "ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
     "status": "SUPERSEDED_BY_POST_APPROVAL_BCE_FINDINGS_NO_LONGER_AUTHORITATIVE"
-  }
+  },
+  "superseded_approved_candidates": [
+    {
+      "sha256": "eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1",
+      "source_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952",
+      "decision": "APPROVE_EXACT_CANDIDATE",
+      "status": "HISTORICAL_SUPERSEDED_BY_FINAL_READY_EVENT_WIRING_FIX",
+      "authorized_scope": "CONTINUE_VERIFICATION_ONLY_NOT_MERGE"
+    }
+  ]
 }

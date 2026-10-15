@@ -62,6 +62,9 @@ jobs:
 
   # Non-required Draft fast loop: impacted tests only. Its PASS is never a full-gate PASS.
   fast-loop:
+    # Keep the exact-head Draft PASS named fast-loop. A later Ready event skips
+    # this job under a DIFFERENT check name, so it cannot shadow PASS as SKIPPED.
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && 'fast-loop' || 'fast-loop-ready-skipped' }}
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:

@@ -1,5 +1,6 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
@@ -70,4 +71,19 @@ for(const v of ["failure","skipped","neutral"]){
   assert.equal(bceCiConsistency({head:HEAD,checks:required.map((x,i)=>run(x,i?v:"success")),required,bcePass:true}).reason,"BCE_CI_MISMATCH");
 }
 assert.equal(bceCiConsistency({head:HEAD,checks:[],required,bcePass:true}).reason,"BCE_CI_MISMATCH");
+// Verify the real Ready-for-review wiring, not just synthetic inputs. Otherwise
+// same-HEAD preflight may deadlock after Draft -> Ready even if evidence exists.
+for(const filename of ["ci.yml","codeql.yml","governance-gate.yml","attack-dry-run.yml"]){
+  const source=readFileSync(".github/workflows/"+filename,"utf8");
+  const triggers=source.match(/^  pull_request:\s*\n((?:    [^\n]*\n)*)/m);
+  assert.ok(triggers,"missing explicit pull_request trigger: "+filename);
+  assert.match(triggers[1],/types:\s*\[[^\]\n]*ready_for_review[^\]\n]*\]/,
+    "ready_for_review must trigger required gate: "+filename);
+}
+const ciWorkflow=readFileSync(".github/workflows/ci.yml","utf8");
+assert.match(ciWorkflow,/^    name: \$\{\{[^\n]*'fast-loop'[^\n]*'fast-loop-ready-skipped'[^\n]*\}\}/m,
+  "Ready event must not mint a newer skipped check with name fast-loop");
+assert.match(ciWorkflow,/^    if: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.draft \}\}/m,
+  "fast-loop must remain draft-only (not a required full gate)");
+console.log("FINAL READY trigger graph and Draft->Ready check-name separation: PASS (static, NOT real full-gate execution).");
 console.log("FINAL READY synthetic positive/negative: PASS (NOT Human approval or real local PASS).");
