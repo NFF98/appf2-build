@@ -72,14 +72,17 @@ const sourceErrors=(s,label,cf)=>{
   if(!strs(s.refs)) e.push(label+" source.refs must list the originating PR/Issue/Sprint/audit references");
   return e;
 };
+const acceptanceEntryErrors=(a,label,cf)=>{
+  const e=[];
+  if(!RE_AC.test(a?.acceptance_id||"") || !RE_TEST.test(a?.test_id||"")) e.push(label+" acceptance/test identifier invalid");
+  if(!(cf.evidence_statuses||[]).includes(a?.evidence_status)) e.push(label+" evidence_status invalid: "+a?.evidence_status);
+  if(!Array.isArray(a?.evidence_refs) || !a.evidence_refs.every(str)) e.push(label+" evidence_refs must be an array of references");
+  return e;
+};
 const acceptanceErrors=(row,label,cf)=>{
   if(!Array.isArray(row.acceptance)) return [label+" acceptance must be an array"];
   const e=[];
-  for(const a of row.acceptance){
-    if(!RE_AC.test(a?.acceptance_id||"") || !RE_TEST.test(a?.test_id||"")) e.push(label+" acceptance/test identifier invalid");
-    if(!(cf.evidence_statuses||[]).includes(a?.evidence_status)) e.push(label+" evidence_status invalid: "+a?.evidence_status);
-    if(!Array.isArray(a?.evidence_refs) || !a.evidence_refs.every(str)) e.push(label+" evidence_refs must be an array of references");
-  }
+  for(const a of row.acceptance) e.push(...acceptanceEntryErrors(a,label,cf));
   if(!unique(acceptancePairs(row))) e.push(label+" duplicate Acceptance/Test pair");
   return e;
 };
@@ -111,9 +114,8 @@ const resolutionErrors=(row,label)=>{
   return e;
 };
 
-/** Strict validation of one APPF2-CARRY-FORWARD-1 row. */
-export function carryForwardRowErrors(row,ctx){
-  const cf=ctx.cf,label="carry-forward "+(row?.id||"<missing id>"),placeholder=ctx.placeholder,e=[];
+const carryForwardStructuralErrors=(row,label,cf,placeholder)=>{
+  const e=[];
   if(!new RegExp(cf.id_pattern).test(row?.id||"")) e.push(label+" id must match "+cf.id_pattern);
   if(!str(row.title)) e.push(label+" title required");
   if(!(cf.row_statuses||[]).includes(row.status)) e.push(label+" status invalid: "+row.status);
@@ -121,25 +123,28 @@ export function carryForwardRowErrors(row,ctx){
   if(row.human_decision!==null) e.push(...decisionErrors(row.human_decision,label,placeholder));
   if(!Array.isArray(row.history) || !row.history.length ||
      !row.history.every(h=>isUnix(h?.at_unix) && str(h?.event) && str(h?.ref))) e.push(label+" history must be a non-empty list of {at_unix,event,ref}");
-  return [...e,...sourceErrors(row.source||{},label,cf),...acceptanceErrors(row,label,cf),
+  return e;
+};
+/** Strict validation of one APPF2-CARRY-FORWARD-1 row. */
+export function carryForwardRowErrors(row,ctx){
+  const cf=ctx.cf,label="carry-forward "+(row?.id||"<missing id>"),placeholder=ctx.placeholder;
+  return [...carryForwardStructuralErrors(row,label,cf,placeholder),
+    ...sourceErrors(row.source||{},label,cf),...acceptanceErrors(row,label,cf),
     ...waiverErrors(row,label,ctx),...nextPhaseErrors(row.next_phase,label,placeholder),...resolutionErrors(row,label)];
 }
-
 /** Cross-checks a row against real Sprint/Task/Backlog truth: no phantom AC, no fake CLOSED/DONE. */
-export function rowTruthErrors(row,ctx){
-  const s=row.source||{},label="carry-forward "+row.id,e=[];
-  if(!s.sprint_id || !ctx.sprints) return e;
-  const sp=ctx.sprints.get(s.sprint_id);
-  if(!sp) return [label+" source Sprint not found: "+s.sprint_id];
-  if(s.task_id){
-    const t=(sp.td?.tasks||[]).find(x=>x.task_id===s.task_id);
-    if(!t) return [label+" source Task not found: "+s.sprint_id+"/"+s.task_id];
-    const mapped=new Set((t.acceptance_links||[]).map(l=>l.acceptance_id+"::"+l.test_id));
-    for(const pair of acceptancePairs(row)) if(!mapped.has(pair)) e.push(label+" phantom Acceptance not mapped to "+s.task_id+": "+pair);
-    if(OPEN_ROW.has(row.status) && t.status==="CLOSED" && (row.acceptance||[]).some(a=>a?.evidence_status!=="PASS")){
-      e.push(label+" Task "+s.task_id+" is CLOSED while its carry-forward Acceptance is not PASS (fake closure)");
-    }
+const mappedTaskTruthErrors=(row,s,sp,label)=>{
+  const e=[],t=(sp.td?.tasks||[]).find(x=>x.task_id===s.task_id);
+  if(!t) return [label+" source Task not found: "+s.sprint_id+"/"+s.task_id];
+  const mapped=new Set((t.acceptance_links||[]).map(l=>l.acceptance_id+"::"+l.test_id));
+  for(const pair of acceptancePairs(row)) if(!mapped.has(pair)) e.push(label+" phantom Acceptance not mapped to "+s.task_id+": "+pair);
+  if(OPEN_ROW.has(row.status) && t.status==="CLOSED" && (row.acceptance||[]).some(a=>a?.evidence_status!=="PASS")){
+    e.push(label+" Task "+s.task_id+" is CLOSED while its carry-forward Acceptance is not PASS (fake closure)");
   }
+  return e;
+};
+const mappedBacklogTruthErrors=(row,s,ctx,label)=>{
+  const e=[];
   for(const bid of s.backlog_item_ids||[]){
     const bi=ctx.backlogById?.get(bid);
     if(!bi){e.push(label+" unknown Backlog item "+bid); continue;}
@@ -147,8 +152,17 @@ export function rowTruthErrors(row,ctx){
     if(OPEN_ROW.has(row.status) && s.kind==="REVALIDATION" && ["VERIFIED","CLOSED"].includes(bi.revalidation?.status)) e.push(label+" revalidation "+bid+" is complete while its carry-forward row is open; resolve the row with evidence");
   }
   return e;
+};
+export function rowTruthErrors(row,ctx){
+  const s=row.source||{},label="carry-forward "+row.id;
+  if(!s.sprint_id || !ctx.sprints) return [];
+  const sp=ctx.sprints.get(s.sprint_id);
+  if(!sp) return [label+" source Sprint not found: "+s.sprint_id];
+  return [
+    ...(s.task_id?mappedTaskTruthErrors(row,s,sp,label):[]),
+    ...mappedBacklogTruthErrors(row,s,ctx,label)
+  ];
 }
-
 /** Whole-register validation at HEAD. Legacy POI rows keep their format; only IDs must be unique. */
 export function registerErrors(register,ctx){
   const items=Array.isArray(register?.items)?register.items:null;
@@ -201,15 +215,9 @@ const zeroGapErrors=(docket,p)=>{
   return e;
 };
 /** A NEW docket that creates, defers or waives an obligation must link registered carry-forward rows. */
-export function docketCarryForwardErrors(docket,p,headReg,cf){
-  if(!(cf.obligation_docket_markers||[]).some(k=>Object.hasOwn(docket,k))) return [];
-  if(docket.closure_disposition && docket.carry_forward) return [p+" closure docket lists carry-forward only in administrative_closure.carry_forward_ids"];
-  const c=docket.closure_disposition?{ids:docket.administrative_closure?.carry_forward_ids}:docket.carry_forward;
-  if(!c || typeof c!=="object") return [p+" creates/defers/waives an obligation without a carry_forward declaration (silent carry-forward)"];
-  if(c.zero_gap===true) return zeroGapErrors(docket,p);
-  if(!Array.isArray(c.ids) || !c.ids.length || !unique(c.ids)) return [p+" carry_forward.ids must list unique register IDs (or an explicit zero_gap declaration)"];
+const linkedDocketRowErrors=(docket,p,headReg,ids)=>{
   const rows=new Map((headReg?.items||[]).map(r=>[r.id,r])),e=[];
-  for(const id of c.ids){
+  for(const id of ids){
     const r=rows.get(id);
     if(!r) e.push(p+" carry-forward id missing from register: "+id);
     else if(!isStrictRow(r)) e.push(p+" carry-forward row "+id+" must use "+CARRY_FORWARD_SCHEMA);
@@ -217,30 +225,46 @@ export function docketCarryForwardErrors(docket,p,headReg,cf){
     else if(!linksDocket(r,docket.case_id)) e.push(p+" register row "+id+" does not link back to "+docket.case_id);
   }
   return e;
+};
+export function docketCarryForwardErrors(docket,p,headReg,cf){
+  if(!(cf.obligation_docket_markers||[]).some(k=>Object.hasOwn(docket,k))) return [];
+  if(docket.closure_disposition && docket.carry_forward) return [p+" closure docket lists carry-forward only in administrative_closure.carry_forward_ids"];
+  const c=docket.closure_disposition?{ids:docket.administrative_closure?.carry_forward_ids}:docket.carry_forward;
+  if(!c || typeof c!=="object") return [p+" creates/defers/waives an obligation without a carry_forward declaration (silent carry-forward)"];
+  if(c.zero_gap===true) return zeroGapErrors(docket,p);
+  if(!Array.isArray(c.ids) || !c.ids.length || !unique(c.ids)) return [p+" carry_forward.ids must list unique register IDs (or an explicit zero_gap declaration)"];
+  return linkedDocketRowErrors(docket,p,headReg,c.ids);
 }
-
 const holdState=cs=>cs?.status==="HOLD" && cs.active_sprint===null && cs.active_build_spec===null && cs.active_task===null;
-const adminTransitionErrors=(ctx,sid,after)=>{
-  const {cf,changed,base,readBaseJson,readHeadJson,readHead,baseDocketDigests,headReg}=ctx;
-  const caseId=after.administrative_closure?.case_id,docketPath=cf.docket_dir+caseId+".json",e=[];
-  const L=sid+" administrative closure transition";
-  if(!RE_CASE.test(caseId||"")) return [L+" case_id invalid"];
-  const docket=readHeadJson(docketPath);
-  if(!changed.includes(docketPath) || readBaseJson(docketPath) || !docket) return [L+" requires its Human closure docket to be added in the same PR (replay/tamper otherwise): "+docketPath];
-  const others=changed.filter(p=>p!==docketPath);
+const adminTransitionDocketErrors=(ctx,docket,others,L)=>{
+  const {base,readHead,baseDocketDigests}=ctx,e=[];
   const exact=docket.exact_changed_paths;
   if(!Array.isArray(exact) || !unique(exact) || !sameJson(sorted(exact),sorted(others))) e.push(L+" PR changed paths differ from the docket's exact_changed_paths");
   if(!RE_DIGEST.test(docket.candidate_digest_sha256||"") || exceptionDigest(readHead,others)!==docket.candidate_digest_sha256) e.push(L+" PR bytes differ from the approved candidate digest");
   if(baseDocketDigests.has(docket.candidate_digest_sha256)) e.push(L+" replay: candidate digest already bound by an earlier docket");
   if(!RE_SHA.test(base||"") || docket.base_sha!==base) e.push(L+" docket base_sha must equal the PR base");
+  return e;
+};
+const adminTransitionStateErrors=(ctx,sid,after,L)=>{
+  const {readBaseJson,readHeadJson}=ctx,e=[];
   const baseBuild=readBaseJson("build-spec/CURRENT.json"),headBuild=readHeadJson("build-spec/CURRENT.json");
   if(!holdState(readHeadJson("delivery/CURRENT-SPRINT.json"))) e.push(L+" must move CURRENT-SPRINT to HOLD with no Sprint/Build Spec/Task binding");
   if(headBuild?.implementation_enabled!==false || !sameJson(omit(baseBuild,["implementation_enabled","reason"]),omit(headBuild,["implementation_enabled","reason"]))) e.push(L+" may only set build-spec/CURRENT.json implementation_enabled=false (and reason)");
   const listed=new Set(after.administrative_closure?.carry_forward_ids||[]);
-  for(const r of (headReg?.items||[]).filter(r=>isStrictRow(r) && r.source?.sprint_id===sid && r.status!=="RESOLVED")){
+  for(const r of (ctx.headReg?.items||[]).filter(r=>isStrictRow(r) && r.source?.sprint_id===sid && r.status!=="RESOLVED")){
     if(!listed.has(r.id)) e.push(L+" silent carry-forward omission: open register row "+r.id+" not listed");
   }
   return e;
+};
+const adminTransitionErrors=(ctx,sid,after)=>{
+  const {cf,changed,readBaseJson,readHeadJson}=ctx;
+  const caseId=after.administrative_closure?.case_id,docketPath=cf.docket_dir+caseId+".json";
+  const L=sid+" administrative closure transition";
+  if(!RE_CASE.test(caseId||"")) return [L+" case_id invalid"];
+  const docket=readHeadJson(docketPath);
+  if(!changed.includes(docketPath) || readBaseJson(docketPath) || !docket) return [L+" requires its Human closure docket to be added in the same PR (replay/tamper otherwise): "+docketPath];
+  return [...adminTransitionDocketErrors(ctx,docket,changed.filter(p=>p!==docketPath),L),
+    ...adminTransitionStateErrors(ctx,sid,after,L)];
 };
 const sprintDiffErrors=(ctx)=>{
   const e=[];
@@ -313,14 +337,17 @@ const ordinaryClosureErrors=({sid,td,backlogById,selectedIds,revalidationIds})=>
   }
   return e;
 };
+const closureApprovalIdentityOk=(docket,a,ex)=>
+  a.case_id===docket.case_id && (ex.accepted_source_kinds||[]).includes(a.source_kind) &&
+  a.decision===ex.required_decision && a.scope===ex.required_scope;
+const closureApprovalProvenanceOk=(docket,a,full)=>
+  RE_DIGEST.test(docket.candidate_digest_sha256||"") && a.candidate_digest_sha256===docket.candidate_digest_sha256 &&
+  str(a.human_message_ref) && !placeholderOf(full).test(a.human_message_ref) &&
+  (full.human_authority_accounts||[]).includes(a.approver) && isUnix(a.approved_at_unix);
 const closureApprovalErrors=(docket,full,L)=>{
   const ex=full.exception||{},a=docket.human_approval||{};
-  const ok=a.case_id===docket.case_id && (ex.accepted_source_kinds||[]).includes(a.source_kind) &&
-    a.decision===ex.required_decision && a.scope===ex.required_scope &&
-    RE_DIGEST.test(docket.candidate_digest_sha256||"") && a.candidate_digest_sha256===docket.candidate_digest_sha256 &&
-    str(a.human_message_ref) && !placeholderOf(full).test(a.human_message_ref) &&
-    (full.human_authority_accounts||[]).includes(a.approver) && isUnix(a.approved_at_unix);
-  return ok?[]:[L+" exact Human closure approval missing or invalid (CI cannot prove Human provenance; manual check mandatory)"];
+  return closureApprovalIdentityOk(docket,a,ex) && closureApprovalProvenanceOk(docket,a,full)?
+    []:[L+" exact Human closure approval missing or invalid (CI cannot prove Human provenance; manual check mandatory)"];
 };
 const closureDocketErrors=(ctx,a,L)=>{
   const {sid,m,docket,full}=ctx,e=[];
@@ -344,49 +371,72 @@ const openSetErrors=(L,kind,actual,listed,permitted)=>{
   for(const id of byId.keys()) if(!actual.has(id)) e.push(L+" approved open "+kind+" "+id+" no longer matches the Sprint record");
   return e;
 };
-const coverageErrors=(ctx,a,L)=>{
-  const {sid,register}=ctx,e=[];
-  const ids=a.carry_forward_ids;
-  if(!Array.isArray(ids) || !ids.length || !unique(ids)) return [L+" carry_forward_ids must list unique register IDs"];
-  const rows=new Map((register?.items||[]).map(r=>[r.id,r]));
-  const linked=[];
+const closureLinkedRows=(ctx,ids,L)=>{
+  const {sid,register}=ctx,rows=new Map((register?.items||[]).map(r=>[r.id,r])),e=[],linked=[];
   for(const id of ids){
     const r=rows.get(id);
     if(!r || !isStrictRow(r)) e.push(L+" carry-forward row missing or not "+CARRY_FORWARD_SCHEMA+": "+id);
     else if(r.source?.sprint_id!==sid) e.push(L+" carry-forward row "+id+" belongs to another Sprint");
     else linked.push(r);
   }
+  return {e,linked};
+};
+const closureUncoveredErrors=(a,linked,L)=>{
+  const e=[];
   for(const x of a.open_tasks||[]) if(!linked.some(r=>r.source?.task_id===x.id)) e.push(L+" open Task "+x.id+" has no carry-forward row");
   for(const x of a.open_backlog||[]) if(!linked.some(r=>r.source?.kind==="BACKLOG" && (r.source.backlog_item_ids||[]).includes(x.id))) e.push(L+" open Backlog "+x.id+" has no carry-forward row");
   for(const x of a.open_revalidations||[]) if(!linked.some(r=>r.source?.kind==="REVALIDATION" && (r.source.backlog_item_ids||[]).includes(x.id))) e.push(L+" open revalidation "+x.id+" has no carry-forward row");
   return e;
 };
-const adminClosureErrors=ctx=>{
-  const {sid,m,td,backlogById,selectedIds,revalidationIds,docket,full}=ctx;
-  const a=m.administrative_closure||{},ac=full?.administrative_closure,L=sid+" administrative closure";
-  if(!ac || !full?.carry_forward) return [L+" policy missing in governance-reform.json"];
-  const e=[];
-  if(a.schema!==ac.schema) e.push(L+" schema must be "+ac.schema);
-  if(!RE_CASE.test(a.case_id||"")) return [...e,L+" case_id invalid"];
-  if(!docket) return [...e,L+" Human closure docket missing: "+full.carry_forward.docket_dir+a.case_id+".json"];
-  e.push(...closureDocketErrors(ctx,a,L));
+const coverageErrors=(ctx,a,L)=>{
+  const ids=a.carry_forward_ids;
+  if(!Array.isArray(ids) || !ids.length || !unique(ids)) return [L+" carry_forward_ids must list unique register IDs"];
+  const {e,linked}=closureLinkedRows(ctx,ids,L);
+  return [...e,...closureUncoveredErrors(a,linked,L)];
+};
+const adminClosureTaskErrors=(ctx,a,L,ac)=>{
+  const {td}=ctx,e=[];
   const openTasks=new Map((td.tasks||[]).filter(t=>t.status!=="CLOSED").map(t=>[t.task_id,t.status]));
   e.push(...openSetErrors(L,"Task",openTasks,a.open_tasks,ac.permitted_open_task_statuses));
   for(const x of a.open_tasks||[]){
     const t=(td.tasks||[]).find(y=>y.task_id===x.id);
     if(t && x.snapshot_sha256!==taskSnapshotDigest(t)) e.push(L+" Task "+x.id+" AC/Test/Evidence bytes changed after Human approval");
   }
+  return e;
+};
+const adminClosureBacklogErrors=(ctx,a,L,ac)=>{
+  const {selectedIds,backlogById}=ctx;
   const openBacklog=new Map([...selectedIds].filter(id=>backlogById.get(id) && backlogById.get(id).status!=="DONE").map(id=>[id,backlogById.get(id).status]));
-  e.push(...openSetErrors(L,"Backlog",openBacklog,a.open_backlog,ac.permitted_open_backlog_statuses));
+  return openSetErrors(L,"Backlog",openBacklog,a.open_backlog,ac.permitted_open_backlog_statuses);
+};
+const adminClosureRevalidationErrors=(ctx,a,L)=>{
+  const {revalidationIds,backlogById}=ctx;
   const openReval=new Map([...revalidationIds].filter(id=>backlogById.get(id) && !["VERIFIED","CLOSED"].includes(backlogById.get(id).revalidation?.status)).map(id=>[id,String(backlogById.get(id).revalidation?.status)]));
-  e.push(...openSetErrors(L,"revalidation",openReval,a.open_revalidations,null));
+  return openSetErrors(L,"revalidation",openReval,a.open_revalidations,null);
+};
+const adminClosureHistoryErrors=(ctx,a,L,ac)=>{
+  const e=[];
   for(const d of a.historical_procedural_dispositions||[]){
     if(!(ac.historical_dispositionable_gates||[]).includes(d?.gate_id)) e.push(L+" gate "+d?.gate_id+" cannot receive a historical disposition");
-    if(!(td.tasks||[]).some(t=>t.task_id===d?.task_id)) e.push(L+" historical disposition names unknown Task "+d?.task_id);
+    if(!(ctx.td.tasks||[]).some(t=>t.task_id===d?.task_id)) e.push(L+" historical disposition names unknown Task "+d?.task_id);
   }
-  return [...e,...coverageErrors(ctx,a,L)];
+  return e;
 };
-
+const adminClosureErrors=ctx=>{
+  const {sid,m,docket,full}=ctx;
+  const a=m.administrative_closure||{},ac=full?.administrative_closure,L=sid+" administrative closure";
+  if(!ac || !full?.carry_forward) return [L+" policy missing in governance-reform.json"];
+  const e=[];
+  if(a.schema!==ac.schema) e.push(L+" schema must be "+ac.schema);
+  if(!RE_CASE.test(a.case_id||"")) return [...e,L+" case_id invalid"];
+  if(!docket) return [...e,L+" Human closure docket missing: "+full.carry_forward.docket_dir+a.case_id+".json"];
+  return [...e,...closureDocketErrors(ctx,a,L),
+    ...adminClosureTaskErrors(ctx,a,L,ac),
+    ...adminClosureBacklogErrors(ctx,a,L,ac),
+    ...adminClosureRevalidationErrors(ctx,a,L),
+    ...adminClosureHistoryErrors(ctx,a,L,ac),
+    ...coverageErrors(ctx,a,L)];
+};
 /**
  * CLOSED-Sprint check used by validate-sprint.mjs. Ordinary closure keeps every original
  * all-Tasks-CLOSED / all-Backlog-DONE / all-revalidations-complete condition, byte for byte.
@@ -400,19 +450,22 @@ export function closedSprintErrors(ctx){
 }
 
 /** The next Sprint may only start after Human Product Alignment reviewed every open carry-forward. */
+const productAlignmentUnreviewedErrors=(prior,register,reviewed,activeSid)=>{
+  const rows=new Map((register?.items||[]).map(r=>[r.id,r])),e=[];
+  for(const [sid,v] of prior) for(const id of v.m.administrative_closure?.carry_forward_ids||[]){
+    if(rows.get(id)?.status!=="RESOLVED" && !reviewed.has(id)) e.push(activeSid+" Product Alignment did not review open carry-forward "+id+" from "+sid);
+  }
+  return e;
+};
+/** The next Sprint may only start after Human Product Alignment reviewed every open carry-forward. */
 export function productAlignmentErrors({activeSid,activeManifest,sprints,register,full}){
   const prior=[...sprints].filter(([sid,v])=>v.m?.status==="CLOSED" && v.m.closure_disposition===ADMIN_CLOSURE && sprintOrder(sid)<sprintOrder(activeSid));
   if(!prior.length) return [];
   const pa=activeManifest?.entry_gate?.product_alignment;
   if(!pa || !str(pa.human_decision_ref) || placeholderOf(full).test(pa.human_decision_ref)) return [activeSid+" activation after an administrative closure requires entry_gate.product_alignment.human_decision_ref"];
   const reviewed=new Set(Array.isArray(pa.reviewed_carry_forward_ids)?pa.reviewed_carry_forward_ids:[]);
-  const rows=new Map((register?.items||[]).map(r=>[r.id,r])),e=[];
-  for(const [sid,v] of prior) for(const id of v.m.administrative_closure?.carry_forward_ids||[]){
-    if(rows.get(id)?.status!=="RESOLVED" && !reviewed.has(id)) e.push(activeSid+" Product Alignment did not review open carry-forward "+id+" from "+sid);
-  }
-  return e;
+  return productAlignmentUnreviewedErrors(prior,register,reviewed,activeSid);
 }
-
 // ---------------------------------------------------------------- repository adapters
 
 const readJsonAbs=abs=>{try{return JSON.parse(fs.readFileSync(abs,"utf8"));}catch{return null;}};
