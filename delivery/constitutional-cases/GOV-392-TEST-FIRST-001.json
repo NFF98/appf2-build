@@ -1,0 +1,81 @@
+{
+  "case_id": "GOV-392-TEST-FIRST-001",
+  "base_sha": "8a471763ab762cf486e42dd9efd52d9195113a97",
+  "constitution_version": "1.0",
+  "title": "Repair GitHub test-before-approval deadlock and empty-suite false FAIL; generic evidence without fake PASS",
+  "exact_changed_paths": [
+    ".github/workflows/attack-dry-run.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/governance-gate.yml",
+    "harness/scripts/final-ready-selftest.mjs",
+    "harness/scripts/select-impacted-tests.mjs",
+    "harness/scripts/w1-01-evidence-mirror.mjs"
+  ],
+  "candidate_digest_sha256": "94b1796216981230f8367299cbc74aa69c3f9caeafd28fe0b4d95b913fc30676",
+  "why5": [
+    {
+      "question": "Why did required Actions show FAIL without running tests?",
+      "answer": "Four workflows invoked a Human Final Ready preflight before the actual Gate commands, causing an unapproved Draft to exit before true CI, governance, CodeQL and Attack testing.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/399"
+    },
+    {
+      "question": "Why could the original real-cloud evidence runner not help other PRs?",
+      "answer": "The W1-01 runner and workflow dispatch conditional hardcoded PR #395 and its governance docket, preventing new PRs from producing seven-stage execution evidence before approval.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/395"
+    },
+    {
+      "question": "Why did closure #398's Fast-loop fail?",
+      "answer": "Both tests/state-machine and tests/accessibility contain no executable files; the full-fallback loop ran these commands and misclassified no-tests as product failure.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/398"
+    },
+    {
+      "question": "Why must the actual security gates remain enforced?",
+      "answer": "Running the real Gate commands before Human approval is the only way to obtain real results; all existing Gate code, CodeQL analysis, product CI, negative cases and independent merge approval remain applicable.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6188207294"
+    },
+    {
+      "question": "Why separate this repair from Sprint3 administrative closure?",
+      "answer": "The closure gate permits only five exact state/control files and must independently preserve T006 BLOCKED, T008 REVIEW, F00-AC-037 UNTESTED and all carry-forward items.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    }
+  ],
+  "alternatives": [
+    "Disable all checks: rejected.",
+    "Mark absent suites PASS: rejected.",
+    "Run all four real GCCA jobs before Final Ready, keep Human Merge, and provide generic execution evidence: selected."
+  ],
+  "no_change": "Four full workflows report NOT_READY before executing substantive tests; one-time #395 evidence runner cannot serve another PR; no-test families are false failures.",
+  "rollback": "Human-governed revert of only seven changed workflow/test harness paths after independent gate and source-byte review; never silently revert merged Product truth.",
+  "negative_tests": [
+    "Fast-loop synthetic inventory asserts unknown test command/missing script hard FAIL, empty suite NOT_RUN_NO_TEST_FILES, existing tests runnable and real failures returned nonzero.",
+    "Final Ready synthetic invariant validates all four workflow required commands remain present, without an early human-approval exit.",
+    "Generic evidence admission synthetic fixture accepts multiple PR numbers while rejecting invalid fork, closed/ready state or mismatched repository.",
+    "Real GitHub cloud GCCA still NOT_RUN for THIS candidate until an allowed testing event; neither this preparation nor a source syntax check represents full PASS."
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Direct Human request 2026-10-15 to immediately fix test-first deadlock and PR395-only runner; prepare candidate without opening a PR or merging.",
+    "risk": "Removing pre-test Final Ready admission may allow CI to execute unapproved candidate source; PR checks run with read-only permissions and no release/deploy step, while independent Human final Merge remains mandatory. Real failures are never converted to PASS.",
+    "owner": "Human merge approver; GPT candidate author and evidence reviewer",
+    "follow_up": "Run real checks on exact HEAD and BASE, record accurate NOT_RUN and any FAIL, conduct independent BCE and Human-authorized Merge separately; Sprint3 remains not closed until independently verified.",
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "residual_gaps": [
+      "NONE"
+    ],
+    "expires_at_unix": null,
+    "expires_at_rule": "Only set within 14 days of genuine exact-candidate Human approval. No approval is asserted by this draft."
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This tooling and workflow repair creates or waives no Product Acceptance/Task/Sprint obligation; open Sprint3 gaps stay open and are handled by their separate closure decision."
+  },
+  "approval_status": "PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE",
+  "human_approval": null
+}
