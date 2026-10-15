@@ -1,0 +1,84 @@
+{
+  "case_id": "GOV-392-FASTLOOP-EMPTY-SUITE-002",
+  "base_sha": "8a471763ab762cf486e42dd9efd52d9195113a97",
+  "constitution_version": "1.0",
+  "title": "Fix: report empty state-machine and accessibility test inventories as NOT_RUN, never PASS; keep all runnable suites and gates enforced",
+  "change_class": "L3_CONSTITUTIONAL",
+  "exact_changed_paths": [
+    "harness/scripts/select-impacted-tests.mjs"
+  ],
+  "candidate_digest_sha256": "850f97532f199290ba95ba5b8e6a7ddf68afc599886073d071b8f9643c19f092",
+  "why5": [
+    {
+      "question": "Why does Sprint3 closure candidate #396 fail the Draft full fallback?",
+      "answer": "build-spec/CURRENT.json selects FULL_FALLBACK; test:state-machine and test:a11y both returned exit 1 for zero existing matching test files in their configured directories.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/396#issuecomment-6189478892"
+    },
+    {
+      "question": "Why is bypassing the whole Fast-loop unacceptable?",
+      "answer": "The other nine real test families must execute normally, and missing scripts, unknown families or missing suite directories must still fail closed.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38716541010/job/116360493163"
+    },
+    {
+      "question": "Why not add fake test cases to make the harness green?",
+      "answer": "A dummy test would falsely claim acceptance and obscure missing state-machine and a11y coverage. Their real coverage remains NOT_RUN_NO_TEST_FILES.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/397"
+    },
+    {
+      "question": "Why keep this change separate from the five-file closure transition?",
+      "answer": "The constitution permits the exact administrative closure transition to modify only those five fixed paths, and separately requires governance selector changes to be Human-approved.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs"
+    },
+    {
+      "question": "Why is this change not a product acceptance waiver?",
+      "answer": "It only classifies a genuinely empty test inventory as NOT_RUN and still runs all populated suites; no individual test or GCCA gate is treated as PASS without actually executing.",
+      "evidence_ref": "harness/scripts/select-impacted-tests.mjs"
+    }
+  ],
+  "alternatives": [
+    "Force npm test commands with empty suite dirs to PASS: prohibited fake green.",
+    "Exclude state-machine and a11y from configuration silently: hides coverage obligation.",
+    "Add dummy placeholder tests: false evidence and product scope creep.",
+    "Change protected workflows or package scripts: increases risk and changes unapproved bytes.",
+    "Selected minimal path: classify empty suites NOT_RUN with real inventory evidence and fail closed for other anomalies."
+  ],
+  "no_change": "Sprint3 #396 remains DRAFT because the full fallback tests always return exit 1 for two README-only directories, despite other test categories passing.",
+  "rollback": "Separate Human-approved revert of only harness/scripts/select-impacted-tests.mjs. Preserve this governance exception decision docket as historical, append-only; never rewrite existing Product truth.",
+  "negative_tests": [
+    "Selector synthetic tests: missing npm script is a HARD FAIL; changed npm command is a HARD FAIL; unknown suite is rejected; regex examples distinguish actual .test.ts/.spec.ts from README.md.",
+    "Selector actual GitHub Fast-loop at candidate source 0cffea836659dd787c85f26c156d7cb72af03208: 9 suites with files, two truly empty suites emitted NOT_RUN_NO_TEST_FILES and NEVER PASS.",
+    "Candidate GitHub Fast-loop GATE_ONLY: check:lint PASS; synthetic selector test PASS; formal Draft GCCA are intentionally NOT_READY, not executed full.",
+    "Full fallback on Sprint3 closure #396 prior to fix: 12 test categories PASS and test:state-machine + test:a11y each FAIL because no test files were found. After this governance-only fix, rerun exact full fallback, do not infer PASS."
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Human 2026-10-15 direct request to fix identified root cause: two README-only test directories must not cause false-fast-loop FAIL. New independent proposal, not reopening rejected PR #397.",
+    "risk": "Misclassification could hide tests if scripts or directory layout changes; stricter command equality, known-suite mapping, missing directory hard failure, visible NOT_RUN and separate Human exact approval guard this risk.",
+    "owner": "Human (NFF98) approval, GPT planning and independent evidence BCE, GitHub canonical CI",
+    "follow_up": "After separate exact Human authorization, required real verification and BCE, separate final-ready and Merge permission for this tooling correction, independently verify PR #398 closure and complete administrative HOLD. Never start Sprint4.",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": null,
+    "expires_at_rule": "UNAPPROVED: after a new exact-byte Human candidate approval, set expiry at most 14 days after its dated decision."
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This narrowly scoped selector correction creates, defers and waives no Product Acceptance, Sprint task or Backlog obligation. Empty suites remain explicit NOT_RUN, and the nine Sprint3 GAP rows are in the separate closure draft #396."
+  },
+  "known_limitations": [
+    "Direct Human request to fix root cause permits preparation, not final exact-byte Merge.",
+    "Prior rejected and CLOSED/unmerged PR #397 is NOT revived, reopened, or treated as authorized; only independently reviewed code behavior is reused.",
+    "Any 0-file test family is NOT_RUN_NO_TEST_FILES and must never count as executed Product PASS.",
+    "All 4 GCCA, Final Ready and independent Human Merge gate remain mandatory, and PR #398 Sprint3 closure is not yet merged."
+  ],
+  "approval_status": "PREPARED_PENDING_EXACT_HUMAN_APPROVAL_NOT_MERGE",
+  "human_approval": null
+}
