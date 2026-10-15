@@ -21,9 +21,10 @@
     "harness/scripts/validate-backlog.mjs",
     "harness/scripts/validate-change-scope.mjs",
     "harness/scripts/validate-special-approvals-and-carry-forward.mjs",
-    "harness/scripts/validate-sprint.mjs"
+    "harness/scripts/validate-sprint.mjs",
+    "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1",
+  "candidate_digest_sha256": "028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d",
   "why5": [
     {
       "question": "為什麼 Sprint3（SP-P1-003）無法結案？",
@@ -88,7 +89,7 @@
       "CHANGE_SCOPE"
     ],
     "expires_at_unix": 1793250970,
-    "expires_at_rule": "Within 14 days of direct Chat Human exact-candidate verification-only approval (2026-10-15). GPT-transcribed GitHub comment https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298 is NOT Human-authored; independent manual provenance check mandatory. Human explicitly did not approve Final Ready or Merge."
+    "expires_at_rule": "New automation candidate has not been approved by Human at byte-exact SHA256 level. Retain previous historical approval only; fresh approved_at and <=14-day expiry must be set after direct Chat approval of new digest."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -109,7 +110,8 @@
     "2026-10-15 Static audit: governance and attack workflow lacked ready_for_review event; Draft-only fast-loop job would be SKIPPED under the same name after Ready, and strict newest-check preflight would fail forever. Fixed by adding ready_for_review to all four required workflows and conditional fast-loop-ready-skipped check name. New L3 digest and Human approval required; full mirror/GCCA remain NOT_RUN.",
     "Updated exact SHA256 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 independently printed by GitHub Draft Fast-loop 2026-10-15 after ready_for_review scheduling fix and lint clean; applies to all 17 non-docket changed path bytes. Still PENDING fresh Human exact candidate approval and full execution tests; prior digests/approvals historical.",
     "2026-10-15 direct Chat 'approve! continue push to 100% complete!' is interpreted in immediate context as approval of exact 17-file digest 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 for continued verification only; GPT transcription https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298; not Final Ready, full GCCA, BCE execution PASS or merge. Human-origin manual check still required.",
-    "2026-10-15 User authorized new cloud workflow scope on PR #395 without PC B. A gated non-required Draft-only W1 evidence mirror job is present but MUST NOT execute its expensive tests until fresh Human approval binds its new exact digest; old approved bytes are historical. Raw numeric exit-code/stdout/stderr/log SHA256 artifact, independently reviewed. Not full GCCA."
+    "2026-10-15 User authorized new cloud workflow scope on PR #395 without PC B. A gated non-required Draft-only W1 evidence mirror job is present but MUST NOT execute its expensive tests until fresh Human approval binds its new exact digest; old approved bytes are historical. Raw numeric exit-code/stdout/stderr/log SHA256 artifact, independently reviewed. Not full GCCA.",
+    "2026-10-15 GitHub Actions exact HEAD f8b68efdd4af301d52c5cd929e324e46c49c1c5c Fast-loop PASS: new non-docket SHA256 028b6b514fa126837ac4029dae0754f731af8cf25e066ef5d64deb570131801d for 18 changed non-docket paths. W1-01 admission check succeeded but expensive 7-stage mirror safely SKIPPED because fresh Human exact candidate approval is absent. Current scope-approval to implement automation is NOT byte approval. One direct Human exact digest decision required before actual tests."
   ],
   "approval_status": "PENDING_NEW_EXACT_HUMAN_CANDIDATE_APPROVAL_AFTER_CLOUD_WORKFLOW_EDIT",
   "human_approval": null,
