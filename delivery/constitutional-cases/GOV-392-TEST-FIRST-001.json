@@ -13,7 +13,7 @@
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "7624f1a6207e391f997b20faa0324aca54f641ac84f26a930604f56a96d24a1d",
+  "candidate_digest_sha256": "e71a534876797949ce702ffce20a3692cf784877c82ee9674cdf1d5d3b731034",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -60,7 +60,8 @@
     "Cloud evidence triggers in a dedicated opt-in workflow, while required CI excludes labeled events; no extra required check from a label-only update.",
     "Evidence mirror: exit-0 Product CI HOLD/N/A is recorded NOT_RUN; explicit PRODUCT CI: PASS is required, and FAIL still stays FAIL. New regression cases for HOLD, governance-only, control-only, real Product PASS, bad exit status.",
     "Cloud evidence manifest.not_run includes both previously attempted non-PASS Product HOLD/N/A stages and unexecuted future commands; stage-specific exit codes and logs are preserved.",
-    "Four required CI/Governance/Attack/CodeQL checks no longer depend on post-test GPT BCE/Human Final Ready; separate non-required final-ready-audit validates ordered attestations after CI, preserves main-push provenance and independent Human Merge."
+    "Four required CI/Governance/Attack/CodeQL checks no longer depend on post-test GPT BCE/Human Final Ready; separate non-required final-ready-audit validates ordered attestations after CI, preserves main-push provenance and independent Human Merge.",
+    "Job-aware synthetic audit extracts required ci only until separate final-ready-audit job, never misclassifies downstream non-required job text as an in-gate Human condition."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",

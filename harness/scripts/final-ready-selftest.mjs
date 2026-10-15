@@ -110,7 +110,7 @@ for(const [file,required] of requiredWorkflows){
 }
 const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
 const ciRequiredJob=ciGeneric.slice(ciGeneric.indexOf("\n  ci:\n"),
-  ciGeneric.indexOf("\n  fast-loop:\n"));
+  ciGeneric.indexOf("\n  final-ready-audit:\n"));
 const cloudEvidenceWorkflow=readFileSync(".github/workflows/cloud-evidence.yml","utf8");
 const ciEvidenceJob=cloudEvidenceWorkflow.slice(cloudEvidenceWorkflow.indexOf("\n  cloud-evidence-mirror:\n"));
 assert.ok(ciRequiredJob.indexOf("- name: Install locked dependencies")>=0 &&
