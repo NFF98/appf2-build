@@ -108,19 +108,11 @@
     "2026-10-15 user's direct Chat instruction approves exact candidate eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 for verification only. GPT transcript: https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952 (not Human-authored GitHub comment). Previous superseded digests remain historical. Independent BCE execution review, Final Ready, full GCCA and separate Merge approval pending.",
     "2026-10-15 Static audit: governance and attack workflow lacked ready_for_review event; Draft-only fast-loop job would be SKIPPED under the same name after Ready, and strict newest-check preflight would fail forever. Fixed by adding ready_for_review to all four required workflows and conditional fast-loop-ready-skipped check name. New L3 digest and Human approval required; full mirror/GCCA remain NOT_RUN.",
     "Updated exact SHA256 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 independently printed by GitHub Draft Fast-loop 2026-10-15 after ready_for_review scheduling fix and lint clean; applies to all 17 non-docket changed path bytes. Still PENDING fresh Human exact candidate approval and full execution tests; prior digests/approvals historical.",
-    "2026-10-15 direct Chat 'approve! continue push to 100% complete!' is interpreted in immediate context as approval of exact 17-file digest 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 for continued verification only; GPT transcription https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298; not Final Ready, full GCCA, BCE execution PASS or merge. Human-origin manual check still required."
+    "2026-10-15 direct Chat 'approve! continue push to 100% complete!' is interpreted in immediate context as approval of exact 17-file digest 02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1 for continued verification only; GPT transcription https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298; not Final Ready, full GCCA, BCE execution PASS or merge. Human-origin manual check still required.",
+    "2026-10-15 User authorized new cloud workflow scope on PR #395 without PC B. A gated non-required Draft-only W1 evidence mirror job is present but MUST NOT execute its expensive tests until fresh Human approval binds its new exact digest; old approved bytes are historical. Raw numeric exit-code/stdout/stderr/log SHA256 artifact, independently reviewed. Not full GCCA."
   ],
-  "approval_status": "HUMAN_DIRECT_CHAT_EXACT_CANDIDATE_APPROVED_FOR_VERIFICATION_ONLY_LOCAL_BCE_FINAL_READY_GCCA_PENDING",
-  "human_approval": {
-    "case_id": "GOV-392-CARRY-FORWARD-001",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298",
-    "approver": "NFF98",
-    "approved_at_unix": 1792041370,
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "candidate_digest_sha256": "02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1"
-  },
+  "approval_status": "PENDING_NEW_EXACT_HUMAN_CANDIDATE_APPROVAL_AFTER_CLOUD_WORKFLOW_EDIT",
+  "human_approval": null,
   "historical_candidate_approval": {
     "sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
     "ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
@@ -133,6 +125,13 @@
       "decision": "APPROVE_EXACT_CANDIDATE",
       "status": "HISTORICAL_SUPERSEDED_BY_FINAL_READY_EVENT_WIRING_FIX",
       "authorized_scope": "CONTINUE_VERIFICATION_ONLY_NOT_MERGE"
+    },
+    {
+      "sha256": "02034d5b6cc92bcf8b006af3fa77151b9bb79cc6e89edfd2b83e69fd85d67cf1",
+      "source_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6184993298",
+      "decision": "APPROVE_EXACT_CANDIDATE",
+      "status": "SUPERSEDED_BY_CLOUD_EVIDENCE_WORKFLOW_EDIT",
+      "authorized_scope": "VERIFICATION_ONLY_OLD_BYTES"
     }
   ]
 }

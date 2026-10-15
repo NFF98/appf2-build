@@ -107,3 +107,133 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: node harness/scripts/select-impacted-tests.mjs --run
+
+
+  # W1-01: Draft-only, non-required, one-shot raw execution evidence.
+  # Never substitutes for the four required GCCA contexts or Human Final Ready.
+  w1-01-evidence-mirror:
+    name: w1-01-evidence-mirror
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 395 && github.event.pull_request.draft }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    permissions:
+      contents: read
+    concurrency:
+      group: w1-01-evidence-pr395
+      cancel-in-progress: false
+    steps:
+      - name: Checkout exact source HEAD (not synthetic PR merge)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail-closed exact-byte Human candidate admission before expensive tests
+        id: admission
+        env:
+          W1_HEAD: ${{ github.event.pull_request.head.sha }}
+          W1_BASE: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          mkdir -p w1-01-evidence
+          node --input-type=module <<'NODE' > w1-01-evidence/admission.json
+          import fs from "node:fs";
+          import {execFileSync} from "node:child_process";
+          import {candidateDigestOf} from "./harness/scripts/final-ready-preflight.mjs";
+          const h=process.env.W1_HEAD,b=process.env.W1_BASE;
+          const rev=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+          const dp="delivery/constitutional-cases/GOV-392-CARRY-FORWARD-001.json";
+          const docket=JSON.parse(fs.readFileSync(dp,"utf8"));
+          const changed=execFileSync("git",["diff","--name-only",b,h],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
+          const digest=candidateDigestOf(changed.map(filename=>({filename})),p=>fs.readFileSync(p));
+          const a=docket.human_approval||{},now=Math.floor(Date.now()/1000),errors=[];
+          const check=(good,msg)=>{if(!good)errors.push(msg);};
+          check(rev===h,"checkout HEAD mismatch");
+          check(docket.case_id==="GOV-392-CARRY-FORWARD-001"&&docket.base_sha===b,"docket identity/base mismatch");
+          check(changed.length===18&&changed.includes(dp),"unexpected candidate inventory");
+          check(JSON.stringify(changed.filter(x=>x!==dp).sort())===JSON.stringify([...(docket.exact_changed_paths||[])].sort()),"changed paths differ from docket");
+          check(/^[a-f0-9]{64}$/.test(digest||"")&&digest===docket.candidate_digest_sha256,"docket approved byte digest mismatch");
+          check(a.decision==="APPROVE_EXACT_CANDIDATE"&&a.scope==="EXACT_PR_DIFF"&&a.source_kind==="DIRECT_HUMAN_MESSAGE"&&
+            a.case_id===docket.case_id&&a.candidate_digest_sha256===digest&&a.approver==="NFF98"&&
+            /^https:\/\/github\.com\/NFF98\/appf2-build\/pull\/395#issuecomment-\d+$/.test(a.human_message_ref||""),
+            "fresh exact-byte Human candidate approval missing");
+          check(Number.isSafeInteger(a.approved_at_unix)&&a.approved_at_unix>0&&a.approved_at_unix<=now,"Human approval timestamp invalid");
+          check(Number.isSafeInteger(docket.scope_exception?.expires_at_unix)&&docket.scope_exception.expires_at_unix>now&&
+            docket.scope_exception.expires_at_unix-a.approved_at_unix<=1209600,"Human approval expired or excessive");
+          const result={schema:"APPF2-W1-01-CLOUD-ADMISSION-V1",head_sha:h,base_sha:b,actual_git_head:rev,
+            digest,approval_comment:a.human_message_ref||null,admitted:errors.length===0,errors,
+            run_id:process.env.GITHUB_RUN_ID};
+          console.log(JSON.stringify(result,null,2));
+          NODE
+          cat w1-01-evidence/admission.json
+          node -e 'const x=require("./w1-01-evidence/admission.json");if(!x.admitted)process.exit(78)'
+      - name: One-shot exact-head full local mirror (numeric exit codes, stdout/stderr SHA256)
+        if: ${{ steps.admission.outcome == 'success' }}
+        env:
+          W1_HEAD: ${{ github.event.pull_request.head.sha }}
+          W1_BASE: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -u
+          node --version > w1-01-evidence/node-version.txt
+          npm --version > w1-01-evidence/npm-version.txt
+          sha256sum package-lock.json > w1-01-evidence/lock-digest.txt
+          names=(npm-ci lint gate attack product-ci final-ready-selftest cross-gate-integration)
+          commands=('npm ci' 'npm run check:lint' 'npm run gate' 'npm run dry-run:attack' 'npm run product:ci' 'node harness/scripts/final-ready-selftest.mjs' 'node harness/scripts/admin-closure-cross-gate-test.mjs')
+          limits=(240 240 480 900 1500 180 900)
+          printf 'name\tcommand\tstatus\texit_code\tcombined_sha256\tstdout_sha256\tstderr_sha256\n' >w1-01-evidence/results.tsv
+          failed=0
+          for i in "${!names[@]}"; do
+            name="${names[$i]}"; cmd="${commands[$i]}"
+            echo "::group::W1-01 $name"
+            timeout --signal=TERM --kill-after=15s "${limits[$i]}s" bash -c "$cmd" >"w1-01-evidence/$name.stdout.log" 2>"w1-01-evidence/$name.stderr.log"
+            code=$?
+            cat "w1-01-evidence/$name.stdout.log" "w1-01-evidence/$name.stderr.log" >"w1-01-evidence/$name.combined.log"
+            ch=$(sha256sum "w1-01-evidence/$name.combined.log" | awk '{print $1}')
+            oh=$(sha256sum "w1-01-evidence/$name.stdout.log" | awk '{print $1}')
+            eh=$(sha256sum "w1-01-evidence/$name.stderr.log" | awk '{print $1}')
+            state=PASS; if [ "$code" -ne 0 ]; then state=FAIL; failed=1; fi
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$name" "$cmd" "$state" "$code" "$ch" "$oh" "$eh" >>w1-01-evidence/results.tsv
+            echo "$state $name numeric_exit_code=$code combined_sha256=$ch"
+            echo "::endgroup::"
+            if [ "$i" -eq 0 ] && [ "$code" -ne 0 ]; then echo "::error::npm ci FAIL, others NOT_RUN"; break; fi
+          done
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import crypto from "node:crypto";
+          const dir="w1-01-evidence/",buf=f=>fs.readFileSync(dir+f);
+          const sha=f=>crypto.createHash("sha256").update(buf(f)).digest("hex");
+          const all=["npm ci","npm run check:lint","npm run gate","npm run dry-run:attack","npm run product:ci",
+            "node harness/scripts/final-ready-selftest.mjs","node harness/scripts/admin-closure-cross-gate-test.mjs"];
+          const completed_at=new Date().toISOString();
+          const runs=buf("results.tsv").toString().trim().split("\n").slice(1).map(s=>{
+            const [name,command,status,exit_code,log_sha256,stdout_sha256,stderr_sha256]=s.split("\t");
+            return {name,command,status,exit_code:Number(exit_code),head_sha:process.env.W1_HEAD,base_sha:process.env.W1_BASE,
+              node_version:buf("node-version.txt").toString().trim(),completed_at,
+              log_sha256,combined_actual_sha256:sha(name+".combined.log"),log_filename:name+".combined.log",
+              stdout_sha256,stdout_actual_sha256:sha(name+".stdout.log"),stdout_filename:name+".stdout.log",
+              stderr_sha256,stderr_actual_sha256:sha(name+".stderr.log"),stderr_filename:name+".stderr.log"};
+          });
+          const missing=all.filter(name=>!runs.some(x=>x.command===name));
+          const manifest={schema:"APPF2-W1-01-CLOUD-RAW-EVIDENCE-V1",head_sha:process.env.W1_HEAD,
+            base_sha:process.env.W1_BASE,run_id:process.env.GITHUB_RUN_ID,job_name:"w1-01-evidence-mirror",
+            candidate_digest_sha256:JSON.parse(buf("admission.json")).digest,
+            lock_sha256:buf("lock-digest.txt").toString().trim().split(" ")[0],
+            environment:"GitHub Actions ubuntu-24.04 Node22",test_runs:runs,not_run:missing,
+            verdict:runs.some(r=>r.status!=="PASS")||missing.length?"FAIL_OR_INCOMPLETE":"MIRROR_PASS_NOT_GCCA"};
+          fs.writeFileSync(dir+"raw-evidence-manifest.json",JSON.stringify(manifest,null,2)+"\n");
+          console.log("W1-01 MIRROR RESULT",JSON.stringify({verdict:manifest.verdict,
+            steps:runs.map(x=>({command:x.command,code:x.exit_code})),not_run:missing}));
+          NODE
+          if [ "$failed" -ne 0 ]; then exit 1; fi
+      - name: Preserve raw evidence regardless of PASS, FAIL, or blocked admission
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: W1-01-PR395-RAW-EXACT-HEAD
+          path: w1-01-evidence/
+          if-no-files-found: warn
+          retention-days: 14
