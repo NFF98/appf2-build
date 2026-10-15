@@ -120,6 +120,20 @@ function cli(argv){
   if(argv.includes("--selftest")) return 0;
   const cfg=JSON.parse(fs.readFileSync(GOVERNANCE_REFORM_POLICY_PATH,"utf8")).impacted_tests;
   const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
+  // Every real CI invocation audits the complete on-disk test inventory, even
+  // when the current PR uses a GATE_ONLY selection. No tests are marked PASS.
+  let fullInventory;
+  try{
+    fullInventory=resolveRunnablePlan({
+      mode:"FULL_FALLBACK",scripts:[...cfg.full_suite],not_run:[],reasons:[]
+    },pkg);
+  }catch(e){console.error(e.message);return 1;}
+  console.log("FAST-LOOP FULL INVENTORY: files-backed suites: "+
+    fullInventory.scripts.filter(s=>s.startsWith("test:")).join(", "));
+  for(const absent of fullInventory.absent_suites)
+    console.log("NOT_RUN_NO_TEST_FILES [REAL REPO INVENTORY] | "+absent.script+
+      " | "+absent.directory+" | matching files=0; NEVER PASS");
+  if(argv.includes("--inventory-only")) return 0;
   let plan;
   try{plan=resolveRunnablePlan(selectImpactedTests(changedFromEnv(),cfg),pkg);}
   catch(e){console.error(e.message);return 1;}
