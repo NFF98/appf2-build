@@ -80,6 +80,17 @@ const testChildEnvironment=()=>{
   assert.equal(isPr({...good,number:500}),true);
   assert.equal(isPr({...good,draft:false}),false);
   assert.equal(isPr({...good,head:{repo:{full_name:"fork/repo"}}}),false);
+  assert.equal(stageStatus("npm run product:ci",0,
+    Buffer.from("PRODUCT CI: HOLD — implementation not enabled.")),"NOT_RUN");
+  assert.equal(stageStatus("npm run product:ci",0,
+    Buffer.from("PRODUCT CI: GOVERNANCE-ONLY N/A (NOT PASS)")),"NOT_RUN");
+  assert.equal(stageStatus("npm run product:ci",0,
+    Buffer.from("PRODUCT CI: CONTROL-ONLY — no product code changed.")),"NOT_RUN");
+  assert.equal(stageStatus("npm run product:ci",0,
+    Buffer.from("PRODUCT CI: PASS\n")),"PASS");
+  assert.equal(stageStatus("npm run product:ci",1,
+    Buffer.from("PRODUCT CI: PASS\n")),"FAIL");
+  assert.equal(stageStatus("npm run gate",0,Buffer.from("")),"PASS");
   console.log("Generic evidence admission and child env isolation: PASS (synthetic, NOT GCCA).");
 };
 async function once(spec,index,env){
@@ -102,7 +113,7 @@ async function once(spec,index,env){
   const logPath=path.join(dir,name+"-combined.log");
   fs.writeFileSync(logPath,combined);
   const exit=Number.isInteger(result.code)?result.code:startError?127:result.signal==="SIGKILL"?137:125;
-  const row={command,status:exit===0?"PASS":"FAIL",exit_code:exit,
+  const row={command,status:stageStatus(command,exit,stdout),exit_code:exit,
     head_sha:env.head,base_sha:env.base,node_version:process.version,
     completed_at:new Date().toISOString(),duration_ms:Date.now()-start,
     stdout_file:stdoutPath,stdout_sha256:sha(stdout),stderr_file:stderrPath,
@@ -110,6 +121,14 @@ async function once(spec,index,env){
   console.log(command+" exit="+exit+" sha256="+row.log_sha256);
   return row;
 }
+// An exit code of 0 is not proof that Product CI ran. HOLD and governance-only
+// Product CI return 0 but explicitly report N/A (NOT PASS).
+const stageStatus=(command,exit,stdout)=>{
+  if(exit!==0) return "FAIL";
+  if(command!=="npm run product:ci") return "PASS";
+  return /(?:^|\r?\n)PRODUCT CI: PASS(?:\r?\n|$)/.test(stdout.toString("utf8"))?
+    "PASS":"NOT_RUN";
+};
 const buildManifest=a=>({
   schema:"APPF2-GENERIC-CLOUD-EVIDENCE-1",pr:a.pr,
   run_type:"NON_REQUIRED_CLOUD_EXECUTION_EVIDENCE_NOT_GCCA",
@@ -132,8 +151,9 @@ async function executeAll(m,a){
 }
 const finish=m=>{
   m.completed_at=new Date().toISOString();
-  m.verdict=m.not_run.length?"INCOMPLETE":
-    m.stages.every(x=>x.exit_code===0)?"ALL_STAGES_PASS":"STAGES_FAILED";
+  m.verdict=m.stages.some(x=>x.status==="FAIL")?"STAGES_FAILED":
+    m.not_run.length || m.stages.some(x=>x.status==="NOT_RUN")?
+      "INCOMPLETE_NOT_RUN":"ALL_STAGES_PASS";
   save(m);console.log("CLOUD MIRROR RESULT "+m.verdict);
   if(m.verdict!=="ALL_STAGES_PASS")process.exitCode=1;
 };

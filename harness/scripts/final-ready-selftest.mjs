@@ -154,3 +154,11 @@ assert.ok(evidenceSource.includes('fs.mkdirSync("cloud-evidence"') &&
   !evidenceSource.includes('"w1-01-evidence/'),
   "cloud evidence source and manifest must use the same existing directory");
 console.log("Cloud evidence artifact paths: PASS (static, NOT real cloud execution).");
+
+const mirrorStatusSource=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
+assert.ok(mirrorStatusSource.includes("const stageStatus=") &&
+  mirrorStatusSource.includes('stageStatus(command,exit,stdout)') &&
+  mirrorStatusSource.includes('INCOMPLETE_NOT_RUN') &&
+  mirrorStatusSource.includes("PRODUCT CI: PASS"),
+  "cloud evidence must never convert Product HOLD/N/A (exit 0) to Product PASS");
+console.log("Cloud Product HOLD/N/A cannot silently become PASS: PASS (static policy assertion).");
