@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "updated_date": "2026-10-04",
-  "purpose": "Canonical carry-forward ledger for project-level unresolved items that are not fully owned by an active Backlog/Task/Finding. Do not duplicate Product truth.",
+  "updated_date": "2026-10-15",
+  "purpose": "Canonical carry-forward ledger for project-level unresolved items that are not fully owned by an active Backlog/Task/Finding. Do not duplicate Product truth. Sprint3 administrative carry-forward was appended under GOV-SP-P1-003-ADMIN-CLOSURE-001; legacy rows remain unchanged.",
   "status_values": [
     "OPEN",
     "MANUAL_ACTION_REQUIRED",
@@ -103,6 +103,582 @@
       "next_action": "At the next project-wide verification / integration cleanup window, run the T005 Postgres trust-transition CAS and admission-lineage adapters against real PostgreSQL, including concurrent VALIDATED→REVOKED|INCOMPATIBLE races, stale/replay behavior, immutable-column checks and Evidence-failure ordering. Revisit whether DB-level constraints should additionally enforce trust_status transition direction and byte_size immutability. Coordinate production route/service wiring with POI-005 instead of duplicating it; include the still-unwired F02 validation/trust Evidence and execution-admission EVT010..013 production path only in an explicitly Human-approved future scope.",
       "completion_criterion": "Real PostgreSQL integration proves one-winner CAS semantics, replay/stale no-op behavior, terminal-status durability under Evidence failure and immutable admission lineage; any DB-level hardening decision is explicitly recorded and implemented if approved; production wiring responsibility is either completed under POI-005 or explicitly re-scoped without changing Product semantics.",
       "resolution_ref": null
+    },
+    {
+      "id": "GAP-T006-01",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "F00-AC-037 Preview-origin F06 full return is UNTESTED",
+      "status": "UNTESTED",
+      "reason": "Preview-origin Return full integration was expressly deferred to future F06; TEST-F00-037 must never be represented as PASS.",
+      "risk": "S03/S05/F06 return path lacks full proof.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Human-approved F06 scope executes TEST-F00-037 end-to-end with true evidence and closes the open item.",
+      "source": {
+        "kind": "TASK",
+        "sprint_id": "SP-P1-003",
+        "task_id": "T006",
+        "backlog_item_ids": [],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F00-AC-037",
+          "test_id": "TEST-F00-037",
+          "evidence_status": "UNTESTED",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-T006-02",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "T006 truthful review and completeness evidence is outstanding",
+      "status": "BLOCKED",
+      "reason": "T006 nine Acceptance/Test mappings and S03 playable proof have not received final verified acceptance; previously supplied R1-R4 tests are not sufficient to close.",
+      "risk": "False Playable/App acceptance despite missing integrated proof.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "All T006 required AC/Test/Evidence verified by independent BCE under a future Human-approved Task.",
+      "source": {
+        "kind": "TASK",
+        "sprint_id": "SP-P1-003",
+        "task_id": "T006",
+        "backlog_item_ids": [],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F03-AC-009",
+          "test_id": "TEST-F03-009",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F03-AC-024",
+          "test_id": "TEST-F03-AC-024",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-007",
+          "test_id": "TEST-F00-007",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-009",
+          "test_id": "TEST-F00-AC-009",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-010",
+          "test_id": "TEST-F00-010",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-011",
+          "test_id": "TEST-F00-011",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-012",
+          "test_id": "TEST-F00-AC-012",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-036",
+          "test_id": "TEST-F00-036",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-T006-03",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "T006 lifecycle stays BLOCKED, never fake CLOSED",
+      "status": "BLOCKED",
+      "reason": "Administrative Sprint3 closure preserves BLOCKED T006 and all outstanding work; no product Task closure is authorized.",
+      "risk": "Potential loss of T006 ownership/sequence on future Product Alignment.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Rebind and complete T006 only by separately approved Build/Task lifecycle; preserve audit history.",
+      "source": {
+        "kind": "TASK",
+        "sprint_id": "SP-P1-003",
+        "task_id": "T006",
+        "backlog_item_ids": [],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-T008-01",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "T008 Stage A revalidation still REVIEW, 14 evidence not full closure",
+      "status": "OPEN",
+      "reason": "T008 remains REVIEW with separately recorded Evidence and open closure-order semantics; administrative freeze does not certify VERIFIED/CLOSED.",
+      "risk": "Revalidation status could be confused with product PASS.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Human Product Alignment reviews four AC mappings, evidence and lawful T008 disposition before future Task activation.",
+      "source": {
+        "kind": "TASK",
+        "sprint_id": "SP-P1-003",
+        "task_id": "T008",
+        "backlog_item_ids": [],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F01-AC-013",
+          "test_id": "TEST-F01-API-001",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F01-AC-016",
+          "test_id": "TEST-F01-API-003",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F01-AC-017",
+          "test_id": "TEST-F01-SEC-007",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F07-AC-004",
+          "test_id": "TEST-F07-004",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-BL-015",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "BL-P1-015 open Sprint3 backlog remains SPRINTED",
+      "status": "OPEN",
+      "reason": "Backlog item is SPRINTED not DONE and is carried forward without modifying Product truth.",
+      "risk": "Unfinished Result/App scope may silently disappear if Sprint is administratively CLOSED.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Human Product Alignment assigns future owner and proves all required Acceptance/Test before DONE.",
+      "source": {
+        "kind": "BACKLOG",
+        "sprint_id": "SP-P1-003",
+        "task_id": null,
+        "backlog_item_ids": [
+          "BL-P1-015"
+        ],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F03-AC-009",
+          "test_id": "TEST-F03-009",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F03-AC-024",
+          "test_id": "TEST-F03-AC-024",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-BL-018",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "BL-P1-018 open Sprint3 backlog remains SPRINTED",
+      "status": "UNTESTED",
+      "reason": "Backlog item is SPRINTED not DONE and is carried forward without modifying Product truth.",
+      "risk": "Unfinished Result/App scope may silently disappear if Sprint is administratively CLOSED.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Human Product Alignment assigns future owner and proves all required Acceptance/Test before DONE.",
+      "source": {
+        "kind": "BACKLOG",
+        "sprint_id": "SP-P1-003",
+        "task_id": null,
+        "backlog_item_ids": [
+          "BL-P1-018"
+        ],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F00-AC-007",
+          "test_id": "TEST-F00-007",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-009",
+          "test_id": "TEST-F00-AC-009",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-010",
+          "test_id": "TEST-F00-010",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-011",
+          "test_id": "TEST-F00-011",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-012",
+          "test_id": "TEST-F00-AC-012",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-036",
+          "test_id": "TEST-F00-036",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F00-AC-037",
+          "test_id": "TEST-F00-037",
+          "evidence_status": "UNTESTED",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-REVAL-008",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "BL-P1-008 BS-P1-025 revalidation remains IN_PROGRESS",
+      "status": "OPEN",
+      "reason": "Revalidation of an already-DONE Backlog remains IN_PROGRESS; administrative closure does not convert it to VERIFIED.",
+      "risk": "Incorrect retroactive certification of Stage A ownership/security semantics.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Human-authorized revalidation review and evidence completion before setting VERIFIED/CLOSED.",
+      "source": {
+        "kind": "REVALIDATION",
+        "sprint_id": "SP-P1-003",
+        "task_id": "T008",
+        "backlog_item_ids": [
+          "BL-P1-008"
+        ],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F01-AC-017",
+          "test_id": "TEST-F01-SEC-007",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-REVAL-010",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "BL-P1-010 BS-P1-025 revalidation remains IN_PROGRESS",
+      "status": "OPEN",
+      "reason": "Revalidation of an already-DONE Backlog remains IN_PROGRESS; administrative closure does not convert it to VERIFIED.",
+      "risk": "Incorrect retroactive certification of Stage A ownership/security semantics.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Human-authorized revalidation review and evidence completion before setting VERIFIED/CLOSED.",
+      "source": {
+        "kind": "REVALIDATION",
+        "sprint_id": "SP-P1-003",
+        "task_id": "T008",
+        "backlog_item_ids": [
+          "BL-P1-010"
+        ],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F01-AC-013",
+          "test_id": "TEST-F01-API-001",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        },
+        {
+          "acceptance_id": "F01-AC-016",
+          "test_id": "TEST-F01-API-003",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
+    },
+    {
+      "id": "GAP-REVAL-031",
+      "row_schema": "APPF2-CARRY-FORWARD-1",
+      "title": "BL-P1-031 BS-P1-025 revalidation remains IN_PROGRESS",
+      "status": "OPEN",
+      "reason": "Revalidation of an already-DONE Backlog remains IN_PROGRESS; administrative closure does not convert it to VERIFIED.",
+      "risk": "Incorrect retroactive certification of Stage A ownership/security semantics.",
+      "owner": "CHATGPT_PLANNING + HUMAN_DECISION + NEXT_AUTHORIZED_IMPLEMENTER",
+      "completion_criterion": "Human-authorized revalidation review and evidence completion before setting VERIFIED/CLOSED.",
+      "source": {
+        "kind": "REVALIDATION",
+        "sprint_id": "SP-P1-003",
+        "task_id": "T008",
+        "backlog_item_ids": [
+          "BL-P1-031"
+        ],
+        "refs": [
+          "https://github.com/NFF98/appf2-build/issues/392",
+          "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-001.json"
+        ]
+      },
+      "acceptance": [
+        {
+          "acceptance_id": "F07-AC-004",
+          "test_id": "TEST-F07-004",
+          "evidence_status": "PARTIAL",
+          "evidence_refs": [
+            "https://github.com/NFF98/appf2-build/issues/392",
+            "https://github.com/NFF98/appf2-build/pull/395"
+          ]
+        }
+      ],
+      "waived_gate": null,
+      "human_decision": null,
+      "next_phase": {
+        "target": "PENDING_PRODUCT_ALIGNMENT",
+        "decided_by_human": false,
+        "decision_ref": null
+      },
+      "resolution": null,
+      "history": [
+        {
+          "at_unix": 1792057855,
+          "event": "REGISTERED_OPEN_CARRY_FORWARD_NOT_PRODUCT_PASS",
+          "ref": "https://github.com/NFF98/appf2-build/issues/392"
+        }
+      ]
     }
   ],
   "last_full_pr_audit": {

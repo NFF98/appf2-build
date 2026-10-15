@@ -1,0 +1,110 @@
+{
+  "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-001",
+  "base_sha": "8a471763ab762cf486e42dd9efd52d9195113a97",
+  "sprint_id": "SP-P1-003",
+  "build_spec_id": "BS-P1-025",
+  "closure_disposition": "ADMINISTRATIVE_WITH_CARRY_FORWARD",
+  "never_converts_fail_or_untested_to_pass": true,
+  "administrative_closure": {
+    "schema": "APPF2-ADMIN-CLOSURE-1",
+    "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-001",
+    "open_tasks": [
+      {
+        "id": "T006",
+        "status": "BLOCKED",
+        "snapshot_sha256": "bc9b15ff6bc3dbfde3ef143e4d6d9e5b0565c2e1ae8057e31616f584db9495e7"
+      },
+      {
+        "id": "T008",
+        "status": "REVIEW",
+        "snapshot_sha256": "3ed5de2e6000c9f2a01975dafb9b7cfd14bcfcd58aa678cf3f6b0fd8248a09e3"
+      }
+    ],
+    "open_backlog": [
+      {
+        "id": "BL-P1-015",
+        "status": "SPRINTED"
+      },
+      {
+        "id": "BL-P1-018",
+        "status": "SPRINTED"
+      }
+    ],
+    "open_revalidations": [
+      {
+        "id": "BL-P1-008",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-010",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-031",
+        "status": "IN_PROGRESS"
+      }
+    ],
+    "carry_forward_ids": [
+      "GAP-T006-01",
+      "GAP-T006-02",
+      "GAP-T006-03",
+      "GAP-T008-01",
+      "GAP-BL-015",
+      "GAP-BL-018",
+      "GAP-REVAL-008",
+      "GAP-REVAL-010",
+      "GAP-REVAL-031"
+    ],
+    "historical_procedural_dispositions": [
+      {
+        "gate_id": "BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      },
+      {
+        "gate_id": "BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      }
+    ],
+    "next_sprint_requires_product_alignment": true,
+    "product_success_claimed": false
+  },
+  "exact_changed_paths": [
+    "build-spec/CURRENT.json",
+    "delivery/CURRENT-SPRINT.json",
+    "delivery/PROJECT-OPEN-ITEMS.json",
+    "delivery/sprints/SP-P1-003/manifest.json"
+  ],
+  "candidate_digest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "human_approval": null,
+  "status": "DRAFT_AWAIT_HUMAN_EXACT_CANDIDATE_APPROVAL",
+  "why5": [
+    {
+      "question": "Why close Sprint3 administratively now?",
+      "answer": "Human explicitly wants Sprint3 to stop after lawful special closure and disallows starting next Task.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    },
+    {
+      "question": "Why not ordinary Product-complete closure?",
+      "answer": "T006 remains BLOCKED and T008 remains REVIEW, with incomplete S03/F06 evidence.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    },
+    {
+      "question": "Why maintain immutable task and backlog statuses?",
+      "answer": "Administrative closure is distinct from Product PASS; no tests or Acceptance mapping may be forged.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/395"
+    },
+    {
+      "question": "Why require a permanent carry-forward register?",
+      "answer": "Nine GAP rows preserve task, backlog and revalidation liabilities, including TEST-F00-037 UNTESTED.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    },
+    {
+      "question": "Why hold all further execution?",
+      "answer": "No next Task/Sprint approved; explicit Product Alignment and Human authorization must precede any future activation.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    }
+  ],
+  "notes": "This proposed five-path transition is NOT approved at a byte-exact SHA256 level. All non-docket bytes require new Human exact candidate approval and required gates before Merge; never claim closure in draft."
+}
