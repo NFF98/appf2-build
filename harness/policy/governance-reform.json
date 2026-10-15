@@ -2,13 +2,17 @@
   "schema_version": 1,
   "reform_id": "GOV-REFORM-20261013",
   "status": "CANDIDATE_EFFECTIVE_ONLY_AFTER_HUMAN_MERGE",
-  "human_authority_accounts": ["NFF98"],
+  "human_authority_accounts": [
+    "NFF98"
+  ],
   "exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
     "docket_dir": "delivery/constitutional-cases/",
     "max_ttl_seconds": 1209600,
     "max_clock_skew_seconds": 300,
-    "accepted_source_kinds": ["DIRECT_HUMAN_MESSAGE"],
+    "accepted_source_kinds": [
+      "DIRECT_HUMAN_MESSAGE"
+    ],
     "required_decision": "APPROVE_EXACT_CANDIDATE",
     "required_scope": "EXACT_PR_DIFF",
     "placeholder_ref_pattern": "SYNTHETIC|PLACEHOLDER|PENDING|TBD|TODO|NOT[-_ ]?HUMAN",
@@ -43,7 +47,9 @@
     "lanes": {
       "GOVERNANCE_REFORM": {
         "change_class": "GOVERNANCE",
-        "waivable_gates": ["CHANGE_SCOPE"],
+        "waivable_gates": [
+          "CHANGE_SCOPE"
+        ],
         "allowed_paths": [
           "harness/",
           "ci/",
@@ -74,7 +80,9 @@
       },
       "PROTECTED_SSOT_AMENDMENT": {
         "change_class": "SSOT_AMENDMENT",
-        "waivable_gates": ["CHANGE_SCOPE"],
+        "waivable_gates": [
+          "CHANGE_SCOPE"
+        ],
         "allowed_paths": [
           "delivery/backlog/QUEUE.json",
           "delivery/sprints/{affected_sprint}/tasks.json",
@@ -99,7 +107,10 @@
       },
       "BUILD_SPEC_ACTIVATION": {
         "change_class": "SPEC_ACTIVATION",
-        "waivable_gates": ["CHANGE_SCOPE", "ACTIVATION_SPRINT_PAUSE_PRECONDITION"],
+        "waivable_gates": [
+          "CHANGE_SCOPE",
+          "ACTIVATION_SPRINT_PAUSE_PRECONDITION"
+        ],
         "allowed_paths": [
           "build-spec/CURRENT.json",
           "build-spec/activations/",
@@ -147,7 +158,9 @@
       },
       "HOTFIX": {
         "change_class": "HOTFIX",
-        "waivable_gates": ["CHANGE_SCOPE"],
+        "waivable_gates": [
+          "CHANGE_SCOPE"
+        ],
         "allowed_paths": [
           "src/",
           "tests/",
@@ -166,7 +179,12 @@
           "delivery/sprints/",
           "delivery/backlog/"
         ],
-        "required_full_gates": ["ci", "attack", "governance", "Analyze JavaScript / TypeScript"]
+        "required_full_gates": [
+          "ci",
+          "attack",
+          "governance",
+          "Analyze JavaScript / TypeScript"
+        ]
       }
     }
   },
@@ -176,17 +194,50 @@
     "register_path": "delivery/PROJECT-OPEN-ITEMS.json",
     "docket_dir": "delivery/constitutional-cases/",
     "id_pattern": "^GAP-[A-Z0-9][A-Z0-9-]{1,60}$",
-    "row_statuses": ["OPEN", "BLOCKED", "UNTESTED", "RESOLVED"],
-    "evidence_statuses": ["UNTESTED", "BLOCKED", "PARTIAL", "FAIL", "PASS"],
-    "source_kinds": ["SPRINT_CLOSURE", "TASK", "BACKLOG", "REVALIDATION", "HUMAN_EXCEPTION", "CHANGE_REVIEW"],
-    "obligation_docket_markers": ["scope_exception", "deferred_acceptance_id", "closure_disposition"]
+    "row_statuses": [
+      "OPEN",
+      "BLOCKED",
+      "UNTESTED",
+      "RESOLVED"
+    ],
+    "evidence_statuses": [
+      "UNTESTED",
+      "BLOCKED",
+      "PARTIAL",
+      "FAIL",
+      "PASS"
+    ],
+    "source_kinds": [
+      "SPRINT_CLOSURE",
+      "TASK",
+      "BACKLOG",
+      "REVALIDATION",
+      "HUMAN_EXCEPTION",
+      "CHANGE_REVIEW"
+    ],
+    "obligation_docket_markers": [
+      "scope_exception",
+      "deferred_acceptance_id",
+      "closure_disposition"
+    ]
   },
   "administrative_closure": {
     "schema": "APPF2-ADMIN-CLOSURE-1",
     "disposition": "ADMINISTRATIVE_WITH_CARRY_FORWARD",
-    "permitted_open_task_statuses": ["PLANNED", "IN_PROGRESS", "BLOCKED", "REVIEW"],
-    "permitted_open_backlog_statuses": ["SPRINTED", "BLOCKED"],
-    "historical_dispositionable_gates": ["BACKLOG_T008_CLOSE_AFTER_T006_REVIEW", "BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED"],
+    "permitted_open_task_statuses": [
+      "PLANNED",
+      "IN_PROGRESS",
+      "BLOCKED",
+      "REVIEW"
+    ],
+    "permitted_open_backlog_statuses": [
+      "SPRINTED",
+      "BLOCKED"
+    ],
+    "historical_dispositionable_gates": [
+      "BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",
+      "BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED"
+    ],
     "next_sprint_requires_product_alignment": true
   },
   "lifecycle": {
@@ -208,41 +259,267 @@
       "EXACT_HEAD_FULL_GATES_PASS",
       "HUMAN_MERGE_APPROVED"
     ],
-    "human_only_events": ["MARK_FINAL_READY", "APPROVE_MERGE", "APPROVE_CLOSURE"]
+    "human_only_events": [
+      "MARK_FINAL_READY",
+      "APPROVE_MERGE",
+      "APPROVE_CLOSURE"
+    ],
+    "conditional_task_approval": {
+      "schema": "APPF2-TASK-ONE-APPROVAL-1",
+      "status": "PROPOSED_L3_NOT_EFFECTIVE_UNTIL_MERGED_TO_MAIN",
+      "eligible_change_classes": [
+        "L1_TASK"
+      ],
+      "max_ttl_seconds": 2592000,
+      "required_actions": [
+        "MARK_FINAL_READY",
+        "APPROVE_MERGE",
+        "RECORD_MERGE",
+        "APPROVE_CLOSURE"
+      ],
+      "delegated_actor": "GPT_DELEGATED",
+      "required_real_gate_contexts": [
+        "ci",
+        "attack",
+        "governance",
+        "Analyze JavaScript / TypeScript"
+      ],
+      "required_evidence": [
+        "EXACT_HEAD_FULL_GATES_PASS",
+        "GPT_INDEPENDENT_BCE_PASS",
+        "ALL_MAPPED_AC_PASS",
+        "SCOPE_GATE_PASS",
+        "EVIDENCE_GATE_PASS",
+        "TRUSTED_HUMAN_PROVENANCE_CHECK"
+      ],
+      "non_delegable": [
+        "L2_SPEC_REBIND",
+        "L3_CONSTITUTION",
+        "RELEASE_DEPLOY",
+        "NEW_TASK_OR_SPRINT",
+        "SCOPE_CHANGE",
+        "TASK_REACTIVATION",
+        "HUMAN_IDENTITY_VERIFICATION"
+      ],
+      "merge_rule": "ONLY_VERIFIED_READY_PR_WITH_BRANCH_PROTECTION_NO_BYPASS",
+      "closure_rule": "ONLY_AFTER_VERIFIED_MERGE_AND_INDEPENDENT_CLOSURE_CARRY_FORWARD_GATES",
+      "external_executor_required": true,
+      "permission_note": "Eligibility validator has NO GitHub merge/write authority; genuine Human source must be authenticated by an independent trusted executor. Until that exists, no unattended auto-merge claim."
+    }
   },
-  "full_gate_contexts": ["ci", "attack", "governance", "Analyze JavaScript / TypeScript"],
+  "full_gate_contexts": [
+    "ci",
+    "attack",
+    "governance",
+    "Analyze JavaScript / TypeScript"
+  ],
   "pr_guard": {
     "task_declaration_pattern": "^Task:\\s*(T\\d{3})\\b",
     "title_task_pattern": "^(T\\d{3})[：:\\s]",
     "justification_pattern": "^PR-Justification:\\s*(NONCOMBINABLE_AUTHORITY_BOUNDARY|CONTROL_TRANSITION_AFTER_MERGE|HOTFIX|SUPERSEDES_CLOSED_PR)\\b\\s*\\S"
   },
-  "evidence_proof_levels": ["STATIC", "MOCK", "API_IN_PROCESS", "REAL_POSTGRES", "REAL_BROWSER", "EXTERNAL_RUNTIME"],
+  "evidence_proof_levels": [
+    "STATIC",
+    "MOCK",
+    "API_IN_PROCESS",
+    "REAL_POSTGRES",
+    "REAL_BROWSER",
+    "EXTERNAL_RUNTIME"
+  ],
   "impacted_tests": {
-    "always_on_code_change": ["check:types", "check:lint"],
-    "gate_only_prefixes": ["harness/", "delivery/", ".cursor/", ".github/", "skills/", "AGENTS.md", "README.md", "ci/README.md", "tooling/README.md"],
-    "full_fallback_prefixes": ["package.json", "package-lock.json", "tsconfig.json", "tsconfig.build.json", "vitest.config.ts", "playwright.config.ts", "eslint.config.mjs", "tooling/", "ci/", "build-spec/"],
-    "rules": [
-      { "prefix": "src/platform/compiler/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
-      { "prefix": "src/platform/intent/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
-      { "prefix": "src/platform/blueprint/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
-      { "prefix": "src/platform/evidence/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression", "test:unit"] },
-      { "prefix": "src/platform/runtime/", "scripts": ["test:contract", "test:behavior", "test:runtime", "test:state-machine", "test:regression", "test:unit"] },
-      { "prefix": "src/edge/", "scripts": ["test:contract", "test:behavior", "test:api", "test:regression"] },
-      { "prefix": "src/app/", "scripts": ["test:behavior", "test:e2e", "test:visual", "test:responsive", "test:a11y"] },
-      { "prefix": "supabase/migrations/", "scripts": ["test:api", "test:regression"] },
-      { "prefix": "tests/unit/", "scripts": ["test:unit"] },
-      { "prefix": "tests/contract/", "scripts": ["test:contract"] },
-      { "prefix": "tests/behavior/", "scripts": ["test:behavior"] },
-      { "prefix": "tests/api/", "scripts": ["test:api"] },
-      { "prefix": "tests/runtime/", "scripts": ["test:runtime"] },
-      { "prefix": "tests/state-machine/", "scripts": ["test:state-machine"] },
-      { "prefix": "tests/regression/", "scripts": ["test:regression"] },
-      { "prefix": "tests/e2e/", "scripts": ["test:e2e"] },
-      { "prefix": "tests/visual/", "scripts": ["test:visual"] },
-      { "prefix": "tests/responsive/", "scripts": ["test:responsive"] },
-      { "prefix": "tests/accessibility/", "scripts": ["test:a11y"] }
+    "always_on_code_change": [
+      "check:types",
+      "check:lint"
     ],
-    "browser_scripts": ["test:e2e", "test:a11y", "test:responsive", "test:visual"],
-    "full_suite": ["check:types", "check:lint", "build", "test:unit", "test:contract", "test:behavior", "test:api", "test:runtime", "test:state-machine", "test:regression", "test:e2e", "test:a11y", "test:responsive", "test:visual"]
+    "gate_only_prefixes": [
+      "harness/",
+      "delivery/",
+      ".cursor/",
+      ".github/",
+      "skills/",
+      "AGENTS.md",
+      "README.md",
+      "ci/README.md",
+      "tooling/README.md"
+    ],
+    "full_fallback_prefixes": [
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "tsconfig.build.json",
+      "vitest.config.ts",
+      "playwright.config.ts",
+      "eslint.config.mjs",
+      "tooling/",
+      "ci/",
+      "build-spec/"
+    ],
+    "rules": [
+      {
+        "prefix": "src/platform/compiler/",
+        "scripts": [
+          "test:contract",
+          "test:behavior",
+          "test:api",
+          "test:regression",
+          "test:unit"
+        ]
+      },
+      {
+        "prefix": "src/platform/intent/",
+        "scripts": [
+          "test:contract",
+          "test:behavior",
+          "test:api",
+          "test:regression",
+          "test:unit"
+        ]
+      },
+      {
+        "prefix": "src/platform/blueprint/",
+        "scripts": [
+          "test:contract",
+          "test:behavior",
+          "test:api",
+          "test:regression",
+          "test:unit"
+        ]
+      },
+      {
+        "prefix": "src/platform/evidence/",
+        "scripts": [
+          "test:contract",
+          "test:behavior",
+          "test:api",
+          "test:regression",
+          "test:unit"
+        ]
+      },
+      {
+        "prefix": "src/platform/runtime/",
+        "scripts": [
+          "test:contract",
+          "test:behavior",
+          "test:runtime",
+          "test:state-machine",
+          "test:regression",
+          "test:unit"
+        ]
+      },
+      {
+        "prefix": "src/edge/",
+        "scripts": [
+          "test:contract",
+          "test:behavior",
+          "test:api",
+          "test:regression"
+        ]
+      },
+      {
+        "prefix": "src/app/",
+        "scripts": [
+          "test:behavior",
+          "test:e2e",
+          "test:visual",
+          "test:responsive",
+          "test:a11y"
+        ]
+      },
+      {
+        "prefix": "supabase/migrations/",
+        "scripts": [
+          "test:api",
+          "test:regression"
+        ]
+      },
+      {
+        "prefix": "tests/unit/",
+        "scripts": [
+          "test:unit"
+        ]
+      },
+      {
+        "prefix": "tests/contract/",
+        "scripts": [
+          "test:contract"
+        ]
+      },
+      {
+        "prefix": "tests/behavior/",
+        "scripts": [
+          "test:behavior"
+        ]
+      },
+      {
+        "prefix": "tests/api/",
+        "scripts": [
+          "test:api"
+        ]
+      },
+      {
+        "prefix": "tests/runtime/",
+        "scripts": [
+          "test:runtime"
+        ]
+      },
+      {
+        "prefix": "tests/state-machine/",
+        "scripts": [
+          "test:state-machine"
+        ]
+      },
+      {
+        "prefix": "tests/regression/",
+        "scripts": [
+          "test:regression"
+        ]
+      },
+      {
+        "prefix": "tests/e2e/",
+        "scripts": [
+          "test:e2e"
+        ]
+      },
+      {
+        "prefix": "tests/visual/",
+        "scripts": [
+          "test:visual"
+        ]
+      },
+      {
+        "prefix": "tests/responsive/",
+        "scripts": [
+          "test:responsive"
+        ]
+      },
+      {
+        "prefix": "tests/accessibility/",
+        "scripts": [
+          "test:a11y"
+        ]
+      }
+    ],
+    "browser_scripts": [
+      "test:e2e",
+      "test:a11y",
+      "test:responsive",
+      "test:visual"
+    ],
+    "full_suite": [
+      "check:types",
+      "check:lint",
+      "build",
+      "test:unit",
+      "test:contract",
+      "test:behavior",
+      "test:api",
+      "test:runtime",
+      "test:state-machine",
+      "test:regression",
+      "test:e2e",
+      "test:a11y",
+      "test:responsive",
+      "test:visual"
+    ]
   }
 }

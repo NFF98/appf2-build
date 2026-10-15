@@ -1,0 +1,82 @@
+{
+  "case_id": "GOV-TASK-ONE-APPROVAL-001",
+  "base_sha": "8a471763ab762cf486e42dd9efd52d9195113a97",
+  "constitution_version": "1.0",
+  "title": "One conditional Human authorization per L1 Task; preserve checks, BCE and independent provenance",
+  "exact_changed_paths": [
+    "AGENTS.md",
+    "delivery/EXECUTION-HANDOFF-PROTOCOL.md",
+    "harness/policy/APPF2-CONSTITUTION.md",
+    "harness/policy/governance-reform.json",
+    "harness/scripts/conditional-task-approval-selftest.mjs",
+    "harness/scripts/conditional-task-approval.mjs",
+    "harness/scripts/governance-gate.mjs",
+    "harness/scripts/task-pr-lifecycle.mjs"
+  ],
+  "candidate_digest_sha256": "abb84b1249b623067096eb1cfbe19d4e08e5925b2f34fbc77f6e080d8ad2e6b3",
+  "why5": [
+    {
+      "question": "Why are users repeatedly asked to approve the same L1 Task?",
+      "answer": "Current lifecycle mandates Human Final Ready, Merge and Closure as separate actor-bound steps even when scope and Task are unchanged.",
+      "evidence_ref": "harness/scripts/task-pr-lifecycle.mjs"
+    },
+    {
+      "question": "Why can a simple chat convention not fix this?",
+      "answer": "The canonical policy and Constitution still define those individual Human-only steps and retain enforceable governance semantics.",
+      "evidence_ref": "harness/policy/APPF2-CONSTITUTION.md"
+    },
+    {
+      "question": "Why not simply delete Human approval and all gates?",
+      "answer": "That would allow unbounded scope changes, failed CI, untested Acceptance and forged approvals to move authority. Separate testing and independent BCE must remain.",
+      "evidence_ref": "harness/policy/governance-reform.json"
+    },
+    {
+      "question": "How can one approval stay scoped to the same authorized Task?",
+      "answer": "Bind the grant to Task/Sprint/Build/BASE/scope digest, Human source and TTL, recheck latest full CI/BCE/AC and merged Main for every step; block any drift.",
+      "evidence_ref": "harness/scripts/conditional-task-approval.mjs"
+    },
+    {
+      "question": "Why separate automation eligibility from authentication and merge execution?",
+      "answer": "An AI or shared GitHub account cannot cryptographically prove direct Human origin. Only a trusted external executor may establish that fact and perform GitHub writes.",
+      "evidence_ref": "harness/policy/APPF2-CONSTITUTION.md"
+    }
+  ],
+  "alternatives": [
+    "Keep three Human interactions per Task: repetitive and rejected for routine unchanged L1.",
+    "Auto-merge from any GPT assertion without verified Human source: rejected.",
+    "One bounded L1 conditional grant + exact live Gate/BCE/AC proof + trusted executor: selected."
+  ],
+  "no_change": "Existing lifecycle still requires independent Human events and creates repeated interruptions on routine unchanged Task work.",
+  "rollback": "Human-governed revert of this eight-file L3 amendment only; restore Human-only transition actors and policy; never rewrite closed Sprint or Product truth.",
+  "negative_tests": [
+    "39 conditional authorization positive/negative cases and seven lifecycle cases: Task/Sprint/Build/base/scope binding, stale HEAD/BCE, incomplete AC, skipped/failed gates, revoked/expired/fake Human, GitHub protection, closure before merge, no next Sprint.",
+    "Current Human-only lifecycle remains legal and effective unless this exact L3 candidate is approved and merged.",
+    "Trusted external Human provenance remains a prerequisite; AI cannot set its own grant.",
+    "This candidate creates no GitHub merge service, releases, Task or Sprint activation."
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Human requested future Task one-approval workflow and to prepare precise rule candidate before approving.",
+    "risk": "Improper trusted-executor implementation could spoof Human source; fail closed until trust is configured and verified. Repository rule changes remain L3.",
+    "owner": "Human governance owner; GPT rule candidate/BCE only",
+    "follow_up": "After exact Human L3 approval, independent CI/BCE and normal protected Merge, configure separate trusted executor/provenance before permitting unattended action. No automatic Sprint3 special closure or next Task.",
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "residual_gaps": [
+      "NONE"
+    ],
+    "expires_at_unix": null,
+    "expires_at_rule": "Set only after authentic exact candidate Human decision; max 30 days."
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "Governance eligibility rule only; no Product AC, Task, Sprint or existing obligation is waived."
+  },
+  "approval_status": "PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE",
+  "human_approval": null
+}

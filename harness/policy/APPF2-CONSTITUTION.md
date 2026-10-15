@@ -129,3 +129,14 @@ Human 可以否決、退回任何一關。GitHub 唯一 canonical source，不�
 - **下一個 Sprint**：只要有任何 Sprint 以行政結案關閉，之後的 Sprint 在 ACTIVE 前，manifest 的 `entry_gate.product_alignment` 必須附 Human 決定參照，並逐一審視每一個仍未 RESOLVED 的缺口。Cursor 不得自行決定 Sprint4 或下一階段內容。
 - **防關閉**：是否強制以 **BASE** policy 的 `carry_forward.enforced` 為準；HEAD 移除強制、刪除驗證器或解除 Gate 串接，都會被判定為 suppression 而失敗。首次引入本節的 PR 因 BASE 尚無此 policy，只能依 §7 的 `GOVERNANCE_REFORM` 通道與 Human 精確審定合併。
 - **CI 不能證明核准者是人**：本節所有通過都只代表結構、連結、位元組與不可變性一致。Human 來源查核、獨立 BCE 與 Human 對精確 HEAD 的 Merge 核准，仍然必須另外取得。
+
+## 9. 一次性條件授權：L1 Task（APPF2-TASK-ONE-APPROVAL-1）
+
+**L3 待核准候選：僅在依現行憲法合法審定、CI/BCE、獨立合併到 canonical main 後生效。不得回溯授權 GOV-392、已關閉 PR 或 Sprint 3 特批結案。**
+
+- **Human 每 Task 一次授權**：明列 L1 Task、Sprint、Build Spec、BASE SHA、scope SHA256、期限（最長 30 日）及 FINAL READY／MERGE／RECORD MERGE／TASK CLOSURE 的完整條件。相同 Task+scope 內的修復不重複請示；換任務、換範圍、過期、撤銷立即 HARD STOP。
+- **每個最新 HEAD 都重驗**：四項 required GitHub Full Gate 真實 SUCCESS、獨立 GPT BCE 精確 HEAD PASS、所有映射 AC 真實 PASS、Change Scope/Evidence PASS。NOT_RUN、UNTESTED、SKIPPED、FAIL 和 stale HEAD 不是 PASS。
+- **GPT 受託不等於 GPT 自行核准**：Human 直接核准的來源必須由獨立可信執行者驗證；共用 GitHub 帳號、Bot/AI 留言、程式 JSON 自填 approved 不具 Human 身份證明。只有驗明來源且正常分支保護通過後，GPT_DELEGATED 才可進行 Final Ready、正常 Merge、核對合併、一般 Task Closure。
+- **不可繼承權限**：禁止下一 Task/Sprint 啟動、CLOSED/BLOCKED 復活、L2/L3 Product/Design/Spec/Rebind/治理憲法變更、Release/部署、安全例外。新增 scope 或安全異常要另行 Human 決定。
+- **Task Closure 與 Sprint 行政結案不同**：ADMINISTRATIVE_WITH_CARRY_FORWARD 及歷史程序處置仍依 §8 Human 精確 docket、真實持續義務與獨立驗證，不由一次 L1 Task 授權自動放行。
+- **現有執行者限制**：conditional-task-approval.mjs 僅提供純授權資格判定，task-pr-lifecycle.mjs 僅核對狀態轉移；兩者均無 GitHub merge/close 權限，也無背景工作。未配置可信核准來源與真實 GitHub 執行者前，不能宣稱已實現無人值守自動 Merge。

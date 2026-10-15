@@ -780,6 +780,7 @@ The second pattern is prohibited when the first can accomplish the same governed
 - 同一 Task 的實作、Bugfix、測試修正、Review 回饋，全部留在**同一個 Draft PR、同一分支**持續 commit。
 - 任何新 commit 都會使 HEAD 綁定的狀態（Local PASS、BCE、Final Ready、Full Gate、Merge Approval）回到 `DRAFT_DEVELOPMENT`；Merge 後的 commit 不繼承任何授權。
 - `HUMAN_FINAL_INTEGRATION_READY`、`HUMAN_MERGE_APPROVED`、`MERGED`、`EVIDENCE_AND_CLOSURE` 只有 Human 能設定；GPT 只能給 BCE；CI 只能給 Full Gate 結果。
+- **L3 修法候選（待正式 Merge）**：新的一般 L1 Task 只需 Human 一次直接、精確、限時條件授權；可信 Human 來源驗證和同 HEAD 四項真 CI、AC、獨立 BCE、Scope／Evidence 全 PASS 後，GPT_DELEGATED 可依現有狀態順序執行 Final Ready → 合併授權 → 正常 GitHub Merge 確認 → 一般 Task Closure。任何 HEAD 改動重新測；Task/Sprint/Build/scope 改變、FAIL、revoked、過期或身份不可信立即 HARD STOP。L2/L3、部署、Sprint 行政結案及下一 Task 不含在內。
 
 ### 18.2 禁止重複核准、Bugfix 持續執行
 

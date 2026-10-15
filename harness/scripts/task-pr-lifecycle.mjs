@@ -6,6 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { matchesPathRule, sameJson, GOVERNANCE_REFORM_POLICY_PATH, HUMAN_EXCEPTION_SCHEMA } from "./human-exception.mjs";
+import { evaluateTaskConditionalApproval } from "./conditional-task-approval.mjs";
 
 export const LIFECYCLE_STATES=Object.freeze([
   "AUTHORIZED_TASK","DRAFT_DEVELOPMENT","LOCAL_AC_TESTS_PASS","GPT_BCE_PASS",
@@ -34,6 +35,26 @@ const ACTOR_FOR={
   MERGED:["HUMAN"],
   EVIDENCE_AND_CLOSURE:["HUMAN"]
 };
+const DELEGATED_EVENT={
+  HUMAN_FINAL_INTEGRATION_READY:"MARK_FINAL_READY",
+  HUMAN_MERGE_APPROVED:"APPROVE_MERGE",
+  MERGED:"RECORD_MERGE",
+  EVIDENCE_AND_CLOSURE:"APPROVE_CLOSURE"
+};
+const delegationErrors=({record,to,actor,head,grant,context})=>{
+  if(actor!=="GPT_DELEGATED" || !Object.hasOwn(DELEGATED_EVENT,to)) return null;
+  const errors=[];
+  if(context?.head_sha!==head || context?.task_id!==record.task_id ||
+    context?.sprint_id!==record.sprint_id ||
+    context?.build_spec_id!==record.build_spec_id ||
+    context?.scope_sha256!==record.scope_sha256)
+    errors.push("delegated Task/Sprint/Build/scope or HEAD must bind immutable lifecycle record");
+  const proof=evaluateTaskConditionalApproval({
+    grant,action:DELEGATED_EVENT[to],context
+  });
+  return errors.concat(proof.errors);
+};
+
 
 /** Any new commit invalidates every HEAD-bound claim; post-merge commits never inherit authority. */
 export function onNewHead(record,newHead){
@@ -56,11 +77,14 @@ const transitionEvidenceErrors=(to,evidence,head)=>{
   return !rule || rule[0](evidence,head)?[]:[rule[1]];
 };
 
-export function advance(record,{to,actor,head,evidence}){
-  const errors=[];
+export function advance(record,{to,actor,head,evidence,conditional_grant,conditional_context}){
+  const errors=[],delegated=delegationErrors({record,to,actor,head,
+    grant:conditional_grant,context:conditional_context});
   if(!(NEXT[record.state]||[]).includes(to)) errors.push("illegal transition "+record.state+" -> "+to);
-  if(!(ACTOR_FOR[to]||[]).includes(actor)) errors.push(to+" cannot be set by "+actor);
+  if(!(ACTOR_FOR[to]||[]).includes(actor) && (!delegated || delegated.length))
+    errors.push(to+" cannot be set by "+actor);
   if(head!==record.head) errors.push("HEAD changed since the last attestation; call onNewHead first");
+  if(delegated) errors.push(...delegated);
   errors.push(...transitionEvidenceErrors(to,evidence,record.head));
   if(errors.length) return {ok:false,errors};
   return {ok:true,record:{...record,state:to,attested_head:HEAD_BOUND.has(to)?head:record.attested_head}};

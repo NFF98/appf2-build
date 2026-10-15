@@ -21,6 +21,7 @@
 
 - 一個 Task 一個 Draft PR；同一 Task lease 內的 Bugfix／測試／Evidence 持續 commit，不重複要求 Activation 或核准。
 - 每次修正先跑相關測試（`harness/scripts/select-impacted-tests.mjs`）；Draft 結果不是 full-gate PASS，完整 CI 只在 Human Final Ready 後的精確 HEAD 執行。
+- **L3 待核准新制**：一般 L1 Task 的一次性條件授權，允許 GPT_DELEGATED 在同 Scope、Human 身份可信核對、真實四 Gate／AC／BCE PASS 後，執行 Final Ready、正常 Merge 及一般 Task Closure；不得自行認證 Human、繞過 GitHub Ruleset、合併或開啟下一 Task／Sprint。詳細限制見憲法 §9；尚未 Merge 前不生效。
 - Sprint 中的治理／SSOT／Closure 延後／Hotfix 例外只能走憲法 §7 的通用 Human 特批通道（精確 docket），不得自行擴張 scope 或宣稱已核准。
 - 細則：[`delivery/EXECUTION-HANDOFF-PROTOCOL.md` §18](delivery/EXECUTION-HANDOFF-PROTOCOL.md#18-lean-task-lifecyclegov-reform-20261013)。
 
