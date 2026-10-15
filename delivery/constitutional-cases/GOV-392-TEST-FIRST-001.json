@@ -12,7 +12,7 @@
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "94b1796216981230f8367299cbc74aa69c3f9caeafd28fe0b4d95b913fc30676",
+  "candidate_digest_sha256": "480b2b9638deefbb987fa298a37a62230ffaa1ed621c6f807898f163ae89ea00",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -48,10 +48,11 @@
   "no_change": "Four full workflows report NOT_READY before executing substantive tests; one-time #395 evidence runner cannot serve another PR; no-test families are false failures.",
   "rollback": "Human-governed revert of only seven changed workflow/test harness paths after independent gate and source-byte review; never silently revert merged Product truth.",
   "negative_tests": [
-    "Fast-loop synthetic inventory asserts unknown test command/missing script hard FAIL, empty suite NOT_RUN_NO_TEST_FILES, existing tests runnable and real failures returned nonzero.",
-    "Final Ready synthetic invariant validates all four workflow required commands remain present, without an early human-approval exit.",
-    "Generic evidence admission synthetic fixture accepts multiple PR numbers while rejecting invalid fork, closed/ready state or mismatched repository.",
-    "Real GitHub cloud GCCA still NOT_RUN for THIS candidate until an allowed testing event; neither this preparation nor a source syntax check represents full PASS."
+    "Draft PR: all four real GH gate jobs execute, without preflight. Ready PR: final-ready preflight runs AFTER each real gate, still refusing invalid attestations.",
+    "Main push: exact-merged-PR provenance validation remains mandatory before any job; direct Main push is denied.",
+    "Generic cloud evidence only runs on PR 'cloud-evidence' label; avoids automatic expensive seven-stage run on unrelated PRs.",
+    "Zero test files become NOT_RUN; populated selected families execute and nonzero status still fails.",
+    "Human approval/TTL absent in this source-only candidate; subsequent merge is NOT authorized by this commit."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -59,7 +60,7 @@
     "reason": "Direct Human request 2026-10-15 to immediately fix test-first deadlock and PR395-only runner; prepare candidate without opening a PR or merging.",
     "risk": "Removing pre-test Final Ready admission may allow CI to execute unapproved candidate source; PR checks run with read-only permissions and no release/deploy step, while independent Human final Merge remains mandatory. Real failures are never converted to PASS.",
     "owner": "Human merge approver; GPT candidate author and evidence reviewer",
-    "follow_up": "Run real checks on exact HEAD and BASE, record accurate NOT_RUN and any FAIL, conduct independent BCE and Human-authorized Merge separately; Sprint3 remains not closed until independently verified.",
+    "follow_up": "Real checks execute on every PR before Ready attestation; non-PR main provenance remains protected. Costly seven-stage evidence is explicit opt-in label only. No Human approval asserted; Sprint3 unaffected.",
     "affected_sprint": "SP-P1-003",
     "affected_tasks": [],
     "covered_gates": [

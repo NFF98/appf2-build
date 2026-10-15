@@ -2,7 +2,7 @@ name: CI Gate
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -21,6 +21,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Main-only merge provenance guard (PR tests never pre-blocked)
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -109,11 +114,11 @@ jobs:
         run: node harness/scripts/select-impacted-tests.mjs --run
 
 
-  # Non-required, generic GitHub-hosted real-command evidence. No Human approval is
-  # necessary to RUN tests. This job never approves, merges, or waives required GCCA.
+  # Non-required real cloud evidence runs only when the PR gets the 'cloud-evidence'
+  # label; no Human approval needed to execute, no unrequested seven-stage GH costs.
   cloud-evidence-admission:
     name: Cloud Evidence source binding (not GCCA)
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.labels.*.name, 'cloud-evidence') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 4
     permissions:
@@ -163,3 +168,8 @@ jobs:
           path: cloud-evidence/
           if-no-files-found: warn
           retention-days: 30
+      - name: Final Ready attestation AFTER real required checks (Ready PR only)
+        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh

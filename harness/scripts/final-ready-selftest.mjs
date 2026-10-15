@@ -98,15 +98,26 @@ const requiredWorkflows=[
 ];
 for(const [file,required] of requiredWorkflows){
   const source=readFileSync(".github/workflows/"+file,"utf8");
-  assert.ok(source.includes(required),"mandatory real gate missing: "+file);
-  assert.ok(!source.includes("run: bash harness/scripts/run-final-ready-preflight.sh"),
-    "Human Final Ready must NOT block actual safety tests: "+file);
+  const actual=source.indexOf(required);
+  const mainGuard=source.indexOf("- name: Main-only merge provenance guard");
+  const finalGuard=source.indexOf("- name: Final Ready attestation AFTER real required checks");
+  assert.ok(actual>mainGuard && mainGuard>=0,"mandatory real gate missing or wrong position: "+file);
+  assert.ok(finalGuard>actual,"Ready-only Human gate MUST run AFTER actual tests: "+file);
+  assert.ok(source.includes("if: ${{ github.event_name != 'pull_request' }}"),
+    "main provenance must remain fail-closed: "+file);
+  assert.ok(source.includes("if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}"),
+    "Ready-only attestation cannot block Draft testing: "+file);
+  assert.ok(source.includes("run: bash harness/scripts/run-final-ready-preflight.sh"),
+    "Final Ready/main branch provenance guard missing: "+file);
 }
 const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
 assert.ok(ciGeneric.includes("cloud-evidence-admission:") && ciGeneric.includes("cloud-evidence-mirror:"),
   "generic real-cloud evidence jobs missing");
 assert.ok(!ciGeneric.includes("github.event.pull_request.number == 395"),
   "cloud evidence must not be hardcoded to an old PR");
+assert.ok(ciGeneric.includes("ready_for_review, labeled") &&
+  ciGeneric.includes("contains(github.event.pull_request.labels.*.name, 'cloud-evidence')"),
+  "expensive cloud mirror must be explicitly opt-in and re-trigger on label");
 const genericRunner=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
 assert.ok(genericRunner.includes("Number.isSafeInteger(p.number)") &&
   genericRunner.includes("NOT_REQUIRED_TO_RUN_TESTS") && !genericRunner.includes("p.number===395"),
