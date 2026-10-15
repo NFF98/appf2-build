@@ -15,6 +15,8 @@ jobs:
   # Required security and functional gates run before Human Final Ready.
   # Final Ready/BCE still govern merge; they must not suppress genuine test results.
   governance:
+    env:
+      APPF2_GOV392_TEST_PHASE: '1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

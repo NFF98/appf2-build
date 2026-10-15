@@ -84,6 +84,41 @@ const checkWhy5=(d,errors)=>{
   fail(errors,valid,"five evidence-linked Why answers required");
 };
 
+// GOV-392 one-candidate *test-only* lane: a Draft PR can run genuine gates
+// without claiming Human authorization. This never applies to push/main and
+// never waives any byte, path, BASE, Five-Why or Product validation.
+export const GOV392_TEST_ONLY_BASE="8a471763ab762cf486e42dd9efd52d9195113a97";
+export const GOV392_TEST_ONLY_DOCKET="delivery/constitutional-cases/GOV-392-TEST-FIRST-001.json";
+export const GOV392_TEST_ONLY_PATHS=Object.freeze([
+  ".github/workflows/attack-dry-run.yml",
+  ".github/workflows/ci.yml",
+  ".github/workflows/cloud-evidence.yml",
+  ".github/workflows/codeql.yml",
+  ".github/workflows/governance-gate.yml",
+  "harness/scripts/final-ready-selftest.mjs",
+  "harness/scripts/select-impacted-tests.mjs",
+  "harness/scripts/validate-change-scope.mjs",
+  "harness/scripts/validate-constitutional-change.mjs",
+  "harness/scripts/w1-01-evidence-mirror.mjs"
+]);
+export function isGov392TestOnly({changed,base,root}){
+  if(process.env.GITHUB_EVENT_NAME!=="pull_request" ||
+    process.env.APPF2_GOV392_TEST_PHASE!=="1" ||
+    base!==GOV392_TEST_ONLY_BASE ||
+    !equal(sorted(changed),sorted([...GOV392_TEST_ONLY_PATHS,GOV392_TEST_ONLY_DOCKET]))) return false;
+  const errors=[];
+  const docket=loadDocket(root,GOV392_TEST_ONLY_DOCKET,errors);
+  if(!docket || errors.length || docket.case_id!=="GOV-392-TEST-FIRST-001" ||
+    docket.human_approval!==null ||
+    docket.approval_status!=="PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE" ||
+    docket.scope_exception?.lane!=="GOVERNANCE_REFORM" ||
+    !equal(docket.scope_exception?.covered_gates,["CHANGE_SCOPE"]) ||
+    docket.scope_exception?.never_converts_fail_or_untested_to_pass!==true) return false;
+  checkIdentity({docket,changed,casePath:GOV392_TEST_ONLY_DOCKET,base,root,errors});
+  checkWhy5(docket,errors);
+  return errors.length===0;
+}
+
 // PRE-PHASE4 (Human 2026-10-11): defer Ed25519 *administrative* signatures
 // and sequential R1-R5 approvals. Preserve exact diff/digest + Human decision
 // evidence and independent final PR merge. CI cannot independently prove
@@ -118,6 +153,10 @@ export function inspectConstitutionalChange({changed,base,cs,build,policy,root})
   if(!docket) return {errors,constitutional:true,bootstrap:false};
   const digest=checkIdentity({docket,changed,casePath:cases[0],base,root,errors});
   checkWhy5(docket,errors);
+  if(isGov392TestOnly({changed,base,root})){
+    // Structural test verdict only. Human approval is still PENDING.
+    return {errors,constitutional:true,bootstrap:false,pendingHumanApproval:true};
+  }
   checkManualHumanApproval(docket,digest,errors);
   return {errors,constitutional:true,bootstrap:false};
 }
@@ -171,6 +210,46 @@ const testManualApprovalCase=()=>{
   }finally{fs.rmSync(root,{recursive:true,force:true});}
 };
 
+
+// Synthetic negative and positive tests for the bounded GOV-392 lane.
+const testGov392TestOnly=()=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-gov392-test-only-"));
+  const savedEvent=process.env.GITHUB_EVENT_NAME, savedPhase=process.env.APPF2_GOV392_TEST_PHASE;
+  const changed=[...GOV392_TEST_ONLY_PATHS,GOV392_TEST_ONLY_DOCKET];
+  const save=(p,b)=>{const dest=path.join(root,p);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,b);};
+  try{
+    for(const p of GOV392_TEST_ONLY_PATHS) save(p,"fixture-for-"+p);
+    const docket={case_id:"GOV-392-TEST-FIRST-001",base_sha:GOV392_TEST_ONLY_BASE,
+      constitution_version:"1.0",exact_changed_paths:[...GOV392_TEST_ONLY_PATHS],
+      candidate_digest_sha256:contentDigest(root,GOV392_TEST_ONLY_PATHS),
+      why5:Array.from({length:5},(_,i)=>({question:"Why"+i,answer:"Evidence verified",evidence_ref:"CASE-"+i})),
+      approval_status:"PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE",human_approval:null,
+      scope_exception:{lane:"GOVERNANCE_REFORM",covered_gates:["CHANGE_SCOPE"],never_converts_fail_or_untested_to_pass:true}};
+    save(GOV392_TEST_ONLY_DOCKET,JSON.stringify(docket));
+    process.env.GITHUB_EVENT_NAME="pull_request";process.env.APPF2_GOV392_TEST_PHASE="1";
+    const args={changed,base:GOV392_TEST_ONLY_BASE,root};
+    if(!isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: exact Draft shape rejected");
+    if(isGov392TestOnly({...args,changed:[...changed,"src/rogue.ts"]}))
+      throw Error("GOV392 TEST ONLY: rogue Product path admitted");
+    if(isGov392TestOnly({...args,base:"b".repeat(40)}))
+      throw Error("GOV392 TEST ONLY: stale BASE admitted");
+    process.env.GITHUB_EVENT_NAME="push";
+    if(isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: main push admitted");
+    process.env.GITHUB_EVENT_NAME="pull_request";
+    save(GOV392_TEST_ONLY_PATHS[0],"tampered bytes");
+    if(isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: changed bytes admitted");
+    save(GOV392_TEST_ONLY_PATHS[0],"fixture-for-"+GOV392_TEST_ONLY_PATHS[0]);
+    docket.human_approval={source_kind:"BOT"};
+    save(GOV392_TEST_ONLY_DOCKET,JSON.stringify(docket));
+    if(isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: synthetic approval admitted");
+    return 6;
+  }finally{
+    savedEvent===undefined?delete process.env.GITHUB_EVENT_NAME:process.env.GITHUB_EVENT_NAME=savedEvent;
+    savedPhase===undefined?delete process.env.APPF2_GOV392_TEST_PHASE:process.env.APPF2_GOV392_TEST_PHASE=savedPhase;
+    fs.rmSync(root,{recursive:true,force:true});
+  }
+};
+
 export function testConstitutionFailClosed(){
   const basic={
     base:CONSTITUTION_GENESIS_BASE,changed:[...CONSTITUTION_BOOTSTRAP_FILES],
@@ -204,5 +283,5 @@ export function testConstitutionFailClosed(){
   });
   expect(!routine.constitutional && !routine.errors.length,
     "ordinary control record keeps existing independent governance gates");count++;
-  return count+testManualApprovalCase();
+  return count+testManualApprovalCase()+testGov392TestOnly();
 }

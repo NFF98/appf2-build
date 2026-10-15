@@ -171,3 +171,18 @@ assert.ok(mirrorStatusSource.includes("const notRunCommands=") &&
   "cloud manifest must include completed-but-NOT_RUN Product CI and unexecuted remaining stages");
 console.log("Cloud NOT_RUN manifest completeness: PASS (static, NOT actual cloud execution).");
 
+
+// GOV-392 structural test-only phase MUST NOT claim Human approval or alter
+// protected Main, and is only for the exact candidate BASE/path/byte digest.
+for(const wf of [".github/workflows/ci.yml",".github/workflows/governance-gate.yml"]){
+  const source=readFileSync(wf,"utf8");
+  assert.ok(source.includes("APPF2_GOV392_TEST_PHASE: '1'"),
+    "exact test-only lane missing in "+wf);
+}
+const constitutionalSource=readFileSync("harness/scripts/validate-constitutional-change.mjs","utf8");
+const scopeSource=readFileSync("harness/scripts/validate-change-scope.mjs","utf8");
+assert.ok(constitutionalSource.includes("isGov392TestOnly") &&
+  constitutionalSource.includes("pendingHumanApproval:true") &&
+  scopeSource.includes("gov392MissingApprovalOnly") &&
+  scopeSource.includes("PENDING_HUMAN_APPROVAL"),
+  "test-only must keep exact structural validation without invented Human approval");
