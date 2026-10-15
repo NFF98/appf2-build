@@ -123,3 +123,11 @@ assert.ok(genericRunner.includes("Number.isSafeInteger(p.number)") &&
   genericRunner.includes("NOT_REQUIRED_TO_RUN_TESTS") && !genericRunner.includes("p.number===395"),
   "generic cloud runner must accept all same-repository draft PRs");
 console.log("Required real GitHub gates are test-first and evidence runner accepts all PRs: PASS (static).");
+
+const evidenceSource=readFileSync("harness/scripts/w1-01-evidence-mirror.mjs","utf8");
+assert.ok(evidenceSource.includes('fs.mkdirSync("cloud-evidence"') &&
+  evidenceSource.includes('"cloud-evidence/raw-evidence-manifest.json"') &&
+  evidenceSource.includes('"cloud-evidence/source.json"') &&
+  !evidenceSource.includes('"w1-01-evidence/'),
+  "cloud evidence source and manifest must use the same existing directory");
+console.log("Cloud evidence artifact paths: PASS (static, NOT real cloud execution).");

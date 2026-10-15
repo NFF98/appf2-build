@@ -12,7 +12,7 @@
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "480b2b9638deefbb987fa298a37a62230ffaa1ed621c6f807898f163ae89ea00",
+  "candidate_digest_sha256": "12fc95897210c3f072d129ca03ceb851b2a4891bfea8984080c8036ea3487764",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -52,7 +52,8 @@
     "Main push: exact-merged-PR provenance validation remains mandatory before any job; direct Main push is denied.",
     "Generic cloud evidence only runs on PR 'cloud-evidence' label; avoids automatic expensive seven-stage run on unrelated PRs.",
     "Zero test files become NOT_RUN; populated selected families execute and nonzero status still fails.",
-    "Human approval/TTL absent in this source-only candidate; subsequent merge is NOT authorized by this commit."
+    "Human approval/TTL absent in this source-only candidate; subsequent merge is NOT authorized by this commit.",
+    "Cloud mirror save()/source.json output paths exactly match its created cloud-evidence/ directory and upload-artifact path."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",

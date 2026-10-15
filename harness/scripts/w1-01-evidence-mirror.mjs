@@ -121,7 +121,7 @@ const buildManifest=a=>({
   prior_human_approval_required:false,merge_authorized:false,
   stages:[],not_run:jobs.map(j=>j[0]),verdict:"NOT_ADMITTED"
 });
-const save=m=>fs.writeFileSync("w1-01-evidence/raw-evidence-manifest.json",
+const save=m=>fs.writeFileSync("cloud-evidence/raw-evidence-manifest.json",
   JSON.stringify(m,null,2)+"\n");
 async function executeAll(m,a){
   for(let i=0;i<jobs.length;i++){
@@ -141,7 +141,7 @@ async function runMirror(a){
   fs.mkdirSync("cloud-evidence",{recursive:true});
   const m=buildManifest(a);save(m);
   if(!a.ok){process.exitCode=2;return;}
-  fs.writeFileSync("w1-01-evidence/source.json",JSON.stringify(a,null,2)+"\n");
+  fs.writeFileSync("cloud-evidence/source.json",JSON.stringify(a,null,2)+"\n");
   await executeAll(m,a);finish(m);
 }
 async function main(){
