@@ -114,6 +114,14 @@ const ciGeneric=readFileSync(".github/workflows/ci.yml","utf8");
 const ciRequiredJob=ciGeneric.slice(ciGeneric.indexOf("\n  ci:\n"),
   ciGeneric.indexOf("\n  fast-loop:\n"));
 const ciEvidenceJob=ciGeneric.slice(ciGeneric.indexOf("\n  cloud-evidence-mirror:\n"));
+assert.ok(ciRequiredJob.indexOf("- name: Install locked dependencies")>=0 &&
+  ciRequiredJob.indexOf("- name: Repository lint")>ciRequiredJob.indexOf("- name: Install locked dependencies") &&
+  ciRequiredJob.indexOf("- name: Product CI")>ciRequiredJob.indexOf("- name: Repository lint") &&
+  ciRequiredJob.indexOf("- name: Governance / traceability gates")>ciRequiredJob.indexOf("- name: Product CI") &&
+  ciRequiredJob.indexOf("- name: Final Ready attestation AFTER real required checks")>
+    ciRequiredJob.indexOf("- name: Governance / traceability gates"),
+  "CI must execute genuine dependency/lint/Product checks before Human-bound governance");
+
 assert.ok(ciRequiredJob.includes("- name: Final Ready attestation AFTER real required checks") &&
   !ciEvidenceJob.includes("- name: Final Ready attestation AFTER real required checks"),
   "Required CI must own its Ready guard; optional cloud evidence may not own it");

@@ -12,7 +12,7 @@
     "harness/scripts/select-impacted-tests.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "638c001a75b9a68779a6ef0d2ff0071973a504c6a8fb4c1e568642ef97bde8ad",
+  "candidate_digest_sha256": "135755157f86c08716150ab0335d1c8f3d00c38c0550ff077d71658385a36e97",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -54,7 +54,8 @@
     "Zero test files become NOT_RUN; populated selected families execute and nonzero status still fails.",
     "Human approval/TTL absent in this source-only candidate; subsequent merge is NOT authorized by this commit.",
     "Cloud mirror save()/source.json output paths exactly match its created cloud-evidence/ directory and upload-artifact path.",
-    "Required CI job owns its Ready-only Final Ready guard; cloud evidence job does not, avoiding false pass from textual grep across jobs."
+    "Required CI job owns its Ready-only Final Ready guard; cloud evidence job does not, avoiding false pass from textual grep across jobs.",
+    "Required CI orders npm ci, lint and Product CI BEFORE Human-bound governance/constitutional gates; governance still fails closed on a missing Human decision, but no longer suppresses earlier test results."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
