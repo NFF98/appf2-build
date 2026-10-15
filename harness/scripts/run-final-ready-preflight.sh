@@ -21,8 +21,9 @@ case "$event" in
     }
     gh api "repos/$repo/issues/$number/comments?per_page=100" --paginate --slurp >"$tmp/comments.json"
     gh api "repos/$repo/commits/$head/check-runs?per_page=100" >"$tmp/checks.json"
+    gh api "repos/$repo/pulls/$number/files?per_page=100" --paginate --slurp >"$tmp/changed-files.json"
     node harness/scripts/final-ready-preflight.mjs --event "$event_file" --live-pr "$tmp/live-pr.json" \
-      --comments "$tmp/comments.json" --checks "$tmp/checks.json"
+      --comments "$tmp/comments.json" --checks "$tmp/checks.json" --changed-files "$tmp/changed-files.json"
     ;;
   push)
     gh api "repos/$repo/commits/$sha/pulls?per_page=100" --paginate --slurp >"$tmp/associated-prs.json"

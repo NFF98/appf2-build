@@ -8,19 +8,20 @@ const event={pull_request:{number:395,head:{sha:HEAD},base:{sha:BASE},draft:fals
 const r=(kind)=>({schema:READY_SCHEMA,kind,pr_number:395,head_sha:HEAD,base_sha:BASE,
   verdict:kind==="HUMAN_FINAL_READY"?"APPROVED":"PASS"});
 const local={...r("LOCAL_TESTS"),lock_sha256:D,environment:"node v22, npm ci, Linux x64",
-  test_runs:["npm run check:lint","npm run gate","npm run dry-run:attack",
-    "node harness/scripts/final-ready-selftest.mjs"].map(command=>({command,status:"PASS",exit_code:0,
+  test_runs:["npm ci","npm run check:lint","npm run gate","npm run dry-run:attack",
+    "npm run product:ci","node harness/scripts/final-ready-selftest.mjs"].map(command=>({command,status:"PASS",exit_code:0,
       log_url:u,log_sha256:D,node_version:"v22.23.3",completed_at:"2026-10-15T00:00:00Z"}))};
 const bce={...r("GPT_BCE"),scope_verdict:"PASS",execution_evidence_verdict:"PASS",
   reviewer_role:"GPT_INDEPENDENT",independent_review_note:"synthetic review not authority",
   review_url:u,review_sha256:D};
 const human={...r("HUMAN_FINAL_READY"),decision:"APPROVE_FINAL_INTEGRATION_READY",
-  approver:"NFF98",candidate_sha256:D,human_provenance_manual_check_required:true};
+  approver:"NFF98",candidate_sha256:D,human_provenance_manual_check_required:true,
+  protected_change_acknowledged:true};
 const mk=(record,id)=>({id,body:READY_MARKER+"\n"+JSON.stringify(record),user:{login:"NFF98",type:"User"},
   author_association:"OWNER",created_at:"2026-10-15T00:00:00Z",updated_at:"2026-10-15T00:00:00Z"});
 const comments=[mk(local,1),mk(bce,2),mk(human,3)];
 const checks={check_runs:[{name:"fast-loop",head_sha:HEAD,status:"completed",conclusion:"success"}]};
-const check=(change={},want=true)=>{const x={event,live,comments,checks,repo:REPO,...change};assert.equal(inspectPrReadiness(x).ok,want);};
+const check=(change={},want=true)=>{const x={event,live,comments,checks,changedFiles:[],repo:REPO,...change};assert.equal(inspectPrReadiness(x).ok,want);};
 check();
 check({live:{...live,draft:true}},false);
 check({event:{pull_request:{...event.pull_request,head:{sha:BASE}}}},false);
@@ -35,6 +36,10 @@ check({comments:[mk(local,1),mk(bce,2),mk({...human,decision:"NONE"},3)]},false)
 check({comments:[mk(local,1),mk(bce,2),{...mk(human,3),user:{login:"github-actions[bot]",type:"Bot"}}]},false);
 check({comments:[mk(local,1),{...mk(bce,2),updated_at:"2026-10-15T01:00:00Z"},mk(human,3)]},false);
 check({comments:[mk(local,1),mk(bce,2),mk(human,3),mk(human,4)]},false);
+check({changedFiles:[[{filename:".github/workflows/ci.yml"},{filename:"harness/scripts/final-ready-preflight.mjs"}]],
+  comments:[mk(local,1),mk(bce,2),mk({...human,protected_change_acknowledged:false},3)]},false);
+check({changedFiles:[[{filename:".github/workflows/ci.yml"},{filename:"harness/scripts/final-ready-preflight.mjs"}]]},true);
+check({changedFiles:null},false);
 check({checks:{check_runs:[{name:"fast-loop",head_sha:HEAD,status:"completed",conclusion:"skipped"}]}},false);
 check({checks:{check_runs:[]}},false);
 check({comments:comments.map(x=>({...x,body:"PR body checkbox PASS"}))},false);
@@ -52,4 +57,4 @@ for(const v of ["failure","skipped","neutral"]){
   assert.equal(bceCiConsistency({head:HEAD,checks:required.map((x,i)=>run(x,i?v:"success")),required,bcePass:true}).reason,"BCE_CI_MISMATCH");
 }
 assert.equal(bceCiConsistency({head:HEAD,checks:[],required,bcePass:true}).reason,"BCE_CI_MISMATCH");
-console.log("FINAL READY synthetic positive/negative: 27 PASS (NOT Human approval or real local PASS).");
+console.log("FINAL READY synthetic positive/negative: PASS (NOT Human approval or real local PASS).");

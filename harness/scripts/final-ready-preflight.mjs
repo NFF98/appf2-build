@@ -8,8 +8,8 @@ import { finalGateVerdict } from "./task-pr-lifecycle.mjs";
 export const READY_MARKER="[APPF2-FINAL-READY-V1]";
 export const READY_SCHEMA="APPF2-FINAL-READY-V1";
 export const REQUIRED_LOCAL=[
-  "npm run check:lint","npm run gate","npm run dry-run:attack",
-  "node harness/scripts/final-ready-selftest.mjs"
+  "npm ci","npm run check:lint","npm run gate","npm run dry-run:attack",
+  "npm run product:ci","node harness/scripts/final-ready-selftest.mjs"
 ];
 const HEX40=/^[0-9a-f]{40}$/, HEX64=/^[0-9a-f]{64}$/;
 const KINDS=["LOCAL_TESTS","GPT_BCE","HUMAN_FINAL_READY"];
@@ -121,6 +121,12 @@ const prMetadataErrors=(event,live,repo)=>{
     "unexpected PR base or fork",e);
   return e;
 };
+const stageEvidenceErrors=(x,ctx)=>{
+  if(x.record.kind==="LOCAL_TESTS") return localEvidenceErrors(x.record,ctx);
+  if(x.record.kind==="GPT_BCE") return bceEvidenceErrors(x.record,ctx);
+  if(x.record.kind==="HUMAN_FINAL_READY") return humanEvidenceErrors(x.record,x.comment,ctx);
+  return ["unknown readiness stage"];
+};
 const currentReadinessErrors=({comments,ctx})=>{
   const decoded=safeArray(comments).flat().map(comment=>({comment,record:parseReadinessComment(comment)}))
     .filter(x=>x.record!==null);
@@ -128,18 +134,29 @@ const currentReadinessErrors=({comments,ctx})=>{
   const errors=[...e,...orderErrors(current)];
   for(const x of current){
     if(x.record.invalid){errors.push("malformed readiness proof");continue;}
-    errors.push(...commonErrors(x.comment,x.record,ctx));
-    if(x.record.kind==="LOCAL_TESTS") errors.push(...localEvidenceErrors(x.record,ctx));
-    if(x.record.kind==="GPT_BCE") errors.push(...bceEvidenceErrors(x.record,ctx));
-    if(x.record.kind==="HUMAN_FINAL_READY") errors.push(...humanEvidenceErrors(x.record,x.comment,ctx));
+    errors.push(...commonErrors(x.comment,x.record,ctx),...stageEvidenceErrors(x,ctx));
   }
   return errors;
 };
+const protectedChangeErrors=(files,comments,head)=>{
+  if(!Array.isArray(files)) return ["protected changed-file inventory is unavailable"];
+  const changed=files.flat().map(x=>x?.filename).filter(nonEmpty);
+  if(changed.length!==files.flat().length) return ["protected changed-file inventory malformed"];
+  const workflowChanged=changed.some(x=>x.startsWith(".github/workflows/"));
+  const gateChanged=changed.some(x=>x==="harness/scripts/final-ready-preflight.mjs" ||
+    x==="harness/scripts/run-final-ready-preflight.sh");
+  if(!workflowChanged || !gateChanged) return [];
+  const human=comments.flat().map(parseReadinessComment)
+    .find(r=>r?.head_sha===head && r.kind==="HUMAN_FINAL_READY");
+  return human?.protected_change_acknowledged===true?[]:
+    ["protected workflow and admission gate changed together without Human explicit acknowledgment"];
+};
 /** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
-export function inspectPrReadiness({event,live,comments,checks,repo}){
+export function inspectPrReadiness({event,live,comments,checks,changedFiles,repo}){
   const errors=prMetadataErrors(event,live,repo),head=live?.head?.sha,base=live?.base?.sha;
   const ctx={head,base,live,repo,owner:repo.split("/")[0]};
-  errors.push(...currentReadinessErrors({comments,ctx}),...fastLoopErrors(checks,head));
+  errors.push(...currentReadinessErrors({comments,ctx}),...fastLoopErrors(checks,head),
+    ...protectedChangeErrors(changedFiles,comments,head));
   return {ok:errors.length===0,head,errors,manual_provenance_required:true};
 }
 /** On push, require an associated merged PR: a direct main push cannot greenwash gates. */
@@ -169,7 +186,7 @@ function main(argv){
   if(eventName==="pull_request"){
     const live=readJsonFile(val("live-pr"));
     result=inspectPrReadiness({event,live,comments:readJsonFile(val("comments")),
-      checks:readJsonFile(val("checks")),repo});
+      checks:readJsonFile(val("checks")),changedFiles:readJsonFile(val("changed-files")),repo});
   }else{
     result=inspectNonPrInvocation({eventName,ref:process.env.GITHUB_REF,
       sha:process.env.GITHUB_SHA,associatedPrs:val("associated-prs")?readJsonFile(val("associated-prs")):[]});
