@@ -23,7 +23,7 @@
     "harness/scripts/validate-special-approvals-and-carry-forward.mjs",
     "harness/scripts/validate-sprint.mjs"
   ],
-  "candidate_digest_sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
+  "candidate_digest_sha256": "eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1",
   "why5": [
     {
       "question": "為什麼 Sprint3（SP-P1-003）無法結案？",
@@ -87,7 +87,7 @@
       "CHANGE_SCOPE"
     ],
     "expires_at_unix": 1793188993,
-    "expires_at_rule": "Expiry 2026-10-28T12:03:13Z is within 14 days after 2026-10-15T01:21:01Z conditional direct Human chat decision (GPT transcription in PR #395; Human verification mandatory). This is not an SSH signer, cryptographic signature or watcher lease."
+    "expires_at_rule": "Previous exact-candidate Human decision was bound to superseded bytes. A fresh Human candidate approval, approval timestamp and valid TTL are REQUIRED; no interim signature or WATCHER installation is mandated."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -102,7 +102,8 @@
     "GitHub 共享 OWNER 帳號無法在機器上區分真人與使用相同授權的 GPT/Codex；已收到直接 Chat 條件式精確候選批准並由 GPT 轉錄，Human 必須親自確認該來源。Final Ready、Merge、Sprint3 結案仍 PENDING。",
     "Human direct Chat 2026-10-15 decision is transcribed by GPT at https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765; this GitHub comment is not Human-authored, not independently authenticatable, and not an electronic signature. Human must verify original direct decision and final HEAD before merge.",
     "2026-10-15 BCE found stale successful fast-loop could mask a newer failed attempt on same HEAD; repaired with greatest check-run id fail-closed and synthetic negative regressions. Earlier Human exact candidate approval invalidated. Actual full local mirror and independent test logs still pending.",
-    "Test log URL/hash validation is structural only; requires specific job/comment and per-command HEAD/BASE binding, while independent BCE must verify raw linked logs and SHA256. No automatic cryptographic authentication of shared owner account."
+    "Test log URL/hash validation is structural only; requires specific job/comment and per-command HEAD/BASE binding, while independent BCE must verify raw linked logs and SHA256. No automatic cryptographic authentication of shared owner account.",
+    "Candidate digest eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 is computed from GitHub Actions 2026-10-15 on the 17 exact non-docket paths; full Local mirror, independent BCE execution evidence, Human Final Ready and four full GCCA checks still NOT_RUN/NOT_READY."
   ],
   "approval_status": "PENDING_NEW_HUMAN_EXACT_CANDIDATE_APPROVAL_POST_BCE_REPAIR",
   "human_approval": null,
