@@ -87,7 +87,7 @@
       "CHANGE_SCOPE"
     ],
     "expires_at_unix": 1793188993,
-    "expires_at_rule": "Previous exact-candidate Human decision was bound to superseded bytes. A fresh Human candidate approval, approval timestamp and valid TTL are REQUIRED; no interim signature or WATCHER installation is mandated."
+    "expires_at_rule": "Within 14-day TTL of the 2026-10-15T01:41:13Z GPT-transcribed direct Human chat exact-candidate decision, reference https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952. Chat speaker origin requires direct Human manual verification; no cryptographic signature or WATCHER authorization asserted."
   },
   "carry_forward": {
     "zero_gap": true,
@@ -103,10 +103,20 @@
     "Human direct Chat 2026-10-15 decision is transcribed by GPT at https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765; this GitHub comment is not Human-authored, not independently authenticatable, and not an electronic signature. Human must verify original direct decision and final HEAD before merge.",
     "2026-10-15 BCE found stale successful fast-loop could mask a newer failed attempt on same HEAD; repaired with greatest check-run id fail-closed and synthetic negative regressions. Earlier Human exact candidate approval invalidated. Actual full local mirror and independent test logs still pending.",
     "Test log URL/hash validation is structural only; requires specific job/comment and per-command HEAD/BASE binding, while independent BCE must verify raw linked logs and SHA256. No automatic cryptographic authentication of shared owner account.",
-    "Candidate digest eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 is computed from GitHub Actions 2026-10-15 on the 17 exact non-docket paths; full Local mirror, independent BCE execution evidence, Human Final Ready and four full GCCA checks still NOT_RUN/NOT_READY."
+    "Candidate digest eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 is computed from GitHub Actions 2026-10-15 on the 17 exact non-docket paths; full Local mirror, independent BCE execution evidence, Human Final Ready and four full GCCA checks still NOT_RUN/NOT_READY.",
+    "2026-10-15 user's direct Chat instruction approves exact candidate eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1 for verification only. GPT transcript: https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952 (not Human-authored GitHub comment). Previous superseded digests remain historical. Independent BCE execution review, Final Ready, full GCCA and separate Merge approval pending."
   ],
-  "approval_status": "PENDING_NEW_HUMAN_EXACT_CANDIDATE_APPROVAL_POST_BCE_REPAIR",
-  "human_approval": null,
+  "approval_status": "HUMAN_CHAT_EXACT_CANDIDATE_APPROVED_ONLY_TESTS_BCE_AND_FINAL_READY_PENDING",
+  "human_approval": {
+    "case_id": "GOV-392-CARRY-FORWARD-001",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182429952",
+    "approver": "NFF98",
+    "approved_at_unix": 1792028473,
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "eff2547929db8bffa970dd140c1d16cae9386b2ee8e605d941977db7dfa0ffe1"
+  },
   "historical_candidate_approval": {
     "sha256": "1e998af60bf8e4a64293117d2830025059ea74c999ae434338a8a2878253b288",
     "ref": "https://github.com/NFF98/appf2-build/pull/395#issuecomment-6182182765",
