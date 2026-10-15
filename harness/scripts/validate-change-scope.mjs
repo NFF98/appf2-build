@@ -886,7 +886,7 @@ if(isAdminClosureAttempt({changed,readBaseJson:showBaseJson,readHeadJson})){
   };
   const baseDocketDigests=new Set();
   if(baseSha && !/^0+$/.test(baseSha)){
-    let names=[];
+    let names;
     try{names=execFileSync("git",["ls-tree","--name-only",baseSha,ADMIN_CLOSE_DOCKET_DIR],{encoding:"utf8",stdio:["ignore","pipe","ignore"]}).trim().split("\n").filter(Boolean);}
     catch{names=[];}
     for(const rel of names){const d=showBaseJson(rel); if(d?.candidate_digest_sha256) baseDocketDigests.add(d.candidate_digest_sha256);}

@@ -781,8 +781,9 @@ function writeExceptionDocket(id,{base,paths,lane="GOVERNANCE_REFORM",scope={},m
     case_id:id,base_sha:base,constitution_version:"1.0",
     why5:[1,2,3,4,5].map(i=>({question:"dry-run why "+i,evidence_ref:"DRYRUN-EVIDENCE-"+i,answer:"dry-run answer "+i})),
     exact_changed_paths:[...paths].sort(),candidate_digest_sha256:digest,
+    carry_forward:{zero_gap:true,justification:"Synthetic governance-only scope fixture has no deferred Acceptance or carry-forward obligations."},
     scope_exception:{schema:"APPF2-HUMAN-EXCEPTION-1",lane,reason:"dry-run",risk:"dry-run",owner:"Human",
-      follow_up:"none",residual_gaps:["dry-run only"],never_converts_fail_or_untested_to_pass:true,
+      follow_up:"none",residual_gaps:["NONE"],never_converts_fail_or_untested_to_pass:true,
       affected_sprint:"SP-P9-001",affected_tasks:[],covered_gates:["CHANGE_SCOPE"],expires_at_unix:now+3600,...scope},
     human_approval:{case_id:id,source_kind:"DIRECT_HUMAN_MESSAGE",decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",
       candidate_digest_sha256:digest,human_message_ref:"DRYRUN-HUMAN-DECISION-REF",approver:"NFF98",approved_at_unix:now-60}

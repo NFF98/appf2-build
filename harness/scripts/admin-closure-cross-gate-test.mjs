@@ -42,10 +42,10 @@ async function buildFixture(repo,base,variant){
   const td=read(P.tasks),m=read(P.manifest),queue=read("delivery/backlog/QUEUE.json");
   const task=id=>td.tasks.find(t=>t.task_id===id);
   const decision={case_id:CASE,human_message_ref:FIXTURE_REF,approved_at_unix:now-60,expires_at_unix:null};
-  const gap=(id,title,status,source,acceptance,reason,criterion)=>({
+  const gap=(id,title,status,source,...details)=>({
     row_schema:CARRY_FORWARD_SCHEMA,id,title,status,source:{...source,refs:[DOCKET,"https://github.com/NFF98/appf2-build/issues/392"]},
-    acceptance,human_decision:decision,waived_gate:null,reason,risk:"Unverified scope could be mistaken for shipped Product behaviour.",
-    owner:"Human + Planning",next_phase:{target:"PENDING_PRODUCT_ALIGNMENT",decided_by_human:false},completion_criterion:criterion,
+    acceptance:details[0],human_decision:decision,waived_gate:null,reason:details[1],risk:"Unverified scope could be mistaken for shipped Product behaviour.",
+    owner:"Human + Planning",next_phase:{target:"PENDING_PRODUCT_ALIGNMENT",decided_by_human:false},completion_criterion:details[2],
     history:[{at_unix:now-60,event:"REGISTERED_AT_ADMINISTRATIVE_CLOSURE",ref:DOCKET}],resolution:null
   });
   const t006=task("T006").acceptance_links.find(l=>l.acceptance_id==="F00-AC-037");
@@ -112,6 +112,11 @@ function prepareClone(root,tmp){
   return {repo,srcHead,overlay,base:git(repo,"rev-parse","HEAD")};
 }
 
+function finalReport(notComplete,failures){
+  if(notComplete){console.log("XGATE cross-gate administrative closure: NOT_COMPLETE (time limit reached before "+notComplete+")");process.exit(2);}
+  console.log("XGATE cross-gate administrative closure: "+(failures.length?"FAIL "+failures.join(","):CASES.length+"/"+CASES.length+" PASS (synthetic fixtures, NOT Human approval)"));
+  process.exit(failures.length?1:0);
+}
 async function main(){
   const root=process.cwd(),tmp=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-gov392-xgate-"));
   const failures=[];
@@ -138,8 +143,6 @@ async function main(){
   }finally{
     fs.rmSync(tmp,{recursive:true,force:true,maxRetries:3});
   }
-  if(notComplete){console.log("XGATE cross-gate administrative closure: NOT_COMPLETE (time limit reached before "+notComplete+")");process.exit(2);}
-  console.log("XGATE cross-gate administrative closure: "+(failures.length?"FAIL "+failures.join(","):CASES.length+"/"+CASES.length+" PASS (synthetic fixtures, NOT Human approval)"));
-  process.exit(failures.length?1:0);
+  finalReport(notComplete,failures);
 }
 await main();

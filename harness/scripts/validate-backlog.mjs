@@ -505,7 +505,8 @@ const t008ReviewOrderDisposed=()=>{
   if(historical.valid) console.log("- BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED: T008 REVIEW frozen by administratively CLOSED SP-P1-003 (carried forward, not Product PASS).");
   return historical.valid;
 };
-function checkT006T008Order(t006,t008,items,baseline,closeOrderWaived=false,reviewOrderDisposed=false) {
+function checkT006T008Order(t006,t008,items,baseline,flags={}) {
+  const {closeOrderWaived=false,reviewOrderDisposed=false}=flags;
   const errors=t006T008PreclosureErrors(t006,t008,baseline,closeOrderWaived,reviewOrderDisposed);
   return t006?.status==="CLOSED" ? errors.concat(t006FinalClosureErrors(t008,items,baseline)) : errors;
 }
@@ -542,7 +543,7 @@ function testT006T008Order() {
     ["BS026 closed exact bindings",true,x=>{x.baseline="BS-P1-026";for(const i of x.items)i.revalidation.target_build_spec_id=x.baseline;return x;}],
     ["BS026 stale target must fail",false,x=>{x.baseline="BS-P1-026";return x;}]
   ];
-  for(const [name,shouldPass,modify] of cases){const x=modify(base());const actual=checkT006T008Order(x.t006,x.t008,x.items,x.baseline||"BS-P1-025",x.waived===true,x.frozen===true).length===0;if(actual!==shouldPass)throw Error("T006/T008 order guard synthetic regression FAILED: "+name);}
+  for(const [name,shouldPass,modify] of cases){const x=modify(base());const actual=checkT006T008Order(x.t006,x.t008,x.items,x.baseline||"BS-P1-025",{closeOrderWaived:x.waived===true,reviewOrderDisposed:x.frozen===true}).length===0;if(actual!==shouldPass)throw Error("T006/T008 order guard synthetic regression FAILED: "+name);}
   return cases.length;
 }
 
@@ -551,7 +552,7 @@ if(t006T008PermittedBaselines.has(current.active_baseline) &&
   const tasks=read("delivery/sprints/SP-P1-003/tasks.json").tasks||[];
   const t006=tasks.find(x=>x.task_id==="T006");
   const t008=tasks.find(x=>x.task_id==="T008");
-  for(const e of checkT006T008Order(t006,t008,queue.items||[],current.active_baseline,t008CloseOrderWaived(),t008ReviewOrderDisposed())){
+  for(const e of checkT006T008Order(t006,t008,queue.items||[],current.active_baseline,{closeOrderWaived:t008CloseOrderWaived(),reviewOrderDisposed:t008ReviewOrderDisposed()})){
     errors.push("SP-P1-003 BS025 T006/T008 closure order: "+e);
   }
 }
