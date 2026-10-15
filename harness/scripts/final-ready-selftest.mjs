@@ -21,7 +21,7 @@ const mk=(record,id)=>({id,body:READY_MARKER+"\n"+JSON.stringify(record),user:{l
   author_association:"OWNER",created_at:"2026-10-15T00:00:00Z",updated_at:"2026-10-15T00:00:00Z"});
 const comments=[mk(local,1),mk(bce,2),mk(human,3)];
 const checks={check_runs:[{name:"fast-loop",head_sha:HEAD,status:"completed",conclusion:"success"}]};
-const check=(change={},want=true)=>{const x={event,live,comments,checks,changedFiles:[],repo:REPO,...change};assert.equal(inspectPrReadiness(x).ok,want);};
+const check=(change={},want=true)=>{const x={event,live,comments,checks,changedFiles:[],candidateDigest:D,repo:REPO,...change};assert.equal(inspectPrReadiness(x).ok,want);};
 check();
 check({live:{...live,draft:true}},false);
 check({event:{pull_request:{...event.pull_request,head:{sha:BASE}}}},false);
@@ -40,6 +40,9 @@ check({changedFiles:[[{filename:".github/workflows/ci.yml"},{filename:"harness/s
   comments:[mk(local,1),mk(bce,2),mk({...human,protected_change_acknowledged:false},3)]},false);
 check({changedFiles:[[{filename:".github/workflows/ci.yml"},{filename:"harness/scripts/final-ready-preflight.mjs"}]]},true);
 check({changedFiles:null},false);
+check({candidateDigest:"e".repeat(64)},false);
+check({comments:[mk(local,1),mk(bce,2),mk({...human,candidate_sha256:"0".repeat(64)},3)]},false);
+check({comments:[mk({...local,test_runs:local.test_runs.map((x,i)=>i?x:{...x,log_url:"https://github.com/FAKE/appf2-build/issues/392"})},1),mk(bce,2),mk(human,3)]},false);
 check({checks:{check_runs:[{name:"fast-loop",head_sha:HEAD,status:"completed",conclusion:"skipped"}]}},false);
 check({checks:{check_runs:[]}},false);
 check({comments:comments.map(x=>({...x,body:"PR body checkbox PASS"}))},false);

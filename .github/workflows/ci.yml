@@ -75,6 +75,21 @@ jobs:
         run: npm ci
       - name: Final Ready exact-HEAD synthetic attack and positive tests (not Human approval)
         run: node harness/scripts/final-ready-selftest.mjs
+      - name: Exact candidate digest preview (informational, NOT approval)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import {execFileSync} from "node:child_process";
+            import {candidateDigestOf} from "./harness/scripts/final-ready-preflight.mjs";
+            const files=execFileSync("git",["diff","--name-only",process.env.BASE_SHA,"HEAD"],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
+            const digest=candidateDigestOf(files.map(filename=>({filename})),rel=>fs.readFileSync(rel));
+            if(!digest) process.exit(1);
+            console.log("EXACT_CANDIDATE_BASE="+process.env.BASE_SHA);
+            console.log("EXACT_CANDIDATE_DIGEST_SHA256="+digest);
+            console.log("EXACT_CANDIDATE_PATHS="+JSON.stringify(files));
+          '
       - name: Plan impacted tests
         id: plan
         env:

@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { finalGateVerdict } from "./task-pr-lifecycle.mjs";
+import { exceptionDigest } from "./human-exception.mjs";
 
 export const READY_MARKER="[APPF2-FINAL-READY-V1]";
 export const READY_SCHEMA="APPF2-FINAL-READY-V1";
@@ -13,8 +14,12 @@ export const REQUIRED_LOCAL=[
 ];
 const HEX40=/^[0-9a-f]{40}$/, HEX64=/^[0-9a-f]{64}$/;
 const KINDS=["LOCAL_TESTS","GPT_BCE","HUMAN_FINAL_READY"];
-const validUrl=(s,repo)=>typeof s==="string" && s.startsWith("https://github.com/"+repo+"/") &&
-  !s.includes("..") && !s.includes("#");
+const validUrl=(s,repo)=>{
+  if(typeof s!=="string") return false;
+  const prefix="https://github.com/"+repo+"/";
+  if(!s.startsWith(prefix)) return false;
+  return /^(?:issues|pull)\/\d+(?:#issuecomment-\d+)?$|^actions\/runs\/\d+(?:\/job\/\d+)?$|^commit\/[0-9a-f]{40}$/.test(s.slice(prefix.length));
+};
 const stamp=s=>typeof s==="string" && Number.isFinite(Date.parse(s));
 const nonEmpty=s=>typeof s==="string" && s.trim().length>0;
 const isRepoOwner=(c,owner)=>c?.user?.login===owner && c?.user?.type==="User" && c?.author_association==="OWNER";
@@ -62,6 +67,8 @@ const localEvidenceErrors=(record,ctx)=>{
   for(const run of runs){
     assertion(numericPass(run),"local test skipped/failed or missing immutable log digest: "+run?.command,e);
     assertion(validUrl(run?.log_url,ctx.repo),"local test evidence link is not repository-scoped: "+run?.command,e);
+    assertion(Date.parse(run?.completed_at)<=Date.parse(ctx.localCommentCreatedAt),
+      "local run completed after its claimed attestation comment: "+run?.command,e);
   }
   return e;
 };
@@ -81,7 +88,8 @@ const humanEvidenceErrors=(r,c,ctx)=>{
     "exact Human Final Ready decision missing",e);
   assertion(r.approver===ctx.owner && isRepoOwner(c,ctx.owner),
     "Human approval needs repository owner; machine cannot authenticate person",e);
-  assertion(HEX64.test(r.candidate_sha256||""),"Human exact candidate digest missing",e);
+  assertion(HEX64.test(r.candidate_sha256||"") && r.candidate_sha256===ctx.candidateDigest,
+    "Human exact candidate digest missing/mismatched against Git content",e);
   assertion(r.human_provenance_manual_check_required===true,
     "Human-origin ambiguity must remain explicit",e);
   return e;
@@ -125,7 +133,7 @@ const prMetadataErrors=(event,live,repo)=>{
   return e;
 };
 const stageEvidenceErrors=(x,ctx)=>{
-  if(x.record.kind==="LOCAL_TESTS") return localEvidenceErrors(x.record,ctx);
+  if(x.record.kind==="LOCAL_TESTS") return localEvidenceErrors(x.record,{...ctx,localCommentCreatedAt:x.comment.created_at});
   if(x.record.kind==="GPT_BCE") return bceEvidenceErrors(x.record,ctx);
   if(x.record.kind==="HUMAN_FINAL_READY") return humanEvidenceErrors(x.record,x.comment,ctx);
   return ["unknown readiness stage"];
@@ -154,10 +162,20 @@ const protectedChangeErrors=(files,comments,head)=>{
   return human?.protected_change_acknowledged===true?[]:
     ["protected workflow and admission gate changed together without Human explicit acknowledgment"];
 };
+// Same exact path+bytes SHA256 as the constitutional and Human-exception validators.
+export function candidateDigestOf(changedFiles,readBytes){
+  if(!Array.isArray(changedFiles)) return null;
+  const paths=changedFiles.flat().map(x=>x?.filename);
+  if(paths.some(x=>!nonEmpty(x)) || new Set(paths).size!==paths.length) return null;
+  const dockets=paths.filter(x=>/^delivery\/constitutional-cases\/GOV-[A-Z0-9-]+\.json$/.test(x));
+  const others=dockets.length===1?paths.filter(x=>x!==dockets[0]):paths;
+  return exceptionDigest(readBytes,others);
+};
 /** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
-export function inspectPrReadiness({event,live,comments,checks,changedFiles,repo}){
+export function inspectPrReadiness({event,live,comments,checks,changedFiles,candidateDigest,repo}){
   const errors=prMetadataErrors(event,live,repo),head=live?.head?.sha,base=live?.base?.sha;
-  const ctx={head,base,live,repo,owner:repo.split("/")[0]};
+  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
+  assertion(HEX64.test(candidateDigest||""),"cannot compute exact Git-byte candidate SHA256",errors);
   errors.push(...currentReadinessErrors({comments,ctx}),...fastLoopErrors(checks,head),
     ...protectedChangeErrors(changedFiles,comments,head));
   return {ok:errors.length===0,head,errors,manual_provenance_required:true};
@@ -188,8 +206,10 @@ function main(argv){
   let result;
   if(eventName==="pull_request"){
     const live=readJsonFile(val("live-pr"));
+    const changedFiles=readJsonFile(val("changed-files"));
+    const candidateDigest=candidateDigestOf(changedFiles,rel=>{try{return fs.readFileSync(rel);}catch{return null;}});
     result=inspectPrReadiness({event,live,comments:readJsonFile(val("comments")),
-      checks:readJsonFile(val("checks")),changedFiles:readJsonFile(val("changed-files")),repo});
+      checks:readJsonFile(val("checks")),changedFiles,candidateDigest,repo});
   }else{
     result=inspectNonPrInvocation({eventName,ref:process.env.GITHUB_REF,
       sha:process.env.GITHUB_SHA,associatedPrs:val("associated-prs")?readJsonFile(val("associated-prs")):[]});
