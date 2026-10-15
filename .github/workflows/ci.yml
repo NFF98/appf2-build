@@ -78,6 +78,8 @@ jobs:
         run: npm ci
       - name: Final Ready exact-HEAD synthetic attack and positive tests (not Human approval)
         run: node harness/scripts/final-ready-selftest.mjs
+      - name: Attack fixture environment isolation (synthetic, NOT Attack PASS)
+        run: node harness/scripts/w1-01-evidence-mirror.mjs env-selftest
       - name: Exact candidate digest preview (informational, NOT approval)
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
