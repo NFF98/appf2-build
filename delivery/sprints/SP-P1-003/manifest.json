@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "sprint_id": "SP-P1-003",
-  "status": "ACTIVE",
+  "status": "CLOSED",
   "build_spec_id": "BS-P1-025",
   "goal": "完成 Product Proof Stage A — Playable App：一個自然語言 request 必須能經 F01 產生 Blueprint、F02 validate/admit、F03 hydrate READY、在 S03 render，並由 User 做出至少一個真實 local interaction 改變 committed Runtime state/result。",
   "scope": [
@@ -53,5 +53,71 @@
     "BL-P1-008",
     "BL-P1-010",
     "BL-P1-031"
-  ]
+  ],
+  "closure_disposition": "ADMINISTRATIVE_WITH_CARRY_FORWARD",
+  "administrative_closure": {
+    "schema": "APPF2-ADMIN-CLOSURE-1",
+    "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-001",
+    "open_tasks": [
+      {
+        "id": "T006",
+        "status": "BLOCKED",
+        "snapshot_sha256": "bc9b15ff6bc3dbfde3ef143e4d6d9e5b0565c2e1ae8057e31616f584db9495e7"
+      },
+      {
+        "id": "T008",
+        "status": "REVIEW",
+        "snapshot_sha256": "3ed5de2e6000c9f2a01975dafb9b7cfd14bcfcd58aa678cf3f6b0fd8248a09e3"
+      }
+    ],
+    "open_backlog": [
+      {
+        "id": "BL-P1-015",
+        "status": "SPRINTED"
+      },
+      {
+        "id": "BL-P1-018",
+        "status": "SPRINTED"
+      }
+    ],
+    "open_revalidations": [
+      {
+        "id": "BL-P1-008",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-010",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-031",
+        "status": "IN_PROGRESS"
+      }
+    ],
+    "carry_forward_ids": [
+      "GAP-T006-01",
+      "GAP-T006-02",
+      "GAP-T006-03",
+      "GAP-T008-01",
+      "GAP-BL-015",
+      "GAP-BL-018",
+      "GAP-REVAL-008",
+      "GAP-REVAL-010",
+      "GAP-REVAL-031"
+    ],
+    "historical_procedural_dispositions": [
+      {
+        "gate_id": "BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      },
+      {
+        "gate_id": "BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      }
+    ],
+    "next_sprint_requires_product_alignment": true,
+    "product_success_claimed": false
+  }
 }
