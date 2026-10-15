@@ -46,7 +46,7 @@ assert.equal(inspectNonPrInvocation({eventName:"push",ref:"refs/heads/main",sha:
 assert.equal(inspectNonPrInvocation({eventName:"workflow_dispatch",ref:"refs/heads/feature",sha:HEAD}).ok,false);
 assert.equal(inspectNonPrInvocation({eventName:"schedule",ref:"refs/heads/main",sha:HEAD}).ok,true);
 const required=["ci","attack","governance","Analyze JavaScript / TypeScript"];
-const run=(context,conclusion)=>({context,head_sha:HEAD,conclusion,status:"completed"});
+const run=(context,conclusion)=>({context,head_sha:HEAD,conclusion,status:"completed",mode:"FULL"});
 assert.equal(bceCiConsistency({head:HEAD,checks:required.map(x=>run(x,"success")),required,bcePass:true}).ok,true);
 for(const v of ["failure","skipped","neutral"]){
   assert.equal(bceCiConsistency({head:HEAD,checks:required.map((x,i)=>run(x,i?v:"success")),required,bcePass:true}).reason,"BCE_CI_MISMATCH");

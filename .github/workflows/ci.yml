@@ -9,21 +9,20 @@ on:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
 
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      # GOV-REFORM-20261013: full CI runs only after Human Final Ready. A Draft PR must
-      # FAIL (never skip) because a skipped required job is reported as success.
-      - name: Draft PR — full CI deferred (NOT_READY, never PASS)
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
-        run: |
-          echo "::error::NOT_READY — Draft PR: full required CI is deferred to Human Final Ready (ready_for_review). See the non-required fast-loop job for impacted tests."
-          exit 1
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -74,6 +73,8 @@ jobs:
           node-version: 22
       - name: Install locked dependencies
         run: npm ci
+      - name: Final Ready exact-HEAD synthetic attack and positive tests (not Human approval)
+        run: node harness/scripts/final-ready-selftest.mjs
       - name: Plan impacted tests
         id: plan
         env:

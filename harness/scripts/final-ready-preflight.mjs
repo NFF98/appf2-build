@@ -144,7 +144,7 @@ export function inspectNonPrInvocation({eventName,ref,sha,associatedPrs}){
   if(eventName!=="push" || ref!=="refs/heads/main" || !HEX40.test(sha||"")){
     return {ok:false,errors:["non-PR workflow invocation is not protected main push"]};
   }
-  const exists=safeArray(associatedPrs).some(pr=>pr.merged_at && pr.merge_commit_sha===sha && pr.base?.ref==="main");
+  const exists=safeArray(associatedPrs).flat().some(pr=>pr.merged_at && pr.merge_commit_sha===sha && pr.base?.ref==="main");
   return exists?{ok:true,reason:"verified merged PR main push"}:
     {ok:false,errors:["direct main push without associated merged PR is NOT_READY"]};
 }

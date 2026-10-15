@@ -12,6 +12,8 @@ on:
 
 permissions:
   contents: read
+  issues: read
+  pull-requests: read
   security-events: write
   packages: read
   actions: read
@@ -21,14 +23,13 @@ jobs:
     name: Analyze JavaScript / TypeScript
     runs-on: ubuntu-latest
     steps:
-      # GOV-REFORM-20261013: full security analysis runs after Human Final Ready.
-      # A Draft PR must FAIL (never skip): a skipped required check is reported as success.
-      - name: Draft PR — CodeQL deferred (NOT_READY, never PASS)
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
-        run: |
-          echo "::error::NOT_READY — Draft PR: CodeQL is deferred to Human Final Ready (ready_for_review)."
-          exit 1
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
