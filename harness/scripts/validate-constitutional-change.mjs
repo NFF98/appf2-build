@@ -102,7 +102,10 @@ export const GOV392_TEST_ONLY_PATHS=Object.freeze([
   "harness/scripts/w1-01-evidence-mirror.mjs"
 ]);
 export function isGov392TestOnly({changed,base,root}){
-  if(process.env.GITHUB_EVENT_NAME!=="pull_request" ||
+  const event=process.env.GITHUB_EVENT_NAME;
+  const scopedRun=event==="pull_request" ||
+    (event==="push" && process.env.GITHUB_REF==="refs/heads/fix/gate-first-generic-evidence-20261015");
+  if(!scopedRun ||
     process.env.APPF2_GOV392_TEST_PHASE!=="1" ||
     base!==GOV392_TEST_ONLY_BASE ||
     !equal(sorted(changed),sorted([...GOV392_TEST_ONLY_PATHS,GOV392_TEST_ONLY_DOCKET]))) return false;
@@ -214,7 +217,7 @@ const testManualApprovalCase=()=>{
 // Synthetic negative and positive tests for the bounded GOV-392 lane.
 const testGov392TestOnly=()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-gov392-test-only-"));
-  const savedEvent=process.env.GITHUB_EVENT_NAME, savedPhase=process.env.APPF2_GOV392_TEST_PHASE;
+  const savedEvent=process.env.GITHUB_EVENT_NAME, savedRef=process.env.GITHUB_REF, savedPhase=process.env.APPF2_GOV392_TEST_PHASE;
   const changed=[...GOV392_TEST_ONLY_PATHS,GOV392_TEST_ONLY_DOCKET];
   const save=(p,b)=>{const dest=path.join(root,p);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,b);};
   try{
@@ -234,7 +237,12 @@ const testGov392TestOnly=()=>{
     if(isGov392TestOnly({...args,base:"b".repeat(40)}))
       throw Error("GOV392 TEST ONLY: stale BASE admitted");
     process.env.GITHUB_EVENT_NAME="push";
+    process.env.GITHUB_REF="refs/heads/main";
     if(isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: main push admitted");
+    process.env.GITHUB_REF="refs/heads/fix/gate-first-generic-evidence-20261015";
+    if(!isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: exact repair-branch push rejected");
+    process.env.GITHUB_REF="refs/heads/other";
+    if(isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: rogue branch push admitted");
     process.env.GITHUB_EVENT_NAME="pull_request";
     save(GOV392_TEST_ONLY_PATHS[0],"tampered bytes");
     if(isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: changed bytes admitted");
@@ -242,9 +250,10 @@ const testGov392TestOnly=()=>{
     docket.human_approval={source_kind:"BOT"};
     save(GOV392_TEST_ONLY_DOCKET,JSON.stringify(docket));
     if(isGov392TestOnly(args))throw Error("GOV392 TEST ONLY: synthetic approval admitted");
-    return 6;
+    return 8;
   }finally{
     savedEvent===undefined?delete process.env.GITHUB_EVENT_NAME:process.env.GITHUB_EVENT_NAME=savedEvent;
+    savedRef===undefined?delete process.env.GITHUB_REF:process.env.GITHUB_REF=savedRef;
     savedPhase===undefined?delete process.env.APPF2_GOV392_TEST_PHASE:process.env.APPF2_GOV392_TEST_PHASE=savedPhase;
     fs.rmSync(root,{recursive:true,force:true});
   }

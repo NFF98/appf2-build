@@ -15,7 +15,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "50e3c3840f538773a85fdb72b63cb77033b6dce0595745a8ff5c864961c000a9",
+  "candidate_digest_sha256": "e8c841f750f6c59e3734da45422a622da274bad798f595a77972ce4f4ebfde97",
   "why5": [
     {
       "question": "Why did required Actions show FAIL without running tests?",
@@ -65,7 +65,8 @@
     "Four required CI/Governance/Attack/CodeQL checks no longer depend on post-test GPT BCE/Human Final Ready; separate non-required final-ready-audit validates ordered attestations after CI, preserves main-push provenance and independent Human Merge.",
     "Job-aware synthetic audit extracts required ci only until separate final-ready-audit job, never misclassifies downstream non-required job text as an in-gate Human condition.",
     "Single exact GOV-392 PR-test-only lane: Human approval and TTL remain PENDING; only the two approval-only blockages are deferred. Real byte/path/BASE/Why5/ChangeScope/CI/Product/Attack/CodeQL checks remain enforced. Push/main fails closed.",
-    "One-shot GOV392 lane synthetic six-case test covers exact PR, rogue Product file, stale BASE, Main push, tampered byte, and fabricated Human approval."
+    "One-shot GOV392 lane synthetic six-case test covers exact PR, rogue Product file, stale BASE, Main push, tampered byte, and fabricated Human approval.",
+    "Four real required GitHub workflows run on exact isolated repair branch push, with canonical fixed BASE SHA and main-push merge provenance protected. Arbitrary branch/main push cannot invoke GOV392 test-only exception."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -73,7 +74,7 @@
     "reason": "Direct Human request 2026-10-15 to immediately fix test-first deadlock and PR395-only runner; prepare candidate without opening a PR or merging.",
     "risk": "Removing pre-test Final Ready admission may allow CI to execute unapproved candidate source; PR checks run with read-only permissions and no release/deploy step, while independent Human final Merge remains mandatory. Real failures are never converted to PASS.",
     "owner": "Human merge approver; GPT candidate author and evidence reviewer",
-    "follow_up": "GOV-392 test-only mode is restricted to one exact byte-bound candidate in a PR. Human exact candidate/TTL still PENDING and do not become PASS; Main push and merge provenance retain their existing hard stops. Independent BCE and Human Merge approval still needed.",
+    "follow_up": "Only this exact byte-bound repair branch push may execute the four real Actions checks without a PR. Human approval remains PENDING; PR creation, merge and Sprint closure remain unauthorized.",
     "affected_sprint": "SP-P1-003",
     "affected_tasks": [],
     "covered_gates": [

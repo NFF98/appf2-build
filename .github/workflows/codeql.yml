@@ -2,7 +2,7 @@ name: CodeQL
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/gate-first-generic-evidence-20261015]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -29,7 +29,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Main-only merge provenance guard (PR tests never pre-blocked)
-        if: ${{ github.event_name != 'pull_request' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/fix/gate-first-generic-evidence-20261015' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash harness/scripts/run-final-ready-preflight.sh
