@@ -83,7 +83,7 @@ export function runConditionalApprovalSelfTests(){
     active_build_spec:"BS-P1-025",status:"REVIEW"};
   const build={active_baseline:"BS-P1-025",implementation_enabled:true};
   const valid={pr:livePr,grant:liveGrant,task,sprint,build,localHead:HEAD,
-    readiness:{ok:true,head:HEAD},changedPaths:[{filename:"src/app.ts"}]};
+    readiness:{ok:true,head:HEAD},changedPaths:[{filename:"src/app.ts",status:"modified"}]};
   if(!delegatedPremergePolicy(valid).ok)
     throw Error("trusted premerge policy positive rejected");
   // A verified Main advance does NOT require another Task Human approval.
@@ -109,8 +109,10 @@ export function runConditionalApprovalSelfTests(){
   denyPremerge(x=>{x.pr.head.repo.full_name="attacker/repo";});
   denyPremerge(x=>{x.pr.head.sha="f".repeat(40);});
   denyPremerge(x=>{x.task.status="BLOCKED";});
-  denyPremerge(x=>{x.changedPaths=[{filename:"src/app.ts"},{filename:"src2/bypass.ts"}];});
+  denyPremerge(x=>{x.changedPaths=[{filename:"src/app.ts",status:"modified"},{filename:"src2/bypass.ts",status:"modified"}];});
   denyPremerge(x=>{x.changedPaths=[];});
+  denyPremerge(x=>{x.changedPaths=[{filename:"src/imported.ts",status:"renamed",previous_filename:"delivery/CURRENT-SPRINT.json"}];});
+  denyPremerge(x=>{x.changedPaths=[{filename:"src/copied.ts",status:"copied",previous_filename:"harness/scripts/governance-gate.mjs"}];});
   denyPremerge(x=>{x.sprint.active_task="T008";});
   denyPremerge(x=>{x.build.implementation_enabled=false;});
   denyPremerge(x=>{x.readiness.ok=false;});
