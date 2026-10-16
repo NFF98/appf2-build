@@ -1,7 +1,7 @@
 // Tests data-path integrity only. Not a real GitHub approval nor a merged PR.
 import assert from "node:assert/strict";
 import {pathToFileURL} from "node:url";
-import {inspectGitHubHumanGrant,taskScopeDigest,ENVIRONMENT,WORKFLOW}
+import {inspectGitHubHumanGrant,taskScopeDigest,githubCompareProvesAncestor,ENVIRONMENT,WORKFLOW}
   from "./trusted-human-task-grant.mjs";
 import {inspectIssuance} from "./task-human-grant-issuance.mjs";
 import {inspectLiveGitHubRequiredChecks} from "./final-ready-preflight.mjs";
@@ -90,6 +90,14 @@ export function runTrustedGrantSelfTests(){
     x.phase="WRONG_PHASE";x.mergedOnMain=true;});
   no(x=>{x.pr.base.ref="other";});
   no(x=>{x.ancestor=false;});
+  for(const [status,allowed] of [
+    ["ahead",true],["identical",true],["diverged",false],
+    ["behind",false],["not-found",false],[null,false]
+  ]){
+    assert.equal(githubCompareProvesAncestor({status}),allowed);
+    total++;
+  }
+  assert.equal(githubCompareProvesAncestor(null),false);total++;
   const sameHead=fresh();sameHead.run.head_sha=sameHead.pr.head.sha;
   sameHead.grant.base_sha=sameHead.run.head_sha;yes(sameHead);
   no(x=>{x.now=x.grant.expires_at_unix+1;});
