@@ -13,6 +13,7 @@ import {
 } from "./task-pr-lifecycle.mjs";
 import { selectImpactedTests } from "./select-impacted-tests.mjs";
 import { buildEvidenceLedger } from "./evidence-ledger.mjs";
+import { planTaskEvidenceReferences } from "./evidence-ledger-report.mjs";
 import { computeGovernanceMetrics } from "./governance-metrics.mjs";
 import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 
@@ -354,6 +355,40 @@ function ledgerCases(levels){
   ],fn=>fn());
 }
 
+function normalizationCases(){
+  const task={task_id:"T009",status:"REVIEW",build_spec_id:"BS-P1-025",
+    acceptance_links:[{acceptance_id:"F01-AC-013",test_id:"TEST-F01-API-001"}],
+    completion_evidence:["EV-SP-P1-003-T009-001"]};
+  const e=(id,kind,status)=>({evidence_id:id,schema_version:2,
+    kind,status,sprint_id:"SP-P1-003",task_id:"T009",build_spec_id:"BS-P1-025",
+    source_commit:"a".repeat(40),acceptance_ids:kind==="TEST_RESULT"?["F01-AC-013"]:[],
+    test_ids:kind==="TEST_RESULT"?["TEST-F01-API-001"]:[]});
+  const a=e("EV-SP-P1-003-T009-001","TEST_RESULT","PASS");
+  const b=e("EV-SP-P1-003-T009-002","COMMAND_RESULT","FAIL");
+  const ledger={task_id:"T009",sprint_id:"SP-P1-003",
+    suggested_completion_evidence:[a.evidence_id,b.evidence_id],
+    duplicates:[],stale:[],dangling_refs:[]};
+  const run=(f=x=>x)=>{const x=clone({task,ledger,existingEvidence:[a,b]});
+    f(x);return planTaskEvidenceReferences({...x,sprintId:"SP-P1-003"});};
+  return expectCases("canonical normalization",[
+    ["append real Evidence reference, including honest FAIL status",true,()=>{const x=run();return x.ok&&x.changed&&x.add.length===1&&x.completion_evidence[1]===b.evidence_id;}],
+    ["idempotent no repeat",true,()=>run(x=>{x.task.completion_evidence.push(b.evidence_id);}).changed===false],
+    ["no status update is returned",true,()=>!Object.hasOwn(run(),"task_status")],
+    ["noncanonical missing document fails",true,()=>!run(x=>{x.existingEvidence.pop();}).ok],
+    ["unknown AC/Test forged fails",true,()=>!run(x=>{x.existingEvidence[0].test_ids=["FAKE"];}).ok],
+    ["FAIL evidence stays FAIL",true,()=>!run(x=>{x.existingEvidence[1].status="UNTESTED";}).ok],
+    ["duplicates refused",true,()=>!run(x=>{x.ledger.duplicates=[["x","y"]];}).ok],
+    ["stale source refused",true,()=>!run(x=>{x.ledger.stale=[a.evidence_id];}).ok],
+    ["dangling prior ref refused",true,()=>!run(x=>{x.ledger.dangling_refs=["missing"];}).ok],
+    ["wrong Sprint rejected",true,()=>!run(x=>{x.existingEvidence[0].sprint_id="SP-P1-004";}).ok],
+    ["wrong Build rejected",true,()=>!run(x=>{x.existingEvidence[1].build_spec_id="BS-P1-026";}).ok],
+    ["CLOSED Task immutable",true,()=>!run(x=>{x.task.status="CLOSED";}).ok],
+    ["BLOCKED Task cannot normalize",true,()=>!run(x=>{x.task.status="BLOCKED";}).ok],
+    ["missing ledger is hard-stop",true,()=>!run(x=>{x.ledger={};}).ok],
+    ["previous references preserved",true,()=>run().completion_evidence[0]===a.evidence_id],
+  ],fn=>fn());
+}
+
 function metricsPreflightCases(guard){
   const m=computeGovernanceMetrics({
     commits:[{subject:"T008 impl (#386)"},{subject:"T008 evidence (#387)"},{subject:"fix T008 typo (#388)"},{subject:"T007 close (#380)"}],
@@ -410,6 +445,7 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
     authority:authorityCases(),
     impacted_tests:impactedCases(policy.impacted_tests),
     evidence_ledger:ledgerCases(policy.evidence_proof_levels),
+    evidence_normalization:normalizationCases(),
     metrics_preflight:metricsPreflightCases(policy.pr_guard)
   };
   return {counts,total:Object.values(counts).reduce((a,n)=>a+n,0)};
