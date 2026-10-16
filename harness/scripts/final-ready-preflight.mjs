@@ -353,39 +353,84 @@ export function bceCiConsistency({head,checks,required,bcePass}){
     {ok:false,reason:"BCE_CI_MISMATCH",head,full}:
     {ok:!bcePass?false:full.verdict==="PASS",reason:full.verdict,head,full};
 }
+// workflow_dispatch rechecks are read-only. A manually supplied PR number is
+// not proof: branch, exact checkout SHA and live Main must all agree with GitHub.
+export function inspectReadyRecheckBinding({requested,event,live,main,
+  repo,ref,sha}={}){
+  const errors=[];
+  assertion(repo==="NFF98/appf2-build","recheck repository not canonical",errors);
+  assertion(typeof requested==="string" && /^[1-9][0-9]{0,7}$/.test(requested) &&
+    event?.inputs?.final_ready_pr_number===requested &&
+    live?.number===Number(requested),"recheck PR input not bound to event",errors);
+  assertion(live?.state==="open" && live?.draft===false,
+    "recheck PR is not open and Ready",errors);
+  assertion(live?.base?.ref==="main" &&
+    live?.base?.repo?.full_name===repo &&
+    live?.head?.repo?.full_name===repo,"recheck PR base/fork mismatch",errors);
+  assertion(HEX40.test(live?.head?.sha||"") &&
+    live?.head?.sha===sha &&
+    ref==="refs/heads/"+live?.head?.ref,
+    "recheck checked-out ref does not match live PR HEAD",errors);
+  assertion(HEX40.test(live?.base?.sha||"") &&
+    main?.commit?.sha===live?.base?.sha,
+    "recheck PR BASE is no longer canonical live Main",errors);
+  return {ok:!errors.length,errors};
+}
+const liveReadyApi=async (path,token)=>{
+  if(!token)throw Error("HARD_STOP: GitHub token missing for Ready recheck");
+  const response=await fetch("https://api.github.com/repos/NFF98/appf2-build"+path,{
+    headers:{accept:"application/vnd.github+json",
+      authorization:"Bearer "+token,"X-GitHub-Api-Version":"2026-03-10",
+      "User-Agent":"appf2-final-ready-recheck"}});
+  if(!response.ok)throw Error("HARD_STOP: authenticated GitHub Ready recheck API "+response.status);
+  return response.json();
+};
+async function inspectReadyWithLiveApi({event,live,repo,token}){
+  // Only official, complete API rows count. CLI preview JSON is not trusted.
+  const {comments,changed,checks}=await readLiveDelegationEvidence({
+    prNumber:live.number,head:live.head?.sha,token});
+  const candidateDigest=candidateDigestOf(changed,rel=>{
+    try{return fs.readFileSync(rel);}catch{return null;}
+  });
+  const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
+    head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
+    checks,token});
+  const facts={event,live,comments,checks,changedFiles:changed,
+    candidateDigest,repo,verifiedPrRunOrigins};
+  if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
+    const verifiedGrant=await verifyLiveGrant({pr:live,token});
+    return inspectTaskPrReadiness({...facts,verifiedGrant});
+  }
+  return inspectPrReadiness(facts);
+}
+async function recheckReadyPr({requested,event,repo,ref,sha,token}){
+  if(typeof requested!=="string"||!/^[1-9][0-9]{0,7}$/.test(requested))
+    throw Error("HARD_STOP: invalid Final Ready recheck PR");
+  const [live,main]=await Promise.all([
+    liveReadyApi("/pulls/"+requested,token),
+    liveReadyApi("/branches/main",token)]);
+  const binding=inspectReadyRecheckBinding({requested,event,live,main,repo,ref,sha});
+  if(!binding.ok)throw Error("HARD_STOP: "+binding.errors.join("; "));
+  const trustedEvent={pull_request:{number:live.number,
+    head:{sha:live.head.sha},base:{sha:live.base.sha},draft:live.draft}};
+  return inspectReadyWithLiveApi({event:trustedEvent,live,repo,token});
+}
 async function main(argv){
   const val=name=>{const n=argv.indexOf("--"+name);return n<0?null:argv[n+1];};
   const eventName=process.env.GITHUB_EVENT_NAME,repo=process.env.GITHUB_REPOSITORY;
+  const ref=process.env.GITHUB_REF,sha=process.env.GITHUB_SHA,
+    token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
   const event=readJsonFile(val("event"));
   let result;
   if(eventName==="pull_request"){
-    const live=readJsonFile(val("live-pr"));
-    // Shell's first-page Check Runs preview is NOT authoritative. Read all
-    // official GitHub comments/files/checks through the trusted executor's
-    // complete paginated and duplicate-rejecting API path for Ready too.
-    const {comments,changed,checks}=await readLiveDelegationEvidence({
-      prNumber:live.number,head:live.head?.sha,
-      token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
-    const changedFiles=changed;
-    const candidateDigest=candidateDigestOf(changedFiles,rel=>{
-      try{return fs.readFileSync(rel);}catch{return null;}
-    });
-    const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
-      head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
-      checks,token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
-    const facts={event,live,comments,checks,changedFiles,
-      candidateDigest,repo,verifiedPrRunOrigins};
-    // No second Human approval for a normal Task with authenticated GitHub grant.
-    if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
-      const verifiedGrant=await verifyLiveGrant({pr:live,
-        token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
-      result=inspectTaskPrReadiness({...facts,verifiedGrant});
-    }else{
-      result=inspectPrReadiness(facts);
-    }
+    result=await inspectReadyWithLiveApi({
+      event,live:readJsonFile(val("live-pr")),repo,token});
+  }else if(eventName==="workflow_dispatch" && val("recheck-pr")!==null){
+    result=await recheckReadyPr({
+      requested:val("recheck-pr"),event,repo,ref,sha,token});
   }else{
-    result=inspectNonPrInvocation({eventName,ref:process.env.GITHUB_REF,
-      sha:process.env.GITHUB_SHA,associatedPrs:val("associated-prs")?readJsonFile(val("associated-prs")):[]});
+    result=inspectNonPrInvocation({eventName,ref,sha,
+      associatedPrs:val("associated-prs")?readJsonFile(val("associated-prs")):[]});
   }
   if(result.ok){console.log("FINAL READY PREFLIGHT: ADMITTED "+(result.head||result.reason)+
     " | Human provenance MUST be manually verified; not a Human signature");return 0;}
@@ -393,6 +438,7 @@ async function main(argv){
   for(const e of result.errors||[])console.error("- "+e);
   return 1;
 }
+
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href)
   main(process.argv.slice(2)).then(code=>{process.exitCode=code;})
     .catch(error=>{console.error("FINAL READY: HARD STOP "+error.message);process.exitCode=1;});
