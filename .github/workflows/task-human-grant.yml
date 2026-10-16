@@ -1,4 +1,6 @@
 name: Human Task 一次條件授權
+# GitHub-generated run name immutably binds the approved exact Task/Sprint/Scope.
+run-name: 'APPF2-L1|${{ inputs.task_id }}|${{ inputs.sprint_id }}|${{ inputs.scope_sha256 }}'
 # 每個一般 Task 唯一 Human 決定。由 GitHub Environment 的真人 Required reviewer
 # 核准；不得把 ChatGPT 產生的留言、actor login 或自行填 true 當 Human 授權。
 on:
