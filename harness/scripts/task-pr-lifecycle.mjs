@@ -152,6 +152,91 @@ export function leaseDecision({lease,request}){
 
 export const scopeDigestOf=task=>JSON.stringify([...(task?.allowed_write_paths||[])].sort());
 
+
+// Trusted live task executor: never accept a caller-supplied "human_verified"
+// value, check-run JSON, PR metadata or review comment as the authoritative input.
+// This is an explicitly invoked GitHub API operation, NOT a background worker.
+const DELEGATED_REPO="NFF98/appf2-build";
+const FULL_CHECK_COUNT=100;
+export function delegatedPremergePolicy({pr,grant,task,sprint,build,localHead,readiness}){
+  const errors=[],deny=(yes,why)=>{if(!yes)errors.push(why);};
+  deny(pr?.state==="open"&&pr?.draft===false,"PR must be open and Ready");
+  deny(pr?.base?.ref==="main"&&pr?.base?.repo?.full_name===DELEGATED_REPO,
+    "PR BASE must be canonical main");
+  deny(pr?.head?.repo?.full_name===DELEGATED_REPO,"fork PR is not delegated");
+  deny(pr?.head?.sha===localHead&&/^[0-9a-f]{40}$/.test(localHead||""),
+    "trusted checkout HEAD differs from live PR HEAD");
+  deny(grant?.ok===true&&grant?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL"&&
+    grant?.source_head===pr?.base?.sha&&grant?.current_head===pr?.head?.sha,
+    "live GitHub Environment grant not bound to exact BASE/HEAD");
+  deny(task?.task_id===grant?.task_id&&
+    sprint?.active_task===task?.task_id&&
+    sprint?.active_sprint&&
+    sprint?.active_build_spec===task?.build_spec_id&&
+    build?.active_baseline===task?.build_spec_id&&
+    build?.implementation_enabled===true&&
+    ["ACTIVE","REVIEW"].includes(sprint?.status)&&
+    ["IN_PROGRESS","REVIEW"].includes(task?.status),
+    "canonical Task/Sprint/Build state forbids delegation");
+  deny(pr?.mergeable===true,"GitHub does not confirm PR is mergeable");
+  deny(readiness?.ok===true&&readiness?.head===localHead,
+    "exact-HEAD real checks and independent BCE/Local proof missing");
+  return {ok:errors.length===0,decision:errors.length?"HARD_STOP":"ELIGIBLE_FOR_PROTECTED_MERGE_REQUEST",
+    errors,pr_number:pr?.number,head_sha:localHead};
+}
+async function delegateGitHubJson(api,token,{method="GET",body}={}){
+  const res=await fetch("https://api.github.com"+api,{method,headers:{
+    accept:"application/vnd.github+json",authorization:"Bearer "+token,
+    "X-GitHub-Api-Version":"2026-03-10",
+    "User-Agent":"appf2-live-delegated-task-executor",
+    ...(body?{"content-type":"application/json"}:{})
+  },...(body?{body:JSON.stringify(body)}:{})});
+  if(!res.ok)throw Error("GitHub API HARD_STOP: "+method+" "+res.status+" "+api);
+  return res.json();
+}
+export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
+  if(!token||!Number.isSafeInteger(prNumber)||prNumber<1 ||
+    !["CHECK","MERGE"].includes(action))throw Error("invalid delegated Task execution input");
+  const root="/repos/"+DELEGATED_REPO;
+  // All authority/evidence inputs are fetched from the live GitHub API.
+  const pr=await delegateGitHubJson(root+"/pulls/"+prNumber,token);
+  const head=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  if(pr.head?.sha!==head)throw Error("HARD_STOP: local checkout != live PR HEAD");
+  const {verifyLiveGrant}=await import("./trusted-human-task-grant.mjs");
+  const grant=await verifyLiveGrant({pr,token});
+  const {candidateDigestOf,inspectTaskPrReadiness}=await import("./final-ready-preflight.mjs");
+  const [comments,changed,checks]=await Promise.all([
+    delegateGitHubJson(root+"/issues/"+prNumber+"/comments?per_page="+FULL_CHECK_COUNT,token),
+    delegateGitHubJson(root+"/pulls/"+prNumber+"/files?per_page="+FULL_CHECK_COUNT,token),
+    delegateGitHubJson(root+"/commits/"+head+"/check-runs?per_page="+FULL_CHECK_COUNT,token)
+  ]);
+  if(!Array.isArray(comments)||comments.length>=FULL_CHECK_COUNT ||
+    !Array.isArray(changed)||changed.length>=FULL_CHECK_COUNT ||
+    !Array.isArray(checks?.check_runs)||
+    checks.total_count>=FULL_CHECK_COUNT || checks.check_runs.length>=FULL_CHECK_COUNT)
+    throw Error("HARD_STOP: truncated/invalid authoritative GitHub evidence inventory");
+  const digest=candidateDigestOf(changed,p=>{try{return fs.readFileSync(p);}catch{return null;}});
+  const event={pull_request:{number:pr.number,head:{sha:head},base:{sha:pr.base.sha},draft:pr.draft}};
+  const readiness=inspectTaskPrReadiness({event,live:pr,comments,checks,
+    changedFiles:changed,candidateDigest:digest,repo:DELEGATED_REPO,verifiedGrant:grant});
+  const sprint=readJson("delivery/CURRENT-SPRINT.json"),build=readJson("build-spec/CURRENT.json");
+  const taskId=pr.body?.match(/^Task:\s*(T\d{3})\b/m)?.[1];
+  const task=(readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks||[])
+    .find(t=>t.task_id===taskId);
+  const result=delegatedPremergePolicy({pr,grant,task,sprint,build,localHead:head,readiness});
+  if(!result.ok||!readiness.ok)
+    return {...result,decision:"HARD_STOP",errors:[...result.errors,...readiness.errors]};
+  if(action==="CHECK")return {...result,action,merged:false};
+  // No admin bypass. GitHub enforces normal protected-branch checks at PUT.
+  // No Task Closure, Evidence mutation, next Task/Sprint or deployment.
+  const merged=await delegateGitHubJson(root+"/pulls/"+prNumber+"/merge",token,{
+    method:"PUT",body:{sha:head,merge_method:"squash"}});
+  if(merged?.merged!==true||!/^[0-9a-f]{40}$/.test(merged.sha||""))
+    throw Error("HARD_STOP: GitHub did not prove a merged commit");
+  return {ok:true,decision:"GITHUB_MERGED_NEEDS_EVIDENCE_AND_CLOSURE",
+    action,pr_number:prNumber,source_head:head,merge_commit_sha:merged.sha,merged:true};
+}
+
 const readJson=rel=>JSON.parse(fs.readFileSync(path.join(process.cwd(),rel),"utf8"));
 const changedPaths=()=>{
   const base=process.env.BASE_SHA,head=process.env.HEAD_SHA||"HEAD";
@@ -172,6 +257,10 @@ const exceptionLaneOf=(changed,reform)=>{
 function cli(argv){
   const [cmd,...rest]=argv;
   const arg=name=>{const i=rest.indexOf("--"+name);return i>=0?rest[i+1]:null;};
+  if(cmd==="delegated-premerge"){
+    console.error("Use explicit delegated-check / delegated-merge with live GitHub API; no caller Boolean permitted");
+    return 2;
+  }
   if(cmd==="classify"){
     const cs=readJson("delivery/CURRENT-SPRINT.json"),reform=readJson(GOVERNANCE_REFORM_POLICY_PATH);
     const td=cs.active_sprint?readJson("delivery/sprints/"+cs.active_sprint+"/tasks.json"):null;
@@ -190,4 +279,14 @@ function cli(argv){
   console.error("usage: task-pr-lifecycle.mjs classify | final-gate --head <sha> --checks <file.json>");
   return 2;
 }
-if(import.meta.url===pathToFileURL(process.argv[1]||"").href) process.exit(cli(process.argv.slice(2)));
+if(import.meta.url===pathToFileURL(process.argv[1]||"").href){
+  const command=process.argv[2];
+  if(command==="delegated-check"||command==="delegated-merge"){
+    const prNumber=Number(process.argv[3]);
+    delegatedTaskExecutor({prNumber,token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN,
+      action:command==="delegated-check"?"CHECK":"MERGE"})
+      .then(result=>{console.log("DELEGATED TASK "+JSON.stringify(result));
+        if(!result.ok)process.exitCode=1;})
+      .catch(e=>{console.error("DELEGATED TASK HARD_STOP "+e.message);process.exitCode=1;});
+  }else process.exit(cli(process.argv.slice(2)));
+}
