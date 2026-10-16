@@ -66,6 +66,28 @@ export function runTrustedGrantSelfTests(){
   no(x=>{x.build.active_baseline="BS-P1-026";});
   no(x=>{x.pr.body="Task: T008\nTask-Grant-Run: 123";});
   no(x=>{x.pr.state="closed";});
+  // Post-merge mode does NOT re-use open-PR assertions. A true GitHub Main
+  // ancestry receipt is required; a caller Boolean never reaches live verification.
+  const closed=fresh();
+  closed.phase="POST_MERGE_CLOSURE";
+  closed.pr.state="closed";closed.pr.merged=true;
+  closed.pr.merged_at="2026-10-16T02:00:00Z";
+  closed.pr.merge_commit_sha="d".repeat(40);
+  closed.mergedOnMain=true;
+  yes(closed);
+  no(x=>{x.phase="POST_MERGE_CLOSURE";});
+  no(x=>{x.pr.state="closed";x.pr.merged=true;
+    x.pr.merged_at="2026-10-16T02:00:00Z";x.pr.merge_commit_sha="d".repeat(40);
+    x.phase="POST_MERGE_CLOSURE";x.mergedOnMain=false;});
+  no(x=>{x.pr.state="closed";x.pr.merged=false;
+    x.pr.merged_at="2026-10-16T02:00:00Z";x.pr.merge_commit_sha="d".repeat(40);
+    x.phase="POST_MERGE_CLOSURE";x.mergedOnMain=true;});
+  no(x=>{x.pr.state="closed";x.pr.merged=true;
+    x.pr.merged_at="2026-10-16T02:00:00Z";x.pr.merge_commit_sha="bad-sha";
+    x.phase="POST_MERGE_CLOSURE";x.mergedOnMain=true;});
+  no(x=>{x.pr.state="closed";x.pr.merged=true;
+    x.pr.merged_at="2026-10-16T02:00:00Z";x.pr.merge_commit_sha="d".repeat(40);
+    x.phase="WRONG_PHASE";x.mergedOnMain=true;});
   no(x=>{x.pr.base.ref="other";});
   no(x=>{x.ancestor=false;});
   const sameHead=fresh();sameHead.run.head_sha=sameHead.pr.head.sha;
