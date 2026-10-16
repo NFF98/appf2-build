@@ -21,9 +21,32 @@ const human={...r("HUMAN_FINAL_READY"),decision:"APPROVE_FINAL_INTEGRATION_READY
 const mk=(record,id)=>({id,body:READY_MARKER+"\n"+JSON.stringify(record),user:{login:"NFF98",type:"User"},
   author_association:"OWNER",created_at:"2026-10-15T00:00:00Z",updated_at:"2026-10-15T00:00:00Z"});
 const comments=[mk(local,1),mk(bce,2),mk(human,3)];
-const checks={check_runs:[{id:5,name:"fast-loop",head_sha:HEAD,status:"completed",conclusion:"success"}]};
-const check=(change={},want=true)=>{const x={event,live,comments,checks,changedFiles:[],candidateDigest:D,repo:REPO,...change};assert.equal(inspectPrReadiness(x).ok,want);};
+const requiredNames=["ci","attack","governance","Analyze JavaScript / TypeScript"];
+const checks={check_runs:[
+  {id:5,name:"fast-loop",head_sha:HEAD,status:"completed",conclusion:"success"},
+  ...requiredNames.map((name,i)=>({id:i+10,name,head_sha:HEAD,status:"completed",
+    conclusion:"success",app:{slug:"github-actions"}}))
+]};
+const originProof={ok:true,head:HEAD,base:BASE,pr_number:395,verified_names:requiredNames};
+const check=(change={},want=true)=>{
+  const x={event,live,comments,checks,changedFiles:[],candidateDigest:D,
+    repo:REPO,verifiedPrRunOrigins:originProof,...change};
+  assert.equal(inspectPrReadiness(x).ok,want);
+};
 check();
+// L3 exact-HEAD candidate cannot use four green branch-push checks as PR Ready.
+// Only the main CLI's authenticated run-by-run provenance receipt is accepted.
+check({verifiedPrRunOrigins:null},false);
+check({verifiedPrRunOrigins:{...originProof,ok:false}},false);
+check({verifiedPrRunOrigins:{...originProof,head:BASE}},false);
+check({verifiedPrRunOrigins:{...originProof,base:HEAD}},false);
+check({verifiedPrRunOrigins:{...originProof,pr_number:401}},false);
+check({verifiedPrRunOrigins:{...originProof,verified_names:["ci","attack","governance"]}},false);
+check({checks:{check_runs:checks.check_runs.filter(c=>c.name!=="attack")}},false);
+check({checks:{check_runs:checks.check_runs.map(c=>c.name==="attack"?
+  {...c,conclusion:"skipped"}:c)}},false);
+check({checks:{check_runs:checks.check_runs.map(c=>c.name==="ci"?
+  {...c,app:{slug:"forged"}}:c)}},false);
 check({live:{...live,draft:true}},false);
 check({event:{pull_request:{...event.pull_request,head:{sha:BASE}}}},false);
 check({comments:[]},false);
@@ -164,6 +187,7 @@ assert.match(ciWorkflow,/^ {4}name: \$\{\{[^\n]*'fast-loop'[^\n]*'fast-loop-read
 assert.match(ciWorkflow,/^ {4}if: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.draft \}\}/m,
   "fast-loop must remain draft-only (not a required full gate)");
 console.log("FINAL READY trigger graph and Draft->Ready check-name separation: PASS (static, NOT real full-gate execution).");
+console.log("L3 Final Ready four real PR-only Gate origin + 9 negative missing/stale/skip cases: PASS (synthetic; Human authorization not implied).");
 console.log("FINAL READY synthetic positive/negative: PASS (NOT Human approval or real local PASS).");
 
 /* The real GitHub workflow MUST run all four security/quality jobs before any
