@@ -2,7 +2,7 @@
 // Github's live reviewer history is the authoritative signed-by-platform Human source.
 import fs from "node:fs";
 import {pathToFileURL} from "node:url";
-import {ENVIRONMENT,WORKFLOW,HUMAN,taskScopeDigest,grantFromRun} from "./trusted-human-task-grant.mjs";
+import {ENVIRONMENT,WORKFLOW,HUMAN,taskScopeDigest,grantFromRun,sameGrantFields} from "./trusted-human-task-grant.mjs";
 const read=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 async function gh(path,token){
   const r=await fetch("https://api.github.com"+path,{headers:{
@@ -57,7 +57,7 @@ export function inspectIssuance({run,approvals,environment,grant,task,sprint,bui
   deny(exactIssuanceRun(run,input),"workflow/source commit 不一致");
   deny(issuanceScopeMatch(grant,input,task),"Human 所見 Task/Scope 與正式映射不一致");
   const canonical=grantFromRun(run,task);
-  deny(canonical!==null&&JSON.stringify(grant)===JSON.stringify(canonical),
+  deny(sameGrantFields(grant,canonical),
     "Workflow 真實 run-name / SHA / timestamp 與 Task 授權不一致");
   deny(leaseEligibleBeforeOrAfterActivation(grant,task,sprint,build),
     "已有另一 ACTIVE Task 或未合法規劃");
