@@ -36,13 +36,14 @@ const assertion=(ok,msg,e)=>{if(!ok)e.push(msg);};
 const readJsonFile=file=>JSON.parse(fs.readFileSync(file,"utf8"));
 // GitHub's check-runs endpoint is paginated. Final Ready must never decide
 // from its first 100 entries while the trusted Merge executor sees all pages.
+const checkPageHeaderOK=(pages,total,pageSize,maxPages)=>
+  Array.isArray(pages) && pages.length>=1 && pages.length<=maxPages &&
+  Number.isSafeInteger(total) && total>=0 && total<=pageSize*maxPages &&
+  pages.length===Math.max(1,Math.ceil(total/pageSize));
 export function completeCheckRunPages(pages){
   const PAGE_SIZE=100,MAX_PAGES=10;
-  if(!Array.isArray(pages)||pages.length<1||pages.length>MAX_PAGES)
-    throw Error("HARD_STOP: invalid GitHub Check Run pagination");
-  const total=pages[0]?.total_count;
-  if(!Number.isSafeInteger(total)||total<0||total>PAGE_SIZE*MAX_PAGES ||
-    pages.length!==Math.max(1,Math.ceil(total/PAGE_SIZE)))
+  const total=pages?.[0]?.total_count;
+  if(!checkPageHeaderOK(pages,total,PAGE_SIZE,MAX_PAGES))
     throw Error("HARD_STOP: incomplete GitHub Check Run pages");
   const all=[];
   for(let i=0;i<pages.length;i++){
