@@ -37,6 +37,10 @@ export const taskScopeDigest=task=>crypto.createHash("sha256").update(JSON.strin
 })).digest("hex");
 
 // Inputs are data from authenticated API calls performed by verifyLiveGrant(), NOT caller claims.
+export const sameGrantFields=(a,b)=>Boolean(a&&b)&&
+  JSON.stringify(Object.entries(a).sort(([x],[y])=>x<y?-1:x>y?1:0))===
+  JSON.stringify(Object.entries(b).sort(([x],[y])=>x<y?-1:x>y?1:0));
+
 const requiredReviewerConfigured=env=>{
   const reviewers=(env?.protection_rules||[]).filter(x=>x.type==="required_reviewers")
     .flatMap(x=>x.reviewers||[]);
@@ -86,7 +90,7 @@ export function inspectGitHubHumanGrant({run,approvals,environment,grant,task,sp
   deny(latestApprovedEnvironmentReview(approvals),"GitHub 真實核准不存在或撤銷");
   deny(grantFormatValid(grant),"Task 核准描述不合法");
   const canonical=grantFromRun(run,task);
-  deny(canonical!==null&&JSON.stringify(grant)===JSON.stringify(canonical),
+  deny(sameGrantFields(grant,canonical),
     "授權資訊沒有與 GitHub 真實 run-name / source SHA / timestamp 精確綁定");
   deny(activeExecutionMatches(task,sprint,build,grant),"Task/Sprint/Build 執行權變更");
   deny(task&&grant?.scope_sha256===taskScopeDigest(task),"AC/Test/Allowed path Scope 不一致");
