@@ -420,11 +420,16 @@ async function inspectReadyWithLiveApi({event,live,repo,token}){
 // Re-read authoritative GitHub state after all expensive Ready evidence
 // checks. Otherwise a force-push, Draft reversal or Main advance while
 // inspecting can admit an already-stale candidate. No mutation is performed.
-const readySnapshotIdentity=({live,main})=>[
+const readySnapshotHead=live=>[
   live?.number,live?.state,live?.draft,
-  live?.head?.sha,live?.head?.ref,live?.head?.repo?.full_name,
+  live?.head?.sha,live?.head?.ref,live?.head?.repo?.full_name
+];
+const readySnapshotBase=(live,main)=>[
   live?.base?.sha,live?.base?.ref,live?.base?.repo?.full_name,
   main?.commit?.sha
+];
+const readySnapshotIdentity=({live,main})=>[
+  ...readySnapshotHead(live),...readySnapshotBase(live,main)
 ];
 export function inspectReadyRecheckFreshness({beforeLive,beforeMain,afterLive,
   afterMain,requested,event,repo,ref,sha}={}){
