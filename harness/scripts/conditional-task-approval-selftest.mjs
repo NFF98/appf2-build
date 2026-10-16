@@ -72,7 +72,6 @@ export function runConditionalApprovalSelfTests(){
     if(got.ok!==expected)throw Error("ONE APPROVAL SELFTEST "+label+": "+got.decision+" "+got.errors.join(";"));
   }
   // Real executor policy: synthetic eligibility tests NEVER write/approve on GitHub.
-  const pristine=make();
   const livePr={number:17,state:"open",draft:false,
     base:{ref:"main",sha:BASE,repo:{full_name:"NFF98/appf2-build"}},
     head:{sha:HEAD,repo:{full_name:"NFF98/appf2-build"}},mergeable:true};
