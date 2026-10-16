@@ -233,6 +233,22 @@ assert.ok(finalAuditJob.startsWith("\n  final-ready-audit:\n") &&
   !ciEvidenceJob.includes("Verify ordered Local tests"),
   "Human Final Ready attestation must be separate from four required gates and cloud evidence");
 
+// GitHub job-level permissions replace workflow permissions. A missing
+// read grant makes authenticated Final Ready's /actions/runs and /check-runs
+// fail at runtime even when all PR checks are actually green. No write scope.
+const auditPermissions=finalAuditJob.match(/\n    permissions:\n((?:      [^\n]+\n)+)/)?.[1]||"";
+const actualPermissions=auditPermissions.trim().split("\n").map(line=>line.trim());
+for(const name of ["contents","issues","pull-requests","actions","checks"])
+  assert.ok(actualPermissions.includes(name+": read"),
+    "Final Ready cannot read required GitHub API evidence: "+name);
+assert.ok(actualPermissions.every(value=>/^(?:contents|issues|pull-requests|actions|checks): read$/.test(value)),
+  "Final Ready must not escalate above read-only permissions");
+const workflowPermissions=ciGeneric.match(/^permissions:\n((?:  [^\n]+\n)+)/m)?.[1]||"";
+assert.ok(workflowPermissions.includes("  actions: read") &&
+  workflowPermissions.includes("  checks: read"),
+  "CI workflow must allow Actions/Checks read-only evidence");
+console.log("Final Ready real Actions/Checks API GitHub token read-only grants: PASS (static).");
+
 assert.ok(!ciGeneric.includes("cloud-evidence-admission:") &&
   !ciGeneric.includes("cloud-evidence-mirror:") &&
   !ciGeneric.includes("ready_for_review, labeled"),
