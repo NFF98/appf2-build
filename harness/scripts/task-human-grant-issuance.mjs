@@ -2,7 +2,7 @@
 // Github's live reviewer history is the authoritative signed-by-platform Human source.
 import fs from "node:fs";
 import {pathToFileURL} from "node:url";
-import {ENVIRONMENT,WORKFLOW,HUMAN,taskScopeDigest} from "./trusted-human-task-grant.mjs";
+import {ENVIRONMENT,WORKFLOW,HUMAN,taskScopeDigest,grantFromRun} from "./trusted-human-task-grant.mjs";
 const read=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 async function gh(path,token){
   const r=await fetch("https://api.github.com"+path,{headers:{
@@ -29,6 +29,7 @@ const approvedHumanReview=approvals=>{
 const exactIssuanceRun=(run,input)=>run?.event==="workflow_dispatch"&&
   run?.head_sha===input?.head_sha&&
   run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW)&&
+  run?.head_branch==="main" &&
   run?.repository?.full_name==="NFF98/appf2-build";
 const inputMatchesGrant=(g,input)=>g?.schema==="APPF2-TRUSTED-TASK-GRANT-1"&&
   g?.task_id===input.task_id&&g?.sprint_id===input.sprint_id&&
@@ -55,6 +56,9 @@ export function inspectIssuance({run,approvals,environment,grant,task,sprint,bui
   deny(approvedHumanReview(approvals),"缺少 GitHub 真人核准");
   deny(exactIssuanceRun(run,input),"workflow/source commit 不一致");
   deny(issuanceScopeMatch(grant,input,task),"Human 所見 Task/Scope 與正式映射不一致");
+  const canonical=grantFromRun(run,task);
+  deny(canonical!==null&&JSON.stringify(grant)===JSON.stringify(canonical),
+    "Workflow 真實 run-name / SHA / timestamp 與 Task 授權不一致");
   deny(leaseEligibleBeforeOrAfterActivation(grant,task,sprint,build),
     "已有另一 ACTIVE Task 或未合法規劃");
   deny(issueTimeValid(grant,now),"Human 授權逾期");
@@ -64,9 +68,8 @@ async function cli(){
   const env=process.env,token=env.GH_TOKEN;
   if(!token||!env.GITHUB_RUN_ID||!env.HUMAN_TASK_ID||
     !env.HUMAN_SPRINT_ID||!env.HUMAN_SCOPE_SHA256)throw Error("missing Actions context");
-  const grant=read("delivery/task-grants/"+env.HUMAN_TASK_ID+".json");
   const sprint=read("delivery/CURRENT-SPRINT.json"),build=read("build-spec/CURRENT.json");
-  const task=read("delivery/sprints/"+grant.sprint_id+"/tasks.json").tasks
+  const task=read("delivery/sprints/"+env.HUMAN_SPRINT_ID+"/tasks.json").tasks
     .find(x=>x.task_id===env.HUMAN_TASK_ID);
   const base="/repos/NFF98/appf2-build";
   const [run,approvals,environment]=await Promise.all([
@@ -74,6 +77,7 @@ async function cli(){
     gh(base+"/actions/runs/"+env.GITHUB_RUN_ID+"/approvals",token),
     gh(base+"/environments/"+ENVIRONMENT,token)
   ]);
+  const grant=grantFromRun(run,task);
   const result=inspectIssuance({run,approvals,environment,grant,task,sprint,build,
     input:{task_id:env.HUMAN_TASK_ID,sprint_id:env.HUMAN_SPRINT_ID,
       scope_sha256:env.HUMAN_SCOPE_SHA256,head_sha:env.GITHUB_SHA},
