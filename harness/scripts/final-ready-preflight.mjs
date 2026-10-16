@@ -209,6 +209,58 @@ export function inspectLiveGitHubRequiredChecks({head,checks}){
   }
   return errors;
 }
+// A branch push may have four green check names on the SAME SHA and even
+// list the PR in check_run.pull_requests. Only an authenticated pull_request
+// workflow run is eligible for the actual Ready full-gate decision.
+const REQUIRED_PR_WORKFLOWS={
+  ci:".github/workflows/ci.yml",
+  attack:".github/workflows/attack-dry-run.yml",
+  governance:".github/workflows/governance-gate.yml",
+  "Analyze JavaScript / TypeScript":".github/workflows/codeql.yml"
+};
+const latestRequiredCheck=(checks,name,head)=>safeArray(checks?.check_runs)
+  .filter(c=>c.name===name&&c.head_sha===head)
+  .sort((a,b)=>(b.id||0)-(a.id||0))[0];
+const exactJobRunRef=check=>{
+  const match=/^https:\/\/github\.com\/NFF98\/appf2-build\/actions\/runs\/(\d+)\/job\/(\d+)$/
+    .exec(check?.details_url||"");
+  if(!match||Number(match[2])!==check?.id)return null;
+  return Number(match[1]);
+};
+export const checkReadyPrRunOrigin=({name,check,run,head,base,prNumber}={})=>{
+  const id=exactJobRunRef(check);
+  return id!==null && Number.isSafeInteger(id) &&
+    run?.id===id && run?.event==="pull_request" &&
+    run?.path===REQUIRED_PR_WORKFLOWS[name] &&
+    run?.repository?.full_name==="NFF98/appf2-build" &&
+    run?.head_sha===head &&
+    run?.status==="completed" && run?.conclusion==="success" &&
+    safeArray(run.pull_requests).some(p=>p.number===prNumber &&
+      p.head?.sha===head && p.base?.sha===base);
+};
+export async function verifyLiveRequiredPrRunOrigins({head,base,prNumber,checks,token}={}){
+  if(!HEX40.test(head||"")||!HEX40.test(base||"")||
+    !Number.isSafeInteger(prNumber)||prNumber<1||!token)
+    throw Error("HARD_STOP: required PR workflow provenance context unavailable");
+  const selected=REAL_CHECKS.map(name=>({
+    name,check:latestRequiredCheck(checks,name,head)}));
+  if(inspectLiveGitHubRequiredChecks({head,checks}).length ||
+    selected.some(({check})=>exactJobRunRef(check)===null))
+    throw Error("HARD_STOP: Full Ready PR checks missing or skipped");
+  const results=await Promise.all(selected.map(async ({name,check})=>{
+    const id=exactJobRunRef(check);
+    const response=await fetch("https://api.github.com/repos/NFF98/appf2-build/actions/runs/"+id,{
+      headers:{accept:"application/vnd.github+json",
+        authorization:"Bearer "+token,"X-GitHub-Api-Version":"2026-03-10",
+        "User-Agent":"appf2-ready-run-origin-verifier"}});
+    if(!response.ok)throw Error("HARD_STOP: GitHub PR workflow source unavailable "+response.status);
+    const run=await response.json();
+    return checkReadyPrRunOrigin({name,check,run,head,base,prNumber});
+  }));
+  if(results.some(ok=>!ok))
+    throw Error("HARD_STOP: push/synthetic/full-gate provenance is not a real PR Ready run");
+  return {ok:true,head,base,pr_number:prNumber,verified_names:REAL_CHECKS};
+}
 const validVerifiedGrant=(g,head)=>g?.ok===true &&
   g?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL"&&
   g?.current_head===head;
