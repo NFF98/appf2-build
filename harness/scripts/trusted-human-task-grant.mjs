@@ -97,7 +97,7 @@ const ttlValid=(g,now)=>Number.isSafeInteger(now)&&
   now>=g.approved_at_unix&&now<=g.expires_at_unix&&
   g.expires_at_unix-g.approved_at_unix<=30*86400;
 export function inspectGitHubHumanGrant({run,approvals,environment,grant,task,sprint,build,pr,ancestor,now,
-  phase="ACTIVE_PR",mergedOnMain=false}){
+  phase="ACTIVE_PR",mergedOnMain=false,baseAncestor=false}){
   const errors=[],deny=(p,m)=>{if(!p)errors.push(m);};
   deny(requiredReviewerConfigured(environment),"Environment 缺少 NFF98 Required reviewer");
   deny(authenticGrantWorkflow(run),"非官方成功的 Task Human grant workflow");
@@ -111,6 +111,7 @@ export function inspectGitHubHumanGrant({run,approvals,environment,grant,task,sp
   deny(grantedPrMatches(pr,grant,phase,mergedOnMain),
     "PR 不屬於已授權 Task 或 POST_MERGE_CLOSURE 缺少 GitHub Main 合併證明");
   deny(ancestor===true && hex40(pr?.head?.sha),"Human 批准 SHA 非當前 Task 分支祖先");
+  deny(baseAncestor===true,"Human 授權 Main SHA 非當前 PR BASE 的可信祖先");
   deny(ttlValid(grant,now),"Task 授權逾期或時間不合法");
   return {ok:errors.length===0,decision:errors.length?"HARD_STOP":"VERIFIED_GITHUB_HUMAN_APPROVAL",errors};
 }
@@ -139,6 +140,22 @@ const grantHeadAncestor=async ({run,pr,phase,token,root})=>{
       {cwd:root,stdio:"ignore"});
     return true;
   }catch{return false;}
+};
+export const inspectGrantMainAdvance=({grantSha,baseSha,compare})=>{
+  if(!hex40(grantSha)||!hex40(baseSha))return false;
+  if(grantSha===baseSha)return true;
+  return compare?.status==="ahead" &&
+    compare?.base_commit?.sha===grantSha &&
+    compare?.merge_base_commit?.sha===grantSha &&
+    compare?.commits?.at(-1)?.sha===baseSha;
+};
+const isGrantMainAncestor=async ({run,pr,token})=>{
+  const grantSha=run?.head_sha,baseSha=pr?.base?.sha;
+  if(!hex40(grantSha)||!hex40(baseSha))return false;
+  if(grantSha===baseSha)return true;
+  const compare=await gh("/repos/NFF98/appf2-build/compare/"+
+    grantSha+"..."+baseSha,token);
+  return inspectGrantMainAdvance({grantSha,baseSha,compare});
 };
 export const inspectMergedMainAncestry=({mergeSha,mainSha,compare,localHead})=>[
   hex40(mergeSha),hex40(mainSha),mainSha===localHead,
@@ -180,15 +197,17 @@ export async function verifyLiveGrant({pr,token,root=".",phase="ACTIVE_PR"}){
   // The Human-approved run itself is canonical; no mutable or absent grant JSON.
   const grant=grantFromRun(run,task);
   const ancestor=await grantHeadAncestor({run,pr,phase,token,root});
+  const baseAncestor=await isGrantMainAncestor({run,pr,token});
   const mergedOnMain=phase==="POST_MERGE_CLOSURE"
     ?await isMergeOnLiveMain({pr,token,root}):false;
   const report=inspectGitHubHumanGrant({run,approvals,environment,grant,
-    task,sprint,build,pr,ancestor,phase,mergedOnMain,
+    task,sprint,build,pr,ancestor,baseAncestor,phase,mergedOnMain,
     now:Math.floor(Date.now()/1000)});
   if(!report.ok)throw Error("可信 Human Task 授權：HARD STOP\n"+
     report.errors.join("\n"));
   return {...report,run_id:Number(id),approver:HUMAN,task_id:taskId,
-    source_head:run.head_sha,current_head:pr.head.sha,phase,mergedOnMain};
+    source_head:run.head_sha,base_sha:pr.base.sha,
+    base_ancestor:baseAncestor,current_head:pr.head.sha,phase,mergedOnMain};
 }
 async function cli(){
   const token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
