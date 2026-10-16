@@ -233,20 +233,32 @@ const exactJobRunRef=check=>{
   if(!match||Number(match[2])!==check?.id)return null;
   return Number(match[1]);
 };
+// A required job can have an authenticated green Check Run while its parent
+// workflow is still in progress, or is marked failed because a NON-required
+// Final Ready evidence job failed. Never let that job check its own parent
+// workflow conclusion: that creates a false provenance deadlock.
+const readyRunLifecycleValid=run=>
+  (run?.status==="in_progress" && run?.conclusion===null) ||
+  (run?.status==="completed" && ["success","failure"].includes(run?.conclusion));
+const readyRequiredJobPassed=(name,check,head)=>[
+  check?.name===name,check?.head_sha===head,
+  check?.status==="completed",check?.conclusion==="success",
+  check?.app?.slug==="github-actions"
+].every(Boolean);
 const readyRunSourceMatches=(name,run,id,head)=>[
   id!==null,Number.isSafeInteger(id),run?.id===id,
   run?.event==="pull_request",
   run?.path===REQUIRED_PR_WORKFLOWS[name],
   run?.repository?.full_name==="NFF98/appf2-build",
-  run?.head_sha===head,
-  run?.status==="completed",run?.conclusion==="success"
+  run?.head_sha===head,readyRunLifecycleValid(run)
 ].every(Boolean);
 const readyRunPrIdentity=(run,head,base,prNumber)=>
   safeArray(run?.pull_requests).some(p=>[
     p.number===prNumber,p.head?.sha===head,p.base?.sha===base
   ].every(Boolean));
 export const checkReadyPrRunOrigin=({name,check,run,head,base,prNumber}={})=>
-  readyRunSourceMatches(name,run,exactJobRunRef(check),head)&&
+  readyRequiredJobPassed(name,check,head) &&
+  readyRunSourceMatches(name,run,exactJobRunRef(check),head) &&
   readyRunPrIdentity(run,head,base,prNumber);
 export async function verifyLiveRequiredPrRunOrigins({head,base,prNumber,checks,token}={}){
   if(!HEX40.test(head||"")||!HEX40.test(base||"")||
