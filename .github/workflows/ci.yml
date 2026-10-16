@@ -6,6 +6,11 @@ on:
   push:
     branches: [main, governance/task-one-approval-20261016]
   workflow_dispatch:
+    inputs:
+      final_ready_pr_number:
+        description: "Read-only Final Ready recheck AFTER Local/BCE/Human evidence"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -19,8 +24,10 @@ jobs:
   # Required security and functional gates run before Human Final Ready.
   # Final Ready/BCE still govern merge; they must not suppress genuine test results.
   ci:
+    # Dispatch evidence recheck MUST NOT mint a newer skipped check named "ci".
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.final_ready_pr_number != '' && 'ci-recheck-only-skipped' || 'ci' }}
     # Draft 只執行 Fast-loop；Ready 才啟動完整必需 Gate。
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' || inputs.final_ready_pr_number == '') }}
     env:
       APPF2_GOV16_TEST_PHASE: '1'
     runs-on: ubuntu-latest
@@ -100,6 +107,33 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash harness/scripts/run-final-ready-preflight.sh
+
+  # After the four real PR gates, Local/BCE/Human comments are added later.
+  # Human/operator may recheck at the exact PR branch tip via workflow_dispatch.
+  # This is read-only and can NEVER create a grant, approve, or merge.
+  final-ready-recheck:
+    name: Final Ready evidence recheck (non-required)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.final_ready_pr_number != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      actions: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Re-evaluate live PR Full Gates plus ordered attestation without writing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.final_ready_pr_number }}
+        run: node harness/scripts/final-ready-preflight.mjs --recheck-pr "$PR_NUMBER" --event "$GITHUB_EVENT_PATH"
 
   # Non-required Draft fast loop: impacted tests only. Its PASS is never a full-gate PASS.
   fast-loop:
