@@ -199,7 +199,59 @@ export async function verifyLiveUnauthorizedNegative(){
     throw Error("LIVE NEGATIVE FAIL: protected main/PR drift after test");
   console.log("LIVE GITHUB NEGATIVE INTEGRATION: 5/5 REAL API HARD_STOP PASS; "+
     "Main/PR unchanged. Human positive approval/Merge/Closure NOT_RUN.");
+  const bootstrap=await inspectLiveBootstrapState({token:TOKEN,mainSha:after.main});
+  console.log("LIVE 16P BOOTSTRAP READINESS (informational, NOT PASS): "+
+    JSON.stringify(bootstrap));
 }
+
+const remoteRead=async (url,token)=>{
+  try{
+    const r=await fetch(url,{headers:{
+      accept:"application/vnd.github+json",authorization:"Bearer "+token,
+      "X-GitHub-Api-Version":"2026-03-10",
+      "User-Agent":"appf2-16p-bootstrap-reality-check"
+    }});
+    return {status:r.status,json:r.ok?await r.json():null};
+  }catch{return {status:0,json:null};}
+};
+const apiStatus=(r,ok,absent)=>{
+  if(r.status===200)return ok(r.json);
+  if(r.status===404)return absent;
+  return "UNVERIFIED_API_HTTP_"+r.status;
+};
+const reviewerSettings=env=>env?.name==="appf2-task-human-approval"&&
+  (env?.protection_rules||[]).some(p=>p.type==="required_reviewers" &&
+    (p.reviewers||[]).some(x=>x.type==="User"&&x.reviewer?.login==="NFF98"));
+export function summarizeBootstrapState({workflow,environment,design,mainSha}){
+  const mainWorkflow=apiStatus(workflow,x=>
+    x?.type==="file"?"PRESENT_MAIN":"UNVERIFIED_BAD_WORKFLOW_METADATA",
+    "NOT_FOUND_ON_MAIN");
+  const humanEnv=apiStatus(environment,x=>reviewerSettings(x)?
+    "REQUIRED_REVIEWER_CONFIRMED":"REQUIRED_REVIEWER_NOT_CONFIGURED",
+  "NOT_FOUND_OR_UNREADABLE");
+  const designLineage=apiStatus(design,x=>
+    ["ahead","identical"].includes(x?.status)?"FROZEN_ANCESTOR_CONFIRMED":
+      x?.status==="diverged"?"DIVERGED_NEEDS_HUMAN_REVIEW":
+        "UNVERIFIED_COMPARE_"+String(x?.status),
+    "UNVERIFIED_DESIGN_NOT_FOUND");
+  return {source:"LIVE_GITHUB_READ_ONLY",main_sha:mainSha,
+    main_grant_workflow:mainWorkflow,human_environment:humanEnv,
+    design_freeze_lineage:designLineage,positive_e2e:"NOT_RUN",
+    decision:"NOT_ELIGIBLE_TO_DECLARE_16P_IMPLEMENTED"};
+}
+export async function inspectLiveBootstrapState({token,mainSha}){
+  const api="https://api.github.com/repos/";
+  const [workflow,environment,design]=await Promise.all([
+    remoteRead(api+"NFF98/appf2-build/contents/.github/workflows/"+
+      "task-human-grant.yml?ref="+mainSha,token),
+    remoteRead(api+"NFF98/appf2-build/environments/appf2-task-human-approval",token),
+    remoteRead(api+"NFF98/appf2-design/compare/"+
+      "fda9045d0fc1b2b718d56ed49fa09abdce343a5c..."+
+      "f844914b7afb738f903d4041f09a1d6c8f82711e",token)
+  ]);
+  return summarizeBootstrapState({workflow,environment,design,mainSha});
+}
+
 
 if(import.meta.url===pathToFileURL(process.argv[1]||"").href){
   if(process.argv.includes("--live-negative"))
