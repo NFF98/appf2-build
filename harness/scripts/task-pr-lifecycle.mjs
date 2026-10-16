@@ -162,18 +162,24 @@ const uniqueIdentity=(rows,key)=>rows.every(r=>r&&r[key]!=null) &&
   new Set(rows.map(r=>r[key])).size===rows.length;
 const pageQuery=(endpoint,index)=>endpoint+
   (endpoint.includes("?")?"&":"?")+"per_page="+FULL_CHECK_COUNT+"&page="+index;
-export const githubPageDecision=({rows,accumulated=0,expected=null,page=1}={})=>{
-  const valid=Array.isArray(rows)&&rows.length<=FULL_CHECK_COUNT&&
-    page>=1&&page<=MAX_GITHUB_PAGES&&
-    (expected===null||(Number.isSafeInteger(expected)&&expected>=0&&
-      expected<=MAX_GITHUB_PAGES*FULL_CHECK_COUNT));
-  if(!valid)return "HARD_STOP";
-  const total=accumulated+rows.length;
-  if(expected!==null && total>expected)return "HARD_STOP";
-  if(expected!==null && total===expected)return "COMPLETE";
-  if(rows.length<FULL_CHECK_COUNT)
-    return expected===null?"COMPLETE":"HARD_STOP";
+const validPageInput=({rows,accumulated,expected,page})=>[
+  Array.isArray(rows),rows?.length<=FULL_CHECK_COUNT,
+  Number.isSafeInteger(page),page>=1,page<=MAX_GITHUB_PAGES,
+  Number.isSafeInteger(accumulated),accumulated>=0,
+  expected===null||Number.isSafeInteger(expected),
+  expected===null||expected>=0,
+  expected===null||expected<=MAX_GITHUB_PAGES*FULL_CHECK_COUNT
+].every(Boolean);
+const nextPageDecision=({size,total,expected,page})=>{
+  if(expected!==null&&total>expected)return "HARD_STOP";
+  if(expected!==null&&total===expected)return "COMPLETE";
+  if(size<FULL_CHECK_COUNT)return expected===null?"COMPLETE":"HARD_STOP";
   return page===MAX_GITHUB_PAGES?"HARD_STOP":"NEXT_PAGE";
+};
+export const githubPageDecision=({rows,accumulated=0,expected=null,page=1}={})=>{
+  if(!validPageInput({rows,accumulated,expected,page}))return "HARD_STOP";
+  return nextPageDecision({size:rows.length,total:accumulated+rows.length,
+    expected,page});
 };
 const fetchCompleteGitHubRows=async (endpoint,token)=>{
   const rows=[];
