@@ -12,7 +12,7 @@ import {inspectGitHubHumanGrant,taskScopeDigest,githubCompareProvesAncestor,
   inspectMergedMainAncestry,inspectGrantMainAdvance,ENVIRONMENT,WORKFLOW}
   from "./trusted-human-task-grant.mjs";
 import {inspectIssuance} from "./task-human-grant-issuance.mjs";
-import {inspectLiveGitHubRequiredChecks} from "./final-ready-preflight.mjs";
+import {inspectLiveGitHubRequiredChecks,verifyLiveRequiredPrRunOrigins} from "./final-ready-preflight.mjs";
 const sha="a".repeat(40),base="b".repeat(40),NOW=1792000000;
 const fresh=()=>{
   const task={task_id:"T009",status:"IN_PROGRESS",build_spec_id:"BS-P1-025",
@@ -386,12 +386,18 @@ export async function verifyLiveUnauthorizedNegative(){
   console.log("LIVE GITHUB PAGINATION VERIFIED: "+
     JSON.stringify({comments:inventory.comments.length,changed:inventory.changed.length,
       checks:inventory.checks.total_count}));
+  // Actual official check inventory has successful branch push checks,
+  // but the Draft PR Full Attack/CodeQL are skipped. Never mint L3 Ready.
+  await mustDeny("Draft/Push green checks cannot prove PR Full Gate",
+    ()=>verifyLiveRequiredPrRunOrigins({head,base:before.pr.base.sha,
+      prNumber:PR,checks:inventory.checks,token:TOKEN}),
+    /HARD_STOP: Full Ready PR checks missing or skipped|HARD_STOP: push\/synthetic\/full-gate provenance/);
   const after=await snapshot();
   if(after.main!==before.main||after.branch!==before.branch||
     after.pr?.head?.sha!==before.pr.head.sha||after.pr?.state!==before.pr.state)
     throw Error("LIVE NEGATIVE FAIL: protected main/PR drift after test");
-  console.log("LIVE GITHUB NEGATIVE INTEGRATION: 5/5 REAL API HARD_STOP PASS; "+
-    "Main/PR unchanged. Human positive approval/Merge/Closure NOT_RUN.");
+  console.log("LIVE GITHUB NEGATIVE INTEGRATION: 6/6 REAL API HARD_STOP PASS; "+
+    "Main/PR unchanged. Human positive approval/Ready/Merge/Closure NOT_RUN.");
   await verifyLiveMainFastForward(after.main);
   const bootstrap=await inspectLiveBootstrapState({token:TOKEN,mainSha:after.main});
   console.log("LIVE 16P BOOTSTRAP READINESS (informational, NOT PASS): "+
