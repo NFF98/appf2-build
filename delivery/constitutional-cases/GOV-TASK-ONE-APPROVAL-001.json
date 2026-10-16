@@ -23,6 +23,7 @@
     "harness/scripts/governance-gate.mjs",
     "harness/scripts/governance-reform-selftest.mjs",
     "harness/scripts/gpt-preflight.mjs",
+    "harness/scripts/live-github-negative-e2e.mjs",
     "harness/scripts/reform-wiring-audit.mjs",
     "harness/scripts/run-task-human-grant-preflight.sh",
     "harness/scripts/select-impacted-tests.mjs",
@@ -93,7 +94,8 @@
     "Genuine CI first attempt found four strict lint failures; refactored three high-complexity verifiers without exemptions, removed unsupported test global; 36 synthetic guard cases preserved.",
     "Second real CI identified last complexity 16 in Task scope matcher; split into independently tested short predicates without altering acceptance.",
     "真實 PR 沒有 Task: 宣告但變更 src/tests/supabase/generated 時，GitHub API changed-file inventory 必須強制拒絕；不可用刪除 PR 標籤繞過 Human grant。",
-    "Draft PR 只執行 Fast-loop 與必要 Governance；產品 CI、CodeQL、Attack 只在 PR Ready 才完整執行，Final HEAD 仍需要全部四 Gate PASS。"
+    "Draft PR 只執行 Fast-loop 與必要 Governance；產品 CI、CodeQL、Attack 只在 PR Ready 才完整執行，Final HEAD 仍需要全部四 Gate PASS。",
+    "Run live read-only GitHub API test against existing unauthorized Draft #401 on branch: grant, delegated CHECK, Evidence apply, Closure check, Closure apply must all reject with policy errors; verify GitHub Main/PR HEAD unchanged. This is negative E2E only."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -141,6 +143,7 @@
     "one_human_approval_per_normal_task": "CANDIDATE_NOT_ACTIVE_ON_MAIN",
     "real_GitHub_review_end_to_end": "NOT_RUN_REQUIRES_HUMAN_ENV_SETUP",
     "full_e2e_verified": false,
-    "github_environment_configured": "UNVERIFIED_NOT_ASSUMED"
+    "github_environment_configured": "UNVERIFIED_NOT_ASSUMED",
+    "live_github_negative_integration": "PENDING_GITHUB_ACTIONS_EXECUTION"
   }
 }
