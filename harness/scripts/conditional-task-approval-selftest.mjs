@@ -1,5 +1,5 @@
 import { evaluateTaskConditionalApproval as evaluate } from "./conditional-task-approval.mjs";
-import { advance, onNewHead } from "./task-pr-lifecycle.mjs";
+import { advance, onNewHead,delegatedPremergePolicy } from "./task-pr-lifecycle.mjs";
 const BASE="a".repeat(40),HEAD="b".repeat(40),DIGEST="c".repeat(64),NOW=1792000000;
 const contexts=["ci","attack","governance","Analyze JavaScript / TypeScript"];
 const make=()=>{
@@ -71,6 +71,41 @@ export function runConditionalApprovalSelfTests(){
     const got=evaluate({grant:fixture.grant,action,context:fixture.context});
     if(got.ok!==expected)throw Error("ONE APPROVAL SELFTEST "+label+": "+got.decision+" "+got.errors.join(";"));
   }
+  // Real executor policy: synthetic eligibility tests NEVER write/approve on GitHub.
+  const pristine=make();
+  const livePr={number:17,state:"open",draft:false,
+    base:{ref:"main",sha:BASE,repo:{full_name:"NFF98/appf2-build"}},
+    head:{sha:HEAD,repo:{full_name:"NFF98/appf2-build"}},mergeable:true};
+  const liveGrant={ok:true,decision:"VERIFIED_GITHUB_HUMAN_APPROVAL",
+    source_head:BASE,current_head:HEAD,task_id:"T001"};
+  const task={task_id:"T001",status:"REVIEW",build_spec_id:"BS-P1-025"};
+  const sprint={active_sprint:"SP-P1-003",active_task:"T001",
+    active_build_spec:"BS-P1-025",status:"REVIEW"};
+  const build={active_baseline:"BS-P1-025",implementation_enabled:true};
+  const valid={pr:livePr,grant:liveGrant,task,sprint,build,localHead:HEAD,
+    readiness:{ok:true,head:HEAD}};
+  if(!delegatedPremergePolicy(valid).ok)
+    throw Error("trusted premerge policy positive rejected");
+  let negativeDelegates=0;
+  const denyPremerge=mutation=>{
+    const x=JSON.parse(JSON.stringify(valid));mutation(x);
+    if(delegatedPremergePolicy(x).ok)throw Error("forged delegated premerge admitted");
+    negativeDelegates++;
+  };
+  denyPremerge(x=>{x.grant.ok=false;});
+  denyPremerge(x=>{x.grant.source_head="f".repeat(40);});
+  denyPremerge(x=>{x.grant.current_head="f".repeat(40);});
+  denyPremerge(x=>{x.pr.draft=true;});
+  denyPremerge(x=>{x.pr.mergeable=false;});
+  denyPremerge(x=>{x.pr.base.repo.full_name="attacker/repo";});
+  denyPremerge(x=>{x.pr.head.repo.full_name="attacker/repo";});
+  denyPremerge(x=>{x.pr.head.sha="f".repeat(40);});
+  denyPremerge(x=>{x.task.status="BLOCKED";});
+  denyPremerge(x=>{x.sprint.active_task="T008";});
+  denyPremerge(x=>{x.build.implementation_enabled=false;});
+  denyPremerge(x=>{x.readiness.ok=false;});
+  denyPremerge(x=>{x.readiness.head="f".repeat(40);});
+
   // Previous "positive" delegation checks accepted a Boolean pretending to authenticate
   // Human. They were fake proof. Until a separate independent verifier is connected,
   // even seemingly complete inputs must NOT move Human-only lifecycle states.
@@ -99,7 +134,7 @@ export function runConditionalApprovalSelfTests(){
     throw Error("AI masqueraded as Human closure approver");
   if(onNewHead(human.record,"f".repeat(40)).record.state!=="DRAFT_DEVELOPMENT")
     throw Error("HEAD change failed to invalidate readiness");
-  return tests.length+7;
+  return tests.length+7+1+negativeDelegates;
 }
 if(process.argv[1]?.endsWith("/conditional-task-approval-selftest.mjs"))
-  console.log("ONE APPROVAL: "+runConditionalApprovalSelfTests()+"/46 PASS (synthetic; delegated Human authority deliberately BLOCKED)");
+  console.log("ONE APPROVAL: "+runConditionalApprovalSelfTests()+" PASS (synthetic; live-only executor path NOT a Human approval)");
