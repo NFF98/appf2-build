@@ -306,11 +306,17 @@ const l1StageEvidenceErrors=(comments,head,ctx)=>{
   return errors;
 };
 export function inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
-  candidateDigest,repo,verifiedGrant}){
+  candidateDigest,repo,verifiedGrant,verifiedPrRunOrigins}){
   const errors=prMetadataErrors(event,live,repo);
   const head=live?.head?.sha,base=live?.base?.sha;
   const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
   assertion(validVerifiedGrant(verifiedGrant,head),"缺少 API 證明的 Human 一次授權",errors);
+  assertion(verifiedPrRunOrigins?.ok===true &&
+    verifiedPrRunOrigins.head===head &&
+    verifiedPrRunOrigins.base===base &&
+    verifiedPrRunOrigins.pr_number===live?.number &&
+    REAL_CHECKS.every(name=>verifiedPrRunOrigins.verified_names?.includes(name)),
+    "四項 Gate 缺少真實 pull_request 工作流程來源證明；Push PASS 不等於 Ready",errors);
   assertion(HEX64.test(candidateDigest||""),"精確 SHA256 不存在",errors);
   assertion(l1TaskChangedPathsValid(changedFiles),"L1 Task 夾帶受保護治理或 SSOT",errors);
   errors.push(...l1StageEvidenceErrors(comments,head,ctx));
@@ -358,8 +364,11 @@ async function main(argv){
     if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
       const verifiedGrant=await verifyLiveGrant({pr:live,
         token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
+      const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
+        head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
+        checks,token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
       result=inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
-        candidateDigest,repo,verifiedGrant});
+        candidateDigest,repo,verifiedGrant,verifiedPrRunOrigins});
     }else{
       result=inspectPrReadiness({event,live,comments,checks,changedFiles,candidateDigest,repo});
     }
