@@ -4,7 +4,7 @@ import {execFileSync} from "node:child_process";
 import {delegatedTaskExecutor,githubPageDecision,
   readLiveDelegationEvidence,freshMergeReceipt,taskChangedPathsWithinGrant,
   mainControlStateMatch,verifyLiveMainCanonicalState} from "./task-pr-lifecycle.mjs";
-import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
+import {verifyLiveGrant,unsignedPrProductScope} from "./trusted-human-task-grant.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck,
   writeExistingProtectedClosureCandidate} from "./evidence-ledger-report.mjs";
 import {pathToFileURL} from "node:url";
@@ -223,7 +223,30 @@ export function runTrustedGrantSelfTests(){
   reject(rawChecks.map((x,i)=>i?x:{...x,status:"in_progress"}));
   reject(rawChecks.map((x,i)=>i?x:{...x,app:{slug:"unknown-bot"}}));
   reject([...rawChecks,{...rawChecks[0],id:999,conclusion:"failure"}]);
-  return total+runFreshMergeReceiptTests()+runTaskAllowedPathsCases();
+  return total+runFreshMergeReceiptTests()+runTaskAllowedPathsCases()+runUnsignedProductScopeCases();
+}
+function runUnsignedProductScopeCases(){
+  const f=(filename,status="modified",previous_filename)=>({
+    filename,status,...(previous_filename===undefined?{}:{previous_filename})});
+  const cases=[
+    [true,[[f("harness/scripts/governance-gate.mjs")]]],
+    [true,[[f("delivery/CURRENT-SPRINT.json")]]],
+    [false,[[f("src/app.ts")]]],
+    [false,[[f("tests/flow.test.ts","removed")]]],
+    [false,[[f("harness/removed-src.ts","renamed","src/app.ts")]]],
+    [false,[[f("harness/copied-src.ts","copied","tests/flow.test.ts")]]],
+    [false,[[f("harness/moved.ts","renamed")]]],
+    [false,[[f("harness/moved.ts","copied")]]],
+    [false,[[f("harness/moved.ts","modified","src/app.ts")]]],
+    [false,[[f("harness/moved.ts","spoofed")]]],
+    [false,[[{filename:"harness/moved.ts"}]]],
+    [false,[]],
+    [false,[[{filename:42,status:"modified"}]]]
+  ];
+  for(const [expected,pages] of cases)
+    assert.equal(unsignedPrProductScope(pages).ok,expected,
+      "unsigned PR cannot disguise a product rename or hide missing GitHub metadata");
+  return cases.length;
 }
 function runTaskAllowedPathsCases(){
   const task={allowed_write_paths:["src/","tests/*.test.ts","docs/**/notes.md"]};
