@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
 import {delegatedTaskExecutor,githubPageDecision,
-  readLiveDelegationEvidence,freshMergeReceipt,
+  readLiveDelegationEvidence,freshMergeReceipt,taskChangedPathsWithinGrant,
   mainControlStateMatch,verifyLiveMainCanonicalState} from "./task-pr-lifecycle.mjs";
 import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck,
@@ -223,7 +223,24 @@ export function runTrustedGrantSelfTests(){
   reject(rawChecks.map((x,i)=>i?x:{...x,status:"in_progress"}));
   reject(rawChecks.map((x,i)=>i?x:{...x,app:{slug:"unknown-bot"}}));
   reject([...rawChecks,{...rawChecks[0],id:999,conclusion:"failure"}]);
-  return total+runFreshMergeReceiptTests();
+  return total+runFreshMergeReceiptTests()+runTaskAllowedPathsCases();
+}
+function runTaskAllowedPathsCases(){
+  const task={allowed_write_paths:["src/","tests/*.test.ts","docs/**/notes.md"]};
+  const valid=names=>taskChangedPathsWithinGrant({
+    task,changed:names.map(filename=>({filename}))});
+  assert.equal(valid(["src/app.ts","tests/flow.test.ts"]),true);
+  assert.equal(valid(["docs/a/notes.md"]),true);
+  assert.equal(valid(["docs/a/b/notes.md"]),true);
+  assert.equal(valid(["src/app.ts","delivery/CURRENT-SPRINT.json"]),false);
+  assert.equal(valid(["src/app.ts","harness/scripts/attack.mjs"]),false);
+  assert.equal(valid(["src/app.ts","src2/evil.ts"]),false);
+  assert.equal(valid(["tests/deep/flow.test.ts"]),false);
+  assert.equal(valid([]),false);
+  assert.equal(taskChangedPathsWithinGrant({task,changed:[{filename:22}]}),false);
+  assert.equal(taskChangedPathsWithinGrant({task:{allowed_write_paths:[]},
+    changed:[{filename:"src/app.ts"}]}),false);
+  return 10;
 }
 function runFreshMergeReceiptTests(){
   const fixture=()=>({
