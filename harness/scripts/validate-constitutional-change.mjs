@@ -123,19 +123,20 @@ export const GOV16_TEST_ONLY_PATHS=Object.freeze([
 // Test-only constitutional exception must NEVER apply to a Ready PR.
 // The official GitHub event file supplies immutable event source metadata;
 // a user-controlled env toggle or PR-body marker is not authorization.
+const gov16ExactDraftPr=pr=>{
+  if(!pr||!pr.head||!pr.base||!pr.head.repo||!pr.base.repo)return false;
+  const head=pr.head,base=pr.base;
+  return pr.draft===true && pr.state==="open" &&
+    base.ref==="main" && base.sha===GOV16_TEST_ONLY_BASE &&
+    head.ref==="governance/task-one-approval-20261016" &&
+    head.repo.full_name==="NFF98/appf2-build" &&
+    base.repo.full_name==="NFF98/appf2-build";
+};
 export const gov16TestOnlyInvocation=({eventName,ref,event}={})=>{
   if(eventName==="push")
     return ref==="refs/heads/governance/task-one-approval-20261016";
   if(eventName!=="pull_request")return false;
-  const pr=event?.pull_request;
-  return [
-    pr?.draft===true,pr?.state==="open",
-    pr?.base?.ref==="main",
-    pr?.base?.sha===GOV16_TEST_ONLY_BASE,
-    pr?.head?.ref==="governance/task-one-approval-20261016",
-    pr?.head?.repo?.full_name==="NFF98/appf2-build",
-    pr?.base?.repo?.full_name==="NFF98/appf2-build"
-  ].every(Boolean);
+  return gov16ExactDraftPr(event?.pull_request);
 };
 const gov16ScopedRun=()=>{
   const eventName=process.env.GITHUB_EVENT_NAME;
@@ -258,6 +259,36 @@ const testManualApprovalCase=()=>{
 };
 
 
+// Ready PR is never eligible for the pre-L3 constitutional test-only lane.
+const testGov392ReadyBoundary=({args,draftEvent,save,root})=>{
+  const readyEvent={pull_request:{...draftEvent.pull_request,draft:false}};
+  save("github-event.json",JSON.stringify(readyEvent));
+  if(isGov392TestOnly(args))
+    throw Error("GOV16 TEST ONLY: Ready PR without Human approval admitted");
+  const readyGate=inspectConstitutionalChange({
+    ...args,policy:{governance_only_paths:["harness/"]}});
+  if(!readyGate.errors.some(e=>e.includes("Human approval evidence")))
+    throw Error("GOV16 TEST ONLY: Ready Gate bypasses L3 Human approval");
+  for(const fake of [
+    {pull_request:{...draftEvent.pull_request,
+      head:{...draftEvent.pull_request.head,ref:"other"}}},
+    {pull_request:{...draftEvent.pull_request,
+      base:{...draftEvent.pull_request.base,sha:"f".repeat(40)}}},
+    {pull_request:{...draftEvent.pull_request,
+      head:{...draftEvent.pull_request.head,repo:{full_name:"other/repo"}}}},
+    {pull_request:{...draftEvent.pull_request,state:"closed",draft:true}}
+  ]){
+    save("github-event.json",JSON.stringify(fake));
+    if(isGov392TestOnly(args))
+      throw Error("GOV16 TEST ONLY: forged PR identity accepted");
+  }
+  save("github-event.json",JSON.stringify(draftEvent));
+  process.env.GITHUB_EVENT_PATH=path.join(root,"not-a-real-event.json");
+  if(isGov392TestOnly(args))
+    throw Error("GOV16 TEST ONLY: missing official GitHub event admitted");
+  process.env.GITHUB_EVENT_PATH=path.join(root,"github-event.json");
+};
+
 // Synthetic negative and positive tests for the bounded GOV-392 lane.
 const testGov392TestOnly=()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-gov16-test-only-"));
@@ -286,34 +317,7 @@ const testGov392TestOnly=()=>{
     process.env.GITHUB_EVENT_PATH=eventPath;
     const args={changed,base:GOV16_TEST_ONLY_BASE,root};
     if(!isGov392TestOnly(args))throw Error("GOV16 TEST ONLY: exact Draft shape rejected");
-    // The decisive live security boundary: when the same PR becomes Ready,
-    // pending Human approval MUST fail the constitutional Gate.
-    const readyEvent={pull_request:{...draftEvent.pull_request,draft:false}};
-    save("github-event.json",JSON.stringify(readyEvent));
-    if(isGov392TestOnly(args))
-      throw Error("GOV16 TEST ONLY: Ready PR without Human approval admitted");
-    const readyGate=inspectConstitutionalChange({
-      ...args,policy:{governance_only_paths:["harness/"]}});
-    if(!readyGate.errors.some(e=>e.includes("Human approval evidence")))
-      throw Error("GOV16 TEST ONLY: Ready Gate bypasses L3 Human approval");
-    for(const fake of [
-      {pull_request:{...draftEvent.pull_request,
-        head:{...draftEvent.pull_request.head,ref:"other"}}},
-      {pull_request:{...draftEvent.pull_request,
-        base:{...draftEvent.pull_request.base,sha:"f".repeat(40)}}},
-      {pull_request:{...draftEvent.pull_request,
-        head:{...draftEvent.pull_request.head,repo:{full_name:"other/repo"}}}},
-      {pull_request:{...draftEvent.pull_request,state:"closed",draft:true}}
-    ]){
-      save("github-event.json",JSON.stringify(fake));
-      if(isGov392TestOnly(args))
-        throw Error("GOV16 TEST ONLY: forged PR identity accepted");
-    }
-    save("github-event.json",JSON.stringify(draftEvent));
-    process.env.GITHUB_EVENT_PATH=path.join(root,"not-a-real-event.json");
-    if(isGov392TestOnly(args))
-      throw Error("GOV16 TEST ONLY: missing official GitHub event admitted");
-    process.env.GITHUB_EVENT_PATH=eventPath;
+    testGov392ReadyBoundary({args,draftEvent,save,root});
     if(isGov392TestOnly({...args,changed:[...changed,"src/rogue.ts"]}))
       throw Error("GOV16 TEST ONLY: rogue Product path admitted");
     if(isGov392TestOnly({...args,base:"b".repeat(40)}))
