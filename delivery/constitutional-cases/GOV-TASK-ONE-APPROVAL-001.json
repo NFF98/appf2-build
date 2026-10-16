@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "cc4c1daaa677d7b9482aa17d47a14f22f0dbef5ea308375b9b3aeabd7fcd1184",
+  "candidate_digest_sha256": "29cbf1bbf4768cf3fffab057fb6d783e41ebde0ffc65a264e6d622ef045c90ca",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -110,7 +110,8 @@
     "L3 non-Task governance PR Final Ready previously admitted synthetic Fast-loop PASS without requiring authenticated PR-event Full Gate provenance. Now it requires exact four pull_request workflow run proofs on PR, BASE and HEAD, shared with L1 and delegated Merge; six real GitHub negative API checks include rejection of draft PR/branch-push-green masquerade. Does not mint Human L3 approval or positive E2E.",
     "GitHub Final Ready audit job had explicit job-level token permissions missing Actions read and Checks read even though new L1/L3 provenance requires GitHub REST workflow-run and check-run APIs. Added read-only permissions (no writes) to CI workflow and overridden audit job and static regression preventing removal/escalation. Draft Human positive Ready still NOT_RUN.",
     "Final Ready audit on ready_for_review runs BEFORE later Local/BCE/Human comments arrive. Added explicit read-only workflow_dispatch final_ready_pr_number recheck in ci.yml; never shadows required 'ci' status (distinct ci-recheck-only-skipped), and new final-ready-preflight.mjs CLI checks authenticated live PR, event input, canonical Main, exact branch/ref/checkout SHA, GitHub Full PR Gate provenance and same ordered human/local/BCE evidence. 1 positive + 19 synthetic false-ref/Main/PR cases, static workflow wiring PASS; real Human positive after evidence NOT_RUN.",
-    "Post-attestation workflow_dispatch Ready recheck previously used an initial live PR/Main snapshot; a PR force-push, return to Draft, branch change or Main advance during evidence reads could leave a stale ADMITTED result. Added a second authenticated live PR/Main fetch after evidence, compare all identity/base/draft/branch/head/main values and HARD_STOP on drift; synthetic 1 positive and 11 drift denials, GitHub lint/gate preserved, Human positive recheck still NOT_RUN."
+    "Post-attestation workflow_dispatch Ready recheck previously used an initial live PR/Main snapshot; a PR force-push, return to Draft, branch change or Main advance during evidence reads could leave a stale ADMITTED result. Added a second authenticated live PR/Main fetch after evidence, compare all identity/base/draft/branch/head/main values and HARD_STOP on drift; synthetic 1 positive and 11 drift denials, GitHub lint/gate preserved, Human positive recheck still NOT_RUN.",
+    "Critical enforcement gap verified via live Main Ruleset 23969502: required approving review count is 0 despite four required GitHub checks. Previous GOV-392 pending-Human constitutional test exemption used event pull_request regardless of Draft, potentially allowing Ready PR required Governance/CI checks to pass without L3 approval. Now official GITHUB_EVENT_PATH must verify exact OPEN DRAFT PR with canonical repository/base/head/branch, or exact candidate-branch Push; Ready PR cannot enter test lane and must pass real exact-digest L3 human_approval docket rule. Synthetic Ready-with-null-Human rejection and forged event/closed PR negatives added; real Human L3 still pending; external Ruleset setting remains Human/admin-controlled."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -176,6 +177,7 @@
     "l3_final_ready_pr_full_gates": "EXACT_GITHUB_PR_EVENT_RUN_PROVENANCE_REQUIRED; 9_SYNTHETIC_NEGATIVES_PLUS_1_POSITIVE; LIVE_DRAFT_REAL_API_NEGATIVE_6_OF_6_EXPECTED; HUMAN_L3_STILL_PENDING",
     "final_ready_workflow_token_permissions": "JOB_EXPLICIT_ACTIONS_READ_CHECKS_READ_WITHOUT_WRITE; STATIC_GATE_CANDIDATE_VERIFIED; HUMAN_PR_READY_POSITIVE_NOT_RUN",
     "post_attestation_ready_recheck": "WORKFLOW_DISPATCH_READ_ONLY_CANDIDATE_STATIC_AND_20_SYNTHETIC_PASS; NO_SHADOWED_CI; VERIFIED_REAL_HUMAN_POSITIVE_NOT_RUN",
-    "post_attestation_ready_recheck_final_freshness": "TWO_AUTHENTICATED_LIVE_PR_MAIN_SNAPSHOTS_BEFORE_AND_AFTER_EVIDENCE_WITH_EXACT_SHA_BASE_BRANCH_DRAFT; SYNTHETIC_POSITIVE_AND_11_NEGATIVES; HUMAN_E2E_NOT_RUN"
+    "post_attestation_ready_recheck_final_freshness": "TWO_AUTHENTICATED_LIVE_PR_MAIN_SNAPSHOTS_BEFORE_AND_AFTER_EVIDENCE_WITH_EXACT_SHA_BASE_BRANCH_DRAFT; SYNTHETIC_POSITIVE_AND_11_NEGATIVES; HUMAN_E2E_NOT_RUN",
+    "l3_ready_pending_human_scope_guard": "REAL_RULESET_23969502_APPROVING_REVIEW_0; DRAFT_ONLY_PENDING_GOV16_TEST_LANE; READY_L3_DOCKET_APPROVAL_REQUIRED; MAIN_RULESET_EXTERNAL_REVIEW_STILL_0"
   }
 }
