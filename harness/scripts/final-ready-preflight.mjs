@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { finalGateVerdict } from "./task-pr-lifecycle.mjs";
-import { exceptionDigest } from "./human-exception.mjs";
+import { exceptionDigest, matchesPathRule } from "./human-exception.mjs";
 import { verifyLiveGrant } from "./trusted-human-task-grant.mjs";
 
 export const READY_MARKER="[APPF2-FINAL-READY-V1]";
@@ -213,10 +213,27 @@ export function inspectLiveGitHubRequiredChecks({head,checks}){
 const validVerifiedGrant=(g,head)=>g?.ok===true &&
   g?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL"&&
   g?.current_head===head;
-const l1TaskChangedPathsValid=files=>{
-  const changed=Array.isArray(files)?files.flat().map(x=>x?.filename):[];
-  return changed.length>0&&changed.every(x=>nonEmpty(x)&&
-    !/^(?:harness\/|build-spec\/|\.github\/|AGENTS\.md$|delivery\/constitutional-cases\/)/.test(x));
+const L1_FILE_STATUSES=new Set(["added","modified","removed","renamed",
+  "copied","changed","unchanged"]);
+const forbiddenL1Path=(path,rules)=>!nonEmpty(path) ||
+  path.startsWith("delivery/constitutional-cases/") ||
+  rules.some(rule=>matchesPathRule(path,rule));
+const l1FileScopeOK=(file,rules)=>{
+  if(!L1_FILE_STATUSES.has(file?.status) ||
+    forbiddenL1Path(file.filename,rules))return false;
+  if(["renamed","copied"].includes(file.status))
+    return !forbiddenL1Path(file.previous_filename,rules);
+  return file.previous_filename==null;
+};
+// Ready must NOT approve protected-source renames or deletions disguised as
+// ordinary implementation. The independent merge executor also enforces the
+// actual Task allowed_write_paths on every live PR filename and origin.
+export const l1TaskChangedPathsValid=files=>{
+  const rows=Array.isArray(files)?files.flat():[];
+  const policy=readJsonFile("harness/policy/repo-policy.json");
+  const rules=policy.governance_only_paths;
+  return Array.isArray(rules) && rules.length>0 &&
+    rows.length>0 && rows.every(f=>l1FileScopeOK(f,rules));
 };
 const l1BceOrderValid=(records)=>{
   const local=records.find(x=>x.record.kind==="LOCAL_TESTS");
