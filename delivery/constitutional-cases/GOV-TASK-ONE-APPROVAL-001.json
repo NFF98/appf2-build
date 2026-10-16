@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "c0c12bd68a69335fc6e1fce71228061c8e8af3afc61548394881c04d167def6c",
+  "candidate_digest_sha256": "54c7f9bda0e57e88ca19ed9360d60b7d0f5b82f2de4b5c3c74d8da8173e00813",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -144,6 +144,6 @@
     "real_GitHub_review_end_to_end": "NOT_RUN_REQUIRES_HUMAN_ENV_SETUP",
     "full_e2e_verified": false,
     "github_environment_configured": "UNVERIFIED_NOT_ASSUMED",
-    "live_github_negative_integration": "5_OF_5_TRUE_GITHUB_API_HARD_STOP_PASS_38877543041; POSITIVE_HUMAN_E2E_NOT_RUN"
+    "live_github_negative_integration": "REAL_API_5_OF_5_HARD_STOP_VERIFIED_CURRENT_SCOPE_38878012380; POSITIVE_E2E_NOT_RUN"
   }
 }
