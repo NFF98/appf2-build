@@ -228,7 +228,9 @@ const isTrustedExactHead=(pr,head)=>[pr?.head?.sha===head,
   /^[0-9a-f]{40}$/.test(head||"")].every(Boolean);
 const isExactGitHubGrant=(grant,pr)=>[
   grant?.ok===true,grant?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL",
-  grant?.source_head===pr?.base?.sha,grant?.current_head===pr?.head?.sha].every(Boolean);
+  /^[a-f0-9]{40}$/.test(grant?.source_head||""),
+  grant?.base_sha===pr?.base?.sha,grant?.base_ancestor===true,
+  grant?.current_head===pr?.head?.sha].every(Boolean);
 const canonicalDelegationState=({task,sprint,build,grant})=>[
   task?.task_id===grant?.task_id,sprint?.active_task===task?.task_id,
   Boolean(sprint?.active_sprint),sprint?.active_build_spec===task?.build_spec_id,
