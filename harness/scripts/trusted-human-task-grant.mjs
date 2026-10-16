@@ -8,6 +8,10 @@ import {pathToFileURL} from "node:url";
 
 export const ENVIRONMENT="appf2-task-human-approval";
 export const WORKFLOW=".github/workflows/task-human-grant.yml";
+export const trustedWorkflowPath=run=>{
+  const path=String(run?.path||"").split("@")[0];
+  return path===WORKFLOW || path==="NFF98/appf2-build/"+WORKFLOW;
+};
 export const HUMAN="NFF98";
 const hex40=x=>/^[a-f0-9]{40}$/.test(x||"");
 const hex64=x=>/^[a-f0-9]{64}$/.test(x||"");
@@ -52,7 +56,7 @@ const authenticGrantWorkflow=run=>
   run?.conclusion==="success" &&
   run?.head_branch==="main" &&
   run?.repository?.full_name==="NFF98/appf2-build" &&
-  run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW) &&
+  trustedWorkflowPath(run) &&
   hex40(run?.head_sha);
 const latestApprovedEnvironmentReview=reviews=>{
   const list=Array.isArray(reviews)?reviews.filter(x=>
