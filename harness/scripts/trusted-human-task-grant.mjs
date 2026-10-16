@@ -140,17 +140,27 @@ const grantHeadAncestor=async ({run,pr,phase,token,root})=>{
     return true;
   }catch{return false;}
 };
+export const inspectMergedMainAncestry=({mergeSha,mainSha,compare,localHead})=>[
+  hex40(mergeSha),hex40(mainSha),mainSha===localHead,
+  githubCompareProvesAncestor(compare),
+  compare?.base_commit?.sha===mergeSha,
+  compare?.merge_base_commit?.sha===mergeSha
+].every(Boolean);
 const isMergeOnLiveMain=async ({pr,token,root})=>{
   const main=await gh("/repos/NFF98/appf2-build/branches/main",token);
-  const mainSha=main?.commit?.sha;
-  if(!hex40(mainSha)||!hex40(pr?.merge_commit_sha))return false;
+  const mainSha=main?.commit?.sha,mergeSha=pr?.merge_commit_sha;
+  if(!hex40(mainSha)||!hex40(mergeSha))return false;
+  // Insist on a canonical Main checkout for local Evidence verification,
+  // but rely on GitHub's authenticated compare API, NOT local git history.
+  let localHead="";
   try{
-    const local=execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim();
-    if(local!==mainSha)return false;
-    execFileSync("git",["merge-base","--is-ancestor",pr.merge_commit_sha,local],
-      {cwd:root,stdio:"ignore"});
-    return true;
+    localHead=execFileSync("git",["rev-parse","HEAD"],
+      {cwd:root,encoding:"utf8"}).trim();
   }catch{return false;}
+  if(localHead!==mainSha)return false;
+  const compare=await gh("/repos/NFF98/appf2-build/compare/"+
+    mergeSha+"..."+mainSha,token);
+  return inspectMergedMainAncestry({mergeSha,mainSha,compare,localHead});
 };
 export async function verifyLiveGrant({pr,token,root=".",phase="ACTIVE_PR"}){
   const id=pr?.body?.match(/^Task-Grant-Run:\s*(\d{1,14})\s*$/m)?.[1];
