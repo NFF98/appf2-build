@@ -363,10 +363,13 @@ const revalidateProtectedMerge=async ({root,prNumber,token,head,pr,
     throw Error("HARD_STOP: GitHub readiness evidence or PR changed before merge");
   await verifyLiveMainCanonicalState({pr:live,token});
   const grant=await verifyLiveGrant({pr:live,token});
+  const {verifyLiveRequiredPrRunOrigins}=await import("./final-ready-preflight.mjs");
+  const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
+    head,base:live.base.sha,prNumber,checks:latest.checks,token});
   const readiness=inspectTaskPrReadiness({event,live,
     comments:latest.comments,checks:latest.checks,changedFiles:latest.changed,
     candidateDigest:candidateDigestOf(latest.changed,candidateFileBytes),
-    repo:DELEGATED_REPO,verifiedGrant:grant});
+    repo:DELEGATED_REPO,verifiedGrant:grant,verifiedPrRunOrigins});
   const result=delegatedPremergePolicy({pr:live,grant,task,sprint,build,
     localHead:head,readiness,changedPaths:latest.changed});
   if(!result.ok||!readiness.ok)
@@ -383,12 +386,16 @@ export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
   const {verifyLiveGrant}=await import("./trusted-human-task-grant.mjs");
   await verifyLiveMainCanonicalState({pr,token});
   const grant=await verifyLiveGrant({pr,token});
-  const {candidateDigestOf,inspectTaskPrReadiness}=await import("./final-ready-preflight.mjs");
+  const {candidateDigestOf,inspectTaskPrReadiness,
+    verifyLiveRequiredPrRunOrigins}=await import("./final-ready-preflight.mjs");
   const {comments,changed,checks}=await readLiveDelegationEvidence({prNumber,head,token});
   const digest=candidateDigestOf(changed,candidateFileBytes);
   const event={pull_request:{number:pr.number,head:{sha:head},base:{sha:pr.base.sha},draft:pr.draft}};
+  const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
+    head,base:pr.base.sha,prNumber,checks,token});
   const readiness=inspectTaskPrReadiness({event,live:pr,comments,checks,
-    changedFiles:changed,candidateDigest:digest,repo:DELEGATED_REPO,verifiedGrant:grant});
+    changedFiles:changed,candidateDigest:digest,repo:DELEGATED_REPO,
+    verifiedGrant:grant,verifiedPrRunOrigins});
   const sprint=readJson("delivery/CURRENT-SPRINT.json"),build=readJson("build-spec/CURRENT.json");
   const taskId=pr.body?.match(/^Task:\s*(T\d{3})\b/m)?.[1];
   const task=(readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks||[])
