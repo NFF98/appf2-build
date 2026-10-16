@@ -149,9 +149,17 @@ const actualPrRun={id:prRunId,event:"pull_request",head_sha:HEAD,
 const origin=(patch={},check=jobCheck,name="ci")=>checkReadyPrRunOrigin({
   name,check,run:{...actualPrRun,...patch},head:HEAD,base:BASE,prNumber:395});
 assert.equal(origin(),true);
+// Real #401: the required ci job SUCCEEDED, yet its parent Workflow FAILED
+// because the non-required Final Ready audit depended on its own conclusion.
+// Read-only GitHub job identity and result remain the required source of truth.
+assert.equal(origin({status:"completed",conclusion:"failure"}),true,
+  "Nonrequired audit failure cannot invalidate genuine successful required job");
+assert.equal(origin({status:"in_progress",conclusion:null}),true,
+  "Ready audit may execute while its own parent CI Workflow remains in progress");
 const rejected=[
   {event:"push"},{event:"workflow_dispatch"},{head_sha:BASE},
-  {status:"in_progress"},{conclusion:"skipped"},{conclusion:"failure"},
+  {status:"in_progress"},{status:"queued",conclusion:null},
+  {conclusion:"skipped"},{conclusion:"cancelled"},
   {path:".github/workflows/attack-dry-run.yml"},
   {repository:{full_name:"other/repo"}},{id:999},
   {pull_requests:[{number:395,head:{sha:BASE},base:{sha:BASE}}]},
@@ -162,6 +170,12 @@ const rejected=[
 for(const x of rejected.slice(0,-1))
   assert.equal(origin(x),false,"Fake Ready origin must be denied");
 assert.equal(origin({}, {...jobCheck,id:900}),false);
+for(const fakeJob of [
+  {conclusion:"failure"},{conclusion:"skipped"},{status:"in_progress"},
+  {app:{slug:"forged"}},{head_sha:BASE},{name:"fast-loop"}
+]) assert.equal(origin({status:"completed",conclusion:"failure"},
+  {...jobCheck,...fakeJob}),false,
+  "Failed, skipped, wrong-source or running required job never satisfies Ready");
 assert.equal(origin({}, {...jobCheck,details_url:
   "https://github.com/forged/appf2-build/actions/runs/"+prRunId+"/job/"+checkId}),false);
 assert.equal(origin({}, {...jobCheck,details_url:
@@ -171,7 +185,7 @@ const prOriginMissing=inspectTaskPrReadiness({event,live,comments:[],
   verifiedGrant:{ok:true,decision:"VERIFIED_GITHUB_HUMAN_APPROVAL",
     current_head:HEAD}});
 assert.ok(prOriginMissing.errors.some(x=>x.includes("Push PASS 不等於 Ready")));
-console.log("16P PR-only full-gate run-origin rejection: 17 synthetic negative + 1 positive PASS; Human positive not verified.");
+console.log("16P PR-only Required JOB origin: 3 synthetic positive (including failed/ongoing parent workflow), 24 negative PASS; Human positive not verified.");
 // GitHub only triggers ready_for_review once. Local/BCE/Human evidence comes
 // later, so a read-only, exact-PR recheck is necessary. It must never accept a
 // dispatch input as trusted proof of PR identity, Head, branch, or canonical Main.
