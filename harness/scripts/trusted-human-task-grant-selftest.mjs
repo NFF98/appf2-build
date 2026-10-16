@@ -57,6 +57,57 @@ function runPaginationSelfTests(){
   assert.equal(page({rows:pageRows(99),expected:100}),"HARD_STOP");count++;
   return count;
 }
+function runAncestrySelfTests(){
+  let count=0;
+  for(const [status,allowed] of [
+    ["ahead",true],["identical",true],["diverged",false],
+    ["behind",false],["not-found",false],[null,false]
+  ]){
+    assert.equal(githubCompareProvesAncestor({status}),allowed);
+    count++;
+  }
+  assert.equal(githubCompareProvesAncestor(null),false);count++;
+  // Authentic Main merge ancestry: GitHub compare receipt must bind *both*
+  // SHA endpoints and the current local Main, not a caller-supplied Boolean.
+  const merge="d".repeat(40),current="e".repeat(40);
+  const positive={mergeSha:merge,mainSha:current,localHead:current,
+    compare:{status:"ahead",base_commit:{sha:merge},
+      merge_base_commit:{sha:merge}}};
+  assert.equal(inspectMergedMainAncestry(positive),true);count++;
+  const receipts=[
+    {compare:{...positive.compare,status:"identical"},mainSha:merge,localHead:merge},
+    {compare:{...positive.compare,status:"diverged"}},
+    {compare:{...positive.compare,status:"behind"}},
+    {compare:{...positive.compare,base_commit:{sha:current}}},
+    {compare:{...positive.compare,merge_base_commit:{sha:current}}},
+    {localHead:"f".repeat(40)},{mergeSha:"not-a-sha"},
+    {mainSha:"not-a-sha"},{compare:null}
+  ];
+  for(const patch of receipts){
+    const data={...positive,...patch};
+    const expected=data.mainSha===merge&&data.localHead===merge&&
+      data.compare?.status==="identical"&&
+      data.compare?.base_commit?.sha===merge;
+    assert.equal(inspectMergedMainAncestry(data),Boolean(expected),
+      "Main ancestry must fail closed unless exact GitHub compare+checkout agrees");
+    count++;
+  }
+  const granted="a".repeat(40),advanced="f".repeat(40);
+  const prove={grantSha:granted,baseSha:advanced,
+    compare:{status:"ahead",base_commit:{sha:granted},
+      merge_base_commit:{sha:granted},commits:[{sha:advanced}]}};
+  assert.equal(inspectGrantMainAdvance(prove),true);count++;
+  assert.equal(inspectGrantMainAdvance({...prove,baseSha:granted,compare:null}),true);count++;
+  for(const patch of [
+    {compare:null},{compare:{...prove.compare,status:"diverged"}},
+    {compare:{...prove.compare,status:"behind"}},
+    {compare:{...prove.compare,base_commit:{sha:advanced}}},
+    {compare:{...prove.compare,merge_base_commit:{sha:advanced}}},
+    {compare:{...prove.compare,commits:[{sha:granted}]}},
+    {grantSha:"invalid"},{baseSha:"invalid"}
+  ]){assert.equal(inspectGrantMainAdvance({...prove,...patch}),false);count++;}
+  return count;
+}
 export function runTrustedGrantSelfTests(){
   let total=0;
   const yes=x=>{const r=inspectGitHubHumanGrant(x);assert.equal(r.ok,true,r.errors.join("|"));total++;};
@@ -117,53 +168,7 @@ export function runTrustedGrantSelfTests(){
   no(x=>{x.pr.base.ref="other";});
   no(x=>{x.ancestor=false;});
   no(x=>{x.baseAncestor=false;});
-  for(const [status,allowed] of [
-    ["ahead",true],["identical",true],["diverged",false],
-    ["behind",false],["not-found",false],[null,false]
-  ]){
-    assert.equal(githubCompareProvesAncestor({status}),allowed);
-    total++;
-  }
-  assert.equal(githubCompareProvesAncestor(null),false);total++;
-  // Authentic Main merge ancestry: GitHub compare receipt must bind *both*
-  // SHA endpoints and the current local Main, not a caller-supplied Boolean.
-  const merge="d".repeat(40),current="e".repeat(40);
-  const positive={mergeSha:merge,mainSha:current,localHead:current,
-    compare:{status:"ahead",base_commit:{sha:merge},
-      merge_base_commit:{sha:merge}}};
-  assert.equal(inspectMergedMainAncestry(positive),true);total++;
-  const receipts=[
-    {compare:{...positive.compare,status:"identical"},mainSha:merge,localHead:merge},
-    {compare:{...positive.compare,status:"diverged"}},
-    {compare:{...positive.compare,status:"behind"}},
-    {compare:{...positive.compare,base_commit:{sha:current}}},
-    {compare:{...positive.compare,merge_base_commit:{sha:current}}},
-    {localHead:"f".repeat(40)},{mergeSha:"not-a-sha"},
-    {mainSha:"not-a-sha"},{compare:null}
-  ];
-  for(const patch of receipts){
-    const data={...positive,...patch};
-    const expected=data.mainSha===merge&&data.localHead===merge&&
-      data.compare?.status==="identical"&&
-      data.compare?.base_commit?.sha===merge;
-    assert.equal(inspectMergedMainAncestry(data),Boolean(expected),
-      "Main ancestry must fail closed unless exact GitHub compare+checkout agrees");
-    total++;
-  }
-  const granted="a".repeat(40),advanced="f".repeat(40);
-  const prove={grantSha:granted,baseSha:advanced,
-    compare:{status:"ahead",base_commit:{sha:granted},
-      merge_base_commit:{sha:granted},commits:[{sha:advanced}]}};
-  assert.equal(inspectGrantMainAdvance(prove),true);total++;
-  assert.equal(inspectGrantMainAdvance({...prove,baseSha:granted,compare:null}),true);total++;
-  for(const patch of [
-    {compare:null},{compare:{...prove.compare,status:"diverged"}},
-    {compare:{...prove.compare,status:"behind"}},
-    {compare:{...prove.compare,base_commit:{sha:advanced}}},
-    {compare:{...prove.compare,merge_base_commit:{sha:advanced}}},
-    {compare:{...prove.compare,commits:[{sha:granted}]}},
-    {grantSha:"invalid"},{baseSha:"invalid"}
-  ]){assert.equal(inspectGrantMainAdvance({...prove,...patch}),false);total++;}
+  total+=runAncestrySelfTests();
   const sameHead=fresh();sameHead.run.head_sha=sameHead.pr.head.sha;
   sameHead.grant.base_sha=sameHead.run.head_sha;yes(sameHead);
   no(x=>{x.now=x.grant.expires_at_unix+1;});
