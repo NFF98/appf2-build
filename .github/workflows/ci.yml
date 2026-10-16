@@ -12,6 +12,7 @@ permissions:
   issues: read
   pull-requests: read
   actions: read
+  checks: read
   deployments: read
 
 jobs:
@@ -86,6 +87,8 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
+      actions: read
+      checks: read
     steps:
       - uses: actions/checkout@v4
         with:
