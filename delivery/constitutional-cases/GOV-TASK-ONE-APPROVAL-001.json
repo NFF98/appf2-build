@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "bc0232a4fee5984f25f1b80f43899996611f81542bae3dfd229f7277141a4168",
+  "candidate_digest_sha256": "ca5404d1a85c3e3976740d0ff9c3e9ce891ed5dcfdb038cdfe9f7ac06f68d349",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -108,7 +108,8 @@
     "Final Ready previously read only first 100 GitHub Check Runs. Now reads complete authenticated comments/files/check-runs with existing trusted delegated executor reader; duplicate/missing/stale inventories HARD_STOP and the same evidence is independently re-read before Merge. An attempt to edit run-final-ready-preflight.sh exceeded the fixed 29-path scope, was rejected by real Governance, and was reverted byte-for-byte to Main. Only originally declared 29 paths remain. Live Human positive E2E NOT_RUN.",
     "Real GitHub Check Runs showed the same exact HEAD on successful push and skipped pull_request Attack/CodeQL; check_run.pull_requests still linked PR #401. Added API-proven PR-event full-gate origin validation for the four required latest checks (check-run ID/details_url->GitHub Actions run event/path/repo/head/base/PR), at Task Ready admission, delegated CHECK and immediately pre-Merge. Push-only success must HARD_STOP. Synthetic 17 negative + 1 positive, not Human positive E2E.",
     "L3 non-Task governance PR Final Ready previously admitted synthetic Fast-loop PASS without requiring authenticated PR-event Full Gate provenance. Now it requires exact four pull_request workflow run proofs on PR, BASE and HEAD, shared with L1 and delegated Merge; six real GitHub negative API checks include rejection of draft PR/branch-push-green masquerade. Does not mint Human L3 approval or positive E2E.",
-    "GitHub Final Ready audit job had explicit job-level token permissions missing Actions read and Checks read even though new L1/L3 provenance requires GitHub REST workflow-run and check-run APIs. Added read-only permissions (no writes) to CI workflow and overridden audit job and static regression preventing removal/escalation. Draft Human positive Ready still NOT_RUN."
+    "GitHub Final Ready audit job had explicit job-level token permissions missing Actions read and Checks read even though new L1/L3 provenance requires GitHub REST workflow-run and check-run APIs. Added read-only permissions (no writes) to CI workflow and overridden audit job and static regression preventing removal/escalation. Draft Human positive Ready still NOT_RUN.",
+    "Final Ready audit on ready_for_review runs BEFORE later Local/BCE/Human comments arrive. Added explicit read-only workflow_dispatch final_ready_pr_number recheck in ci.yml; never shadows required 'ci' status (distinct ci-recheck-only-skipped), and new final-ready-preflight.mjs CLI checks authenticated live PR, event input, canonical Main, exact branch/ref/checkout SHA, GitHub Full PR Gate provenance and same ordered human/local/BCE evidence. 1 positive + 19 synthetic false-ref/Main/PR cases, static workflow wiring PASS; real Human positive after evidence NOT_RUN."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -172,6 +173,7 @@
     "final_ready_complete_live_inventory": "TRUSTED_GITHUB_ALL_PAGES_SHARED_WITH_MERGE; SYNTHETIC_WIRING_AND_REAL_API_NEGATIVE_PASS; HUMAN_POSITIVE_READY_NOT_RUN",
     "full_ready_pr_run_origin": "AUTHENTICATED_GITHUB_ACTION_RUN_EVENT_PATH_HEAD_BASE_PR_REQUIRED_NOT_BRANCH_PUSH; CANDIDATE_SYNTHETIC_AND_LIVE_API_DRAFT_NEGATIVE; HUMAN_READY_E2E_NOT_RUN",
     "l3_final_ready_pr_full_gates": "EXACT_GITHUB_PR_EVENT_RUN_PROVENANCE_REQUIRED; 9_SYNTHETIC_NEGATIVES_PLUS_1_POSITIVE; LIVE_DRAFT_REAL_API_NEGATIVE_6_OF_6_EXPECTED; HUMAN_L3_STILL_PENDING",
-    "final_ready_workflow_token_permissions": "JOB_EXPLICIT_ACTIONS_READ_CHECKS_READ_WITHOUT_WRITE; STATIC_GATE_CANDIDATE_VERIFIED; HUMAN_PR_READY_POSITIVE_NOT_RUN"
+    "final_ready_workflow_token_permissions": "JOB_EXPLICIT_ACTIONS_READ_CHECKS_READ_WITHOUT_WRITE; STATIC_GATE_CANDIDATE_VERIFIED; HUMAN_PR_READY_POSITIVE_NOT_RUN",
+    "post_attestation_ready_recheck": "WORKFLOW_DISPATCH_READ_ONLY_CANDIDATE_STATIC_AND_20_SYNTHETIC_PASS; NO_SHADOWED_CI; VERIFIED_REAL_HUMAN_POSITIVE_NOT_RUN"
   }
 }
