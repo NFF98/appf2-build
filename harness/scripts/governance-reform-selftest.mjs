@@ -14,7 +14,7 @@ import {
 import { selectImpactedTests } from "./select-impacted-tests.mjs";
 import { buildEvidenceLedger } from "./evidence-ledger.mjs";
 import { planTaskEvidenceReferences,planTaskClosureReadiness,
-  planProtectedClosureMutation } from "./evidence-ledger-report.mjs";
+  planProtectedClosureMutation,inspectProtectedControlPrProvenance } from "./evidence-ledger-report.mjs";
 import { computeGovernanceMetrics } from "./governance-metrics.mjs";
 import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 
@@ -459,6 +459,40 @@ function protectedClosureWriterCases(){
   ],fn=>fn());
 }
 
+function protectedControlProvenanceCases(){
+  const mk=()=>({
+    source:{number:101,state:"closed",merged:true,
+      merged_at:"2026-10-16T03:00:00Z",head:{ref:"task/t009"}},
+    control:{number:102,state:"open",draft:true,
+      created_at:"2026-10-16T03:00:01Z",
+      base:{ref:"main",repo:{full_name:"NFF98/appf2-build"}},
+      head:{ref:"control/t009",sha:"c".repeat(40),
+        repo:{full_name:"NFF98/appf2-build"}},
+      body:"Task: T009\nClosure-Source-PR: 101\n"+
+        "PR-Justification: CONTROL_TRANSITION_AFTER_MERGE 正式 Evidence 後的 Task Closure"}
+  });
+  const run=f=>{const x=mk();f(x);return inspectProtectedControlPrProvenance(
+    x.source,x.control,"T009");};
+  return expectCases("one grant; postmerge PR justified",[
+    ["valid same-task control exception",true,()=>run(()=>{})],
+    ["unmerged source refused",false,()=>run(x=>{x.source.merged=false;})],
+    ["still open source refused",false,()=>run(x=>{x.source.state="open";})],
+    ["same PR number refused",false,()=>run(x=>{x.control.number=101;})],
+    ["control before source merge refused",false,()=>run(x=>{x.control.created_at="2026-10-16T02:59:59Z";})],
+    ["bad control created_at refused",false,()=>run(x=>{x.control.created_at="not-a-date";})],
+    ["missing source merged_at refused",false,()=>run(x=>{x.source.merged_at=null;})],
+    ["reused task implementation branch refused",false,()=>run(x=>{x.control.head.ref="task/t009";})],
+    ["missing justification refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/PR-Justification:.+/,"");})],
+    ["wrong justification lane refused",false,()=>run(x=>{x.control.body=x.control.body.replace("CONTROL_TRANSITION_AFTER_MERGE","HOTFIX");})],
+    ["empty justification rationale refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/PR-Justification:.+/,"PR-Justification: CONTROL_TRANSITION_AFTER_MERGE ");})],
+    ["wrong Task refused",false,()=>run(x=>{x.control.body=x.control.body.replace("Task: T009","Task: T008");})],
+    ["wrong closure source refused",false,()=>run(x=>{x.control.body=x.control.body.replace("Closure-Source-PR: 101","Closure-Source-PR: 999");})],
+    ["control fork refused",false,()=>run(x=>{x.control.head.repo.full_name="attacker/appf2-build";})],
+    ["not a draft control refused",false,()=>run(x=>{x.control.draft=false;})],
+    ["control points outside Main refused",false,()=>run(x=>{x.control.base.ref="unsafe";})]
+  ],fn=>fn());
+}
+
 function metricsPreflightCases(guard){
   const m=computeGovernanceMetrics({
     commits:[{subject:"T008 impl (#386)"},{subject:"T008 evidence (#387)"},{subject:"fix T008 typo (#388)"},{subject:"T007 close (#380)"}],
@@ -518,6 +552,7 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
     evidence_normalization:normalizationCases(),
     protected_closure:closurePlanningCases(),
     protected_closure_writer:protectedClosureWriterCases(),
+    protected_control_provenance:protectedControlProvenanceCases(),
     metrics_preflight:metricsPreflightCases(policy.pr_guard)
   };
   return {counts,total:Object.values(counts).reduce((a,n)=>a+n,0)};
