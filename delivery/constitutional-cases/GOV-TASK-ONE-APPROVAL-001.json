@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "06c584c00fc6b76bf8557602e7345f5b3bfda38d4b4393c86624598d3bcada6e",
+  "candidate_digest_sha256": "168b52bfe2c7212a8e2d36e2ea25cd86a42ab7f3204b33a2aaac7be0c2304b3d",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -98,7 +98,8 @@
     "Scope-tightening: genuine GitHub API 5/5 negative integration moved into existing trusted-human-task-grant-selftest.mjs, preserving 29-path immutable GOV16 test lane; do not extend allowed paths.",
     "2026-10-16 authenticated GitHub Actions read-only bootstrap: Required Reviewer NFF98 confirmed; task-human-grant.yml NOT_FOUND_ON_MAIN; Design frozen/main compare diverged; positive grant/Merge/Closure E2E explicitly NOT_RUN. Live unauthorised 5/5 API negative PASS without mutations.",
     "Official GitHub Main squash-merge ancestry proof requires authenticated GitHub compare response, exact merge-base and base commits, latest Main SHA matching executor checkout. Ten new fail-closed synthetic cases; positive Human E2E still NOT_RUN.",
-    "Real GitHub API paginated PR inventory verified in branch push: comments/files/check-runs completely enumerated with strict total_count/unique-id checks; 13 added pure positive/negative page checks. No L1 grant or merge performed."
+    "Real GitHub API paginated PR inventory verified in branch push: comments/files/check-runs completely enumerated with strict total_count/unique-id checks; 13 added pure positive/negative page checks. No L1 grant or merge performed.",
+    "Refresh complete authenticated GitHub comments, changed files, check runs, and verified Human grant immediately before delegated protected merge; stale, duplicate, edited BCE, newer failed run or HEAD/BASE drift must HARD_STOP. Pure 13 synthetic checks; no positive Human Merge attempted."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -151,6 +152,7 @@
     "main_human_grant_workflow": "NOT_FOUND_ON_MAIN_FROM_REAL_GITHUB_ACTIONS_API_38880023499",
     "design_freeze_to_current_main": "DIVERGED_FROM_REAL_GITHUB_ACTIONS_COMPARE_38880023499",
     "post_merge_ancestry": "GITHUB_COMPARE_VERIFIER_CANDIDATE_TESTED_SYNTHETIC_NOT_LIVE_HUMAN_MERGE",
-    "live_delegation_evidence_pagination": "CAPPED_PAGINATION_WITH_COMPLETE_COUNTS_13_SYNTHETIC_CASES_PLUS_REAL_GITHUB_API_38899272510_POSITIVE_MERGE_NOT_RUN"
+    "live_delegation_evidence_pagination": "CAPPED_PAGINATION_WITH_COMPLETE_COUNTS_13_SYNTHETIC_CASES_PLUS_REAL_GITHUB_API_38899272510_POSITIVE_MERGE_NOT_RUN",
+    "delegated_merge_last_moment_recheck": "IMPLEMENTED_CANDIDATE_SYNTHETIC_POSITIVE_AND_NEGATIVE; LIVE_POSITIVE_NOT_RUN"
   }
 }
