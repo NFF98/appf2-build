@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
 import {delegatedTaskExecutor,githubPageDecision,
-  readLiveDelegationEvidence} from "./task-pr-lifecycle.mjs";
+  readLiveDelegationEvidence,freshMergeReceipt} from "./task-pr-lifecycle.mjs";
 import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck,
   writeExistingProtectedClosureCandidate} from "./evidence-ledger-report.mjs";
@@ -178,7 +178,37 @@ export function runTrustedGrantSelfTests(){
   reject(rawChecks.map((x,i)=>i?x:{...x,status:"in_progress"}));
   reject(rawChecks.map((x,i)=>i?x:{...x,app:{slug:"unknown-bot"}}));
   reject([...rawChecks,{...rawChecks[0],id:999,conclusion:"failure"}]);
-  return total;
+  return total+runFreshMergeReceiptTests();
+}
+function runFreshMergeReceiptTests(){
+  const fixture=()=>({
+    firstPr:{number:99,state:"open",draft:false,mergeable:true,
+      base:{sha:"a".repeat(40)},head:{sha:"b".repeat(40)}},
+    currentPr:{number:99,state:"open",draft:false,mergeable:true,
+      base:{sha:"a".repeat(40)},head:{sha:"b".repeat(40)}},
+    before:{comments:[{id:1,body:"GPT BCE PASS"}],
+      changed:[{filename:"src/app.ts"}],
+      checks:{total_count:1,check_runs:[{id:23,name:"ci",conclusion:"success"}]}},
+    after:{comments:[{id:1,body:"GPT BCE PASS"}],
+      changed:[{filename:"src/app.ts"}],
+      checks:{total_count:1,check_runs:[{id:23,name:"ci",conclusion:"success"}]}}
+  });
+  const run=f=>{const data=fixture();f(data);return freshMergeReceipt(data);};
+  const deny=f=>assert.equal(run(f),false,"stale merge proof admitted");
+  assert.equal(run(()=>{}),true);
+  deny(x=>{x.currentPr.head.sha="c".repeat(40);});
+  deny(x=>{x.currentPr.base.sha="c".repeat(40);});
+  deny(x=>{x.currentPr.mergeable=null;});
+  deny(x=>{x.currentPr.draft=true;});
+  deny(x=>{x.currentPr.state="closed";});
+  deny(x=>{x.after.comments[0].body="forged BCE PASS";});
+  deny(x=>{x.after.comments.push({id:2,body:"later challenge"});});
+  deny(x=>{x.after.changed[0].filename="src/other.ts";});
+  deny(x=>{x.after.checks.check_runs[0].conclusion="failure";});
+  deny(x=>{x.after.checks.check_runs[0].id=24;});
+  deny(x=>{x.after.checks.total_count=0;});
+  deny(x=>{x.after.checks.check_runs.push({id:23,name:"ci"});});
+  return 13;
 }
 const REPO="NFF98/appf2-build";
 const PR=Number(process.env.APPF2_NEGATIVE_PR_NUMBER);
