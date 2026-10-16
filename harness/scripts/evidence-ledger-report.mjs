@@ -209,14 +209,18 @@ export async function liveTaskClosureCheck({prNumber,token}={}){
 // The only write target is an already-open, dedicated, SAME-TASK CONTROL PR branch.
 // A Human L3 change, Main branch push, unauthorized status, or unrelated file fails closed.
 const ONLY_BUILD_REPO="NFF98/appf2-build";
-const prControlIdentity=(source,control,id)=>[
-  source?.number!==control?.number,
-  control?.state==="open",control?.draft===true,
-  control?.base?.ref==="main",control?.base?.repo?.full_name===ONLY_BUILD_REPO,
-  control?.head?.repo?.full_name===ONLY_BUILD_REPO,control?.head?.ref!=="main",
-  /^[a-f0-9]{40}$/.test(control?.head?.sha||""),
-  new RegExp("^Task:\\s*"+id+"\\s*$","m").test(control?.body||""),
-  new RegExp("^Closure-Source-PR:\\s*"+source?.number+"\\s*$","m").test(control?.body||"")
+const controlRepoIdentity=c=>[
+  c?.base?.ref==="main",c?.base?.repo?.full_name===ONLY_BUILD_REPO,
+  c?.head?.repo?.full_name===ONLY_BUILD_REPO,c?.head?.ref!=="main",
+  /^[a-f0-9]{40}$/.test(c?.head?.sha||"")
+].every(Boolean);
+const controlPrClaims=(source,c,id)=>[
+  new RegExp("^Task:\\s*"+id+"\\s*$","m").test(c?.body||""),
+  new RegExp("^Closure-Source-PR:\\s*"+source?.number+"\\s*$","m").test(c?.body||"")
+].every(Boolean);
+const prControlIdentity=(source,c,id)=>[
+  source?.number!==c?.number,c?.state==="open",c?.draft===true,
+  controlRepoIdentity(c),controlPrClaims(source,c,id)
 ].every(Boolean);
 const exactControlFileInventory=(files,path)=>Array.isArray(files)&&
   files.length===1&&files[0]?.filename===path &&
@@ -225,34 +229,47 @@ const sameTaskExceptStatus=(a,b,id)=>[
   a?.task_id===id,b?.task_id===id,
   JSON.stringify({...a,status:null})===JSON.stringify({...b,status:null})
 ].every(Boolean);
-/** Only the eligible reviewed Task's status can become CLOSED. */
+const closureRequestMatches=({plan,mainDoc,controlDoc,taskId})=>[
+  plan?.ok===true,
+  plan?.decision==="ELIGIBLE_FOR_SEPARATE_PROTECTED_CONTROL_REVIEW",
+  /^T\d{3}$/.test(taskId||""),plan?.task_id===taskId,
+  mainDoc?.sprint_id===plan?.sprint_id,
+  controlDoc?.sprint_id===plan?.sprint_id
+].every(Boolean);
+const taskListWellFormed=(a,b,id)=>[
+  Array.isArray(a),Array.isArray(b),a?.length===b?.length,
+  a?.filter(t=>t.task_id===id).length===1,
+  b?.filter(t=>t.task_id===id).length===1
+].every(Boolean);
+const validReviewAndProposedStatus=(a,b,id)=>{
+  const original=a?.find(t=>t.task_id===id),
+    proposed=b?.find(t=>t.task_id===id);
+  return [original?.status==="REVIEW",
+    ["REVIEW","CLOSED"].includes(proposed?.status)].every(Boolean);
+};
+const controlTaskContentsUnchanged=(a,b,id)=>{
+  const rows=new Map(b.map(t=>[t.task_id,t])),names=new Set(rows.keys());
+  return [
+    names.size===b.length,
+    a.every(t=>rows.has(t.task_id)&&sameTaskExceptStatus(t,rows.get(t.task_id),t.task_id)),
+    a.every(t=>t.task_id===id||t.status===rows.get(t.task_id)?.status)
+  ].every(Boolean);
+};
+const proposedClosureTaskDoc=(doc,id)=>({...doc,tasks:doc.tasks.map(t=>
+  t.task_id===id?{...t,status:"CLOSED"}:t)});
+/** Pure closure mutation plan; no direct Main writes or Product PASS fabrication. */
 export function planProtectedClosureMutation({plan,mainDoc,controlDoc,taskId}={}){
   const errors=[],deny=(ok,msg)=>{if(!ok)errors.push(msg);};
-  deny(plan?.ok===true&&plan?.decision==="ELIGIBLE_FOR_SEPARATE_PROTECTED_CONTROL_REVIEW",
-    "Independent post-merge closure plan was not eligible");
-  deny(/^T\d{3}$/.test(taskId||"")&&plan?.task_id===taskId,"Closure Task ID mismatch");
-  deny(mainDoc?.sprint_id===plan?.sprint_id&&controlDoc?.sprint_id===plan?.sprint_id,
-    "Canonical Sprint ID mismatch");
-  deny(Array.isArray(mainDoc?.tasks)&&Array.isArray(controlDoc?.tasks)&&
-    mainDoc?.tasks?.length===controlDoc?.tasks?.length,
-    "Canonical Task inventory altered");
-  const before=mainDoc?.tasks||[],existing=controlDoc?.tasks||[];
-  const targets=before.filter(t=>t.task_id===taskId);
-  deny(targets.length===1&&targets[0]?.status==="REVIEW",
-    "Canonical Main must have exactly one REVIEW Task");
-  deny(existing.filter(t=>t.task_id===taskId).length===1,
-    "Control PR Task must exist exactly once");
-  const byId=new Map(existing.map(t=>[t.task_id,t]));
-  deny(new Set(existing.map(t=>t.task_id)).size===existing.length,
-    "Duplicate Task IDs in control branch");
-  deny(before.every(t=>byId.has(t.task_id)&&sameTaskExceptStatus(t,byId.get(t.task_id),t.task_id)),
-    "Control branch changed Task content beyond status");
-  deny(before.every(t=>t.task_id===taskId||t.status===byId.get(t.task_id)?.status),
-    "Control branch changed another Task status");
-  deny(["REVIEW","CLOSED"].includes(byId.get(taskId)?.status),
-    "Control branch status outside permitted closure transition");
+  deny(closureRequestMatches({plan,mainDoc,controlDoc,taskId}),
+    "Invalid closure plan, Task ID or Sprint");
+  const a=mainDoc?.tasks,b=controlDoc?.tasks;
+  deny(taskListWellFormed(a,b,taskId),"Task inventory missing, duplicated or altered");
+  deny(validReviewAndProposedStatus(a,b,taskId),
+    "Canonical Task is not REVIEW or proposed status is invalid");
+  deny(controlTaskContentsUnchanged(a||[],b||[],taskId),
+    "Control branch modified unrelated Task, Evidence, AC or Product contract");
   if(errors.length)return {ok:false,decision:"HARD_STOP",errors,changed:false};
-  const updated={...mainDoc,tasks:before.map(t=>t.task_id===taskId?{...t,status:"CLOSED"}:t)};
+  const updated=proposedClosureTaskDoc(mainDoc,taskId);
   const changed=JSON.stringify(updated)!==JSON.stringify(controlDoc);
   return {ok:true,decision:changed?"READY_FOR_PROTECTED_BRANCH_WRITE":"ALREADY_PROPOSED",
     errors:[],changed,task_id:taskId,sprint_id:plan.sprint_id,
@@ -266,8 +283,6 @@ const proofOfControlBase=(control,main)=>[
   control?.head?.sha!==main
 ].every(Boolean);
 const taskControlPath=plan=>"delivery/sprints/"+plan.sprint_id+"/tasks.json";
-const taskForPlan=(id,sprint)=>taskFromDoc(
-  readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json"),id);
 const matchingLocalMain=(sha)=>execFileSync("git",["rev-parse","HEAD"],
   {encoding:"utf8"}).trim()===sha;
 const verifyControlInventory=async (repo,number,path,token)=>{
@@ -287,10 +302,19 @@ const assertControlSource=(source,control,plan,main,checkoutSha)=>{
     !proofOfControlBase(control,main)||checkoutSha!==main)
     throw Error("HARD_STOP: unauthorized control PR/base/ref/checkout");
 };
+const validControlRequest=({sourcePrNumber,controlPrNumber,token})=>[
+  validReconcileRequest({prNumber:sourcePrNumber,token}),
+  validReconcileRequest({prNumber:controlPrNumber,token})
+].every(Boolean);
+const controlShouldNotWrite=(m,apply)=>[!m?.ok,!m?.changed,!apply].some(Boolean);
+const stableControlHeads=async ({repo,number,token,head,main})=>{
+  const [p,b]=await Promise.all([
+    gh(repo+"/pulls/"+number,token),gh(repo+"/branches/main",token)]);
+  return [p?.head?.sha===head,b?.commit?.sha===main].every(Boolean);
+};
 export async function writeExistingProtectedClosureCandidate({
   sourcePrNumber,controlPrNumber,token,apply=false}={}){
-  if(!validReconcileRequest({prNumber:sourcePrNumber,token})||
-    !validReconcileRequest({prNumber:controlPrNumber,token}))
+  if(!validControlRequest({sourcePrNumber,controlPrNumber,token}))
     throw Error("HARD_STOP: explicit valid source/control PR IDs required");
   const repo="/repos/"+ONLY_BUILD_REPO;
   const [source,control,mainBranch]=await Promise.all([
@@ -299,7 +323,7 @@ export async function writeExistingProtectedClosureCandidate({
     gh(repo+"/branches/main",token)
   ]);
   const main=mainBranch?.commit?.sha;
-  if(!hex40(main)||!matchingLocalMain(main))
+  if(![hex40(main),matchingLocalMain(main)].every(Boolean))
     throw Error("HARD_STOP: executor checkout must match live Main");
   // This includes original Task Human grant, a verified merge on Main,
   // canonical mapped Evidence, plus separate L3 block on Sprint3 T006/T008.
@@ -312,13 +336,11 @@ export async function writeExistingProtectedClosureCandidate({
     control.head.ref,token);
   const mutation=planProtectedClosureMutation({plan:verified,mainDoc,controlDoc,
     taskId:verified.task_id});
-  if(!mutation.ok||!mutation.changed||!apply)
+  if(controlShouldNotWrite(mutation,apply))
     return {...mutation,write_action:"NO_MUTATION",control_pr:controlPrNumber};
   // Optimistic concurrency: no changed PR HEAD or target blob since inspection.
-  const [freshControl,freshMain]=await Promise.all([
-    gh(repo+"/pulls/"+controlPrNumber,token),gh(repo+"/branches/main",token)]);
-  if(freshControl?.head?.sha!==control.head.sha ||
-    freshMain?.commit?.sha!==main)
+  if(!await stableControlHeads({repo,number:controlPrNumber,token,
+    head:control.head.sha,main}))
     throw Error("HARD_STOP: control PR or Main moved before protected write");
   const written=await gh(repo+"/contents/"+path,token,{method:"PUT",body:{
     branch:control.head.ref,sha:target.sha,
@@ -333,26 +355,24 @@ export async function writeExistingProtectedClosureCandidate({
     closure_performed:false,main_unmodified_by_this_call:true};
 }
 
+const cliResult=(prefix,promise)=>promise.then(out=>{
+  console.log(prefix+" "+JSON.stringify(out));return out.ok?0:1;});
+const cliRoutes={
+  "--closure-control":args=>cliResult("CLOSURE CONTROL",
+    writeExistingProtectedClosureCandidate({
+      sourcePrNumber:Number(args[1]),controlPrNumber:Number(args[2]),
+      token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN,
+      apply:args.includes("--apply")})),
+  "--closure-check":args=>cliResult("CLOSURE PREFLIGHT",
+    liveTaskClosureCheck({prNumber:Number(args[1]),
+      token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN})),
+  "--reconcile-pr":args=>cliResult("EVIDENCE RECONCILE",
+    reconcileTaskEvidencePr({prNumber:Number(args[1]),
+      token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN,
+      apply:args.includes("--apply")}))
+};
 function cli(args){
-  if(args[0]==="--closure-control"){
-    const sourcePrNumber=Number(args[1]),controlPrNumber=Number(args[2]),
-      token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
-    return writeExistingProtectedClosureCandidate({sourcePrNumber,controlPrNumber,
-      token,apply:args.includes("--apply")}).then(x=>{
-      console.log("CLOSURE CONTROL "+JSON.stringify(x));return x.ok?0:1;});
-  }
-  if(args[0]==="--closure-check"){
-    const prNumber=Number(args[1]),token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
-    return liveTaskClosureCheck({prNumber,token})
-      .then(out=>{console.log("CLOSURE PREFLIGHT "+JSON.stringify(out));
-        return out.ok?0:1;});
-  }
-  if(args[0]==="--reconcile-pr"){
-    const prNumber=Number(args[1]),token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
-    return reconcileTaskEvidencePr({prNumber,token,apply:args.includes("--apply")})
-      .then(out=>{console.log("EVIDENCE RECONCILE "+JSON.stringify(out));
-        return out.ok?0:1;});
-  }
+  if(Object.hasOwn(cliRoutes,args[0]))return cliRoutes[args[0]](args);
   const index=args.indexOf("--event"), outIndex=args.indexOf("--out");
   if(index<0 || outIndex<0 || !args[index+1] || !args[outIndex+1])
     throw Error("usage: evidence-ledger-report.mjs --event EVENT_JSON --out REPORT_JSON");
