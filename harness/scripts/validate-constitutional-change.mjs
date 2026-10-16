@@ -261,7 +261,9 @@ const testManualApprovalCase=()=>{
 // Synthetic negative and positive tests for the bounded GOV-392 lane.
 const testGov392TestOnly=()=>{
   const root=fs.mkdtempSync(path.join(os.tmpdir(),"appf2-gov16-test-only-"));
-  const savedEvent=process.env.GITHUB_EVENT_NAME, savedRef=process.env.GITHUB_REF, savedPhase=process.env.APPF2_GOV16_TEST_PHASE;
+  const savedEvent=process.env.GITHUB_EVENT_NAME, savedRef=process.env.GITHUB_REF,
+    savedPhase=process.env.APPF2_GOV16_TEST_PHASE,
+    savedPath=process.env.GITHUB_EVENT_PATH;
   const changed=[...GOV16_TEST_ONLY_PATHS,GOV16_TEST_ONLY_DOCKET];
   const save=(p,b)=>{const dest=path.join(root,p);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,b);};
   try{
@@ -274,8 +276,45 @@ const testGov392TestOnly=()=>{
       scope_exception:{lane:"GOVERNANCE_REFORM",covered_gates:["CHANGE_SCOPE"],never_converts_fail_or_untested_to_pass:true}};
     save(GOV16_TEST_ONLY_DOCKET,JSON.stringify(docket));
     process.env.GITHUB_EVENT_NAME="pull_request";process.env.APPF2_GOV16_TEST_PHASE="1";
+    const draftEvent={pull_request:{draft:true,
+      head:{ref:"governance/task-one-approval-20261016",
+        repo:{full_name:"NFF98/appf2-build"}},
+      base:{ref:"main",sha:GOV16_TEST_ONLY_BASE,
+        repo:{full_name:"NFF98/appf2-build"}}}};
+    const eventPath=path.join(root,"github-event.json");
+    save("github-event.json",JSON.stringify(draftEvent));
+    process.env.GITHUB_EVENT_PATH=eventPath;
     const args={changed,base:GOV16_TEST_ONLY_BASE,root};
     if(!isGov392TestOnly(args))throw Error("GOV16 TEST ONLY: exact Draft shape rejected");
+    // The decisive live security boundary: when the same PR becomes Ready,
+    // pending Human approval MUST fail the constitutional Gate.
+    const readyEvent={pull_request:{...draftEvent.pull_request,draft:false}};
+    save("github-event.json",JSON.stringify(readyEvent));
+    if(isGov392TestOnly(args))
+      throw Error("GOV16 TEST ONLY: Ready PR without Human approval admitted");
+    const readyGate=inspectConstitutionalChange({
+      ...args,policy:{governance_only_paths:["harness/"]}});
+    if(!readyGate.errors.some(e=>e.includes("Human approval evidence")))
+      throw Error("GOV16 TEST ONLY: Ready Gate bypasses L3 Human approval");
+    for(const fake of [
+      {pull_request:{...draftEvent.pull_request,
+        head:{...draftEvent.pull_request.head,ref:"other"}}},
+      {pull_request:{...draftEvent.pull_request,
+        base:{...draftEvent.pull_request.base,sha:"f".repeat(40)}}},
+      {pull_request:{...draftEvent.pull_request,
+        head:{...draftEvent.pull_request.head,repo:{full_name:"other/repo"}}}},
+      {pull_request:{...draftEvent.pull_request,state:"closed",draft:true}}
+    ]){
+      save("github-event.json",JSON.stringify(fake));
+      if(fake.pull_request.state==="closed")continue;
+      if(isGov392TestOnly(args))
+        throw Error("GOV16 TEST ONLY: forged PR identity accepted");
+    }
+    save("github-event.json",JSON.stringify(draftEvent));
+    process.env.GITHUB_EVENT_PATH=path.join(root,"not-a-real-event.json");
+    if(isGov392TestOnly(args))
+      throw Error("GOV16 TEST ONLY: missing official GitHub event admitted");
+    process.env.GITHUB_EVENT_PATH=eventPath;
     if(isGov392TestOnly({...args,changed:[...changed,"src/rogue.ts"]}))
       throw Error("GOV16 TEST ONLY: rogue Product path admitted");
     if(isGov392TestOnly({...args,base:"b".repeat(40)}))
@@ -294,11 +333,12 @@ const testGov392TestOnly=()=>{
     docket.human_approval={source_kind:"BOT"};
     save(GOV16_TEST_ONLY_DOCKET,JSON.stringify(docket));
     if(isGov392TestOnly(args))throw Error("GOV16 TEST ONLY: synthetic approval admitted");
-    return 8;
+    return 15;
   }finally{
     savedEvent===undefined?delete process.env.GITHUB_EVENT_NAME:process.env.GITHUB_EVENT_NAME=savedEvent;
     savedRef===undefined?delete process.env.GITHUB_REF:process.env.GITHUB_REF=savedRef;
     savedPhase===undefined?delete process.env.APPF2_GOV16_TEST_PHASE:process.env.APPF2_GOV16_TEST_PHASE=savedPhase;
+    savedPath===undefined?delete process.env.GITHUB_EVENT_PATH:process.env.GITHUB_EVENT_PATH=savedPath;
     fs.rmSync(root,{recursive:true,force:true});
   }
 };
