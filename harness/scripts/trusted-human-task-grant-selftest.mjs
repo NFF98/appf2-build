@@ -11,13 +11,15 @@ const fresh=()=>{
     allowed_write_paths:["src/","tests/"],acceptance_links:[{acceptance_id:"A1",test_id:"T1"}]};
   const grant={schema:"APPF2-TRUSTED-TASK-GRANT-1",task_id:"T009",
     sprint_id:"SP-P1-003",build_spec_id:"BS-P1-025",
-    base_sha:base,scope_sha256:taskScopeDigest(task),
-    approved_at_unix:NOW-3600,expires_at_unix:NOW+86400};
+    base_sha:sha,scope_sha256:taskScopeDigest(task),
+    approved_at_unix:NOW-3600,expires_at_unix:NOW-3600+30*86400};
   const sprint={active_sprint:"SP-P1-003",active_task:"T009",
     active_build_spec:"BS-P1-025",status:"ACTIVE"};
   const build={active_baseline:"BS-P1-025",implementation_enabled:true};
   const run={event:"workflow_dispatch",conclusion:"success",head_sha:sha,
-    path:"NFF98/appf2-build/"+WORKFLOW+"@refs/heads/task-T009",
+    head_branch:"main",created_at:new Date((NOW-3600)*1000).toISOString(),
+    display_title:"APPF2-L1|T009|SP-P1-003|"+grant.scope_sha256,
+    path:"NFF98/appf2-build/"+WORKFLOW+"@refs/heads/main",
     repository:{full_name:"NFF98/appf2-build"}};
   const review={state:"approved",user:{login:"NFF98"},
     environments:[{name:ENVIRONMENT}]};
@@ -42,13 +44,16 @@ export function runTrustedGrantSelfTests(){
   no(x=>{x.approvals.push({state:"rejected",user:{login:"NFF98"},
     environments:[{name:ENVIRONMENT}]});});
   no(x=>{x.run.event="push";});
+  no(x=>{x.run.head_branch="unsafe-feature";});
+  no(x=>{x.run.created_at="not-a-time";});
   no(x=>{x.run.conclusion="failure";});
   no(x=>{x.run.path="NFF98/appf2-build/.github/workflows/fake.yml@main";});
   no(x=>{x.run.repository.full_name="other/fake";});
   no(x=>{x.grant.schema="LEGACY";});
   no(x=>{x.grant.scope_sha256="f".repeat(64);});
   no(x=>{x.grant.base_sha="not-a-SHA";});
-  no(x=>{x.original.scope_sha256="different";});
+  no(x=>{x.grant.expires_at_unix+=1;});
+  no(x=>{x.run.display_title="APPF2-L1|T008|SP-P1-003|"+x.grant.scope_sha256;});
   no(x=>{x.task.allowed_write_paths=["src/","tests/","secrets/"];});
   no(x=>{x.task.status="BLOCKED";});
   no(x=>{x.sprint.active_task="T008";});
@@ -88,4 +93,4 @@ export function runTrustedGrantSelfTests(){
   return total;
 }
 if(import.meta.url===pathToFileURL(process.argv[1]||"").href)
-  console.log("可信 Human Grant："+runTrustedGrantSelfTests()+" 項合成正負測試 PASS；真實 E2E 仍待 Environment 設定");
+  console.log("可信 Human Grant："+runTrustedGrantSelfTests()+" 項合成正負測試 PASS；run-name/SHA 綁定為合成測試，真人 Environment E2E 尚未證明");
