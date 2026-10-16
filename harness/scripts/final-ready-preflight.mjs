@@ -210,37 +210,42 @@ export function inspectLiveGitHubRequiredChecks({head,checks}){
   }
   return errors;
 }
+const validVerifiedGrant=(g,head)=>g?.ok===true &&
+  g?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL"&&
+  g?.current_head===head;
+const l1TaskChangedPathsValid=files=>{
+  const changed=Array.isArray(files)?files.flat().map(x=>x?.filename):[];
+  return changed.length>0&&changed.every(x=>nonEmpty(x)&&
+    !/^(?:harness\/|build-spec\/|\.github\/|AGENTS\.md$|delivery\/constitutional-cases\/)/.test(x));
+};
+const l1BceOrderValid=(records)=>{
+  const local=records.find(x=>x.record.kind==="LOCAL_TESTS");
+  const bce=records.find(x=>x.record.kind==="GPT_BCE");
+  return local&&bce &&
+    bce.comment.id>local.comment.id&&
+    Date.parse(bce.comment.created_at)>=Date.parse(local.comment.created_at);
+};
+const l1StageEvidenceErrors=(comments,head,ctx)=>{
+  const errors=[],records=safeArray(comments).flat().map(comment=>({
+    comment,record:parseReadinessComment(comment)})).filter(x=>x.record?.head_sha===head);
+  for(const kind of ["LOCAL_TESTS","GPT_BCE"]){
+    const stage=records.filter(x=>x.record.kind===kind);
+    assertion(stage.length===1,"缺少或重複 "+kind+" exact-HEAD 證據",errors);
+    if(stage.length===1)errors.push(...commonErrors(stage[0].comment,stage[0].record,ctx),
+      ...stageEvidenceErrors(stage[0],ctx));
+  }
+  assertion(l1BceOrderValid(records),"BCE 必須晚於 Local tests",errors);
+  return errors;
+};
 export function inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
   candidateDigest,repo,verifiedGrant}){
   const errors=prMetadataErrors(event,live,repo);
   const head=live?.head?.sha,base=live?.base?.sha;
   const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
-  assertion(verifiedGrant?.ok===true &&
-    verifiedGrant?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL" &&
-    verifiedGrant?.current_head===head,
-    "缺少從 GitHub API 核驗的真人一次授權",errors);
-  assertion(HEX64.test(candidateDigest||""),"精確 candidate digest 缺失",errors);
-  const changed=Array.isArray(changedFiles)?changedFiles.flat().map(x=>x?.filename):[];
-  assertion(changed.length>0 && changed.every(x=>nonEmpty(x) &&
-    !/^(?:harness\/|build-spec\/|\.github\/|AGENTS\.md$|delivery\/constitutional-cases\/)/.test(x)),
-    "一般 L1 Task 不得夾帶 L2/L3 治理與受保護 SSOT",errors);
-  const records=safeArray(comments).flat().map(comment=>({
-    comment,record:parseReadinessComment(comment)})).filter(x=>x.record?.head_sha===head);
-  const expected=["LOCAL_TESTS","GPT_BCE"];
-  for(const kind of expected){
-    const stage=records.filter(x=>x.record.kind===kind);
-    assertion(stage.length===1,"缺少或重複的 "+kind+" exact-HEAD 證據",errors);
-    if(stage.length===1){
-      errors.push(...commonErrors(stage[0].comment,stage[0].record,ctx),
-        ...stageEvidenceErrors(stage[0],ctx));
-    }
-  }
-  const local=records.find(x=>x.record.kind==="LOCAL_TESTS");
-  const bce=records.find(x=>x.record.kind==="GPT_BCE");
-  if(local && bce)assertion(
-    bce.comment.id>local.comment.id &&
-    Date.parse(bce.comment.created_at)>=Date.parse(local.comment.created_at),
-    "BCE 需晚於 Local tests，且必須獨立驗證",errors);
+  assertion(validVerifiedGrant(verifiedGrant,head),"缺少 API 證明的 Human 一次授權",errors);
+  assertion(HEX64.test(candidateDigest||""),"精確 SHA256 不存在",errors);
+  assertion(l1TaskChangedPathsValid(changedFiles),"L1 Task 夾帶受保護治理或 SSOT",errors);
+  errors.push(...l1StageEvidenceErrors(comments,head,ctx));
   errors.push(...inspectLiveGitHubRequiredChecks({head,checks}));
   return {ok:!errors.length,head,errors,manual_provenance_required:false,
     grant_kind:"GITHUB_ENVIRONMENT_REVIEW",human_approvals_required:1};

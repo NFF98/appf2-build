@@ -14,45 +14,49 @@ async function gh(path,token){
   if(!r.ok)throw Error("GitHub genuine review verification unavailable: "+r.status);
   return r.json();
 }
-export function inspectIssuance({run,approvals,environment,grant,task,sprint,build,input,now}){
-  const errors=[],assert=(x,msg)=>{if(!x)errors.push(msg);};
-  const reviewers=(environment?.protection_rules||[]).filter(r=>r.type==="required_reviewers")
-    .flatMap(r=>r.reviewers||[]);
-  assert(environment?.name===ENVIRONMENT &&
-    reviewers.some(r=>r.type==="User"&&r.reviewer?.login===HUMAN),
-    "未設定 GitHub Required reviewer：不得發出 Human 授權");
-  const reviews=Array.isArray(approvals)?approvals.filter(a=>
+const requiredHumanReviewer=env=>{
+  const r=(env?.protection_rules||[]).filter(x=>x.type==="required_reviewers")
+    .flatMap(x=>x.reviewers||[]);
+  return env?.name===ENVIRONMENT &&
+    r.some(x=>x.type==="User"&&x.reviewer?.login===HUMAN);
+};
+const approvedHumanReview=approvals=>{
+  const rows=Array.isArray(approvals)?approvals.filter(a=>
     a.environments?.some(e=>e.name===ENVIRONMENT)):[];
-  assert(reviews.length>0&&reviews.at(-1)?.state==="approved"&&
-    reviews.at(-1)?.user?.login===HUMAN,"缺少 GitHub 真人批准");
-  assert(run?.event==="workflow_dispatch"&&run?.head_sha===input.head_sha&&
-    run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW)&&
-    run?.repository?.full_name==="NFF98/appf2-build",
-    "不是指定的 workflow/source commit");
-  assert(grant?.schema==="APPF2-TRUSTED-TASK-GRANT-1"&&
-    grant?.task_id===input.task_id&&grant?.sprint_id===input.sprint_id&&
-    grant?.scope_sha256===input.scope_sha256,
-    "所見授權內容不等於 Human 審核的 Task/scope");
-  assert(grant?.task_id===task?.task_id&&grant?.build_spec_id===task?.build_spec_id&&
-    grant?.scope_sha256===taskScopeDigest(task),
-    "Task 正式 scope/映射已改變");
-  // The Human grant MUST precede Task Activation. Do not demand an earlier
-  // Human Activation (which would silently create two separate approvals).
-  const noOtherActiveTask=(sprint?.active_task===null ||
-    sprint?.active_task===grant?.task_id) &&
-    (sprint?.active_sprint===null || sprint?.active_sprint===grant?.sprint_id);
-  assert(noOtherActiveTask&&
-    ["PLANNED","IN_PROGRESS","REVIEW"].includes(task?.status)&&
-    (build?.active_baseline===grant?.build_spec_id ||
-      task?.build_spec_id===grant?.build_spec_id),
-    "已有其他 ACTIVE Task/Sprint、或候選 Task/Build Spec 無效，禁止預先授權");
-  assert(Number.isSafeInteger(grant?.approved_at_unix)&&
-    Number.isSafeInteger(grant?.expires_at_unix)&&
-    now>=grant?.approved_at_unix&&now<=grant?.expires_at_unix&&
-    grant?.expires_at_unix-grant?.approved_at_unix<=30*86400,
-    "核准有效期有誤");
-  return {ok:!errors.length,decision:errors.length?"HARD_STOP":"GITHUB_HUMAN_GRANT_ISSUED",
-    errors};
+  return rows.length>0&&rows.at(-1)?.state==="approved"&&
+    rows.at(-1)?.user?.login===HUMAN;
+};
+const exactIssuanceRun=(run,input)=>run?.event==="workflow_dispatch"&&
+  run?.head_sha===input?.head_sha&&
+  run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW)&&
+  run?.repository?.full_name==="NFF98/appf2-build";
+const issuanceScopeMatch=(grant,input,task)=>grant?.schema==="APPF2-TRUSTED-TASK-GRANT-1"&&
+  grant?.task_id===input.task_id&&grant?.sprint_id===input.sprint_id&&
+  grant?.scope_sha256===input.scope_sha256 &&
+  grant?.task_id===task?.task_id&&grant?.build_spec_id===task?.build_spec_id&&
+  grant?.scope_sha256===taskScopeDigest(task);
+const noDifferentTaskInExecution=(s,g)=>
+  (s?.active_task===null||s?.active_task===g?.task_id)&&
+  (s?.active_sprint===null||s?.active_sprint===g?.sprint_id);
+const leaseEligibleBeforeOrAfterActivation=(g,task,sprint,build)=>
+  noDifferentTaskInExecution(sprint,g)&&
+  ["PLANNED","IN_PROGRESS","REVIEW"].includes(task?.status)&&
+  (build?.active_baseline===g?.build_spec_id ||
+    task?.build_spec_id===g?.build_spec_id);
+const issueTimeValid=(g,now)=>Number.isSafeInteger(g?.approved_at_unix)&&
+  Number.isSafeInteger(g?.expires_at_unix)&&
+  now>=g?.approved_at_unix&&now<=g?.expires_at_unix&&
+  g.expires_at_unix-g.approved_at_unix<=30*86400;
+export function inspectIssuance({run,approvals,environment,grant,task,sprint,build,input,now}){
+  const errors=[],deny=(v,msg)=>{if(!v)errors.push(msg);};
+  deny(requiredHumanReviewer(environment),"GitHub Required reviewer 未設定");
+  deny(approvedHumanReview(approvals),"缺少 GitHub 真人核准");
+  deny(exactIssuanceRun(run,input),"workflow/source commit 不一致");
+  deny(issuanceScopeMatch(grant,input,task),"Human 所見 Task/Scope 與正式映射不一致");
+  deny(leaseEligibleBeforeOrAfterActivation(grant,task,sprint,build),
+    "已有另一 ACTIVE Task 或未合法規劃");
+  deny(issueTimeValid(grant,now),"Human 授權逾期");
+  return {ok:!errors.length,decision:errors.length?"HARD_STOP":"GITHUB_HUMAN_GRANT_ISSUED",errors};
 }
 async function cli(){
   const env=process.env,token=env.GH_TOKEN;

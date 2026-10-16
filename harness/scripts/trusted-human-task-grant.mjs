@@ -21,47 +21,62 @@ export const taskScopeDigest=task=>crypto.createHash("sha256").update(JSON.strin
 })).digest("hex");
 
 // Inputs are data from authenticated API calls performed by verifyLiveGrant(), NOT caller claims.
-export function inspectGitHubHumanGrant({run,approvals,environment,grant,original,task,sprint,build,pr,ancestor,now}){
-  const errors=[],deny=(p,s)=>{if(!p)errors.push(s);};
-  const reviewers=(environment?.protection_rules||[]).filter(x=>x.type==="required_reviewers")
+const requiredReviewerConfigured=env=>{
+  const reviewers=(env?.protection_rules||[]).filter(x=>x.type==="required_reviewers")
     .flatMap(x=>x.reviewers||[]);
-  deny(environment?.name===ENVIRONMENT &&
-    reviewers.some(x=>x.type==="User"&&x.reviewer?.login===HUMAN),
-    "GitHub Environment 未設定 NFF98 為 Required reviewer");
-  deny(run?.event==="workflow_dispatch"&&run?.conclusion==="success"&&
-    run?.repository?.full_name==="NFF98/appf2-build" &&
-    run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW) && hex40(run?.head_sha),
-    "非官方成功的 Human grant workflow");
-  const review=Array.isArray(approvals)?approvals.filter(x=>
+  return env?.name===ENVIRONMENT &&
+    reviewers.some(x=>x.type==="User"&&x.reviewer?.login===HUMAN);
+};
+const authenticGrantWorkflow=run=>
+  run?.event==="workflow_dispatch" &&
+  run?.conclusion==="success" &&
+  run?.repository?.full_name==="NFF98/appf2-build" &&
+  run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW) &&
+  hex40(run?.head_sha);
+const latestApprovedEnvironmentReview=reviews=>{
+  const list=Array.isArray(reviews)?reviews.filter(x=>
     x.environments?.some(e=>e.name===ENVIRONMENT)):[];
-  deny(review.length>0 && review.at(-1)?.state==="approved" &&
-    review.at(-1)?.user?.login===HUMAN,"GitHub 環境真實核准事件不存在或已撤回");
-  deny(grant?.schema==="APPF2-TRUSTED-TASK-GRANT-1"&&
-    taskIdOK(grant?.task_id)&&hex64(grant?.scope_sha256)&&hex40(grant?.base_sha),
-    "Task 核准描述不合法");
-  deny(original!==null && typeof original==="object"&&
-    JSON.stringify(original)===JSON.stringify(grant),"核准後 Task 授權內容遭修改");
-  deny(task?.task_id===grant?.task_id && task?.build_spec_id===grant?.build_spec_id &&
-    sprint?.active_sprint===grant?.sprint_id &&
-    sprint?.active_task===grant?.task_id &&
-    sprint?.active_build_spec===grant?.build_spec_id &&
-    build?.active_baseline===grant?.build_spec_id &&
-    build?.implementation_enabled===true &&
-    ["ACTIVE","REVIEW"].includes(sprint?.status)&&
-    ["IN_PROGRESS","REVIEW"].includes(task?.status),
-    "Task、Sprint、Build Spec 或執行權已改變");
-  deny(task && grant?.scope_sha256===taskScopeDigest(task),"AC/Test/Allowed write scope 不一致");
-  deny(pr?.state==="open"&&pr?.base?.ref==="main"&&
-    /^Task:\s*T\d{3}\b/m.test(pr?.body||"")&&
-    new RegExp("^Task:\\s*"+grant?.task_id+"\\b","m").test(pr?.body||""),
-    "PR 不屬於該已授權 Task");
-  deny(ancestor===true && hex40(pr?.head?.sha),
-    "Human 批准 SHA 必須是現有 Task 分支祖先（可為同一 HEAD）且後續未修改授權");
-  deny(Number.isSafeInteger(now)&&Number.isSafeInteger(grant?.approved_at_unix)&& Number.isSafeInteger(grant?.expires_at_unix) &&
-    now>=grant?.approved_at_unix && now<=grant.expires_at_unix &&
-    grant.expires_at_unix-grant.approved_at_unix<=30*86400,
-    "Task 授權已過期或不合法");
-  return {ok:errors.length===0,decision:errors.length===0?"VERIFIED_GITHUB_HUMAN_APPROVAL":"HARD_STOP",errors};
+  return list.length>0 && list.at(-1)?.state==="approved" &&
+    list.at(-1)?.user?.login===HUMAN;
+};
+const grantFormatValid=g=>g?.schema==="APPF2-TRUSTED-TASK-GRANT-1" &&
+  taskIdOK(g?.task_id)&&hex64(g?.scope_sha256)&&hex40(g?.base_sha);
+const grantUnchanged=(original,g)=>original!==null&&typeof original==="object"&&
+  JSON.stringify(original)===JSON.stringify(g);
+const activeIdentityMatches=(task,sprint,grant)=>
+  task?.task_id===grant?.task_id&&
+  task?.build_spec_id===grant?.build_spec_id&&
+  sprint?.active_sprint===grant?.sprint_id &&
+  sprint?.active_task===grant?.task_id &&
+  sprint?.active_build_spec===grant?.build_spec_id;
+const activeExecutionMatches=(task,sprint,build,grant)=>
+  activeIdentityMatches(task,sprint,grant)&&
+  build?.active_baseline===grant?.build_spec_id &&
+  build?.implementation_enabled===true &&
+  ["ACTIVE","REVIEW"].includes(sprint?.status)&&
+  ["IN_PROGRESS","REVIEW"].includes(task?.status);
+const grantedPrMatches=(pr,g)=>pr?.state==="open"&&
+  pr?.base?.ref==="main"&&
+  /^Task:\s*T\d{3}\b/m.test(pr?.body||"")&&
+  new RegExp("^Task:\\s*"+g?.task_id+"\\b","m").test(pr?.body||"");
+const ttlValid=(g,now)=>Number.isSafeInteger(now)&&
+  Number.isSafeInteger(g?.approved_at_unix)&&
+  Number.isSafeInteger(g?.expires_at_unix)&&
+  now>=g.approved_at_unix&&now<=g.expires_at_unix&&
+  g.expires_at_unix-g.approved_at_unix<=30*86400;
+export function inspectGitHubHumanGrant({run,approvals,environment,grant,original,task,sprint,build,pr,ancestor,now}){
+  const errors=[],deny=(p,m)=>{if(!p)errors.push(m);};
+  deny(requiredReviewerConfigured(environment),"Environment 缺少 NFF98 Required reviewer");
+  deny(authenticGrantWorkflow(run),"非官方成功的 Task Human grant workflow");
+  deny(latestApprovedEnvironmentReview(approvals),"GitHub 真實核准不存在或撤銷");
+  deny(grantFormatValid(grant),"Task 核准描述不合法");
+  deny(grantUnchanged(original,grant),"核准後 Task 授權內容遭修改");
+  deny(activeExecutionMatches(task,sprint,build,grant),"Task/Sprint/Build 執行權變更");
+  deny(task&&grant?.scope_sha256===taskScopeDigest(task),"AC/Test/Allowed path Scope 不一致");
+  deny(grantedPrMatches(pr,grant),"PR 不屬於已授權 Task");
+  deny(ancestor===true && hex40(pr?.head?.sha),"Human 批准 SHA 非當前 Task 分支祖先");
+  deny(ttlValid(grant,now),"Task 授權逾期或時間不合法");
+  return {ok:errors.length===0,decision:errors.length?"HARD_STOP":"VERIFIED_GITHUB_HUMAN_APPROVAL",errors};
 }
 const json=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 const gh=async (api,token)=>{

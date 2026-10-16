@@ -26,7 +26,7 @@ const fresh=()=>{
     reviewers:[{type:"User",reviewer:{login:"NFF98"}}]}]};
   const pr={state:"open",base:{ref:"main"},
     head:{sha:"c".repeat(40)},body:"Task: T009\nTask-Grant-Run: 123"};
-  return {run,approvals,environment,grant,original:structuredClone(grant),
+  return {run,approvals,environment,grant,original:JSON.parse(JSON.stringify(grant)),
     task,sprint,build,pr,ancestor:true,now:NOW};
 };
 export function runTrustedGrantSelfTests(){
