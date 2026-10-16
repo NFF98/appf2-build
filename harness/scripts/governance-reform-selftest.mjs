@@ -462,13 +462,14 @@ function protectedClosureWriterCases(){
 function protectedControlProvenanceCases(){
   const mk=()=>({
     source:{number:101,state:"closed",merged:true,
-      merged_at:"2026-10-16T03:00:00Z",head:{ref:"task/t009"}},
+      merged_at:"2026-10-16T03:00:00Z",head:{ref:"task/t009"},
+      body:"Task: T009\nTask-Grant-Run: 12345"},
     control:{number:102,state:"open",draft:true,
       created_at:"2026-10-16T03:00:01Z",
       base:{ref:"main",repo:{full_name:"NFF98/appf2-build"}},
       head:{ref:"control/t009",sha:"c".repeat(40),
         repo:{full_name:"NFF98/appf2-build"}},
-      body:"Task: T009\nClosure-Source-PR: 101\n"+
+      body:"Task: T009\nTask-Grant-Run: 12345\nClosure-Source-PR: 101\n"+
         "PR-Justification: CONTROL_TRANSITION_AFTER_MERGE 正式 Evidence 後的 Task Closure"}
   });
   const run=f=>{const x=mk();f(x);return inspectProtectedControlPrProvenance(
@@ -483,6 +484,9 @@ function protectedControlProvenanceCases(){
     ["missing source merged_at refused",false,()=>run(x=>{x.source.merged_at=null;})],
     ["reused task implementation branch refused",false,()=>run(x=>{x.control.head.ref="task/t009";})],
     ["missing justification refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/PR-Justification:.+/,"");})],
+    ["missing original grant refused",false,()=>run(x=>{x.source.body="Task: T009";})],
+    ["missing control grant refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/Task-Grant-Run:.+\n/,"");})],
+    ["substituted control grant refused",false,()=>run(x=>{x.control.body=x.control.body.replace("Task-Grant-Run: 12345","Task-Grant-Run: 54321");})],
     ["wrong justification lane refused",false,()=>run(x=>{x.control.body=x.control.body.replace("CONTROL_TRANSITION_AFTER_MERGE","HOTFIX");})],
     ["empty justification rationale refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/PR-Justification:.+/,"PR-Justification: CONTROL_TRANSITION_AFTER_MERGE ");})],
     ["wrong Task refused",false,()=>run(x=>{x.control.body=x.control.body.replace("Task: T009","Task: T008");})],
