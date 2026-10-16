@@ -204,7 +204,143 @@ export async function liveTaskClosureCheck({prNumber,token}={}){
     note:"Read-only post-merge preflight. Separate protected control transition and Human L3 remain required."};
 }
 
+
+// Closure mutation is deliberately separate from ordinary product implementation.
+// The only write target is an already-open, dedicated, SAME-TASK CONTROL PR branch.
+// A Human L3 change, Main branch push, unauthorized status, or unrelated file fails closed.
+const ONLY_BUILD_REPO="NFF98/appf2-build";
+const prControlIdentity=(source,control,id)=>[
+  source?.number!==control?.number,
+  control?.state==="open",control?.draft===true,
+  control?.base?.ref==="main",control?.base?.repo?.full_name===ONLY_BUILD_REPO,
+  control?.head?.repo?.full_name===ONLY_BUILD_REPO,control?.head?.ref!=="main",
+  /^[a-f0-9]{40}$/.test(control?.head?.sha||""),
+  new RegExp("^Task:\\s*"+id+"\\s*$","m").test(control?.body||""),
+  new RegExp("^Closure-Source-PR:\\s*"+source?.number+"\\s*$","m").test(control?.body||"")
+].every(Boolean);
+const exactControlFileInventory=(files,path)=>Array.isArray(files)&&
+  files.length===1&&files[0]?.filename===path &&
+  ["modified"].includes(files[0]?.status);
+const sameTaskExceptStatus=(a,b,id)=>[
+  a?.task_id===id,b?.task_id===id,
+  JSON.stringify({...a,status:null})===JSON.stringify({...b,status:null})
+].every(Boolean);
+/** Only the eligible reviewed Task's status can become CLOSED. */
+export function planProtectedClosureMutation({plan,mainDoc,controlDoc,taskId}={}){
+  const errors=[],deny=(ok,msg)=>{if(!ok)errors.push(msg);};
+  deny(plan?.ok===true&&plan?.decision==="ELIGIBLE_FOR_SEPARATE_PROTECTED_CONTROL_REVIEW",
+    "Independent post-merge closure plan was not eligible");
+  deny(/^T\d{3}$/.test(taskId||"")&&plan?.task_id===taskId,"Closure Task ID mismatch");
+  deny(mainDoc?.sprint_id===plan?.sprint_id&&controlDoc?.sprint_id===plan?.sprint_id,
+    "Canonical Sprint ID mismatch");
+  deny(Array.isArray(mainDoc?.tasks)&&Array.isArray(controlDoc?.tasks)&&
+    mainDoc?.tasks?.length===controlDoc?.tasks?.length,
+    "Canonical Task inventory altered");
+  const before=mainDoc?.tasks||[],existing=controlDoc?.tasks||[];
+  const targets=before.filter(t=>t.task_id===taskId);
+  deny(targets.length===1&&targets[0]?.status==="REVIEW",
+    "Canonical Main must have exactly one REVIEW Task");
+  deny(existing.filter(t=>t.task_id===taskId).length===1,
+    "Control PR Task must exist exactly once");
+  const byId=new Map(existing.map(t=>[t.task_id,t]));
+  deny(new Set(existing.map(t=>t.task_id)).size===existing.length,
+    "Duplicate Task IDs in control branch");
+  deny(before.every(t=>byId.has(t.task_id)&&sameTaskExceptStatus(t,byId.get(t.task_id),t.task_id)),
+    "Control branch changed Task content beyond status");
+  deny(before.every(t=>t.task_id===taskId||t.status===byId.get(t.task_id)?.status),
+    "Control branch changed another Task status");
+  deny(["REVIEW","CLOSED"].includes(byId.get(taskId)?.status),
+    "Control branch status outside permitted closure transition");
+  if(errors.length)return {ok:false,decision:"HARD_STOP",errors,changed:false};
+  const updated={...mainDoc,tasks:before.map(t=>t.task_id===taskId?{...t,status:"CLOSED"}:t)};
+  const changed=JSON.stringify(updated)!==JSON.stringify(controlDoc);
+  return {ok:true,decision:changed?"READY_FOR_PROTECTED_BRANCH_WRITE":"ALREADY_PROPOSED",
+    errors:[],changed,task_id:taskId,sprint_id:plan.sprint_id,
+    updated,closure_performed:false};
+}
+const githubContentJson=c=>JSON.parse(Buffer.from(
+  (c?.content||"").replace(/\s/g,""),"base64").toString("utf8"));
+const proofOfControlBase=(control,main)=>[
+  control?.base?.sha===main,
+  /^[a-f0-9]{40}$/.test(main||""),
+  control?.head?.sha!==main
+].every(Boolean);
+const taskControlPath=plan=>"delivery/sprints/"+plan.sprint_id+"/tasks.json";
+const taskForPlan=(id,sprint)=>taskFromDoc(
+  readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json"),id);
+const matchingLocalMain=(sha)=>execFileSync("git",["rev-parse","HEAD"],
+  {encoding:"utf8"}).trim()===sha;
+const verifyControlInventory=async (repo,number,path,token)=>{
+  const files=await gh(repo+"/pulls/"+number+"/files?per_page=100",token);
+  if(!exactControlFileInventory(files,path))
+    throw Error("HARD_STOP: existing control PR must modify only canonical Task document");
+};
+const fetchTaskControls=async (repo,path,main,branch,token)=>{
+  const [base,target]=await Promise.all([
+    gh(repo+"/contents/"+path+"?ref="+main,token),
+    gh(repo+"/contents/"+path+"?ref="+encodeURIComponent(branch),token)
+  ]);
+  return {base,target,mainDoc:githubContentJson(base),controlDoc:githubContentJson(target)};
+};
+const assertControlSource=(source,control,plan,main,checkoutSha)=>{
+  if(!prControlIdentity(source,control,plan.task_id)||
+    !proofOfControlBase(control,main)||checkoutSha!==main)
+    throw Error("HARD_STOP: unauthorized control PR/base/ref/checkout");
+};
+export async function writeExistingProtectedClosureCandidate({
+  sourcePrNumber,controlPrNumber,token,apply=false}={}){
+  if(!validReconcileRequest({prNumber:sourcePrNumber,token})||
+    !validReconcileRequest({prNumber:controlPrNumber,token}))
+    throw Error("HARD_STOP: explicit valid source/control PR IDs required");
+  const repo="/repos/"+ONLY_BUILD_REPO;
+  const [source,control,mainBranch]=await Promise.all([
+    gh(repo+"/pulls/"+sourcePrNumber,token),
+    gh(repo+"/pulls/"+controlPrNumber,token),
+    gh(repo+"/branches/main",token)
+  ]);
+  const main=mainBranch?.commit?.sha;
+  if(!hex40(main)||!matchingLocalMain(main))
+    throw Error("HARD_STOP: executor checkout must match live Main");
+  // This includes original Task Human grant, a verified merge on Main,
+  // canonical mapped Evidence, plus separate L3 block on Sprint3 T006/T008.
+  const verified=await liveTaskClosureCheck({prNumber:sourcePrNumber,token});
+  if(!verified.ok)return {...verified,write_action:"HARD_STOP",closure_performed:false};
+  assertControlSource(source,control,verified,main,main);
+  const path=taskControlPath(verified);
+  await verifyControlInventory(repo,controlPrNumber,path,token);
+  const {target,mainDoc,controlDoc}=await fetchTaskControls(repo,path,main,
+    control.head.ref,token);
+  const mutation=planProtectedClosureMutation({plan:verified,mainDoc,controlDoc,
+    taskId:verified.task_id});
+  if(!mutation.ok||!mutation.changed||!apply)
+    return {...mutation,write_action:"NO_MUTATION",control_pr:controlPrNumber};
+  // Optimistic concurrency: no changed PR HEAD or target blob since inspection.
+  const [freshControl,freshMain]=await Promise.all([
+    gh(repo+"/pulls/"+controlPrNumber,token),gh(repo+"/branches/main",token)]);
+  if(freshControl?.head?.sha!==control.head.sha ||
+    freshMain?.commit?.sha!==main)
+    throw Error("HARD_STOP: control PR or Main moved before protected write");
+  const written=await gh(repo+"/contents/"+path,token,{method:"PUT",body:{
+    branch:control.head.ref,sha:target.sha,
+    message:"Task "+verified.task_id+": propose evidence-verified protected closure (not Main)",
+    content:Buffer.from(JSON.stringify(mutation.updated,null,2)+"\n").toString("base64")
+  }});
+  if(!hex40(written?.commit?.sha))
+    throw Error("HARD_STOP: GitHub did not acknowledge control branch commit");
+  return {ok:true,decision:"CONTROL_PR_UPDATED_NEEDS_FULL_CI_AND_PROTECTED_MERGE",
+    write_action:"CONTROL_PR_BRANCH_ONLY",source_pr:sourcePrNumber,
+    control_pr:controlPrNumber,head_sha:written.commit.sha,
+    closure_performed:false,main_unmodified_by_this_call:true};
+}
+
 function cli(args){
+  if(args[0]==="--closure-control"){
+    const sourcePrNumber=Number(args[1]),controlPrNumber=Number(args[2]),
+      token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
+    return writeExistingProtectedClosureCandidate({sourcePrNumber,controlPrNumber,
+      token,apply:args.includes("--apply")}).then(x=>{
+      console.log("CLOSURE CONTROL "+JSON.stringify(x));return x.ok?0:1;});
+  }
   if(args[0]==="--closure-check"){
     const prNumber=Number(args[1]),token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
     return liveTaskClosureCheck({prNumber,token})
