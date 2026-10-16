@@ -35,12 +35,17 @@ const matchingPairs=(e,pairs)=>[
   e?.acceptance_ids?.length===e?.test_ids?.length
 ].every(Boolean) && e.acceptance_ids.every((a,i)=>pairs.get(a)===e.test_ids[i]);
 const normalizeError=(errors,ok,msg)=>{if(!ok)errors.push(msg);};
-const reviewReference=(errors,id,docs,task,sprintId,pairs)=>{
+const reviewReference=({errors,id,docs,task,sprintId,pairs})=>{
   const e=docs.get(id),deny=(ok,msg)=>normalizeError(errors,ok,msg+": "+id);
   deny(referenceNameOK(e,id),"Missing exact canonical Evidence");
   deny(validDocumentState(e),"Evidence invalid schema/status/source SHA");
   deny(documentScopeOK(e,task,sprintId),"Evidence scope differs");
   deny(matchingPairs(e,pairs),"Evidence AC/Test linkage differs");
+};
+const completeReferencePlan=(prior,proposed)=>{
+  const add=proposed.filter(id=>!prior.includes(id));
+  return {ok:true,status:add.length?"READY_TO_APPEND_REFERENCES":"ALREADY_NORMALIZED",
+    errors:[],add,changed:add.length>0,completion_evidence:[...prior,...add]};
 };
 /** Only update existing Task Evidence IDs; no PASS fabrication or Task closure. */
 export function planTaskEvidenceReferences({task,sprintId,ledger,existingEvidence}={}){
@@ -58,11 +63,9 @@ export function planTaskEvidenceReferences({task,sprintId,ledger,existingEvidenc
   deny(docs.size===documents.length,"Canonical Evidence IDs duplicated");
   const pairs=new Map((task?.acceptance_links||[]).map(x=>[x.acceptance_id,x.test_id]));
   for(const id of [...(prior||[]),...(proposed||[])])
-    reviewReference(errors,id,docs,task,sprintId,pairs);
+    reviewReference({errors,id,docs,task,sprintId,pairs});
   if(errors.length)return {ok:false,status:"HARD_STOP",errors,add:[],changed:false};
-  const add=proposed.filter(id=>!prior.includes(id));
-  return {ok:true,status:add.length?"READY_TO_APPEND_REFERENCES":"ALREADY_NORMALIZED",
-    errors:[],add,changed:add.length>0,completion_evidence:[...prior,...add]};
+  return completeReferencePlan(prior,proposed);
 }
 const gh=async (endpoint,token,options={})=>{
   const res=await fetch("https://api.github.com"+endpoint,{
@@ -94,6 +97,13 @@ const samePrBranch=(pr,head)=>[
 const validReconcileRequest=({prNumber,token})=>
   [Number.isSafeInteger(prNumber),prNumber>0,Boolean(token)].every(Boolean);
 const shouldNotWrite=(plan,apply)=>[!plan?.ok,!plan?.changed,!apply].some(Boolean);
+const normalizeTaskRow=(task,id,plan)=>task.task_id===id
+  ?{...task,completion_evidence:plan.completion_evidence}:task;
+const updatedTaskDoc=(doc,id,plan)=>({...doc,tasks:doc.tasks.map(
+  t=>normalizeTaskRow(t,id,plan))});
+const exactTaskBytes=(content,path)=>Buffer.from(
+  (content.content||"").replace(/\s/g,""),"base64").toString("utf8")===
+  fs.readFileSync(path,"utf8");
 export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
   if(!validReconcileRequest({prNumber,token}))
     throw Error("HARD_STOP: missing PR number or GitHub token");
@@ -116,13 +126,11 @@ export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
   // Directly check live Environment approval; a caller boolean is NEVER enough.
   await verifyLiveGrant({pr,token});
   const content=await gh(repo+"/contents/"+path+"?ref="+head,token);
-  const actual=Buffer.from((content.content||"").replace(/\s/g,""),"base64");
-  if(actual.toString("utf8")!==fs.readFileSync(path,"utf8"))
+  if(!exactTaskBytes(content,path))
     throw Error("HARD_STOP: local Task bytes differ from live GitHub HEAD");
   const fresh=await gh(repo+"/pulls/"+prNumber,token);
   if(!samePrBranch(fresh,head))throw Error("HARD_STOP: PR HEAD moved during normalization");
-  const updated={...doc,tasks:doc.tasks.map(t=>t.task_id===taskId
-    ?{...t,completion_evidence:plan.completion_evidence}:t)};
+  const updated=updatedTaskDoc(doc,taskId,plan);
   const response=await gh(repo+"/contents/"+path,token,{method:"PUT",body:{
     branch:pr.head.ref,sha:content.sha,
     message:"Task "+taskId+": normalize existing canonical Evidence references (no status change)",
