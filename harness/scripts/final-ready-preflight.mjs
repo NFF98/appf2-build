@@ -3,7 +3,7 @@
 // Evidence is external to HEAD (append-only PR comments); the code HEAD never embeds its own SHA.
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
-import { finalGateVerdict } from "./task-pr-lifecycle.mjs";
+import { finalGateVerdict, readLiveDelegationEvidence } from "./task-pr-lifecycle.mjs";
 import { exceptionDigest, matchesPathRule } from "./human-exception.mjs";
 import { verifyLiveGrant } from "./trusted-human-task-grant.mjs";
 
@@ -34,32 +34,6 @@ const numericPass=r=>r?.status==="PASS" && r.exit_code===0 && HEX64.test(r.log_s
 const safeArray=x=>Array.isArray(x)?x:[];
 const assertion=(ok,msg,e)=>{if(!ok)e.push(msg);};
 const readJsonFile=file=>JSON.parse(fs.readFileSync(file,"utf8"));
-// GitHub's check-runs endpoint is paginated. Final Ready must never decide
-// from its first 100 entries while the trusted Merge executor sees all pages.
-const checkPageHeaderOK=(pages,total,pageSize,maxPages)=>
-  Array.isArray(pages) && pages.length>=1 && pages.length<=maxPages &&
-  Number.isSafeInteger(total) && total>=0 && total<=pageSize*maxPages &&
-  pages.length===Math.max(1,Math.ceil(total/pageSize));
-export function completeCheckRunPages(pages){
-  const PAGE_SIZE=100,MAX_PAGES=10;
-  const total=pages?.[0]?.total_count;
-  if(!checkPageHeaderOK(pages,total,PAGE_SIZE,MAX_PAGES))
-    throw Error("HARD_STOP: incomplete GitHub Check Run pages");
-  const all=[];
-  for(let i=0;i<pages.length;i++){
-    const p=pages[i],expected=Math.min(PAGE_SIZE,total-i*PAGE_SIZE);
-    if(p?.total_count!==total||!Array.isArray(p.check_runs)||
-      p.check_runs.length!==expected)
-      throw Error("HARD_STOP: GitHub Check Run page count drift");
-    all.push(...p.check_runs);
-  }
-  const ids=all.map(c=>c?.id);
-  if(ids.some(id=>!Number.isSafeInteger(id)||id<1) ||
-    new Set(ids).size!==total)
-    throw Error("HARD_STOP: duplicated/missing GitHub Check Run IDs");
-  return {total_count:total,check_runs:all};
-}
-
 export function parseReadinessComment(comment){
   const body=comment?.body;
   if(typeof body!=="string" || !body.startsWith(READY_MARKER+"\n")) return null;
@@ -318,9 +292,16 @@ async function main(argv){
   let result;
   if(eventName==="pull_request"){
     const live=readJsonFile(val("live-pr"));
-    const changedFiles=readJsonFile(val("changed-files"));
-    const candidateDigest=candidateDigestOf(changedFiles,rel=>{try{return fs.readFileSync(rel);}catch{return null;}});
-    const comments=readJsonFile(val("comments")),checks=readJsonFile(val("checks"));
+    // Shell's first-page Check Runs preview is NOT authoritative. Read all
+    // official GitHub comments/files/checks through the trusted executor's
+    // complete paginated and duplicate-rejecting API path for Ready too.
+    const {comments,changed,checks}=await readLiveDelegationEvidence({
+      prNumber:live.number,head:live.head?.sha,
+      token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
+    const changedFiles=changed;
+    const candidateDigest=candidateDigestOf(changedFiles,rel=>{
+      try{return fs.readFileSync(rel);}catch{return null;}
+    });
     // No second Human approval for a normal Task with authenticated GitHub grant.
     if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
       const verifiedGrant=await verifyLiveGrant({pr:live,
