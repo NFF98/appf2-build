@@ -227,20 +227,39 @@ export function runTrustedGrantSelfTests(){
 }
 function runTaskAllowedPathsCases(){
   const task={allowed_write_paths:["src/","tests/*.test.ts","docs/**/notes.md"]};
-  const valid=names=>taskChangedPathsWithinGrant({
-    task,changed:names.map(filename=>({filename}))});
-  assert.equal(valid(["src/app.ts","tests/flow.test.ts"]),true);
-  assert.equal(valid(["docs/a/notes.md"]),true);
-  assert.equal(valid(["docs/a/b/notes.md"]),true);
-  assert.equal(valid(["src/app.ts","delivery/CURRENT-SPRINT.json"]),false);
-  assert.equal(valid(["src/app.ts","harness/scripts/attack.mjs"]),false);
-  assert.equal(valid(["src/app.ts","src2/evil.ts"]),false);
-  assert.equal(valid(["tests/deep/flow.test.ts"]),false);
-  assert.equal(valid([]),false);
-  assert.equal(taskChangedPathsWithinGrant({task,changed:[{filename:22}]}),false);
+  const run=changed=>taskChangedPathsWithinGrant({task,changed});
+  const file=(filename,status="modified",previous_filename)=>({
+    filename,status,...(previous_filename===undefined?{}:{previous_filename})});
+  const valid=names=>run(names.map(filename=>file(filename)));
+  const cases=[
+    [true,[file("src/app.ts"),file("tests/flow.test.ts")]],
+    [true,[file("docs/a/notes.md")]],
+    [true,[file("docs/a/b/notes.md")]],
+    [true,[file("src/old.ts","renamed","src/new.ts")]],
+    [true,[file("src/copied.ts","copied","src/original.ts")]],
+    [true,[file("src/new.ts","added")]],
+    [true,[file("src/deleted.ts","removed")]],
+    [false,[file("src/app.ts"),file("delivery/CURRENT-SPRINT.json")]],
+    [false,[file("src/app.ts"),file("harness/scripts/attack.mjs")]],
+    [false,[file("src/app.ts"),file("src2/evil.ts")]],
+    [false,[file("tests/deep/flow.test.ts")]],
+    [false,[file("src/new.ts","renamed","delivery/CURRENT-SPRINT.json")]],
+    [false,[file("src/new.ts","copied","harness/scripts/attack.mjs")]],
+    [false,[file("src/new.ts","renamed")]],
+    [false,[file("src/new.ts","copied")]],
+    [false,[file("src/new.ts","modified","delivery/CURRENT-SPRINT.json")]],
+    [false,[file("src/new.ts","injected")]],
+    [false,[{filename:"src/new.ts"}]],
+    [false,[file("src/old.ts","renamed","tests/deep/flow.test.ts")]],
+    [false,[]],
+    [false,[{filename:22,status:"modified"}]]
+  ];
+  for(const [expected,changed] of cases)
+    assert.equal(run(changed),expected,"delegated Task rename/source scope failed");
+  assert.equal(valid(["src/ok.ts"]),true);
   assert.equal(taskChangedPathsWithinGrant({task:{allowed_write_paths:[]},
-    changed:[{filename:"src/app.ts"}]}),false);
-  return 10;
+    changed:[file("src/app.ts")]}),false);
+  return cases.length+2;
 }
 function runFreshMergeReceiptTests(){
   const fixture=()=>({
