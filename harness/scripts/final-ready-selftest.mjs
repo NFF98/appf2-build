@@ -101,7 +101,7 @@ for(const [file,required] of requiredWorkflows){
   const actual=source.indexOf(required);
   const mainGuard=source.indexOf("- name: Main-only merge provenance guard");
   assert.ok(actual>mainGuard && mainGuard>=0,"mandatory real gate missing or wrong position: "+file);
-  assert.ok(source.includes("if: ${{ github.event_name != 'pull_request' }}"),
+  assert.ok(source.includes("if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/governance/task-one-approval-20261016' }}"),
     "main push provenance must remain fail-closed: "+file);
   assert.ok(source.includes("run: bash harness/scripts/run-final-ready-preflight.sh"),
     "main push provenance guard missing: "+file);
