@@ -78,12 +78,12 @@ export function runConditionalApprovalSelfTests(){
   const liveGrant={ok:true,decision:"VERIFIED_GITHUB_HUMAN_APPROVAL",
     source_head:BASE,base_sha:BASE,base_ancestor:true,
     current_head:HEAD,task_id:"T001"};
-  const task={task_id:"T001",status:"REVIEW",build_spec_id:"BS-P1-025"};
+  const task={task_id:"T001",status:"REVIEW",build_spec_id:"BS-P1-025",allowed_write_paths:["src/"]};
   const sprint={active_sprint:"SP-P1-003",active_task:"T001",
     active_build_spec:"BS-P1-025",status:"REVIEW"};
   const build={active_baseline:"BS-P1-025",implementation_enabled:true};
   const valid={pr:livePr,grant:liveGrant,task,sprint,build,localHead:HEAD,
-    readiness:{ok:true,head:HEAD}};
+    readiness:{ok:true,head:HEAD},changedPaths:[{filename:"src/app.ts"}]};
   if(!delegatedPremergePolicy(valid).ok)
     throw Error("trusted premerge policy positive rejected");
   // A verified Main advance does NOT require another Task Human approval.
@@ -109,6 +109,8 @@ export function runConditionalApprovalSelfTests(){
   denyPremerge(x=>{x.pr.head.repo.full_name="attacker/repo";});
   denyPremerge(x=>{x.pr.head.sha="f".repeat(40);});
   denyPremerge(x=>{x.task.status="BLOCKED";});
+  denyPremerge(x=>{x.changedPaths=[{filename:"src/app.ts"},{filename:"src2/bypass.ts"}];});
+  denyPremerge(x=>{x.changedPaths=[];});
   denyPremerge(x=>{x.sprint.active_task="T008";});
   denyPremerge(x=>{x.build.implementation_enabled=false;});
   denyPremerge(x=>{x.readiness.ok=false;});
