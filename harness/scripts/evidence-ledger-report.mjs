@@ -104,6 +104,9 @@ const updatedTaskDoc=(doc,id,plan)=>({...doc,tasks:doc.tasks.map(
 const exactTaskBytes=(content,path)=>Buffer.from(
   (content.content||"").replace(/\s/g,""),"base64").toString("utf8")===
   fs.readFileSync(path,"utf8");
+const taskFromPr=pr=>/^Task:\s*(T\d{3})\b/m.exec(pr?.body||"")?.[1];
+const taskFromDoc=(doc,id)=>(doc.tasks||[]).find(t=>t.task_id===id);
+const didCommitWrite=out=>hex40(out?.commit?.sha);
 export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
   if(!validReconcileRequest({prNumber,token}))
     throw Error("HARD_STOP: missing PR number or GitHub token");
@@ -113,9 +116,9 @@ export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
   if(!samePrBranch(pr,head))throw Error("HARD_STOP: stale, fork, merged or Main PR");
   const sprint=readJson("delivery/CURRENT-SPRINT.json"),
     build=readJson("build-spec/CURRENT.json");
-  const taskId=pr.body?.match(/^Task:\s*(T\d{3})\b/m)?.[1];
+  const taskId=taskFromPr(pr);
   const path="delivery/sprints/"+sprint.active_sprint+"/tasks.json";
-  const doc=readJson(path),task=doc.tasks?.find(t=>t.task_id===taskId);
+  const doc=readJson(path),task=taskFromDoc(doc,taskId);
   if(!activeLease(sprint,build,task))
     throw Error("HARD_STOP: active Task lease missing or wrong scope");
   const ledger=ledgerFor(sprint.active_sprint,taskId);
@@ -135,7 +138,7 @@ export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
     branch:pr.head.ref,sha:content.sha,
     message:"Task "+taskId+": normalize existing canonical Evidence references (no status change)",
     content:Buffer.from(JSON.stringify(updated,null,2)+"\n").toString("base64")}});
-  if(!hex40(response?.commit?.sha))
+  if(!didCommitWrite(response))
     throw Error("HARD_STOP: canonical PR evidence update commit was not verified");
   return {...plan,action:"COMMITTED_TO_SAME_TASK_PR_NOT_MAIN",pr_number:prNumber,
     previous_head:head,new_head:response.commit.sha,
