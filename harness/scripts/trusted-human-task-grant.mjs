@@ -152,7 +152,7 @@ const isMergeOnLiveMain=async ({pr,token,root})=>{
   if(!hex40(mainSha)||!hex40(mergeSha))return false;
   // Insist on a canonical Main checkout for local Evidence verification,
   // but rely on GitHub's authenticated compare API, NOT local git history.
-  let localHead="";
+  let localHead;
   try{
     localHead=execFileSync("git",["rev-parse","HEAD"],
       {cwd:root,encoding:"utf8"}).trim();
