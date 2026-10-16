@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import { inspectConstitutionalChange, testConstitutionFailClosed } from "./validate-constitutional-change.mjs";
 import { runGovernanceReformSelfTests } from "./governance-reform-selftest.mjs";
+import { runConditionalApprovalSelfTests } from "./conditional-task-approval-selftest.mjs";
+import { testReformWiring } from "./reform-wiring-audit.mjs";
+import { runTrustedGrantSelfTests } from "./trusted-human-task-grant-selftest.mjs";
 import { inspectRepoCarryForwardChange, validateRepoCarryForwardRegister, CARRY_FORWARD_GATE_MARKER } from "./validate-special-approvals-and-carry-forward.mjs";
 import { runCarryForwardSelfTests } from "./carry-forward-selftest.mjs";
 import path from 'node:path';
@@ -76,6 +79,14 @@ try{ const cf=runCarryForwardSelfTests(root); note.push("GOV-392 carry-forward p
 catch(error){ fail.push(String(error)); }
 try{ const count=testConstitutionFailClosed(); note.push("Constitution negative-scope self tests: "+count+" PASS."); }
 catch(error){ fail.push(String(error)); }
+try{note.push("GitHub Human 一次授權驗證器："+runTrustedGrantSelfTests()+" 項合成正負測試 PASS（Environment 真實人工批准仍須獨立實測）。");}
+catch(error){fail.push("可信 Human grant 測試失敗："+String(error));}
+try{note.push("GOV-REFORM wiring fail-closed attack cases: "+testReformWiring()+" PASS (synthetic).");}
+catch(error){fail.push(String(error));}
+try{
+  const count=runConditionalApprovalSelfTests();
+  note.push("ONE-APPROVAL conditional Task auth negative/positive: "+count+" PASS (synthetic; requires external genuine Human provenance).");
+}catch(error){ fail.push(String(error)); }
 try{
   const reform=runGovernanceReformSelfTests(root);
   note.push("GOV-REFORM-20261013 positive/negative matrix: "+reform.total+" PASS (synthetic, NOT Human approval) "+JSON.stringify(reform.counts)+".");

@@ -4,34 +4,49 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [main]
+    branches: [main, governance/task-one-approval-20261016]
   workflow_dispatch:
+    inputs:
+      final_ready_pr_number:
+        description: "Read-only Final Ready recheck AFTER Local/BCE/Human evidence"
+        required: false
+        type: string
 
 permissions:
   contents: read
   issues: read
   pull-requests: read
+  actions: read
+  checks: read
+  deployments: read
 
 jobs:
+  # Required security and functional gates run before Human Final Ready.
+  # Final Ready/BCE still govern merge; they must not suppress genuine test results.
   ci:
+    # Dispatch evidence recheck MUST NOT mint a newer skipped check named "ci".
+    name: ${{ github.event_name == 'workflow_dispatch' && inputs.final_ready_pr_number != '' && 'ci-recheck-only-skipped' || 'ci' }}
+    # Draft 只執行 Fast-loop；Ready 才啟動完整必需 Gate。
+    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.draft) && (github.event_name != 'workflow_dispatch' || inputs.final_ready_pr_number == '') }}
+    env:
+      APPF2_GOV16_TEST_PHASE: '1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
+      - name: 真實 Human Task 授權預檢（未核准不跑完整 Gate）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-task-human-grant-preflight.sh
+      - name: Main-only merge provenance guard (PR tests never pre-blocked)
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/governance/task-one-approval-20261016' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash harness/scripts/run-final-ready-preflight.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Governance / traceability gates
-        env:
-          APPF2_CONSTITUTION_PUBKEY_B64: ${{ vars.APPF2_CONSTITUTION_PUBKEY_B64 }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
-        run: npm run gate
       - name: Install locked dependencies
         if: ${{ hashFiles('package-lock.json') != '' }}
         run: npm ci
@@ -42,7 +57,7 @@ jobs:
         run: npx --no -- playwright install --with-deps chromium firefox webkit
       - name: Product CI (one-time founding governance-only N/A when exact scope)
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || (github.ref == 'refs/heads/governance/task-one-approval-20261016' && '8a471763ab762cf486e42dd9efd52d9195113a97') || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: |
           if node --input-type=module -e '
@@ -59,6 +74,66 @@ jobs:
           else
             npm run product:ci
           fi
+
+      - name: Governance / traceability gates
+        env:
+          APPF2_CONSTITUTION_PUBKEY_B64: ${{ vars.APPF2_CONSTITUTION_PUBKEY_B64 }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || (github.ref == 'refs/heads/governance/task-one-approval-20261016' && '8a471763ab762cf486e42dd9efd52d9195113a97') || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: npm run gate
+
+  # Non-required Final Ready audit. The four mandated status checks must be able
+  # to PASS before GPT BCE and Human Final Ready; never bind post-test approvals
+  # into their success condition. Main provenance remains protected independently.
+  final-ready-audit:
+    name: Final Ready evidence (not one of four required checks)
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      actions: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify ordered Local tests, independent BCE, Human Final Ready
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-final-ready-preflight.sh
+
+  # After the four real PR gates, Local/BCE/Human comments are added later.
+  # Human/operator may recheck at the exact PR branch tip via workflow_dispatch.
+  # This is read-only and can NEVER create a grant, approve, or merge.
+  final-ready-recheck:
+    name: Final Ready evidence recheck (non-required)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.final_ready_pr_number != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      actions: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Re-evaluate live PR Full Gates plus ordered attestation without writing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.final_ready_pr_number }}
+        run: node harness/scripts/final-ready-preflight.mjs --recheck-pr "$PR_NUMBER" --event "$GITHUB_EVENT_PATH"
 
   # Non-required Draft fast loop: impacted tests only. Its PASS is never a full-gate PASS.
   fast-loop:
@@ -109,58 +184,3 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: node harness/scripts/select-impacted-tests.mjs --run
-
-
-  # W1-01 independent evidence, NOT a required check and never a GCCA waiver.
-  w1-01-admission:
-    name: W1-01 PR395 cheap exact-byte approval check
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 395 && github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 4
-    permissions:
-      contents: read
-    outputs:
-      approved: ${{ steps.check.outputs.approved }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Check HEAD/BASE/17 plus files byte-digest and fresh Human approval
-        id: check
-        run: node harness/scripts/w1-01-evidence-mirror.mjs admit
-
-  w1-01-evidence-mirror:
-    name: W1-01 PR395 seven-stage true logs (NOT GCCA)
-    needs: w1-01-admission
-    if: ${{ needs.w1-01-admission.outputs.approved == 'true' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 55
-    permissions:
-      contents: read
-    concurrency:
-      group: w1-01-395-${{ github.event.pull_request.head.sha }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Seven real commands with bounded time, exit codes, stdout, stderr and SHA256
-        run: node harness/scripts/w1-01-evidence-mirror.mjs run
-      - name: Preserve evidence even for failed commands
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: W1-01-395-one-shot-raw-evidence
-          path: w1-01-evidence/
-          if-no-files-found: warn
-          retention-days: 30

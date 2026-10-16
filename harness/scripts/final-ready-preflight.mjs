@@ -3,8 +3,9 @@
 // Evidence is external to HEAD (append-only PR comments); the code HEAD never embeds its own SHA.
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
-import { finalGateVerdict } from "./task-pr-lifecycle.mjs";
-import { exceptionDigest } from "./human-exception.mjs";
+import { finalGateVerdict, readLiveDelegationEvidence } from "./task-pr-lifecycle.mjs";
+import { exceptionDigest, matchesPathRule } from "./human-exception.mjs";
+import { verifyLiveGrant } from "./trusted-human-task-grant.mjs";
 
 export const READY_MARKER="[APPF2-FINAL-READY-V1]";
 export const READY_SCHEMA="APPF2-FINAL-READY-V1";
@@ -33,7 +34,6 @@ const numericPass=r=>r?.status==="PASS" && r.exit_code===0 && HEX64.test(r.log_s
 const safeArray=x=>Array.isArray(x)?x:[];
 const assertion=(ok,msg,e)=>{if(!ok)e.push(msg);};
 const readJsonFile=file=>JSON.parse(fs.readFileSync(file,"utf8"));
-
 export function parseReadinessComment(comment){
   const body=comment?.body;
   if(typeof body!=="string" || !body.startsWith(READY_MARKER+"\n")) return null;
@@ -184,13 +184,167 @@ export function candidateDigestOf(changedFiles,readBytes){
   return exceptionDigest(readBytes,others);
 };
 /** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
-export function inspectPrReadiness({event,live,comments,checks,changedFiles,candidateDigest,repo}){
+export function inspectPrReadiness({event,live,comments,checks,changedFiles,
+  candidateDigest,repo,verifiedPrRunOrigins}){
   const errors=prMetadataErrors(event,live,repo),head=live?.head?.sha,base=live?.base?.sha;
   const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
   assertion(HEX64.test(candidateDigest||""),"cannot compute exact Git-byte candidate SHA256",errors);
+  // L3 governance changes cannot obtain Final Ready from Draft fast-loop or
+  // a successful branch push. Reuse the L1 trusted GitHub PR-run provenance.
+  assertion(exactRequiredPrRunProof(verifiedPrRunOrigins,head,base,live?.number),
+    "L3 Ready missing four authenticated pull_request Full Gate runs",errors);
   errors.push(...currentReadinessErrors({comments,ctx}),...fastLoopErrors(checks,head),
-    ...protectedChangeErrors(changedFiles,comments,head));
+    ...protectedChangeErrors(changedFiles,comments,head),
+    ...inspectLiveGitHubRequiredChecks({head,checks}));
   return {ok:errors.length===0,head,errors,manual_provenance_required:true};
+}
+// L1 Task: Human's ONE GitHub Environment approval replaces the extra
+// Final Ready comment. Local proof, independent BCE and FOUR live GitHub check
+// runs remain mandatory; a fake caller Boolean cannot enter via the real CLI.
+const REAL_CHECKS=["ci","attack","governance","Analyze JavaScript / TypeScript"];
+export function inspectLiveGitHubRequiredChecks({head,checks}){
+  const errors=[];
+  const rows=safeArray(checks?.check_runs);
+  for(const name of REAL_CHECKS){
+    const matched=rows.filter(x=>x.name===name && x.head_sha===head)
+      .sort((a,b)=>(b.id||0)-(a.id||0));
+    if(!matched.length || matched[0]?.status!=="completed" ||
+      matched[0]?.conclusion!=="success" ||
+      matched[0]?.app?.slug!=="github-actions")
+      errors.push("真實 GitHub Check 未達精確 HEAD success: "+name);
+  }
+  return errors;
+}
+// A branch push may have four green check names on the SAME SHA and even
+// list the PR in check_run.pull_requests. Only an authenticated pull_request
+// workflow run is eligible for the actual Ready full-gate decision.
+const REQUIRED_PR_WORKFLOWS={
+  ci:".github/workflows/ci.yml",
+  attack:".github/workflows/attack-dry-run.yml",
+  governance:".github/workflows/governance-gate.yml",
+  "Analyze JavaScript / TypeScript":".github/workflows/codeql.yml"
+};
+const latestRequiredCheck=(checks,name,head)=>safeArray(checks?.check_runs)
+  .filter(c=>c.name===name&&c.head_sha===head)
+  .sort((a,b)=>(b.id||0)-(a.id||0))[0];
+const exactJobRunRef=check=>{
+  const match=/^https:\/\/github\.com\/NFF98\/appf2-build\/actions\/runs\/(\d+)\/job\/(\d+)$/
+    .exec(check?.details_url||"");
+  if(!match||Number(match[2])!==check?.id)return null;
+  return Number(match[1]);
+};
+// A required job can have an authenticated green Check Run while its parent
+// workflow is still in progress, or is marked failed because a NON-required
+// Final Ready evidence job failed. Never let that job check its own parent
+// workflow conclusion: that creates a false provenance deadlock.
+const readyRunLifecycleValid=run=>
+  (run?.status==="in_progress" && run?.conclusion===null) ||
+  (run?.status==="completed" && ["success","failure"].includes(run?.conclusion));
+const readyRequiredJobPassed=(name,check,head)=>[
+  check?.name===name,check?.head_sha===head,
+  check?.status==="completed",check?.conclusion==="success",
+  check?.app?.slug==="github-actions"
+].every(Boolean);
+const readyRunSourceMatches=(name,run,id,head)=>[
+  id!==null,Number.isSafeInteger(id),run?.id===id,
+  run?.event==="pull_request",
+  run?.path===REQUIRED_PR_WORKFLOWS[name],
+  run?.repository?.full_name==="NFF98/appf2-build",
+  run?.head_sha===head,readyRunLifecycleValid(run)
+].every(Boolean);
+const readyRunPrIdentity=(run,head,base,prNumber)=>
+  safeArray(run?.pull_requests).some(p=>[
+    p.number===prNumber,p.head?.sha===head,p.base?.sha===base
+  ].every(Boolean));
+export const checkReadyPrRunOrigin=({name,check,run,head,base,prNumber}={})=>
+  readyRequiredJobPassed(name,check,head) &&
+  readyRunSourceMatches(name,run,exactJobRunRef(check),head) &&
+  readyRunPrIdentity(run,head,base,prNumber);
+export async function verifyLiveRequiredPrRunOrigins({head,base,prNumber,checks,token}={}){
+  if(!HEX40.test(head||"")||!HEX40.test(base||"")||
+    !Number.isSafeInteger(prNumber)||prNumber<1||!token)
+    throw Error("HARD_STOP: required PR workflow provenance context unavailable");
+  const selected=REAL_CHECKS.map(name=>({
+    name,check:latestRequiredCheck(checks,name,head)}));
+  if(inspectLiveGitHubRequiredChecks({head,checks}).length ||
+    selected.some(({check})=>exactJobRunRef(check)===null))
+    throw Error("HARD_STOP: Full Ready PR checks missing or skipped");
+  const results=await Promise.all(selected.map(async ({name,check})=>{
+    const id=exactJobRunRef(check);
+    const response=await fetch("https://api.github.com/repos/NFF98/appf2-build/actions/runs/"+id,{
+      headers:{accept:"application/vnd.github+json",
+        authorization:"Bearer "+token,"X-GitHub-Api-Version":"2026-03-10",
+        "User-Agent":"appf2-ready-run-origin-verifier"}});
+    if(!response.ok)throw Error("HARD_STOP: GitHub PR workflow source unavailable "+response.status);
+    const run=await response.json();
+    return checkReadyPrRunOrigin({name,check,run,head,base,prNumber});
+  }));
+  if(results.some(ok=>!ok))
+    throw Error("HARD_STOP: push/synthetic/full-gate provenance is not a real PR Ready run");
+  return {ok:true,head,base,pr_number:prNumber,verified_names:REAL_CHECKS};
+}
+const exactRequiredPrRunProof=(receipt,head,base,number)=>
+  receipt?.ok===true && receipt.head===head && receipt.base===base &&
+  receipt.pr_number===number &&
+  REAL_CHECKS.every(name=>receipt.verified_names?.includes(name));
+const validVerifiedGrant=(g,head)=>g?.ok===true &&
+  g?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL"&&
+  g?.current_head===head;
+const L1_FILE_STATUSES=new Set(["added","modified","removed","renamed",
+  "copied","changed","unchanged"]);
+const forbiddenL1Path=(path,rules)=>!nonEmpty(path) ||
+  path.startsWith("delivery/constitutional-cases/") ||
+  rules.some(rule=>matchesPathRule(path,rule));
+const l1FileScopeOK=(file,rules)=>{
+  if(!L1_FILE_STATUSES.has(file?.status) ||
+    forbiddenL1Path(file.filename,rules))return false;
+  if(["renamed","copied"].includes(file.status))
+    return !forbiddenL1Path(file.previous_filename,rules);
+  return file.previous_filename==null;
+};
+// Ready must NOT approve protected-source renames or deletions disguised as
+// ordinary implementation. The independent merge executor also enforces the
+// actual Task allowed_write_paths on every live PR filename and origin.
+export const l1TaskChangedPathsValid=files=>{
+  const rows=Array.isArray(files)?files.flat():[];
+  const policy=readJsonFile("harness/policy/repo-policy.json");
+  const rules=policy.governance_only_paths;
+  return Array.isArray(rules) && rules.length>0 &&
+    rows.length>0 && rows.every(f=>l1FileScopeOK(f,rules));
+};
+const l1BceOrderValid=(records)=>{
+  const local=records.find(x=>x.record.kind==="LOCAL_TESTS");
+  const bce=records.find(x=>x.record.kind==="GPT_BCE");
+  return local&&bce &&
+    bce.comment.id>local.comment.id&&
+    Date.parse(bce.comment.created_at)>=Date.parse(local.comment.created_at);
+};
+const l1StageEvidenceErrors=(comments,head,ctx)=>{
+  const errors=[],records=safeArray(comments).flat().map(comment=>({
+    comment,record:parseReadinessComment(comment)})).filter(x=>x.record?.head_sha===head);
+  for(const kind of ["LOCAL_TESTS","GPT_BCE"]){
+    const stage=records.filter(x=>x.record.kind===kind);
+    assertion(stage.length===1,"缺少或重複 "+kind+" exact-HEAD 證據",errors);
+    if(stage.length===1)errors.push(...commonErrors(stage[0].comment,stage[0].record,ctx),
+      ...stageEvidenceErrors(stage[0],ctx));
+  }
+  assertion(l1BceOrderValid(records),"BCE 必須晚於 Local tests",errors);
+  return errors;
+};
+export function inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
+  candidateDigest,repo,verifiedGrant,verifiedPrRunOrigins}){
+  const errors=prMetadataErrors(event,live,repo);
+  const head=live?.head?.sha,base=live?.base?.sha;
+  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
+  assertion(validVerifiedGrant(verifiedGrant,head),"缺少 API 證明的 Human 一次授權",errors);
+  assertion(exactRequiredPrRunProof(verifiedPrRunOrigins,head,base,live?.number),
+    "四項 Gate 缺少真實 pull_request 工作流程來源證明；Push PASS 不等於 Ready",errors);
+  assertion(HEX64.test(candidateDigest||""),"精確 SHA256 不存在",errors);
+  assertion(l1TaskChangedPathsValid(changedFiles),"L1 Task 夾帶受保護治理或 SSOT",errors);
+  errors.push(...l1StageEvidenceErrors(comments,head,ctx));
+  errors.push(...inspectLiveGitHubRequiredChecks({head,checks}));
+  return {ok:!errors.length,head,errors,manual_provenance_required:false,
+    grant_kind:"GITHUB_ENVIRONMENT_REVIEW",human_approvals_required:1};
 }
 /** On push, require an associated merged PR: a direct main push cannot greenwash gates. */
 export function inspectNonPrInvocation({eventName,ref,sha,associatedPrs}){
@@ -211,20 +365,132 @@ export function bceCiConsistency({head,checks,required,bcePass}){
     {ok:false,reason:"BCE_CI_MISMATCH",head,full}:
     {ok:!bcePass?false:full.verdict==="PASS",reason:full.verdict,head,full};
 }
-function main(argv){
+// workflow_dispatch rechecks are read-only. A manually supplied PR number is
+// not proof: branch, exact checkout SHA and live Main must all agree with GitHub.
+const recheckInputMatches=({requested,event,live})=>[
+  typeof requested==="string",
+  /^[1-9][0-9]{0,7}$/.test(requested||""),
+  event?.inputs?.final_ready_pr_number===requested,
+  live?.number===Number(requested)
+].every(Boolean);
+const recheckPrSourceMatches=(live,repo)=>[
+  live?.state==="open",live?.draft===false,
+  live?.base?.ref==="main",
+  live?.base?.repo?.full_name===repo,
+  live?.head?.repo?.full_name===repo
+].every(Boolean);
+const recheckBranchMatches=(live,ref,sha)=>[
+  HEX40.test(live?.head?.sha||""),
+  live?.head?.sha===sha,
+  ref==="refs/heads/"+live?.head?.ref
+].every(Boolean);
+const recheckMainMatches=(live,main)=>[
+  HEX40.test(live?.base?.sha||""),
+  main?.commit?.sha===live?.base?.sha
+].every(Boolean);
+export function inspectReadyRecheckBinding({requested,event,live,main,
+  repo,ref,sha}={}){
+  const errors=[];
+  assertion(repo==="NFF98/appf2-build","recheck repository not canonical",errors);
+  assertion(recheckInputMatches({requested,event,live}),
+    "recheck PR input not bound to event",errors);
+  assertion(recheckPrSourceMatches(live,repo),
+    "recheck PR is not open/Ready on the canonical base",errors);
+  assertion(recheckBranchMatches(live,ref,sha),
+    "recheck checked-out ref does not match live PR HEAD",errors);
+  assertion(recheckMainMatches(live,main),
+    "recheck PR BASE is no longer canonical live Main",errors);
+  return {ok:!errors.length,errors};
+}
+const liveReadyApi=async (path,token)=>{
+  if(!token)throw Error("HARD_STOP: GitHub token missing for Ready recheck");
+  const response=await fetch("https://api.github.com/repos/NFF98/appf2-build"+path,{
+    headers:{accept:"application/vnd.github+json",
+      authorization:"Bearer "+token,"X-GitHub-Api-Version":"2026-03-10",
+      "User-Agent":"appf2-final-ready-recheck"}});
+  if(!response.ok)throw Error("HARD_STOP: authenticated GitHub Ready recheck API "+response.status);
+  return response.json();
+};
+async function inspectReadyWithLiveApi({event,live,repo,token}){
+  // Only official, complete API rows count. CLI preview JSON is not trusted.
+  const {comments,changed,checks}=await readLiveDelegationEvidence({
+    prNumber:live.number,head:live.head?.sha,token});
+  const candidateDigest=candidateDigestOf(changed,rel=>{
+    try{return fs.readFileSync(rel);}catch{return null;}
+  });
+  const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
+    head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
+    checks,token});
+  const facts={event,live,comments,checks,changedFiles:changed,
+    candidateDigest,repo,verifiedPrRunOrigins};
+  if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
+    const verifiedGrant=await verifyLiveGrant({pr:live,token});
+    return inspectTaskPrReadiness({...facts,verifiedGrant});
+  }
+  return inspectPrReadiness(facts);
+}
+// Re-read authoritative GitHub state after all expensive Ready evidence
+// checks. Otherwise a force-push, Draft reversal or Main advance while
+// inspecting can admit an already-stale candidate. No mutation is performed.
+const readySnapshotHead=live=>[
+  live?.number,live?.state,live?.draft,
+  live?.head?.sha,live?.head?.ref,live?.head?.repo?.full_name
+];
+const readySnapshotBase=(live,main)=>[
+  live?.base?.sha,live?.base?.ref,live?.base?.repo?.full_name,
+  main?.commit?.sha
+];
+const readySnapshotIdentity=({live,main})=>[
+  ...readySnapshotHead(live),...readySnapshotBase(live,main)
+];
+export function inspectReadyRecheckFreshness({beforeLive,beforeMain,afterLive,
+  afterMain,requested,event,repo,ref,sha}={}){
+  const binding=inspectReadyRecheckBinding({requested,event,live:afterLive,
+    main:afterMain,repo,ref,sha});
+  const unchanged=JSON.stringify(readySnapshotIdentity({
+    live:beforeLive,main:beforeMain}))===JSON.stringify(readySnapshotIdentity({
+    live:afterLive,main:afterMain}));
+  return {ok:binding.ok&&unchanged,errors:[
+    ...binding.errors,...(unchanged?[]:["HARD_STOP: live PR/Main changed during Ready recheck"])
+  ]};
+}
+async function recheckReadyPr({requested,event,repo,ref,sha,token}){
+  if(typeof requested!=="string"||!/^[1-9][0-9]{0,7}$/.test(requested))
+    throw Error("HARD_STOP: invalid Final Ready recheck PR");
+  const [live,main]=await Promise.all([
+    liveReadyApi("/pulls/"+requested,token),
+    liveReadyApi("/branches/main",token)]);
+  const binding=inspectReadyRecheckBinding({requested,event,live,main,repo,ref,sha});
+  if(!binding.ok)throw Error("HARD_STOP: "+binding.errors.join("; "));
+  const trustedEvent={pull_request:{number:live.number,
+    head:{sha:live.head.sha},base:{sha:live.base.sha},draft:live.draft}};
+  const verdict=await inspectReadyWithLiveApi({
+    event:trustedEvent,live,repo,token});
+  const [finalLive,finalMain]=await Promise.all([
+    liveReadyApi("/pulls/"+requested,token),
+    liveReadyApi("/branches/main",token)]);
+  const freshness=inspectReadyRecheckFreshness({
+    beforeLive:live,beforeMain:main,afterLive:finalLive,afterMain:finalMain,
+    requested,event,repo,ref,sha});
+  if(!freshness.ok)throw Error("HARD_STOP: "+freshness.errors.join("; "));
+  return verdict;
+}
+async function main(argv){
   const val=name=>{const n=argv.indexOf("--"+name);return n<0?null:argv[n+1];};
   const eventName=process.env.GITHUB_EVENT_NAME,repo=process.env.GITHUB_REPOSITORY;
+  const ref=process.env.GITHUB_REF,sha=process.env.GITHUB_SHA,
+    token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
   const event=readJsonFile(val("event"));
   let result;
   if(eventName==="pull_request"){
-    const live=readJsonFile(val("live-pr"));
-    const changedFiles=readJsonFile(val("changed-files"));
-    const candidateDigest=candidateDigestOf(changedFiles,rel=>{try{return fs.readFileSync(rel);}catch{return null;}});
-    result=inspectPrReadiness({event,live,comments:readJsonFile(val("comments")),
-      checks:readJsonFile(val("checks")),changedFiles,candidateDigest,repo});
+    result=await inspectReadyWithLiveApi({
+      event,live:readJsonFile(val("live-pr")),repo,token});
+  }else if(eventName==="workflow_dispatch" && val("recheck-pr")!==null){
+    result=await recheckReadyPr({
+      requested:val("recheck-pr"),event,repo,ref,sha,token});
   }else{
-    result=inspectNonPrInvocation({eventName,ref:process.env.GITHUB_REF,
-      sha:process.env.GITHUB_SHA,associatedPrs:val("associated-prs")?readJsonFile(val("associated-prs")):[]});
+    result=inspectNonPrInvocation({eventName,ref,sha,
+      associatedPrs:val("associated-prs")?readJsonFile(val("associated-prs")):[]});
   }
   if(result.ok){console.log("FINAL READY PREFLIGHT: ADMITTED "+(result.head||result.reason)+
     " | Human provenance MUST be manually verified; not a Human signature");return 0;}
@@ -232,4 +498,7 @@ function main(argv){
   for(const e of result.errors||[])console.error("- "+e);
   return 1;
 }
-if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href)process.exit(main(process.argv.slice(2)));
+
+if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href)
+  main(process.argv.slice(2)).then(code=>{process.exitCode=code;})
+    .catch(error=>{console.error("FINAL READY: HARD STOP "+error.message);process.exitCode=1;});

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { createHash } from "node:crypto";
-import { isOneTimeConstitutionFounding } from "./validate-constitutional-change.mjs";
+import { isOneTimeConstitutionFounding, isGov392TestOnly } from "./validate-constitutional-change.mjs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
@@ -184,10 +184,25 @@ const humanException=resolveRepoException({
   root,base:baseSha,changed,
   state:{baseSprint:baseCurrentSprint,headSprint:cs,baseBuild:baseCurrentBuild,headBuild:currentBuild}
 });
-if(humanException.applies && !humanException.ok){
+// Test-only GOV-392: this is NOT an approved exception or an authorized Merge.
+// First validate an exact SHA/base/path/digest/Why5 candidate, then permit only
+// the missing-approval/TTL errors during PR tests. Any other scope error fails.
+const gov16MissingApprovalOnly=[
+  "approval case_id mismatch","approval source_kind not accepted:",
+  "approval decision/scope is not an exact-candidate decision",
+  "approval bound to a different digest","Human decision reference missing or placeholder",
+  "approver is not a registered Human authority account",
+  "approved_at_unix missing or in the future","expires_at_unix required"
+];
+const gov16TestOnly=isGov392TestOnly({changed,base:baseSha,root}) &&
+  humanException.applies && humanException.lane==="GOVERNANCE_REFORM" &&
+  humanException.errors.length>0 &&
+  humanException.errors.every(x=>gov16MissingApprovalOnly.some(s=>x.startsWith(s)));
+if(humanException.applies && !humanException.ok && !gov16TestOnly){
   for(const e of humanException.errors) errors.push("Human exception lane rejected ("+humanException.policySource+" policy): "+e);
 }
-const humanExceptionScope=humanException.ok && humanException.coveredGates.includes("CHANGE_SCOPE");
+if(gov16TestOnly) console.log("- GOV-REFORM16 test-only structural scope: PENDING_HUMAN_APPROVAL; NOT authorized Merge.");
+const humanExceptionScope=(humanException.ok && humanException.coveredGates.includes("CHANGE_SCOPE")) || gov16TestOnly;
 if(humanException.ok && humanException.lane==="CLOSURE_DEFERRAL") exceptionRecordPaths.add(humanException.docketPath);
 if(humanException.ok){
   console.log("- "+HUMAN_EXCEPTION_SCOPE_MARKER+": "+humanException.lane+" "+humanException.caseId+

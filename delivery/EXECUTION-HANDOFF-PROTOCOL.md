@@ -780,6 +780,7 @@ The second pattern is prohibited when the first can accomplish the same governed
 - 同一 Task 的實作、Bugfix、測試修正、Review 回饋，全部留在**同一個 Draft PR、同一分支**持續 commit。
 - 任何新 commit 都會使 HEAD 綁定的狀態（Local PASS、BCE、Final Ready、Full Gate、Merge Approval）回到 `DRAFT_DEVELOPMENT`；Merge 後的 commit 不繼承任何授權。
 - `HUMAN_FINAL_INTEGRATION_READY`、`HUMAN_MERGE_APPROVED`、`MERGED`、`EVIDENCE_AND_CLOSURE` 只有 Human 能設定；GPT 只能給 BCE；CI 只能給 Full Gate 結果。
+- **一次授權候選真實狀態：BLOCKED_NOT_IMPLEMENTED（不得宣稱已生效）**。原型接受呼叫者自己填 `provenance_checked_by_trusted_executor=true`，這不能證明 Human 身分；已改為 `GPT_DELEGATED` 的 Human-only Final Ready／Merge／Closure 一律 HARD STOP。正式 Human 的原有權限不受影響。必須先配置獨立不可由 AI 偽造的 Human 核准驗證路徑與受保護 GitHub 執行器、完成真實端到端／負向實測、由 Human 依法批准並 Merge，才可另案討論啟用。一般 4/4 CI PASS 或 46 項 synthetic test 不構成授權。
 
 ### 18.2 禁止重複核准、Bugfix 持續執行
 
@@ -827,3 +828,19 @@ The second pattern is prohibited when the first can accomplish the same governed
 
 `node harness/scripts/governance-metrics.mjs --runs <runs.json> --open-prs <prs.json> --out <file>` 產出：每個 Task 的 PR 數、Human 核准數與重複核准、完整 CI 執行次數與同 HEAD 重跑、返工 commit 比例、open PR 數。基準值：`delivery/audits/GOV-REFORM-20261013-METRICS-BASELINE.json`。
 
+### 18.10 GOV-REFORM-20261013 原始十六項的真實落地驗收（不得假結案）
+- 唯一需求來源：Human 於 2026-10-13 批准的 Issue #389 九項、六項補強，以及 Human 另要求的 ACTIVE Sprint 中 SSOT／Design／Build Spec 精確特批（第十六項）。不可把後來新增 W01 專案或單純的程式變更冒充這十六項完成。
+- `harness/scripts/reform-wiring-audit.mjs` 的 16 項都是 **STATIC_WIRED 入口診斷**。該工具另列逐項 `UNVERIFIED_E2E` 的具體缺口；不得把 16/16 靜態字串存在、synthetic 46 PASS 或 GitHub 四 Gate PASS 對外改稱 16/16 實施。
+- 任何「全部完成／正式頒布實施」聲明必須：真實 GitHub 主分支已合併、每項 E2E 正反測試證據、獨立 BCE、可信 Human 核准來源、工具呼叫前的 PR 權限邊界，以及 Design Repo 自身強制測試。缺其中任何條件只能標 PARTIAL 或 BLOCKED。
+- Evidence 自動化目前是唯讀彙整報告，非自動寫入 canonical Evidence；週報 workflow 合併前未啟用、合併後還須取得一次真實運行證據；Phase 1 全真實驗收政策仍為待獨立 Human 決定。
+- **正式語言遵守**：上位 `NFF98/appf2-design/SSOT.md` 的 Official Language Rule 要求 Human-facing／治理說明以繁體中文為唯一 authoritative 語言。ChatGPT 實際回覆不能靠 repository CI 保證，需每次直接遵守；一旦使用英文主導回覆即明確紀錄違規與更正，不能以文件存在冒充執行。
+
+
+### 18.11 一次 Human 核准真正執行通道（待 Main 實施，不得假綠燈）
+- **單 Task 實作 PR 與 Closure 控制 PR 的精確例外**：正常實作仍只使用一個 enduring Task PR。若它完成真實 Merge 後才有資格關閉 Task，既有憲法／PR Guard 允許 **在原 PR 已 Merge 之後** 使用一份獨立、受保護、只修改同 Task `tasks.json` status 的控制 PR，須含 `Task: Txxx`、**與原已 Merge 實作 PR 完全相同的 `Task-Grant-Run: <run ID>`**、`Closure-Source-PR: <原已合併 PR 編號>` 及 `PR-Justification: CONTROL_TRANSITION_AFTER_MERGE <非空理由>`，建立時間必須晚於原 Merge。這份控制 PR **不是第二個實作 PR，也不能啟動第二個 Task、重複索取 L1 Human Task 授權或跳過 CI／BCE／GitHub branch protection**；但必須如實計入實際 PR 數（不能宣稱每 Task 物理上只有一份 PR）。既有 T006／T008 的 L3 closure-order 決定仍獨立必要，不能靠一次 L1 授權繞過。
+**正常 Task：規劃 → Human 在 GitHub protected Environment 一次批准 → GPT 依該核准進行 Task Activation → 同一 Task PR 開發／Bugfix／Fast-loop → 真實 CI 四 Gate → GPT 獨立 BCE → GPT 讀取可信授權與證據後依保護規則 Merge → Evidence／一般 Task Closure → STOP。** 無第二次 Human Final Ready／Merge／Closure 核准；異常、範圍或基線變更、授權到期、缺少真實驗證則 HARD STOP。下一 Task/Sprint 一律要另一次 Human 授權；Sprint 特批行政結案仍獨立。
+- GitHub 設定前提：Build Repo 為 public，`Settings → Environments → appf2-task-human-approval` 必須選 **Required reviewers: NFF98**。若沒有這條真正的 GitHub 設定，工作流程即使執行也必須 FAIL；禁止讓 GPT 留言自稱 NFF98。此設定為部署前一筆 Admin 配置，非每 Task 的第二次核准。
+- Human 核准之前，GPT 準備 immutable `delivery/task-grants/Txxx.json`，含 `APPF2-TRUSTED-TASK-GRANT-1`、task_id、sprint_id、build_spec_id、scope_sha256（包含 AC/Test + allowed_write_paths）、base_sha、approved_at_unix、expires_at_unix（最多 30 日）。`workflow_dispatch` 啟動 `task-human-grant.yml`，Human **只在 Environment 按一次批准**；`task-human-grant-issuance.mjs` 查 GitHub 審核者、工作流程、任務快照及期限；准許在 Task 還是 PLANNED 時核准，無須先求 Human Activation。
+- 任務後續 PR 必須帶 `Task: Txxx`、`Task-Grant-Run: <GitHub run ID>`，且不得改寫原核准 Task 描述。Required `governance` Gate 對真實 GitHub workflow approval history、reviewer、HEAD ancestry、Task Scope、現行 Sprint/Build 綁定再次查驗。缺其中任何一項就 FAIL；不得使用 `provenance_checked_by_trusted_executor=true` 冒充。
+- 正式 Final Ready 稽核對 L1 任務只接受一次 GitHub Environment Human 核准 + 真實同 HEAD 四 Gate + local TEST／獨立 GPT BCE，**不得再要求 Human 留 FINAL_READY 留言**；L2/L3 原有獨立核准要求完全維持。
+- **尚未完成的落地依賴**：GitHub Environment 必須由 Human Admin 配置；可信 Task Activation 寫入與 Merge／Closure 的受保護 GitHub 執行鏈需實際端到端確認；Task 前置核准與正常合併必須在 Main 上至少實測一次並留下 Reviewer/Evidence。沒有這些，不得宣稱 16/16 全部落地。

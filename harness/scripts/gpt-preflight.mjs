@@ -12,16 +12,38 @@ export function taskKeyOfPr(pr,guard){
   return new RegExp(guard.title_task_pattern).exec(pr.title||"")?.[1]||null;
 }
 export const hasPrJustification=(pr,guard)=>new RegExp(guard.justification_pattern,"m").test(pr.body||"");
+// Design SSOT Official Language Rule: at least some Han prose in Human-facing PR.
+// This is ONLY a machine minimum, not an automatic Traditional Chinese language certificate.
+export const hasHumanFacingChinese=pr=>/[\u3400-\u9fff]/u.test(String(pr.title||"")+"\n"+String(pr.body||""));
 
-export function prCreationDecision({taskKey,openPrs,guard,selfNumber=null,justified=false}){
-  if(!taskKey) return {decision:"NO_TASK_DECLARED",existing:[]};
-  const existing=(openPrs||[]).filter(p=>p.number!==selfNumber && taskKeyOfPr(p,guard)===taskKey).map(p=>p.number).sort((a,b)=>a-b);
-  if(!existing.length) return {decision:"NEW_PR_ALLOWED",existing};
+
+const GOVERNANCE_CASE=/^GOV-[A-Z0-9][A-Z0-9_-]{5,80}$/;
+export const governanceCaseOfPr=pr=>{
+  const src=String(pr.body||"");
+  const line=/^Governance-Case:\s*(GOV-[A-Z0-9_-]+)\s*$/m.exec(src);
+  if(line && GOVERNANCE_CASE.test(line[1])) return line[1];
+  return null;
+};
+export function prCreationDecision({taskKey,openPrs,guard,selfNumber=null,justified=false,governanceCase=null}){
+  if(!Array.isArray(openPrs)) return {decision:"BLOCKED_NO_LIVE_PR_INVENTORY",existing:[]};
+  if(!taskKey && !GOVERNANCE_CASE.test(governanceCase||""))
+    return {decision:"BLOCKED_MISSING_TASK_OR_GOVERNANCE_CASE",existing:[]};
+  const existing=openPrs.filter(pr=>pr.number!==selfNumber &&
+    (taskKey?taskKeyOfPr(pr,guard)===taskKey:governanceCaseOfPr(pr)===governanceCase))
+    .map(pr=>pr.number).sort((a,b)=>a-b);
+  if(!existing.length) return {decision:"NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY",existing};
   return {decision:justified?"NEW_PR_ALLOWED_WITH_JUSTIFICATION":"REUSE_EXISTING_PR",existing};
 }
 
+const validTaskLease=({build,sprint,task,taskId})=>
+  sprint.active_task===taskId &&
+  ["ACTIVE","REVIEW"].includes(sprint.status) &&
+  ["IN_PROGRESS","REVIEW"].includes(task?.status) &&
+  task?.build_spec_id===build.active_baseline &&
+  sprint.active_build_spec===build.active_baseline &&
+  Boolean(sprint.active_sprint);
 const intentDecision=({intent,build,sprint,task,taskId})=>{
-  const isActive=sprint.active_task===taskId && ["ACTIVE","REVIEW"].includes(sprint.status);
+  const isActive=validTaskLease({build,sprint,task,taskId});
   switch(intent){
     case "CONTINUE_TASK_WORK":
       return isActive && build.implementation_enabled?{decision:"CONTINUE_SAME_LEASE",reason:"same active Task; no new approval needed"}:
@@ -36,7 +58,9 @@ const intentDecision=({intent,build,sprint,task,taskId})=>{
       return {decision:"STOP",reason:"unknown intent "+intent};
   }
 };
-const DENIED=new Set(["STOP","REDUNDANT_ACTIVATION_DENIED","REDUNDANT_APPROVAL_DENIED","REBIND_NOT_REQUIRED","REUSE_EXISTING_PR"]);
+const DENIED=new Set(["STOP","REDUNDANT_ACTIVATION_DENIED","REDUNDANT_APPROVAL_DENIED",
+  "REBIND_NOT_REQUIRED","REUSE_EXISTING_PR","BLOCKED_NO_LIVE_PR_INVENTORY",
+  "BLOCKED_MISSING_TASK_OR_GOVERNANCE_CASE"]);
 
 /** Pure preflight over canonical state; returns auditable facts plus one decision. */
 export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId}){
@@ -47,7 +71,11 @@ export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId}){
     task_status:task?.status||null,task_build_spec:task?.build_spec_id||null,
     open_prs_for_task:prCreationDecision({taskKey:taskId,openPrs,guard}).existing
   };
-  const result=intent==="NEW_PR"?prCreationDecision({taskKey:taskId,openPrs,guard}):intentDecision({intent,build,sprint,task,taskId});
+  const valid=validTaskLease({build,sprint,task,taskId}) && build.implementation_enabled;
+  const result=intent==="NEW_PR" && !valid?
+    {decision:"STOP",reason:"new product PR needs genuine active non-BLOCKED Task, Build match and execution authority"}:
+    intent==="NEW_PR"?prCreationDecision({taskKey:taskId,openPrs,guard}):
+      intentDecision({intent,build,sprint,task,taskId});
   return {facts,intent,task_id:taskId,...result,denied:DENIED.has(result.decision)};
 }
 
@@ -57,19 +85,24 @@ function prGuardCli({arg,guard,openPrs}){
   const pr=readJson(arg("event")).pull_request;
   if(!pr){console.log("PR GUARD: N/A (not a pull_request event)");return 0;}
   if(!openPrs){console.error("PR GUARD: FAIL — open PR inventory unavailable (fail closed)");return 1;}
+  if(!hasHumanFacingChinese(pr)){
+    console.error("PR GUARD: FAIL — 缺少中文 Human-facing PR 說明；須由 Human 審核是否為繁體中文（本檢查不冒稱能鑑別繁簡）。");
+    return 1;
+  }
   const limit=Number(arg("inventory-limit")||0);
   if(limit && openPrs.length>=limit){console.error("PR GUARD: FAIL — open PR inventory may be truncated at "+limit+" (fail closed)");return 1;}
-  const out=prCreationDecision({taskKey:taskKeyOfPr(pr,guard),openPrs,guard,selfNumber:pr.number,justified:hasPrJustification(pr,guard)});
+  const out=prCreationDecision({taskKey:taskKeyOfPr(pr,guard),governanceCase:governanceCaseOfPr(pr),
+    openPrs,guard,selfNumber:pr.number,justified:hasPrJustification(pr,guard)});
   console.log("PR GUARD: "+out.decision+(out.existing.length?" (existing open PR(s) for same Task: #"+out.existing.join(", #")+")":""));
-  if(out.decision!=="REUSE_EXISTING_PR") return 0;
-  console.error("PR GUARD: FAIL — reuse the existing Task PR or add a recorded 'PR-Justification: <REASON> <detail>' line.");
+  if(!DENIED.has(out.decision)) return 0;
+  console.error("PR GUARD: FAIL — identify authorized Task / Governance-Case; reuse existing PR or include permitted justified exception.");
   return 1;
 }
 function stateCli({arg,guard,openPrs}){
   if(!openPrs) console.error("PREFLIGHT WARNING: no --open-prs inventory; PR reuse cannot be proven (treat as NOT_READY for NEW_PR).");
   const sprint=readJson("delivery/CURRENT-SPRINT.json");
   const tasks=sprint.active_sprint?readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
-  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs:openPrs||[],guard,intent:arg("intent")||"CONTINUE_TASK_WORK",taskId:arg("task")||sprint.active_task});
+  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs,guard,intent:arg("intent")||"CONTINUE_TASK_WORK",taskId:arg("task")||sprint.active_task});
   console.log(JSON.stringify(out,null,2));
   return out.denied || (!openPrs && out.intent==="NEW_PR")?3:0;
 }

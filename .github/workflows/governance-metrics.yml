@@ -1,0 +1,38 @@
+name: GOV-REFORM-20261013 Weekly Metrics
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "31 1 * * 1"
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Collect real GitHub histories
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/gov-reform"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?per_page=100" |
+            jq -s '[.[] | .workflow_runs[]? | {name,event,headSha:.head_sha,headBranch:.head_branch}]'               > "$RUNNER_TEMP/gov-reform/runs.json"
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000             --json number,title,body,isDraft > "$RUNNER_TEMP/gov-reform/open-prs.json"
+      - name: Publish evidence-bound reform scorecard
+        run: |
+          node harness/scripts/governance-metrics.mjs --ref HEAD             --runs "$RUNNER_TEMP/gov-reform/runs.json" --run-limit 100000             --open-prs "$RUNNER_TEMP/gov-reform/open-prs.json"             --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
+      - name: Upload weekly scorecard (NOT governance PASS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gov-reform-weekly-metrics
+          path: ${{ runner.temp }}/gov-reform/reform-metrics.json
+          if-no-files-found: error

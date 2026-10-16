@@ -13,8 +13,10 @@ import {
 } from "./task-pr-lifecycle.mjs";
 import { selectImpactedTests } from "./select-impacted-tests.mjs";
 import { buildEvidenceLedger } from "./evidence-ledger.mjs";
+import { planTaskEvidenceReferences,planTaskClosureReadiness,
+  planProtectedClosureMutation,inspectProtectedControlPrProvenance } from "./evidence-ledger-report.mjs";
 import { computeGovernanceMetrics } from "./governance-metrics.mjs";
-import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification } from "./gpt-preflight.mjs";
+import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 
 const NOW=1792000000,BASE="a".repeat(40),DOCKET="delivery/constitutional-cases/GOV-TEST-EXCEPTION-001.json";
 const RULESET_CONTEXTS=["ci","attack","governance","Analyze JavaScript / TypeScript"];
@@ -354,6 +356,147 @@ function ledgerCases(levels){
   ],fn=>fn());
 }
 
+function normalizationCases(){
+  const task={task_id:"T009",status:"REVIEW",build_spec_id:"BS-P1-025",
+    acceptance_links:[{acceptance_id:"F01-AC-013",test_id:"TEST-F01-API-001"}],
+    completion_evidence:["EV-SP-P1-003-T009-001"]};
+  const e=(id,kind,status)=>({evidence_id:id,schema_version:2,
+    kind,status,sprint_id:"SP-P1-003",task_id:"T009",build_spec_id:"BS-P1-025",
+    source_commit:"a".repeat(40),acceptance_ids:kind==="TEST_RESULT"?["F01-AC-013"]:[],
+    test_ids:kind==="TEST_RESULT"?["TEST-F01-API-001"]:[]});
+  const a=e("EV-SP-P1-003-T009-001","TEST_RESULT","PASS");
+  const b=e("EV-SP-P1-003-T009-002","COMMAND_RESULT","FAIL");
+  const ledger={task_id:"T009",sprint_id:"SP-P1-003",
+    suggested_completion_evidence:[a.evidence_id,b.evidence_id],
+    duplicates:[],stale:[],dangling_refs:[]};
+  const run=(f=x=>x)=>{const x=clone({task,ledger,existingEvidence:[a,b]});
+    f(x);return planTaskEvidenceReferences({...x,sprintId:"SP-P1-003"});};
+  return expectCases("canonical normalization",[
+    ["append real Evidence reference, including honest FAIL status",true,()=>{const x=run();return x.ok&&x.changed&&x.add.length===1&&x.completion_evidence[1]===b.evidence_id;}],
+    ["idempotent no repeat",true,()=>run(x=>{x.task.completion_evidence.push(b.evidence_id);}).changed===false],
+    ["no status update is returned",true,()=>!Object.hasOwn(run(),"task_status")],
+    ["noncanonical missing document fails",true,()=>!run(x=>{x.existingEvidence.pop();}).ok],
+    ["unknown AC/Test forged fails",true,()=>!run(x=>{x.existingEvidence[0].test_ids=["FAKE"];}).ok],
+    ["FAIL evidence stays FAIL",true,()=>!run(x=>{x.existingEvidence[1].status="UNTESTED";}).ok],
+    ["duplicates refused",true,()=>!run(x=>{x.ledger.duplicates=[["x","y"]];}).ok],
+    ["stale source refused",true,()=>!run(x=>{x.ledger.stale=[a.evidence_id];}).ok],
+    ["dangling prior ref refused",true,()=>!run(x=>{x.ledger.dangling_refs=["missing"];}).ok],
+    ["wrong Sprint rejected",true,()=>!run(x=>{x.existingEvidence[0].sprint_id="SP-P1-004";}).ok],
+    ["wrong Build rejected",true,()=>!run(x=>{x.existingEvidence[1].build_spec_id="BS-P1-026";}).ok],
+    ["CLOSED Task immutable",true,()=>!run(x=>{x.task.status="CLOSED";}).ok],
+    ["BLOCKED Task cannot normalize",true,()=>!run(x=>{x.task.status="BLOCKED";}).ok],
+    ["missing ledger is hard-stop",true,()=>!run(x=>{x.ledger={};}).ok],
+    ["previous references preserved",true,()=>run().completion_evidence[0]===a.evidence_id],
+  ],fn=>fn());
+}
+
+function closurePlanningCases(){
+  const mk=()=>({
+    task:{task_id:"T009",status:"REVIEW",build_spec_id:"BS-P1-025"},
+    sprint:{active_sprint:"SP-P1-003",active_task:"T009",
+      active_build_spec:"BS-P1-025",status:"REVIEW"},
+    build:{active_baseline:"BS-P1-025",implementation_enabled:true},
+    ledger:{task_id:"T009",sprint_id:"SP-P1-003",
+      evidence_readiness:"EVIDENCE_COMPLETE_FOR_CLOSURE_CONTROL",missing_review:false,
+      missing_pairs:[],missing_commands:[],duplicates:[],stale:[],dangling_refs:[],unreferenced:[]},
+    grant:{ok:true,decision:"VERIFIED_GITHUB_HUMAN_APPROVAL",
+      phase:"POST_MERGE_CLOSURE",mergedOnMain:true,current_head:"a".repeat(40)},
+    pr:{state:"closed",merged:true,head:{sha:"a".repeat(40)},merge_commit_sha:"b".repeat(40)}
+  });
+  const check=mutate=>{const x=mk();mutate(x);return planTaskClosureReadiness(x);};
+  return expectCases("postmerge protected closure preflight",[
+    ["Synthetic eligible remains only a proposal",true,()=>{
+      const r=check(()=>{});return r.ok&&!r.closure_performed&&!r.mutates;}],
+    ["Unmerged PR rejected",false,()=>check(x=>{x.pr.merged=false;}).ok],
+    ["Fake grant rejected",false,()=>check(x=>{x.grant.ok=false;}).ok],
+    ["Wrong grant phase rejected",false,()=>check(x=>{x.grant.phase="ACTIVE_PR";}).ok],
+    ["Main merge ancestry missing",false,()=>check(x=>{x.grant.mergedOnMain=false;}).ok],
+    ["Grant to different HEAD",false,()=>check(x=>{x.grant.current_head="c".repeat(40);}).ok],
+    ["Task not REVIEW",false,()=>check(x=>{x.task.status="BLOCKED";}).ok],
+    ["Sprint mismatched",false,()=>check(x=>{x.sprint.active_task="T006";}).ok],
+    ["Build mismatch",false,()=>check(x=>{x.build.active_baseline="BS-P1-026";}).ok],
+    ["Missing mapped acceptance",false,()=>check(x=>{x.ledger.missing_pairs=["A1::T1"];}).ok],
+    ["Missing command PASS",false,()=>check(x=>{x.ledger.missing_commands=["npm run gate"];}).ok],
+    ["Missing review PASS",false,()=>check(x=>{x.ledger.missing_review=true;}).ok],
+    ["Unreferenced Evidence",false,()=>check(x=>{x.ledger.unreferenced=["EV-001"];}).ok],
+    ["Duplicate Evidence",false,()=>check(x=>{x.ledger.duplicates=[["EV1","EV2"]];}).ok],
+    ["Stale Evidence",false,()=>check(x=>{x.ledger.stale=["EV-OLD"];}).ok],
+    ["T008 closure requires Human L3",false,()=>check(x=>{x.task.task_id="T008";x.sprint.active_task="T008";x.ledger.task_id="T008";}).ok],
+    ["T006 closure requires Human L3",false,()=>check(x=>{x.task.task_id="T006";x.sprint.active_task="T006";x.ledger.task_id="T006";}).ok]
+  ],f=>f());
+}
+
+function protectedClosureWriterCases(){
+  const mk=()=>{
+    const task={task_id:"T009",status:"REVIEW",build_spec_id:"BS-P1-025",
+      acceptance_links:[{acceptance_id:"A1",test_id:"T1"}],
+      completion_evidence:["EV-SP-P1-003-T009-001"]};
+    const other={task_id:"T007",status:"CLOSED",completion_evidence:[]};
+    return {plan:{ok:true,decision:"ELIGIBLE_FOR_SEPARATE_PROTECTED_CONTROL_REVIEW",
+      task_id:"T009",sprint_id:"SP-P1-003"},
+    taskId:"T009",mainDoc:{sprint_id:"SP-P1-003",tasks:[task,other]},
+    controlDoc:{sprint_id:"SP-P1-003",tasks:[{...task,status:"REVIEW"},other]}};
+  };
+  const run=fn=>{const x=clone(mk());fn(x);return planProtectedClosureMutation(x);};
+  return expectCases("protected closure control writer",[
+    ["writes only a proposed CLOSED status",true,()=>{
+      const r=run(()=>{});return r.ok&&r.changed&&!r.closure_performed&&
+        r.updated.tasks[0].status==="CLOSED"&&r.updated.tasks[1].status==="CLOSED";}],
+    ["idempotent existing proposal",true,()=>!run(x=>{x.controlDoc.tasks[0].status="CLOSED";}).changed],
+    ["fail when closure preflight invalid",false,()=>run(x=>{x.plan.ok=false;}).ok],
+    ["wrong Task requested",false,()=>run(x=>{x.taskId="T006";}).ok],
+    ["wrong Sprint requested",false,()=>run(x=>{x.controlDoc.sprint_id="SP-P1-004";}).ok],
+    ["Main Task must be REVIEW",false,()=>run(x=>{x.mainDoc.tasks[0].status="BLOCKED";}).ok],
+    ["Task missing from control",false,()=>run(x=>{x.controlDoc.tasks.pop();}).ok],
+    ["duplicate Task IDs",false,()=>run(x=>{x.controlDoc.tasks[1].task_id="T009";}).ok],
+    ["AC mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].acceptance_links=[];}).ok],
+    ["Evidence mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].completion_evidence=[];}).ok],
+    ["Other Task mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[1].status="BLOCKED";}).ok],
+    ["Task definition mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].build_spec_id="BS-P1-026";}).ok],
+    ["Root metadata mutation rejected",false,()=>run(x=>{x.controlDoc.schema_version=999;}).ok],
+    ["Unexpected status transition rejected",false,()=>run(x=>{x.controlDoc.tasks[0].status="VERIFIED";}).ok],
+    ["Unapproved closure status proposal forbidden",false,()=>run(x=>{x.plan.decision="HARD_STOP";}).ok]
+  ],fn=>fn());
+}
+
+function protectedControlProvenanceCases(){
+  const mk=()=>({
+    source:{number:101,state:"closed",merged:true,
+      merged_at:"2026-10-16T03:00:00Z",head:{ref:"task/t009"},
+      body:"Task: T009\nTask-Grant-Run: 12345"},
+    control:{number:102,state:"open",draft:true,
+      created_at:"2026-10-16T03:00:01Z",
+      base:{ref:"main",repo:{full_name:"NFF98/appf2-build"}},
+      head:{ref:"control/t009",sha:"c".repeat(40),
+        repo:{full_name:"NFF98/appf2-build"}},
+      body:"Task: T009\nTask-Grant-Run: 12345\nClosure-Source-PR: 101\n"+
+        "PR-Justification: CONTROL_TRANSITION_AFTER_MERGE 正式 Evidence 後的 Task Closure"}
+  });
+  const run=f=>{const x=mk();f(x);return inspectProtectedControlPrProvenance(
+    x.source,x.control,"T009");};
+  return expectCases("one grant; postmerge PR justified",[
+    ["valid same-task control exception",true,()=>run(()=>{})],
+    ["unmerged source refused",false,()=>run(x=>{x.source.merged=false;})],
+    ["still open source refused",false,()=>run(x=>{x.source.state="open";})],
+    ["same PR number refused",false,()=>run(x=>{x.control.number=101;})],
+    ["control before source merge refused",false,()=>run(x=>{x.control.created_at="2026-10-16T02:59:59Z";})],
+    ["bad control created_at refused",false,()=>run(x=>{x.control.created_at="not-a-date";})],
+    ["missing source merged_at refused",false,()=>run(x=>{x.source.merged_at=null;})],
+    ["reused task implementation branch refused",false,()=>run(x=>{x.control.head.ref="task/t009";})],
+    ["missing justification refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/PR-Justification:.+/,"");})],
+    ["missing original grant refused",false,()=>run(x=>{x.source.body="Task: T009";})],
+    ["missing control grant refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/Task-Grant-Run:.+\n/,"");})],
+    ["substituted control grant refused",false,()=>run(x=>{x.control.body=x.control.body.replace("Task-Grant-Run: 12345","Task-Grant-Run: 54321");})],
+    ["wrong justification lane refused",false,()=>run(x=>{x.control.body=x.control.body.replace("CONTROL_TRANSITION_AFTER_MERGE","HOTFIX");})],
+    ["empty justification rationale refused",false,()=>run(x=>{x.control.body=x.control.body.replace(/PR-Justification:.+/,"PR-Justification: CONTROL_TRANSITION_AFTER_MERGE ");})],
+    ["wrong Task refused",false,()=>run(x=>{x.control.body=x.control.body.replace("Task: T009","Task: T008");})],
+    ["wrong closure source refused",false,()=>run(x=>{x.control.body=x.control.body.replace("Closure-Source-PR: 101","Closure-Source-PR: 999");})],
+    ["control fork refused",false,()=>run(x=>{x.control.head.repo.full_name="attacker/appf2-build";})],
+    ["not a draft control refused",false,()=>run(x=>{x.control.draft=false;})],
+    ["control points outside Main refused",false,()=>run(x=>{x.control.base.ref="unsafe";})]
+  ],fn=>fn());
+}
+
 function metricsPreflightCases(guard){
   const m=computeGovernanceMetrics({
     commits:[{subject:"T008 impl (#386)"},{subject:"T008 evidence (#387)"},{subject:"fix T008 typo (#388)"},{subject:"T007 close (#380)"}],
@@ -362,7 +505,7 @@ function metricsPreflightCases(guard){
   });
   const open=[{number:386,title:"T008：impl",body:""},{number:390,title:"gov",body:"Task: T009"}];
   const build={active_baseline:"BS-P1-025",implementation_enabled:true};
-  const sprint={active_sprint:"SP-P1-003",active_task:"T008",status:"REVIEW"};
+  const sprint={active_sprint:"SP-P1-003",active_build_spec:"BS-P1-025",active_task:"T008",status:"REVIEW"};
   const tasks=[{task_id:"T008",status:"REVIEW",build_spec_id:"BS-P1-025"},{task_id:"T006",status:"BLOCKED",build_spec_id:"BS-P1-025"}];
   const pf=(intent,taskId)=>preflight({build,sprint,tasks,openPrs:open,guard,intent,taskId}).decision;
   return expectCases("metrics/preflight/pr-guard",[
@@ -374,12 +517,25 @@ function metricsPreflightCases(guard){
     ["duplicate Task PR must reuse",true,()=>prCreationDecision({taskKey:"T008",openPrs:open,guard}).decision==="REUSE_EXISTING_PR"],
     ["justified new PR allowed",true,()=>prCreationDecision({taskKey:"T008",openPrs:open,guard,justified:hasPrJustification({body:"PR-Justification: CONTROL_TRANSITION_AFTER_MERGE closure after #386"},guard)}).decision==="NEW_PR_ALLOWED_WITH_JUSTIFICATION"],
     ["bare justification keyword rejected",false,()=>hasPrJustification({body:"PR-Justification: HOTFIX"},guard)],
-    ["own PR excluded from duplicates",true,()=>prCreationDecision({taskKey:"T009",openPrs:open,guard,selfNumber:390}).decision==="NEW_PR_ALLOWED"],
+    ["own PR excluded from duplicates",true,()=>prCreationDecision({taskKey:"T009",openPrs:open,guard,selfNumber:390}).decision==="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY"],
+    ["unidentified PR denied",true,()=>prCreationDecision({taskKey:null,openPrs:open,guard}).decision==="BLOCKED_MISSING_TASK_OR_GOVERNANCE_CASE"],
+    ["unverified PR inventory denied",true,()=>prCreationDecision({taskKey:"T008",openPrs:null,guard}).decision==="BLOCKED_NO_LIVE_PR_INVENTORY"],
+    ["governance docket recognized",true,()=>governanceCaseOfPr({body:"Governance-Case: GOV-REFORM-20261013-001"})==="GOV-REFORM-20261013-001"],
+    ["English-only Human PR explanation fails language guard",false,()=>hasHumanFacingChinese({title:"fix title",body:"Some English only"})],
+    ["Human PR contains Chinese explanation",true,()=>hasHumanFacingChinese({title:"修復：檢查流程",body:"Governance-Case: GOV-REFORM-20261013-001"})],
+    ["duplicate governance docket PR denied",true,()=>prCreationDecision({openPrs:[{number:89,body:"Governance-Case: GOV-REFORM-20261013-001"}],
+      taskKey:null,governanceCase:"GOV-REFORM-20261013-001",guard}).decision==="REUSE_EXISTING_PR"],
+    ["unknown product Task new PR denied",true,()=>preflight({build,sprint,tasks,openPrs:[],guard,intent:"NEW_PR",taskId:"T099"}).decision==="STOP"],
+    ["CLOSED Task new PR denied",true,()=>preflight({build,sprint,tasks:[{...tasks[0],status:"CLOSED"},tasks[1]],openPrs:[],guard,intent:"NEW_PR",taskId:"T008"}).decision==="STOP"],
     ["redundant Activation denied",true,()=>pf("REQUEST_ACTIVATION","T008")==="REDUNDANT_ACTIVATION_DENIED"],
     ["redundant approval denied",true,()=>pf("REQUEST_APPROVAL","T008")==="REDUNDANT_APPROVAL_DENIED"],
     ["unneeded Rebind denied",true,()=>pf("REQUEST_REBIND","T008")==="REBIND_NOT_REQUIRED"],
     ["BLOCKED Task cannot continue",true,()=>pf("CONTINUE_TASK_WORK","T006")==="STOP"],
-    ["REVIEW Task fix continues same lease",true,()=>pf("CONTINUE_TASK_WORK","T008")==="CONTINUE_SAME_LEASE"]
+    ["REVIEW Task fix continues same lease",true,()=>pf("CONTINUE_TASK_WORK","T008")==="CONTINUE_SAME_LEASE"],
+    ["missing PR inventory fails closed",true,()=>preflight({build,sprint,tasks,openPrs:null,guard,intent:"NEW_PR",taskId:"T008"}).decision==="BLOCKED_NO_LIVE_PR_INVENTORY"],
+    ["CLOSED active Task cannot continue",true,()=>preflight({build,sprint,tasks:[{...tasks[0],status:"CLOSED"},tasks[1]],openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"],
+    ["Task Build mismatch cannot continue",true,()=>preflight({build,sprint,tasks:[{...tasks[0],build_spec_id:"BS-P1-026"},tasks[1]],openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"],
+    ["Sprint binding mismatch cannot continue",true,()=>preflight({build,sprint:{...sprint,active_build_spec:"BS-P1-026"},tasks,openPrs:open,guard,intent:"CONTINUE_TASK_WORK",taskId:"T008"}).decision==="STOP"]
   ],fn=>fn());
 }
 
@@ -397,6 +553,10 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
     authority:authorityCases(),
     impacted_tests:impactedCases(policy.impacted_tests),
     evidence_ledger:ledgerCases(policy.evidence_proof_levels),
+    evidence_normalization:normalizationCases(),
+    protected_closure:closurePlanningCases(),
+    protected_closure_writer:protectedClosureWriterCases(),
+    protected_control_provenance:protectedControlProvenanceCases(),
     metrics_preflight:metricsPreflightCases(policy.pr_guard)
   };
   return {counts,total:Object.values(counts).reduce((a,n)=>a+n,0)};

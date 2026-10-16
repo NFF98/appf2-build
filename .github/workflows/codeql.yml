@@ -2,7 +2,7 @@ name: CodeQL
 
 on:
   push:
-    branches: [main]
+    branches: [main, governance/task-one-approval-20261016]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -17,16 +17,26 @@ permissions:
   security-events: write
   packages: read
   actions: read
+  deployments: read
 
 jobs:
+  # Required security and functional gates run before Human Final Ready.
+  # Final Ready/BCE still govern merge; they must not suppress genuine test results.
   analyze:
+    # Draft 只執行 Fast-loop；Ready 才啟動完整必需 Gate。
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     name: Analyze JavaScript / TypeScript
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Exact-HEAD Final Ready preflight (NOT_READY fails, no full jobs)
+      - name: 真實 Human Task 授權預檢（未核准不跑完整 Gate）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-task-human-grant-preflight.sh
+      - name: Main-only merge provenance guard (PR tests never pre-blocked)
+        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/governance/task-one-approval-20261016' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash harness/scripts/run-final-ready-preflight.sh

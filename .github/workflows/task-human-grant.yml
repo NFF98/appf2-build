@@ -1,0 +1,51 @@
+name: Human Task 一次條件授權
+# GitHub-generated run name immutably binds the approved exact Task/Sprint/Scope.
+run-name: 'APPF2-L1|${{ inputs.task_id }}|${{ inputs.sprint_id }}|${{ inputs.scope_sha256 }}'
+# 每個一般 Task 唯一 Human 決定。由 GitHub Environment 的真人 Required reviewer
+# 核准；不得把 ChatGPT 產生的留言、actor login 或自行填 true 當 Human 授權。
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: "Task ID (Txxx)"
+        required: true
+        type: string
+      sprint_id:
+        description: "Sprint ID"
+        required: true
+        type: string
+      scope_sha256:
+        description: "AC/Test + allowed write paths scope SHA256"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  task-human-grant:
+    # A real Required reviewer must be configured for this environment.
+    # If not, this workflow MUST fail rather than mint a silent false grant.
+    environment: appf2-task-human-approval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Task binding, exact scope and GitHub reviewer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HUMAN_TASK_ID: ${{ inputs.task_id }}
+          HUMAN_SPRINT_ID: ${{ inputs.sprint_id }}
+          HUMAN_SCOPE_SHA256: ${{ inputs.scope_sha256 }}
+        run: node harness/scripts/task-human-grant-issuance.mjs
+      - name: State the single-use Human approval evidence
+        run: |
+          echo "Human Task grant source: GitHub Environment review history"
+          echo "Task: ${{ inputs.task_id }} / Sprint: ${{ inputs.sprint_id }}"
+          echo "Grant run: ${{ github.run_id }}; grant source commit: ${{ github.sha }}"
+          echo "This is NOT a Product PASS / not Task Closure / not approval of any new Task."

@@ -21,6 +21,7 @@
 
 - 一個 Task 一個 Draft PR；同一 Task lease 內的 Bugfix／測試／Evidence 持續 commit，不重複要求 Activation 或核准。
 - 每次修正先跑相關測試（`harness/scripts/select-impacted-tests.mjs`）；Draft 結果不是 full-gate PASS，完整 CI 只在 Human Final Ready 後的精確 HEAD 執行。
+- **L3 一次授權候選現況：BLOCKED_NOT_IMPLEMENTED**：條件判定器僅為模擬／資料資格檢查；缺少可信的獨立 Human 身分驗證器與 GitHub 執行權限接線。GPT_DELEGATED 的 Human-only Final Ready、Merge、Closure 已強制 HARD STOP，絕不能拿呼叫者的布林值或 46 項模擬 PASS 冒充正式 Human 授權。直到另一筆合法修法、真實驗證與正式 Merge 才可能啟用。不得自動開新 Task／Sprint。
 - Sprint 中的治理／SSOT／Closure 延後／Hotfix 例外只能走憲法 §7 的通用 Human 特批通道（精確 docket），不得自行擴張 scope 或宣稱已核准。
 - 細則：[`delivery/EXECUTION-HANDOFF-PROTOCOL.md` §18](delivery/EXECUTION-HANDOFF-PROTOCOL.md#18-lean-task-lifecyclegov-reform-20261013)。
 
@@ -55,9 +56,12 @@ Project-wide canonical language rule is owned by `NFF98/appf2-design/SSOT.md#off
 
 Build / Delivery enforcement:
 - Human-facing summaries、handoffs、governance、Findings、Evidence descriptions、review conclusions、Product/Spec explanation 使用繁體中文。
-- PR / commit 說明在 practical 時使用繁體中文。
+- PR title/description、Commit 的 Human-readable description **必須使用繁體中文**；僅外部技術限制或精確 identifier 例外，不能以英文為主要治理說明。
 - code、identifier、schema/field、command、path、branch、AC/Test ID、error code、established technical terminology、machine-facing instruction 可保留英文以維持 exact meaning。
 - 混合語言時，繁體中文 Human-readable explanation 是 authoritative interpretation。
+- **回覆前強制自檢（聊天亦適用）**：無論 Human 以何種語言輸入，除非 Human 明確變更正式語言政策，Agent 的 Human-facing 回覆、摘要、核准請求與稽核結論，仍一律以繁體中文為主。英文技術名稱不改 canonical token。
+- **能力邊界**：GitHub repo CI 無法攔截或檢測 ChatGPT 對話輸出；未有獨立對話政策執行器前不得宣稱「聊天語言已被 GitHub 機器強制」。發現違規須公開標示 VIOLATION 並更正，不能因本文件存在而宣稱完成。
+- **一次 Human 核准（未部署候選）**：新一般 Task 的唯一 Human 授權將使用受保護 GitHub Environment `appf2-task-human-approval` 的 Required reviewer 審核事件。必須是 GitHub 官方 API 可核對的 NFF98 真人批准，並且鎖定 Task/Sprint/Build/scope/期限；驗證器 `trusted-human-task-grant.mjs` 與核發器 `task-human-grant-issuance.mjs` 將在合法 Main 合併後啟用。沒有實際 Environment 設定與端到端證據，**不准稱制度已生效**。
 - 不得翻譯或改寫 canonical technical token 到改變 contract meaning。
 
 ## Mandatory Read Order
