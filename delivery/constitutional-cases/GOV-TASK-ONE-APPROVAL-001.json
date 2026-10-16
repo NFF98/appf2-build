@@ -130,19 +130,28 @@
     "residual_gaps": [
       "NONE"
     ],
-    "expires_at_unix": null,
-    "expires_at_rule": "Set only after renewed authentic exact candidate Human decision; max 14 days."
+    "expires_at_unix": 1793396706,
+    "expires_at_rule": "Main governance policy max_ttl_seconds=1209600 (14 days); Human merge decision remains separate."
   },
   "carry_forward": {
     "zero_gap": true,
     "justification": "本案不新增／延後 Product AC 義務；這不表示十六項治理 E2E 或 Human 身分驗證已完成。治理落地缺口在 rollout_truth 個別記錄，嚴禁稱為 zero implementation gap。"
   },
-  "approval_status": "PREPARED_PENDING_HUMAN_EXACT_CANDIDATE_NOT_MERGE",
-  "human_approval": null,
+  "approval_status": "EXACT_CANDIDATE_CHAT_APPROVED_NOT_MERGE_MANUAL_HUMAN_PROVENANCE_CHECK_REQUIRED",
+  "human_approval": {
+    "case_id": "GOV-TASK-ONE-APPROVAL-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "human_message_ref": "ChatGPT user said 「批准 你繼續收尾完成」 in this chat on 2026-10-17 JST after exact #401 candidate; GPT transcript relay, human GitHub identity independently unverified: https://github.com/NFF98/appf2-build/pull/401#issuecomment-6225290549",
+    "approved_at_unix": 1792187106,
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "b50e6de996f79ba8b1eb3932f6c08fa0d5dd04232eafe4f482c8296a6d59cce5"
+  },
   "rollout_truth": {
     "main_effective": false,
-    "candidate_real_four_gates": "NOT_RUN_ON_NEW_HEAD_PENDING_PROTECTED_VALIDATION",
-    "exact_human_approval": "PENDING_NEW_EXACT_DIGEST; prior direct chat L3 consent 2026-10-17 bound exclusively to old digest 29cbf1bb... NOT transferable; GPT relay reference #6225032191 retained in comment history",
+    "candidate_real_four_gates": "NEW_FINAL_HEAD_PENDING_GITHUB_REQUIRED_PR_GATES",
+    "exact_human_approval": "2026-10-17 CHAT_L3_CANDIDATE_6225290549_BOUND_TO_NEW_EXACT_DIGEST; GITHUB_IDENTITY_NOT_INDEPENDENTLY_VERIFIED; MERGE_NOT_APPROVED",
     "synthetic_regressions": "46 delegated Human false-auth and valid-Human regression cases; 18 static wiring/false-completion checks; PR language + missing inventory/closed Task tests",
     "incomplete_external_dependencies": [
       "GPT plugin/tool permission boundary before PR creation",
