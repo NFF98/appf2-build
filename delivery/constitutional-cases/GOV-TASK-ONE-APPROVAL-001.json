@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "0a9f00c4408c3a929ce56da587bbadbf027e1003f0aae676a6b91e321cd74a93",
+  "candidate_digest_sha256": "d111ecccc06701910be60440407fbf1c434cc6ab7108bdbb327113a8edcb4548",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -100,7 +100,8 @@
     "Official GitHub Main squash-merge ancestry proof requires authenticated GitHub compare response, exact merge-base and base commits, latest Main SHA matching executor checkout. Ten new fail-closed synthetic cases; positive Human E2E still NOT_RUN.",
     "Real GitHub API paginated PR inventory verified in branch push: comments/files/check-runs completely enumerated with strict total_count/unique-id checks; 13 added pure positive/negative page checks. No L1 grant or merge performed.",
     "Refresh complete authenticated GitHub comments, changed files, check runs, and verified Human grant immediately before delegated protected merge; stale, duplicate, edited BCE, newer failed run or HEAD/BASE drift must HARD_STOP. Pure 13 synthetic checks; no positive Human Merge attempted.",
-    "Main after Human grant may fast-forward without second L1 Human approval ONLY when exact authenticated GitHub compare proves grant origin ancestry to current Main BASE and Task scope unchanged. One positive and one reverse real GitHub API compare verified; additional synthetic divergent/malformed cases. Real Human approval still NOT_RUN."
+    "Main after Human grant may fast-forward without second L1 Human approval ONLY when exact authenticated GitHub compare proves grant origin ancestry to current Main BASE and Task scope unchanged. One positive and one reverse real GitHub API compare verified; additional synthetic divergent/malformed cases. Real Human approval still NOT_RUN.",
+    "Live GitHub Main Task/Sprint/Build snapshot: exact current Main SHA must equal PR base; 3 canonical JSON files require trustworthy git blob SHA/content and exact local equality. 10 synthetic stale/forged/changed-status cases, plus real GitHub API compare in branch Governance. Positive protected merge E2E remains NOT_RUN."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -155,6 +156,7 @@
     "post_merge_ancestry": "GITHUB_COMPARE_VERIFIER_CANDIDATE_TESTED_SYNTHETIC_NOT_LIVE_HUMAN_MERGE",
     "live_delegation_evidence_pagination": "CAPPED_PAGINATION_WITH_COMPLETE_COUNTS_13_SYNTHETIC_CASES_PLUS_REAL_GITHUB_API_38899272510_POSITIVE_MERGE_NOT_RUN",
     "delegated_merge_last_moment_recheck": "IMPLEMENTED_CANDIDATE_SYNTHETIC_POSITIVE_AND_NEGATIVE; LIVE_POSITIVE_NOT_RUN",
-    "one_human_grant_main_fast_forward": "LIVE_GITHUB_PARENT_TIP_COMPARE_1_ADMIT_1_DENY_PASS_38905150435; TASK_GRANT_POSITIVE_NOT_RUN"
+    "one_human_grant_main_fast_forward": "LIVE_GITHUB_PARENT_TIP_COMPARE_1_ADMIT_1_DENY_PASS_38905150435; TASK_GRANT_POSITIVE_NOT_RUN",
+    "live_main_canonical_state": "GITHUB_API_THREE_CANONICAL_FILES_BLOB_SHA_AND_JSON_MATCHED_38906621599; POSITIVE_TASK_MERGE_NOT_RUN"
   }
 }
