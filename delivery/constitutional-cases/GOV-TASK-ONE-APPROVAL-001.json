@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "c762c4b19a9a3f036477c975fd65b23bdd9b775954edec26e42e2f41acedab88",
+  "candidate_digest_sha256": "e7ecd97f8d0544f31c0cf0eb63ec0c39eaa48196d45da579439ef51915c1c39a",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -96,7 +96,8 @@
     "Draft PR 只執行 Fast-loop 與必要 Governance；產品 CI、CodeQL、Attack 只在 PR Ready 才完整執行，Final HEAD 仍需要全部四 Gate PASS。",
     "Run live read-only GitHub API test against existing unauthorized Draft #401 on branch: grant, delegated CHECK, Evidence apply, Closure check, Closure apply must all reject with policy errors; verify GitHub Main/PR HEAD unchanged. This is negative E2E only.",
     "Scope-tightening: genuine GitHub API 5/5 negative integration moved into existing trusted-human-task-grant-selftest.mjs, preserving 29-path immutable GOV16 test lane; do not extend allowed paths.",
-    "2026-10-16 authenticated GitHub Actions read-only bootstrap: Required Reviewer NFF98 confirmed; task-human-grant.yml NOT_FOUND_ON_MAIN; Design frozen/main compare diverged; positive grant/Merge/Closure E2E explicitly NOT_RUN. Live unauthorised 5/5 API negative PASS without mutations."
+    "2026-10-16 authenticated GitHub Actions read-only bootstrap: Required Reviewer NFF98 confirmed; task-human-grant.yml NOT_FOUND_ON_MAIN; Design frozen/main compare diverged; positive grant/Merge/Closure E2E explicitly NOT_RUN. Live unauthorised 5/5 API negative PASS without mutations.",
+    "Official GitHub Main squash-merge ancestry proof requires authenticated GitHub compare response, exact merge-base and base commits, latest Main SHA matching executor checkout. Ten new fail-closed synthetic cases; positive Human E2E still NOT_RUN."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -147,6 +148,7 @@
     "github_environment_configured": "VERIFIED_NFF98_REQUIRED_REVIEWER_FROM_REAL_GITHUB_ACTIONS_API_38880023499",
     "live_github_negative_integration": "5_OF_5_REAL_API_HARD_STOP_PASS_38880023499; MAIN_AND_PR_SHA_UNCHANGED",
     "main_human_grant_workflow": "NOT_FOUND_ON_MAIN_FROM_REAL_GITHUB_ACTIONS_API_38880023499",
-    "design_freeze_to_current_main": "DIVERGED_FROM_REAL_GITHUB_ACTIONS_COMPARE_38880023499"
+    "design_freeze_to_current_main": "DIVERGED_FROM_REAL_GITHUB_ACTIONS_COMPARE_38880023499",
+    "post_merge_ancestry": "GITHUB_COMPARE_VERIFIER_CANDIDATE_TESTED_SYNTHETIC_NOT_LIVE_HUMAN_MERGE"
   }
 }
