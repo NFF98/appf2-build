@@ -1,7 +1,7 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness} from "./final-ready-preflight.mjs";
+import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness,inspectReadyRecheckBinding} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
 const live={number:395,state:"open",draft:false,head:{sha:HEAD,repo:{full_name:REPO}},base:{sha:BASE,ref:"main"}};
@@ -172,6 +172,40 @@ const prOriginMissing=inspectTaskPrReadiness({event,live,comments:[],
     current_head:HEAD}});
 assert.ok(prOriginMissing.errors.some(x=>x.includes("Push PASS 不等於 Ready")));
 console.log("16P PR-only full-gate run-origin rejection: 17 synthetic negative + 1 positive PASS; Human positive not verified.");
+// GitHub only triggers ready_for_review once. Local/BCE/Human evidence comes
+// later, so a read-only, exact-PR recheck is necessary. It must never accept a
+// dispatch input as trusted proof of PR identity, Head, branch, or canonical Main.
+const liveRecheck={...live,head:{...live.head,ref:"feature"},base:{
+  ...live.base,repo:{full_name:REPO}}};
+const positiveRecheck={requested:"395",
+  event:{inputs:{final_ready_pr_number:"395"}},
+  live:liveRecheck,main:{commit:{sha:BASE}},repo:REPO,
+  ref:"refs/heads/feature",sha:HEAD};
+assert.equal(inspectReadyRecheckBinding(positiveRecheck).ok,true);
+const recheckDenied=[
+  {requested:"401"},{requested:"not-a-number"},{requested:"000395"},
+  {event:{inputs:{final_ready_pr_number:"401"}}},
+  {event:{inputs:{}}},
+  {repo:"other/appf2-build"},
+  {ref:"refs/heads/main"},
+  {sha:BASE},
+  {live:{...liveRecheck,number:401}},
+  {live:{...liveRecheck,draft:true}},
+  {live:{...liveRecheck,state:"closed"}},
+  {live:{...liveRecheck,head:{...liveRecheck.head,ref:"main"}}},
+  {live:{...liveRecheck,head:{...liveRecheck.head,sha:BASE}}},
+  {live:{...liveRecheck,head:{...liveRecheck.head,repo:{full_name:"other/repo"}}}},
+  {live:{...liveRecheck,base:{...liveRecheck.base,ref:"not-main"}}},
+  {live:{...liveRecheck,base:{...liveRecheck.base,repo:{full_name:"other/repo"}}}},
+  {live:{...liveRecheck,base:{...liveRecheck.base,sha:HEAD}}},
+  {main:{commit:{sha:HEAD}}},
+  {main:null}
+];
+for(const patch of recheckDenied)
+  assert.equal(inspectReadyRecheckBinding({...positiveRecheck,...patch}).ok,false,
+    "Untrusted dispatch cannot fabricate Ready PR identity");
+console.log("Final Ready delayed evidence recheck: 1 positive + "+
+  recheckDenied.length+" synthetic false-ref/Main/identity cases PASS.");
 // Verify the real Ready-for-review wiring, not just synthetic inputs. Otherwise
 // same-HEAD preflight may deadlock after Draft -> Ready even if evidence exists.
 for(const filename of ["ci.yml","codeql.yml","governance-gate.yml","attack-dry-run.yml"]){
@@ -249,6 +283,32 @@ assert.ok(workflowPermissions.includes("  actions: read") &&
   "CI workflow must allow Actions/Checks read-only evidence");
 console.log("Final Ready real Actions/Checks API GitHub token read-only grants: PASS (static).");
 
+// Dispatch recheck must preserve the existing required check. A skipped
+// job named "ci" would otherwise invalidate the exact HEAD Ready evidence.
+assert.ok(ciGeneric.includes("final_ready_pr_number:") &&
+  ciGeneric.includes("workflow_dispatch:") &&
+  ciGeneric.includes("'ci-recheck-only-skipped' || 'ci'") &&
+  ciGeneric.includes("inputs.final_ready_pr_number == ''"),
+  "post-attestation dispatch must not shadow the required ci check");
+const recheckJob=ciGeneric.slice(ciGeneric.indexOf("\n  final-ready-recheck:\n"),
+  ciGeneric.indexOf("\n  fast-loop:\n"));
+assert.ok(recheckJob.includes("github.event_name == 'workflow_dispatch'") &&
+  recheckJob.includes("persist-credentials: false") &&
+  recheckJob.includes("final-ready-preflight.mjs --recheck-pr") &&
+  recheckJob.includes('--event "$GITHUB_EVENT_PATH"') &&
+  !recheckJob.includes("needs: ci"),
+  "post-attestation audit dispatch may run after evidence without a skipped ci dependency");
+for(const permission of ["contents","issues","pull-requests","actions","checks"])
+  assert.ok(recheckJob.includes(permission+": read"),
+    "recheck must have explicit read-only "+permission);
+assert.ok(!recheckJob.includes(": write") && !recheckJob.includes("gh pr merge"),
+  "post-attestation audit is not authorized to write or merge");
+const cliSource=readFileSync("harness/scripts/final-ready-preflight.mjs","utf8");
+assert.ok(cliSource.includes('eventName==="workflow_dispatch" && val("recheck-pr")!==null') &&
+  cliSource.includes("inspectReadyRecheckBinding({requested,event,live,main,repo,ref,sha})") &&
+  cliSource.includes("inspectReadyWithLiveApi({event:trustedEvent,live,repo,token})"),
+  "recheck must authenticate PR, Main and branch before reusing production Ready admission");
+console.log("Final Ready on-demand actual workflow wiring and no-ci-shadow: PASS (static, not Human E2E).");
 assert.ok(!ciGeneric.includes("cloud-evidence-admission:") &&
   !ciGeneric.includes("cloud-evidence-mirror:") &&
   !ciGeneric.includes("ready_for_review, labeled"),
