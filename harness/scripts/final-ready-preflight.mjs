@@ -184,12 +184,18 @@ export function candidateDigestOf(changedFiles,readBytes){
   return exceptionDigest(readBytes,others);
 };
 /** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
-export function inspectPrReadiness({event,live,comments,checks,changedFiles,candidateDigest,repo}){
+export function inspectPrReadiness({event,live,comments,checks,changedFiles,
+  candidateDigest,repo,verifiedPrRunOrigins}){
   const errors=prMetadataErrors(event,live,repo),head=live?.head?.sha,base=live?.base?.sha;
   const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
   assertion(HEX64.test(candidateDigest||""),"cannot compute exact Git-byte candidate SHA256",errors);
+  // L3 governance changes cannot obtain Final Ready from Draft fast-loop or
+  // a successful branch push. Reuse the L1 trusted GitHub PR-run provenance.
+  assertion(exactRequiredPrRunProof(verifiedPrRunOrigins,head,base,live?.number),
+    "L3 Ready missing four authenticated pull_request Full Gate runs",errors);
   errors.push(...currentReadinessErrors({comments,ctx}),...fastLoopErrors(checks,head),
-    ...protectedChangeErrors(changedFiles,comments,head));
+    ...protectedChangeErrors(changedFiles,comments,head),
+    ...inspectLiveGitHubRequiredChecks({head,checks}));
   return {ok:errors.length===0,head,errors,manual_provenance_required:true};
 }
 // L1 Task: Human's ONE GitHub Environment approval replaces the extra
@@ -265,6 +271,10 @@ export async function verifyLiveRequiredPrRunOrigins({head,base,prNumber,checks,
     throw Error("HARD_STOP: push/synthetic/full-gate provenance is not a real PR Ready run");
   return {ok:true,head,base,pr_number:prNumber,verified_names:REAL_CHECKS};
 }
+const exactRequiredPrRunProof=(receipt,head,base,number)=>
+  receipt?.ok===true && receipt.head===head && receipt.base===base &&
+  receipt.pr_number===number &&
+  REAL_CHECKS.every(name=>receipt.verified_names?.includes(name));
 const validVerifiedGrant=(g,head)=>g?.ok===true &&
   g?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL"&&
   g?.current_head===head;
@@ -315,11 +325,7 @@ export function inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
   const head=live?.head?.sha,base=live?.base?.sha;
   const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
   assertion(validVerifiedGrant(verifiedGrant,head),"缺少 API 證明的 Human 一次授權",errors);
-  assertion(verifiedPrRunOrigins?.ok===true &&
-    verifiedPrRunOrigins.head===head &&
-    verifiedPrRunOrigins.base===base &&
-    verifiedPrRunOrigins.pr_number===live?.number &&
-    REAL_CHECKS.every(name=>verifiedPrRunOrigins.verified_names?.includes(name)),
+  assertion(exactRequiredPrRunProof(verifiedPrRunOrigins,head,base,live?.number),
     "四項 Gate 缺少真實 pull_request 工作流程來源證明；Push PASS 不等於 Ready",errors);
   assertion(HEX64.test(candidateDigest||""),"精確 SHA256 不存在",errors);
   assertion(l1TaskChangedPathsValid(changedFiles),"L1 Task 夾帶受保護治理或 SSOT",errors);
@@ -374,7 +380,11 @@ async function main(argv){
       result=inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
         candidateDigest,repo,verifiedGrant,verifiedPrRunOrigins});
     }else{
-      result=inspectPrReadiness({event,live,comments,checks,changedFiles,candidateDigest,repo});
+      const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
+        head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
+        checks,token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
+      result=inspectPrReadiness({event,live,comments,checks,changedFiles,
+        candidateDigest,repo,verifiedPrRunOrigins});
     }
   }else{
     result=inspectNonPrInvocation({eventName,ref:process.env.GITHUB_REF,
