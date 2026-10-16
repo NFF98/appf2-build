@@ -8,7 +8,7 @@ import {reconcileTaskEvidencePr,liveTaskClosureCheck,
   writeExistingProtectedClosureCandidate} from "./evidence-ledger-report.mjs";
 import {pathToFileURL} from "node:url";
 import {inspectGitHubHumanGrant,taskScopeDigest,githubCompareProvesAncestor,
-  inspectMergedMainAncestry,ENVIRONMENT,WORKFLOW}
+  inspectMergedMainAncestry,inspectGrantMainAdvance,ENVIRONMENT,WORKFLOW}
   from "./trusted-human-task-grant.mjs";
 import {inspectIssuance} from "./task-human-grant-issuance.mjs";
 import {inspectLiveGitHubRequiredChecks} from "./final-ready-preflight.mjs";
@@ -36,7 +36,7 @@ const fresh=()=>{
   const pr={state:"open",base:{ref:"main"},
     head:{sha:"c".repeat(40)},body:"Task: T009\nTask-Grant-Run: 123"};
   return {run,approvals,environment,grant,original:JSON.parse(JSON.stringify(grant)),
-    task,sprint,build,pr,ancestor:true,now:NOW};
+    task,sprint,build,pr,ancestor:true,baseAncestor:true,now:NOW};
 };
 function runPaginationSelfTests(){
   let count=0;
@@ -116,6 +116,7 @@ export function runTrustedGrantSelfTests(){
     x.phase="WRONG_PHASE";x.mergedOnMain=true;});
   no(x=>{x.pr.base.ref="other";});
   no(x=>{x.ancestor=false;});
+  no(x=>{x.baseAncestor=false;});
   for(const [status,allowed] of [
     ["ahead",true],["identical",true],["diverged",false],
     ["behind",false],["not-found",false],[null,false]
@@ -149,6 +150,20 @@ export function runTrustedGrantSelfTests(){
       "Main ancestry must fail closed unless exact GitHub compare+checkout agrees");
     total++;
   }
+  const granted="a".repeat(40),advanced="f".repeat(40);
+  const prove={grantSha:granted,baseSha:advanced,
+    compare:{status:"ahead",base_commit:{sha:granted},
+      merge_base_commit:{sha:granted},commits:[{sha:advanced}]}};
+  assert.equal(inspectGrantMainAdvance(prove),true);total++;
+  assert.equal(inspectGrantMainAdvance({...prove,baseSha:granted,compare:null}),true);total++;
+  for(const patch of [
+    {compare:null},{compare:{...prove.compare,status:"diverged"}},
+    {compare:{...prove.compare,status:"behind"}},
+    {compare:{...prove.compare,base_commit:{sha:advanced}}},
+    {compare:{...prove.compare,merge_base_commit:{sha:advanced}}},
+    {compare:{...prove.compare,commits:[{sha:granted}]}},
+    {grantSha:"invalid"},{baseSha:"invalid"}
+  ]){assert.equal(inspectGrantMainAdvance({...prove,...patch}),false);total++;}
   const sameHead=fresh();sameHead.run.head_sha=sameHead.pr.head.sha;
   sameHead.grant.base_sha=sameHead.run.head_sha;yes(sameHead);
   no(x=>{x.now=x.grant.expires_at_unix+1;});
