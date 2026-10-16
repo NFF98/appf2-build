@@ -305,11 +305,26 @@ export async function verifyLiveUnauthorizedNegative(){
     throw Error("LIVE NEGATIVE FAIL: protected main/PR drift after test");
   console.log("LIVE GITHUB NEGATIVE INTEGRATION: 5/5 REAL API HARD_STOP PASS; "+
     "Main/PR unchanged. Human positive approval/Merge/Closure NOT_RUN.");
+  await verifyLiveMainFastForward(after.main);
   const bootstrap=await inspectLiveBootstrapState({token:TOKEN,mainSha:after.main});
   console.log("LIVE 16P BOOTSTRAP READINESS (informational, NOT PASS): "+
     JSON.stringify(bootstrap));
 }
 
+const verifyLiveMainFastForward=async mainSha=>{
+  const main=await gh("/commits/"+mainSha),parent=main?.parents?.[0]?.sha;
+  if(!hex40(mainSha)||!hex40(parent))
+    throw Error("LIVE MAIN ANCESTRY FAIL: canonical GitHub parent SHA unavailable");
+  const [forward,reverse]=await Promise.all([
+    gh("/compare/"+parent+"..."+mainSha),
+    gh("/compare/"+mainSha+"..."+parent)]);
+  if(!inspectGrantMainAdvance({grantSha:parent,baseSha:mainSha,compare:forward}))
+    throw Error("LIVE MAIN ANCESTRY FAIL: official fast-forward proof missing");
+  if(inspectGrantMainAdvance({grantSha:mainSha,baseSha:parent,compare:reverse}))
+    throw Error("LIVE MAIN ANCESTRY FAIL: reverse direction incorrectly admitted");
+  console.log("LIVE GITHUB MAIN FAST-FORWARD API: 1 ADMIT + 1 REJECT PASS; "+
+    "History lineage proof only, NOT a Human Task grant or Merge");
+};
 const remoteRead=async (url,token)=>{
   try{
     const r=await fetch(url,{headers:{
