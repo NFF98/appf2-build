@@ -17,52 +17,52 @@ export function reportContext(event, current){
 const EVIDENCE_STATUSES=new Set(["PASS","FAIL","INFO"]);
 const TASK_STATES=new Set(["IN_PROGRESS","REVIEW"]);
 const hex40=s=>/^[a-f0-9]{40}$/.test(s||"");
-const taskEvidenceFile=id=>"delivery/evidence/"+id+".json";
 const readJson=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 const activeLease=(s,b,t)=>s?.active_sprint&&s.active_task===t?.task_id&&
   s.active_build_spec===t?.build_spec_id&&b?.active_baseline===t?.build_spec_id&&
   b?.implementation_enabled===true&&["ACTIVE","REVIEW"].includes(s.status);
-/** Reconcile canonical references ONLY. No status change, Evidence creation or Closure. */
+const distinctList=x=>Array.isArray(x)&&new Set(x).size===x.length;
+const zeroList=x=>Array.isArray(x)&&x.length===0;
+const ledgerScopeOK=(l,t,s)=>[l?.task_id===t?.task_id,l?.sprint_id===s].every(Boolean);
+const referenceNameOK=(e,id)=>[e?.evidence_id===id,
+  /^EV-SP-P\d+-\d{3}-T\d{3}-\d{3}$/.test(id)].every(Boolean);
+const validDocumentState=e=>[e?.schema_version===2,
+  EVIDENCE_STATUSES.has(e?.status),hex40(e?.source_commit)].every(Boolean);
+const documentScopeOK=(e,t,s)=>[e?.sprint_id===s,
+  e?.task_id===t?.task_id,e?.build_spec_id===t?.build_spec_id].every(Boolean);
+const matchingPairs=(e,pairs)=>[
+  Array.isArray(e?.acceptance_ids),Array.isArray(e?.test_ids),
+  e?.acceptance_ids?.length===e?.test_ids?.length
+].every(Boolean) && e.acceptance_ids.every((a,i)=>pairs.get(a)===e.test_ids[i]);
+const normalizeError=(errors,ok,msg)=>{if(!ok)errors.push(msg);};
+const reviewReference=(errors,id,docs,task,sprintId,pairs)=>{
+  const e=docs.get(id),deny=(ok,msg)=>normalizeError(errors,ok,msg+": "+id);
+  deny(referenceNameOK(e,id),"Missing exact canonical Evidence");
+  deny(validDocumentState(e),"Evidence invalid schema/status/source SHA");
+  deny(documentScopeOK(e,task,sprintId),"Evidence scope differs");
+  deny(matchingPairs(e,pairs),"Evidence AC/Test linkage differs");
+};
+/** Only update existing Task Evidence IDs; no PASS fabrication or Task closure. */
 export function planTaskEvidenceReferences({task,sprintId,ledger,existingEvidence}={}){
-  const errors=[],deny=(ok,msg)=>{if(!ok)errors.push(msg);};
+  const errors=[],deny=(ok,msg)=>normalizeError(errors,ok,msg);
   const prior=task?.completion_evidence,proposed=ledger?.suggested_completion_evidence;
   deny(TASK_STATES.has(task?.status),"Task is not IN_PROGRESS/REVIEW");
-  deny(Array.isArray(prior)&&new Set(prior).size===prior?.length,
-    "Task completion_evidence malformed or duplicated");
-  deny(ledger?.task_id===task?.task_id&&ledger?.sprint_id===sprintId,
-    "Evidence ledger Task/Sprint mismatch");
-  deny(Array.isArray(proposed)&&new Set(proposed).size===proposed?.length,
-    "Evidence references missing or duplicated");
-  deny(Array.isArray(ledger?.duplicates)&&ledger.duplicates.length===0,
-    "Ambiguous duplicated canonical Evidence");
-  deny(Array.isArray(ledger?.stale)&&ledger.stale.length===0,
-    "Stale/out-of-baseline Evidence");
-  deny(Array.isArray(ledger?.dangling_refs)&&ledger.dangling_refs.length===0,
-    "Existing dangling canonical Evidence reference");
+  deny(distinctList(prior),"Task existing references malformed/duplicated");
+  deny(ledgerScopeOK(ledger,task,sprintId),"Evidence ledger Task/Sprint mismatch");
+  deny(distinctList(proposed),"Evidence references missing/duplicated");
+  deny(zeroList(ledger?.duplicates),"Ambiguous duplicated Evidence");
+  deny(zeroList(ledger?.stale),"Stale Evidence");
+  deny(zeroList(ledger?.dangling_refs),"Dangling references");
   const documents=Array.isArray(existingEvidence)?existingEvidence:[];
   const docs=new Map(documents.map(e=>[e?.evidence_id,e]));
-  deny(docs.size===documents.length,"Canonical Evidence IDs must be unique");
-  const approvedPairs=new Map((task?.acceptance_links||[])
-    .map(x=>[x.acceptance_id,x.test_id]));
-  for(const id of [...(prior||[]),...(proposed||[])]){
-    const e=docs.get(id);
-    deny(e?.evidence_id===id && /^EV-SP-P\d+-\d{3}-T\d{3}-\d{3}$/.test(id),
-      "Evidence reference has no exact canonical document: "+id);
-    deny(e?.schema_version===2&&EVIDENCE_STATUSES.has(e?.status),
-      "Evidence document has invalid schema/status: "+id);
-    deny(e?.sprint_id===sprintId&&e?.task_id===task?.task_id&&
-      e?.build_spec_id===task?.build_spec_id,"Evidence scope mismatch: "+id);
-    deny(hex40(e?.source_commit),"Evidence source commit invalid: "+id);
-    deny(Array.isArray(e?.acceptance_ids)&&Array.isArray(e?.test_ids)&&
-      e.acceptance_ids.length===e.test_ids.length &&
-      e.acceptance_ids.every((a,i)=>approvedPairs.get(a)===e.test_ids[i]),
-      "Evidence AC/Test linkage invalid: "+id);
-  }
+  deny(docs.size===documents.length,"Canonical Evidence IDs duplicated");
+  const pairs=new Map((task?.acceptance_links||[]).map(x=>[x.acceptance_id,x.test_id]));
+  for(const id of [...(prior||[]),...(proposed||[])])
+    reviewReference(errors,id,docs,task,sprintId,pairs);
   if(errors.length)return {ok:false,status:"HARD_STOP",errors,add:[],changed:false};
   const add=proposed.filter(id=>!prior.includes(id));
   return {ok:true,status:add.length?"READY_TO_APPEND_REFERENCES":"ALREADY_NORMALIZED",
-    errors:[],add,changed:add.length>0,
-    completion_evidence:[...prior,...add]};
+    errors:[],add,changed:add.length>0,completion_evidence:[...prior,...add]};
 }
 const gh=async (endpoint,token,options={})=>{
   const res=await fetch("https://api.github.com"+endpoint,{
@@ -91,8 +91,11 @@ const samePrBranch=(pr,head)=>[
   pr?.head?.ref!=="main",pr?.head?.repo?.full_name==="NFF98/appf2-build",
   pr?.base?.repo?.full_name==="NFF98/appf2-build",pr?.base?.ref==="main"
 ].every(Boolean);
+const validReconcileRequest=({prNumber,token})=>
+  [Number.isSafeInteger(prNumber),prNumber>0,Boolean(token)].every(Boolean);
+const shouldNotWrite=(plan,apply)=>[!plan?.ok,!plan?.changed,!apply].some(Boolean);
 export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
-  if(!Number.isSafeInteger(prNumber)||prNumber<1||!token)
+  if(!validReconcileRequest({prNumber,token}))
     throw Error("HARD_STOP: missing PR number or GitHub token");
   const repo="/repos/NFF98/appf2-build";
   const pr=await gh(repo+"/pulls/"+prNumber,token);
@@ -103,12 +106,12 @@ export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
   const taskId=pr.body?.match(/^Task:\s*(T\d{3})\b/m)?.[1];
   const path="delivery/sprints/"+sprint.active_sprint+"/tasks.json";
   const doc=readJson(path),task=doc.tasks?.find(t=>t.task_id===taskId);
-  if(!task||!activeLease(sprint,build,task))
+  if(!activeLease(sprint,build,task))
     throw Error("HARD_STOP: active Task lease missing or wrong scope");
   const ledger=ledgerFor(sprint.active_sprint,taskId);
   const plan=planTaskEvidenceReferences({task,sprintId:sprint.active_sprint,
     ledger,existingEvidence:evidenceDocuments()});
-  if(!plan.ok||!plan.changed||!apply)return {...plan,action:apply?"NO_MUTATION":"PLAN_ONLY",
+  if(shouldNotWrite(plan,apply))return {...plan,action:apply?"NO_MUTATION":"PLAN_ONLY",
     head_sha:head,pr_number:prNumber};
   // Directly check live Environment approval; a caller boolean is NEVER enough.
   await verifyLiveGrant({pr,token});
