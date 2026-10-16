@@ -238,13 +238,25 @@ const canonicalDelegationState=({task,sprint,build,grant})=>[
   build?.active_baseline===task?.build_spec_id,build?.implementation_enabled===true,
   ["ACTIVE","REVIEW"].includes(sprint?.status),
   ["IN_PROGRESS","REVIEW"].includes(task?.status)].every(Boolean);
-export function delegatedPremergePolicy({pr,grant,task,sprint,build,localHead,readiness}){
+// Independent live changed-file scope check: a valid Task grant digest alone
+// does not prove that the proposed PR file list stays inside its allowed paths.
+export function taskChangedPathsWithinGrant({changed,task}={}){
+  const allowed=task?.allowed_write_paths;
+  return Array.isArray(changed) && changed.length>0 &&
+    Array.isArray(allowed) && allowed.length>0 &&
+    changed.every(f=>typeof f?.filename==="string" && f.filename.length>0 &&
+      allowed.some(rule=>typeof rule==="string" &&
+        matchesPathRule(f.filename,rule)));
+}
+export function delegatedPremergePolicy({pr,grant,task,sprint,build,localHead,readiness,changedPaths}){
   const errors=[],deny=(yes,why)=>{if(!yes)errors.push(why);};
   deny(isReadyTaskPr(pr),"PR must be Ready, same repo and based on canonical main");
   deny(isTrustedExactHead(pr,localHead),"trusted checkout HEAD differs from live PR HEAD");
   deny(isExactGitHubGrant(grant,pr),"live GitHub Environment grant not bound to exact BASE/HEAD");
   deny(canonicalDelegationState({task,sprint,build,grant}),
     "canonical Task/Sprint/Build state forbids delegation");
+  deny(taskChangedPathsWithinGrant({changed:changedPaths,task}),
+    "live PR files exceed Human-approved Task allowed_write_paths");
   deny(pr?.mergeable===true,"GitHub does not confirm PR is mergeable");
   deny(readiness?.ok===true&&readiness?.head===localHead,
     "exact-HEAD real checks and independent BCE/Local proof missing");
@@ -344,7 +356,7 @@ const revalidateProtectedMerge=async ({root,prNumber,token,head,pr,
     candidateDigest:candidateDigestOf(latest.changed,candidateFileBytes),
     repo:DELEGATED_REPO,verifiedGrant:grant});
   const result=delegatedPremergePolicy({pr:live,grant,task,sprint,build,
-    localHead:head,readiness});
+    localHead:head,readiness,changedPaths:latest.changed});
   if(!result.ok||!readiness.ok)
     throw Error("HARD_STOP: freshly fetched exact-HEAD CI/BCE/Grant was not Ready");
 };
@@ -369,7 +381,8 @@ export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
   const taskId=pr.body?.match(/^Task:\s*(T\d{3})\b/m)?.[1];
   const task=(readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks||[])
     .find(t=>t.task_id===taskId);
-  const result=delegatedPremergePolicy({pr,grant,task,sprint,build,localHead:head,readiness});
+  const result=delegatedPremergePolicy({pr,grant,task,sprint,build,localHead:head,
+    readiness,changedPaths:changed});
   if(!result.ok||!readiness.ok)
     return {...result,decision:"HARD_STOP",errors:[...result.errors,...readiness.errors]};
   const liveAgain=await delegateGitHubJson(root+"/pulls/"+prNumber,token);
