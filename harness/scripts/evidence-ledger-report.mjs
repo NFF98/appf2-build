@@ -1,5 +1,7 @@
-// GOV-REFORM-20261013: Task-PR Evidence ledger as an automatic,
- // read-only report. No Evidence or Task files are mutated. The report is not a PASS.
+// GOV-REFORM-20261013: default Task-PR Evidence reporting is read-only.
+// Explicit --apply can propose narrowly scoped updates only to an existing PR
+// branch after authenticated GitHub Human-grant verification. Never writes Main,
+// invents Product PASS, merges a PR or marks canonical Task closure by itself.
 import fs from "node:fs";
 import {spawnSync,execFileSync} from "node:child_process";
 import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
