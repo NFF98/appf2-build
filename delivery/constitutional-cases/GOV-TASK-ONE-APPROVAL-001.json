@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "111513f01c72731ab0f2d64e2ed944c01c00ebe00890aee570b6767367cd6e2e",
+  "candidate_digest_sha256": "f34a24c9114741b39042aed1c9e8f310abd981ea32cffc5875932ea6ca62e767",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -106,7 +106,8 @@
     "Live PR file scope checks now reject status-missing, rename/copy origin missing, or protected-source renamed/copied into allowed paths both in trusted delegated CHECK/MERGE and L1 Ready; canonical repo-policy governance-only paths are enforced on both endpoints. Synthetic positive/negative matrix, no Human positive E2E.",
     "Unsigned PR Human-grant preflight now uses a pure tested GitHub changed-file origin/destination validator. 13 synthetic cases reject source product files renamed/copied outside src/tests/supabase/generated, missing origin metadata and forged status, not just destination paths; live GitHub Actions remain required before any positive rollout.",
     "Final Ready previously read only first 100 GitHub Check Runs. Now reads complete authenticated comments/files/check-runs with existing trusted delegated executor reader; duplicate/missing/stale inventories HARD_STOP and the same evidence is independently re-read before Merge. An attempt to edit run-final-ready-preflight.sh exceeded the fixed 29-path scope, was rejected by real Governance, and was reverted byte-for-byte to Main. Only originally declared 29 paths remain. Live Human positive E2E NOT_RUN.",
-    "Real GitHub Check Runs showed the same exact HEAD on successful push and skipped pull_request Attack/CodeQL; check_run.pull_requests still linked PR #401. Added API-proven PR-event full-gate origin validation for the four required latest checks (check-run ID/details_url->GitHub Actions run event/path/repo/head/base/PR), at Task Ready admission, delegated CHECK and immediately pre-Merge. Push-only success must HARD_STOP. Synthetic 17 negative + 1 positive, not Human positive E2E."
+    "Real GitHub Check Runs showed the same exact HEAD on successful push and skipped pull_request Attack/CodeQL; check_run.pull_requests still linked PR #401. Added API-proven PR-event full-gate origin validation for the four required latest checks (check-run ID/details_url->GitHub Actions run event/path/repo/head/base/PR), at Task Ready admission, delegated CHECK and immediately pre-Merge. Push-only success must HARD_STOP. Synthetic 17 negative + 1 positive, not Human positive E2E.",
+    "L3 non-Task governance PR Final Ready previously admitted synthetic Fast-loop PASS without requiring authenticated PR-event Full Gate provenance. Now it requires exact four pull_request workflow run proofs on PR, BASE and HEAD, shared with L1 and delegated Merge; six real GitHub negative API checks include rejection of draft PR/branch-push-green masquerade. Does not mint Human L3 approval or positive E2E."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -168,6 +169,7 @@
     "l1_ready_rename_origin_scope": "CANONICAL_REPO_POLICY_GOVERNANCE_ONLY_SOURCE_DESTINATION_FAIL_CLOSED_SYNTHETIC_CANDIDATE",
     "unsigned_pr_rename_source_admission": "GITHUB_CHANGED_FILES_SOURCE_AND_DESTINATION_CHECK_SYNTHETIC; LIVE_NO_TASK_NEGATIVE_INTEGRATION_NOT_YET_RUN",
     "final_ready_complete_live_inventory": "TRUSTED_GITHUB_ALL_PAGES_SHARED_WITH_MERGE; SYNTHETIC_WIRING_AND_REAL_API_NEGATIVE_PASS; HUMAN_POSITIVE_READY_NOT_RUN",
-    "full_ready_pr_run_origin": "AUTHENTICATED_GITHUB_ACTION_RUN_EVENT_PATH_HEAD_BASE_PR_REQUIRED_NOT_BRANCH_PUSH; CANDIDATE_SYNTHETIC_AND_LIVE_API_DRAFT_NEGATIVE; HUMAN_READY_E2E_NOT_RUN"
+    "full_ready_pr_run_origin": "AUTHENTICATED_GITHUB_ACTION_RUN_EVENT_PATH_HEAD_BASE_PR_REQUIRED_NOT_BRANCH_PUSH; CANDIDATE_SYNTHETIC_AND_LIVE_API_DRAFT_NEGATIVE; HUMAN_READY_E2E_NOT_RUN",
+    "l3_final_ready_pr_full_gates": "EXACT_GITHUB_PR_EVENT_RUN_PROVENANCE_REQUIRED; 9_SYNTHETIC_NEGATIVES_PLUS_1_POSITIVE; LIVE_DRAFT_REAL_API_NEGATIVE_6_OF_6_EXPECTED; HUMAN_L3_STILL_PENDING"
   }
 }
