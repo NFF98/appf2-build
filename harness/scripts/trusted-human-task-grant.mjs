@@ -13,6 +13,31 @@ export const trustedWorkflowPath=run=>{
   return path===WORKFLOW || path==="NFF98/appf2-build/"+WORKFLOW;
 };
 export const HUMAN="NFF98";
+const PRODUCT_PATH=/^(?:src\/|tests\/|supabase\/|generated\/)/;
+const VALID_CHANGED_STATUSES=new Set(["added","modified","removed","renamed",
+  "copied","changed","unchanged"]);
+// A PR without a Task declaration must not hide product writes by moving or
+// copying src/tests/etc into a governance-looking destination path.
+export function unsignedPrProductScope(pages){
+  if(!Array.isArray(pages) || pages.length===0 ||
+    !pages.every(Array.isArray))return {ok:false,reason:"GitHub file pages unavailable"};
+  const files=pages.flat();
+  if(!files.length||files.some(f=>!VALID_CHANGED_STATUSES.has(f?.status) ||
+    typeof f.filename!=="string"||!f.filename))
+    return {ok:false,reason:"GitHub changed-file inventory malformed"};
+  if(files.some(f=>
+    (["renamed","copied"].includes(f.status)) !==
+      (typeof f.previous_filename==="string"&&f.previous_filename.length>0)))
+    return {ok:false,reason:"GitHub changed-file origin metadata malformed"};
+  const product=files.filter(f=>
+    PRODUCT_PATH.test(f.filename) ||
+    (f.previous_filename!=null && PRODUCT_PATH.test(f.previous_filename)));
+  return product.length?{ok:false,reason:"Product source/destination requires Task Human grant",
+    paths:product.map(f=>f.previous_filename?
+      f.previous_filename+" -> "+f.filename:f.filename)}:
+    {ok:true,reason:"Non-product PR (L2/L3 authority still required)",paths:[]};
+}
+
 const hex40=x=>/^[a-f0-9]{40}$/.test(x||"");
 const hex64=x=>/^[a-f0-9]{64}$/.test(x||"");
 const taskIdOK=x=>/^T\d{3}$/.test(x||"");
