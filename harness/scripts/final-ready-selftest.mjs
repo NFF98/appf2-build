@@ -1,7 +1,7 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,completeCheckRunPages} from "./final-ready-preflight.mjs";
+import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
 const live={number:395,state:"open",draft:false,head:{sha:HEAD,repo:{full_name:REPO}},base:{sha:BASE,ref:"main"}};
@@ -96,37 +96,20 @@ for(const v of ["failure","skipped","neutral"]){
   assert.equal(bceCiConsistency({head:HEAD,checks:required.map((x,i)=>run(x,i?v:"success")),required,bcePass:true}).reason,"BCE_CI_MISMATCH");
 }
 assert.equal(bceCiConsistency({head:HEAD,checks:[],required,bcePass:true}).reason,"BCE_CI_MISMATCH");
-// Final Ready receives a complete check-run inventory, not only GitHub page 1.
-const checkRow=id=>({id,name:"ci",head_sha:HEAD,status:"completed",
-  conclusion:"success"});
-const checkPage=(total,ids)=>({total_count:total,check_runs:ids.map(checkRow)});
-const hundred=Array.from({length:100},(_,i)=>i+1);
-const fullPages=[checkPage(103,hundred),checkPage(103,[101,102,103])];
-assert.equal(completeCheckRunPages(fullPages).check_runs.length,103);
-assert.equal(completeCheckRunPages([checkPage(0,[])]).total_count,0);
-assert.equal(completeCheckRunPages([checkPage(100,hundred)]).total_count,100);
-const invalidChecks=[
-  fullPages.slice(0,1),
-  [checkPage(103,hundred),checkPage(104,[101,102,103])],
-  [checkPage(103,hundred),checkPage(103,[101,102])],
-  [checkPage(103,hundred),checkPage(103,[100,102,103])],
-  [checkPage(103,hundred),checkPage(103,[101,102,0])],
-  [checkPage(103,hundred),checkPage(103,[101,102,null])],
-  [checkPage(0,[]),checkPage(0,[])],
-  [checkPage(1001,hundred)],
-  [],
-  null
-];
-for(const cases of invalidChecks)assert.throws(
-  ()=>completeCheckRunPages(cases),/HARD_STOP/,
-  "incomplete Check Run pagination must never pass Ready");
+// Final Ready must use the SAME authenticated, complete GitHub pagination
+// as the trusted protected-Merge executor, rather than Shell's first 100 runs.
+const readySource=readFileSync("harness/scripts/final-ready-preflight.mjs","utf8");
+const mergeSource=readFileSync("harness/scripts/task-pr-lifecycle.mjs","utf8");
+assert.ok(readySource.includes("const {comments,changed,checks}=await readLiveDelegationEvidence(") &&
+  readySource.includes("prNumber:live.number,head:live.head?.sha") &&
+  mergeSource.includes("fetchCompleteGitHubChecks(") &&
+  mergeSource.includes("completeApiInventory({comments,changed,checks})"),
+  "Ready and protected Merge must share complete authenticated GitHub evidence");
 const readyShell=readFileSync("harness/scripts/run-final-ready-preflight.sh","utf8");
-assert.ok(readyShell.includes('check-runs?per_page=100" --paginate --slurp') &&
-  readyShell.includes("completeCheckRunPages") &&
-  readyShell.includes('"$tmp/check-pages.json" "$tmp/checks.json"'),
-  "Final Ready shell must normalize every GitHub Check Run page");
-console.log("Final Ready Check Run pages: "+(invalidChecks.length+3)+
-  " synthetic positive/negative PASS; live pagination awaited.");
+assert.ok(readyShell.includes('check-runs?per_page=100" >"$tmp/checks.json"'),
+  "do not expand the Human-authorized 29-path governance scope into the shell");
+console.log("Ready/Protected Merge share authenticated complete GitHub pagination: "+
+  "PASS (static wiring; live API also checked by Governance, not Human positive E2E).");
 // Verify the real Ready-for-review wiring, not just synthetic inputs. Otherwise
 // same-HEAD preflight may deadlock after Draft -> Ready even if evidence exists.
 for(const filename of ["ci.yml","codeql.yml","governance-gate.yml","attack-dry-run.yml"]){
