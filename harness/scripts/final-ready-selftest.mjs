@@ -1,7 +1,7 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness,inspectReadyRecheckBinding} from "./final-ready-preflight.mjs";
+import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness,inspectReadyRecheckBinding,inspectReadyRecheckFreshness} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
 const live={number:395,state:"open",draft:false,head:{sha:HEAD,repo:{full_name:REPO}},base:{sha:BASE,ref:"main"}};
@@ -204,6 +204,31 @@ const recheckDenied=[
 for(const patch of recheckDenied)
   assert.equal(inspectReadyRecheckBinding({...positiveRecheck,...patch}).ok,false,
     "Untrusted dispatch cannot fabricate Ready PR identity");
+// Race defense: even after initial authorized binding, the live PR or Main
+// may change during GitHub's multiple evidence-page and run-origin reads.
+const freshInput={beforeLive:liveRecheck,beforeMain:positiveRecheck.main,
+  afterLive:liveRecheck,afterMain:positiveRecheck.main,
+  ...positiveRecheck};
+assert.equal(inspectReadyRecheckFreshness(freshInput).ok,true);
+const staleReadyCases=[
+  {afterLive:{...liveRecheck,head:{...liveRecheck.head,sha:BASE}}},
+  {afterLive:{...liveRecheck,base:{...liveRecheck.base,sha:HEAD}}},
+  {afterLive:{...liveRecheck,head:{...liveRecheck.head,ref:"other-branch"}}},
+  {afterLive:{...liveRecheck,base:{...liveRecheck.base,ref:"other"}}},
+  {afterLive:{...liveRecheck,draft:true}},
+  {afterLive:{...liveRecheck,state:"closed"}},
+  {afterLive:{...liveRecheck,number:401}},
+  {afterLive:{...liveRecheck,head:{...liveRecheck.head,
+    repo:{full_name:"other/repo"}}}},
+  {afterMain:{commit:{sha:HEAD}}},
+  {afterLive:null},
+  {afterMain:null}
+];
+for(const drift of staleReadyCases)
+  assert.equal(inspectReadyRecheckFreshness({...freshInput,...drift}).ok,false,
+    "Live changed mid-recheck must HARD STOP");
+console.log("Final Ready post-evidence live PR/Main freshness: 1 positive + "+
+  staleReadyCases.length+" drift rejections PASS (synthetic).");
 console.log("Final Ready delayed evidence recheck: 1 positive + "+
   recheckDenied.length+" synthetic false-ref/Main/identity cases PASS.");
 // Verify the real Ready-for-review wiring, not just synthetic inputs. Otherwise
@@ -306,7 +331,10 @@ assert.ok(!recheckJob.includes(": write") && !recheckJob.includes("gh pr merge")
 const cliSource=readFileSync("harness/scripts/final-ready-preflight.mjs","utf8");
 assert.ok(cliSource.includes('eventName==="workflow_dispatch" && val("recheck-pr")!==null') &&
   cliSource.includes("inspectReadyRecheckBinding({requested,event,live,main,repo,ref,sha})") &&
-  cliSource.includes("inspectReadyWithLiveApi({event:trustedEvent,live,repo,token})"),
+  cliSource.includes("inspectReadyWithLiveApi({") &&
+  cliSource.includes("inspectReadyRecheckFreshness({") &&
+  cliSource.includes('liveReadyApi("/pulls/"+requested,token)') &&
+  cliSource.includes('liveReadyApi("/branches/main",token)'),
   "recheck must authenticate PR, Main and branch before reusing production Ready admission");
 console.log("Final Ready on-demand actual workflow wiring and no-ci-shadow: PASS (static, not Human E2E).");
 assert.ok(!ciGeneric.includes("cloud-evidence-admission:") &&
