@@ -6,7 +6,8 @@ import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck,
   writeExistingProtectedClosureCandidate} from "./evidence-ledger-report.mjs";
 import {pathToFileURL} from "node:url";
-import {inspectGitHubHumanGrant,taskScopeDigest,githubCompareProvesAncestor,ENVIRONMENT,WORKFLOW}
+import {inspectGitHubHumanGrant,taskScopeDigest,githubCompareProvesAncestor,
+  inspectMergedMainAncestry,ENVIRONMENT,WORKFLOW}
   from "./trusted-human-task-grant.mjs";
 import {inspectIssuance} from "./task-human-grant-issuance.mjs";
 import {inspectLiveGitHubRequiredChecks} from "./final-ready-preflight.mjs";
@@ -103,6 +104,31 @@ export function runTrustedGrantSelfTests(){
     total++;
   }
   assert.equal(githubCompareProvesAncestor(null),false);total++;
+  // Authentic Main merge ancestry: GitHub compare receipt must bind *both*
+  // SHA endpoints and the current local Main, not a caller-supplied Boolean.
+  const merge="d".repeat(40),current="e".repeat(40);
+  const positive={mergeSha:merge,mainSha:current,localHead:current,
+    compare:{status:"ahead",base_commit:{sha:merge},
+      merge_base_commit:{sha:merge}}};
+  assert.equal(inspectMergedMainAncestry(positive),true);total++;
+  const receipts=[
+    {compare:{...positive.compare,status:"identical"},mainSha:merge,localHead:merge},
+    {compare:{...positive.compare,status:"diverged"}},
+    {compare:{...positive.compare,status:"behind"}},
+    {compare:{...positive.compare,base_commit:{sha:current}}},
+    {compare:{...positive.compare,merge_base_commit:{sha:current}}},
+    {localHead:"f".repeat(40)},{mergeSha:"not-a-sha"},
+    {mainSha:"not-a-sha"},{compare:null}
+  ];
+  for(const patch of receipts){
+    const data={...positive,...patch};
+    const expected=data.mainSha===merge&&data.localHead===merge&&
+      data.compare?.status==="identical"&&
+      data.compare?.base_commit?.sha===merge;
+    assert.equal(inspectMergedMainAncestry(data),Boolean(expected),
+      "Main ancestry must fail closed unless exact GitHub compare+checkout agrees");
+    total++;
+  }
   const sameHead=fresh();sameHead.run.head_sha=sameHead.pr.head.sha;
   sameHead.grant.base_sha=sameHead.run.head_sha;yes(sameHead);
   no(x=>{x.now=x.grant.expires_at_unix+1;});
