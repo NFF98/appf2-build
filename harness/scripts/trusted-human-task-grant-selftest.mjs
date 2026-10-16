@@ -46,7 +46,8 @@ function runCanonicalMainSnapshotCases(){
     {sprint_id:"SP-P1-003",tasks:[{task_id:"T009",status:"REVIEW"}]}];
   const run=(f=()=>{})=>{
     const data={mainSha:main,baseSha:main,
-      localDocs:structuredClone(sample),remoteDocs:structuredClone(sample)};
+      localDocs:JSON.parse(JSON.stringify(sample)),
+      remoteDocs:JSON.parse(JSON.stringify(sample))};
     f(data);return mainControlStateMatch(data);
   };
   assert.equal(run(),true);
