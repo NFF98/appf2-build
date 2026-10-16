@@ -76,7 +76,8 @@ export function runConditionalApprovalSelfTests(){
     base:{ref:"main",sha:BASE,repo:{full_name:"NFF98/appf2-build"}},
     head:{sha:HEAD,repo:{full_name:"NFF98/appf2-build"}},mergeable:true};
   const liveGrant={ok:true,decision:"VERIFIED_GITHUB_HUMAN_APPROVAL",
-    source_head:BASE,current_head:HEAD,task_id:"T001"};
+    source_head:BASE,base_sha:BASE,base_ancestor:true,
+    current_head:HEAD,task_id:"T001"};
   const task={task_id:"T001",status:"REVIEW",build_spec_id:"BS-P1-025"};
   const sprint={active_sprint:"SP-P1-003",active_task:"T001",
     active_build_spec:"BS-P1-025",status:"REVIEW"};
@@ -85,6 +86,12 @@ export function runConditionalApprovalSelfTests(){
     readiness:{ok:true,head:HEAD}};
   if(!delegatedPremergePolicy(valid).ok)
     throw Error("trusted premerge policy positive rejected");
+  // A verified Main advance does NOT require another Task Human approval.
+  const advanced=JSON.parse(JSON.stringify(valid));
+  advanced.pr.base.sha="e".repeat(40);
+  advanced.grant.base_sha=advanced.pr.base.sha;
+  if(!delegatedPremergePolicy(advanced).ok)
+    throw Error("verified Main fast-forward rejected without scope change");
   let negativeDelegates=0;
   const denyPremerge=mutation=>{
     const x=JSON.parse(JSON.stringify(valid));mutation(x);
@@ -92,7 +99,9 @@ export function runConditionalApprovalSelfTests(){
     negativeDelegates++;
   };
   denyPremerge(x=>{x.grant.ok=false;});
-  denyPremerge(x=>{x.grant.source_head="f".repeat(40);});
+  denyPremerge(x=>{x.grant.source_head="not-a-sha";});
+  denyPremerge(x=>{x.grant.base_sha="f".repeat(40);});
+  denyPremerge(x=>{x.grant.base_ancestor=false;});
   denyPremerge(x=>{x.grant.current_head="f".repeat(40);});
   denyPremerge(x=>{x.pr.draft=true;});
   denyPremerge(x=>{x.pr.mergeable=false;});
