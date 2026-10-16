@@ -355,24 +355,38 @@ export function bceCiConsistency({head,checks,required,bcePass}){
 }
 // workflow_dispatch rechecks are read-only. A manually supplied PR number is
 // not proof: branch, exact checkout SHA and live Main must all agree with GitHub.
+const recheckInputMatches=({requested,event,live})=>[
+  typeof requested==="string",
+  /^[1-9][0-9]{0,7}$/.test(requested||""),
+  event?.inputs?.final_ready_pr_number===requested,
+  live?.number===Number(requested)
+].every(Boolean);
+const recheckPrSourceMatches=(live,repo)=>[
+  live?.state==="open",live?.draft===false,
+  live?.base?.ref==="main",
+  live?.base?.repo?.full_name===repo,
+  live?.head?.repo?.full_name===repo
+].every(Boolean);
+const recheckBranchMatches=(live,ref,sha)=>[
+  HEX40.test(live?.head?.sha||""),
+  live?.head?.sha===sha,
+  ref==="refs/heads/"+live?.head?.ref
+].every(Boolean);
+const recheckMainMatches=(live,main)=>[
+  HEX40.test(live?.base?.sha||""),
+  main?.commit?.sha===live?.base?.sha
+].every(Boolean);
 export function inspectReadyRecheckBinding({requested,event,live,main,
   repo,ref,sha}={}){
   const errors=[];
   assertion(repo==="NFF98/appf2-build","recheck repository not canonical",errors);
-  assertion(typeof requested==="string" && /^[1-9][0-9]{0,7}$/.test(requested) &&
-    event?.inputs?.final_ready_pr_number===requested &&
-    live?.number===Number(requested),"recheck PR input not bound to event",errors);
-  assertion(live?.state==="open" && live?.draft===false,
-    "recheck PR is not open and Ready",errors);
-  assertion(live?.base?.ref==="main" &&
-    live?.base?.repo?.full_name===repo &&
-    live?.head?.repo?.full_name===repo,"recheck PR base/fork mismatch",errors);
-  assertion(HEX40.test(live?.head?.sha||"") &&
-    live?.head?.sha===sha &&
-    ref==="refs/heads/"+live?.head?.ref,
+  assertion(recheckInputMatches({requested,event,live}),
+    "recheck PR input not bound to event",errors);
+  assertion(recheckPrSourceMatches(live,repo),
+    "recheck PR is not open/Ready on the canonical base",errors);
+  assertion(recheckBranchMatches(live,ref,sha),
     "recheck checked-out ref does not match live PR HEAD",errors);
-  assertion(HEX40.test(live?.base?.sha||"") &&
-    main?.commit?.sha===live?.base?.sha,
+  assertion(recheckMainMatches(live,main),
     "recheck PR BASE is no longer canonical live Main",errors);
   return {ok:!errors.length,errors};
 }
