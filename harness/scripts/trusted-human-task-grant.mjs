@@ -125,6 +125,21 @@ const gh=async (api,token)=>{
   if(!res.ok)throw Error("GitHub evidence fetch failed (fail closed): "+res.status+" "+api);
   return res.json();
 };
+export const githubCompareProvesAncestor=compare=>
+  ["ahead","identical"].includes(compare?.status);
+const grantHeadAncestor=async ({run,pr,phase,token,root})=>{
+  if(!hex40(run?.head_sha)||!hex40(pr?.head?.sha))return false;
+  if(phase==="POST_MERGE_CLOSURE"){
+    const compare=await gh("/repos/NFF98/appf2-build/compare/"+
+      run.head_sha+"..."+pr.head.sha,token);
+    return githubCompareProvesAncestor(compare);
+  }
+  try{
+    execFileSync("git",["merge-base","--is-ancestor",run.head_sha,pr.head.sha],
+      {cwd:root,stdio:"ignore"});
+    return true;
+  }catch{return false;}
+};
 const isMergeOnLiveMain=async ({pr,token,root})=>{
   const main=await gh("/repos/NFF98/appf2-build/branches/main",token);
   const mainSha=main?.commit?.sha;
@@ -154,14 +169,7 @@ export async function verifyLiveGrant({pr,token,root=".",phase="ACTIVE_PR"}){
   ]);
   // The Human-approved run itself is canonical; no mutable or absent grant JSON.
   const grant=grantFromRun(run,task);
-  let ancestor=false;
-  if(hex40(run?.head_sha)){
-    try{
-      execFileSync("git",["merge-base","--is-ancestor",run.head_sha,
-        pr.head.sha],{cwd:root,stdio:"ignore"});
-      ancestor=true;
-    }catch { /* HARD STOP */ }
-  }
+  const ancestor=await grantHeadAncestor({run,pr,phase,token,root});
   const mergedOnMain=phase==="POST_MERGE_CLOSURE"
     ?await isMergeOnLiveMain({pr,token,root}):false;
   const report=inspectGitHubHumanGrant({run,approvals,environment,grant,
