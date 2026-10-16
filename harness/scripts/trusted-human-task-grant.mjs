@@ -12,6 +12,22 @@ export const HUMAN="NFF98";
 const hex40=x=>/^[a-f0-9]{40}$/.test(x||"");
 const hex64=x=>/^[a-f0-9]{64}$/.test(x||"");
 const taskIdOK=x=>/^T\d{3}$/.test(x||"");
+
+export function grantIdentityFromRun(run){
+  const m=/^APPF2-L1\|(T\d{3})\|(SP-P\d+-\d{3})\|([a-f0-9]{64})$/.exec(run?.display_title||"");
+  return m?{task_id:m[1],sprint_id:m[2],scope_sha256:m[3]}:null;
+}
+// Reconstruct from GitHub's immutable run name + run timestamp; no pre-written
+// delivery/task-grants/Txxx.json, AI comment or caller-supplied true is trusted.
+export function grantFromRun(run,task){
+  const identity=grantIdentityFromRun(run),created=Date.parse(run?.created_at||"");
+  const issued=created/1000;
+  if(!identity||!task?.build_spec_id||!Number.isSafeInteger(issued)||!hex40(run?.head_sha))
+    return null;
+  return {schema:"APPF2-TRUSTED-TASK-GRANT-1",...identity,
+    build_spec_id:task.build_spec_id,base_sha:run.head_sha,
+    approved_at_unix:issued,expires_at_unix:issued+30*86400};
+}
 export const taskScopeDigest=task=>crypto.createHash("sha256").update(JSON.stringify({
   task_id:task.task_id,build_spec_id:task.build_spec_id,
   allowed_write_paths:[...(task.allowed_write_paths||[])].sort(),
@@ -30,6 +46,7 @@ const requiredReviewerConfigured=env=>{
 const authenticGrantWorkflow=run=>
   run?.event==="workflow_dispatch" &&
   run?.conclusion==="success" &&
+  run?.head_branch==="main" &&
   run?.repository?.full_name==="NFF98/appf2-build" &&
   run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW) &&
   hex40(run?.head_sha);
@@ -41,8 +58,6 @@ const latestApprovedEnvironmentReview=reviews=>{
 };
 const grantFormatValid=g=>g?.schema==="APPF2-TRUSTED-TASK-GRANT-1" &&
   taskIdOK(g?.task_id)&&hex64(g?.scope_sha256)&&hex40(g?.base_sha);
-const grantUnchanged=(original,g)=>original!==null&&typeof original==="object"&&
-  JSON.stringify(original)===JSON.stringify(g);
 const activeIdentityMatches=(task,sprint,grant)=>
   task?.task_id===grant?.task_id&&
   task?.build_spec_id===grant?.build_spec_id&&
@@ -64,13 +79,15 @@ const ttlValid=(g,now)=>Number.isSafeInteger(now)&&
   Number.isSafeInteger(g?.expires_at_unix)&&
   now>=g.approved_at_unix&&now<=g.expires_at_unix&&
   g.expires_at_unix-g.approved_at_unix<=30*86400;
-export function inspectGitHubHumanGrant({run,approvals,environment,grant,original,task,sprint,build,pr,ancestor,now}){
+export function inspectGitHubHumanGrant({run,approvals,environment,grant,task,sprint,build,pr,ancestor,now}){
   const errors=[],deny=(p,m)=>{if(!p)errors.push(m);};
   deny(requiredReviewerConfigured(environment),"Environment 缺少 NFF98 Required reviewer");
   deny(authenticGrantWorkflow(run),"非官方成功的 Task Human grant workflow");
   deny(latestApprovedEnvironmentReview(approvals),"GitHub 真實核准不存在或撤銷");
   deny(grantFormatValid(grant),"Task 核准描述不合法");
-  deny(grantUnchanged(original,grant),"核准後 Task 授權內容遭修改");
+  const canonical=grantFromRun(run,task);
+  deny(canonical!==null&&JSON.stringify(grant)===JSON.stringify(canonical),
+    "授權資訊沒有與 GitHub 真實 run-name / source SHA / timestamp 精確綁定");
   deny(activeExecutionMatches(task,sprint,build,grant),"Task/Sprint/Build 執行權變更");
   deny(task&&grant?.scope_sha256===taskScopeDigest(task),"AC/Test/Allowed path Scope 不一致");
   deny(grantedPrMatches(pr,grant),"PR 不屬於已授權 Task");
@@ -94,8 +111,7 @@ export async function verifyLiveGrant({pr,token,root="."}){
   if(!id)throw Error("Task-Grant-Run 缺失；不得擅自當作 Human 核准");
   const taskId=pr.body.match(/^Task:\s*(T\d{3})\b/m)?.[1];
   if(!taskId)throw Error("PR Task 身份缺失");
-  const path="delivery/task-grants/"+taskId+".json";
-  const grant=json(path),sprint=json("delivery/CURRENT-SPRINT.json");
+  const sprint=json("delivery/CURRENT-SPRINT.json");
   const build=json("build-spec/CURRENT.json");
   const task=(json("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks||[])
     .find(t=>t.task_id===taskId);
@@ -105,17 +121,17 @@ export async function verifyLiveGrant({pr,token,root="."}){
     gh(prefix+"/actions/runs/"+id+"/approvals",token),
     gh(prefix+"/environments/"+ENVIRONMENT,token)
   ]);
-  let original=null,ancestor=false;
+  // The Human-approved run itself is canonical; no mutable or absent grant JSON.
+  const grant=grantFromRun(run,task);
+  let ancestor=false;
   if(hex40(run?.head_sha)){
     try{
-      const src=execFileSync("git",["show",run.head_sha+":"+path],{encoding:"utf8",cwd:root});
-      original=JSON.parse(src);
       execFileSync("git",["merge-base","--is-ancestor",run.head_sha,
         pr.head.sha],{cwd:root,stdio:"ignore"});
       ancestor=true;
     }catch { /* HARD STOP */ }
   }
-  const report=inspectGitHubHumanGrant({run,approvals,environment,grant,original,
+  const report=inspectGitHubHumanGrant({run,approvals,environment,grant,
     task,sprint,build,pr,ancestor,now:Math.floor(Date.now()/1000)});
   if(!report.ok)throw Error("可信 Human Task 授權：HARD STOP\n"+
     report.errors.join("\n"));
