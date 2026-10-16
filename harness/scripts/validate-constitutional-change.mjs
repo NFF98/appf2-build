@@ -129,7 +129,7 @@ export const gov16TestOnlyInvocation=({eventName,ref,event}={})=>{
   if(eventName!=="pull_request")return false;
   const pr=event?.pull_request;
   return [
-    pr?.draft===true,
+    pr?.draft===true,pr?.state==="open",
     pr?.base?.ref==="main",
     pr?.base?.sha===GOV16_TEST_ONLY_BASE,
     pr?.head?.ref==="governance/task-one-approval-20261016",
@@ -276,7 +276,7 @@ const testGov392TestOnly=()=>{
       scope_exception:{lane:"GOVERNANCE_REFORM",covered_gates:["CHANGE_SCOPE"],never_converts_fail_or_untested_to_pass:true}};
     save(GOV16_TEST_ONLY_DOCKET,JSON.stringify(docket));
     process.env.GITHUB_EVENT_NAME="pull_request";process.env.APPF2_GOV16_TEST_PHASE="1";
-    const draftEvent={pull_request:{draft:true,
+    const draftEvent={pull_request:{draft:true,state:"open",
       head:{ref:"governance/task-one-approval-20261016",
         repo:{full_name:"NFF98/appf2-build"}},
       base:{ref:"main",sha:GOV16_TEST_ONLY_BASE,
@@ -306,7 +306,6 @@ const testGov392TestOnly=()=>{
       {pull_request:{...draftEvent.pull_request,state:"closed",draft:true}}
     ]){
       save("github-event.json",JSON.stringify(fake));
-      if(fake.pull_request.state==="closed")continue;
       if(isGov392TestOnly(args))
         throw Error("GOV16 TEST ONLY: forged PR identity accepted");
     }
