@@ -453,6 +453,7 @@ function protectedClosureWriterCases(){
     ["Evidence mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].completion_evidence=[];}).ok],
     ["Other Task mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[1].status="BLOCKED";}).ok],
     ["Task definition mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].build_spec_id="BS-P1-026";}).ok],
+    ["Root metadata mutation rejected",false,()=>run(x=>{x.controlDoc.schema_version=999;}).ok],
     ["Unexpected status transition rejected",false,()=>run(x=>{x.controlDoc.tasks[0].status="VERIFIED";}).ok],
     ["Unapproved closure status proposal forbidden",false,()=>run(x=>{x.plan.decision="HARD_STOP";}).ok]
   ],fn=>fn());
