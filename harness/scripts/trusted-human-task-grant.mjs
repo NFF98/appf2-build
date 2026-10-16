@@ -78,16 +78,26 @@ const activeExecutionMatches=(task,sprint,build,grant)=>
   build?.implementation_enabled===true &&
   ["ACTIVE","REVIEW"].includes(sprint?.status)&&
   ["IN_PROGRESS","REVIEW"].includes(task?.status);
-const grantedPrMatches=(pr,g)=>pr?.state==="open"&&
-  pr?.base?.ref==="main"&&
+const grantPrIdentityOK=(pr,g)=>pr?.base?.ref==="main"&&
   /^Task:\s*T\d{3}\b/m.test(pr?.body||"")&&
   new RegExp("^Task:\\s*"+g?.task_id+"\\b","m").test(pr?.body||"");
+const grantPrPhaseOK=(pr,phase,mergedOnMain)=>{
+  if(phase==="ACTIVE_PR")return pr?.state==="open"&&pr?.merged!==true;
+  if(phase==="POST_MERGE_CLOSURE")return [
+    pr?.state==="closed",pr?.merged===true,
+    hex40(pr?.merge_commit_sha),Boolean(pr?.merged_at),mergedOnMain===true
+  ].every(Boolean);
+  return false;
+};
+const grantedPrMatches=(pr,g,phase,mergedOnMain)=>
+  grantPrIdentityOK(pr,g)&&grantPrPhaseOK(pr,phase,mergedOnMain);
 const ttlValid=(g,now)=>Number.isSafeInteger(now)&&
   Number.isSafeInteger(g?.approved_at_unix)&&
   Number.isSafeInteger(g?.expires_at_unix)&&
   now>=g.approved_at_unix&&now<=g.expires_at_unix&&
   g.expires_at_unix-g.approved_at_unix<=30*86400;
-export function inspectGitHubHumanGrant({run,approvals,environment,grant,task,sprint,build,pr,ancestor,now}){
+export function inspectGitHubHumanGrant({run,approvals,environment,grant,task,sprint,build,pr,ancestor,now,
+  phase="ACTIVE_PR",mergedOnMain=false}){
   const errors=[],deny=(p,m)=>{if(!p)errors.push(m);};
   deny(requiredReviewerConfigured(environment),"Environment 缺少 NFF98 Required reviewer");
   deny(authenticGrantWorkflow(run),"非官方成功的 Task Human grant workflow");
@@ -98,7 +108,8 @@ export function inspectGitHubHumanGrant({run,approvals,environment,grant,task,sp
     "授權資訊沒有與 GitHub 真實 run-name / source SHA / timestamp 精確綁定");
   deny(activeExecutionMatches(task,sprint,build,grant),"Task/Sprint/Build 執行權變更");
   deny(task&&grant?.scope_sha256===taskScopeDigest(task),"AC/Test/Allowed path Scope 不一致");
-  deny(grantedPrMatches(pr,grant),"PR 不屬於已授權 Task");
+  deny(grantedPrMatches(pr,grant,phase,mergedOnMain),
+    "PR 不屬於已授權 Task 或 POST_MERGE_CLOSURE 缺少 GitHub Main 合併證明");
   deny(ancestor===true && hex40(pr?.head?.sha),"Human 批准 SHA 非當前 Task 分支祖先");
   deny(ttlValid(grant,now),"Task 授權逾期或時間不合法");
   return {ok:errors.length===0,decision:errors.length?"HARD_STOP":"VERIFIED_GITHUB_HUMAN_APPROVAL",errors};
@@ -114,7 +125,19 @@ const gh=async (api,token)=>{
   if(!res.ok)throw Error("GitHub evidence fetch failed (fail closed): "+res.status+" "+api);
   return res.json();
 };
-export async function verifyLiveGrant({pr,token,root="."}){
+const isMergeOnLiveMain=async ({pr,token,root})=>{
+  const main=await gh("/repos/NFF98/appf2-build/branches/main",token);
+  const mainSha=main?.commit?.sha;
+  if(!hex40(mainSha)||!hex40(pr?.merge_commit_sha))return false;
+  try{
+    const local=execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim();
+    if(local!==mainSha)return false;
+    execFileSync("git",["merge-base","--is-ancestor",pr.merge_commit_sha,local],
+      {cwd:root,stdio:"ignore"});
+    return true;
+  }catch{return false;}
+};
+export async function verifyLiveGrant({pr,token,root=".",phase="ACTIVE_PR"}){
   const id=pr?.body?.match(/^Task-Grant-Run:\s*(\d{1,14})\s*$/m)?.[1];
   if(!id)throw Error("Task-Grant-Run 缺失；不得擅自當作 Human 核准");
   const taskId=pr.body.match(/^Task:\s*(T\d{3})\b/m)?.[1];
@@ -139,12 +162,15 @@ export async function verifyLiveGrant({pr,token,root="."}){
       ancestor=true;
     }catch { /* HARD STOP */ }
   }
+  const mergedOnMain=phase==="POST_MERGE_CLOSURE"
+    ?await isMergeOnLiveMain({pr,token,root}):false;
   const report=inspectGitHubHumanGrant({run,approvals,environment,grant,
-    task,sprint,build,pr,ancestor,now:Math.floor(Date.now()/1000)});
+    task,sprint,build,pr,ancestor,phase,mergedOnMain,
+    now:Math.floor(Date.now()/1000)});
   if(!report.ok)throw Error("可信 Human Task 授權：HARD STOP\n"+
     report.errors.join("\n"));
   return {...report,run_id:Number(id),approver:HUMAN,task_id:taskId,
-    source_head:run.head_sha,current_head:pr.head.sha};
+    source_head:run.head_sha,current_head:pr.head.sha,phase,mergedOnMain};
 }
 async function cli(){
   const token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
