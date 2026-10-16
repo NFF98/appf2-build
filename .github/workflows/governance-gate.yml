@@ -41,7 +41,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           APPF2_NEGATIVE_PR_NUMBER: "401"
-        run: node harness/scripts/live-github-negative-e2e.mjs
+        run: node harness/scripts/trusted-human-task-grant-selftest.mjs --live-negative
       - name: Run repository gates
         env:
           APPF2_CONSTITUTION_PUBKEY_B64: ${{ vars.APPF2_CONSTITUTION_PUBKEY_B64 }}
