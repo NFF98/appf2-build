@@ -13,7 +13,8 @@ import {
 } from "./task-pr-lifecycle.mjs";
 import { selectImpactedTests } from "./select-impacted-tests.mjs";
 import { buildEvidenceLedger } from "./evidence-ledger.mjs";
-import { planTaskEvidenceReferences,planTaskClosureReadiness } from "./evidence-ledger-report.mjs";
+import { planTaskEvidenceReferences,planTaskClosureReadiness,
+  planProtectedClosureMutation } from "./evidence-ledger-report.mjs";
 import { computeGovernanceMetrics } from "./governance-metrics.mjs";
 import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 
@@ -425,6 +426,38 @@ function closurePlanningCases(){
   ],f=>f());
 }
 
+function protectedClosureWriterCases(){
+  const mk=()=>{
+    const task={task_id:"T009",status:"REVIEW",build_spec_id:"BS-P1-025",
+      acceptance_links:[{acceptance_id:"A1",test_id:"T1"}],
+      completion_evidence:["EV-SP-P1-003-T009-001"]};
+    const other={task_id:"T007",status:"CLOSED",completion_evidence:[]};
+    return {plan:{ok:true,decision:"ELIGIBLE_FOR_SEPARATE_PROTECTED_CONTROL_REVIEW",
+      task_id:"T009",sprint_id:"SP-P1-003"},
+    taskId:"T009",mainDoc:{sprint_id:"SP-P1-003",tasks:[task,other]},
+    controlDoc:{sprint_id:"SP-P1-003",tasks:[{...task,status:"REVIEW"},other]}};
+  };
+  const run=fn=>{const x=clone(mk());fn(x);return planProtectedClosureMutation(x);};
+  return expectCases("protected closure control writer",[
+    ["writes only a proposed CLOSED status",true,()=>{
+      const r=run(()=>{});return r.ok&&r.changed&&!r.closure_performed&&
+        r.updated.tasks[0].status==="CLOSED"&&r.updated.tasks[1].status==="CLOSED";}],
+    ["idempotent existing proposal",true,()=>!run(x=>{x.controlDoc.tasks[0].status="CLOSED";}).changed],
+    ["fail when closure preflight invalid",false,()=>run(x=>{x.plan.ok=false;}).ok],
+    ["wrong Task requested",false,()=>run(x=>{x.taskId="T006";}).ok],
+    ["wrong Sprint requested",false,()=>run(x=>{x.controlDoc.sprint_id="SP-P1-004";}).ok],
+    ["Main Task must be REVIEW",false,()=>run(x=>{x.mainDoc.tasks[0].status="BLOCKED";}).ok],
+    ["Task missing from control",false,()=>run(x=>{x.controlDoc.tasks.pop();}).ok],
+    ["duplicate Task IDs",false,()=>run(x=>{x.controlDoc.tasks[1].task_id="T009";}).ok],
+    ["AC mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].acceptance_links=[];}).ok],
+    ["Evidence mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].completion_evidence=[];}).ok],
+    ["Other Task mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[1].status="BLOCKED";}).ok],
+    ["Task definition mutation rejected",false,()=>run(x=>{x.controlDoc.tasks[0].build_spec_id="BS-P1-026";}).ok],
+    ["Unexpected status transition rejected",false,()=>run(x=>{x.controlDoc.tasks[0].status="VERIFIED";}).ok],
+    ["Unapproved closure status proposal forbidden",false,()=>run(x=>{x.plan.decision="HARD_STOP";}).ok]
+  ],fn=>fn());
+}
+
 function metricsPreflightCases(guard){
   const m=computeGovernanceMetrics({
     commits:[{subject:"T008 impl (#386)"},{subject:"T008 evidence (#387)"},{subject:"fix T008 typo (#388)"},{subject:"T007 close (#380)"}],
@@ -483,6 +516,7 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
     evidence_ledger:ledgerCases(policy.evidence_proof_levels),
     evidence_normalization:normalizationCases(),
     protected_closure:closurePlanningCases(),
+    protected_closure_writer:protectedClosureWriterCases(),
     metrics_preflight:metricsPreflightCases(policy.pr_guard)
   };
   return {counts,total:Object.values(counts).reduce((a,n)=>a+n,0)};
