@@ -370,21 +370,18 @@ async function main(argv){
     const candidateDigest=candidateDigestOf(changedFiles,rel=>{
       try{return fs.readFileSync(rel);}catch{return null;}
     });
+    const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
+      head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
+      checks,token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
+    const facts={event,live,comments,checks,changedFiles,
+      candidateDigest,repo,verifiedPrRunOrigins};
     // No second Human approval for a normal Task with authenticated GitHub grant.
     if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
       const verifiedGrant=await verifyLiveGrant({pr:live,
         token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
-      const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
-        head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
-        checks,token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
-      result=inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
-        candidateDigest,repo,verifiedGrant,verifiedPrRunOrigins});
+      result=inspectTaskPrReadiness({...facts,verifiedGrant});
     }else{
-      const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
-        head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
-        checks,token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
-      result=inspectPrReadiness({event,live,comments,checks,changedFiles,
-        candidateDigest,repo,verifiedPrRunOrigins});
+      result=inspectPrReadiness(facts);
     }
   }else{
     result=inspectNonPrInvocation({eventName,ref:process.env.GITHUB_REF,
