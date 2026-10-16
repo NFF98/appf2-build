@@ -20,16 +20,7 @@ case "$event" in
       echo "::error::NOT_READY — live HEAD missing"; exit 1;
     }
     gh api "repos/$repo/issues/$number/comments?per_page=100" --paginate --slurp >"$tmp/comments.json"
-    gh api "repos/$repo/commits/$head/check-runs?per_page=100" --paginate --slurp >"$tmp/check-pages.json"
-    node --input-type=module -e '
-      import fs from "node:fs";
-      import {completeCheckRunPages} from "./harness/scripts/final-ready-preflight.mjs";
-      const pages=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
-      const inventory=completeCheckRunPages(pages);
-      fs.writeFileSync(process.argv[2],JSON.stringify(inventory));
-      console.log("READY Check Runs: complete GitHub pages, "+
-        inventory.total_count+" unique entries");
-    ' "$tmp/check-pages.json" "$tmp/checks.json"
+    gh api "repos/$repo/commits/$head/check-runs?per_page=100" >"$tmp/checks.json"
     gh api "repos/$repo/pulls/$number/files?per_page=100" --paginate --slurp >"$tmp/changed-files.json"
     node harness/scripts/final-ready-preflight.mjs --event "$event_file" --live-pr "$tmp/live-pr.json" \
       --comments "$tmp/comments.json" --checks "$tmp/checks.json" --changed-files "$tmp/changed-files.json"
