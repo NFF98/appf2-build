@@ -2,7 +2,7 @@
 // Github's live reviewer history is the authoritative signed-by-platform Human source.
 import fs from "node:fs";
 import {pathToFileURL} from "node:url";
-import {ENVIRONMENT,WORKFLOW,HUMAN,taskScopeDigest,grantFromRun,sameGrantFields} from "./trusted-human-task-grant.mjs";
+import {ENVIRONMENT,WORKFLOW,HUMAN,taskScopeDigest,grantFromRun,sameGrantFields,trustedWorkflowPath} from "./trusted-human-task-grant.mjs";
 const read=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 async function gh(path,token){
   const r=await fetch("https://api.github.com"+path,{headers:{
@@ -28,7 +28,7 @@ const approvedHumanReview=approvals=>{
 };
 const exactIssuanceRun=(run,input)=>run?.event==="workflow_dispatch"&&
   run?.head_sha===input?.head_sha&&
-  run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW)&&
+  trustedWorkflowPath(run)&&
   run?.head_branch==="main" &&
   run?.repository?.full_name==="NFF98/appf2-build";
 const inputMatchesGrant=(g,input)=>g?.schema==="APPF2-TRUSTED-TASK-GRANT-1"&&
