@@ -63,7 +63,8 @@ export function runTrustedGrantSelfTests(){
   no(x=>{x.pr.state="closed";});
   no(x=>{x.pr.base.ref="other";});
   no(x=>{x.ancestor=false;});
-  const sameHead=fresh();sameHead.run.head_sha=sameHead.pr.head.sha;yes(sameHead);
+  const sameHead=fresh();sameHead.run.head_sha=sameHead.pr.head.sha;
+  sameHead.grant.base_sha=sameHead.run.head_sha;yes(sameHead);
   no(x=>{x.now=x.grant.expires_at_unix+1;});
   no(x=>{x.grant.approved_at_unix="not-human";});
   const issuing=fresh(),input={task_id:issuing.grant.task_id,
