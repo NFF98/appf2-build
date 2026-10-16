@@ -1,7 +1,7 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA} from "./final-ready-preflight.mjs";
+import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
 const live={number:395,state:"open",draft:false,head:{sha:HEAD,repo:{full_name:REPO}},base:{sha:BASE,ref:"main"}};
@@ -59,6 +59,31 @@ check({checks:{check_runs:[]}},false);
 check({comments:comments.map(x=>({...x,body:"PR body checkbox PASS"}))},false);
 check({event:{pull_request:{...event.pull_request,base:null}}},false);
 check({comments:[mk({...local,test_runs:[...local.test_runs,{...local.test_runs[0],command:"npm run product:ci",status:"NOT_RUN"}]},1),mk(bce,2),mk(human,3)]},false);
+// Actual canonical repo-policy.json governance roots, not a guessed whitelist.
+// Source and destination must both be unprotected in Ready admission.
+const l1File=(filename,status="modified",previous_filename)=>({
+  filename,status,...(previous_filename===undefined?{}:{previous_filename})});
+const l1Cases=[
+  [true,[l1File("src/app.ts")]],
+  [true,[l1File("tests/flow.test.ts","renamed","tests/old.test.ts")]],
+  [true,[l1File("src/new.ts","copied","src/original.ts")]],
+  [false,[l1File("src/import.ts","renamed","delivery/CURRENT-SPRINT.json")]],
+  [false,[l1File("src/import.ts","copied","harness/scripts/governance-gate.mjs")]],
+  [false,[l1File("src/import.ts","renamed","build-spec/CURRENT.json")]],
+  [false,[l1File("src/import.ts","renamed","delivery/constitutional-cases/GOV-FAKE.json")]],
+  [false,[l1File("src/import.ts","renamed")]],
+  [false,[l1File("src/import.ts","copied")]],
+  [false,[l1File("src/import.ts","modified","delivery/CURRENT-SPRINT.json")]],
+  [false,[l1File("delivery/CURRENT-SPRINT.json","removed")]],
+  [false,[l1File("package.json","modified")]],
+  [false,[l1File("src/app.ts","invalid")]],
+  [false,[{filename:"src/app.ts"}]],
+  [false,[]]
+];
+for(const [expected,files] of l1Cases)
+  assert.equal(l1TaskChangedPathsValid(files),expected,"L1 Ready path/source admission regression");
+console.log("L1 Ready canonical governance path/rename/copy guard: "+
+  l1Cases.length+" PASS (synthetic; not a real Task grant).");
 const merged=[{merged_at:"2026-10-15T00:00:00Z",merge_commit_sha:HEAD,base:{ref:"main"}}];
 assert.equal(inspectNonPrInvocation({eventName:"push",ref:"refs/heads/main",sha:HEAD,associatedPrs:merged}).ok,true);
 assert.equal(inspectNonPrInvocation({eventName:"push",ref:"refs/heads/main",sha:HEAD,associatedPrs:[]}).ok,false);
