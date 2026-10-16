@@ -28,30 +28,14 @@ else
   inventory="$(mktemp)"
   trap 'rm -f "$inventory"' EXIT
   gh api --paginate --slurp "repos/$repo/pulls/$number/files?per_page=100" > "$inventory"
-  node -e '
-    const pages=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8"));
-    if(!Array.isArray(pages)||!pages.length||!pages.every(Array.isArray)){
-      console.error("::error::GitHub changed-file inventory unavailable");process.exit(1);
-    }
-    const files=pages.flat();
-    if(!files.length||files.some(f=>typeof f.filename!=="string")){
-      console.error("::error::GitHub PR changed-file inventory empty or malformed");process.exit(1);
-    }
-    const hasMissingOrigin=files.some(f=>
-      ["renamed","copied"].includes(f.status) &&
-      (typeof f.previous_filename!=="string"||!f.previous_filename));
-    if(hasMissingOrigin){
-      console.error("::error::GitHub rename/copy source path missing：HARD STOP");
-      process.exit(1);
-    }
-    const isProduct=p=>typeof p==="string" &&
-      /^(?:src\/|tests\/|supabase\/|generated\/)/.test(p);
-    const product=files.filter(f=>
-      isProduct(f.filename)||isProduct(f.previous_filename));
-    if(product.length){
-      console.error("::error::產品/測試變更沒有 Task 宣告及可信 Human grant：HARD STOP");
-      console.error(product.map(f=>
-        f.previous_filename?f.previous_filename+" -> "+f.filename:f.filename).join(", "));
+  node --input-type=module -e '
+    import fs from "node:fs";
+    import {unsignedPrProductScope} from "./harness/scripts/trusted-human-task-grant.mjs";
+    const pages=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+    const result=unsignedPrProductScope(pages);
+    if(!result.ok){
+      console.error("::error::沒有 Task 宣告的產品路徑 / 不完整 GitHub 來源路徑：HARD STOP");
+      console.error(result.reason+" "+(result.paths||[]).join(", "));
       process.exit(1);
     }
     console.log("非產品路徑，仍須獨立 L2/L3 治理授權；不得假稱已批准");
