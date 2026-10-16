@@ -13,7 +13,7 @@ import {
 } from "./task-pr-lifecycle.mjs";
 import { selectImpactedTests } from "./select-impacted-tests.mjs";
 import { buildEvidenceLedger } from "./evidence-ledger.mjs";
-import { planTaskEvidenceReferences } from "./evidence-ledger-report.mjs";
+import { planTaskEvidenceReferences,planTaskClosureReadiness } from "./evidence-ledger-report.mjs";
 import { computeGovernanceMetrics } from "./governance-metrics.mjs";
 import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 
@@ -389,6 +389,42 @@ function normalizationCases(){
   ],fn=>fn());
 }
 
+function closurePlanningCases(){
+  const mk=()=>({
+    task:{task_id:"T009",status:"REVIEW",build_spec_id:"BS-P1-025"},
+    sprint:{active_sprint:"SP-P1-003",active_task:"T009",
+      active_build_spec:"BS-P1-025",status:"REVIEW"},
+    build:{active_baseline:"BS-P1-025",implementation_enabled:true},
+    ledger:{task_id:"T009",sprint_id:"SP-P1-003",
+      evidence_readiness:"EVIDENCE_COMPLETE_FOR_CLOSURE_CONTROL",missing_review:false,
+      missing_pairs:[],missing_commands:[],duplicates:[],stale:[],dangling_refs:[],unreferenced:[]},
+    grant:{ok:true,decision:"VERIFIED_GITHUB_HUMAN_APPROVAL",
+      phase:"POST_MERGE_CLOSURE",mergedOnMain:true,current_head:"a".repeat(40)},
+    pr:{state:"closed",merged:true,head:{sha:"a".repeat(40)},merge_commit_sha:"b".repeat(40)}
+  });
+  const check=mutate=>{const x=mk();mutate(x);return planTaskClosureReadiness(x);};
+  return expectCases("postmerge protected closure preflight",[
+    ["Synthetic eligible remains only a proposal",true,()=>{
+      const r=check(()=>{});return r.ok&&!r.closure_performed&&!r.mutates;}],
+    ["Unmerged PR rejected",false,()=>check(x=>{x.pr.merged=false;}).ok],
+    ["Fake grant rejected",false,()=>check(x=>{x.grant.ok=false;}).ok],
+    ["Wrong grant phase rejected",false,()=>check(x=>{x.grant.phase="ACTIVE_PR";}).ok],
+    ["Main merge ancestry missing",false,()=>check(x=>{x.grant.mergedOnMain=false;}).ok],
+    ["Grant to different HEAD",false,()=>check(x=>{x.grant.current_head="c".repeat(40);}).ok],
+    ["Task not REVIEW",false,()=>check(x=>{x.task.status="BLOCKED";}).ok],
+    ["Sprint mismatched",false,()=>check(x=>{x.sprint.active_task="T006";}).ok],
+    ["Build mismatch",false,()=>check(x=>{x.build.active_baseline="BS-P1-026";}).ok],
+    ["Missing mapped acceptance",false,()=>check(x=>{x.ledger.missing_pairs=["A1::T1"];}).ok],
+    ["Missing command PASS",false,()=>check(x=>{x.ledger.missing_commands=["npm run gate"];}).ok],
+    ["Missing review PASS",false,()=>check(x=>{x.ledger.missing_review=true;}).ok],
+    ["Unreferenced Evidence",false,()=>check(x=>{x.ledger.unreferenced=["EV-001"];}).ok],
+    ["Duplicate Evidence",false,()=>check(x=>{x.ledger.duplicates=[["EV1","EV2"]];}).ok],
+    ["Stale Evidence",false,()=>check(x=>{x.ledger.stale=["EV-OLD"];}).ok],
+    ["T008 closure requires Human L3",false,()=>check(x=>{x.task.task_id="T008";x.sprint.active_task="T008";x.ledger.task_id="T008";}).ok],
+    ["T006 closure requires Human L3",false,()=>check(x=>{x.task.task_id="T006";x.sprint.active_task="T006";x.ledger.task_id="T006";}).ok]
+  ],f=>f());
+}
+
 function metricsPreflightCases(guard){
   const m=computeGovernanceMetrics({
     commits:[{subject:"T008 impl (#386)"},{subject:"T008 evidence (#387)"},{subject:"fix T008 typo (#388)"},{subject:"T007 close (#380)"}],
@@ -446,6 +482,7 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
     impacted_tests:impactedCases(policy.impacted_tests),
     evidence_ledger:ledgerCases(policy.evidence_proof_levels),
     evidence_normalization:normalizationCases(),
+    protected_closure:closurePlanningCases(),
     metrics_preflight:metricsPreflightCases(policy.pr_guard)
   };
   return {counts,total:Object.values(counts).reduce((a,n)=>a+n,0)};
