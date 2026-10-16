@@ -18,6 +18,8 @@ jobs:
   # Required security and functional gates run before Human Final Ready.
   # Final Ready/BCE still govern merge; they must not suppress genuine test results.
   ci:
+    # Draft 只執行 Fast-loop；Ready 才啟動完整必需 Gate。
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     env:
       APPF2_GOV16_TEST_PHASE: '1'
     runs-on: ubuntu-latest

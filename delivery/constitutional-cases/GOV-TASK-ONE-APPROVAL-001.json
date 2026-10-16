@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "528dc14ddf6ae1530e0e538b66ca826e88f1abffe20bb31c75a59d66f302381c",
+  "candidate_digest_sha256": "ba54fe61f270fcca46e178fdf6af9fc1e7aa3cabcae922fbad3166efd70120f6",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -91,7 +91,9 @@
     "Any L1 Task without GitHub one-time grant fails before CI/CodeQL/Attack/Governance full job; L2/L3 still use separate Human constitutional rules.",
     "Final Ready for a normal Task with a real grant uses Local tests+independent GPT BCE+real same-HEAD 4 checks, no second Human comment; grant is NOT self-authenticated by a Boolean.",
     "Genuine CI first attempt found four strict lint failures; refactored three high-complexity verifiers without exemptions, removed unsupported test global; 36 synthetic guard cases preserved.",
-    "Second real CI identified last complexity 16 in Task scope matcher; split into independently tested short predicates without altering acceptance."
+    "Second real CI identified last complexity 16 in Task scope matcher; split into independently tested short predicates without altering acceptance.",
+    "真實 PR 沒有 Task: 宣告但變更 src/tests/supabase/generated 時，GitHub API changed-file inventory 必須強制拒絕；不可用刪除 PR 標籤繞過 Human grant。",
+    "Draft PR 只執行 Fast-loop 與必要 Governance；產品 CI、CodeQL、Attack 只在 PR Ready 才完整執行，Final HEAD 仍需要全部四 Gate PASS。"
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -120,7 +122,7 @@
   "human_approval": null,
   "rollout_truth": {
     "main_effective": false,
-    "candidate_real_four_gates": "RECHECK_AFTER_LAST_COMPLEXITY_FIX_NOT_RUN",
+    "candidate_real_four_gates": "NOT_RUN_ON_NEW_HEAD_PENDING_PROTECTED_VALIDATION",
     "exact_human_approval": "PENDING",
     "synthetic_regressions": "46 delegated Human false-auth and valid-Human regression cases; 18 static wiring/false-completion checks; PR language + missing inventory/closed Task tests",
     "incomplete_external_dependencies": [
@@ -137,6 +139,8 @@
     "delegated_human_authority_enabled": false,
     "trusted_environment_required": "appf2-task-human-approval (Required reviewers must include NFF98)",
     "one_human_approval_per_normal_task": "CANDIDATE_NOT_ACTIVE_ON_MAIN",
-    "real_GitHub_review_end_to_end": "NOT_RUN_REQUIRES_HUMAN_ENV_SETUP"
+    "real_GitHub_review_end_to_end": "NOT_RUN_REQUIRES_HUMAN_ENV_SETUP",
+    "full_e2e_verified": false,
+    "github_environment_configured": "UNVERIFIED_NOT_ASSUMED"
   }
 }

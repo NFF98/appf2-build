@@ -16,5 +16,33 @@ if node -e '
 '; then
   node harness/scripts/trusted-human-task-grant.mjs
 else
-  echo "非 L1 Task PR：使用原本的 L2/L3 Human 治理授權鏈，不宣稱已有 Task Grant"
+  # Do not allow a product PR to avoid the one-Human grant merely by
+  # deleting "Task: Txxx" from its PR body. Inspect REAL GitHub changed files.
+  repo="${GITHUB_REPOSITORY:?}"
+  number="$(node -e '
+    const e=JSON.parse(require("node:fs").readFileSync(process.env.GITHUB_EVENT_PATH));
+    const n=e.pull_request?.number;
+    if(!Number.isSafeInteger(n)||n<1)process.exit(2);
+    console.log(n);
+  ')" || { echo "::error::PR number unavailable (fail closed)"; exit 1; }
+  inventory="$(mktemp)"
+  trap 'rm -f "$inventory"' EXIT
+  gh api --paginate --slurp "repos/$repo/pulls/$number/files?per_page=100" > "$inventory"
+  node -e '
+    const pages=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8"));
+    if(!Array.isArray(pages)||!pages.length||!pages.every(Array.isArray)){
+      console.error("::error::GitHub changed-file inventory unavailable");process.exit(1);
+    }
+    const files=pages.flat();
+    if(!files.length||files.some(f=>typeof f.filename!=="string")){
+      console.error("::error::GitHub PR changed-file inventory empty or malformed");process.exit(1);
+    }
+    const product=files.filter(f=>/^(?:src\/|tests\/|supabase\/|generated\/)/.test(f.filename));
+    if(product.length){
+      console.error("::error::產品/測試變更沒有 Task 宣告及可信 Human grant：HARD STOP");
+      console.error(product.map(f=>f.filename).join(", "));
+      process.exit(1);
+    }
+    console.log("非產品路徑，仍須獨立 L2/L3 治理授權；不得假稱已批准");
+  ' "$inventory"
 fi
