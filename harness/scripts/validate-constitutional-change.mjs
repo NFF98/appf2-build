@@ -120,10 +120,32 @@ export const GOV16_TEST_ONLY_PATHS=Object.freeze([
   "harness/scripts/validate-constitutional-change.mjs",
   "harness/scripts/w1-01-evidence-mirror.mjs"
 ]);
+// Test-only constitutional exception must NEVER apply to a Ready PR.
+// The official GitHub event file supplies immutable event source metadata;
+// a user-controlled env toggle or PR-body marker is not authorization.
+export const gov16TestOnlyInvocation=({eventName,ref,event}={})=>{
+  if(eventName==="push")
+    return ref==="refs/heads/governance/task-one-approval-20261016";
+  if(eventName!=="pull_request")return false;
+  const pr=event?.pull_request;
+  return [
+    pr?.draft===true,
+    pr?.base?.ref==="main",
+    pr?.base?.sha===GOV16_TEST_ONLY_BASE,
+    pr?.head?.ref==="governance/task-one-approval-20261016",
+    pr?.head?.repo?.full_name==="NFF98/appf2-build",
+    pr?.base?.repo?.full_name==="NFF98/appf2-build"
+  ].every(Boolean);
+};
 const gov16ScopedRun=()=>{
-  const event=process.env.GITHUB_EVENT_NAME;
-  return event==="pull_request" ||
-    (event==="push" && process.env.GITHUB_REF==="refs/heads/governance/task-one-approval-20261016");
+  const eventName=process.env.GITHUB_EVENT_NAME;
+  if(eventName==="push")return gov16TestOnlyInvocation({
+    eventName,ref:process.env.GITHUB_REF});
+  if(eventName!=="pull_request")return false;
+  try{
+    const event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,"utf8"));
+    return gov16TestOnlyInvocation({eventName,event});
+  }catch{return false;}
 };
 const gov16PendingDocketValid=(docket,errors)=>Boolean(docket) && errors.length===0 &&
   docket.case_id==="GOV-TASK-ONE-APPROVAL-001" &&
