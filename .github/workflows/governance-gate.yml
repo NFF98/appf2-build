@@ -36,6 +36,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: 16P live GitHub unauthorized negative integration (real API, read-only)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/governance/task-one-approval-20261016' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPF2_NEGATIVE_PR_NUMBER: "401"
+        run: node harness/scripts/live-github-negative-e2e.mjs
       - name: Run repository gates
         env:
           APPF2_CONSTITUTION_PUBKEY_B64: ${{ vars.APPF2_CONSTITUTION_PUBKEY_B64 }}
