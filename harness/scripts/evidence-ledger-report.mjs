@@ -218,11 +218,23 @@ const controlRepoIdentity=c=>[
 ].every(Boolean);
 const controlPrClaims=(source,c,id)=>[
   new RegExp("^Task:\\s*"+id+"\\s*$","m").test(c?.body||""),
-  new RegExp("^Closure-Source-PR:\\s*"+source?.number+"\\s*$","m").test(c?.body||"")
+  new RegExp("^Closure-Source-PR:\\s*"+source?.number+"\\s*$","m")
+    .test(c?.body||""),
+  /^PR-Justification:\s*CONTROL_TRANSITION_AFTER_MERGE\s+\S.+$/m
+    .test(c?.body||"")
 ].every(Boolean);
-const prControlIdentity=(source,c,id)=>[
+const createdAfterOriginalMerge=(source,c)=>{
+  const merged=Date.parse(source?.merged_at||""),
+    created=Date.parse(c?.created_at||"");
+  return Number.isFinite(merged)&&Number.isFinite(created)&&created>merged;
+};
+/** Exception control PR is NOT another implementation PR or L1 grant. */
+export const inspectProtectedControlPrProvenance=(source,c,id)=>[
+  source?.merged===true,source?.state==="closed",
   source?.number!==c?.number,c?.state==="open",c?.draft===true,
-  controlRepoIdentity(c),controlPrClaims(source,c,id)
+  source?.head?.ref!==c?.head?.ref,
+  controlRepoIdentity(c),controlPrClaims(source,c,id),
+  createdAfterOriginalMerge(source,c)
 ].every(Boolean);
 const exactControlFileInventory=(files,path)=>Array.isArray(files)&&
   files.length===1&&files[0]?.filename===path &&
@@ -304,7 +316,7 @@ const fetchTaskControls=async (repo,path,main,branch,token)=>{
   return {base,target,mainDoc:githubContentJson(base),controlDoc:githubContentJson(target)};
 };
 const assertControlSource=(source,control,plan,main,checkoutSha)=>{
-  if(!prControlIdentity(source,control,plan.task_id)||
+  if(!inspectProtectedControlPrProvenance(source,control,plan.task_id)||
     !proofOfControlBase(control,main)||checkoutSha!==main)
     throw Error("HARD_STOP: unauthorized control PR/base/ref/checkout");
 };
