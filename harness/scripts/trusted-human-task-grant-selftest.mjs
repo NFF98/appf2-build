@@ -38,6 +38,25 @@ const fresh=()=>{
   return {run,approvals,environment,grant,original:JSON.parse(JSON.stringify(grant)),
     task,sprint,build,pr,ancestor:true,now:NOW};
 };
+function runPaginationSelfTests(){
+  let count=0;
+  const page=githubPageDecision;
+  const pageRows=n=>Array.from({length:n},(_,i)=>({id:i+1}));
+  assert.equal(page({rows:pageRows(40)}),"COMPLETE");count++;
+  assert.equal(page({rows:pageRows(100)}),"NEXT_PAGE");count++;
+  assert.equal(page({rows:pageRows(20),page:2,accumulated:100}),"COMPLETE");count++;
+  assert.equal(page({rows:pageRows(20),page:2,accumulated:100,expected:121}),"HARD_STOP");count++;
+  assert.equal(page({rows:pageRows(20),page:2,accumulated:100,expected:120}),"COMPLETE");count++;
+  assert.equal(page({rows:pageRows(100),page:10,accumulated:900}),"HARD_STOP");count++;
+  assert.equal(page({rows:pageRows(101)}),"HARD_STOP");count++;
+  assert.equal(page({rows:"forged"}),"HARD_STOP");count++;
+  assert.equal(page({rows:pageRows(1),expected:0}),"HARD_STOP");count++;
+  assert.equal(page({rows:[],expected:0}),"COMPLETE");count++;
+  assert.equal(page({rows:pageRows(100),expected:100}),"COMPLETE");count++;
+  assert.equal(page({rows:pageRows(100),expected:101}),"NEXT_PAGE");count++;
+  assert.equal(page({rows:pageRows(99),expected:100}),"HARD_STOP");count++;
+  return count;
+}
 export function runTrustedGrantSelfTests(){
   let total=0;
   const yes=x=>{const r=inspectGitHubHumanGrant(x);assert.equal(r.ok,true,r.errors.join("|"));total++;};
@@ -146,21 +165,7 @@ export function runTrustedGrantSelfTests(){
     "Human grant must happen BEFORE activation, not require duplicate approval");total++;
   before.sprint.active_task="T008";
   assert.equal(inspectIssuance({...before,input,now:NOW}).ok,false);total++;
-  const page=githubPageDecision;
-  const pageRows=n=>Array.from({length:n},(_,i)=>({id:i+1}));
-  assert.equal(page({rows:pageRows(40)}),"COMPLETE");total++;
-  assert.equal(page({rows:pageRows(100)}),"NEXT_PAGE");total++;
-  assert.equal(page({rows:pageRows(20),page:2,accumulated:100}),"COMPLETE");total++;
-  assert.equal(page({rows:pageRows(20),page:2,accumulated:100,expected:121}),"HARD_STOP");total++;
-  assert.equal(page({rows:pageRows(20),page:2,accumulated:100,expected:120}),"COMPLETE");total++;
-  assert.equal(page({rows:pageRows(100),page:10,accumulated:900}),"HARD_STOP");total++;
-  assert.equal(page({rows:pageRows(101)}),"HARD_STOP");total++;
-  assert.equal(page({rows:"forged"}),"HARD_STOP");total++;
-  assert.equal(page({rows:pageRows(1),expected:0}),"HARD_STOP");total++;
-  assert.equal(page({rows:[],expected:0}),"COMPLETE");total++;
-  assert.equal(page({rows:pageRows(100),expected:100}),"COMPLETE");total++;
-  assert.equal(page({rows:pageRows(100),expected:101}),"NEXT_PAGE");total++;
-  assert.equal(page({rows:pageRows(99),expected:100}),"HARD_STOP");total++;
+  total+=runPaginationSelfTests();
   const rawChecks=["ci","attack","governance","Analyze JavaScript / TypeScript"]
     .map((name,i)=>({name,id:i+100,head_sha:sha,status:"completed",
       conclusion:"success",app:{slug:"github-actions"}}));
