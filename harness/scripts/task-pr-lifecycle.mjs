@@ -2,6 +2,7 @@
 // Activation/Rebind necessity, Task-lease continuity and exact-HEAD full-gate verdicts.
 // Pure functions; the CLI only reads canonical repository state.
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
@@ -282,6 +283,48 @@ export const freshMergeReceipt=({before,after,firstPr,currentPr}={})=>[
   JSON.stringify(before?.changed)===JSON.stringify(after?.changed),
   JSON.stringify(before?.checks)===JSON.stringify(after?.checks)
 ].every(Boolean);
+
+// Canonical Task/Sprint/Build state must agree with GitHub Main, not an old
+// PR checkout. No caller-provided "canonical=true" can pass this live guard.
+export const mainControlStateMatch=({mainSha,baseSha,localDocs,remoteDocs}={})=>[
+  /^[a-f0-9]{40}$/.test(mainSha||""),mainSha===baseSha,
+  Array.isArray(localDocs),Array.isArray(remoteDocs),
+  localDocs?.length===3,remoteDocs?.length===3,
+  localDocs?.every((d,i)=>sameJson(d,remoteDocs?.[i]))
+].every(Boolean);
+const realMainControlFiles=sprint=>{
+  if(!/^SP-P\d+-\d{3}$/.test(sprint?.active_sprint||""))
+    throw Error("HARD_STOP: invalid canonical active_sprint");
+  return ["delivery/CURRENT-SPRINT.json","build-spec/CURRENT.json",
+    "delivery/sprints/"+sprint.active_sprint+"/tasks.json"];
+};
+const authenticatedMainFile=async (path,mainSha,token)=>{
+  const api="/repos/"+DELEGATED_REPO+"/contents/"+path+"?ref="+mainSha;
+  const result=await delegateGitHubJson(api,token);
+  if(result?.type!=="file"||result?.path!==path||
+    result?.encoding!=="base64"||!/^[a-f0-9]{40}$/.test(result?.sha||""))
+    throw Error("HARD_STOP: malformed authenticated GitHub Main file "+path);
+  const raw=Buffer.from((result?.content||"").replace(/\s/g,""),"base64");
+  const blob=crypto.createHash("sha1").update("blob "+raw.length+"\0")
+    .update(raw).digest("hex");
+  if(blob!==result.sha || raw.length!==result.size)
+    throw Error("HARD_STOP: GitHub Main blob content mismatch "+path);
+  return JSON.parse(raw.toString("utf8"));
+};
+export async function verifyLiveMainCanonicalState({pr,token}={}){
+  if(!pr?.base?.sha||!token)throw Error("HARD_STOP: Main snapshot input invalid");
+  const main=await delegateGitHubJson("/repos/"+DELEGATED_REPO+"/branches/main",token);
+  const mainSha=main?.commit?.sha;
+  if(!/^[a-f0-9]{40}$/.test(mainSha||"")||mainSha!==pr.base.sha)
+    throw Error("HARD_STOP: live Main moved past PR base");
+  const sprint=readJson("delivery/CURRENT-SPRINT.json"),
+    paths=realMainControlFiles(sprint);
+  const localDocs=paths.map(readJson),remoteDocs=await Promise.all(
+    paths.map(p=>authenticatedMainFile(p,mainSha,token)));
+  if(!mainControlStateMatch({mainSha,baseSha:pr.base.sha,localDocs,remoteDocs}))
+    throw Error("HARD_STOP: canonical Task/Sprint/Build differs from GitHub Main");
+  return {ok:true,main_sha:mainSha,compared_control_files:paths.length};
+}
 const validMergedReceipt=merged=>[
   merged?.merged===true,/^[0-9a-f]{40}$/.test(merged?.sha||"")].every(Boolean);
 const revalidateProtectedMerge=async ({root,prNumber,token,head,pr,
@@ -294,6 +337,7 @@ const revalidateProtectedMerge=async ({root,prNumber,token,head,pr,
     readLiveDelegationEvidence({prNumber,head,token})]);
   if(!freshMergeReceipt({before:previous,after:latest,firstPr:pr,currentPr:live}))
     throw Error("HARD_STOP: GitHub readiness evidence or PR changed before merge");
+  await verifyLiveMainCanonicalState({pr:live,token});
   const grant=await verifyLiveGrant({pr:live,token});
   const readiness=inspectTaskPrReadiness({event,live,
     comments:latest.comments,checks:latest.checks,changedFiles:latest.changed,
@@ -313,6 +357,7 @@ export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
   const head=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim();
   if(pr.head?.sha!==head)throw Error("HARD_STOP: local checkout != live PR HEAD");
   const {verifyLiveGrant}=await import("./trusted-human-task-grant.mjs");
+  await verifyLiveMainCanonicalState({pr,token});
   const grant=await verifyLiveGrant({pr,token});
   const {candidateDigestOf,inspectTaskPrReadiness}=await import("./final-ready-preflight.mjs");
   const {comments,changed,checks}=await readLiveDelegationEvidence({prNumber,head,token});
