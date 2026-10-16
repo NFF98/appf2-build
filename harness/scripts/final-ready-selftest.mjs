@@ -1,7 +1,7 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid} from "./final-ready-preflight.mjs";
+import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
 const live={number:395,state:"open",draft:false,head:{sha:HEAD,repo:{full_name:REPO}},base:{sha:BASE,ref:"main"}};
@@ -110,6 +110,45 @@ assert.ok(readyShell.includes('check-runs?per_page=100" >"$tmp/checks.json"'),
   "do not expand the Human-authorized 29-path governance scope into the shell");
 console.log("Ready/Protected Merge share authenticated complete GitHub pagination: "+
   "PASS (static wiring; live API also checked by Governance, not Human positive E2E).");
+// A four-green Push run can list the PR but never substitutes a real
+// pull_request full-gate workflow. GitHub REST /actions/runs/{id} is the
+// canonical event/source proof; screenshots, client Boolean, and PR comments
+// are not.
+const checkId=117014179629,prRunId=38913272652;
+const runName="ci",jobCheck={id:checkId,name:runName,head_sha:HEAD,
+  status:"completed",conclusion:"success",app:{slug:"github-actions"},
+  details_url:"https://github.com/NFF98/appf2-build/actions/runs/"+
+    prRunId+"/job/"+checkId};
+const actualPrRun={id:prRunId,event:"pull_request",head_sha:HEAD,
+  status:"completed",conclusion:"success",path:".github/workflows/ci.yml",
+  repository:{full_name:REPO},
+  pull_requests:[{number:395,head:{sha:HEAD},base:{sha:BASE}}]};
+const origin=(patch={},check=jobCheck,name="ci")=>checkReadyPrRunOrigin({
+  name,check,run:{...actualPrRun,...patch},head:HEAD,base:BASE,prNumber:395});
+assert.equal(origin(),true);
+const rejected=[
+  {event:"push"},{event:"workflow_dispatch"},{head_sha:BASE},
+  {status:"in_progress"},{conclusion:"skipped"},{conclusion:"failure"},
+  {path:".github/workflows/attack-dry-run.yml"},
+  {repository:{full_name:"other/repo"}},{id:999},
+  {pull_requests:[{number:395,head:{sha:BASE},base:{sha:BASE}}]},
+  {pull_requests:[{number:395,head:{sha:HEAD},base:{sha:HEAD}}]},
+  {pull_requests:[{number:401,head:{sha:HEAD},base:{sha:BASE}}]},
+  {pull_requests:[]},{}
+];
+for(const x of rejected.slice(0,-1))
+  assert.equal(origin(x),false,"Fake Ready origin must be denied");
+assert.equal(origin({}, {...jobCheck,id:900}),false);
+assert.equal(origin({}, {...jobCheck,details_url:
+  "https://github.com/forged/appf2-build/actions/runs/"+prRunId+"/job/"+checkId}),false);
+assert.equal(origin({}, {...jobCheck,details_url:
+  "https://github.com/NFF98/appf2-build/actions/runs/"+prRunId+"/job/9"}),false);
+const prOriginMissing=inspectTaskPrReadiness({event,live,comments:[],
+  checks:{check_runs:[]},changedFiles:[],candidateDigest:D,repo:REPO,
+  verifiedGrant:{ok:true,decision:"VERIFIED_GITHUB_HUMAN_APPROVAL",
+    current_head:HEAD}});
+assert.ok(prOriginMissing.errors.some(x=>x.includes("Push PASS 不等於 Ready")));
+console.log("16P PR-only full-gate run-origin rejection: 17 synthetic negative + 1 positive PASS; Human positive not verified.");
 // Verify the real Ready-for-review wiring, not just synthetic inputs. Otherwise
 // same-HEAD preflight may deadlock after Draft -> Ready even if evidence exists.
 for(const filename of ["ci.yml","codeql.yml","governance-gate.yml","attack-dry-run.yml"]){
