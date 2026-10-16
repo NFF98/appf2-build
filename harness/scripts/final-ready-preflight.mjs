@@ -227,17 +227,21 @@ const exactJobRunRef=check=>{
   if(!match||Number(match[2])!==check?.id)return null;
   return Number(match[1]);
 };
-export const checkReadyPrRunOrigin=({name,check,run,head,base,prNumber}={})=>{
-  const id=exactJobRunRef(check);
-  return id!==null && Number.isSafeInteger(id) &&
-    run?.id===id && run?.event==="pull_request" &&
-    run?.path===REQUIRED_PR_WORKFLOWS[name] &&
-    run?.repository?.full_name==="NFF98/appf2-build" &&
-    run?.head_sha===head &&
-    run?.status==="completed" && run?.conclusion==="success" &&
-    safeArray(run.pull_requests).some(p=>p.number===prNumber &&
-      p.head?.sha===head && p.base?.sha===base);
-};
+const readyRunSourceMatches=(name,run,id,head)=>[
+  id!==null,Number.isSafeInteger(id),run?.id===id,
+  run?.event==="pull_request",
+  run?.path===REQUIRED_PR_WORKFLOWS[name],
+  run?.repository?.full_name==="NFF98/appf2-build",
+  run?.head_sha===head,
+  run?.status==="completed",run?.conclusion==="success"
+].every(Boolean);
+const readyRunPrIdentity=(run,head,base,prNumber)=>
+  safeArray(run?.pull_requests).some(p=>[
+    p.number===prNumber,p.head?.sha===head,p.base?.sha===base
+  ].every(Boolean));
+export const checkReadyPrRunOrigin=({name,check,run,head,base,prNumber}={})=>
+  readyRunSourceMatches(name,run,exactJobRunRef(check),head)&&
+  readyRunPrIdentity(run,head,base,prNumber);
 export async function verifyLiveRequiredPrRunOrigins({head,base,prNumber,checks,token}={}){
   if(!HEX40.test(head||"")||!HEX40.test(base||"")||
     !Number.isSafeInteger(prNumber)||prNumber<1||!token)
