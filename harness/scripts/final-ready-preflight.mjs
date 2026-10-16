@@ -417,6 +417,26 @@ async function inspectReadyWithLiveApi({event,live,repo,token}){
   }
   return inspectPrReadiness(facts);
 }
+// Re-read authoritative GitHub state after all expensive Ready evidence
+// checks. Otherwise a force-push, Draft reversal or Main advance while
+// inspecting can admit an already-stale candidate. No mutation is performed.
+const readySnapshotIdentity=({live,main})=>[
+  live?.number,live?.state,live?.draft,
+  live?.head?.sha,live?.head?.ref,live?.head?.repo?.full_name,
+  live?.base?.sha,live?.base?.ref,live?.base?.repo?.full_name,
+  main?.commit?.sha
+];
+export function inspectReadyRecheckFreshness({beforeLive,beforeMain,afterLive,
+  afterMain,requested,event,repo,ref,sha}={}){
+  const binding=inspectReadyRecheckBinding({requested,event,live:afterLive,
+    main:afterMain,repo,ref,sha});
+  const unchanged=JSON.stringify(readySnapshotIdentity({
+    live:beforeLive,main:beforeMain}))===JSON.stringify(readySnapshotIdentity({
+    live:afterLive,main:afterMain}));
+  return {ok:binding.ok&&unchanged,errors:[
+    ...binding.errors,...(unchanged?[]:["HARD_STOP: live PR/Main changed during Ready recheck"])
+  ]};
+}
 async function recheckReadyPr({requested,event,repo,ref,sha,token}){
   if(typeof requested!=="string"||!/^[1-9][0-9]{0,7}$/.test(requested))
     throw Error("HARD_STOP: invalid Final Ready recheck PR");
@@ -427,7 +447,16 @@ async function recheckReadyPr({requested,event,repo,ref,sha,token}){
   if(!binding.ok)throw Error("HARD_STOP: "+binding.errors.join("; "));
   const trustedEvent={pull_request:{number:live.number,
     head:{sha:live.head.sha},base:{sha:live.base.sha},draft:live.draft}};
-  return inspectReadyWithLiveApi({event:trustedEvent,live,repo,token});
+  const verdict=await inspectReadyWithLiveApi({
+    event:trustedEvent,live,repo,token});
+  const [finalLive,finalMain]=await Promise.all([
+    liveReadyApi("/pulls/"+requested,token),
+    liveReadyApi("/branches/main",token)]);
+  const freshness=inspectReadyRecheckFreshness({
+    beforeLive:live,beforeMain:main,afterLive:finalLive,afterMain:finalMain,
+    requested,event,repo,ref,sha});
+  if(!freshness.ok)throw Error("HARD_STOP: "+freshness.errors.join("; "));
+  return verdict;
 }
 async function main(argv){
   const val=name=>{const n=argv.indexOf("--"+name);return n<0?null:argv[n+1];};
