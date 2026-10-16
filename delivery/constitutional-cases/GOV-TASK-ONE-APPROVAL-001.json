@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "f8d1944b560d2a81a1b66f181ad1b4e7bec1aa788d7faf0bce8e9fe3c8ce5d01",
+  "candidate_digest_sha256": "cdd93e6d48a491665454e255cf7dc379d95dce45737fa69559dc6b9c51d05fc3",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
