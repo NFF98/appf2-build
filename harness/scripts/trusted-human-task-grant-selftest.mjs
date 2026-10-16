@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
 import {delegatedTaskExecutor,githubPageDecision,
-  readLiveDelegationEvidence,freshMergeReceipt} from "./task-pr-lifecycle.mjs";
+  readLiveDelegationEvidence,freshMergeReceipt,
+  mainControlStateMatch,verifyLiveMainCanonicalState} from "./task-pr-lifecycle.mjs";
 import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck,
   writeExistingProtectedClosureCandidate} from "./evidence-ledger-report.mjs";
@@ -38,6 +39,28 @@ const fresh=()=>{
   return {run,approvals,environment,grant,original:JSON.parse(JSON.stringify(grant)),
     task,sprint,build,pr,ancestor:true,baseAncestor:true,now:NOW};
 };
+function runCanonicalMainSnapshotCases(){
+  const main="a".repeat(40),next="b".repeat(40);
+  const sample=[{active_sprint:"SP-P1-003",active_task:"T009"},
+    {implementation_enabled:true,active_baseline:"BS-P1-025"},
+    {sprint_id:"SP-P1-003",tasks:[{task_id:"T009",status:"REVIEW"}]}];
+  const run=(f=()=>{})=>{
+    const data={mainSha:main,baseSha:main,
+      localDocs:structuredClone(sample),remoteDocs:structuredClone(sample)};
+    f(data);return mainControlStateMatch(data);
+  };
+  assert.equal(run(),true);
+  for(const mutate of [
+    x=>{x.baseSha=next;},x=>{x.mainSha="invalid";},
+    x=>{x.remoteDocs[0].active_task="T006";},
+    x=>{x.remoteDocs[1].implementation_enabled=false;},
+    x=>{x.remoteDocs[2].tasks[0].status="CLOSED";},
+    x=>{x.remoteDocs[2].tasks.push({task_id:"T010"});},
+    x=>{x.remoteDocs.pop();},x=>{x.localDocs.pop();},
+    x=>{x.remoteDocs=null;}
+  ])assert.equal(run(mutate),false,"Stale Main canonical state admitted");
+  return 10;
+}
 function runPaginationSelfTests(){
   let count=0;
   const page=githubPageDecision;
@@ -186,6 +209,7 @@ export function runTrustedGrantSelfTests(){
   before.sprint.active_task="T008";
   assert.equal(inspectIssuance({...before,input,now:NOW}).ok,false);total++;
   total+=runPaginationSelfTests();
+  total+=runCanonicalMainSnapshotCases();
   const rawChecks=["ci","attack","governance","Analyze JavaScript / TypeScript"]
     .map((name,i)=>({name,id:i+100,head_sha:sha,status:"completed",
       conclusion:"success",app:{slug:"github-actions"}}));
@@ -292,6 +316,9 @@ export async function verifyLiveUnauthorizedNegative(){
     /executor checkout must match live Main/);
   // Read actual PR comments, changed files, and check runs through the same
   // complete, capped, GitHub-paginated API path used by the trusted executor.
+  const canonical=await verifyLiveMainCanonicalState({pr:before.pr,token:TOKEN});
+  console.log("LIVE MAIN CANONICAL SNAPSHOT VERIFIED: "+
+    JSON.stringify(canonical));
   const inventory=await readLiveDelegationEvidence({prNumber:PR,head,token:TOKEN});
   if(!inventory.changed.length||inventory.checks.total_count!==
     inventory.checks.check_runs.length)
