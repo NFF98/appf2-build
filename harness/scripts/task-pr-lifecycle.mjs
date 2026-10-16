@@ -157,7 +157,64 @@ export const scopeDigestOf=task=>JSON.stringify([...(task?.allowed_write_paths||
 // value, check-run JSON, PR metadata or review comment as the authoritative input.
 // This is an explicitly invoked GitHub API operation, NOT a background worker.
 const DELEGATED_REPO="NFF98/appf2-build";
-const FULL_CHECK_COUNT=100;
+const FULL_CHECK_COUNT=100,MAX_GITHUB_PAGES=10;
+const uniqueIdentity=(rows,key)=>rows.every(r=>r&&r[key]!=null) &&
+  new Set(rows.map(r=>r[key])).size===rows.length;
+const pageQuery=(endpoint,index)=>endpoint+
+  (endpoint.includes("?")?"&":"?")+"per_page="+FULL_CHECK_COUNT+"&page="+index;
+export const githubPageDecision=({rows,accumulated=0,expected=null,page=1}={})=>{
+  const valid=Array.isArray(rows)&&rows.length<=FULL_CHECK_COUNT&&
+    page>=1&&page<=MAX_GITHUB_PAGES&&
+    (expected===null||(Number.isSafeInteger(expected)&&expected>=0&&
+      expected<=MAX_GITHUB_PAGES*FULL_CHECK_COUNT));
+  if(!valid)return "HARD_STOP";
+  const total=accumulated+rows.length;
+  if(expected!==null && total>expected)return "HARD_STOP";
+  if(expected!==null && total===expected)return "COMPLETE";
+  if(rows.length<FULL_CHECK_COUNT)
+    return expected===null?"COMPLETE":"HARD_STOP";
+  return page===MAX_GITHUB_PAGES?"HARD_STOP":"NEXT_PAGE";
+};
+const fetchCompleteGitHubRows=async (endpoint,token)=>{
+  const rows=[];
+  for(let page=1;page<=MAX_GITHUB_PAGES;page++){
+    const incoming=await delegateGitHubJson(pageQuery(endpoint,page),token);
+    const decision=githubPageDecision({rows:incoming,accumulated:rows.length,page});
+    if(decision==="HARD_STOP")throw Error("HARD_STOP: incomplete paginated GitHub inventory");
+    rows.push(...incoming);
+    if(decision==="COMPLETE")return rows;
+  }
+  throw Error("HARD_STOP: GitHub inventory exceeded safe pagination cap");
+};
+const fetchCompleteGitHubChecks=async (endpoint,token)=>{
+  const check_runs=[];let expected=null;
+  for(let page=1;page<=MAX_GITHUB_PAGES;page++){
+    const incoming=await delegateGitHubJson(pageQuery(endpoint,page),token);
+    if(!Number.isSafeInteger(incoming?.total_count)||
+      (expected!==null&&incoming.total_count!==expected))
+      throw Error("HARD_STOP: inconsistent live GitHub check total_count");
+    expected=incoming.total_count;
+    const decision=githubPageDecision({rows:incoming.check_runs,
+      expected,accumulated:check_runs.length,page});
+    if(decision==="HARD_STOP")throw Error("HARD_STOP: incomplete check-run inventory");
+    check_runs.push(...incoming.check_runs);
+    if(decision==="COMPLETE")return {total_count:expected,check_runs};
+  }
+  throw Error("HARD_STOP: GitHub check-runs exceeded safe pagination cap");
+};
+export async function readLiveDelegationEvidence({prNumber,head,token}={}){
+  if(!delegatedInputOK({prNumber,token,action:"CHECK"})||
+    !/^[0-9a-f]{40}$/.test(head||""))
+    throw Error("HARD_STOP: invalid live inventory input");
+  const root="/repos/"+DELEGATED_REPO;
+  const [comments,changed,checks]=await Promise.all([
+    fetchCompleteGitHubRows(root+"/issues/"+prNumber+"/comments",token),
+    fetchCompleteGitHubRows(root+"/pulls/"+prNumber+"/files",token),
+    fetchCompleteGitHubChecks(root+"/commits/"+head+"/check-runs",token)]);
+  if(!completeApiInventory({comments,changed,checks}))
+    throw Error("HARD_STOP: invalid/duplicated authoritative GitHub inventory");
+  return {comments,changed,checks};
+}
 const isReadyTaskPr=pr=>[pr?.state==="open",pr?.draft===false,
   pr?.base?.ref==="main",pr?.base?.repo?.full_name===DELEGATED_REPO,
   pr?.head?.repo?.full_name===DELEGATED_REPO].every(Boolean);
@@ -200,9 +257,15 @@ const delegatedInputOK=({prNumber,token,action})=>[
   ["CHECK","MERGE"].includes(action)].every(Boolean);
 const completeApiInventory=({comments,changed,checks})=>[
   Array.isArray(comments),Array.isArray(changed),Array.isArray(checks?.check_runs),
-  comments?.length<FULL_CHECK_COUNT,changed?.length<FULL_CHECK_COUNT,
-  checks?.total_count<FULL_CHECK_COUNT,checks?.check_runs?.length<FULL_CHECK_COUNT].every(Boolean);
+  checks?.total_count===checks?.check_runs?.length,
+  uniqueIdentity(comments,"id"),uniqueIdentity(changed,"filename"),
+  uniqueIdentity(checks?.check_runs||[],"id")
+].every(Boolean);
 const candidateFileBytes=p=>{try{return fs.readFileSync(p);}catch{return null;}};
+const unchangedTaskPr=(a,b)=>[
+  a?.number===b?.number,a?.head?.sha===b?.head?.sha,
+  a?.base?.sha===b?.base?.sha,b?.draft===false,b?.state==="open",
+  b?.mergeable===true].every(Boolean);
 const validMergedReceipt=merged=>[
   merged?.merged===true,/^[0-9a-f]{40}$/.test(merged?.sha||"")].every(Boolean);
 export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
@@ -216,13 +279,7 @@ export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
   const {verifyLiveGrant}=await import("./trusted-human-task-grant.mjs");
   const grant=await verifyLiveGrant({pr,token});
   const {candidateDigestOf,inspectTaskPrReadiness}=await import("./final-ready-preflight.mjs");
-  const [comments,changed,checks]=await Promise.all([
-    delegateGitHubJson(root+"/issues/"+prNumber+"/comments?per_page="+FULL_CHECK_COUNT,token),
-    delegateGitHubJson(root+"/pulls/"+prNumber+"/files?per_page="+FULL_CHECK_COUNT,token),
-    delegateGitHubJson(root+"/commits/"+head+"/check-runs?per_page="+FULL_CHECK_COUNT,token)
-  ]);
-  if(!completeApiInventory({comments,changed,checks}))
-    throw Error("HARD_STOP: truncated/invalid authoritative GitHub evidence inventory");
+  const {comments,changed,checks}=await readLiveDelegationEvidence({prNumber,head,token});
   const digest=candidateDigestOf(changed,candidateFileBytes);
   const event={pull_request:{number:pr.number,head:{sha:head},base:{sha:pr.base.sha},draft:pr.draft}};
   const readiness=inspectTaskPrReadiness({event,live:pr,comments,checks,
@@ -234,6 +291,9 @@ export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
   const result=delegatedPremergePolicy({pr,grant,task,sprint,build,localHead:head,readiness});
   if(!result.ok||!readiness.ok)
     return {...result,decision:"HARD_STOP",errors:[...result.errors,...readiness.errors]};
+  const liveAgain=await delegateGitHubJson(root+"/pulls/"+prNumber,token);
+  if(!unchangedTaskPr(pr,liveAgain))
+    throw Error("HARD_STOP: PR head/base/draft/mergeability changed during evidence read");
   if(action==="CHECK")return {...result,action,merged:false};
   // No admin bypass. GitHub enforces normal protected-branch checks at PUT.
   // No Task Closure, Evidence mutation, next Task/Sprint or deployment.
