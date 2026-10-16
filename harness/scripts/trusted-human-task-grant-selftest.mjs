@@ -48,6 +48,11 @@ export function runTrustedGrantSelfTests(){
   no(x=>{x.run.created_at="not-a-time";});
   no(x=>{x.run.conclusion="failure";});
   no(x=>{x.run.path="NFF98/appf2-build/.github/workflows/fake.yml@main";});
+  no(x=>{x.run.path=".github/workflows/task-human-grant.yml.bak@refs/heads/main";});
+  no(x=>{x.run.path="wrong-owner/appf2-build/"+WORKFLOW+"@refs/heads/main";});
+  const actualGitHubPath=fresh();
+  actualGitHubPath.run.path=WORKFLOW+"@refs/heads/main";
+  yes(actualGitHubPath);
   no(x=>{x.run.repository.full_name="other/fake";});
   no(x=>{x.grant.schema="LEGACY";});
   no(x=>{x.grant.scope_sha256="f".repeat(64);});
