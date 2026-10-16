@@ -240,13 +240,25 @@ const canonicalDelegationState=({task,sprint,build,grant})=>[
   ["IN_PROGRESS","REVIEW"].includes(task?.status)].every(Boolean);
 // Independent live changed-file scope check: a valid Task grant digest alone
 // does not prove that the proposed PR file list stays inside its allowed paths.
+const taskPathMatches=(p,allowed)=>typeof p==="string" && p.length>0 &&
+  allowed.some(rule=>typeof rule==="string" && matchesPathRule(p,rule));
+const GITHUB_FILE_STATUSES=new Set(["added","modified","removed","renamed",
+  "copied","changed","unchanged"]);
+const taskFileWithinGrant=(f,allowed)=>{
+  if(!GITHUB_FILE_STATUSES.has(f?.status) ||
+    !taskPathMatches(f.filename,allowed))return false;
+  // Renaming/copying a protected source into src/ changes BOTH path identities.
+  // GitHub supplies previous_filename for moved/copied files; absence is unsafe.
+  if(["renamed","copied"].includes(f.status))
+    return taskPathMatches(f.previous_filename,allowed);
+  // Reject inconsistent metadata rather than overlooking hidden original paths.
+  return f.previous_filename==null;
+};
 export function taskChangedPathsWithinGrant({changed,task}={}){
   const allowed=task?.allowed_write_paths;
   return Array.isArray(changed) && changed.length>0 &&
     Array.isArray(allowed) && allowed.length>0 &&
-    changed.every(f=>typeof f?.filename==="string" && f.filename.length>0 &&
-      allowed.some(rule=>typeof rule==="string" &&
-        matchesPathRule(f.filename,rule)));
+    changed.every(f=>taskFileWithinGrant(f,allowed));
 }
 export function delegatedPremergePolicy({pr,grant,task,sprint,build,localHead,readiness,changedPaths}){
   const errors=[],deny=(yes,why)=>{if(!yes)errors.push(why);};
