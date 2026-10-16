@@ -216,12 +216,19 @@ const controlRepoIdentity=c=>[
   c?.head?.repo?.full_name===ONLY_BUILD_REPO,c?.head?.ref!=="main",
   /^[a-f0-9]{40}$/.test(c?.head?.sha||"")
 ].every(Boolean);
+const sameTaskGrantRun=(source,c)=>{
+  const official=/^Task-Grant-Run:\s*(\d{1,14})\s*$/m;
+  const src=official.exec(source?.body||"")?.[1],
+    ctl=official.exec(c?.body||"")?.[1];
+  return Boolean(src)&&src===ctl;
+};
 const controlPrClaims=(source,c,id)=>[
   new RegExp("^Task:\\s*"+id+"\\s*$","m").test(c?.body||""),
   new RegExp("^Closure-Source-PR:\\s*"+source?.number+"\\s*$","m")
     .test(c?.body||""),
   /^PR-Justification:\s*CONTROL_TRANSITION_AFTER_MERGE\s+\S.+$/m
-    .test(c?.body||"")
+    .test(c?.body||""),
+  sameTaskGrantRun(source,c)
 ].every(Boolean);
 const createdAfterOriginalMerge=(source,c)=>{
   const merged=Date.parse(source?.merged_at||""),
