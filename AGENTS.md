@@ -61,6 +61,7 @@ Build / Delivery enforcement:
 - 混合語言時，繁體中文 Human-readable explanation 是 authoritative interpretation。
 - **回覆前強制自檢（聊天亦適用）**：無論 Human 以何種語言輸入，除非 Human 明確變更正式語言政策，Agent 的 Human-facing 回覆、摘要、核准請求與稽核結論，仍一律以繁體中文為主。英文技術名稱不改 canonical token。
 - **能力邊界**：GitHub repo CI 無法攔截或檢測 ChatGPT 對話輸出；未有獨立對話政策執行器前不得宣稱「聊天語言已被 GitHub 機器強制」。發現違規須公開標示 VIOLATION 並更正，不能因本文件存在而宣稱完成。
+- **一次 Human 核准（未部署候選）**：新一般 Task 的唯一 Human 授權將使用受保護 GitHub Environment `appf2-task-human-approval` 的 Required reviewer 審核事件。必須是 GitHub 官方 API 可核對的 NFF98 真人批准，並且鎖定 Task/Sprint/Build/scope/期限；驗證器 `trusted-human-task-grant.mjs` 與核發器 `task-human-grant-issuance.mjs` 將在合法 Main 合併後啟用。沒有實際 Environment 設定與端到端證據，**不准稱制度已生效**。
 - 不得翻譯或改寫 canonical technical token 到改變 contract meaning。
 
 ## Mandatory Read Order

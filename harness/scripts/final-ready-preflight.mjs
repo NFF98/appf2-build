@@ -5,6 +5,7 @@ import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { finalGateVerdict } from "./task-pr-lifecycle.mjs";
 import { exceptionDigest } from "./human-exception.mjs";
+import { verifyLiveGrant } from "./trusted-human-task-grant.mjs";
 
 export const READY_MARKER="[APPF2-FINAL-READY-V1]";
 export const READY_SCHEMA="APPF2-FINAL-READY-V1";
@@ -192,6 +193,58 @@ export function inspectPrReadiness({event,live,comments,checks,changedFiles,cand
     ...protectedChangeErrors(changedFiles,comments,head));
   return {ok:errors.length===0,head,errors,manual_provenance_required:true};
 }
+// L1 Task: Human's ONE GitHub Environment approval replaces the extra
+// Final Ready comment. Local proof, independent BCE and FOUR live GitHub check
+// runs remain mandatory; a fake caller Boolean cannot enter via the real CLI.
+const REAL_CHECKS=["ci","attack","governance","Analyze JavaScript / TypeScript"];
+export function inspectLiveGitHubRequiredChecks({head,checks}){
+  const errors=[];
+  const rows=safeArray(checks?.check_runs);
+  for(const name of REAL_CHECKS){
+    const matched=rows.filter(x=>x.name===name && x.head_sha===head)
+      .sort((a,b)=>(b.id||0)-(a.id||0));
+    if(!matched.length || matched[0]?.status!=="completed" ||
+      matched[0]?.conclusion!=="success" ||
+      matched[0]?.app?.slug!=="github-actions")
+      errors.push("真實 GitHub Check 未達精確 HEAD success: "+name);
+  }
+  return errors;
+}
+export function inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
+  candidateDigest,repo,verifiedGrant}){
+  const errors=prMetadataErrors(event,live,repo);
+  const head=live?.head?.sha,base=live?.base?.sha;
+  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
+  assertion(verifiedGrant?.ok===true &&
+    verifiedGrant?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL" &&
+    verifiedGrant?.current_head===head,
+    "缺少從 GitHub API 核驗的真人一次授權",errors);
+  assertion(HEX64.test(candidateDigest||""),"精確 candidate digest 缺失",errors);
+  const changed=Array.isArray(changedFiles)?changedFiles.flat().map(x=>x?.filename):[];
+  assertion(changed.length>0 && changed.every(x=>nonEmpty(x) &&
+    !/^(?:harness\/|build-spec\/|\.github\/|AGENTS\.md$|delivery\/constitutional-cases\/)/.test(x)),
+    "一般 L1 Task 不得夾帶 L2/L3 治理與受保護 SSOT",errors);
+  const records=safeArray(comments).flat().map(comment=>({
+    comment,record:parseReadinessComment(comment)})).filter(x=>x.record?.head_sha===head);
+  const expected=["LOCAL_TESTS","GPT_BCE"];
+  for(const kind of expected){
+    const stage=records.filter(x=>x.record.kind===kind);
+    assertion(stage.length===1,"缺少或重複的 "+kind+" exact-HEAD 證據",errors);
+    if(stage.length===1){
+      errors.push(...commonErrors(stage[0].comment,stage[0].record,ctx),
+        ...stageEvidenceErrors(stage[0],ctx));
+    }
+  }
+  const local=records.find(x=>x.record.kind==="LOCAL_TESTS");
+  const bce=records.find(x=>x.record.kind==="GPT_BCE");
+  if(local && bce)assertion(
+    bce.comment.id>local.comment.id &&
+    Date.parse(bce.comment.created_at)>=Date.parse(local.comment.created_at),
+    "BCE 需晚於 Local tests，且必須獨立驗證",errors);
+  errors.push(...inspectLiveGitHubRequiredChecks({head,checks}));
+  return {ok:!errors.length,head,errors,manual_provenance_required:false,
+    grant_kind:"GITHUB_ENVIRONMENT_REVIEW",human_approvals_required:1};
+}
 /** On push, require an associated merged PR: a direct main push cannot greenwash gates. */
 export function inspectNonPrInvocation({eventName,ref,sha,associatedPrs}){
   if(eventName==="workflow_dispatch" || eventName==="schedule"){
@@ -211,7 +264,7 @@ export function bceCiConsistency({head,checks,required,bcePass}){
     {ok:false,reason:"BCE_CI_MISMATCH",head,full}:
     {ok:!bcePass?false:full.verdict==="PASS",reason:full.verdict,head,full};
 }
-function main(argv){
+async function main(argv){
   const val=name=>{const n=argv.indexOf("--"+name);return n<0?null:argv[n+1];};
   const eventName=process.env.GITHUB_EVENT_NAME,repo=process.env.GITHUB_REPOSITORY;
   const event=readJsonFile(val("event"));
@@ -220,8 +273,16 @@ function main(argv){
     const live=readJsonFile(val("live-pr"));
     const changedFiles=readJsonFile(val("changed-files"));
     const candidateDigest=candidateDigestOf(changedFiles,rel=>{try{return fs.readFileSync(rel);}catch{return null;}});
-    result=inspectPrReadiness({event,live,comments:readJsonFile(val("comments")),
-      checks:readJsonFile(val("checks")),changedFiles,candidateDigest,repo});
+    const comments=readJsonFile(val("comments")),checks=readJsonFile(val("checks"));
+    // No second Human approval for a normal Task with authenticated GitHub grant.
+    if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
+      const verifiedGrant=await verifyLiveGrant({pr:live,
+        token:process.env.GH_TOKEN||process.env.GITHUB_TOKEN});
+      result=inspectTaskPrReadiness({event,live,comments,checks,changedFiles,
+        candidateDigest,repo,verifiedGrant});
+    }else{
+      result=inspectPrReadiness({event,live,comments,checks,changedFiles,candidateDigest,repo});
+    }
   }else{
     result=inspectNonPrInvocation({eventName,ref:process.env.GITHUB_REF,
       sha:process.env.GITHUB_SHA,associatedPrs:val("associated-prs")?readJsonFile(val("associated-prs")):[]});
@@ -232,4 +293,6 @@ function main(argv){
   for(const e of result.errors||[])console.error("- "+e);
   return 1;
 }
-if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href)process.exit(main(process.argv.slice(2)));
+if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href)
+  main(process.argv.slice(2)).then(code=>{process.exitCode=code;})
+    .catch(error=>{console.error("FINAL READY: HARD STOP "+error.message);process.exitCode=1;});

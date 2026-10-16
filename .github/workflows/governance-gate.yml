@@ -10,6 +10,8 @@ permissions:
   contents: read
   pull-requests: read
   issues: read
+  actions: read
+  deployments: read
 
 jobs:
   # Required security and functional gates run before Human Final Ready.
@@ -22,6 +24,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: 真實 Human Task 授權預檢（未核准不跑完整 Gate）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash harness/scripts/run-task-human-grant-preflight.sh
       - name: Main-only merge provenance guard (PR tests never pre-blocked)
         if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/governance/task-one-approval-20261016' }}
         env:
@@ -44,6 +50,19 @@ jobs:
             console.log("原始改革："+report.checks.length+" 個靜態入口存在；真實 E2E 未完成，不得宣稱已實施。");
             console.log("驗收結果："+report.acceptance.decision+"／已確認真實 E2E "+report.acceptance.verified_end_to_end+" 項；詳細缺口見 reform-wiring-audit.mjs");
           '
+      - name: 一般 Task 真實 GitHub Human 一次授權驗證（無核准即 FAIL）
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if node -e '
+            const e=JSON.parse(require("fs").readFileSync(process.env.GITHUB_EVENT_PATH));
+            process.exit(/^Task:\\s*T\\d{3}\\b/m.test(e.pull_request?.body||"")?0:1);
+          '; then
+            node harness/scripts/trusted-human-task-grant.mjs
+          else
+            echo "非一般 Task PR：沿用既有 L2/L3 Human 精確核准規則"
+          fi
       # GOV-REFORM-20261013: one Task -> one open PR unless a recorded PR-Justification exists.
       - name: PR proliferation guard (fail closed)
         if: ${{ github.event_name == 'pull_request' }}

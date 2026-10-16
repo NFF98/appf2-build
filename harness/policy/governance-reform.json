@@ -266,7 +266,7 @@
     ],
     "conditional_task_approval": {
       "schema": "APPF2-TASK-ONE-APPROVAL-1",
-      "status": "BLOCKED_TRUSTED_HUMAN_IDENTITY_VERIFIER_NOT_WIRED",
+      "status": "IMPLEMENTATION_CANDIDATE_PENDING_MAIN_MERGE_AND_GITHUB_ENVIRONMENT_REVIEWER_SETUP",
       "eligible_change_classes": [
         "L1_TASK"
       ],
@@ -304,7 +304,21 @@
       "merge_rule": "ONLY_VERIFIED_READY_PR_WITH_BRANCH_PROTECTION_NO_BYPASS",
       "closure_rule": "ONLY_AFTER_VERIFIED_MERGE_AND_INDEPENDENT_CLOSURE_CARRY_FORWARD_GATES",
       "external_executor_required": true,
-      "permission_note": "Eligibility tests are synthetic only. Caller-provided Boolean is forgeable. GPT_DELEGATED always HARD_STOP for Human Final Ready / Merge / Closure until independent trusted verifier, real GitHub implementation and Human L3 approval."
+      "permission_note": "Eligibility tests are synthetic only. Caller-provided Boolean is forgeable. GPT_DELEGATED always HARD_STOP for Human Final Ready / Merge / Closure until independent trusted verifier, real GitHub implementation and Human L3 approval.",
+      "github_trust_anchor": {
+        "environment": "appf2-task-human-approval",
+        "only_approver": "NFF98",
+        "issuance_workflow": ".github/workflows/task-human-grant.yml",
+        "source": "GET /repos/NFF98/appf2-build/actions/runs/{run_id}/approvals",
+        "mandatory_environment_required_reviewers": true,
+        "scope_source": "Task allowed_write_paths and mapped Acceptance/Test IDs",
+        "approval_timing": "BEFORE_TASK_ACTIVATION",
+        "normal_task_human_approvals": 1,
+        "unconfigured_environment_behavior": "HARD_STOP",
+        "fake_boolean_authentication": "FORBIDDEN",
+        "main_effective": false,
+        "real_end_to_end_verified": false
+      }
     }
   },
   "full_gate_contexts": [
