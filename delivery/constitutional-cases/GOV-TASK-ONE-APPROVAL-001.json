@@ -34,7 +34,7 @@
     "harness/scripts/validate-constitutional-change.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "492c2f188ed3e5915e51ed02e9877dde7475803baef7b1aaee347e4be60f7abb",
+  "candidate_digest_sha256": "f4b7e7095eb89683628948381daeba96c315a0723acb627c6f91644c5a512713",
   "why5": [
     {
       "question": "Why are users repeatedly asked to approve the same L1 Task?",
@@ -103,7 +103,8 @@
     "Main after Human grant may fast-forward without second L1 Human approval ONLY when exact authenticated GitHub compare proves grant origin ancestry to current Main BASE and Task scope unchanged. One positive and one reverse real GitHub API compare verified; additional synthetic divergent/malformed cases. Real Human approval still NOT_RUN.",
     "Live GitHub Main Task/Sprint/Build snapshot: exact current Main SHA must equal PR base; 3 canonical JSON files require trustworthy git blob SHA/content and exact local equality. 10 synthetic stale/forged/changed-status cases, plus real GitHub API compare in branch Governance. Positive protected merge E2E remains NOT_RUN.",
     "Delegated CHECK and protected MERGE now independently enforce every live GitHub changed file against the genuine Human Task allowed_write_paths; out-of-scope/missing lists fail closed. Updated synthetic fixtures plus ten additional path-matching cases; no positive Human E2E performed.",
-    "Live PR file scope checks now reject status-missing, rename/copy origin missing, or protected-source renamed/copied into allowed paths both in trusted delegated CHECK/MERGE and L1 Ready; canonical repo-policy governance-only paths are enforced on both endpoints. Synthetic positive/negative matrix, no Human positive E2E."
+    "Live PR file scope checks now reject status-missing, rename/copy origin missing, or protected-source renamed/copied into allowed paths both in trusted delegated CHECK/MERGE and L1 Ready; canonical repo-policy governance-only paths are enforced on both endpoints. Synthetic positive/negative matrix, no Human positive E2E.",
+    "Unsigned PR Human-grant preflight now uses a pure tested GitHub changed-file origin/destination validator. 13 synthetic cases reject source product files renamed/copied outside src/tests/supabase/generated, missing origin metadata and forged status, not just destination paths; live GitHub Actions remain required before any positive rollout."
   ],
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -162,6 +163,7 @@
     "live_main_canonical_state": "GITHUB_API_THREE_CANONICAL_FILES_BLOB_SHA_AND_JSON_MATCHED_38906621599; POSITIVE_TASK_MERGE_NOT_RUN",
     "delegated_pr_path_scope": "LIVE_FILES_MATCH_TASK_ALLOWED_PATHS_CANDIDATE; SYNTHETIC_POSITIVE_NEGATIVE_TESTS; HUMAN_E2E_NOT_RUN",
     "delegated_rename_origin_scope": "LIVE_GITHUB_CHANGED_FILES_SOURCE_DESTINATION_FAIL_CLOSED_SYNTHETIC_CANDIDATE; NO_POSITIVE_HUMAN_E2E",
-    "l1_ready_rename_origin_scope": "CANONICAL_REPO_POLICY_GOVERNANCE_ONLY_SOURCE_DESTINATION_FAIL_CLOSED_SYNTHETIC_CANDIDATE"
+    "l1_ready_rename_origin_scope": "CANONICAL_REPO_POLICY_GOVERNANCE_ONLY_SOURCE_DESTINATION_FAIL_CLOSED_SYNTHETIC_CANDIDATE",
+    "unsigned_pr_rename_source_admission": "GITHUB_CHANGED_FILES_SOURCE_AND_DESTINATION_CHECK_SYNTHETIC; LIVE_NO_TASK_NEGATIVE_INTEGRATION_NOT_YET_RUN"
   }
 }
