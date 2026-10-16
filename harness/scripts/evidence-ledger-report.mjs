@@ -145,7 +145,72 @@ export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){
     note:"New HEAD invalidates earlier CI/BCE; revalidate before Merge. No closure."};
 }
 
+
+const exactClosureSource=(pr,grant)=>[
+  pr?.state==="closed",pr?.merged===true,
+  /^[a-f0-9]{40}$/.test(pr?.merge_commit_sha||""),
+  grant?.ok===true,grant?.decision==="VERIFIED_GITHUB_HUMAN_APPROVAL",
+  grant?.phase==="POST_MERGE_CLOSURE",grant?.mergedOnMain===true,
+  grant?.current_head===pr?.head?.sha
+].every(Boolean);
+const completeCanonicalLedger=l=>[
+  l?.evidence_readiness==="EVIDENCE_COMPLETE_FOR_CLOSURE_CONTROL",
+  l?.missing_review===false,
+  Array.isArray(l?.missing_pairs)&&l.missing_pairs.length===0,
+  Array.isArray(l?.missing_commands)&&l.missing_commands.length===0,
+  Array.isArray(l?.duplicates)&&l.duplicates.length===0,
+  Array.isArray(l?.stale)&&l.stale.length===0,
+  Array.isArray(l?.dangling_refs)&&l.dangling_refs.length===0,
+  Array.isArray(l?.unreferenced)&&l.unreferenced.length===0
+].every(Boolean);
+const closureTaskIdentity=({task,sprint,build,ledger})=>[
+  task?.status==="REVIEW",task?.task_id===sprint?.active_task,
+  task?.build_spec_id===sprint?.active_build_spec,
+  task?.build_spec_id===build?.active_baseline,
+  sprint?.status==="REVIEW",Boolean(sprint?.active_sprint),
+  build?.implementation_enabled===true,
+  ledger?.task_id===task?.task_id,ledger?.sprint_id===sprint?.active_sprint
+].every(Boolean);
+const specialClosureSequence=({task,sprint})=>
+  sprint?.active_sprint==="SP-P1-003"&&["T006","T008"].includes(task?.task_id);
+/** Pure closure preflight. It never changes statuses, creates PRs or fabricates PASS. */
+export function planTaskClosureReadiness({task,sprint,build,ledger,grant,pr}={}){
+  const errors=[],deny=(ok,msg)=>{if(!ok)errors.push(msg);};
+  deny(exactClosureSource(pr,grant),"Live merged PR / Human grant Main ancestry not proven");
+  deny(closureTaskIdentity({task,sprint,build,ledger}),
+    "Canonical REVIEW Task/Sprint/Build binding not ready");
+  deny(completeCanonicalLedger(ledger),
+    "Canonical Evidence missing, duplicated, stale, unreferenced or lacking PASS review");
+  deny(!specialClosureSequence({task,sprint}),
+    "SP-P1-003 T006/T008 require separate Human L3 closure-order resolution");
+  return {ok:errors.length===0,
+    decision:errors.length?"HARD_STOP":"ELIGIBLE_FOR_SEPARATE_PROTECTED_CONTROL_REVIEW",
+    errors,task_id:task?.task_id,sprint_id:sprint?.active_sprint,
+    mutates:false,closure_performed:false};
+}
+export async function liveTaskClosureCheck({prNumber,token}={}){
+  if(!validReconcileRequest({prNumber,token}))
+    throw Error("HARD_STOP: invalid closure query");
+  const repo="/repos/NFF98/appf2-build";
+  const pr=await gh(repo+"/pulls/"+prNumber,token);
+  const grant=await verifyLiveGrant({pr,token,phase:"POST_MERGE_CLOSURE"});
+  const sprint=readJson("delivery/CURRENT-SPRINT.json"),
+    build=readJson("build-spec/CURRENT.json"),
+    taskId=taskFromPr(pr);
+  const task=taskFromDoc(readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json"),taskId);
+  const ledger=task?ledgerFor(sprint.active_sprint,taskId):null;
+  return {...planTaskClosureReadiness({task,sprint,build,ledger,grant,pr}),
+    pr_number:prNumber,merged_commit:pr?.merge_commit_sha,
+    note:"Read-only post-merge preflight. Separate protected control transition and Human L3 remain required."};
+}
+
 function cli(args){
+  if(args[0]==="--closure-check"){
+    const prNumber=Number(args[1]),token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
+    return liveTaskClosureCheck({prNumber,token})
+      .then(out=>{console.log("CLOSURE PREFLIGHT "+JSON.stringify(out));
+        return out.ok?0:1;});
+  }
   if(args[0]==="--reconcile-pr"){
     const prNumber=Number(args[1]),token=process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
     return reconcileTaskEvidencePr({prNumber,token,apply:args.includes("--apply")})
