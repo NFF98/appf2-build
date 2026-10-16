@@ -1,7 +1,8 @@
 // Tests data-path integrity only. Not a real GitHub approval nor a merged PR.
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
-import {delegatedTaskExecutor} from "./task-pr-lifecycle.mjs";
+import {delegatedTaskExecutor,githubPageDecision,
+  readLiveDelegationEvidence} from "./task-pr-lifecycle.mjs";
 import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck,
   writeExistingProtectedClosureCandidate} from "./evidence-ledger-report.mjs";
@@ -145,6 +146,21 @@ export function runTrustedGrantSelfTests(){
     "Human grant must happen BEFORE activation, not require duplicate approval");total++;
   before.sprint.active_task="T008";
   assert.equal(inspectIssuance({...before,input,now:NOW}).ok,false);total++;
+  const page=githubPageDecision;
+  const pageRows=n=>Array.from({length:n},(_,i)=>({id:i+1}));
+  assert.equal(page({rows:pageRows(40)}),"COMPLETE");total++;
+  assert.equal(page({rows:pageRows(100)}),"NEXT_PAGE");total++;
+  assert.equal(page({rows:pageRows(20),page:2,accumulated:100}),"COMPLETE");total++;
+  assert.equal(page({rows:pageRows(20),page:2,accumulated:100,expected:121}),"HARD_STOP");total++;
+  assert.equal(page({rows:pageRows(20),page:2,accumulated:100,expected:120}),"COMPLETE");total++;
+  assert.equal(page({rows:pageRows(100),page:10,accumulated:900}),"HARD_STOP");total++;
+  assert.equal(page({rows:pageRows(101)}),"HARD_STOP");total++;
+  assert.equal(page({rows:"forged"}),"HARD_STOP");total++;
+  assert.equal(page({rows:pageRows(1),expected:0}),"HARD_STOP");total++;
+  assert.equal(page({rows:[],expected:0}),"COMPLETE");total++;
+  assert.equal(page({rows:pageRows(100),expected:100}),"COMPLETE");total++;
+  assert.equal(page({rows:pageRows(100),expected:101}),"NEXT_PAGE");total++;
+  assert.equal(page({rows:pageRows(99),expected:100}),"HARD_STOP");total++;
   const rawChecks=["ci","attack","governance","Analyze JavaScript / TypeScript"]
     .map((name,i)=>({name,id:i+100,head_sha:sha,status:"completed",
       conclusion:"success",app:{slug:"github-actions"}}));
@@ -219,6 +235,15 @@ export async function verifyLiveUnauthorizedNegative(){
     ()=>writeExistingProtectedClosureCandidate({
       sourcePrNumber:PR,controlPrNumber:PR,token:TOKEN,apply:true}),
     /executor checkout must match live Main/);
+  // Read actual PR comments, changed files, and check runs through the same
+  // complete, capped, GitHub-paginated API path used by the trusted executor.
+  const inventory=await readLiveDelegationEvidence({prNumber:PR,head,token:TOKEN});
+  if(!inventory.changed.length||inventory.checks.total_count!==
+    inventory.checks.check_runs.length)
+    throw Error("LIVE PAGINATION FAIL: incomplete authoritative file/check inventory");
+  console.log("LIVE GITHUB PAGINATION VERIFIED: "+
+    JSON.stringify({comments:inventory.comments.length,changed:inventory.changed.length,
+      checks:inventory.checks.total_count}));
   const after=await snapshot();
   if(after.main!==before.main||after.branch!==before.branch||
     after.pr?.head?.sha!==before.pr.head.sha||after.pr?.state!==before.pr.state)
