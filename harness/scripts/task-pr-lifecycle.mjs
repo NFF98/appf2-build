@@ -282,6 +282,26 @@ export const freshMergeReceipt=({before,after,firstPr,currentPr}={})=>[
 ].every(Boolean);
 const validMergedReceipt=merged=>[
   merged?.merged===true,/^[0-9a-f]{40}$/.test(merged?.sha||"")].every(Boolean);
+const revalidateProtectedMerge=async ({root,prNumber,token,head,pr,
+  previous,task,sprint,build,event,verifyLiveGrant,
+  candidateDigestOf,inspectTaskPrReadiness})=>{
+  // Re-read ALL evidence on the GitHub API before a merge. This is not
+  // a client Boolean and does not bypass GitHub branch protection.
+  const [live,latest]=await Promise.all([
+    delegateGitHubJson(root+"/pulls/"+prNumber,token),
+    readLiveDelegationEvidence({prNumber,head,token})]);
+  if(!freshMergeReceipt({before:previous,after:latest,firstPr:pr,currentPr:live}))
+    throw Error("HARD_STOP: GitHub readiness evidence or PR changed before merge");
+  const grant=await verifyLiveGrant({pr:live,token});
+  const readiness=inspectTaskPrReadiness({event,live,
+    comments:latest.comments,checks:latest.checks,changedFiles:latest.changed,
+    candidateDigest:candidateDigestOf(latest.changed,candidateFileBytes),
+    repo:DELEGATED_REPO,verifiedGrant:grant});
+  const result=delegatedPremergePolicy({pr:live,grant,task,sprint,build,
+    localHead:head,readiness});
+  if(!result.ok||!readiness.ok)
+    throw Error("HARD_STOP: freshly fetched exact-HEAD CI/BCE/Grant was not Ready");
+};
 export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
   if(!delegatedInputOK({prNumber,token,action}))
     throw Error("invalid delegated Task execution input");
@@ -309,24 +329,9 @@ export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
   if(!unchangedTaskPr(pr,liveAgain))
     throw Error("HARD_STOP: PR head/base/draft/mergeability changed during evidence read");
   if(action==="CHECK")return {...result,action,merged:false};
-  // Refresh the complete evidence immediately before PUT.
-  // A newer failed check or edited BCE comment invalidates the earlier PASS.
-  const [atMerge,currentEvidence]=await Promise.all([
-    delegateGitHubJson(root+"/pulls/"+prNumber,token),
-    readLiveDelegationEvidence({prNumber,head,token})
-  ]);
-  if(!freshMergeReceipt({before:{comments,changed,checks},
-    after:currentEvidence,firstPr:pr,currentPr:atMerge}))
-    throw Error("HARD_STOP: GitHub readiness evidence or PR changed before merge");
-  const latestGrant=await verifyLiveGrant({pr:atMerge,token});
-  const latestDigest=candidateDigestOf(currentEvidence.changed,candidateFileBytes);
-  const latestReadiness=inspectTaskPrReadiness({event,live:atMerge,
-    ...currentEvidence,changedFiles:currentEvidence.changed,
-    candidateDigest:latestDigest,repo:DELEGATED_REPO,verifiedGrant:latestGrant});
-  const latestState=delegatedPremergePolicy({pr:atMerge,grant:latestGrant,
-    task,sprint,build,localHead:head,readiness:latestReadiness});
-  if(!latestState.ok||!latestReadiness.ok)
-    throw Error("HARD_STOP: freshly fetched exact-HEAD CI/BCE/Grant was not Ready");
+  await revalidateProtectedMerge({root,prNumber,token,head,pr,
+    previous:{comments,changed,checks},task,sprint,build,event,
+    verifyLiveGrant,candidateDigestOf,inspectTaskPrReadiness});
   // No admin bypass. GitHub enforces normal protected-branch checks at PUT.
   // No Task Closure, Evidence mutation, next Task/Sprint or deployment.
   const merged=await delegateGitHubJson(root+"/pulls/"+prNumber+"/merge",token,{
