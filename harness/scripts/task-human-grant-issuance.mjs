@@ -2,7 +2,7 @@
 // Github's live reviewer history is the authoritative signed-by-platform Human source.
 import fs from "node:fs";
 import {pathToFileURL} from "node:url";
-import {ENVIRONMENT,WORKFLOW,HUMAN,taskScopeDigest,grantFromRun,sameGrantFields,trustedWorkflowPath} from "./trusted-human-task-grant.mjs";
+import {ENVIRONMENT,HUMAN,taskScopeDigest,grantFromRun,sameGrantFields,trustedWorkflowPath} from "./trusted-human-task-grant.mjs";
 const read=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 async function gh(path,token){
   const r=await fetch("https://api.github.com"+path,{headers:{
