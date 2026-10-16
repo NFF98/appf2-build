@@ -30,11 +30,13 @@ const exactIssuanceRun=(run,input)=>run?.event==="workflow_dispatch"&&
   run?.head_sha===input?.head_sha&&
   run?.path?.split("@")[0]?.endsWith("/"+WORKFLOW)&&
   run?.repository?.full_name==="NFF98/appf2-build";
-const issuanceScopeMatch=(grant,input,task)=>grant?.schema==="APPF2-TRUSTED-TASK-GRANT-1"&&
-  grant?.task_id===input.task_id&&grant?.sprint_id===input.sprint_id&&
-  grant?.scope_sha256===input.scope_sha256 &&
-  grant?.task_id===task?.task_id&&grant?.build_spec_id===task?.build_spec_id&&
-  grant?.scope_sha256===taskScopeDigest(task);
+const inputMatchesGrant=(g,input)=>g?.schema==="APPF2-TRUSTED-TASK-GRANT-1"&&
+  g?.task_id===input.task_id&&g?.sprint_id===input.sprint_id&&
+  g?.scope_sha256===input.scope_sha256;
+const canonicalTaskMatchesGrant=(g,task)=>g?.task_id===task?.task_id&&
+  g?.build_spec_id===task?.build_spec_id&&g?.scope_sha256===taskScopeDigest(task);
+const issuanceScopeMatch=(g,input,task)=>
+  inputMatchesGrant(g,input)&&canonicalTaskMatchesGrant(g,task);
 const noDifferentTaskInExecution=(s,g)=>
   (s?.active_task===null||s?.active_task===g?.task_id)&&
   (s?.active_sprint===null||s?.active_sprint===g?.sprint_id);
