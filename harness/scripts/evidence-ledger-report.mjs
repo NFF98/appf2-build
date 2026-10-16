@@ -255,6 +255,8 @@ const controlTaskContentsUnchanged=(a,b,id)=>{
     a.every(t=>t.task_id===id||t.status===rows.get(t.task_id)?.status)
   ].every(Boolean);
 };
+const canonicalTaskMetadataUnchanged=(a,b)=>JSON.stringify({...a,tasks:null})===
+  JSON.stringify({...b,tasks:null});
 const proposedClosureTaskDoc=(doc,id)=>({...doc,tasks:doc.tasks.map(t=>
   t.task_id===id?{...t,status:"CLOSED"}:t)});
 /** Pure closure mutation plan; no direct Main writes or Product PASS fabrication. */
@@ -264,6 +266,8 @@ export function planProtectedClosureMutation({plan,mainDoc,controlDoc,taskId}={}
     "Invalid closure plan, Task ID or Sprint");
   const a=mainDoc?.tasks,b=controlDoc?.tasks;
   deny(taskListWellFormed(a,b,taskId),"Task inventory missing, duplicated or altered");
+  deny(canonicalTaskMetadataUnchanged(mainDoc,controlDoc),
+    "Control branch mutated tasks.json root metadata");
   deny(validReviewAndProposedStatus(a,b,taskId),
     "Canonical Task is not REVIEW or proposed status is invalid");
   deny(controlTaskContentsUnchanged(a||[],b||[],taskId),
