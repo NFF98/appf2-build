@@ -26,9 +26,8 @@ jobs:
           set -euo pipefail
           out="$RUNNER_TEMP/gov-reform"
           mkdir -p "$out"
-          # Bounded observation window; no invented before/after efficacy claim.
           since="$(date -u -d '7 days ago' +%Y-%m-%d)"
-          enrich_cap=120
+          enrich_cap=40
           echo "metrics_window_start=$since enrich_cap=$enrich_cap"
           : > "$out/list.ndjson"
           for workflow in ci.yml codeql.yml; do
@@ -40,13 +39,13 @@ jobs:
           if [[ ! -s "$out/list.ndjson" ]]; then
             jq -n --arg since "$since" '{complete:false,window_start:$since,reason:"EMPTY_WINDOW",runs:[]}' > "$out/runs.json"
           else
-            # Newest first (higher run id), then enrich only the newest N for job depth.
             jq -s 'sort_by(.id) | reverse' "$out/list.ndjson" > "$out/list.json"
             listed="$(jq 'length' "$out/list.json")"
             echo "metrics_run_list_count=$listed"
             jq --argjson cap "$enrich_cap" '.[0:$cap]' "$out/list.json" > "$out/to-enrich.json"
             : > "$out/enriched.ndjson"
-            jq -c '.[]' "$out/to-enrich.json" | while IFS= read -r row; do
+            mapfile -t rows < <(jq -c '.[]' "$out/to-enrich.json")
+            for row in "${rows[@]}"; do
               [[ -z "$row" ]] && continue
               id="$(jq -r .id <<< "$row")"
               attempts="$(jq -r .runAttempt <<< "$row")"
@@ -67,10 +66,9 @@ jobs:
               fi
               jq -s '.' "$out/jobs.ndjson" > "$out/jobs.json"
               jq -cn --argjson row "$row" --slurpfile jobs "$out/jobs.json" '$row + {jobs:$jobs[0]}' >> "$out/enriched.ndjson"
-            done < <(jq -c '.[]' "/to-enrich.json")
+            done
             enriched="$(jq -s 'length' "$out/enriched.ndjson")"
-            truncated=false
-            if (( enriched < listed )); then truncated=true; fi
+            if (( enriched < listed )); then truncated=true; else truncated=false; fi
             jq -s --arg since "$since" --argjson listed "$listed" --argjson enriched "$enriched" --argjson truncated "$truncated" \
               '{complete:true,window_start:$since,sample:{strategy:"newest",listed:$listed,enriched:$enriched,truncated:$truncated},runs:.}' \
               "$out/enriched.ndjson" > "$out/runs.json"
@@ -84,7 +82,7 @@ jobs:
             --runs "$RUNNER_TEMP/gov-reform/runs.json" --run-limit 100000 \
             --open-prs "$RUNNER_TEMP/gov-reform/open-prs.json" \
             --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
-          node -e "const m=require(process.env.RUNNER_TEMP+'/gov-reform/reform-metrics.json'); console.log(JSON.stringify({ci_status:m.ci?.status,ci_reason:m.ci?.reason||null,full_ci_runs:m.ci?.full_ci_runs??null,ready_ci_executed:m.ci?.ready_ci_executed??null,sample:m.ci?.sample||null},null,2));"
+          node -e "const m=require(process.env.RUNNER_TEMP+'/gov-reform/reform-metrics.json'); console.log(JSON.stringify({ci_status:m.ci?.status,full_ci_runs:m.ci?.full_ci_runs??null,ready_ci_executed:m.ci?.ready_ci_executed??null,sample:m.ci?.sample||null},null,2));"
       - name: Upload weekly scorecard (NOT governance PASS)
         uses: actions/upload-artifact@v4
         with:
