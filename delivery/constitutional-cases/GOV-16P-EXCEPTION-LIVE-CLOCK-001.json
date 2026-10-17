@@ -9,7 +9,7 @@
     "harness/scripts/16p-real-e2e.mjs",
     "harness/scripts/16p-task-evidence-live.mjs"
   ],
-  "candidate_digest_sha256": "67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441",
+  "candidate_digest_sha256": "7732c517cb377fc1b01f330d7f6fe2879b60bc62c841d7c83dc28472585d2121",
   "why5": [
     {
       "question": "Why cannot 16P #7 claim verified expiry and revocation?",
@@ -45,17 +45,8 @@
   ],
   "no_change": "Expiry/revocation remain only synthetic fixtures; 16P #7 full protected lifecycle stays AUTHORITY_REQUIRED.",
   "rollback": "Remove this candidate-only 16P runner probe if authorized independent review identifies any false-green or side effect.",
-  "status": "HUMAN_EXACT_CANDIDATE_CHAT_APPROVED_GATES_AND_GPT_BCE_ONLY_NO_MERGE",
-  "human_approval": {
-    "case_id": "GOV-16P-EXCEPTION-LIVE-CLOCK-001",
-    "approver": "NFF98",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "candidate_digest_sha256": "67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441",
-    "human_message_ref": "Human direct ChatGPT reply on 2026-10-18 JST: \"批准\", directly responding to prior GPT exact #407 candidate listing BASE=312b923221f5d5d18c887302a60d30493fa66129 HEAD=a9b1c24a3348a3446301b3eb4964af9ec9b8daaf candidate_digest_sha256=67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441. GPT-registered provenance https://github.com/NFF98/appf2-build/pull/407#issuecomment-6240507324; NOT independent GitHub/cryptographic Human signature; manual Human provenance check required. Limited to docket approval record, GitHub gates, independent BCE; NOT Merge.",
-    "approved_at_unix": 1792268838
-  },
+  "status": "REVISED_EXACT_CANDIDATE_PENDING_NEW_HUMAN_APPROVAL__16P_INCOMPLETE_EXPECTED_HARD_STOP",
+  "human_approval": null,
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
     "lane": "GOVERNANCE_REFORM",
@@ -78,5 +69,20 @@
     "zero_gap": true,
     "justification": "This test adds no Product completion claim and defers no acceptance; both protected lifecycle gaps remain open in 16P receipt, no canonical product truth edit."
   },
-  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval. After first draft CI, broadened from two to three harness paths solely to correct 16P historical HOLD Task evidence reporting; zero-gap marker normalized to [NONE]. Exact candidate remains pending Human approval. Existing 16P historical evidence reporter corrected to explicitly return NOT_RUN_NO_ACTIVE_SPRINT instead of READY_TO_REPORT under Main HOLD; code complexity extraction only, no new Task authority. Human direct one-word exact candidate approval transcribed 2026-10-17T20:27:18.000Z after unambiguous SHA/digest listing; any further program file mutation or Main change invalidates approval. GitHub owner attribution not standalone Human identity proof."
+  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval. After first draft CI, broadened from two to three harness paths solely to correct 16P historical HOLD Task evidence reporting; zero-gap marker normalized to [NONE]. Exact candidate remains pending Human approval. Existing 16P historical evidence reporter corrected to explicitly return NOT_RUN_NO_ACTIVE_SPRINT instead of READY_TO_REPORT under Main HOLD; code complexity extraction only, no new Task authority. Human direct one-word exact candidate approval transcribed 2026-10-17T20:27:18.000Z after unambiguous SHA/digest listing; any further program file mutation or Main change invalidates approval. GitHub owner attribution not standalone Human identity proof.\n2026-10-18 NEW UNAPPROVED SOURCE REVISION (user requested continuing same PR): changed only harness/scripts/16p-real-e2e.mjs strict acceptance. 16P 0/16 or missing authenticated Main closure now exits nonzero, rather than green for incomplete. All 16 original operation receipts remain intact. Old Human approval preserved under previous_exact_approval as archival-only and set active human_approval=null. No Product claim, no Merge, no new PR, no new Task/Sprint. Revised code source SHA256 7732c517cb377fc1b01f330d7f6fe2879b60bc62c841d7c83dc28472585d2121.",
+  "previous_exact_approval": {
+    "approved_source_digest_sha256": "67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441",
+    "approved_old_head_sha": "3b7b1fba276b1a9235f86770ca2252607a186aff",
+    "old_approval": {
+      "case_id": "GOV-16P-EXCEPTION-LIVE-CLOCK-001",
+      "approver": "NFF98",
+      "source_kind": "DIRECT_HUMAN_MESSAGE",
+      "decision": "APPROVE_EXACT_CANDIDATE",
+      "scope": "EXACT_PR_DIFF",
+      "candidate_digest_sha256": "67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441",
+      "human_message_ref": "Human direct ChatGPT reply on 2026-10-18 JST: \"批准\", directly responding to prior GPT exact #407 candidate listing BASE=312b923221f5d5d18c887302a60d30493fa66129 HEAD=a9b1c24a3348a3446301b3eb4964af9ec9b8daaf candidate_digest_sha256=67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441. GPT-registered provenance https://github.com/NFF98/appf2-build/pull/407#issuecomment-6240507324; NOT independent GitHub/cryptographic Human signature; manual Human provenance check required. Limited to docket approval record, GitHub gates, independent BCE; NOT Merge.",
+      "approved_at_unix": 1792268838
+    },
+    "disposition": "HISTORICAL_ONLY_INVALIDATED_BY_16P_RUNNER_SOURCE_CHANGE_NO_MERGE_AUTHORITY"
+  }
 }
