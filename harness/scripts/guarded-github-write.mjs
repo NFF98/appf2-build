@@ -46,6 +46,11 @@ function canonical(){
  const tasks=sprint.active_sprint?read("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
  return {sprint,build,tasks,policy:read(GOVERNANCE_REFORM_POLICY_PATH).pr_guard};
 }
+// Query historical primary PRs before the lease preflight even after HOLD.
+const historicalPrimaryPrs=(taskId,allPrs)=>Array.isArray(allPrs)?
+ allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
+  .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
+  .sort((a,b)=>a.number-b.number):[];
 export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,governanceCase=null,allPrs=null}){
  if(!Array.isArray(openPrs))return fail("BLOCK_NO_INVENTORY","Live inventory required");
  if(openPrs.length>=200)return fail("BLOCK_TRUNCATED","Live PR inventory truncated");
@@ -57,14 +62,10 @@ export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,gover
  }
  if(!/^T\d{3}$/.test(taskId||""))return fail("BLOCK_TASK_ID","Task ID missing");
  // Existing merged Task PR must remain blocked after a proposed Sprint HOLD.
- if(Array.isArray(allPrs)){
-  const previous=allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
-   .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
-   .sort((a,b)=>a.number-b.number);
-  if(previous.length)return fail("BLOCK_REUSE_EXISTING_TASK_PR",
+ const previous=historicalPrimaryPrs(taskId,allPrs);
+ if(previous.length)return fail("BLOCK_REUSE_EXISTING_TASK_PR",
    "Historical Task primary PR exists; do not create a duplicate",
    {task_id:taskId,existing:previous});
- }
  const out=preflight({build,sprint,tasks,openPrs,guard,intent:"NEW_PR",taskId});
  if(out.denied||out.decision!=="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY")
   return fail("BLOCK_NEW_PR",out.reason||out.decision,{preflight:out});
@@ -132,7 +133,7 @@ function auditTaskHistory(sourceNumber,evidenceNumber){
  const source=api("pulls/"+sourceNumber),proof=api("pulls/"+evidenceNumber);
  const identity=taskIdentityOfPr(source);
  if(!identity.ok)return fail("BLOCK_NOT_REAL_TASK_PR","Primary PR identity mismatch",{identity});
- const taskId=identity.task_id,ctx=canonical();
+ const taskId=identity.task_id;
  // Real immutable Main task history survives proposed CURRENT-SPRINT HOLD.
  const remote=api("contents/delivery/sprints/SP-P1-003/tasks.json?ref=main");
  const taskDoc=JSON.parse(Buffer.from(String(remote?.content||"").replace(/\s/g,""),"base64").toString("utf8"));
