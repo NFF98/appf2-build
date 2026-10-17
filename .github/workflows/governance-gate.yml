@@ -213,7 +213,7 @@ jobs:
       - name: Real PostgreSQL migration / RLS / PostgREST exposure tests (no SKIP accepted)
         run: |
           set -euo pipefail
-          npx vitest run tests/api/pg001-postgrest-exposure.integration.test.ts --reporter=json > "$RUNNER_TEMP/16p-d/postgres-report.json"
+          npx vitest run tests/api/pg001-postgrest-exposure.integration.test.ts --reporter=json --outputFile="$RUNNER_TEMP/16p-d/postgres-report.json" > "$RUNNER_TEMP/16p-d/postgres-runner.log"
           node --input-type=module <<'CHECK'
           import fs from 'node:fs';
           const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/16p-d/postgres-report.json'));
