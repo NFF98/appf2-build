@@ -277,6 +277,23 @@ jobs:
             }
           '
           if [[ "$a" -ne 3 || "$b" -ne 3 || "$c" -ne 3 || "$d" -ne 3 ]]; then exit 2; fi
+      - name: Existing merged Task PR must be reused, never opened again
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          node harness/scripts/guarded-github-write.mjs --operation PR_CREATE --task T008 --out "$RUNNER_TEMP/16p-write/reuse-task.json"
+          rc=$?
+          set -e
+          test "$rc" -eq 3
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/16p-write/reuse-task.json","utf8"));
+            if(d.decision!=="BLOCK_REUSE_EXISTING_TASK_PR"||d.write_performed!==false||
+               !d.existing?.some(p=>p.number===386&&p.merged===true))
+              throw Error("Historical Task #386 merged PR must block a new T008 PR");
+            console.log("LIVE GitHub Task reuse PASS: T008 #386 already merged; no new PR created");
+          '
       - name: Real #1 GitHub Task lifecycle source-to-evidence audit (not Closure)
         env:
           GH_TOKEN: ${{ github.token }}

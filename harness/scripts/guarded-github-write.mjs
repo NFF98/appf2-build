@@ -26,6 +26,21 @@ function inventory(){
  if(!Array.isArray(rows)||rows.length>=200)throw Error("HARD_STOP: live open PR inventory missing/truncated");
  return rows;
 }
+// GitHub's open-PR inventory is insufficient for a "one Task -> one PR" rule:
+// after a merge the Task may remain REVIEW while its primary PR is closed.
+// Read every historical PR (max 1000) before considering another write.
+function taskPrHistory(){
+ if(!auth())throw Error("HARD_STOP: GH_TOKEN required for closed/merged PR inventory");
+ const rows=JSON.parse(execFileSync("gh",["pr","list","--repo",repoName(),
+  "--state","all","--limit","1000","--json","number,title,body,state,mergedAt"],{
+   encoding:"utf8",timeout:60000,maxBuffer:20000000,env:process.env}));
+ if(!Array.isArray(rows)||rows.length>=1000||
+   rows.some(x=>!Number.isSafeInteger(x.number)||x.number<=0||
+    typeof x.title!=="string"||typeof x.body!=="string"))
+  throw Error("HARD_STOP: incomplete/malformed Task PR historical inventory");
+ return rows;
+}
+
 function canonical(){
  const sprint=read("delivery/CURRENT-SPRINT.json"),build=read("build-spec/CURRENT.json");
  const tasks=sprint.active_sprint?read("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
@@ -35,7 +50,7 @@ function taskDecision(taskId,openPrs){
  const {sprint,build,tasks,policy}=canonical();
  return preflight({build,sprint,tasks,openPrs,guard:policy,intent:"NEW_PR",taskId});
 }
-export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,governanceCase=null}){
+export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,governanceCase=null,allPrs=null}){
  if(!Array.isArray(openPrs))return fail("BLOCK_NO_INVENTORY","Live inventory required");
  if(openPrs.length>=200)return fail("BLOCK_TRUNCATED","Live PR inventory truncated");
  if(governanceCase){
@@ -48,12 +63,26 @@ export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,gover
  const out=preflight({build,sprint,tasks,openPrs,guard,intent:"NEW_PR",taskId});
  if(out.denied||out.decision!=="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY")
   return fail("BLOCK_NEW_PR",out.reason||out.decision,{preflight:out});
+ if(!Array.isArray(allPrs))
+  return fail("BLOCK_HISTORY_MISSING","Cannot prove no previously merged Task PRs",{preflight:out});
+ // Match BOTH the title and the explicit Task declaration, using the same
+ // canonical Task identity algorithm as the Merge/Evidence writer.
+ const previous=allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
+   .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
+   .sort((a,b)=>a.number-b.number);
+ if(previous.length)
+  return fail("BLOCK_REUSE_EXISTING_TASK_PR",
+   "The same Task already has a primary PR in real GitHub history. Reuse an open PR or follow protected closure; never open another PR automatically",
+   {task_id:taskId,existing:previous,preflight:out});
  // Do not turn 'new PR may be requested' into Human's explicit PR-create approval.
  return fail("BLOCK_HUMAN_CREATE_AUTHORITY","Task lease does not grant new PR creation on its own",{preflight:out});
 }
 function realPrecreate(taskId,governanceCase){
  const openPrs=inventory(),ctx=canonical();
- return classifyPrecreate({taskId,governanceCase,openPrs,...ctx,guard:ctx.policy});
+ // Fetch history only after the Task is plausibly active; invalid Task IDs
+ // already fail closed in the pure preflight and do not consume API quota.
+ const allPrs=taskId===ctx.sprint.active_task?taskPrHistory():null;
+ return classifyPrecreate({taskId,governanceCase,openPrs,allPrs,...ctx,guard:ctx.policy});
 }
 async function realEvidence(prNumber,apply){
  const source=api("pulls/"+prNumber);
