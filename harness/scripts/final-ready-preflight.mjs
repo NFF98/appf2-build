@@ -55,7 +55,8 @@ const commonErrors=(c,record,ctx)=>{
   assertion(record.pr_number===ctx.live.number,"readiness PR number mismatch",e);
   assertion(record.head_sha===ctx.head && HEX40.test(record.head_sha||""),"stale or malformed readiness HEAD",e);
   assertion(record.base_sha===ctx.base && HEX40.test(record.base_sha||""),"stale or malformed readiness BASE",e);
-  const control=ctx.adminClosure===true && record.kind==="LOCAL_TESTS" &&
+  const control=(ctx.adminClosure===true || ctx.governanceHold===true) &&
+    record.kind==="LOCAL_TESTS" &&
     record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN";
   assertion(record.verdict==="PASS" || control ||
     (record.kind==="HUMAN_FINAL_READY" && record.verdict==="APPROVED"),
@@ -64,8 +65,8 @@ const commonErrors=(c,record,ctx)=>{
   return e.concat(sourceErrors(c,ctx.owner));
 };
 // A narrowly authenticated administrative HOLD is not Product PASS.
-const adminHoldRun=(run,record,ctx)=>[
-  ctx.adminClosure===true,
+const scopedHoldRun=(run,record,ctx)=>[
+  ctx.adminClosure===true || ctx.governanceHold===true,
   record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN",
   run?.command==="npm run product:ci",run?.status==="NOT_RUN",
   run?.product_disposition==="HOLD_NOT_RUN",run?.exit_code===0,
@@ -82,7 +83,7 @@ const localEvidenceErrors=(record,ctx)=>{
     assertion(matched.length===1,"local command missing or duplicated: "+name,e);
   }
   for(const run of runs){
-    const admissible=[numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
+    const admissible=[numericPass(run),scopedHoldRun(run,record,ctx)].some(Boolean);
     assertion(admissible,"local test skipped/failed or missing immutable log digest: "+run?.command,e);
     assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
       "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
@@ -95,7 +96,7 @@ const localEvidenceErrors=(record,ctx)=>{
 };
 const bceEvidenceErrors=(r,ctx)=>{
   const e=[];
-  const administrativeControl=ctx.adminClosure===true &&
+  const administrativeControl=(ctx.adminClosure===true || ctx.governanceHold===true) &&
     r.execution_evidence_verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN";
   assertion(r.scope_verdict==="PASS" && (r.execution_evidence_verdict==="PASS" || administrativeControl),
     "GPT BCE requires separate scope and execution-evidence PASS",e);
@@ -198,6 +199,69 @@ export function candidateDigestOf(changedFiles,readBytes){
   const others=dockets.length===1?paths.filter(x=>x!==dockets[0]):paths;
   return exceptionDigest(readBytes,others);
 };
+// A governance-only HOLD cannot be upgraded into a Product PASS. It must be
+// a single newly approved GOVERNANCE_REFORM docket plus strictly permitted
+// governance paths. Full GitHub required checks and Human Final Ready still apply.
+const GOVERNANCE_HOLD_PREFIXES=[
+  "harness/","ci/","skills/",".cursor/rules/",".github/",
+  "delivery/templates/","delivery/audits/","delivery/findings/"
+];
+const governanceHoldPath=p=>GOVERNANCE_HOLD_PREFIXES.some(a=>p.startsWith(a)) ||
+  p==="AGENTS.md" || /^delivery\\/[^/]+\\.md$/.test(p);
+const sameSorted=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&
+  a.length===b.length&&[...a].sort().every((x,i)=>x===[...b].sort()[i]);
+export function isGovernanceHoldCandidate({changedFiles,docket,sprint,build,
+  base,candidateDigest,now=Math.floor(Date.now()/1000)}={}){
+  const files=Array.isArray(changedFiles)?changedFiles.flat():null;
+  if(!files?.length||files.some(f=>!f||!["added","modified"].includes(f.status)||
+    f.previous_filename!==undefined||typeof f.filename!=="string"))return false;
+  const paths=files.map(f=>f.filename);
+  if(new Set(paths).size!==paths.length)return false;
+  const casePaths=paths.filter(p=>/^delivery\\/constitutional-cases\\/GOV-[A-Z0-9-]+\\.json$/.test(p));
+  if(casePaths.length!==1)return false;
+  const docketPath=casePaths[0],others=paths.filter(p=>p!==docketPath);
+  if(!others.length||!others.every(governanceHoldPath))return false;
+  if(!files.some(f=>f.filename===docketPath&&f.status==="added"))return false;
+  const exception=docket?.scope_exception||{},approval=docket?.human_approval||{};
+  return sprint?.status==="HOLD" && sprint?.active_sprint===null &&
+    sprint?.active_task===null && build?.implementation_enabled===false &&
+    dossierBound( {docket,docketPath,others,base,candidateDigest,approval,exception,now} );
+}
+function dossierBound({docket,docketPath,others,base,candidateDigest,approval,exception,now}){
+  return docket?.case_id && docketPath==="delivery/constitutional-cases/"+docket.case_id+".json" &&
+    dossierApprovalBound({docket,others,base,candidateDigest,approval}) &&
+    exception.schema==="APPF2-HUMAN-EXCEPTION-1" &&
+    exception.lane==="GOVERNANCE_REFORM" &&
+    exception.affected_sprint===null && Array.isArray(exception.affected_tasks) &&
+    exception.affected_tasks.length===0 &&
+    sameSorted(exception.covered_gates,["CHANGE_SCOPE"]) &&
+    exception.never_converts_fail_or_untested_to_pass===true &&
+    Number.isSafeInteger(exception.expires_at_unix) &&
+    Number.isSafeInteger(approval.approved_at_unix) &&
+    exception.expires_at_unix>approval.approved_at_unix &&
+    now<=exception.expires_at_unix;
+}
+function dossierApprovalBound({docket,others,base,candidateDigest,approval}){
+  return /^[0-9a-f]{40}$/.test(base||"") &&
+    /^[0-9a-f]{64}$/.test(candidateDigest||"") &&
+    docket.base_sha===base && docket.candidate_digest_sha256===candidateDigest &&
+    sameSorted(docket.exact_changed_paths,others) &&
+    approval.case_id===docket.case_id && approval.candidate_digest_sha256===candidateDigest &&
+    approval.source_kind==="DIRECT_HUMAN_MESSAGE" && approval.approver==="NFF98" &&
+    approval.decision==="APPROVE_EXACT_CANDIDATE" && approval.scope==="EXACT_PR_DIFF" &&
+    typeof approval.human_message_ref==="string" && approval.human_message_ref.length>30;
+}
+const actualGovernanceHold=({changedFiles,base,candidateDigest})=>{
+  const paths=Array.isArray(changedFiles)?changedFiles.flat().map(f=>f?.filename):[];
+  const cases=paths.filter(p=>typeof p==="string"&&
+    /^delivery\\/constitutional-cases\\/GOV-[A-Z0-9-]+\\.json$/.test(p));
+  if(cases.length!==1)return false;
+  const safeRead=p=>{try{return readJsonFile(p);}catch{return null;}};
+  return isGovernanceHoldCandidate({changedFiles,docket:safeRead(cases[0]),
+    sprint:safeRead("delivery/CURRENT-SPRINT.json"),
+    build:safeRead("build-spec/CURRENT.json"),base,candidateDigest});
+};
+
 /** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
 export function inspectPrReadiness({event,live,comments,checks,changedFiles,
   candidateDigest,repo,verifiedPrRunOrigins}){
@@ -211,7 +275,9 @@ export function inspectPrReadiness({event,live,comments,checks,changedFiles,
   const paths=Array.isArray(changedFiles)?changedFiles.flat().map(x=>x?.filename).sort():[];
   const adminClosure=paths.length===approvedPaths.length &&
     paths.every((x,i)=>x===approvedPaths[i]);
-  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest,adminClosure};
+  const governanceHold=actualGovernanceHold({changedFiles,base,candidateDigest});
+  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest,
+    adminClosure,governanceHold};
   assertion(HEX64.test(candidateDigest||""),"cannot compute exact Git-byte candidate SHA256",errors);
   // L3 governance changes cannot obtain Final Ready from Draft fast-loop or
   // a successful branch push. Reuse the L1 trusted GitHub PR-run provenance.
