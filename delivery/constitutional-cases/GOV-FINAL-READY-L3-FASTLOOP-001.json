@@ -60,5 +60,29 @@
     "expires_at_unix": 1793443560
   },
   "status": "EXACT_CANDIDATE_CHAT_APPROVED_PENDING_LIVE_GATES_AND_FINAL_READY",
-  "notes": "Human approved GPT to work on Final Ready but did not specifically approve this exact BASE/HEAD/digest candidate. No forged approval. Gate failure expected before explicit Human decision. Current code head c3f4cb00d4b86523b5b258ee1c1b9a31c4b7b0e0; source digest extracted from actual GitHub Actions fast-loop log."
+  "notes": "Human approved GPT to work on Final Ready but did not specifically approve this exact BASE/HEAD/digest candidate. No forged approval. Gate failure expected before explicit Human decision. Current code head c3f4cb00d4b86523b5b258ee1c1b9a31c4b7b0e0; source digest extracted from actual GitHub Actions fast-loop log.",
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Existing active Sprint3 T008 REVIEW prohibits governance-only harness changes. Narrow Ready validator correction is required so preapproved #403 may satisfy real Final Ready without Draft fast-loop deadlock.",
+    "risk": "Protected workflow admission changes may affect GitHub Merge correctness; four full pull_request checks, exact Head/Base, local evidence, independent GPT BCE and Human Ready remain required.",
+    "owner": "Human（NFF98）",
+    "follow_up": "After isolated lawful #405 Merge and Main post-merge CI, run exact-head #403 Final Ready evidence and re-evaluate #402; maintain blocked Product evidence as NOT_PASS.",
+    "residual_gaps": [
+      "#403 final readiness proof still missing",
+      "#402 administrative carry-forward closure still pending"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793443560,
+    "expires_at_rule": "Bound to registered Human precise candidate approval; max 14 days under governance policy."
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "Change applies only to L3 admission consistency; no Product/Task test is deferred or newly waived by this governance fix."
+  }
 }
