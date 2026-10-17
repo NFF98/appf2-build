@@ -63,7 +63,11 @@ function run(){
  const mainSprint=actualMainFile("delivery/CURRENT-SPRINT.json",mainSha);
  const taskDoc=actualMainFile(pathOfTask,mainSha);
  const task=taskDoc.tasks?.find(x=>x.task_id==="T008");
- hard(mainSprint.active_sprint===sprint&&task?.task_id==="T008","T008 not canonical");
+ const historicalHold=mainSprint.status==="HOLD"&&mainSprint.active_sprint===null&&
+  mainSprint.active_task===null&&task?.status==="REVIEW";
+ hard((mainSprint.active_sprint===sprint||historicalHold)&&task?.task_id==="T008",
+  "T008 not canonical (allowed historical HOLD with T008 REVIEW only)");
+ if(historicalHold) console.log("16P REAL EVIDENCE: historical Sprint3 HOLD verified; no Task activation or Product PASS");
  const {primary,evidencePr}=verifyHistoricalPrs(mainSprint);
  const {ids,unique,docs}=loadMainEvidence(task,mainSha);
  const ci=actualMainFile("ci/policy.json",mainSha);
