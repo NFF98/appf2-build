@@ -128,6 +128,18 @@ jobs:
           node-version: 22
       - name: Install dependencies for real tests
         run: npm ci
+      - name: Verify 14 live canonical T008 Evidence documents against merged GitHub PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TASK_EVIDENCE_RECEIPT: ${{ runner.temp }}/16p-t008-canonical-live.json
+        run: node harness/scripts/16p-task-evidence-live.mjs
+      - name: Upload verified live canonical Evidence receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-t008-real-evidence-audit
+          path: ${{ runner.temp }}/16p-t008-canonical-live.json
+          if-no-files-found: warn
       - name: Execute strict 16P REAL E2E operations (never conflate local PASS with Main Closure)
         env:
           GH_TOKEN: ${{ github.token }}
