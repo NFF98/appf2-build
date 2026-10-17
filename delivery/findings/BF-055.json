@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "finding_id": "BF-055",
+  "classification": "SPEC_AMBIGUITY",
+  "status": "RESOLVED",
+  "build_spec_id": "BS-P1-025",
+  "sprint_id": "SP-P1-003",
+  "task_id": "T006",
+  "expected": "T006 Stage A nine mapped executable acceptances must be achievable without implementing out-of-scope F06 Preview, while preserving original F00-AC-037/F06-AC-025 for Stage C.",
+  "actual": "BS025 T006 ninth pair F00-AC-037/TEST-F00-037 includes both Composer and F06 Preview origin; existing Composer-only real E2E PASS cannot claim the full AC037. Human-approved Design PR42 adds F00-AC-039/TEST-F00-039 for Stage A; full original AC037 remains Stage C. L2 semantic issue resolved, Build Freeze/Activation and product test still unfinished.",
+  "evidence": [
+    "Human Design PR #42 approved and merged f844914b7afb738f903d4041f09a1d6c8f82711e.",
+    "#374 CI Gate PRODUCT CI PASS; playwright TEST-F00-037 Composer-origin path passes in Chromium/Firefox/WebKit/Mobile Chromium; Preview origin not tested.",
+    "BS026 Draft #377 64/64 source identities and 52/52 output inventory verified; Manifest still not Human approved.",
+    "Full F00-AC-037 plus F06-AC-025 remain ACTIVE unchanged for future Stage C F06."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "A1",
+      "strategy": "DESIGN_L2_STAGE_SPLIT_REVIEW",
+      "result": "DESIGN_OWNER_APPROVED_NOT_BUILD_FROZEN",
+      "evidence": "Design #42 merged; unique new F00-AC-039/Test039; full AC037 preserved."
+    },
+    {
+      "attempt_id": "A2",
+      "strategy": "SCOPE_CLEAN_FREEZE_CANDIDATE",
+      "result": "CANDIDATE_ONLY_NO_PRODUCT_PASS",
+      "evidence": "Build PR #377 only Draft, no BS026 Freeze or Activation approval."
+    }
+  ],
+  "requested_planning_action": [
+    "Human-approved BS026 Freeze after correct scope guard; distinct activation/rebind",
+    "Cursor under separate lease adapt and rerun Composer-only TEST-F00-039, preserve original F06 proof",
+    "Independent BCE 9 real mapped pairs; T006 VERIFIED before T008"
+  ],
+  "affected_contracts": [
+    "F00-AC-037/TEST-F00-037 retained",
+    "F00-AC-039/TEST-F00-039 Composer-only added",
+    "F06-AC-025/TEST-F06-025 future Stage C"
+  ],
+  "affected_acceptance": [
+    "F00-AC-037",
+    "F00-AC-039",
+    "F06-AC-025"
+  ],
+  "contract_affecting": true,
+  "delta_id": "BD-026"
+}
