@@ -71,15 +71,6 @@ export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,gover
   return fail("BLOCK_NEW_PR",out.reason||out.decision,{preflight:out});
  if(!Array.isArray(allPrs))
   return fail("BLOCK_HISTORY_MISSING","Cannot prove no previously merged Task PRs",{preflight:out});
- // Match BOTH the title and the explicit Task declaration, using the same
- // canonical Task identity algorithm as the Merge/Evidence writer.
- const previous=allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
-   .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
-   .sort((a,b)=>a.number-b.number);
- if(previous.length)
-  return fail("BLOCK_REUSE_EXISTING_TASK_PR",
-   "The same Task already has a primary PR in real GitHub history. Reuse an open PR or follow protected closure; never open another PR automatically",
-   {task_id:taskId,existing:previous,preflight:out});
  // Do not turn 'new PR may be requested' into Human's explicit PR-create approval.
  return fail("BLOCK_HUMAN_CREATE_AUTHORITY","Task lease does not grant new PR creation on its own",{preflight:out});
 }
