@@ -63,6 +63,15 @@ const commonErrors=(c,record,ctx)=>{
   assertion(KINDS.includes(record.kind),"unknown readiness stage",e);
   return e.concat(sourceErrors(c,ctx.owner));
 };
+// A narrowly authenticated administrative HOLD is not Product PASS.
+const adminHoldRun=(run,record,ctx)=>[
+  ctx.adminClosure===true,
+  record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN",
+  run?.command==="npm run product:ci",run?.status==="NOT_RUN",
+  run?.product_disposition==="HOLD_NOT_RUN",run?.exit_code===0,
+  HEX64.test(run?.log_sha256||""),nonEmpty(run?.node_version),
+  stamp(run?.completed_at)
+].every(Boolean);
 const localEvidenceErrors=(record,ctx)=>{
   const e=[],runs=safeArray(record.test_runs);
   assertion(runs.length>=REQUIRED_LOCAL.length,"local test manifest missing required commands",e);
@@ -73,14 +82,8 @@ const localEvidenceErrors=(record,ctx)=>{
     assertion(matched.length===1,"local command missing or duplicated: "+name,e);
   }
   for(const run of runs){
-    const held=ctx.adminClosure===true &&
-      record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN" &&
-      run?.command==="npm run product:ci" && run?.status==="NOT_RUN" &&
-      run?.product_disposition==="HOLD_NOT_RUN" && run?.exit_code===0 &&
-      HEX64.test(run?.log_sha256||"") && nonEmpty(run?.node_version) &&
-      stamp(run?.completed_at);
-    assertion(numericPass(run)||held,
-      "local test skipped/failed or missing immutable log digest: "+run?.command,e);
+    const admissible=[numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
+    assertion(admissible,"local test skipped/failed or missing immutable log digest: "+run?.command,e);
     assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
       "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
     assertion(run?.head_sha===ctx.head && run?.base_sha===ctx.base,
