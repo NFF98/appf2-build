@@ -108,7 +108,8 @@
   ],
   "notes": [
     "Fresh candidate on Main 398079ed4cc7864f72143571ee6ccfbbd074898a. Case GOV-SP-P1-003-ADMIN-CLOSURE-002 supersedes never-merged #398 structure only; does NOT reopen #396/#397/#398. human_approval is intentionally null until genuine Human exact-digest decision. NOT Merge authorization. #389 work retained on separate branch/worktree.",
-    "Re-anchored against protected Main f7ec03b8c7e3a7604f99473129e6d7536dc7314b after authorized #403 and #405 merges. Exact non-docket content and code digest unchanged. Human exact-candidate approval remains PENDING; Draft PR cannot Merge. T006 BLOCKED and T008 REVIEW remain in ledger and carried forward without Product PASS."
+    "Re-anchored against protected Main f7ec03b8c7e3a7604f99473129e6d7536dc7314b after authorized #403 and #405 merges. Exact non-docket content and code digest unchanged. Human exact-candidate approval remains PENDING; Draft PR cannot Merge. T006 BLOCKED and T008 REVIEW remain in ledger and carried forward without Product PASS.",
+    "Canonical 2026-10-17 PR #402 branch source now fast-forward-descends from latest Main f7ec03b8c7e3a7604f99473129e6d7536dc7314b. Rerun GitHub pull_request synchronize checks with correct BASE/HEAD; no Human exact approval has been assumed, protected Merge remains forbidden until all independently verified requirements pass."
   ],
   "previous_approval_history": []
 }
