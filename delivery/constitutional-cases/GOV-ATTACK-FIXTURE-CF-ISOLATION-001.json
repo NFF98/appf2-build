@@ -54,9 +54,7 @@
     "owner": "Human（NFF98）",
     "follow_up": "After Merge, rebase/re-verify #402 attack locally and on Ready CI; then Human exact closure approval for #402.",
     "residual_gaps": [
-      "CI cannot prove human_approval is from a person.",
-      "Does not authorize #402 Merge or Sprint 4.",
-      "Does not alter APPF2-CARRY-FORWARD-1 production validation."
+      "NONE"
     ],
     "never_converts_fail_or_untested_to_pass": true,
     "affected_sprint": "SP-P1-003",
@@ -69,5 +67,15 @@
   },
   "human_approval": null,
   "status": "PREPARED_EXACT_CANDIDATE_PENDING_HUMAN_APPROVAL",
-  "notes": "Prerequisite for #402 Ready attack. NOT Merge of #402. NOT Product PASS."
+  "notes": "Prerequisite for #402 Ready attack. NOT Merge of #402. NOT Product PASS.",
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This PR only isolates attack-fixture register rows after synthetic sprint wipe; it creates no Product/Task Acceptance deferral and adds no permanent GAP obligation beyond existing Main register truth."
+  },
+  "known_limitations": [
+    "CI cannot prove human_approval is from a person; Human provenance check remains mandatory.",
+    "Does not authorize #402 Merge, Sprint 4, or Product PASS.",
+    "Does not alter APPF2-CARRY-FORWARD-1 production validation on the real repository.",
+    "human_approval remains null until genuine Human exact-digest decision."
+  ]
 }
