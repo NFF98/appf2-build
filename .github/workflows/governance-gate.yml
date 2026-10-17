@@ -232,3 +232,55 @@ jobs:
           name: 16p-actual-operational-results
           path: ${{ runner.temp }}/16p-operational-results.json
           if-no-files-found: warn
+
+  six-gap-prewrite-live:
+    name: 16P #1/#6/#8/#A/#E/#F guarded GitHub write denials (real API)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Real GitHub negative-operation enforcement before unauthorized write
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_PR: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/16p-write"
+          set +e
+          node harness/scripts/guarded-github-write.mjs --operation PR_CREATE --task T099 --out "$RUNNER_TEMP/16p-write/pr-create.json"
+          a=$?
+          node harness/scripts/guarded-github-write.mjs --operation EVIDENCE_NORMALIZE --pr "$TARGET_PR" --apply --out "$RUNNER_TEMP/16p-write/evidence.json"
+          b=$?
+          node harness/scripts/guarded-github-write.mjs --operation TASK_MERGE --pr "$TARGET_PR" --apply --out "$RUNNER_TEMP/16p-write/merge.json"
+          c=$?
+          node harness/scripts/guarded-github-write.mjs --operation TASK_CLOSURE --pr "$TARGET_PR" --apply --out "$RUNNER_TEMP/16p-write/closure.json"
+          d=$?
+          set -e
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const base=process.env.RUNNER_TEMP+"/16p-write/";
+            const names=["pr-create.json","evidence.json","merge.json","closure.json"];
+            for(const name of names){
+              const j=JSON.parse(fs.readFileSync(base+name,"utf8"));
+              if(j.ok!==false||j.write_performed!==false||!/^BLOCK_|^HARD_STOP/.test(j.decision))
+                throw Error("FAIL CLOSED not demonstrated: "+name);
+              console.log("REAL GITHUB DENIAL VERIFIED",name,j.decision);
+            }
+          '
+          if [[ "$a" -ne 3 || "$b" -ne 3 || "$c" -ne 3 || "$d" -ne 3 ]]; then exit 2; fi
+      - name: Upload real GitHub prewrite denial receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-guarded-prewrite-evidence
+          path: ${{ runner.temp }}/16p-write/*.json
+          if-no-files-found: warn
