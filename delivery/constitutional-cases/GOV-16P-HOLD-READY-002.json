@@ -1,0 +1,78 @@
+{
+  "case_id": "GOV-16P-HOLD-READY-002",
+  "base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
+  "constitution_version": "1.0",
+  "title": "Narrow truthful Final Ready control-only governance HOLD without Product PASS",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    "harness/scripts/final-ready-preflight.mjs",
+    "harness/scripts/final-ready-selftest.mjs"
+  ],
+  "candidate_digest_sha256": "d53fa28313554ff39607e329ff271b7c4572702cadcc2271a59b981c6fb35242",
+  "why5": [
+    {
+      "question": "Why does an admitted Governance-only PR remain NOT_READY?",
+      "answer": "Final Ready currently accepts HOLD_NOT_RUN only for the five-file Sprint3 administrative closure, although strict no-Product governance-only changes also cannot truthfully run Product CI.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/407#issuecomment-6240661030"
+    },
+    {
+      "question": "Why not treat Product CI exit code zero as PASS?",
+      "answer": "The true product:ci output is HOLD and implementation_enabled=false; changing it to PASS would violate Test Integrity and Product truth.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/39066818889/job/117496108500"
+    },
+    {
+      "question": "How can the exception be safe?",
+      "answer": "A single new exact approved GOVERNANCE_REFORM dossier, immutable product HOLD state, exact dossier digest and strictly governance-only changed paths must all hold before accepting CONTROL_GATES_PASS_PRODUCT_NOT_RUN.",
+      "evidence_ref": "harness/scripts/final-ready-preflight.mjs"
+    },
+    {
+      "question": "What else remains required?",
+      "answer": "Six exact HEAD/BASE log-bound local evidence receipts, four real required PR checks, independent BCE, ordered Human Final Ready, and manual Human provenance still remain mandatory; non-Product PASS is never upgraded.",
+      "evidence_ref": "harness/scripts/final-ready-preflight.mjs"
+    },
+    {
+      "question": "Does this address provider time-of-merge expiry?",
+      "answer": "No. Only GitHub ruleset/required provider enforcement could do that; the existing checks alone cannot automatically detect TTL crossing. This scoped candidate does not claim protected 16P E2E.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389#issuecomment-6240666235"
+    }
+  ],
+  "alternatives": [
+    "Fabricate Product PASS (prohibited)",
+    "Reopen Sprint3/T006/T008 (prohibited)",
+    "Broaden Product HOLD for all PRs (prohibited)",
+    "Exact Human-approved governance-only HOLD conditional local/BCE attestations, no Product PASS (chosen)"
+  ],
+  "no_change": "Governance-only PR cannot meet normal Final Ready without fake Product PASS or a new precise control-only policy.",
+  "rollback": "Revert only after an equivalent fail-closed policy exists; retain all Product gates, Human Final Ready, and protected GitHub requirements.",
+  "negative_tests": [
+    "Product path smuggling rejects",
+    "Unapproved, replay-shape, expired and wrong BASE/digest rejects",
+    "No active Sprint/Task or Product implementation may be silently reactivated",
+    "Human Final Ready and required four PR statuses stay mandatory"
+  ],
+  "status": "DRAFT_CANDIDATE_PENDING_HUMAN_EXACT_APPROVAL",
+  "human_approval": null,
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Permit truthful Product HOLD_NOT_RUN reporting for an exact approved governance-only change without accepting Product PASS or other waiver.",
+    "risk": "A generalized Product HOLD waiver could let Product work bypass CI; allow only exact Human dossier, exact governance paths and no active Sprint/implementation.",
+    "owner": "Human NFF98; reviewer GPT Independent",
+    "follow_up": "Test synthetic positive/negative matrix, obtain exact BASE/HEAD/digest Human approval, run four real required GitHub gates and independent BCE. Do not auto-Merge.",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": null,
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1792897200
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This PR adds no Product acceptance claim, deferral, Task, Build Spec, or Sprint lifecycle modification; #407 and 16P protected E2E gaps remain explicitly open."
+  },
+  "notes": "Only implementation and synthetic negative tests of a governance Final Ready control state; no Main changes, no production execution, no forbidden Product PASS. Candidate exact source digest computed using self-tested SHA256."
+}
