@@ -210,23 +210,33 @@ const governanceHoldPath=p=>GOVERNANCE_HOLD_PREFIXES.some(a=>p.startsWith(a)) ||
   p==="AGENTS.md" || new RegExp("^delivery/[^/]+[.]md$").test(p);
 const sameSorted=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&
   a.length===b.length&&[...a].sort().every((x,i)=>x===[...b].sort()[i]);
+const validHoldFile=f=>[
+  typeof f?.filename==="string",
+  f?.previous_filename===undefined,
+  ["added","modified"].includes(f?.status)
+].every(Boolean);
 export function isGovernanceHoldCandidate({changedFiles,docket,sprint,build,
   base,candidateDigest,now=Math.floor(Date.now()/1000)}={}){
-  const files=Array.isArray(changedFiles)?changedFiles.flat():null;
-  if(!files?.length||files.some(f=>!f||!["added","modified"].includes(f.status)||
-    f.previous_filename!==undefined||typeof f.filename!=="string"))return false;
+  const files=Array.isArray(changedFiles)?changedFiles.flat():[];
+  if(!files.length || !files.every(validHoldFile))return false;
   const paths=files.map(f=>f.filename);
-  if(new Set(paths).size!==paths.length)return false;
   const casePaths=paths.filter(p=>new RegExp("^delivery/constitutional-cases/GOV-[A-Z0-9-]+[.]json$").test(p));
-  if(casePaths.length!==1)return false;
   const docketPath=casePaths[0],others=paths.filter(p=>p!==docketPath);
-  if(!others.length||!others.every(governanceHoldPath))return false;
-  if(!files.some(f=>f.filename===docketPath&&f.status==="added"))return false;
   const exception=docket?.scope_exception||{},approval=docket?.human_approval||{};
-  return sprint?.status==="HOLD" && sprint?.active_sprint===null &&
-    sprint?.active_task===null && build?.implementation_enabled===false &&
-    dossierBound( {docket,docketPath,others,base,candidateDigest,approval,exception,now} );
+  return [
+    new Set(paths).size===paths.length,
+    casePaths.length===1,
+    others.length>0,
+    others.every(governanceHoldPath),
+    files.some(f=>f.filename===docketPath&&f.status==="added"),
+    sprint?.status==="HOLD",
+    sprint?.active_sprint===null,
+    sprint?.active_task===null,
+    build?.implementation_enabled===false,
+    dossierBound({docket,docketPath,others,base,candidateDigest,approval,exception,now})
+  ].every(Boolean);
 }
+
 function dossierBound({docket,docketPath,others,base,candidateDigest,approval,exception,now}){
   return [
     docket?.case_id,
