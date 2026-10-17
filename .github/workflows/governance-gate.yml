@@ -108,3 +108,115 @@ jobs:
           name: task-evidence-ledger
           path: ${{ runner.temp }}/task-evidence-report.json
           if-no-files-found: warn
+
+  real-e2e-16p:
+    name: 16P REAL E2E live evidence (never fake PASS)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify 16 independent items against real GitHub APIs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import {execFileSync} from "node:child_process";
+          const repo=process.env.GITHUB_REPOSITORY,pr=Number(process.env.PR_NUMBER),head=process.env.PR_HEAD;
+          const run=process.env.GITHUB_RUN_ID,attempt=Number(process.env.GITHUB_RUN_ATTEMPT||1);
+          const ids=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","16"];
+          const output=[],reads=[];
+          function api(path,raw=false){
+            try{
+              const data=execFileSync("gh",["api",path],{encoding:"utf8",timeout:18000,maxBuffer:16*1024*1024});
+              reads.push({path,ok:true});
+              return raw?data:JSON.parse(data);
+            }catch(e){reads.push({path,ok:false,error:String(e.message).slice(0,120)});return null}
+          }
+          const base="repos/"+repo+"/",url=(s)=>"https://github.com/"+repo+"/"+s;
+          const file=(s)=>{try{return fs.readFileSync(s,"utf8")}catch{return ""}};
+          const ghPr=api(base+"pulls/"+pr),oldPr=api(base+"pulls/401"),fixPr=api(base+"pulls/403");
+          const sprint=(()=>{try{return JSON.parse(file("delivery/CURRENT-SPRINT.json"))}catch{return {}}})();
+          const exception=(()=>{try{return JSON.parse(file("delivery/constitutional-cases/GOV-16P-CI-METRICS-3-9-001.json"))}catch{return {}}})();
+          const ev=file("harness/scripts/evidence-ledger-report.mjs");
+          const gov=file(".github/workflows/governance-gate.yml");
+          const trigger=file(".github/workflows/ci.yml");
+          const evidence=[url("issues/389"),url("pull/"+pr)];
+          function item(id,verdict,operation,observed,reason,links=evidence){
+           if(!ids.includes(id)||output.some(x=>x.id===id)||!["PASS","FAIL","NOT_RUN","AUTHORITY_REQUIRED"].includes(verdict))throw Error("Invalid 16P id/verdict");
+           output.push({id,verdict,operation,observed,reason,evidence:links});
+          }
+          item("1","NOT_RUN","Real Task single PR development→closure",{governancePr401Merged:oldPr?.merged??null},
+           "Existing #401 merged governance, not a real Product Task with legal Evidence/Closure");
+          item("2","AUTHORITY_REQUIRED","Real one-time Human Task lease reused",{activeTask:sprint.active_task||null,grantDirectoryExists:fs.existsSync("delivery/task-grants")},
+           "No authenticated Human Task grant and same-lease positive lifecycle on this PR");
+          item("3","NOT_RUN","Draft→Ready and no extra full CI Push",{workflowPushMainOnly:gov.includes("branches: [main]")&&trigger.includes("branches: [main]")},
+           "Need real post-merge lifecycle observation; reading workflow text is not E2E");
+          item("4","AUTHORITY_REQUIRED","True Task Activation on changed authority",{activeTask:sprint.active_task||null},
+           "No authorized genuine Product Task Activation event");
+          item("5","AUTHORITY_REQUIRED","Real Rebind only when mapping changes",{activeBuildSpec:sprint.active_build_spec||null},
+           "No Human-approved real baseline/AC/Test Rebind event");
+          item("6","NOT_RUN","Real Evidence Registry write and dedupe",{ledgerReportExists:!!ev,reportDefaultsReadOnly:ev.includes("read-only")},
+           "Existing report artifact is not a verified canonical Evidence write and Closure");
+          item("7","AUTHORITY_REQUIRED","Human authentic limited exception to closure",{existingFixturePr:fixPr?.number||null,approvalSource:exception.human_approval?.source_kind||null},
+           "Authentic independent Human origin, Merge and expiry/revocation lifecycle remain unverified");
+          item("8","NOT_RUN","Mandatory GPT preflight before write API",{cliExists:fs.existsSync("harness/scripts/gpt-preflight.mjs")},
+           "GitHub Runner cannot observe external GPT tool pre-invocation enforcement");
+          item("9","NOT_RUN","Actual efficiency measurement without false census",{reviewNotice:/40\s*[／/]\s*1,156|40 筆樣本/.test(ghPr?.body||"")},
+           "History only samples 40/1156; no complete savings proof; NOT_RUN is not PASS",[url("pull/404"),url("actions/runs/38997080123")]);
+          item("A","NOT_RUN","Block duplicate PR before GitHub creates it",{prAPIReadOnly:true},
+           "A post-creation CI Guard is not a pre-create real GitHub tool denial");
+          item("B","AUTHORITY_REQUIRED","Human repeat approval correctly denied on genuine lease",{grantDirectoryExists:fs.existsSync("delivery/task-grants")},
+           "No genuine grant reuse and Human-bound positive/negative event");
+          const draftJob=api(base+"actions/jobs/117210866948"),readyJob=api(base+"actions/jobs/117220460423");
+          const draftLog=draftJob?.conclusion==="success"?api(base+"actions/jobs/117210866948/logs",true):null;
+          const readyLog=readyJob?.conclusion==="success"?api(base+"actions/jobs/117220460423/logs",true):null;
+          const absent=!!draftLog&&/NOT_RUN_NO_TEST_FILES|matching files=0/.test(draftLog);
+          const present=!!readyLog&&/test:contract|tests\/contract|133 passed/.test(readyLog);
+          const cPass=absent&&present;
+          item("C",cPass?"PASS":"NOT_RUN","Actual GitHub missing-test NOT_RUN and present-test execution",
+           {draftJobConclusion:draftJob?.conclusion||null,draftNotRunEvidence:absent,readyJobConclusion:readyJob?.conclusion||null,readyExecutedTests:present},
+           cPass?"Both real Actions job logs prove NOT_RUN when absent and real tests executed when present":
+           "Unable to validate both real Actions job logs; never infer PASS",
+           [url("actions/runs/38971550809/job/117210866948"),url("actions/runs/38971660865/job/117220460423")]);
+          item("D","AUTHORITY_REQUIRED","Separated mock/API/real PostgreSQL/browser acceptance",{proofLevelCodeExists:file("harness/scripts/evidence-ledger.mjs").includes("UNCLASSIFIED")},
+           "Phase1 all-real acceptance policy requires separate Human authorization");
+          item("E","NOT_RUN","Canonical Evidence auto-dedupe append",{reportOnly:gov.includes("report only")},
+           "CI artifact reporting does not verify legal Evidence Registry mutation");
+          item("F","NOT_RUN","Unbypassable GPT tool preflight",{cliExists:fs.existsSync("harness/scripts/gpt-preflight.mjs")},
+           "A repo script cannot attest enforcement of GPT external write tools");
+          const design=api("repos/NFF98/appf2-design/git/trees/main");
+          item("16","AUTHORITY_REQUIRED","Real Human mid-Sprint Design+BuildSpec cross-repo rebaseline",
+           {designRepoReadable:!!design,designWorkflowsPresent:design?.tree?.some(x=>x.path===".github")??null},
+           "No real Human-approved protected dual-repo control transition",["https://github.com/NFF98/appf2-design",url("issues/389")]);
+          if(output.length!==16||new Set(output.map(x=>x.id)).size!==16)throw Error("16P missing evidence rows");
+          const counts=Object.fromEntries(["PASS","FAIL","NOT_RUN","AUTHORITY_REQUIRED"].map(x=>[x,output.filter(y=>y.verdict===x).length]));
+          const headMatches=ghPr?.head?.sha===head&&ghPr?.state==="open";
+          const result={schema:"APPF2-16P-LIVE-E2E-1",source:"REAL_GITHUB_ACTIONS",repository:repo,pr,run_id:run,run_attempt:attempt,head,
+          head_matches_live_pr:headMatches,overall:headMatches&&counts.PASS===16?"PASS":"INCOMPLETE",counts,items:output,api_reads:reads,
+          guardrails:"No protected writes, no new PR, no fake E2E green; NOT_RUN/AUTHORITY_REQUIRED do not imply PASS"};
+          fs.writeFileSync(process.env.RUNNER_TEMP+"/16p-real-e2e.json",JSON.stringify(result,null,2)+"\n");
+          const summary=["## 16P REAL E2E GitHub 原生驗證","PR #"+pr+" / HEAD "+head+" / RUN "+run,
+          "PASS "+counts.PASS+" | FAIL "+counts.FAIL+" | NOT_RUN "+counts.NOT_RUN+" | AUTHORITY_REQUIRED "+counts.AUTHORITY_REQUIRED,
+          ...output.map(x=>"- "+x.id+" "+x.verdict+": "+x.reason)].join("\n")+"\n";
+          console.log(summary);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary);
+          if(!headMatches){console.error("HEAD mismatch; E2E evidence NOT VALID");process.exitCode=2}
+          NODE
+      - name: Upload 16P real E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-real-e2e-results
+          path: ${{ runner.temp }}/16p-real-e2e.json
+          if-no-files-found: error
