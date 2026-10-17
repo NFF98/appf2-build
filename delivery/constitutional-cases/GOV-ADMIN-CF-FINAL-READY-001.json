@@ -54,8 +54,18 @@
     "Rejected duplicate Task PR even after administrative HOLD",
     "No historical Main bytes can be compared against an unmerged candidate"
   ],
-  "status": "PREPARED_REAL_FAST_LOOP_PASS_PENDING_HUMAN_EXACT_CANDIDATE",
-  "human_approval": null,
+  "status": "EXACT_CHAT_APPROVED_CONDITIONAL_FULL_GATES_FINAL_READY",
+  "human_approval": {
+    "case_id": "GOV-ADMIN-CF-FINAL-READY-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "42ed983451e44b369de761c8545e831879ca3c698841bf86885a860830666ece",
+    "human_message_ref": "Human direct ChatGPT message on 2026-10-17: 正式批准 PR #406 精確候選 BASE=f7ec03b8c7e3a7604f99473129e6d7536dc7314b HEAD=af66a88c2e64d0b8888824141213e7abf93be482 candidate_digest_sha256=42ed983451e44b369de761c8545e831879ca3c698841bf86885a860830666ece. Human approved real seven Cloud Evidence/four PR GitHub Gates/independent GPT BCE, and conditional Final Ready and protected Merge only on actual PASS. No fake Product PASS, no next Task. Direct chat, NOT a GitHub cryptographic Human signature.",
+    "approved_at_unix": 1792238920,
+    "expires_at_unix": 1793447755
+  },
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
     "lane": "GOVERNANCE_REFORM",
@@ -79,5 +89,5 @@
     "zero_gap": true,
     "justification": "This repairs control/evidence plumbing only. It does not waive Product E2E or defer a new AC; T006 BLOCKED and T008 REVIEW remain existing #402 liabilities."
   },
-  "notes": "GitHub Draft fast-loop job 117390852909 actually PASS on five changed source files; calculated candidate digest 42ed983451e44b369de761c8545e831879ca3c698841bf86885a860830666ece. No Human exact-candidate approval yet; protected governance gate cannot PASS and no Merge allowed."
+  "notes": "GitHub Draft fast-loop job 117390852909 actually PASS on five changed source files; calculated candidate digest 42ed983451e44b369de761c8545e831879ca3c698841bf86885a860830666ece. No Human exact-candidate approval yet; protected governance gate cannot PASS and no Merge allowed. User direct exact Human candidate approval received; source bytes and digest unchanged."
 }
