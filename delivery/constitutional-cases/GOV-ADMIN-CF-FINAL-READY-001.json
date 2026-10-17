@@ -1,0 +1,82 @@
+{
+  "case_id": "GOV-ADMIN-CF-FINAL-READY-001",
+  "base_sha": "f7ec03b8c7e3a7604f99473129e6d7536dc7314b",
+  "constitution_version": "1.0",
+  "title": "Fix real admin closure Final Ready and 16P read-only checks without Product PASS",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    "harness/scripts/admin-closure-cross-gate-test.mjs",
+    "harness/scripts/16p-task-evidence-live.mjs",
+    "harness/scripts/guarded-github-write.mjs",
+    "harness/scripts/final-ready-preflight.mjs",
+    "harness/scripts/w1-01-evidence-mirror.mjs"
+  ],
+  "candidate_digest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "why5": [
+    {
+      "question": "Why is #402's real seven-command evidence not admitted?",
+      "answer": "An administrative HOLD correctly returns Product CI NOT_RUN, and disposable cross-gate fixtures accidentally use an already-closed candidate instead of the open BASE.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/402#issuecomment-6233434809"
+    },
+    {
+      "question": "Why does strict live Main evidence report false mismatch?",
+      "answer": "It compares canonical Main bytes to the PR candidate working tree, which necessarily differs during an authorized Sprint closure transition.",
+      "evidence_ref": "harness/scripts/16p-task-evidence-live.mjs"
+    },
+    {
+      "question": "Why does historical Task protection reject the wrong way after HOLD?",
+      "answer": "Duplicate Task PR rejection and T008 Evidence audit previously depended on active CURRENT-SPRINT rather than existing immutable GitHub Task PR history.",
+      "evidence_ref": "harness/scripts/guarded-github-write.mjs"
+    },
+    {
+      "question": "Why is special Final Ready safe without Product PASS?",
+      "answer": "Only exact five administrative paths, real six executed non-Product PASS commands, explicit Product HOLD NOT_RUN and exact Human case are recognized; four GitHub checks and Human decision stay binding.",
+      "evidence_ref": "harness/scripts/final-ready-preflight.mjs"
+    },
+    {
+      "question": "Why separate six-file PR?",
+      "answer": "The five-file #402 exact Human-approved administrative disposition must not be modified by adding governance execution-rule files; this PR isolates the corrected validator contract.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/402"
+    }
+  ],
+  "alternatives": [
+    "Mark Product HOLD as PASS (prohibited)",
+    "Merge #402 with failed Final Ready (prohibited)",
+    "Modify #402 five-file Human-approved diff (invalidates candidate)",
+    "Isolate five corrected scripts plus one protected Human dossier (chosen)"
+  ],
+  "no_change": "Without corrections, #402's actual administrative closure still fails Final Ready and some 16P append-only observational jobs misread a valid pending Main distinction.",
+  "rollback": "Only revert after an equivalent truthful administrative control-gate admission replaces this exact-case handler; restoring prior mismatch blocks #402.",
+  "negative_tests": [
+    "Non-admin five-path PR must retain six actual PASS requirement",
+    "Admin Product HOLD must remain NOT_RUN, never Product PASS",
+    "Missing or failed gate/attack/lint still fails",
+    "Rejected duplicate Task PR even after administrative HOLD",
+    "No historical Main bytes can be compared against an unmerged candidate"
+  ],
+  "status": "PREPARED_HUMAN_EXACT_CANDIDATE_PENDING_GITHUB_GATES",
+  "human_approval": null,
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Human explicitly approved one six-file governance PR to repair three real Final Ready blocking cases for Sprint3 administrative HOLD; preserve the prior #402 exact candidate and closed Task truth.",
+    "risk": "Incorrect admission could mistakenly treat Product HOLD as Product PASS; explicit exact paths, log status NOT_RUN and all other Gate authenticity are mandatory.",
+    "owner": "Human (NFF98)",
+    "follow_up": "After separately Human-approved exact PR and protected Merge, rerun #402 real Cloud Evidence and Final Ready on unchanged administrative candidate, then protected merge only if admitted.",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793447755,
+    "expires_at_rule": "Maximum 14 days; before exact Human candidate approval, this record is NOT authorization."
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This repairs control/evidence plumbing only. It does not waive Product E2E or defer a new AC; T006 BLOCKED and T008 REVIEW remain existing #402 liabilities."
+  }
+}
