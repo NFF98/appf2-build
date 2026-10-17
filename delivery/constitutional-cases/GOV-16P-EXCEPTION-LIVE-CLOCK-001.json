@@ -1,0 +1,73 @@
+{
+  "case_id": "GOV-16P-EXCEPTION-LIVE-CLOCK-001",
+  "base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
+  "constitution_version": "1.0",
+  "title": "16P #7 actual-clock expiry/revocation engine integration on GitHub Actions with explicit non-provider proof limit",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    "harness/scripts/16p-human-exception-live-clock.mjs",
+    "harness/scripts/16p-real-e2e.mjs"
+  ],
+  "candidate_digest_sha256": "7b5bb9aaf6cf844244590dd1db85807547e991579bac0fa5edd6ec87598fa1bd",
+  "why5": [
+    {
+      "question": "Why cannot 16P #7 claim verified expiry and revocation?",
+      "answer": "Main currently has no merged CLOSURE_DEFERRAL and no real revocation docket; synthetic positive/negative self-tests cannot establish provider-end-to-end enforcement.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389#issuecomment-6234373399"
+    },
+    {
+      "question": "Why add a real-clock integration probe?",
+      "answer": "The existing negative suite injects fake time. A GitHub-hosted job using actual wall-clock expiry and actual on-disk revocation events strengthens engine-level evidence without requiring Product changes.",
+      "evidence_ref": "harness/scripts/governance-reform-selftest.mjs"
+    },
+    {
+      "question": "Why retain AUTHORITY_REQUIRED for protected lifecycle?",
+      "answer": "Temporary synthetic approval-shaped dockets are not Human-authorized merged exceptions. Only a correctly approved protected lifecycle can prove external host enforcement.",
+      "evidence_ref": "harness/scripts/16p-real-e2e.mjs"
+    },
+    {
+      "question": "Why use exactly two harness paths?",
+      "answer": "The new isolated clock runner is invoked from the existing 16P PR workflow. The other change recognizes already-authorized Sprint3 HOLD historical T008 evidence without inventing active execution authority.",
+      "evidence_ref": "delivery/sprints/SP-P1-003/manifest.json"
+    },
+    {
+      "question": "Why does this remain a Draft?",
+      "answer": "Exact source SHA/digest awaits separate Human approval; no authority to auto-merge, change Main, or treat fixture owner data as a real signature.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389"
+    }
+  ],
+  "alternatives": [
+    "Wait for current governance exception TTL (does not test CLOSURE_DEFERRAL).",
+    "Reopen Sprint3/Task T008 (prohibited).",
+    "Temporarily disable branch protection or bypass Human controls (prohibited).",
+    "Add bounded GitHub runner real-clock engine evidence; keep full provider E2E NOT_VERIFIED (chosen)."
+  ],
+  "no_change": "Expiry/revocation remain only synthetic fixtures; 16P #7 full protected lifecycle stays AUTHORITY_REQUIRED.",
+  "rollback": "Remove this candidate-only 16P runner probe if authorized independent review identifies any false-green or side effect.",
+  "status": "DRAFT_CANDIDATE_PENDING_HUMAN_EXACT_APPROVAL",
+  "human_approval": null,
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Bounded governance-only 16P #7 truthful real wall-clock engine test on an isolated PR; no live Human waiver, Product PASS or protected merge.",
+    "risk": "Confusing a GitHub runner with a genuinely merged authorized CLOSURE_DEFERRAL and provider denial; result explicitly remains NOT_VERIFIED.",
+    "owner": "Human NFF98 (separate approval required)",
+    "follow_up": "Independently verify GitHub execution then obtain exact-candidate approval and separately plan real protected test provider denial without touching Sprint3 Main truth.",
+    "residual_gaps": [
+      "16P-7-PROTECTED-CLOSURE-DEFERRAL-NOT_VERIFIED",
+      "16P-7-PROVIDER-EXPIRED-REVOKED-REJECTION-NOT_VERIFIED"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": null,
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1792897200
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This test adds no Product completion claim and defers no acceptance; both protected lifecycle gaps remain open in 16P receipt, no canonical product truth edit."
+  },
+  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval."
+}
