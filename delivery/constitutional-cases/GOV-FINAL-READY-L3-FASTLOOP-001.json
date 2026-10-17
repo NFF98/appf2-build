@@ -60,7 +60,7 @@
     "expires_at_unix": 1793443560
   },
   "status": "EXACT_CANDIDATE_CHAT_APPROVED_PENDING_LIVE_GATES_AND_FINAL_READY",
-  "notes": "Human approved GPT to work on Final Ready but did not specifically approve this exact BASE/HEAD/digest candidate. No forged approval. Gate failure expected before explicit Human decision. Current code head c3f4cb00d4b86523b5b258ee1c1b9a31c4b7b0e0; source digest extracted from actual GitHub Actions fast-loop log.",
+  "notes": "Human approved GPT to work on Final Ready but did not specifically approve this exact BASE/HEAD/digest candidate. No forged approval. Gate failure expected before explicit Human decision. Current code head c3f4cb00d4b86523b5b258ee1c1b9a31c4b7b0e0; source digest extracted from actual GitHub Actions fast-loop log. GitHub PR body now explicitly declares Governance-Case GOV-FINAL-READY-L3-FASTLOOP-001 and permitted PR-Justification. This is explanatory metadata only, no change in the Human-approved source digest.",
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
     "lane": "GOVERNANCE_REFORM",
