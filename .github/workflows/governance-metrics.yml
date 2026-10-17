@@ -84,7 +84,7 @@ jobs:
             --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
           node -e "const m=require(process.env.RUNNER_TEMP+'/gov-reform/reform-metrics.json'); console.log(JSON.stringify({ci_status:m.ci?.status,full_ci_runs:m.ci?.full_ci_runs??null,ready_ci_executed:m.ci?.ready_ci_executed??null,sample_counts:m.ci?.sample_counts||null,sample:m.ci?.sample||null},null,2));"
       - name: Upload weekly scorecard (NOT governance PASS)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gov-reform-weekly-metrics
           path: |

@@ -57,7 +57,7 @@ jobs:
         run: node harness/scripts/w1-01-evidence-mirror.mjs run
       - name: Preserve evidence even for failed commands
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cloud-evidence-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
           path: cloud-evidence/

@@ -36,7 +36,7 @@ jobs:
           CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
           CLOUDFLARE_WORKER_NAME: ${{ secrets.CLOUDFLARE_WORKER_NAME }}
         run: npm run deploy:rollback -- --environment production --release "${{ inputs.release_id }}" --auto-previous
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: "rollback-${{ inputs.release_id }}"
