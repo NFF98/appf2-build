@@ -176,10 +176,45 @@ receipt("C","Actual file-based impacted test selection and executing real tests"
 requireBool(absent&&selected&&test.exit===0,"#C file selector or actual Vitest failed");
 const integrity=node("harness/scripts/validate-test-integrity.mjs");
 const proofLevel=node("harness/scripts/validate-evidence.mjs");
+// An earlier real GitHub Actions run on the SAME exact HEAD can supply #D
+// operational proof. The matching job must actually complete both real test
+// steps successfully. Current/unfinished jobs, other SHAs and mock fixtures
+// are never admissible, and this never implies a Product/Main closure.
+const dRunsQuery=gh("actions/runs?head_sha="+head+"&per_page=30");
+const dRuns=(parse(dRunsQuery)?.workflow_runs||[]).filter(r=>
+ r.head_sha===head && r.id!==Number(process.env.GITHUB_RUN_ID) &&
+ r.event==="pull_request" && r.status==="completed" &&
+ r.path===".github/workflows/governance-gate.yml" &&
+ r.head_repository?.full_name===repo).slice(0,5);
+const dInventories=dRuns.map(r=>({
+ run:r,operation:gh("actions/runs/"+r.id+"/jobs?per_page=100")}));
+const dSteps=[
+ "Bootstrap Supabase request roles in disposable real PostgreSQL",
+ "Real PostgreSQL migration / RLS / PostgREST exposure tests (no SKIP accepted)",
+ "Install actual Chromium browser",
+ "Real Chromium UI interactions and production-handler harness (no SKIP accepted)"
+];
+const dMatches=dInventories.flatMap(({run,operation})=>{
+ const list=parse(operation);
+ if(operation.exit!==0 || !Array.isArray(list?.jobs) ||
+   list.total_count!==list.jobs.length || list.jobs.length>100)return [];
+ return list.jobs.filter(job=>job.run_id===run.id && job.head_sha===head &&
+   job.status==="completed" && job.conclusion==="success" &&
+   dSteps.every(name=>job.steps?.some(s=>s.name===name &&
+      s.status==="completed" && s.conclusion==="success"))).map(job=>({
+    run_id:run.id,job_id:job.id,run_head:run.head_sha,
+    run_url:run.html_url,job_url:job.html_url
+   }));
+});
+const dRealProof=dMatches.length>0;
 receipt("D","REAL PostgreSQL and browser proof classification (no Mock upgrade)",
- [integrity,proofLevel],{integrity_exit:integrity.exit,evidence_gate_exit:proofLevel.exit},
- ["Live PostgreSQL-backed and real Playwright/browser positive acceptance receipts under the requested proof policy"],
- "AUTHORITY_REQUIRED");
+ [integrity,proofLevel,dRunsQuery,...dInventories.map(x=>x.operation)],
+ {integrity_exit:integrity.exit,evidence_gate_exit:proofLevel.exit,
+  exact_head_completed_real_pg_chromium_jobs:dMatches,
+  real_pg_browser_operations_verified:dRealProof,
+  protected_product_main_acceptance_proven:false},
+ ["Actual PostgreSQL and Chromium job proof is independent of the required protected Product/Main acceptance and closure"],
+ dRealProof?"CHECK_PASS":"AUTHORITY_REQUIRED");
 const evidencePre=node("harness/scripts/guarded-github-write.mjs",
  "--operation","EVIDENCE_NORMALIZE","--pr",String(prNumber),"--apply");
 receipt("E","Canonical evidence dedupe + protected Registry mutation",
