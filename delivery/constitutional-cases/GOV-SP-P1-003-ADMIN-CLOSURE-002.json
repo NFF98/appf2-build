@@ -1,0 +1,143 @@
+{
+  "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-002",
+  "base_sha": "c20f40792808e2cb7d8b1f95b1adcad4124d1c49",
+  "sprint_id": "SP-P1-003",
+  "build_spec_id": "BS-P1-025",
+  "closure_disposition": "ADMINISTRATIVE_WITH_CARRY_FORWARD",
+  "never_converts_fail_or_untested_to_pass": true,
+  "administrative_closure": {
+    "schema": "APPF2-ADMIN-CLOSURE-1",
+    "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-002",
+    "open_tasks": [
+      {
+        "id": "T006",
+        "status": "BLOCKED",
+        "snapshot_sha256": "bc9b15ff6bc3dbfde3ef143e4d6d9e5b0565c2e1ae8057e31616f584db9495e7"
+      },
+      {
+        "id": "T008",
+        "status": "REVIEW",
+        "snapshot_sha256": "3ed5de2e6000c9f2a01975dafb9b7cfd14bcfcd58aa678cf3f6b0fd8248a09e3"
+      }
+    ],
+    "open_backlog": [
+      {
+        "id": "BL-P1-015",
+        "status": "SPRINTED"
+      },
+      {
+        "id": "BL-P1-018",
+        "status": "SPRINTED"
+      }
+    ],
+    "open_revalidations": [
+      {
+        "id": "BL-P1-008",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-010",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-031",
+        "status": "IN_PROGRESS"
+      }
+    ],
+    "carry_forward_ids": [
+      "GAP-T006-01",
+      "GAP-T006-02",
+      "GAP-T006-03",
+      "GAP-T008-01",
+      "GAP-BL-015",
+      "GAP-BL-018",
+      "GAP-REVAL-008",
+      "GAP-REVAL-010",
+      "GAP-REVAL-031"
+    ],
+    "historical_procedural_dispositions": [
+      {
+        "gate_id": "BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      },
+      {
+        "gate_id": "BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      }
+    ],
+    "next_sprint_requires_product_alignment": true,
+    "product_success_claimed": false
+  },
+  "exact_changed_paths": [
+    "build-spec/CURRENT.json",
+    "delivery/CURRENT-SPRINT.json",
+    "delivery/PROJECT-OPEN-ITEMS.json",
+    "delivery/sprints/SP-P1-003/manifest.json"
+  ],
+  "candidate_digest_sha256": "73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c",
+  "human_approval": {
+    "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-002",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c",
+    "human_message_ref": "2026-10-17 Human direct ChatGPT: 正式批准 PR #402 新版精確候選 BASE=c20f40792808e2cb7d8b1f95b1adcad4124d1c49 HEAD=332138c8e172506039a4fd40c952297642b8fc61 candidate_digest_sha256=73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c. Human authorized 7 real Cloud, 4 real Gate, independent GPT BCE, conditional Final Ready ADMITTED then protected Merge only. T006 BLOCKED, T008 REVIEW, Product HOLD/NOT_RUN, never Product PASS or next Task. Direct Chat, not GitHub cryptographic signature.",
+    "approved_at_unix": 1792240594
+  },
+  "status": "EXACT_HUMAN_APPROVED_PENDING_REAL_GATES_AND_FINAL_READY",
+  "why5": [
+    {
+      "question": "Why close Sprint3 administratively now?",
+      "answer": "Human highest goal is lawful Sprint 3 administrative closure without starting Sprint 4 or forging Product PASS for open work.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    },
+    {
+      "question": "Why not ordinary Product-complete closure?",
+      "answer": "T006 remains BLOCKED and T008 remains REVIEW; F00-AC-037 remains UNTESTED; backlog BL-P1-015/018 remain SPRINTED; revalidations remain IN_PROGRESS.",
+      "evidence_ref": "delivery/sprints/SP-P1-003/tasks.json"
+    },
+    {
+      "question": "Why keep immutable Task/Backlog statuses?",
+      "answer": "ADMINISTRATIVE_WITH_CARRY_FORWARD is distinct from Product PASS; Acceptance/Test evidence must not be forged to CLOSED/DONE.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/395"
+    },
+    {
+      "question": "Why require a permanent carry-forward register?",
+      "answer": "Nine GAP rows preserve Task/Backlog/revalidation liabilities including TEST-F00-037 UNTESTED for future Product Alignment.",
+      "evidence_ref": "delivery/PROJECT-OPEN-ITEMS.json"
+    },
+    {
+      "question": "Why HOLD all further execution?",
+      "answer": "No next Task/Sprint is authorized; implementation_enabled=false until a separately Human-approved activation.",
+      "evidence_ref": "delivery/CURRENT-SPRINT.json"
+    }
+  ],
+  "notes": [
+    "Fresh candidate on Main 398079ed4cc7864f72143571ee6ccfbbd074898a. Case GOV-SP-P1-003-ADMIN-CLOSURE-002 supersedes never-merged #398 structure only; does NOT reopen #396/#397/#398. human_approval is intentionally null until genuine Human exact-digest decision. NOT Merge authorization. #389 work retained on separate branch/worktree.",
+    "Re-anchored against protected Main f7ec03b8c7e3a7604f99473129e6d7536dc7314b after authorized #403 and #405 merges. Exact non-docket content and code digest unchanged. Human exact-candidate approval remains PENDING; Draft PR cannot Merge. T006 BLOCKED and T008 REVIEW remain in ledger and carried forward without Product PASS.",
+    "Canonical 2026-10-17 PR #402 branch source now fast-forward-descends from latest Main f7ec03b8c7e3a7604f99473129e6d7536dc7314b. Rerun GitHub pull_request synchronize checks with correct BASE/HEAD; no Human exact approval has been assumed, protected Merge remains forbidden until all independently verified requirements pass.",
+    "2026-10-17 Human direct exact BASE/HEAD/digest candidate approval. Docket-only attestation update; preserve existing four non-docket bytes unchanged, preserve no Product PASS and no next Task. Final Ready and protected merge remain conditional.",
+    "After protected #406 Main commit c20f40792808e2cb7d8b1f95b1adcad4124d1c49, preserve four original non-docket closure files byte-for-byte, retain T006 BLOCKED, T008 REVIEW, Product HOLD/NOT_RUN; new BASE requires separately authorized exact Human candidate before Merge.",
+    "2026-10-17 Human exact new BASE/HEAD/digest approval, recorded truthfully as direct message. No new Product status implied. All protected Gates/Final Ready still mandatory."
+  ],
+  "previous_approval_history": [
+    {
+      "old_base_sha": "f7ec03b8c7e3a7604f99473129e6d7536dc7314b",
+      "old_head_sha": "364dd9ab0e8e19bea7f50f0cef2abbac2ad45447",
+      "prior_human_approval": {
+        "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-002",
+        "approver": "NFF98",
+        "source_kind": "DIRECT_HUMAN_MESSAGE",
+        "decision": "APPROVE_EXACT_CANDIDATE",
+        "scope": "EXACT_PR_DIFF",
+        "candidate_digest_sha256": "73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c",
+        "human_message_ref": "Human direct ChatGPT 2026-10-17 explicitly: 正式批准 PR #402 精確行政結案候選 BASE=f7ec03b8c7e3a7604f99473129e6d7536dc7314b HEAD=3da3f136a15684b645141e112d21f0682b25d759 candidate_digest_sha256=73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c。僅 ADMINISTRATIVE_WITH_CARRY_FORWARD，T006 BLOCKED/T008 REVIEW；必須真實 Gate、Cloud Evidence、BCE 及 Final Ready PASS 才授權 Merge，無 Sprint4/新 Task。This is an accurate direct Human message reference, not GitHub cryptographic Human signature.",
+        "approved_at_unix": 1792236734
+      },
+      "reason": "Protected Main updated by independently approved #406. Prior exact approval is preserved as historical, not inherited for this changed BASE."
+    }
+  ]
+}

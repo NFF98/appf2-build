@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_sprint": "SP-P1-003",
-  "active_build_spec": "BS-P1-025",
-  "active_task": "T008",
-  "status": "REVIEW",
+  "active_sprint": null,
+  "active_build_spec": null,
+  "active_task": null,
+  "status": "HOLD",
   "automation_mode": "SAFE_AUTOMATION",
-  "reason": "Human 2026-10-13 T008 continue to closure. Implementation PR #386 merged 1919a7225cd80551c7b610afe0bbdae0b185c774; 14 evidence items normalized through #387 merge 685ddf7ddfc8ed06a150a48ef203c85fd7056d87, independent GPT BCE PASS. T008 REVIEW, exact four AC mappings; T006 BLOCKED and F00-AC-037 UNTESTED, T007 CLOSED. Await separate Human-governed minimal closure-order L3 correction before T008 CLOSED; NO next lease or Sprint activation."
+  "reason": "SP-P1-003 ADMINISTRATIVE_WITH_CARRY_FORWARD candidate on Main 398079e; T006 BLOCKED / T008 REVIEW preserved; F00-AC-037 UNTESTED. No Sprint4 / Task lease. Pending exact Human closure approval + Merge."
 }
