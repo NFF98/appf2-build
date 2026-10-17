@@ -172,25 +172,34 @@ const administrativeControlPass=(m,a)=>{
   "delivery/PROJECT-OPEN-ITEMS.json",
   "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json",
   "delivery/sprints/SP-P1-003/manifest.json"].sort();
- if(!Array.isArray(a?.paths)||a.paths.length!==required.length||
-   ![...a.paths].sort().every((x,i)=>x===required[i]))return false;
+ const exact=[Array.isArray(a?.paths),a?.paths?.length===required.length,
+  Array.isArray(a?.paths) && [...a.paths].sort().every((x,i)=>x===required[i])
+ ].every(Boolean);
+ if(!exact)return false;
  const docket=json("delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json");
  const manifest=json("delivery/sprints/SP-P1-003/manifest.json");
  const current=json("delivery/CURRENT-SPRINT.json");
  const build=json("build-spec/CURRENT.json");
- if(docket.base_sha!==a.base || docket.candidate_digest_sha256!==m.digest_sha256 ||
-   docket.human_approval?.decision!=="APPROVE_EXACT_CANDIDATE" ||
-   manifest.closure_disposition!=="ADMINISTRATIVE_WITH_CARRY_FORWARD" ||
-   manifest.administrative_closure?.product_success_claimed!==false ||
-   current.status!=="HOLD" || current.active_sprint!==null ||
-   current.active_task!==null || build.implementation_enabled!==false)return false;
+ const policyBound=[
+  docket.base_sha===a.base,docket.candidate_digest_sha256===m.digest_sha256,
+  docket.human_approval?.decision==="APPROVE_EXACT_CANDIDATE",
+  manifest.closure_disposition==="ADMINISTRATIVE_WITH_CARRY_FORWARD",
+  manifest.administrative_closure?.product_success_claimed===false,
+  current.status==="HOLD",current.active_sprint===null,current.active_task===null,
+  build.implementation_enabled===false
+ ].every(Boolean);
+ if(!policyBound)return false;
  const product=m.stages.find(s=>s.command==="npm run product:ci");
- if(!product || product.status!=="NOT_RUN" || product.exit_code!==0 ||
-    !fs.readFileSync(product.stdout_file,"utf8")
-      .includes("PRODUCT CI: HOLD — implementation not enabled."))return false;
- return m.stages.length===jobs.length && m.stages.every(s=>
-  s.command==="npm run product:ci"?s.status==="NOT_RUN"&&s.exit_code===0:
-    s.status==="PASS"&&s.exit_code===0);
+ const truthfulHold=[product?.status==="NOT_RUN",product?.exit_code===0,
+  typeof product?.stdout_file==="string" &&
+   fs.readFileSync(product.stdout_file,"utf8").includes("PRODUCT CI: HOLD — implementation not enabled.")
+ ].every(Boolean);
+ if(!truthfulHold)return false;
+ return [m.stages.length===jobs.length,m.stages.every(s=>
+   s.command==="npm run product:ci" ?
+     [s.status==="NOT_RUN",s.exit_code===0].every(Boolean):
+     [s.status==="PASS",s.exit_code===0].every(Boolean))
+ ].every(Boolean);
 };
 const finish=(m,a)=>{
   m.completed_at=new Date().toISOString();
