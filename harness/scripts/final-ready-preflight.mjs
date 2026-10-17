@@ -55,7 +55,10 @@ const commonErrors=(c,record,ctx)=>{
   assertion(record.pr_number===ctx.live.number,"readiness PR number mismatch",e);
   assertion(record.head_sha===ctx.head && HEX40.test(record.head_sha||""),"stale or malformed readiness HEAD",e);
   assertion(record.base_sha===ctx.base && HEX40.test(record.base_sha||""),"stale or malformed readiness BASE",e);
-  assertion(record.verdict==="PASS" || (record.kind==="HUMAN_FINAL_READY" && record.verdict==="APPROVED"),
+  const control=ctx.adminClosure===true && record.kind==="LOCAL_TESTS" &&
+    record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN";
+  assertion(record.verdict==="PASS" || control ||
+    (record.kind==="HUMAN_FINAL_READY" && record.verdict==="APPROVED"),
     "readiness verdict is not PASS/APPROVED",e);
   assertion(KINDS.includes(record.kind),"unknown readiness stage",e);
   return e.concat(sourceErrors(c,ctx.owner));
@@ -70,7 +73,14 @@ const localEvidenceErrors=(record,ctx)=>{
     assertion(matched.length===1,"local command missing or duplicated: "+name,e);
   }
   for(const run of runs){
-    assertion(numericPass(run),"local test skipped/failed or missing immutable log digest: "+run?.command,e);
+    const held=ctx.adminClosure===true &&
+      record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN" &&
+      run?.command==="npm run product:ci" && run?.status==="NOT_RUN" &&
+      run?.product_disposition==="HOLD_NOT_RUN" && run?.exit_code===0 &&
+      HEX64.test(run?.log_sha256||"") && nonEmpty(run?.node_version) &&
+      stamp(run?.completed_at);
+    assertion(numericPass(run)||held,
+      "local test skipped/failed or missing immutable log digest: "+run?.command,e);
     assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
       "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
     assertion(run?.head_sha===ctx.head && run?.base_sha===ctx.base,
@@ -82,7 +92,9 @@ const localEvidenceErrors=(record,ctx)=>{
 };
 const bceEvidenceErrors=(r,ctx)=>{
   const e=[];
-  assertion(r.scope_verdict==="PASS" && r.execution_evidence_verdict==="PASS",
+  const administrativeControl=ctx.adminClosure===true &&
+    r.execution_evidence_verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN";
+  assertion(r.scope_verdict==="PASS" && (r.execution_evidence_verdict==="PASS" || administrativeControl),
     "GPT BCE requires separate scope and execution-evidence PASS",e);
   assertion(r.reviewer_role==="GPT_INDEPENDENT" && nonEmpty(r.independent_review_note),
     "GPT BCE reviewer declaration/review note missing; role remains manually verified",e);
@@ -187,7 +199,16 @@ export function candidateDigestOf(changedFiles,readBytes){
 export function inspectPrReadiness({event,live,comments,checks,changedFiles,
   candidateDigest,repo,verifiedPrRunOrigins}){
   const errors=prMetadataErrors(event,live,repo),head=live?.head?.sha,base=live?.base?.sha;
-  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest};
+  // Only an exact-five-file administrative closure may carry a truthful
+  // Product HOLD/NOT_RUN; unrelated PRs must supply six real PASS commands.
+  const approvedPaths=["build-spec/CURRENT.json","delivery/CURRENT-SPRINT.json",
+    "delivery/PROJECT-OPEN-ITEMS.json",
+    "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json",
+    "delivery/sprints/SP-P1-003/manifest.json"].sort();
+  const paths=Array.isArray(changedFiles)?changedFiles.flat().map(x=>x?.filename).sort():[];
+  const adminClosure=paths.length===approvedPaths.length &&
+    paths.every((x,i)=>x===approvedPaths[i]);
+  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest,adminClosure};
   assertion(HEX64.test(candidateDigest||""),"cannot compute exact Git-byte candidate SHA256",errors);
   // L3 governance changes cannot obtain Final Ready from Draft fast-loop or
   // a successful branch push. Reuse the L1 trusted GitHub PR-run provenance.
