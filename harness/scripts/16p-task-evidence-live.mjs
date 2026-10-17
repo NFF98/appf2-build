@@ -21,8 +21,11 @@ const hard=(condition,reason)=>{if(!condition)throw Error("REAL_EVIDENCE_HARD_ST
 function actualMainFile(relative,sha){
  const remote=api("contents/"+relative+"?ref="+sha);
  const bytes=decode(remote);
- const local=fs.readFileSync(relative);
- hard(bytes.equals(local),"Main bytes differ from checkout for "+relative);
+ // GitHub Main is canonical. A pending control transition may differ from Main.
+ // Verify real GitHub bytes against the immutable local Main Git object.
+ const localMain=execFileSync("git",["show",sha+":"+relative],{
+  encoding:null,timeout:15000,maxBuffer:30000000});
+ hard(bytes.equals(localMain),"Main bytes differ from exact local Main Git object for "+relative);
  return JSON.parse(bytes.toString("utf8"));
 }
 const ancestry=(source,main)=>spawnSync("git",["merge-base","--is-ancestor",source,main],
