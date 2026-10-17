@@ -1,0 +1,54 @@
+{
+  "case_id": "GOV-FINAL-READY-L3-FASTLOOP-001",
+  "base_sha": "ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede",
+  "constitution_version": "1.0",
+  "title": "Correct L3 Ready admission incorrectly requiring Draft-only fast-loop",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    "harness/scripts/final-ready-preflight.mjs"
+  ],
+  "candidate_digest_sha256": "14c3dae9647710bddaa19ec52f7b00f28afeae49c2ce33689c10fcef9479018c",
+  "why5": [
+    {
+      "question": "Why is PR #403 Final Ready blocked despite full gates?",
+      "answer": "Exact HEAD required ci/governance/attack/CodeQL have success; Final Ready additionally demands a Draft-only fast-loop while PR is Ready.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/403#issuecomment-6232522838"
+    },
+    {
+      "question": "Why does Ready lack fast-loop?",
+      "answer": "The CI workflow intentionally restricts fast-loop to draft pull requests and full CI to non-draft pull requests.",
+      "evidence_ref": ".github/workflows/ci.yml"
+    },
+    {
+      "question": "Why not just switch Ready to Draft?",
+      "answer": "A conversion is not a configured fast-loop trigger; verified switching #403 to Draft and back did not create the missing same-HEAD fast-loop.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/403"
+    },
+    {
+      "question": "Why is excluding fast-loop from L3 Ready not an unsafe bypass?",
+      "answer": "Ready still requires four authenticated current HEAD pull_request full-gate runs and ordered Local Tests, independent GPT BCE and Human Final Ready evidence. Draft fast-loop remains a separate stage.",
+      "evidence_ref": "harness/scripts/final-ready-preflight.mjs"
+    },
+    {
+      "question": "Why separate PR #405?",
+      "answer": "PR #403 carries a Human-approved exact two-file governance exception; adding admission guard changes would invalidate its protected scope.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/405"
+    }
+  ],
+  "alternatives": [
+    "Require Draft fast-loop on Ready (deadlocks unless artificial commit timing)",
+    "Relax actual four PR full gates (unsafe, rejected)",
+    "Change Ready workflow to run additional fast-loop (redundant and risks check name collision)"
+  ],
+  "no_change": "Without fix, properly tested L3 Ready PRs cannot satisfy unrelated Draft-only check.",
+  "rollback": "Revert PR #405 after explicitly redesigning equivalent L3 protected Ready admission; reverting without replacement restores blocker.",
+  "negative_tests": [
+    "Four required PR full gates missing/failing/stale => Final Ready must FAIL",
+    "Local/GPT BCE/Human Final Ready missing => FAIL",
+    "Draft fast-loop must not be counted as full CI",
+    "Cross-HEAD PR evidence => FAIL"
+  ],
+  "human_approval": null,
+  "status": "PREPARED_EXACT_CANDIDATE_PENDING_HUMAN_APPROVAL",
+  "notes": "Human approved GPT to work on Final Ready but did not specifically approve this exact BASE/HEAD/digest candidate. No forged approval. Gate failure expected before explicit Human decision. Current code head c3f4cb00d4b86523b5b258ee1c1b9a31c4b7b0e0; source digest extracted from actual GitHub Actions fast-loop log."
+}
