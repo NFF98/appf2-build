@@ -1,0 +1,73 @@
+{
+  "case_id": "GOV-ATTACK-FIXTURE-CF-ISOLATION-001",
+  "base_sha": "398079ed4cc7864f72143571ee6ccfbbd074898a",
+  "constitution_version": "1.0",
+  "title": "Attack fixture: isolate strict carry-forward rows after sprint wipe (does not weaken real register gates)",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    "harness/attack/run-dry-run.mjs"
+  ],
+  "candidate_digest_sha256": "b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1",
+  "why5": [
+    {
+      "question": "Why change the attack fixture?",
+      "answer": "ADMINISTRATIVE_WITH_CARRY_FORWARD adds APPF2-CARRY-FORWARD-1 GAP rows bound to SP-P1-003; attack dry-run deletes real Sprint trees and rebuilds only SP-P9-*, so register truth falsely fails before any security property is exercised.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/402"
+    },
+    {
+      "question": "Why not change register validation?",
+      "answer": "Softening rowTruthErrors when Sprint is missing would weaken production gates. The fix is fixture-local only.",
+      "evidence_ref": "harness/scripts/validate-special-approvals-and-carry-forward.mjs"
+    },
+    {
+      "question": "Why strip only strict rows?",
+      "answer": "Legacy POI rows lack row_schema APPF2-CARRY-FORWARD-1 and are not Sprint-bound the same way; keeping them preserves fixture realism without false negatives.",
+      "evidence_ref": "delivery/PROJECT-OPEN-ITEMS.json"
+    },
+    {
+      "question": "Why clear inherited BASE_SHA?",
+      "answer": "Caller BASE_SHA/HEAD_SHA from real repos are absent from the synthetic git history and produce spurious governance-diff failures; explicit fixture base/head still apply.",
+      "evidence_ref": "harness/attack/run-dry-run.mjs"
+    },
+    {
+      "question": "Why a separate PR from #402?",
+      "answer": "#402 is an exact five-file ADMINISTRATIVE_WITH_CARRY_FORWARD control transition; adding harness/attack would violate the exact closure path set. This PR is GOVERNANCE_REFORM for one fixture file only.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs"
+    }
+  ],
+  "alternatives": [
+    "Expand #402 exact closure path set to include attack (requires gate allowlist change; rejected as scope mixing).",
+    "Weaken register truth when Sprint dir missing (rejected; softens production gates).",
+    "Defer attack fix until after #402 HOLD (Ready CI would still fail attack on #402 before Merge)."
+  ],
+  "no_change": "Without this fix, Ready CI for Sprint 3 admin closure cannot pass attack dry-run once GAP rows exist.",
+  "rollback": "Revert this single-file PR; attack fixture again keeps strict GAP rows after sprint wipe.",
+  "negative_tests": [
+    "npm run dry-run:attack must keep failing closed on Active Sprint Task rewrite and other expectFail cases",
+    "governance-gate on the real repository still validates full PROJECT-OPEN-ITEMS including GAP rows"
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Main still has SP-P1-003 REVIEW; harness/ is governance-only during execution. Fixture isolation is required so #402 Ready CI can run attack without weakening production register gates.",
+    "risk": "CI cannot prove Human provenance; must verify exact bytes and that production register validation is unchanged.",
+    "owner": "Human（NFF98）",
+    "follow_up": "After Merge, rebase/re-verify #402 attack locally and on Ready CI; then Human exact closure approval for #402.",
+    "residual_gaps": [
+      "CI cannot prove human_approval is from a person.",
+      "Does not authorize #402 Merge or Sprint 4.",
+      "Does not alter APPF2-CARRY-FORWARD-1 production validation."
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793410651,
+    "expires_at_rule": "policy max_ttl_seconds from approval time; placeholder until Human sets approved_at_unix"
+  },
+  "human_approval": null,
+  "status": "PREPARED_EXACT_CANDIDATE_PENDING_HUMAN_APPROVAL",
+  "notes": "Prerequisite for #402 Ready attack. NOT Merge of #402. NOT Product PASS."
+}
