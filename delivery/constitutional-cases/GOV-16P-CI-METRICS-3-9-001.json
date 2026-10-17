@@ -41,11 +41,6 @@
       "evidence_ref": "harness/scripts/governance-metrics.mjs"
     },
     {
-      "question": "Why a separate PR from #402/#403?",
-      "answer": "#402 is exact five-file ADMINISTRATIVE_WITH_CARRY_FORWARD; #403 is one-file attack fixture. Mixing CI/metrics bytes into those digests would invalidate Human-approved exact candidates. This PR is Issue #389 GOVERNANCE_REFORM only.",
-      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389"
-    },
-    {
       "question": "Why expand from the old exact six-file candidate?",
       "answer": "User ordered the original #404 16P positive E2E repairs; 12 actual non-docket files now implement genuine operation probes, guarded negative writes, real existing Evidence verification and disposable PostgreSQL/Chromium tests. Old six-file approval cannot apply.",
       "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/39009245208"
