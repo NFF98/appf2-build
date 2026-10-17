@@ -110,6 +110,11 @@ const historicalMergeChain=(source,proof)=>[
  source?.head?.repo?.full_name===repoName(),
  proof?.head?.repo?.full_name===repoName()
 ].every(Boolean);
+const taskHistoryOutcome=({sequence,evidenceLinked,same,closed,count})=>({
+ full:[sequence,evidenceLinked,same,closed,count>0].every(Boolean),
+ status:[sequence,evidenceLinked].every(Boolean)?
+   "PARTIAL_TWO_PR_HISTORY_AND_CLOSURE_PENDING":"NOT_VERIFIED"
+});
 // Live, read-only historical Task transition audit; no simulated Merge/Closure.
 function auditTaskHistory(sourceNumber,evidenceNumber){
  if(!Number.isSafeInteger(sourceNumber)||sourceNumber<=0||
@@ -125,14 +130,15 @@ function auditTaskHistory(sourceNumber,evidenceNumber){
  const n=Array.isArray(task?.completion_evidence)?task.completion_evidence.length:0;
  const evidenceLinked=String(proof.body||"").includes(taskId);
  const same=sourceNumber===evidenceNumber,closed=task?.status==="CLOSED";
+ const outcome=taskHistoryOutcome({sequence,evidenceLinked,same,closed,count:n});
  return {ok:true,decision:"REAL_GITHUB_TASK_HISTORY_OBSERVED",task_id:taskId,
   source_pr:sourceNumber,evidence_pr:evidenceNumber,
   source_merged:src,evidence_merged:ev,
   verified_pr_merge_sequence:sequence,linked_evidence_body:evidenceLinked,
   canonical_task_status:task?.status||"MISSING",
   canonical_evidence_count:n,same_primary_pr:same,task_closed:closed,
-  complete_one_pr_e2e_verified:Boolean(sequence&&evidenceLinked&&same&&closed&&n),
-  status:sequence&&evidenceLinked?"PARTIAL_TWO_PR_HISTORY_AND_CLOSURE_PENDING":"NOT_VERIFIED",
+  complete_one_pr_e2e_verified:outcome.full,
+  status:outcome.status,
   write_performed:false};
 }
 
