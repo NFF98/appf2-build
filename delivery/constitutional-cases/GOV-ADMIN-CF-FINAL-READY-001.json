@@ -11,7 +11,7 @@
     "harness/scripts/final-ready-preflight.mjs",
     "harness/scripts/w1-01-evidence-mirror.mjs"
   ],
-  "candidate_digest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "candidate_digest_sha256": "42ed983451e44b369de761c8545e831879ca3c698841bf86885a860830666ece",
   "why5": [
     {
       "question": "Why is #402's real seven-command evidence not admitted?",
@@ -54,7 +54,7 @@
     "Rejected duplicate Task PR even after administrative HOLD",
     "No historical Main bytes can be compared against an unmerged candidate"
   ],
-  "status": "PREPARED_HUMAN_EXACT_CANDIDATE_PENDING_GITHUB_GATES",
+  "status": "PREPARED_REAL_FAST_LOOP_PASS_PENDING_HUMAN_EXACT_CANDIDATE",
   "human_approval": null,
   "scope_exception": {
     "schema": "APPF2-HUMAN-EXCEPTION-1",
@@ -78,5 +78,6 @@
   "carry_forward": {
     "zero_gap": true,
     "justification": "This repairs control/evidence plumbing only. It does not waive Product E2E or defer a new AC; T006 BLOCKED and T008 REVIEW remain existing #402 liabilities."
-  }
+  },
+  "notes": "GitHub Draft fast-loop job 117390852909 actually PASS on five changed source files; calculated candidate digest 42ed983451e44b369de761c8545e831879ca3c698841bf86885a860830666ece. No Human exact-candidate approval yet; protected governance gate cannot PASS and no Merge allowed."
 }
