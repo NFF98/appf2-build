@@ -65,9 +65,19 @@
     "expires_at_unix": 1793412660,
     "expires_at_rule": "Main governance policy max_ttl_seconds=1209600 (14 days) from approved_at_unix; Human merge decision remains separate."
   },
-  "human_approval": null,
-  "status": "REBASED_EXACT_CODE_PENDING_NEW_HUMAN_EXACT_CANDIDATE",
-  "notes": "Prerequisite for #402 Ready attack. Exact-candidate Human chat approval recorded 2026-10-17. NOT Merge of #403 or #402. NOT Product PASS. NOT Sprint 4. Candidate re-anchored to protected Main ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede with identical approved non-docket code blob a64d9390844b791430a4599c4120bdee84b5848f. Historical approval explicitly archived, not recycled; new Human exact-candidate decision and Final Ready remain outstanding. User 2026-10-17 authorized Merge actions, not an invented exact base/head approval.",
+  "human_approval": {
+    "case_id": "GOV-ATTACK-FIXTURE-CF-ISOLATION-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1",
+    "human_message_ref": "Human direct ChatGPT message dated 2026-10-17 JST: 「核准 #403 新版精確候選。」 This refers to GPT's immediately preceding #403 candidate explicitly identified by BASE=ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede, HEAD=af60456280374e9d3ae5df35bf1b6a77a2992a7f, and candidate_digest_sha256=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Exact-candidate approval only, independent Final Ready and protected GitHub gates remain mandatory. Not a fabricated GitHub message URL.",
+    "approved_at_unix": 1792230360,
+    "expires_at_unix": 1793412660
+  },
+  "status": "EXACT_CANDIDATE_CHAT_APPROVED_PENDING_LIVE_GATES_AND_FINAL_READY",
+  "notes": "Prerequisite for #402 Ready attack. Exact-candidate Human chat approval recorded 2026-10-17. NOT Merge of #403 or #402. NOT Product PASS. NOT Sprint 4. Candidate re-anchored to protected Main ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede with identical approved non-docket code blob a64d9390844b791430a4599c4120bdee84b5848f. Historical approval explicitly archived, not recycled; new Human exact-candidate decision and Final Ready remain outstanding. User 2026-10-17 authorized Merge actions, not an invented exact base/head approval. Human direct ChatGPT approval 2026-10-17 specifically authorizes rebased #403 candidate BASE=ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede HEAD=af60456280374e9d3ae5df35bf1b6a77a2992a7f digest=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Recording this approval modifies only the docket and supersedes none of the proof requirements; Final Ready remains independent.",
   "carry_forward": {
     "zero_gap": true,
     "justification": "This PR only isolates attack-fixture register rows after synthetic sprint wipe; it creates no Product/Task Acceptance deferral and adds no permanent GAP obligation beyond existing Main register truth."
