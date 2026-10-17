@@ -77,8 +77,17 @@
     "delivery/sprints/SP-P1-003/manifest.json"
   ],
   "candidate_digest_sha256": "73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c",
-  "human_approval": null,
-  "status": "REANCHORED_SAME_4_DATA_BLOBS_PENDING_NEW_HUMAN_EXACT_CANDIDATE",
+  "human_approval": {
+    "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-002",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c",
+    "human_message_ref": "2026-10-17 Human direct ChatGPT: 正式批准 PR #402 新版精確候選 BASE=c20f40792808e2cb7d8b1f95b1adcad4124d1c49 HEAD=332138c8e172506039a4fd40c952297642b8fc61 candidate_digest_sha256=73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c. Human authorized 7 real Cloud, 4 real Gate, independent GPT BCE, conditional Final Ready ADMITTED then protected Merge only. T006 BLOCKED, T008 REVIEW, Product HOLD/NOT_RUN, never Product PASS or next Task. Direct Chat, not GitHub cryptographic signature.",
+    "approved_at_unix": 1792240594
+  },
+  "status": "EXACT_HUMAN_APPROVED_PENDING_REAL_GATES_AND_FINAL_READY",
   "why5": [
     {
       "question": "Why close Sprint3 administratively now?",
@@ -111,7 +120,8 @@
     "Re-anchored against protected Main f7ec03b8c7e3a7604f99473129e6d7536dc7314b after authorized #403 and #405 merges. Exact non-docket content and code digest unchanged. Human exact-candidate approval remains PENDING; Draft PR cannot Merge. T006 BLOCKED and T008 REVIEW remain in ledger and carried forward without Product PASS.",
     "Canonical 2026-10-17 PR #402 branch source now fast-forward-descends from latest Main f7ec03b8c7e3a7604f99473129e6d7536dc7314b. Rerun GitHub pull_request synchronize checks with correct BASE/HEAD; no Human exact approval has been assumed, protected Merge remains forbidden until all independently verified requirements pass.",
     "2026-10-17 Human direct exact BASE/HEAD/digest candidate approval. Docket-only attestation update; preserve existing four non-docket bytes unchanged, preserve no Product PASS and no next Task. Final Ready and protected merge remain conditional.",
-    "After protected #406 Main commit c20f40792808e2cb7d8b1f95b1adcad4124d1c49, preserve four original non-docket closure files byte-for-byte, retain T006 BLOCKED, T008 REVIEW, Product HOLD/NOT_RUN; new BASE requires separately authorized exact Human candidate before Merge."
+    "After protected #406 Main commit c20f40792808e2cb7d8b1f95b1adcad4124d1c49, preserve four original non-docket closure files byte-for-byte, retain T006 BLOCKED, T008 REVIEW, Product HOLD/NOT_RUN; new BASE requires separately authorized exact Human candidate before Merge.",
+    "2026-10-17 Human exact new BASE/HEAD/digest approval, recorded truthfully as direct message. No new Product status implied. All protected Gates/Final Ready still mandatory."
   ],
   "previous_approval_history": [
     {
