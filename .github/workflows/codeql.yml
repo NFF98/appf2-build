@@ -2,7 +2,7 @@ name: CodeQL
 
 on:
   push:
-    branches: [main, governance/task-one-approval-20261016]
+    branches: [main]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]

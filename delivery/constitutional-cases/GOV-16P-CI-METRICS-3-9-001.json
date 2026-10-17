@@ -1,0 +1,87 @@
+{
+  "case_id": "GOV-16P-CI-METRICS-3-9-001",
+  "base_sha": "398079ed4cc7864f72143571ee6ccfbbd074898a",
+  "constitution_version": "1.0",
+  "title": "16P #3/#9: stop one-shot Push-branch full CI waste; count Ready CI by run attempt/job (Draft/skip separate)",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    ".github/workflows/attack-dry-run.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/governance-gate.yml",
+    ".github/workflows/governance-metrics.yml",
+    "harness/scripts/governance-metrics.mjs"
+  ],
+  "candidate_digest_sha256": "f09e117b7eb8c093f58c98a1e98fcdb63ec9fc0a264f9f43fed413e58393cdc9",
+  "why5": [
+    {
+      "question": "Why remove governance/task-one-approval-20261016 from Push triggers?",
+      "answer": "#401 already merged that one-shot branch; Push on it still ran full CI/CodeQL (#38971545678 / #38971545705), violating Issue #389 item #3 thrift (full gates only at Ready/final).",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38971545678"
+    },
+    {
+      "question": "Why change metrics collection to per-attempt jobs?",
+      "answer": "Issue #389 item #9 requires accurate efficiency measurement; counting workflow runs by name alone treated Draft fast-loop and skipped CodeQL as full CI and under-counted Ready re-runs (same run_id attempt 1/2/3 = three executed ci jobs).",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38971660865"
+    },
+    {
+      "question": "Why keep Draft fast-loop and Ready required checks?",
+      "answer": "Thrift must not weaken branch protection; Draft still runs fast-loop; Ready still requires ci/governance/attack/CodeQL. Metrics classify Draft skip separately instead of inventing PASS.",
+      "evidence_ref": ".github/workflows/ci.yml"
+    },
+    {
+      "question": "Why INCOMPLETE / INSUFFICIENT_BASELINE instead of fake savings?",
+      "answer": "Without complete attempt/job evidence or a pre-reform baseline, publishing a savings percentage would be a false PASS. Fail closed and label legacy synthetic arrays as non-publishable.",
+      "evidence_ref": "harness/scripts/governance-metrics.mjs"
+    },
+    {
+      "question": "Why a separate PR from #402/#403?",
+      "answer": "#402 is exact five-file ADMINISTRATIVE_WITH_CARRY_FORWARD; #403 is one-file attack fixture. Mixing CI/metrics bytes into those digests would invalidate Human-approved exact candidates. This PR is Issue #389 GOVERNANCE_REFORM only.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389"
+    }
+  ],
+  "alternatives": [
+    "Keep one-shot Push branch forever (rejected; wastes full CI).",
+    "Count only distinct headSha once (rejected; hides Ready re-run cost).",
+    "Fold into #402/#403 (rejected; exact digests already frozen)."
+  ],
+  "no_change": "Without this fix, metrics remain distorted and Push-branch full CI continues to violate #3 thrift semantics.",
+  "rollback": "Revert the six-file PR; Push again triggers on the one-shot branch; metrics revert to run-name counting.",
+  "negative_tests": [
+    "Offline classifier must mark incomplete attempt/job sets INCOMPLETE",
+    "Legacy synthetic run arrays must not publish as full_ci_runs",
+    "Draft PR must still skip required ci job while running fast-loop"
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Issue #389 still OPEN; items #3 and #9 require workflow+metrics correction on governance-only paths while Sprint 3 remains REVIEW. Procedural Sprint-3 closure (#402/#403) is deferred per Human 16P-first order.",
+    "risk": "Workflow trigger changes affect CI cost and required-check semantics; metrics misclassification could claim fake efficiency. Exact digest + Human approval + Ready four gates remain mandatory.",
+    "owner": "Human（NFF98）",
+    "follow_up": "After Merge: observe scheduled/dispatch governance-metrics real run; verify Draft PR no longer triggers Push full CI on feature branches; then resume #403→#402 Sprint 3 admin closure.",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793414168,
+    "expires_at_rule": "Main governance policy max_ttl_seconds=1209600 (14 days); placeholder until Human sets approved_at_unix"
+  },
+  "human_approval": null,
+  "status": "PREPARED_EXACT_CANDIDATE_PENDING_HUMAN_APPROVAL",
+  "notes": "Issue #389 items #3 and #9 only. NOT Merge. NOT #402/#403. NOT Sprint 4. NOT Product PASS.",
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "Corrects CI thrift triggers and metrics classification only; creates no Product/Task Acceptance deferral and adds no permanent GAP beyond existing Main register truth."
+  },
+  "known_limitations": [
+    "CI cannot prove human_approval is from a person; Human provenance check remains mandatory.",
+    "Does not authorize Merge, Sprint 4, Product PASS, or folding into #402/#403.",
+    "Scheduled metrics observation still requires a real workflow run after Merge (or Human-authorized workflow_dispatch).",
+    "Other 14 of 16P items remain separate E2E obligations; this PR does not claim 16/16 VERIFIED."
+  ]
+}
