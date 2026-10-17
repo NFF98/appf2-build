@@ -121,7 +121,7 @@ const orderErrors=records=>{
   }
   return e;
 };
-const fastLoopErrors=(checks,head)=>{
+export const fastLoopErrors=(checks,head)=>{
   const runs=safeArray(checks?.check_runs).filter(x=>x.name==="fast-loop" && x.head_sha===head);
   const rows=runs.filter(x=>Number.isSafeInteger(x.id) && x.id>0).sort((a,b)=>b.id-a.id);
   // Old PASS must not mask a newer failed/re-run attempt for the same HEAD.
