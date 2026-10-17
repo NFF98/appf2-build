@@ -210,25 +210,35 @@ const tally=Object.fromEntries(["CHECK_PASS","PARTIAL","AUTHORITY_REQUIRED","NOT
  [s,rows.filter(r=>r.operation_verdict===s).length]));
 // IMPORTANT: CHECK_PASS is NOT E2E PASS. Only independently proven protected
 // lifecycle receipts can mark full E2E complete, which this read-only token cannot obtain.
+const verifiedFullCount=rows.filter(r=>r.complete_real_e2e==="PASS").length;
 const result={schema:"APPF2-16P-REAL-EOE-STRICT-1",source:"LIVE_GITHUB_ACTIONS",
  pr:prNumber,head,run_id:process.env.GITHUB_RUN_ID,
  attempted_items:rows.length,operational_counts:tally,
- full_real_e2e_pass_count:rows.filter(r=>r.complete_real_e2e==="PASS").length,
- main_closure_pass_count:0,
+ full_real_e2e_pass_count:verifiedFullCount,
+ main_closure_pass_count:0, // Not yet authenticated; NEVER extrapolate from tests or PR checks.
  no_unauthorized_mutations:true,
  historical_invalid_run:"39003122776:VOID_INVALID_METHOD",
  harness_failures:fatal,items:rows.map(({operations,...rest})=>({...rest,
   operation_count:operations.length,
   operation_failure_count:operations.filter(o=>o.exit!==0&&o.exit!==3).length}))};
+// Fail CLOSED: zero real protected Main closure receipts cannot be promoted by a green
+// read-only runner. A 16/16 local probe inventory is not a 16/16 E2E acceptance.
+const fullyAdmitted=verifiedFullCount===REQUIRED.length &&
+  result.main_closure_pass_count>0 && fatal.length===0 && tally.FAIL===0;
+result.full_real_e2e_admitted=fullyAdmitted;
+result.final_verdict=fullyAdmitted?"FULL_REAL_E2E_PASS":"INCOMPLETE_REAL_E2E_HARD_STOP";
 fs.writeFileSync(path.join(tmp,"16p-real-e2e.json"),JSON.stringify(result,null,2)+"\n");
 const summary=["## 16P STRICT REAL E2E: "+
  result.full_real_e2e_pass_count+"/16 complete",
  "Actual GitHub APIs and runnable commands performed: "+rows.length+"/16;",
  "Local-operation CHECK_PASS is NOT a full protected lifecycle PASS.",
+ "Full real E2E admission: "+result.final_verdict+"; required 16/16 plus authenticated Main closure evidence.",
  "Operation verdicts "+JSON.stringify(tally),
  "Human approval, protected Merge/Closure and cross-repo writes NEVER simulated.",
  ...rows.map(r=>"- #"+r.id+" "+r.operation_verdict+" (full="+r.complete_real_e2e+") — "+r.missing.join("; ")),
  ...(fatal.length?["HARD_STOP: "+fatal.join("; ")]:[])].join("\n")+"\n";
 console.log(summary);
 if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary);
-if(fatal.length||tally.FAIL)process.exitCode=1;
+if(!fullyAdmitted)console.error("16P HARD_STOP: real protected E2E incomplete; "+
+ verifiedFullCount+"/16; authenticated Main closures="+result.main_closure_pass_count);
+if(fatal.length||tally.FAIL||!fullyAdmitted)process.exitCode=1;
