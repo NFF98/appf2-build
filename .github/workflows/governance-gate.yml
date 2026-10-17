@@ -161,6 +161,89 @@ jobs:
           path: ${{ runner.temp }}/16p-real-e2e.json
           if-no-files-found: warn
 
+  real-e2e-d:
+    name: 16P #D real PostgreSQL + Chromium (non-synthetic proof)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd 'pg_isready -U postgres -d postgres'
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      APPF2_TEST_ADMIN_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+      PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/16p-d/browser-report.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Bootstrap Supabase request roles in disposable real PostgreSQL
+        run: |
+          mkdir -p "$RUNNER_TEMP/16p-d"
+          node --input-type=module <<'PG'
+          import {Client} from 'pg';
+          const c=new Client({connectionString:process.env.APPF2_TEST_ADMIN_DATABASE_URL});
+          await c.connect();
+          try{
+           await c.query('CREATE ROLE anon NOLOGIN');
+           await c.query('CREATE ROLE authenticated NOLOGIN');
+           await c.query('CREATE ROLE service_role NOLOGIN BYPASSRLS');
+           const result=await c.query("SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = ANY($1)",[['anon','authenticated','service_role']]);
+           if(result.rows.length!==3||!result.rows.some(r=>r.rolname==='service_role'&&r.rolbypassrls))
+            throw Error('Real PostgreSQL role bootstrap did not succeed');
+           console.log('REAL POSTGRES bootstrap PASS: 3 distinct request roles verified');
+          }finally{await c.end()}
+          PG
+      - name: Real PostgreSQL migration / RLS / PostgREST exposure tests (no SKIP accepted)
+        run: |
+          set -euo pipefail
+          npx vitest run tests/api/pg001-postgrest-exposure.integration.test.ts --reporter=json > "$RUNNER_TEMP/16p-d/postgres-report.json"
+          node --input-type=module <<'CHECK'
+          import fs from 'node:fs';
+          const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/16p-d/postgres-report.json'));
+          if(d.numPassedTests<1||d.numFailedTests!==0||d.numPendingTests!==0||d.numTotalTests!==d.numPassedTests)
+           throw Error('Postgres tests not actually executed/pass: '+JSON.stringify({total:d.numTotalTests,passed:d.numPassedTests,failed:d.numFailedTests,skipped:d.numPendingTests}));
+          console.log('REAL POSTGRES verified executed=',d.numPassedTests,'no skipped tests');
+          CHECK
+      - name: Install actual Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Real Chromium UI interactions and production-handler harness (no SKIP accepted)
+        run: |
+          set -euo pipefail
+          npx playwright test tests/e2e/sp2-production-contract.spec.ts --project=chromium --reporter=json > "$RUNNER_TEMP/16p-d/browser-report.json"
+          node --input-type=module <<'CHECK'
+          import fs from 'node:fs';
+          const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/16p-d/browser-report.json'));
+          const a=d.stats||{};
+          if(a.expected<1||a.unexpected!==0||a.skipped!==0)
+           throw Error('Chromium real-browser tests absent/failed/skipped: '+JSON.stringify(a));
+          console.log('REAL CHROMIUM verified executed=',a.expected,'unexpected=',a.unexpected,'skipped=',a.skipped);
+          CHECK
+      - name: Preserve true PostgreSQL and browser runner receipts (not deployed Product PASS)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-d-real-postgres-browser
+          path: ${{ runner.temp }}/16p-d/*.json
+          if-no-files-found: warn
+
   six-gap-prewrite-live:
     name: 16P #1/#6/#8/#A/#E/#F guarded GitHub write denials (real API)
     if: ${{ github.event_name == 'pull_request' }}
