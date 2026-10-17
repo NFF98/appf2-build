@@ -103,7 +103,7 @@ jobs:
             --event "$GITHUB_EVENT_PATH" --out "$RUNNER_TEMP/task-evidence-report.json"
       - name: Upload canonical-reference ledger (NOT automatic Task Closure)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: task-evidence-ledger
           path: ${{ runner.temp }}/task-evidence-report.json
@@ -135,7 +135,7 @@ jobs:
         run: node harness/scripts/16p-task-evidence-live.mjs
       - name: Upload verified live canonical Evidence receipt
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 16p-t008-real-evidence-audit
           path: ${{ runner.temp }}/16p-t008-canonical-live.json
@@ -148,14 +148,14 @@ jobs:
         run: node harness/scripts/16p-real-e2e.mjs
       - name: Upload 16 separate raw GitHub E2E operation receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 16p-strict-real-e2e-receipts
           path: ${{ runner.temp }}/16p-real-e2e/*.json
           if-no-files-found: warn
       - name: Upload only v2 operation receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 16p-strict-real-e2e-summary
           path: ${{ runner.temp }}/16p-real-e2e.json
@@ -239,7 +239,7 @@ jobs:
           CHECK
       - name: Preserve true PostgreSQL and browser runner receipts (not deployed Product PASS)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 16p-d-real-postgres-browser
           path: ${{ runner.temp }}/16p-d/*.json
@@ -326,7 +326,7 @@ jobs:
           '
       - name: Upload real GitHub prewrite denial receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: 16p-guarded-prewrite-evidence
           path: ${{ runner.temp }}/16p-write/*.json
