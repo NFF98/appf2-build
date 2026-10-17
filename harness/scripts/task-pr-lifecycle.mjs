@@ -51,7 +51,7 @@ export function taskIdentityOfPr(pr){
  const title=/^(T\d{3})(?:[：:\s]|$)/.exec(String(pr?.title||""))?.[1]||null;
  const body=String(pr?.body||"").replace(/\x60/g,"");
  const ids=[...new Set([...body.matchAll(
-  /^\s*(?:[-*]\s*)?Task\s*[：:]\s*(T\d{3})(?=\s|$|[（(])/gim
+  /(?:^|[｜|])\s*(?:[-*]\s*)?Task\s*[：:]\s*(T\d{3})(?=\s|$|[（(｜|])/gim
  )].map(m=>m[1]))];
  if(!title||ids.length!==1||ids[0]!==title)
   return {ok:false,task_id:null,decision:"BLOCK_TASK_IDENTITY_MISSING_OR_CONFLICTING",title_task:title,body_tasks:ids};
