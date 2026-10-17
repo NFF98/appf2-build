@@ -160,18 +160,55 @@ const measuredResult=(input,state)=>{
       (sample?.truncated?"; SAMPLE newest enriched runs only — not a full-window census":"")};
 };
 
+// A source can contain authentic GitHub jobs yet cover only the newest N runs.
+// Do not publish those N observations as a seven-day total, even when the
+// producer mistakenly claims complete:true (legacy 2026-10-17 exporter bug).
+const sampleMeta=input=>input?.sample&&typeof input.sample==="object"?{
+  strategy:input.sample.strategy||null,
+  listed:input.sample.listed,
+  enriched:input.sample.enriched,
+  truncated:input.sample.truncated===true
+}:null;
+const isPartialSample=sample=>sample?.truncated===true ||
+  (Number.isSafeInteger(sample?.listed)&&Number.isSafeInteger(sample?.enriched)&&
+   sample.enriched<sample.listed);
+const sampleShapeOK=(input,sample)=>sample&&
+  sample.strategy==="newest"&&Number.isSafeInteger(sample.listed)&&sample.listed>0&&
+  Number.isSafeInteger(sample.enriched)&&sample.enriched>=1&&
+  sample.enriched===input.runs.length&&sample.enriched<=sample.listed;
+const sampledResult=(input,state,sample)=>({
+  status:"INCOMPLETE_SAMPLED",complete:false,
+  reason:"Only newest enriched runs were observed; not a seven-day total or savings baseline",
+  window_start:input.window_start,
+  full_ci_runs:null,repeated_full_runs_same_head:null,
+  ready_ci_executed:null,ready_ci_success:null,
+  ready_codeql_executed:null,ready_codeql_success:null,
+  draft_fast_loop_executed:null,draft_required_skipped:null,
+  push_full_ci_executed:null,push_full_codeql_executed:null,
+  baseline_status:"INSUFFICIENT_BASELINE",
+  source_complete_claim_invalid:input.complete===true,
+  sample:{...sample,truncated:true},
+  sample_counts:{...state.counts,distinct_heads:state.perHead.size,
+    repeated_ready_ci_same_head:[...state.perHead.values()].reduce((a,n)=>a+n-1,0)},
+  semantics:"Newest sampled GitHub Actions run ATTEMPT/jobs ONLY. Sample counts are NOT whole-window totals. No savings percentage."
+});
 const fullCiRuns=input=>{
   if(Array.isArray(input)) return legacyFullCiRuns(input);
-  if(!input||input.complete!==true||!Array.isArray(input.runs)||
+  if(!input||!Array.isArray(input.runs)||
      typeof input.window_start!=="string"||!input.window_start)
     return incomplete("GitHub run/job history missing or pagination incomplete");
   if(!input.runs.length) return incomplete("No enriched run/job rows in observation window");
+  const sample=sampleMeta(input),partial=isPartialSample(sample);
+  if(partial&&!sampleShapeOK(input,sample))
+    return incomplete("Sample count/coverage metadata disagrees with enriched GitHub rows");
+  if(!partial&&input.complete!==true)
+    return incomplete("GitHub run/job history missing or pagination incomplete");
   const state={seen:new Set(),perHead:new Map(),branches:new Set(),counts:emptyCounts()};
   for(const r of input.runs){
     const err=processRun(r,state);
-    if(err) return incomplete(err);
+    if(err)return incomplete(err);
   }
-  return measuredResult(input,state);
+  return partial?sampledResult(input,state,sample):measuredResult(input,state);
 };
 
 export { fullCiRuns };

@@ -15,7 +15,7 @@ import { selectImpactedTests } from "./select-impacted-tests.mjs";
 import { buildEvidenceLedger } from "./evidence-ledger.mjs";
 import { planTaskEvidenceReferences,planTaskClosureReadiness,
   planProtectedClosureMutation,inspectProtectedControlPrProvenance } from "./evidence-ledger-report.mjs";
-import { computeGovernanceMetrics } from "./governance-metrics.mjs";
+import { computeGovernanceMetrics,fullCiRuns } from "./governance-metrics.mjs";
 import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 
 const NOW=1792000000,BASE="a".repeat(40),DOCKET="delivery/constitutional-cases/GOV-TEST-EXCEPTION-001.json";
@@ -498,6 +498,16 @@ function protectedControlProvenanceCases(){
 }
 
 function metricsPreflightCases(guard){
+  const validJob={id:115,name:"ci",status:"completed",conclusion:"success",attempt:1};
+  const validRun={id:101,name:"CI Gate",event:"pull_request",headSha:"a".repeat(40),
+    headBranch:"gov/389-16p-3-9-fix",runAttempt:1,jobs:[validJob]};
+  const partialInput={complete:false,window_start:"2026-10-10",
+    sample:{strategy:"newest",listed:1156,enriched:1,truncated:true},runs:[validRun]};
+  const partialReal=fullCiRuns(partialInput);
+  const legacyLiar=fullCiRuns({...partialInput,complete:true});
+  const completeReal=fullCiRuns({...partialInput,complete:true,
+    sample:{strategy:"newest",listed:1,enriched:1,truncated:false}});
+  const invalidSample=fullCiRuns({...partialInput,sample:{...partialInput.sample,enriched:3}});
   const m=computeGovernanceMetrics({
     commits:[{subject:"T008 impl (#386)"},{subject:"T008 evidence (#387)"},{subject:"fix T008 typo (#388)"},{subject:"T007 close (#380)"}],
     runs:[{name:"CI Gate",event:"pull_request",headSha:"h1",headBranch:"b"},{name:"CI Gate",event:"pull_request",headSha:"h1",headBranch:"b"},{name:"Governance Gate",event:"pull_request",headSha:"h1",headBranch:"b"}],
@@ -512,6 +522,14 @@ function metricsPreflightCases(guard){
     ["Task-PR ratio measured",true,()=>m.task_pr.by_task.find(x=>x.task==="T008").prs===3],
     ["re-approvals counted",true,()=>m.human_approval.redundant_reapprovals===2],
     ["repeated full CI on same HEAD counted",true,()=>m.ci.repeated_full_runs_same_head===1],
+    ["sample from real job shape is never complete",true,()=>partialReal.status==="INCOMPLETE_SAMPLED"&&
+      partialReal.full_ci_runs===null&&partialReal.ready_ci_executed===null&&
+      partialReal.sample_counts.ready_ci_executed===1&&partialReal.sample.truncated===true],
+    ["legacy complete:true cannot disguise truncated sampling",true,()=>legacyLiar.status==="INCOMPLETE_SAMPLED"&&
+      legacyLiar.source_complete_claim_invalid===true&&legacyLiar.full_ci_runs===null],
+    ["genuinely full sample can be measured",true,()=>completeReal.status==="MEASURED_NO_PRE_POST_BASELINE"&&
+      completeReal.full_ci_runs===1&&completeReal.ready_ci_executed===1],
+    ["invalid sample metadata hard stops",true,()=>invalidSample.status==="INCOMPLETE"],
     ["rework commits counted",true,()=>m.rework.task_rework_commits===1],
     ["title Task key extracted",true,()=>taskKeyOfPr(open[0],guard)==="T008"],
     ["duplicate Task PR must reuse",true,()=>prCreationDecision({taskKey:"T008",openPrs:open,guard}).decision==="REUSE_EXISTING_PR"],

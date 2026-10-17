@@ -174,17 +174,27 @@ jobs:
           const metrics=js("harness/scripts/governance-metrics.mjs","--ref","origin/main","--since","2026-10-10");
           const integrity=js("harness/scripts/validate-test-integrity.mjs");
           const realChecks=gh("repos/"+r+"/commits/"+head+"/check-runs");
+          const featureCi=gh("repos/"+r+"/actions/workflows/ci.yml/runs?per_page=40&branch="+encodeURIComponent(liveJson.head.ref));
+          let featureRuns=null;
+          try{featureRuns=featureCi.exit===0?JSON.parse(featureCi.raw_stdout).workflow_runs:null}catch{}
+          const featurePushes=Array.isArray(featureRuns)?featureRuns.filter(x=>x.event==="push"):null;
+          const sampledPolicy=js("--input-type=module","-e",
+            'import{fullCiRuns}from"./harness/scripts/governance-metrics.mjs";const job={id:115,name:"ci",status:"completed",conclusion:"success",attempt:1};const row={id:101,name:"CI Gate",event:"pull_request",headSha:"a".repeat(40),headBranch:"branch",runAttempt:1,jobs:[job]};const s=fullCiRuns({complete:true,window_start:"2026-10-10",sample:{strategy:"newest",listed:1156,enriched:1,truncated:true},runs:[row]});if(s.status!=="INCOMPLETE_SAMPLED"||s.full_ci_runs!==null||s.sample_counts.ready_ci_executed!==1)process.exit(8);console.log("LIVE RUNNER #9 sample safety: PASS, even when exporter lies complete:true");');
           const design=gh("repos/NFF98/appf2-design/branches/main");
           const taskCli=js("harness/scripts/task-pr-lifecycle.mjs","classify");
           row("1",taskCli.exit===0?"PARTIAL":"FAIL",[live,taskCli],"真 PR/Task CLI 已執行；未真 Merge/Closure");
           row("2","AUTHORITY_REQUIRED",[grant],"Task Human grant 預檢已實際執行，缺真人授權的完整正向流程");
-          row("3",realChecks.exit===0?"PARTIAL":"FAIL",[realChecks],"真 GitHub Checks API 已查；Ready->Merge 後節流未完成");
+          row("3",realChecks.exit===0&&featureCi.exit===0&&featurePushes?.length===0?"PARTIAL":"FAIL",
+            [realChecks,featureCi,{cmd:"feature branch push CI event audit",exit:featurePushes?.length===0?0:1,
+            push_count:featurePushes?.length??null,pr_runs:featureRuns?.filter(x=>x.event==="pull_request").length??null}],
+            "真 GitHub CI API 驗證本分支只有 PR-trigger（無 Push 重跑）；仍須 Merge 後觀察節流。");
           row("4","AUTHORITY_REQUIRED",[activation],"Activation Validator 已真跑；不可自行批准 Task Activation");
           row("5","AUTHORITY_REQUIRED",[baseline],"Baseline Validator 真跑；不可擅自 Rebind");
           row("6",ledger.exit===0?"PARTIAL":"FAIL",[ledger],"真 Evidence 自動彙整已跑；不是 Canonical Registry 寫入");
           row("7","AUTHORITY_REQUIRED",[changed],"真例外 Gate 已跑；修改 #404 導致精確核准過期");
           row("8","PARTIAL",[preflight],"真 preflight CLI 已操作；GPT 外部工具硬攔尚未接線");
-          row("9",metrics.exit===0?"PARTIAL":"FAIL",[metrics],"真 Git 歷史已算；不把 40/1156 樣本冒充完整");
+          row("9",metrics.exit===0&&sampledPolicy.exit===0?"PARTIAL":"FAIL",[metrics,sampledPolicy],
+            "真 Git Runner 執行 #9 舊 complete:true 欺騙回歸並成功阻止全數誤報；尚無前後節流效益基線。");
           row("A",open.exit===0?"PARTIAL":"FAIL",[open,prGuard],"真 GitHub open PR inventory + Guard 執行；未證明建立 PR 前 API 硬拒絕");
           row("B","AUTHORITY_REQUIRED",[grant],"真的執行重複核准檢查；不可偽造真人 Task grant");
           const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));

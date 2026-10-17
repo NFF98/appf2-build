@@ -70,7 +70,7 @@ jobs:
             enriched="$(jq -s 'length' "$out/enriched.ndjson")"
             if (( enriched < listed )); then truncated=true; else truncated=false; fi
             jq -s --arg since "$since" --argjson listed "$listed" --argjson enriched "$enriched" --argjson truncated "$truncated" \
-              '{complete:true,window_start:$since,sample:{strategy:"newest",listed:$listed,enriched:$enriched,truncated:$truncated},runs:.}' \
+              '{complete:($truncated | not),reason:(if $truncated then "INCOMPLETE_SAMPLED" else null end),window_start:$since,sample:{strategy:"newest",listed:$listed,enriched:$enriched,truncated:$truncated},runs:.}' \
               "$out/enriched.ndjson" > "$out/runs.json"
           fi
           jq '{complete,window_start,reason:(.reason//null),sample,run_count:(.runs|length)}' "$out/runs.json"
@@ -82,7 +82,7 @@ jobs:
             --runs "$RUNNER_TEMP/gov-reform/runs.json" --run-limit 100000 \
             --open-prs "$RUNNER_TEMP/gov-reform/open-prs.json" \
             --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
-          node -e "const m=require(process.env.RUNNER_TEMP+'/gov-reform/reform-metrics.json'); console.log(JSON.stringify({ci_status:m.ci?.status,full_ci_runs:m.ci?.full_ci_runs??null,ready_ci_executed:m.ci?.ready_ci_executed??null,sample:m.ci?.sample||null},null,2));"
+          node -e "const m=require(process.env.RUNNER_TEMP+'/gov-reform/reform-metrics.json'); console.log(JSON.stringify({ci_status:m.ci?.status,full_ci_runs:m.ci?.full_ci_runs??null,ready_ci_executed:m.ci?.ready_ci_executed??null,sample_counts:m.ci?.sample_counts||null,sample:m.ci?.sample||null},null,2));"
       - name: Upload weekly scorecard (NOT governance PASS)
         uses: actions/upload-artifact@v4
         with:
