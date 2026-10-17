@@ -184,7 +184,6 @@ jobs:
           --health-retries 12
     env:
       APPF2_TEST_ADMIN_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
-      PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/16p-d/browser-report.json
     steps:
       - uses: actions/checkout@v4
         with:
@@ -225,6 +224,8 @@ jobs:
       - name: Install actual Chromium browser
         run: npx playwright install --with-deps chromium
       - name: Real Chromium UI interactions and production-handler harness (no SKIP accepted)
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/16p-d/browser-report.json
         run: |
           set -euo pipefail
           npx playwright test tests/e2e/sp2-production-contract.spec.ts --project=chromium --reporter=json > "$RUNNER_TEMP/16p-d/browser-report.json"
