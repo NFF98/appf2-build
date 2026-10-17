@@ -28,42 +28,65 @@ jobs:
           mkdir -p "$out"
           # Bounded observation window; no invented before/after efficacy claim.
           since="$(date -u -d '7 days ago' +%Y-%m-%d)"
+          echo "metrics_window_start=$since"
           : > "$out/list.ndjson"
           for workflow in ci.yml codeql.yml; do
-            gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?per_page=100&created=%3E%3D$since" | \
-              jq -sc '[.[] | .workflow_runs[]? | {id,name,event,headSha:.head_sha,headBranch:.head_branch,runAttempt:.run_attempt}] | .[]' >> "$out/list.ndjson"
+            # Prefer gh --jq over paginate|jq -s: the latter can yield empty/malformed NDJSON.
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?per_page=100&created=%3E%3D${since}" \
+              --jq '.workflow_runs[] | {id,name,event,headSha:.head_sha,headBranch:.head_branch,runAttempt:.run_attempt}' \
+              >> "$out/list.ndjson"
           done
-          jq -s '.' "$out/list.ndjson" > "$out/list.json"
-          count="$(jq 'length' "$out/list.json")"
-          if (( count > 750 )); then
-            jq -n --arg since "$since" '{complete:false,window_start:$since,reason:"RUN_LIMIT_750",runs:[]}' > "$out/runs.json"
+          if [[ ! -s "$out/list.ndjson" ]]; then
+            jq -n --arg since "$since" '{complete:false,window_start:$since,reason:"EMPTY_WINDOW",runs:[]}' > "$out/runs.json"
           else
-            : > "$out/enriched.ndjson"
-            while IFS= read -r row; do
-              id="$(jq -r .id <<< "$row")"
-              attempts="$(jq -r .runAttempt <<< "$row")"
-              if ! [[ "$attempts" =~ ^[1-9][0-9]*$ ]] || (( attempts > 25 )); then
-                echo "HARD_STOP: missing/excessive run attempts for $id" >&2
-                exit 2
-              fi
-              : > "$out/jobs.ndjson"
-              for (( a=1; a<=attempts; a++ )); do
-                gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$id/attempts/$a/jobs?per_page=100" | \
-                  jq -sc --argjson attempt "$a" '[.[] | .jobs[]? | {id,name,status,conclusion,attempt:$attempt}] | .[]' >> "$out/jobs.ndjson"
-              done
-              jq -s '.' "$out/jobs.ndjson" > "$out/jobs.json"
-              jq -cn --argjson row "$row" --slurpfile jobs "$out/jobs.json" '$row + {jobs:$jobs[0]}' >> "$out/enriched.ndjson"
-            done < "$out/list.ndjson"
-            jq -s --arg since "$since" '{complete:true,window_start:$since,runs:.}' "$out/enriched.ndjson" > "$out/runs.json"
+            jq -s '.' "$out/list.ndjson" > "$out/list.json"
+            count="$(jq 'length' "$out/list.json")"
+            echo "metrics_run_list_count=$count"
+            if (( count > 750 )); then
+              jq -n --arg since "$since" '{complete:false,window_start:$since,reason:"RUN_LIMIT_750",runs:[]}' > "$out/runs.json"
+            else
+              : > "$out/enriched.ndjson"
+              while IFS= read -r row; do
+                [[ -z "$row" ]] && continue
+                id="$(jq -r .id <<< "$row")"
+                attempts="$(jq -r .runAttempt <<< "$row")"
+                if ! [[ "$attempts" =~ ^[1-9][0-9]*$ ]] || (( attempts > 25 )); then
+                  echo "HARD_STOP: missing/excessive run attempts for $id" >&2
+                  exit 2
+                fi
+                : > "$out/jobs.ndjson"
+                for (( a=1; a<=attempts; a++ )); do
+                  gh api --paginate \
+                    "repos/$GITHUB_REPOSITORY/actions/runs/${id}/attempts/${a}/jobs?per_page=100" \
+                    --jq ".jobs[] | {id,name,status,conclusion,attempt:${a}}" \
+                    >> "$out/jobs.ndjson"
+                done
+                if [[ ! -s "$out/jobs.ndjson" ]]; then
+                  echo "HARD_STOP: no jobs for run $id attempts=$attempts" >&2
+                  exit 2
+                fi
+                jq -s '.' "$out/jobs.ndjson" > "$out/jobs.json"
+                jq -cn --argjson row "$row" --slurpfile jobs "$out/jobs.json" '$row + {jobs:$jobs[0]}' >> "$out/enriched.ndjson"
+              done < "$out/list.ndjson"
+              jq -s --arg since "$since" '{complete:true,window_start:$since,runs:.}' "$out/enriched.ndjson" > "$out/runs.json"
+            fi
           fi
+          jq '{complete,window_start,reason:(.reason//null),run_count:(.runs|length)}' "$out/runs.json"
           gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 \
             --json number,title,body,isDraft > "$out/open-prs.json"
       - name: Publish evidence-bound reform scorecard
         run: |
-          node harness/scripts/governance-metrics.mjs --ref HEAD             --runs "$RUNNER_TEMP/gov-reform/runs.json" --run-limit 100000             --open-prs "$RUNNER_TEMP/gov-reform/open-prs.json"             --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
+          node harness/scripts/governance-metrics.mjs --ref HEAD \
+            --runs "$RUNNER_TEMP/gov-reform/runs.json" --run-limit 100000 \
+            --open-prs "$RUNNER_TEMP/gov-reform/open-prs.json" \
+            --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
+          node -e "const m=require(process.env.RUNNER_TEMP+'/gov-reform/reform-metrics.json'); console.log(JSON.stringify({ci_status:m.ci?.status,ci_reason:m.ci?.reason||null,full_ci_runs:m.ci?.full_ci_runs??null,ready_ci_executed:m.ci?.ready_ci_executed??null},null,2));"
       - name: Upload weekly scorecard (NOT governance PASS)
         uses: actions/upload-artifact@v4
         with:
           name: gov-reform-weekly-metrics
-          path: ${{ runner.temp }}/gov-reform/reform-metrics.json
+          path: |
+            ${{ runner.temp }}/gov-reform/reform-metrics.json
+            ${{ runner.temp }}/gov-reform/runs.json
           if-no-files-found: error

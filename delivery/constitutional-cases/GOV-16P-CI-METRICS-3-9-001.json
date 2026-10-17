@@ -12,7 +12,7 @@
     ".github/workflows/governance-metrics.yml",
     "harness/scripts/governance-metrics.mjs"
   ],
-  "candidate_digest_sha256": "f09e117b7eb8c093f58c98a1e98fcdb63ec9fc0a264f9f43fed413e58393cdc9",
+  "candidate_digest_sha256": "7f5d83c52b6b43d863f666f1b62892a6493780e86fefc435b47d204673245ebb",
   "why5": [
     {
       "question": "Why remove governance/task-one-approval-20261016 from Push triggers?",
