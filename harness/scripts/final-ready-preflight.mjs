@@ -246,6 +246,7 @@ function dossierBound({docket,docketPath,others,base,candidateDigest,approval,ex
   ].every(Boolean);
 }
 function dossierApprovalBound({docket,others,base,candidateDigest,approval}){
+  if(!docket || !approval)return false;
   return [
     /^[0-9a-f]{40}$/.test(base||""),
     /^[0-9a-f]{64}$/.test(candidateDigest||""),
