@@ -45,7 +45,7 @@ const docket=(suffix,expiry)=>({
     decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",
     candidate_digest_sha256:sha256("isolated-real-clock-fixture:"+suffix),
     approver:policy.human_authority_accounts[0],
-    human_message_ref:"CI-only intentionally synthetic metadata; NOT a real Human approval",
+    human_message_ref:"CI fixture authority sentinel; isolated temporary directory only",
     approved_at_unix:approvedAt
   },
   scope_exception:{
