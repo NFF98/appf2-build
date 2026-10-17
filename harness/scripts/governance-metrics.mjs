@@ -145,12 +145,19 @@ const processRun=(r,state)=>{
 
 const measuredResult=(input,state)=>{
   const full=state.counts.ready_ci_executed;
+  const sample=input.sample&&typeof input.sample==="object"?{
+    strategy:input.sample.strategy||null,
+    listed:Number.isSafeInteger(input.sample.listed)?input.sample.listed:null,
+    enriched:Number.isSafeInteger(input.sample.enriched)?input.sample.enriched:null,
+    truncated:Boolean(input.sample.truncated)
+  }:null;
   return {status:"MEASURED_NO_PRE_POST_BASELINE",window_start:input.window_start,
     full_ci_runs:full,distinct_heads:state.perHead.size,
     repeated_full_runs_same_head:[...state.perHead.values()].reduce((a,n)=>a+n-1,0),
     full_runs_per_branch_avg:state.branches.size?Number((full/state.branches.size).toFixed(2)):0,
-    ...state.counts,baseline_status:"INSUFFICIENT_BASELINE",
-    semantics:"One executed ci job per PR run ATTEMPT; Draft/CodeQL/Push categorized separately"};
+    ...state.counts,baseline_status:"INSUFFICIENT_BASELINE",sample,
+    semantics:"One executed ci job per PR run ATTEMPT; Draft/CodeQL/Push categorized separately"+
+      (sample?.truncated?"; SAMPLE newest enriched runs only — not a full-window census":"")};
 };
 
 const fullCiRuns=input=>{
@@ -158,6 +165,7 @@ const fullCiRuns=input=>{
   if(!input||input.complete!==true||!Array.isArray(input.runs)||
      typeof input.window_start!=="string"||!input.window_start)
     return incomplete("GitHub run/job history missing or pagination incomplete");
+  if(!input.runs.length) return incomplete("No enriched run/job rows in observation window");
   const state={seen:new Set(),perHead:new Map(),branches:new Set(),counts:emptyCounts()};
   for(const r of input.runs){
     const err=processRun(r,state);
