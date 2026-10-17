@@ -27,16 +27,8 @@ function actualMainFile(relative,sha){
 }
 const ancestry=(source,main)=>spawnSync("git",["merge-base","--is-ancestor",source,main],
  {encoding:"utf8",timeout:15000}).status===0;
-function run(){
- hard(repository==="NFF98/appf2-build","unexpected repository");
- const mainSha=api("branches/main")?.commit?.sha;
- hard(/^[a-f0-9]{40}$/.test(mainSha||""),"Main SHA absent");
- const mainSprint=actualMainFile("delivery/CURRENT-SPRINT.json",mainSha);
- const taskDoc=actualMainFile(pathOfTask,mainSha);
- const task=taskDoc.tasks?.find(x=>x.task_id==="T008");
- hard(mainSprint.active_sprint===sprint&&task?.task_id==="T008","T008 not canonical");
- const primary=api("pulls/386"),evidencePr=api("pulls/387"),
-  current=api("pulls/404");
+function verifyHistoricalPrs(mainSprint){
+ const primary=api("pulls/386"),evidencePr=api("pulls/387"),current=api("pulls/404");
  const ident=taskIdentityOfPr(primary);
  const historicValid=ident.ok&&ident.task_id==="T008"&&
   primary.merged===true&&evidencePr.merged===true&&
@@ -48,6 +40,9 @@ function run(){
   "valid historic Task PR rejected by Evidence reporter");
  hard(reportContext({pull_request:current},mainSprint).status==="NOT_RUN_NO_TASK_PR",
   "governance PR accepted by Evidence reporter");
+ return {primary,evidencePr};
+}
+function loadMainEvidence(task,mainSha){
  const ids=task.completion_evidence||[],unique=new Set(ids);
  hard(ids.length===14&&unique.size===14,"T008 canonical Evidence list not 14 unique IDs");
  const inventory=api("contents/delivery/evidence?ref="+mainSha);
@@ -56,7 +51,18 @@ function run(){
   e.name?.endsWith(".json")).map(e=>e.name);
  hard(filenames.length===14&&filenames.every(f=>ids.includes(f.slice(0,-5))),
   "Existing T008 Evidence files conflict with canonical Task refs");
- const docs=ids.map(id=>actualMainFile("delivery/evidence/"+id+".json",mainSha));
+ return {ids,unique,docs:ids.map(id=>actualMainFile("delivery/evidence/"+id+".json",mainSha))};
+}
+function run(){
+ hard(repository==="NFF98/appf2-build","unexpected repository");
+ const mainSha=api("branches/main")?.commit?.sha;
+ hard(/^[a-f0-9]{40}$/.test(mainSha||""),"Main SHA absent");
+ const mainSprint=actualMainFile("delivery/CURRENT-SPRINT.json",mainSha);
+ const taskDoc=actualMainFile(pathOfTask,mainSha);
+ const task=taskDoc.tasks?.find(x=>x.task_id==="T008");
+ hard(mainSprint.active_sprint===sprint&&task?.task_id==="T008","T008 not canonical");
+ const {primary,evidencePr}=verifyHistoricalPrs(mainSprint);
+ const {ids,unique,docs}=loadMainEvidence(task,mainSha);
  const ci=actualMainFile("ci/policy.json",mainSha);
  const policy=actualMainFile("harness/policy/governance-reform.json",mainSha);
  const commands=[...(ci.required_on_every_implementation_change||[]).map(s=>"npm run "+s),
