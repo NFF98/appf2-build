@@ -182,8 +182,9 @@ const proofLevel=node("harness/scripts/validate-evidence.mjs");
 // are never admissible, and this never implies a Product/Main closure.
 const dRunsQuery=gh("actions/runs?head_sha="+head+"&per_page=30");
 const dRuns=(parse(dRunsQuery)?.workflow_runs||[]).filter(r=>
- r.head_sha===head && r.id!==Number(process.env.GITHUB_RUN_ID) &&
- r.event==="pull_request" && r.status==="completed" &&
+ r.head_sha===head &&
+ (r.id===Number(process.env.GITHUB_RUN_ID) || r.status==="completed") &&
+ r.event==="pull_request" &&
  r.path===".github/workflows/governance-gate.yml" &&
  r.head_repository?.full_name===repo).slice(0,5);
 const dInventories=dRuns.map(r=>({
