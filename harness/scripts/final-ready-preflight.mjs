@@ -121,7 +121,7 @@ const orderErrors=records=>{
   }
   return e;
 };
-const fastLoopErrors=(checks,head)=>{
+export const fastLoopErrors=(checks,head)=>{
   const runs=safeArray(checks?.check_runs).filter(x=>x.name==="fast-loop" && x.head_sha===head);
   const rows=runs.filter(x=>Number.isSafeInteger(x.id) && x.id>0).sort((a,b)=>b.id-a.id);
   // Old PASS must not mask a newer failed/re-run attempt for the same HEAD.
@@ -193,7 +193,10 @@ export function inspectPrReadiness({event,live,comments,checks,changedFiles,
   // a successful branch push. Reuse the L1 trusted GitHub PR-run provenance.
   assertion(exactRequiredPrRunProof(verifiedPrRunOrigins,head,base,live?.number),
     "L3 Ready missing four authenticated pull_request Full Gate runs",errors);
-  errors.push(...currentReadinessErrors({comments,ctx}),...fastLoopErrors(checks,head),
+  // L3 Ready is gated by four authenticated, exact-HEAD Full PR runs below.
+  // Draft-only fast-loop is not scheduled for Ready and must not block it.
+  // Local/BCE/Human Final Ready attestations remain mandatory.
+  errors.push(...currentReadinessErrors({comments,ctx}),
     ...protectedChangeErrors(changedFiles,comments,head),
     ...inspectLiveGitHubRequiredChecks({head,checks}));
   return {ok:errors.length===0,head,errors,manual_provenance_required:true};
