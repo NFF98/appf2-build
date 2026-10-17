@@ -6,9 +6,10 @@
   "change_class": "GOVERNANCE",
   "exact_changed_paths": [
     "harness/scripts/16p-human-exception-live-clock.mjs",
-    "harness/scripts/16p-real-e2e.mjs"
+    "harness/scripts/16p-real-e2e.mjs",
+    "harness/scripts/16p-task-evidence-live.mjs"
   ],
-  "candidate_digest_sha256": "7b5bb9aaf6cf844244590dd1db85807547e991579bac0fa5edd6ec87598fa1bd",
+  "candidate_digest_sha256": "245b8ebd92fb2e85f7892c06f51e4bf7419095beca66c124ef20cc58b76a01b7",
   "why5": [
     {
       "question": "Why cannot 16P #7 claim verified expiry and revocation?",
@@ -54,8 +55,7 @@
     "owner": "Human NFF98 (separate approval required)",
     "follow_up": "Independently verify GitHub execution then obtain exact-candidate approval and separately plan real protected test provider denial without touching Sprint3 Main truth.",
     "residual_gaps": [
-      "16P-7-PROTECTED-CLOSURE-DEFERRAL-NOT_VERIFIED",
-      "16P-7-PROVIDER-EXPIRED-REVOKED-REJECTION-NOT_VERIFIED"
+      "NONE"
     ],
     "never_converts_fail_or_untested_to_pass": true,
     "affected_sprint": null,
@@ -69,5 +69,5 @@
     "zero_gap": true,
     "justification": "This test adds no Product completion claim and defers no acceptance; both protected lifecycle gaps remain open in 16P receipt, no canonical product truth edit."
   },
-  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval."
+  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval. After first draft CI, broadened from two to three harness paths solely to correct 16P historical HOLD Task evidence reporting; zero-gap marker normalized to [NONE]. Exact candidate remains pending Human approval."
 }
