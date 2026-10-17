@@ -8,7 +8,7 @@
     "harness/scripts/final-ready-preflight.mjs",
     "harness/scripts/final-ready-selftest.mjs"
   ],
-  "candidate_digest_sha256": "cb8387b34e295072a4ddacb1a9aaaab778f47386d4237ed650d3d1cebcf7bc35",
+  "candidate_digest_sha256": "aa40f05591b4d5bb27945be9f550a5aeaf1b235fc075f1a72826f6a95696de75",
   "why5": [
     {
       "question": "Why does an admitted Governance-only PR remain NOT_READY?",
@@ -74,5 +74,5 @@
     "zero_gap": true,
     "justification": "This PR adds no Product acceptance claim, deferral, Task, Build Spec, or Sprint lifecycle modification; #407 and 16P protected E2E gaps remain explicitly open."
   },
-  "notes": "Only implementation and synthetic negative tests of a governance Final Ready control state; no Main changes, no production execution, no forbidden Product PASS. Candidate exact source digest computed using self-tested SHA256. Corrected initial escaped regex SyntaxError detected by real GitHub fast-loop; adjusted governance-only path patterns without widening accepted paths. Exact digest rebound; Human approval still null."
+  "notes": "Only implementation and synthetic negative tests of a governance Final Ready control state; no Main changes, no production execution, no forbidden Product PASS. Candidate exact source digest computed using self-tested SHA256. Corrected initial escaped regex SyntaxError detected by real GitHub fast-loop; adjusted governance-only path patterns without widening accepted paths. Exact digest rebound; Human approval still null. Actual GitHub Runner final Draft fast-loop PASS (job #117500996705), GOV16P7 synthetic 1 positive + 23 negative PASS, ESLint PASS. Still no exact Human approval; no Merge."
 }
