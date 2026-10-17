@@ -9,7 +9,7 @@
     "harness/scripts/16p-real-e2e.mjs",
     "harness/scripts/16p-task-evidence-live.mjs"
   ],
-  "candidate_digest_sha256": "245b8ebd92fb2e85f7892c06f51e4bf7419095beca66c124ef20cc58b76a01b7",
+  "candidate_digest_sha256": "67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441",
   "why5": [
     {
       "question": "Why cannot 16P #7 claim verified expiry and revocation?",
@@ -69,5 +69,5 @@
     "zero_gap": true,
     "justification": "This test adds no Product completion claim and defers no acceptance; both protected lifecycle gaps remain open in 16P receipt, no canonical product truth edit."
   },
-  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval. After first draft CI, broadened from two to three harness paths solely to correct 16P historical HOLD Task evidence reporting; zero-gap marker normalized to [NONE]. Exact candidate remains pending Human approval."
+  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval. After first draft CI, broadened from two to three harness paths solely to correct 16P historical HOLD Task evidence reporting; zero-gap marker normalized to [NONE]. Exact candidate remains pending Human approval. Existing 16P historical evidence reporter corrected to explicitly return NOT_RUN_NO_ACTIVE_SPRINT instead of READY_TO_REPORT under Main HOLD; code complexity extraction only, no new Task authority."
 }
