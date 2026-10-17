@@ -21,7 +21,7 @@ const exec=(cmd,args=[],timeout=120000)=>{
    env:{...process.env,CI:"true"}});
  return {command:[cmd,...args].join(" "),exit:r.status,
   duration_ms:Date.now()-started,error:r.error?.message||null,
-  stdout:(r.stdout||"").slice(-14000),stderr:(r.stderr||"").slice(-5000)};
+  stdout:r.stdout||"",stderr:(r.stderr||"").slice(-5000)};
 };
 const gh=(route)=>exec("gh",["api","repos/"+repo+"/"+route],60000);
 const node=(...args)=>exec(process.execPath,args,120000);
