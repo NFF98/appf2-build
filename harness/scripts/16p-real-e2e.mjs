@@ -26,7 +26,8 @@ const exec=(cmd,args=[],timeout=120000)=>{
 const gh=(route)=>exec("gh",["api","repos/"+repo+"/"+route],60000);
 const node=(...args)=>exec(process.execPath,args,120000);
 const parse=r=>{try{return JSON.parse(r.stdout)}catch{return null}};
-const receipt=(id,description,operations,observed,missing,verdict="PARTIAL")=>{
+const receipt=(id,description,operations,observed,...tail)=>{
+ const [missing,verdict="PARTIAL"]=tail;
  const permitted=new Set(["PARTIAL","AUTHORITY_REQUIRED","NOT_RUN","FAIL","CHECK_PASS"]);
  if(!permitted.has(verdict))throw Error("unknown 16P verdict: "+verdict);
  if(rows.some(x=>x.id===id)||!REQUIRED.includes(id))throw Error("duplicate/unknown item "+id);
@@ -55,7 +56,6 @@ requireBool(mainState?.active_sprint==="SP-P1-003"&&t008?.task_id==="T008",
 const ctx=[canonical,taskFile,live];
 const history=node("harness/scripts/guarded-github-write.mjs","--operation","TASK_HISTORY_AUDIT",
  "--pr","386","--evidence-pr","387");
-const observedHistory=parse(history.stdout?{stdout:(history.stdout.match(/GITHUB PROTECTED WRITE PREFLIGHT (\{.*\})/)||[])[1]}:{});
 const p386=gh("pulls/386"),p387=gh("pulls/387");
 const a386=parse(p386),a387=parse(p387);
 const historicReady=a386?.merged===true&&a387?.merged===true&&

@@ -46,10 +46,6 @@ function canonical(){
  const tasks=sprint.active_sprint?read("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
  return {sprint,build,tasks,policy:read(GOVERNANCE_REFORM_POLICY_PATH).pr_guard};
 }
-function taskDecision(taskId,openPrs){
- const {sprint,build,tasks,policy}=canonical();
- return preflight({build,sprint,tasks,openPrs,guard:policy,intent:"NEW_PR",taskId});
-}
 export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,governanceCase=null,allPrs=null}){
  if(!Array.isArray(openPrs))return fail("BLOCK_NO_INVENTORY","Live inventory required");
  if(openPrs.length>=200)return fail("BLOCK_TRUNCATED","Live PR inventory truncated");
@@ -103,6 +99,17 @@ async function realMerge(prNumber,apply){
  const result=await delegatedTaskExecutor({prNumber,token:auth(),action:apply?"MERGE":"CHECK"});
  return {...result,write_performed:result.merged===true};
 }
+const wasMerged=p=>[
+ p?.state==="closed",p?.merged===true,
+ /^[a-f0-9]{40}$/.test(p?.merge_commit_sha||"")
+].every(Boolean);
+const historicalMergeChain=(source,proof)=>[
+ wasMerged(source),wasMerged(proof),
+ proof?.base?.sha===source?.merge_commit_sha,
+ source?.base?.ref==="main",proof?.base?.ref==="main",
+ source?.head?.repo?.full_name===repoName(),
+ proof?.head?.repo?.full_name===repoName()
+].every(Boolean);
 // Live, read-only historical Task transition audit; no simulated Merge/Closure.
 function auditTaskHistory(sourceNumber,evidenceNumber){
  if(!Number.isSafeInteger(sourceNumber)||sourceNumber<=0||
@@ -113,11 +120,8 @@ function auditTaskHistory(sourceNumber,evidenceNumber){
  if(!identity.ok)return fail("BLOCK_NOT_REAL_TASK_PR","Primary PR identity mismatch",{identity});
  const taskId=identity.task_id,ctx=canonical();
  const task=ctx.tasks.find(t=>t.task_id===taskId);
- const merged=p=>p.state==="closed"&&p.merged===true&&/^[a-f0-9]{40}$/.test(p.merge_commit_sha||"");
- const src=merged(source),ev=merged(proof);
- const sequence=src&&ev&&proof.base?.sha===source.merge_commit_sha&&
-  source.base?.ref==="main"&&proof.base?.ref==="main"&&
-  source.head?.repo?.full_name===repoName()&&proof.head?.repo?.full_name===repoName();
+ const src=wasMerged(source),ev=wasMerged(proof);
+ const sequence=historicalMergeChain(source,proof);
  const n=Array.isArray(task?.completion_evidence)?task.completion_evidence.length:0;
  const evidenceLinked=String(proof.body||"").includes(taskId);
  const same=sourceNumber===evidenceNumber,closed=task?.status==="CLOSED";
