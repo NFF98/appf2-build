@@ -228,28 +228,39 @@ export function isGovernanceHoldCandidate({changedFiles,docket,sprint,build,
     dossierBound( {docket,docketPath,others,base,candidateDigest,approval,exception,now} );
 }
 function dossierBound({docket,docketPath,others,base,candidateDigest,approval,exception,now}){
-  return docket?.case_id && docketPath==="delivery/constitutional-cases/"+docket.case_id+".json" &&
-    dossierApprovalBound({docket,others,base,candidateDigest,approval}) &&
-    exception.schema==="APPF2-HUMAN-EXCEPTION-1" &&
-    exception.lane==="GOVERNANCE_REFORM" &&
-    exception.affected_sprint===null && Array.isArray(exception.affected_tasks) &&
-    exception.affected_tasks.length===0 &&
-    sameSorted(exception.covered_gates,["CHANGE_SCOPE"]) &&
-    exception.never_converts_fail_or_untested_to_pass===true &&
-    Number.isSafeInteger(exception.expires_at_unix) &&
-    Number.isSafeInteger(approval.approved_at_unix) &&
-    exception.expires_at_unix>approval.approved_at_unix &&
-    now<=exception.expires_at_unix;
+  return [
+    docket?.case_id,
+    docketPath==="delivery/constitutional-cases/"+docket?.case_id+".json",
+    dossierApprovalBound({docket,others,base,candidateDigest,approval}),
+    exception.schema==="APPF2-HUMAN-EXCEPTION-1",
+    exception.lane==="GOVERNANCE_REFORM",
+    exception.affected_sprint===null,
+    Array.isArray(exception.affected_tasks),
+    exception.affected_tasks?.length===0,
+    sameSorted(exception.covered_gates,["CHANGE_SCOPE"]),
+    exception.never_converts_fail_or_untested_to_pass===true,
+    Number.isSafeInteger(exception.expires_at_unix),
+    Number.isSafeInteger(approval.approved_at_unix),
+    exception.expires_at_unix>approval.approved_at_unix,
+    now<=exception.expires_at_unix
+  ].every(Boolean);
 }
 function dossierApprovalBound({docket,others,base,candidateDigest,approval}){
-  return /^[0-9a-f]{40}$/.test(base||"") &&
-    /^[0-9a-f]{64}$/.test(candidateDigest||"") &&
-    docket.base_sha===base && docket.candidate_digest_sha256===candidateDigest &&
-    sameSorted(docket.exact_changed_paths,others) &&
-    approval.case_id===docket.case_id && approval.candidate_digest_sha256===candidateDigest &&
-    approval.source_kind==="DIRECT_HUMAN_MESSAGE" && approval.approver==="NFF98" &&
-    approval.decision==="APPROVE_EXACT_CANDIDATE" && approval.scope==="EXACT_PR_DIFF" &&
-    typeof approval.human_message_ref==="string" && approval.human_message_ref.length>30;
+  return [
+    /^[0-9a-f]{40}$/.test(base||""),
+    /^[0-9a-f]{64}$/.test(candidateDigest||""),
+    docket.base_sha===base,
+    docket.candidate_digest_sha256===candidateDigest,
+    sameSorted(docket.exact_changed_paths,others),
+    approval.case_id===docket.case_id,
+    approval.candidate_digest_sha256===candidateDigest,
+    approval.source_kind==="DIRECT_HUMAN_MESSAGE",
+    approval.approver==="NFF98",
+    approval.decision==="APPROVE_EXACT_CANDIDATE",
+    approval.scope==="EXACT_PR_DIFF",
+    typeof approval.human_message_ref==="string",
+    approval.human_message_ref?.length>30
+  ].every(Boolean);
 }
 const actualGovernanceHold=({changedFiles,base,candidateDigest})=>{
   const paths=Array.isArray(changedFiles)?changedFiles.flat().map(f=>f?.filename):[];
