@@ -51,8 +51,11 @@ const live=gh("pulls/"+prNumber);
 const livePr=parse(live);
 requireBool(live.exit===0&&livePr?.state==="open"&&livePr?.head?.sha===head,
  "REAL PR HEAD/state does not match the event");
-requireBool(mainState?.active_sprint==="SP-P1-003"&&t008?.task_id==="T008",
+const canonicalHistoricalTask=mainState?.status==="HOLD"&&mainState?.active_sprint===null&&
+ mainState?.active_task===null&&t008?.status==="REVIEW";
+requireBool((mainState?.active_sprint==="SP-P1-003"||canonicalHistoricalTask)&&t008?.task_id==="T008",
  "Canonical Main Task/Sprint record unexpectedly changed; no inherited authority");
+if(canonicalHistoricalTask) console.log("16P CANONICAL: Sprint3 administrative HOLD, T008 historic REVIEW; no live Task authority");
 const ctx=[canonical,taskFile,live];
 const history=node("harness/scripts/guarded-github-write.mjs","--operation","TASK_HISTORY_AUDIT",
  "--pr","386","--evidence-pr","387");
@@ -113,12 +116,18 @@ receipt("6","Evidence automatically aggregated in same Task PR",
 const exceptCase=gh("contents/delivery/constitutional-cases/GOV-ATTACK-FIXTURE-CF-ISOLATION-001.json?ref=fix/attack-fixture-carry-forward-isolation");
 const exception=decode(parse(exceptCase));
 const special=node("harness/scripts/validate-special-approvals-and-carry-forward.mjs");
+const liveClock=node("harness/scripts/16p-human-exception-live-clock.mjs");
 receipt("7","Live scoped Human exception, expiry/revocation & protected effect",
- [exceptCase,special],{existing_docket:exceptCase.exit===0,
+ [exceptCase,special,liveClock],{existing_docket:exceptCase.exit===0,
  human_approval_recorded:!!exception?.human_approval,
- policy_gate_exit:special.exit},
- ["Authorized positive exception actually applied to eligible procedural gate, and real expiry/revocation behavior"],
- "AUTHORITY_REQUIRED");
+ policy_gate_exit:special.exit,
+ actual_wall_clock_temp_engine_exit:liveClock.exit,
+ actual_wall_clock_engine_only:liveClock.exit===0,
+ genuine_human_approved_closure_deferral_main:false,
+ github_provider_protected_expiry_denial_observed:false,
+ github_provider_protected_revocation_denial_observed:false},
+ ["Authorized protected positive CLOSURE_DEFERRAL, real merged expiry/revocation, and provider rejection (temporary wall-clock sandbox is insufficient)"],
+ liveClock.exit===0?"PARTIAL":"FAIL");
 const pre=node("harness/scripts/guarded-github-write.mjs",
  "--operation","PR_CREATE","--task","T099");
 receipt("8","Prewrite Task lease / PR / scope preflight",
