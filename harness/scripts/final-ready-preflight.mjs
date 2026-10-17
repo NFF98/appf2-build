@@ -207,7 +207,7 @@ const GOVERNANCE_HOLD_PREFIXES=[
   "delivery/templates/","delivery/audits/","delivery/findings/"
 ];
 const governanceHoldPath=p=>GOVERNANCE_HOLD_PREFIXES.some(a=>p.startsWith(a)) ||
-  p==="AGENTS.md" || /^delivery\\/[^/]+\\.md$/.test(p);
+  p==="AGENTS.md" || new RegExp("^delivery/[^/]+[.]md$").test(p);
 const sameSorted=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&
   a.length===b.length&&[...a].sort().every((x,i)=>x===[...b].sort()[i]);
 export function isGovernanceHoldCandidate({changedFiles,docket,sprint,build,
@@ -217,7 +217,7 @@ export function isGovernanceHoldCandidate({changedFiles,docket,sprint,build,
     f.previous_filename!==undefined||typeof f.filename!=="string"))return false;
   const paths=files.map(f=>f.filename);
   if(new Set(paths).size!==paths.length)return false;
-  const casePaths=paths.filter(p=>/^delivery\\/constitutional-cases\\/GOV-[A-Z0-9-]+\\.json$/.test(p));
+  const casePaths=paths.filter(p=>new RegExp("^delivery/constitutional-cases/GOV-[A-Z0-9-]+[.]json$").test(p));
   if(casePaths.length!==1)return false;
   const docketPath=casePaths[0],others=paths.filter(p=>p!==docketPath);
   if(!others.length||!others.every(governanceHoldPath))return false;
@@ -265,7 +265,7 @@ function dossierApprovalBound({docket,others,base,candidateDigest,approval}){
 const actualGovernanceHold=({changedFiles,base,candidateDigest})=>{
   const paths=Array.isArray(changedFiles)?changedFiles.flat().map(f=>f?.filename):[];
   const cases=paths.filter(p=>typeof p==="string"&&
-    /^delivery\\/constitutional-cases\\/GOV-[A-Z0-9-]+\\.json$/.test(p));
+    new RegExp("^delivery/constitutional-cases/GOV-[A-Z0-9-]+[.]json$").test(p));
   if(cases.length!==1)return false;
   const safeRead=p=>{try{return readJsonFile(p);}catch{return null;}};
   return isGovernanceHoldCandidate({changedFiles,docket:safeRead(cases[0]),
