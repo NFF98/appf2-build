@@ -65,9 +65,19 @@
     "expires_at_unix": 1793412660,
     "expires_at_rule": "Main governance policy max_ttl_seconds=1209600 (14 days) from approved_at_unix; Human merge decision remains separate."
   },
-  "human_approval": null,
-  "status": "REBASED_CODE_UNCHANGED_PENDING_FRESH_EXACT_CANDIDATE",
-  "notes": "Prerequisite for #402 Ready attack. Exact-candidate Human chat approval recorded 2026-10-17. NOT Merge of #403 or #402. NOT Product PASS. NOT Sprint 4. Candidate re-anchored to protected Main ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede with identical approved non-docket code blob a64d9390844b791430a4599c4120bdee84b5848f. Historical approval explicitly archived, not recycled; new Human exact-candidate decision and Final Ready remain outstanding. User 2026-10-17 authorized Merge actions, not an invented exact base/head approval. Human direct ChatGPT approval 2026-10-17 specifically authorizes rebased #403 candidate BASE=ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede HEAD=af60456280374e9d3ae5df35bf1b6a77a2992a7f digest=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Recording this approval modifies only the docket and supersedes none of the proof requirements; Final Ready remains independent. Post #405 protected-Main update: original attack code blob and SHA256 remain byte-identical. New main BASE 1c6b940c2efc12451fdb27a39d9582f21ea6e2cb requires new exact candidate Human decision, not inherited. Prior approvals preserved only as history.",
+  "human_approval": {
+    "case_id": "GOV-ATTACK-FIXTURE-CF-ISOLATION-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1",
+    "human_message_ref": "2026-10-17 user direct ChatGPT message: 正式批准 PR #403 新精確候選 BASE=1c6b940c2efc12451fdb27a39d9582f21ea6e2cb HEAD=506f494fc342f127bc6bdb17a7e4dee0c69ae675 SHA256=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Human conditionally approved Final Ready and protected Merge only after real seven-command Cloud Evidence and all authentic Gates, independent GPT BCE, exact unchanged HEAD. Chat message, not GitHub-authenticated provenance.",
+    "approved_at_unix": 1792235890,
+    "expires_at_unix": 1793412660
+  },
+  "status": "EXACT_CANDIDATE_CHAT_APPROVED_PENDING_REAL_GATES_FINAL_READY",
+  "notes": "Prerequisite for #402 Ready attack. Exact-candidate Human chat approval recorded 2026-10-17. NOT Merge of #403 or #402. NOT Product PASS. NOT Sprint 4. Candidate re-anchored to protected Main ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede with identical approved non-docket code blob a64d9390844b791430a4599c4120bdee84b5848f. Historical approval explicitly archived, not recycled; new Human exact-candidate decision and Final Ready remain outstanding. User 2026-10-17 authorized Merge actions, not an invented exact base/head approval. Human direct ChatGPT approval 2026-10-17 specifically authorizes rebased #403 candidate BASE=ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede HEAD=af60456280374e9d3ae5df35bf1b6a77a2992a7f digest=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Recording this approval modifies only the docket and supersedes none of the proof requirements; Final Ready remains independent. Post #405 protected-Main update: original attack code blob and SHA256 remain byte-identical. New main BASE 1c6b940c2efc12451fdb27a39d9582f21ea6e2cb requires new exact candidate Human decision, not inherited. Prior approvals preserved only as history. #403 new Main-base exact candidate approved by Human in direct chat 2026-10-17; changed docket only, unchanged source digest and scope. Final Ready/Merge require actual successful evidence, and per-comment Human origin verification remains explicit.",
   "carry_forward": {
     "zero_gap": true,
     "justification": "This PR only isolates attack-fixture register rows after synthetic sprint wipe; it creates no Product/Task Acceptance deferral and adds no permanent GAP obligation beyond existing Main register truth."
