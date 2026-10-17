@@ -16,7 +16,13 @@ const repo=path.join(tmp,"repo");
 const results=[];
 
 const run=(cmd,args,{cwd=repo,env={}}={})=>{
-  const r=spawnSync(cmd,args,{cwd,encoding:"utf8",env:{...process.env,...env}});
+  // Drop inherited caller BASE_SHA/HEAD_SHA (real PR/Main SHAs are absent from the synthetic
+  // fixture history). Explicit env from expectPass/expectFail still wins afterward.
+  const merged={...process.env};
+  delete merged.BASE_SHA;
+  delete merged.HEAD_SHA;
+  Object.assign(merged,env);
+  const r=spawnSync(cmd,args,{cwd,encoding:"utf8",env:merged});
   return {status:r.status??1,stdout:r.stdout||"",stderr:r.stderr||""};
 };
 const must=(cond,msg)=>{if(!cond) throw new Error(msg);};
@@ -36,6 +42,26 @@ fs.rmSync(path.join(repo,"delivery","sprints"),{recursive:true,force:true});
 fs.mkdirSync(path.join(repo,"delivery","sprints"),{recursive:true});
 fs.rmSync(path.join(repo,"delivery","evidence"),{recursive:true,force:true});
 fs.mkdirSync(path.join(repo,"delivery","evidence"),{recursive:true});
+// Fixture wipes real Sprint trees and rebuilds only SP-P9-*. Strict carry-forward rows bind
+// real Sprint/Task IDs (e.g. SP-P1-003 GAP-*); keeping them here falsely fails register truth.
+// Strip only APPF2-CARRY-FORWARD-1 rows inside the synthetic tree. Production register validation
+// on the real repository (governance-gate / sprint / admin-closure) is unchanged and not skipped.
+{
+  const rel="delivery/PROJECT-OPEN-ITEMS.json";
+  const abs=path.join(repo,rel);
+  if(fs.existsSync(abs)){
+    const reg=JSON.parse(fs.readFileSync(abs,"utf8"));
+    const kept=(reg.items||[]).filter(r=>r?.row_schema!=="APPF2-CARRY-FORWARD-1");
+    write(rel,{
+      ...reg,
+      items:kept,
+      last_full_pr_audit:{
+        ...(reg.last_full_pr_audit&&typeof reg.last_full_pr_audit==="object"?reg.last_full_pr_audit:{}),
+        attack_fixture_note:"Strict APPF2-CARRY-FORWARD-1 rows stripped after sprint wipe in attack fixture only; real-register gates remain enforced outside this synthetic tree."
+      }
+    });
+  }
+}
 must(git("init","-b","main").status===0,"git init failed");
 must(git("config","core.autocrlf","false").status===0,"git core.autocrlf configuration failed");
 git("config","user.name","appf2 Attack Dry Run");
