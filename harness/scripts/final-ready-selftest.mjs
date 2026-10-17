@@ -1,7 +1,7 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness,inspectReadyRecheckBinding,inspectReadyRecheckFreshness} from "./final-ready-preflight.mjs";
+import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness,inspectReadyRecheckBinding,inspectReadyRecheckFreshness,isGovernanceHoldCandidate} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
 const live={number:395,state:"open",draft:false,head:{sha:HEAD,repo:{full_name:REPO}},base:{sha:BASE,ref:"main"}};
@@ -82,6 +82,63 @@ check({checks:{check_runs:[]}},false);
 check({comments:comments.map(x=>({...x,body:"PR body checkbox PASS"}))},false);
 check({event:{pull_request:{...event.pull_request,base:null}}},false);
 check({comments:[mk({...local,test_runs:[...local.test_runs,{...local.test_runs[0],command:"npm run product:ci",status:"NOT_RUN"}]},1),mk(bce,2),mk(human,3)]},false);
+// GOV16P7: synthetic ONLY. A control-only Human-approved GOVERNANCE_REFORM may
+// report Product HOLD/NOT_RUN, but must never waive Product work, Human Ready,
+// scope, expiry, required checks or independent provenance.
+const holdPaths=["harness/scripts/final-ready-preflight.mjs",
+  "harness/scripts/final-ready-selftest.mjs"];
+const holdCase="GOV-16P-HOLD-READY-001";
+const holdCasePath="delivery/constitutional-cases/"+holdCase+".json";
+const holdDocket={
+  case_id:holdCase,base_sha:BASE,candidate_digest_sha256:D,
+  exact_changed_paths:holdPaths,
+  human_approval:{case_id:holdCase,approver:"NFF98",source_kind:"DIRECT_HUMAN_MESSAGE",
+    decision:"APPROVE_EXACT_CANDIDATE",scope:"EXACT_PR_DIFF",
+    candidate_digest_sha256:D,
+    human_message_ref:"synthetic-only long human message shaped reference for unit test",
+    approved_at_unix:1792000000},
+  scope_exception:{schema:"APPF2-HUMAN-EXCEPTION-1",lane:"GOVERNANCE_REFORM",
+    affected_sprint:null,affected_tasks:[],covered_gates:["CHANGE_SCOPE"],
+    never_converts_fail_or_untested_to_pass:true,expires_at_unix:1793000000}
+};
+const holdFiles=[{filename:holdCasePath,status:"added"},
+  ...holdPaths.map(filename=>({filename,status:"modified"}))];
+const holdSprint={status:"HOLD",active_sprint:null,active_task:null};
+const holdBuild={implementation_enabled:false};
+const positiveHold={changedFiles:holdFiles,docket:holdDocket,
+  sprint:holdSprint,build:holdBuild,base:BASE,candidateDigest:D,now:1792200000};
+assert.equal(isGovernanceHoldCandidate(positiveHold),true);
+const holdNegatives=[
+  {changedFiles:holdFiles.concat({filename:"src/product.ts",status:"added"})},
+  {changedFiles:holdFiles.concat({filename:"tests/product.test.ts",status:"added"})},
+  {changedFiles:holdFiles.concat({filename:"delivery/CURRENT-SPRINT.json",status:"modified"})},
+  {changedFiles:holdFiles.concat({filename:holdCasePath,status:"added"})},
+  {changedFiles:holdFiles.map((x,i)=>i===0?{...x,status:"modified"}:x)},
+  {changedFiles:holdFiles.map((x,i)=>i===1?{...x,status:"renamed",previous_filename:"src/a.ts"}:x)},
+  {changedFiles:holdFiles.filter(x=>x.filename!==holdCasePath)},
+  {docket:null},
+  {docket:{...holdDocket,exact_changed_paths:[]}},
+  {docket:{...holdDocket,base_sha:HEAD}},
+  {docket:{...holdDocket,candidate_digest_sha256:"f".repeat(64)}},
+  {docket:{...holdDocket,human_approval:null}},
+  {docket:{...holdDocket,human_approval:{...holdDocket.human_approval,decision:"PENDING"}}},
+  {docket:{...holdDocket,scope_exception:{...holdDocket.scope_exception,lane:"HOTFIX"}}},
+  {docket:{...holdDocket,scope_exception:{...holdDocket.scope_exception,affected_tasks:["T008"]}}},
+  {docket:{...holdDocket,scope_exception:{...holdDocket.scope_exception,covered_gates:["PRODUCT_CI"]}}},
+  {docket:{...holdDocket,scope_exception:{...holdDocket.scope_exception,expires_at_unix:1792100000}}},
+  {sprint:{...holdSprint,status:"ACTIVE"}},
+  {sprint:{...holdSprint,active_sprint:"SP-P1-004"}},
+  {build:{...holdBuild,implementation_enabled:true}},
+  {candidateDigest:"f".repeat(64)},
+  {base:HEAD},
+  {now:1793100000}
+];
+for(const change of holdNegatives)
+  assert.equal(isGovernanceHoldCandidate({...positiveHold,...change}),false,
+    "A non-governance, unauthorized, expired or live Product candidate passed HOLD classification");
+console.log("GOV16P7 truthful governance HOLD admission: 1 synthetic positive + "+
+  holdNegatives.length+" negative PASS, not Human or Product E2E");
+
 // Actual canonical repo-policy.json governance roots, not a guessed whitelist.
 // Source and destination must both be unprotected in Ready admission.
 const l1File=(filename,status="modified",previous_filename)=>({
