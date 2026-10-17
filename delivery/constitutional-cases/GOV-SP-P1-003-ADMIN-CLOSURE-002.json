@@ -1,0 +1,110 @@
+{
+  "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-002",
+  "base_sha": "398079ed4cc7864f72143571ee6ccfbbd074898a",
+  "sprint_id": "SP-P1-003",
+  "build_spec_id": "BS-P1-025",
+  "closure_disposition": "ADMINISTRATIVE_WITH_CARRY_FORWARD",
+  "never_converts_fail_or_untested_to_pass": true,
+  "administrative_closure": {
+    "schema": "APPF2-ADMIN-CLOSURE-1",
+    "case_id": "GOV-SP-P1-003-ADMIN-CLOSURE-002",
+    "open_tasks": [
+      {
+        "id": "T006",
+        "status": "BLOCKED",
+        "snapshot_sha256": "bc9b15ff6bc3dbfde3ef143e4d6d9e5b0565c2e1ae8057e31616f584db9495e7"
+      },
+      {
+        "id": "T008",
+        "status": "REVIEW",
+        "snapshot_sha256": "3ed5de2e6000c9f2a01975dafb9b7cfd14bcfcd58aa678cf3f6b0fd8248a09e3"
+      }
+    ],
+    "open_backlog": [
+      {
+        "id": "BL-P1-015",
+        "status": "SPRINTED"
+      },
+      {
+        "id": "BL-P1-018",
+        "status": "SPRINTED"
+      }
+    ],
+    "open_revalidations": [
+      {
+        "id": "BL-P1-008",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-010",
+        "status": "IN_PROGRESS"
+      },
+      {
+        "id": "BL-P1-031",
+        "status": "IN_PROGRESS"
+      }
+    ],
+    "carry_forward_ids": [
+      "GAP-T006-01",
+      "GAP-T006-02",
+      "GAP-T006-03",
+      "GAP-T008-01",
+      "GAP-BL-015",
+      "GAP-BL-018",
+      "GAP-REVAL-008",
+      "GAP-REVAL-010",
+      "GAP-REVAL-031"
+    ],
+    "historical_procedural_dispositions": [
+      {
+        "gate_id": "BACKLOG_T008_CLOSE_AFTER_T006_REVIEW",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      },
+      {
+        "gate_id": "BACKLOG_T008_REVIEW_AFTER_T006_VERIFIED",
+        "task_id": "T008",
+        "disposition": "HISTORICAL_SPRINT_ADMIN_CLOSURE_ONLY_NOT_PRODUCT_PASS"
+      }
+    ],
+    "next_sprint_requires_product_alignment": true,
+    "product_success_claimed": false
+  },
+  "exact_changed_paths": [
+    "build-spec/CURRENT.json",
+    "delivery/CURRENT-SPRINT.json",
+    "delivery/PROJECT-OPEN-ITEMS.json",
+    "delivery/sprints/SP-P1-003/manifest.json"
+  ],
+  "candidate_digest_sha256": "73a2bbffe7cfe7db0b67bca2c9218f38f5f3c5c0f486e6fb1c27dea783a6143c",
+  "human_approval": null,
+  "status": "PREPARED_EXACT_CANDIDATE_PENDING_HUMAN_APPROVAL",
+  "why5": [
+    {
+      "question": "Why close Sprint3 administratively now?",
+      "answer": "Human highest goal is lawful Sprint 3 administrative closure without starting Sprint 4 or forging Product PASS for open work.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/392"
+    },
+    {
+      "question": "Why not ordinary Product-complete closure?",
+      "answer": "T006 remains BLOCKED and T008 remains REVIEW; F00-AC-037 remains UNTESTED; backlog BL-P1-015/018 remain SPRINTED; revalidations remain IN_PROGRESS.",
+      "evidence_ref": "delivery/sprints/SP-P1-003/tasks.json"
+    },
+    {
+      "question": "Why keep immutable Task/Backlog statuses?",
+      "answer": "ADMINISTRATIVE_WITH_CARRY_FORWARD is distinct from Product PASS; Acceptance/Test evidence must not be forged to CLOSED/DONE.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/395"
+    },
+    {
+      "question": "Why require a permanent carry-forward register?",
+      "answer": "Nine GAP rows preserve Task/Backlog/revalidation liabilities including TEST-F00-037 UNTESTED for future Product Alignment.",
+      "evidence_ref": "delivery/PROJECT-OPEN-ITEMS.json"
+    },
+    {
+      "question": "Why HOLD all further execution?",
+      "answer": "No next Task/Sprint is authorized; implementation_enabled=false until a separately Human-approved activation.",
+      "evidence_ref": "delivery/CURRENT-SPRINT.json"
+    }
+  ],
+  "notes": "Fresh candidate on Main 398079ed4cc7864f72143571ee6ccfbbd074898a. Case GOV-SP-P1-003-ADMIN-CLOSURE-002 supersedes never-merged #398 structure only; does NOT reopen #396/#397/#398. human_approval is intentionally null until genuine Human exact-digest decision. NOT Merge authorization. #389 work retained on separate branch/worktree."
+}
