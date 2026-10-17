@@ -46,6 +46,11 @@ function canonical(){
  const tasks=sprint.active_sprint?read("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
  return {sprint,build,tasks,policy:read(GOVERNANCE_REFORM_POLICY_PATH).pr_guard};
 }
+// Query historical primary PRs before the lease preflight even after HOLD.
+const historicalPrimaryPrs=(taskId,allPrs)=>Array.isArray(allPrs)?
+ allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
+  .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
+  .sort((a,b)=>a.number-b.number):[];
 export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,governanceCase=null,allPrs=null}){
  if(!Array.isArray(openPrs))return fail("BLOCK_NO_INVENTORY","Live inventory required");
  if(openPrs.length>=200)return fail("BLOCK_TRUNCATED","Live PR inventory truncated");
@@ -56,20 +61,16 @@ export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,gover
   return fail("BLOCK_HUMAN_CREATE_AUTHORITY","Human pre-create approval must be verified independently");
  }
  if(!/^T\d{3}$/.test(taskId||""))return fail("BLOCK_TASK_ID","Task ID missing");
+ // Existing merged Task PR must remain blocked after a proposed Sprint HOLD.
+ const previous=historicalPrimaryPrs(taskId,allPrs);
+ if(previous.length)return fail("BLOCK_REUSE_EXISTING_TASK_PR",
+   "Historical Task primary PR exists; do not create a duplicate",
+   {task_id:taskId,existing:previous});
  const out=preflight({build,sprint,tasks,openPrs,guard,intent:"NEW_PR",taskId});
  if(out.denied||out.decision!=="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY")
   return fail("BLOCK_NEW_PR",out.reason||out.decision,{preflight:out});
  if(!Array.isArray(allPrs))
   return fail("BLOCK_HISTORY_MISSING","Cannot prove no previously merged Task PRs",{preflight:out});
- // Match BOTH the title and the explicit Task declaration, using the same
- // canonical Task identity algorithm as the Merge/Evidence writer.
- const previous=allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
-   .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
-   .sort((a,b)=>a.number-b.number);
- if(previous.length)
-  return fail("BLOCK_REUSE_EXISTING_TASK_PR",
-   "The same Task already has a primary PR in real GitHub history. Reuse an open PR or follow protected closure; never open another PR automatically",
-   {task_id:taskId,existing:previous,preflight:out});
  // Do not turn 'new PR may be requested' into Human's explicit PR-create approval.
  return fail("BLOCK_HUMAN_CREATE_AUTHORITY","Task lease does not grant new PR creation on its own",{preflight:out});
 }
@@ -77,7 +78,7 @@ function realPrecreate(taskId,governanceCase){
  const openPrs=inventory(),ctx=canonical();
  // Fetch history only after the Task is plausibly active; invalid Task IDs
  // already fail closed in the pure preflight and do not consume API quota.
- const allPrs=taskId===ctx.sprint.active_task?taskPrHistory():null;
+ const allPrs=/^T\d{3}$/.test(taskId||"")?taskPrHistory():null;
  return classifyPrecreate({taskId,governanceCase,openPrs,allPrs,...ctx,guard:ctx.policy});
 }
 async function realEvidence(prNumber,apply){
@@ -123,8 +124,11 @@ function auditTaskHistory(sourceNumber,evidenceNumber){
  const source=api("pulls/"+sourceNumber),proof=api("pulls/"+evidenceNumber);
  const identity=taskIdentityOfPr(source);
  if(!identity.ok)return fail("BLOCK_NOT_REAL_TASK_PR","Primary PR identity mismatch",{identity});
- const taskId=identity.task_id,ctx=canonical();
- const task=ctx.tasks.find(t=>t.task_id===taskId);
+ const taskId=identity.task_id;
+ // Real immutable Main task history survives proposed CURRENT-SPRINT HOLD.
+ const remote=api("contents/delivery/sprints/SP-P1-003/tasks.json?ref=main");
+ const taskDoc=JSON.parse(Buffer.from(String(remote?.content||"").replace(/\s/g,""),"base64").toString("utf8"));
+ const task=taskDoc.tasks?.find(t=>t.task_id===taskId);
  const src=wasMerged(source),ev=wasMerged(proof);
  const sequence=historicalMergeChain(source,proof);
  const n=Array.isArray(task?.completion_evidence)?task.completion_evidence.length:0;

@@ -165,20 +165,57 @@ async function executeAll(m,a){
     if(i===0&&m.stages[0].exit_code!==0)break;
   }
 }
-const finish=m=>{
+// Truthful control-gate completion is NOT Product CI PASS. The exact approved
+// five-file closure must retain Product HOLD/NOT_RUN and six actual other PASS.
+const administrativeControlPass=(m,a)=>{
+ const required=["build-spec/CURRENT.json","delivery/CURRENT-SPRINT.json",
+  "delivery/PROJECT-OPEN-ITEMS.json",
+  "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json",
+  "delivery/sprints/SP-P1-003/manifest.json"].sort();
+ const exact=[Array.isArray(a?.paths),a?.paths?.length===required.length,
+  Array.isArray(a?.paths) && [...a.paths].sort().every((x,i)=>x===required[i])
+ ].every(Boolean);
+ if(!exact)return false;
+ const docket=json("delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json");
+ const manifest=json("delivery/sprints/SP-P1-003/manifest.json");
+ const current=json("delivery/CURRENT-SPRINT.json");
+ const build=json("build-spec/CURRENT.json");
+ const policyBound=[
+  docket.base_sha===a.base,docket.candidate_digest_sha256===m.digest_sha256,
+  docket.human_approval?.decision==="APPROVE_EXACT_CANDIDATE",
+  manifest.closure_disposition==="ADMINISTRATIVE_WITH_CARRY_FORWARD",
+  manifest.administrative_closure?.product_success_claimed===false,
+  current.status==="HOLD",current.active_sprint===null,current.active_task===null,
+  build.implementation_enabled===false
+ ].every(Boolean);
+ if(!policyBound)return false;
+ const product=m.stages.find(s=>s.command==="npm run product:ci");
+ const truthfulHold=[product?.status==="NOT_RUN",product?.exit_code===0,
+  typeof product?.stdout_file==="string" &&
+   fs.readFileSync(product.stdout_file,"utf8").includes("PRODUCT CI: HOLD — implementation not enabled.")
+ ].every(Boolean);
+ if(!truthfulHold)return false;
+ return [m.stages.length===jobs.length,m.stages.every(s=>
+   s.command==="npm run product:ci" ?
+     [s.status==="NOT_RUN",s.exit_code===0].every(Boolean):
+     [s.status==="PASS",s.exit_code===0].every(Boolean))
+ ].every(Boolean);
+};
+const finish=(m,a)=>{
   m.completed_at=new Date().toISOString();
   m.verdict=m.stages.some(x=>x.status==="FAIL")?"STAGES_FAILED":
+    administrativeControlPass(m,a)?"CONTROL_GATES_PASS_PRODUCT_NOT_RUN":
     m.not_run.length || m.stages.some(x=>x.status==="NOT_RUN")?
       "INCOMPLETE_NOT_RUN":"ALL_STAGES_PASS";
   save(m);console.log("CLOUD MIRROR RESULT "+m.verdict);
-  if(m.verdict!=="ALL_STAGES_PASS")process.exitCode=1;
+  if(!["ALL_STAGES_PASS","CONTROL_GATES_PASS_PRODUCT_NOT_RUN"].includes(m.verdict))process.exitCode=1;
 };
 async function runMirror(a){
   fs.mkdirSync("cloud-evidence",{recursive:true});
   const m=buildManifest(a);save(m);
   if(!a.ok){process.exitCode=2;return;}
   fs.writeFileSync("cloud-evidence/source.json",JSON.stringify(a,null,2)+"\n");
-  await executeAll(m,a);finish(m);
+  await executeAll(m,a);finish(m,a);
 }
 async function main(){
   const mode=process.argv[2];

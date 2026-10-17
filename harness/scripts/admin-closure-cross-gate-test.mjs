@@ -99,8 +99,21 @@ const runGate=(repo,gate,base,head)=>{
 function prepareClone(root,tmp){
   const repo=path.join(tmp,"repo"),common=git(root,"rev-parse","--path-format=absolute","--git-common-dir");
   const srcHead=git(root,"rev-parse","HEAD");
+  // The real closure PR already has a CLOSED Sprint at HEAD. Disposable
+  // positive/negative fixtures must start at the OPEN Sprint BASE instead.
+  const candidate=JSON.parse(fs.readFileSync(path.join(root,P.manifest),"utf8"));
+  let source=srcHead;
+  if(candidate.status==="CLOSED"&&candidate.closure_disposition==="ADMINISTRATIVE_WITH_CARRY_FORWARD"){
+    const baseSha=process.env.BASE_SHA;
+    if(!/^[0-9a-f]{40}$/.test(baseSha||""))throw Error("XGATE: exact BASE_SHA required for closure fixture");
+    if(spawnSync("git",["merge-base","--is-ancestor",baseSha,srcHead],{cwd:root}).status!==0)
+      throw Error("XGATE: closure BASE_SHA must be ancestral to candidate HEAD");
+    const previous=JSON.parse(git(root,"show",baseSha+":"+P.manifest));
+    if(previous.status==="CLOSED")throw Error("XGATE: closure source BASE must be OPEN");
+    source=baseSha;
+  }
   execFileSync("git",["clone","-q","--shared","--no-checkout","-c","core.autocrlf=false",common,repo],{stdio:"ignore"});
-  git(repo,"-c","advice.detachedHead=false","checkout","-q","--detach",srcHead);
+  git(repo,"-c","advice.detachedHead=false","checkout","-q","--detach",source);
   const overlay=[...new Set([...git(root,"diff","--name-only","HEAD").split("\n"),
     ...git(root,"ls-files","--others","--exclude-standard").split("\n")].filter(Boolean))];
   for(const rel of overlay){
