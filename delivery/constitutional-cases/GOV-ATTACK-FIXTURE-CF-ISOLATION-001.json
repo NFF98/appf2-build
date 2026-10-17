@@ -1,0 +1,125 @@
+{
+  "case_id": "GOV-ATTACK-FIXTURE-CF-ISOLATION-001",
+  "base_sha": "1c6b940c2efc12451fdb27a39d9582f21ea6e2cb",
+  "constitution_version": "1.0",
+  "title": "Attack fixture: isolate strict carry-forward rows after sprint wipe (does not weaken real register gates)",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    "harness/attack/run-dry-run.mjs"
+  ],
+  "candidate_digest_sha256": "b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1",
+  "why5": [
+    {
+      "question": "Why change the attack fixture?",
+      "answer": "ADMINISTRATIVE_WITH_CARRY_FORWARD adds APPF2-CARRY-FORWARD-1 GAP rows bound to SP-P1-003; attack dry-run deletes real Sprint trees and rebuilds only SP-P9-*, so register truth falsely fails before any security property is exercised.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/402"
+    },
+    {
+      "question": "Why not change register validation?",
+      "answer": "Softening rowTruthErrors when Sprint is missing would weaken production gates. The fix is fixture-local only.",
+      "evidence_ref": "harness/scripts/validate-special-approvals-and-carry-forward.mjs"
+    },
+    {
+      "question": "Why strip only strict rows?",
+      "answer": "Legacy POI rows lack row_schema APPF2-CARRY-FORWARD-1 and are not Sprint-bound the same way; keeping them preserves fixture realism without false negatives.",
+      "evidence_ref": "delivery/PROJECT-OPEN-ITEMS.json"
+    },
+    {
+      "question": "Why clear inherited BASE_SHA?",
+      "answer": "Caller BASE_SHA/HEAD_SHA from real repos are absent from the synthetic git history and produce spurious governance-diff failures; explicit fixture base/head still apply.",
+      "evidence_ref": "harness/attack/run-dry-run.mjs"
+    },
+    {
+      "question": "Why a separate PR from #402?",
+      "answer": "#402 is an exact five-file ADMINISTRATIVE_WITH_CARRY_FORWARD control transition; adding harness/attack would violate the exact closure path set. This PR is GOVERNANCE_REFORM for one fixture file only.",
+      "evidence_ref": "harness/scripts/validate-change-scope.mjs"
+    }
+  ],
+  "alternatives": [
+    "Expand #402 exact closure path set to include attack (requires gate allowlist change; rejected as scope mixing).",
+    "Weaken register truth when Sprint dir missing (rejected; softens production gates).",
+    "Defer attack fix until after #402 HOLD (Ready CI would still fail attack on #402 before Merge)."
+  ],
+  "no_change": "Without this fix, Ready CI for Sprint 3 admin closure cannot pass attack dry-run once GAP rows exist.",
+  "rollback": "Revert this single-file PR; attack fixture again keeps strict GAP rows after sprint wipe.",
+  "negative_tests": [
+    "npm run dry-run:attack must keep failing closed on Active Sprint Task rewrite and other expectFail cases",
+    "governance-gate on the real repository still validates full PROJECT-OPEN-ITEMS including GAP rows"
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Main still has SP-P1-003 REVIEW; harness/ is governance-only during execution. Fixture isolation is required so #402 Ready CI can run attack without weakening production register gates.",
+    "risk": "CI cannot prove Human provenance; must verify exact bytes and that production register validation is unchanged.",
+    "owner": "Human（NFF98）",
+    "follow_up": "After Merge, rebase/re-verify #402 attack locally and on Ready CI; then Human exact closure approval for #402.",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793412660,
+    "expires_at_rule": "Main governance policy max_ttl_seconds=1209600 (14 days) from approved_at_unix; Human merge decision remains separate."
+  },
+  "human_approval": {
+    "case_id": "GOV-ATTACK-FIXTURE-CF-ISOLATION-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1",
+    "human_message_ref": "2026-10-17 user direct ChatGPT message: 正式批准 PR #403 新精確候選 BASE=1c6b940c2efc12451fdb27a39d9582f21ea6e2cb HEAD=506f494fc342f127bc6bdb17a7e4dee0c69ae675 SHA256=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Human conditionally approved Final Ready and protected Merge only after real seven-command Cloud Evidence and all authentic Gates, independent GPT BCE, exact unchanged HEAD. Chat message, not GitHub-authenticated provenance.",
+    "approved_at_unix": 1792235890,
+    "expires_at_unix": 1793412660
+  },
+  "status": "EXACT_CANDIDATE_CHAT_APPROVED_PENDING_REAL_GATES_FINAL_READY",
+  "notes": "Prerequisite for #402 Ready attack. Exact-candidate Human chat approval recorded 2026-10-17. NOT Merge of #403 or #402. NOT Product PASS. NOT Sprint 4. Candidate re-anchored to protected Main ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede with identical approved non-docket code blob a64d9390844b791430a4599c4120bdee84b5848f. Historical approval explicitly archived, not recycled; new Human exact-candidate decision and Final Ready remain outstanding. User 2026-10-17 authorized Merge actions, not an invented exact base/head approval. Human direct ChatGPT approval 2026-10-17 specifically authorizes rebased #403 candidate BASE=ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede HEAD=af60456280374e9d3ae5df35bf1b6a77a2992a7f digest=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Recording this approval modifies only the docket and supersedes none of the proof requirements; Final Ready remains independent. Post #405 protected-Main update: original attack code blob and SHA256 remain byte-identical. New main BASE 1c6b940c2efc12451fdb27a39d9582f21ea6e2cb requires new exact candidate Human decision, not inherited. Prior approvals preserved only as history. #403 new Main-base exact candidate approved by Human in direct chat 2026-10-17; changed docket only, unchanged source digest and scope. Final Ready/Merge require actual successful evidence, and per-comment Human origin verification remains explicit.",
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This PR only isolates attack-fixture register rows after synthetic sprint wipe; it creates no Product/Task Acceptance deferral and adds no permanent GAP obligation beyond existing Main register truth."
+  },
+  "known_limitations": [
+    "CI cannot prove human_approval is from a person; Human provenance check remains mandatory.",
+    "Does not authorize #403 Merge, #402 Merge, Sprint 4, or Product PASS.",
+    "Does not alter APPF2-CARRY-FORWARD-1 production validation on the real repository.",
+    "human_message_ref is ChatGPT-conversation citation only; no GitHub comment URL was available at recording time."
+  ],
+  "previous_approval_history": [
+    {
+      "old_base_sha": "398079ed4cc7864f72143571ee6ccfbbd074898a",
+      "old_head_sha": "72aa330e69b3b376bafa064678aac5d8a332a50c",
+      "prior_human_approval": {
+        "case_id": "GOV-ATTACK-FIXTURE-CF-ISOLATION-001",
+        "approver": "NFF98",
+        "source_kind": "DIRECT_HUMAN_MESSAGE",
+        "decision": "APPROVE_EXACT_CANDIDATE",
+        "scope": "EXACT_PR_DIFF",
+        "candidate_digest_sha256": "b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1",
+        "human_message_ref": "Human direct ChatGPT message 2026-10-17 JST in the same conversation that authorized this Cursor execution: 「Human 已於 2026-10-17 在本次 ChatGPT 對話直接批准：PR #403 BASE：398079ed4cc7864f72143571ee6ccfbbd074898a HEAD：6a1cd54edf0f38be7aeca42d1ce3cf259e0dbb53 Digest：b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1」. Exact-candidate approval only for recording in this docket, Ready CI/Governance/Attack/CodeQL, and GPT BCE. Merge not authorized. No fabricated GitHub comment URL or message id; ChatGPT transcript relay to LOCAL Cursor; human GitHub identity independently unverified by CI.",
+        "approved_at_unix": 1792203060,
+        "expires_at_unix": 1793412660
+      },
+      "reason": "Previous approval bound to original BASE/HEAD, cannot transfer unchanged to rebased candidate; historical evidence only."
+    },
+    {
+      "old_base_sha": "ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede",
+      "old_head_sha": "3782160374a6576ac5060c359657ce46f6d62dbb",
+      "prior_human_approval": {
+        "case_id": "GOV-ATTACK-FIXTURE-CF-ISOLATION-001",
+        "approver": "NFF98",
+        "source_kind": "DIRECT_HUMAN_MESSAGE",
+        "decision": "APPROVE_EXACT_CANDIDATE",
+        "scope": "EXACT_PR_DIFF",
+        "candidate_digest_sha256": "b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1",
+        "human_message_ref": "Human direct ChatGPT message dated 2026-10-17 JST: 「核准 #403 新版精確候選。」 This refers to GPT's immediately preceding #403 candidate explicitly identified by BASE=ce6cac1bd3c2c40f97a49917b74f7a0b45d5dede, HEAD=af60456280374e9d3ae5df35bf1b6a77a2992a7f, and candidate_digest_sha256=b90e01e317510fb55f556d5910e07210f10f04421b6ba62e26de06f1e44751d1. Exact-candidate approval only, independent Final Ready and protected GitHub gates remain mandatory. Not a fabricated GitHub message URL.",
+        "approved_at_unix": 1792230360,
+        "expires_at_unix": 1793412660
+      },
+      "reason": "Approval for old exact BASE/HEAD archived as history only after Design/Build Main advanced due approved #405. Preserve true past decision, require new Human precise candidate authority for new BASE."
+    }
+  ]
+}
