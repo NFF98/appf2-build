@@ -145,7 +145,7 @@ jobs:
           function exec(cmd,args=[],timeout=90000){
            const a=spawnSync(cmd,args,{encoding:"utf8",timeout,maxBuffer:4e6});
            return {cmd:[cmd,...args].join(" "),exit:a.status,error:a.error?.message||null,
-            output:(a.stdout||"").slice(-1400)+"\n"+(a.stderr||"").slice(-700)};
+            raw_stdout:(a.stdout||""),output:(a.stdout||"").slice(-1400)+"\n"+(a.stderr||"").slice(-700)};
           }
           function row(id,status,steps,note){
            results.push({id,status,steps,note});
@@ -155,13 +155,13 @@ jobs:
           const js=(...args)=>exec("node",args);
           const evidence=(name)=>"https://github.com/"+r+"/"+name;
           const live=gh("repos/"+r+"/pulls/"+pr);
-          let liveJson=null;try{liveJson=JSON.parse(live.output)}catch{}
+          let liveJson=null;try{liveJson=JSON.parse(live.raw_stdout)}catch{}
           if(live.exit!==0||liveJson?.head?.sha!==head||liveJson?.state!=="open")
            throw Error("HARD_STOP: real GitHub PR exact HEAD verification failed");
           const active=JSON.parse(fs.readFileSync("delivery/CURRENT-SPRINT.json","utf8"));
           const task=active.active_task||"T008";
           const open=exec("gh",["pr","list","--repo",r,"--state","open","--limit","200","--json","number,title,body,isDraft"]);
-          let prs=[];try{prs=JSON.parse(open.output)}catch{}
+          let prs=[];try{prs=JSON.parse(open.raw_stdout)}catch{}
           const inv=path.join(tmp,"16p-open-prs.json");fs.writeFileSync(inv,JSON.stringify(prs));
           const grant=js("harness/scripts/gpt-preflight.mjs","state","--task",task,"--intent","REQUEST_APPROVAL","--open-prs",inv);
           const baseline=js("harness/scripts/validate-baseline.mjs");
