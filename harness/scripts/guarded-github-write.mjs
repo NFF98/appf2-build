@@ -56,6 +56,15 @@ export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,gover
   return fail("BLOCK_HUMAN_CREATE_AUTHORITY","Human pre-create approval must be verified independently");
  }
  if(!/^T\d{3}$/.test(taskId||""))return fail("BLOCK_TASK_ID","Task ID missing");
+ // Existing merged Task PR must remain blocked after a proposed Sprint HOLD.
+ if(Array.isArray(allPrs)){
+  const previous=allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
+   .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
+   .sort((a,b)=>a.number-b.number);
+  if(previous.length)return fail("BLOCK_REUSE_EXISTING_TASK_PR",
+   "Historical Task primary PR exists; do not create a duplicate",
+   {task_id:taskId,existing:previous});
+ }
  const out=preflight({build,sprint,tasks,openPrs,guard,intent:"NEW_PR",taskId});
  if(out.denied||out.decision!=="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY")
   return fail("BLOCK_NEW_PR",out.reason||out.decision,{preflight:out});
@@ -77,7 +86,7 @@ function realPrecreate(taskId,governanceCase){
  const openPrs=inventory(),ctx=canonical();
  // Fetch history only after the Task is plausibly active; invalid Task IDs
  // already fail closed in the pure preflight and do not consume API quota.
- const allPrs=taskId===ctx.sprint.active_task?taskPrHistory():null;
+ const allPrs=/^T\d{3}$/.test(taskId||"")?taskPrHistory():null;
  return classifyPrecreate({taskId,governanceCase,openPrs,allPrs,...ctx,guard:ctx.policy});
 }
 async function realEvidence(prNumber,apply){
@@ -124,7 +133,10 @@ function auditTaskHistory(sourceNumber,evidenceNumber){
  const identity=taskIdentityOfPr(source);
  if(!identity.ok)return fail("BLOCK_NOT_REAL_TASK_PR","Primary PR identity mismatch",{identity});
  const taskId=identity.task_id,ctx=canonical();
- const task=ctx.tasks.find(t=>t.task_id===taskId);
+ // Real immutable Main task history survives proposed CURRENT-SPRINT HOLD.
+ const remote=api("contents/delivery/sprints/SP-P1-003/tasks.json?ref=main");
+ const taskDoc=JSON.parse(Buffer.from(String(remote?.content||"").replace(/\s/g,""),"base64").toString("utf8"));
+ const task=taskDoc.tasks?.find(t=>t.task_id===taskId);
  const src=wasMerged(source),ev=wasMerged(proof);
  const sequence=historicalMergeChain(source,proof);
  const n=Array.isArray(task?.completion_evidence)?task.completion_evidence.length:0;
