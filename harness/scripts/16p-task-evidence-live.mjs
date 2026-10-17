@@ -30,6 +30,13 @@ function actualMainFile(relative,sha){
 }
 const ancestry=(source,main)=>spawnSync("git",["merge-base","--is-ancestor",source,main],
  {encoding:"utf8",timeout:15000}).status===0;
+const historicalTaskReportStatus=mainSprint=>mainSprint.active_sprint?
+ "READY_TO_REPORT":"NOT_RUN_NO_ACTIVE_SPRINT";
+const canonicalT008State=(mainSprint,task)=>{
+ const historical=mainSprint.status==="HOLD"&&mainSprint.active_sprint===null&&
+  mainSprint.active_task===null&&task?.status==="REVIEW";
+ return task?.task_id==="T008"&&(mainSprint.active_sprint===sprint||historical);
+};
 function verifyHistoricalPrs(mainSprint){
  const primary=api("pulls/386"),evidencePr=api("pulls/387"),current=api("pulls/404");
  const ident=taskIdentityOfPr(primary);
@@ -39,8 +46,8 @@ function verifyHistoricalPrs(mainSprint){
   String(evidencePr.body||"").includes("T008");
  hard(historicValid,"real #386 and #387 merge chain or Task declaration invalid");
  hard(taskIdentityOfPr(current).ok===false,"governance PR accepted as Product");
- hard(reportContext({pull_request:primary},mainSprint).status==="READY_TO_REPORT",
-  "valid historic Task PR rejected by Evidence reporter");
+ hard(reportContext({pull_request:primary},mainSprint).status===historicalTaskReportStatus(mainSprint),
+  "historic Task PR reporter must honor HOLD (no active Task authority)");
  hard(reportContext({pull_request:current},mainSprint).status==="NOT_RUN_NO_TASK_PR",
   "governance PR accepted by Evidence reporter");
  return {primary,evidencePr};
@@ -63,11 +70,9 @@ function run(){
  const mainSprint=actualMainFile("delivery/CURRENT-SPRINT.json",mainSha);
  const taskDoc=actualMainFile(pathOfTask,mainSha);
  const task=taskDoc.tasks?.find(x=>x.task_id==="T008");
- const historicalHold=mainSprint.status==="HOLD"&&mainSprint.active_sprint===null&&
-  mainSprint.active_task===null&&task?.status==="REVIEW";
- hard((mainSprint.active_sprint===sprint||historicalHold)&&task?.task_id==="T008",
+ hard(canonicalT008State(mainSprint,task),
   "T008 not canonical (allowed historical HOLD with T008 REVIEW only)");
- if(historicalHold) console.log("16P REAL EVIDENCE: historical Sprint3 HOLD verified; no Task activation or Product PASS");
+ console.log("16P REAL EVIDENCE: canonical Sprint3 "+mainSprint.status+"; historical T008 "+task.status+"; no new Task authority");
  const {primary,evidencePr}=verifyHistoricalPrs(mainSprint);
  const {ids,unique,docs}=loadMainEvidence(task,mainSha);
  const ci=actualMainFile("ci/policy.json",mainSha);
