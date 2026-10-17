@@ -19,20 +19,75 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Collect real GitHub histories
+      - name: Collect real GitHub histories (run ATTEMPTS + executed jobs)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p "$RUNNER_TEMP/gov-reform"
-          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?per_page=100" |
-            jq -s '[.[] | .workflow_runs[]? | {name,event,headSha:.head_sha,headBranch:.head_branch}]'               > "$RUNNER_TEMP/gov-reform/runs.json"
-          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000             --json number,title,body,isDraft > "$RUNNER_TEMP/gov-reform/open-prs.json"
+          set -euo pipefail
+          out="$RUNNER_TEMP/gov-reform"
+          mkdir -p "$out"
+          since="$(date -u -d '7 days ago' +%Y-%m-%d)"
+          enrich_cap=40
+          echo "metrics_window_start=$since enrich_cap=$enrich_cap"
+          : > "$out/list.ndjson"
+          for workflow in ci.yml codeql.yml; do
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?per_page=100&created=%3E%3D${since}" \
+              --jq '.workflow_runs[] | {id,name,event,headSha:.head_sha,headBranch:.head_branch,runAttempt:.run_attempt}' \
+              >> "$out/list.ndjson"
+          done
+          if [[ ! -s "$out/list.ndjson" ]]; then
+            jq -n --arg since "$since" '{complete:false,window_start:$since,reason:"EMPTY_WINDOW",runs:[]}' > "$out/runs.json"
+          else
+            jq -s 'sort_by(.id) | reverse' "$out/list.ndjson" > "$out/list.json"
+            listed="$(jq 'length' "$out/list.json")"
+            echo "metrics_run_list_count=$listed"
+            jq --argjson cap "$enrich_cap" '.[0:$cap]' "$out/list.json" > "$out/to-enrich.json"
+            : > "$out/enriched.ndjson"
+            mapfile -t rows < <(jq -c '.[]' "$out/to-enrich.json")
+            for row in "${rows[@]}"; do
+              [[ -z "$row" ]] && continue
+              id="$(jq -r .id <<< "$row")"
+              attempts="$(jq -r .runAttempt <<< "$row")"
+              if ! [[ "$attempts" =~ ^[1-9][0-9]*$ ]] || (( attempts > 25 )); then
+                echo "HARD_STOP: missing/excessive run attempts for $id" >&2
+                exit 2
+              fi
+              : > "$out/jobs.ndjson"
+              for (( a=1; a<=attempts; a++ )); do
+                gh api --paginate \
+                  "repos/$GITHUB_REPOSITORY/actions/runs/${id}/attempts/${a}/jobs?per_page=100" \
+                  --jq ".jobs[] | {id,name,status,conclusion,attempt:${a}}" \
+                  >> "$out/jobs.ndjson"
+              done
+              if [[ ! -s "$out/jobs.ndjson" ]]; then
+                echo "HARD_STOP: no jobs for run $id attempts=$attempts" >&2
+                exit 2
+              fi
+              jq -s '.' "$out/jobs.ndjson" > "$out/jobs.json"
+              jq -cn --argjson row "$row" --slurpfile jobs "$out/jobs.json" '$row + {jobs:$jobs[0]}' >> "$out/enriched.ndjson"
+            done
+            enriched="$(jq -s 'length' "$out/enriched.ndjson")"
+            if (( enriched < listed )); then truncated=true; else truncated=false; fi
+            jq -s --arg since "$since" --argjson listed "$listed" --argjson enriched "$enriched" --argjson truncated "$truncated" \
+              '{complete:($truncated | not),reason:(if $truncated then "INCOMPLETE_SAMPLED" else null end),window_start:$since,sample:{strategy:"newest",listed:$listed,enriched:$enriched,truncated:$truncated},runs:.}' \
+              "$out/enriched.ndjson" > "$out/runs.json"
+          fi
+          jq '{complete,window_start,reason:(.reason//null),sample,run_count:(.runs|length)}' "$out/runs.json"
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 \
+            --json number,title,body,isDraft > "$out/open-prs.json"
       - name: Publish evidence-bound reform scorecard
         run: |
-          node harness/scripts/governance-metrics.mjs --ref HEAD             --runs "$RUNNER_TEMP/gov-reform/runs.json" --run-limit 100000             --open-prs "$RUNNER_TEMP/gov-reform/open-prs.json"             --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
+          node harness/scripts/governance-metrics.mjs --ref HEAD \
+            --runs "$RUNNER_TEMP/gov-reform/runs.json" --run-limit 100000 \
+            --open-prs "$RUNNER_TEMP/gov-reform/open-prs.json" \
+            --out "$RUNNER_TEMP/gov-reform/reform-metrics.json"
+          node -e "const m=require(process.env.RUNNER_TEMP+'/gov-reform/reform-metrics.json'); console.log(JSON.stringify({ci_status:m.ci?.status,full_ci_runs:m.ci?.full_ci_runs??null,ready_ci_executed:m.ci?.ready_ci_executed??null,sample_counts:m.ci?.sample_counts||null,sample:m.ci?.sample||null},null,2));"
       - name: Upload weekly scorecard (NOT governance PASS)
         uses: actions/upload-artifact@v4
         with:
           name: gov-reform-weekly-metrics
-          path: ${{ runner.temp }}/gov-reform/reform-metrics.json
+          path: |
+            ${{ runner.temp }}/gov-reform/reform-metrics.json
+            ${{ runner.temp }}/gov-reform/runs.json
           if-no-files-found: error

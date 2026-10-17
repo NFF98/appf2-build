@@ -5,13 +5,12 @@
 import fs from "node:fs";
 import {spawnSync,execFileSync} from "node:child_process";
 import {verifyLiveGrant} from "./trusted-human-task-grant.mjs";
+import {taskIdentityOfPr} from "./task-pr-lifecycle.mjs";
 import {pathToFileURL} from "node:url";
 
 export function reportContext(event, current){
-  const body=event?.pull_request?.body||"";
-  const match=/^Task:\s*(T\d{3})\b/m.exec(body);
-  if(!event?.pull_request || !match) return {status:"NOT_RUN_NO_TASK_PR"};
-  const id=match[1];
+  const id=taskIdentityOfPr(event?.pull_request).task_id;
+  if(!event?.pull_request || !id) return {status:"NOT_RUN_NO_TASK_PR"};
   if(!current.active_sprint) return {status:"NOT_RUN_NO_ACTIVE_SPRINT",task_id:id};
   return {status:"READY_TO_REPORT",task_id:id,sprint_id:current.active_sprint};
 }
@@ -106,7 +105,7 @@ const updatedTaskDoc=(doc,id,plan)=>({...doc,tasks:doc.tasks.map(
 const exactTaskBytes=(content,path)=>Buffer.from(
   (content.content||"").replace(/\s/g,""),"base64").toString("utf8")===
   fs.readFileSync(path,"utf8");
-const taskFromPr=pr=>/^Task:\s*(T\d{3})\b/m.exec(pr?.body||"")?.[1];
+const taskFromPr=pr=>taskIdentityOfPr(pr).task_id;
 const taskFromDoc=(doc,id)=>(doc.tasks||[]).find(t=>t.task_id===id);
 const didCommitWrite=out=>hex40(out?.commit?.sha);
 export async function reconcileTaskEvidencePr({prNumber,token,apply=false}={}){

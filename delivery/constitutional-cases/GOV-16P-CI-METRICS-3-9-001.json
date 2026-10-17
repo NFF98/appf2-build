@@ -1,0 +1,105 @@
+{
+  "case_id": "GOV-16P-CI-METRICS-3-9-001",
+  "base_sha": "398079ed4cc7864f72143571ee6ccfbbd074898a",
+  "constitution_version": "1.0",
+  "title": "16P #3/#9 CI thrift plus #1/#6/#8/#A/#E/#F live guards, #D real PostgreSQL/Browser and E2E evidence",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    ".github/workflows/attack-dry-run.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/codeql.yml",
+    ".github/workflows/governance-gate.yml",
+    ".github/workflows/governance-metrics.yml",
+    "harness/scripts/16p-real-e2e.mjs",
+    "harness/scripts/16p-task-evidence-live.mjs",
+    "harness/scripts/evidence-ledger-report.mjs",
+    "harness/scripts/governance-metrics.mjs",
+    "harness/scripts/governance-reform-selftest.mjs",
+    "harness/scripts/guarded-github-write.mjs",
+    "harness/scripts/task-pr-lifecycle.mjs"
+  ],
+  "candidate_digest_sha256": "95eda63dd9400c9881b32997353292c01249f1b0e7e4b87c3771d93c07c093ea",
+  "why5": [
+    {
+      "question": "Why remove governance/task-one-approval-20261016 from Push triggers?",
+      "answer": "#401 already merged that one-shot branch; Push on it still ran full CI/CodeQL (#38971545678 / #38971545705), violating Issue #389 item #3 thrift (full gates only at Ready/final).",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38971545678"
+    },
+    {
+      "question": "Why change metrics collection to per-attempt jobs?",
+      "answer": "Issue #389 item #9 requires accurate efficiency measurement; counting workflow runs by name alone treated Draft fast-loop and skipped CodeQL as full CI and under-counted Ready re-runs (same run_id attempt 1/2/3 = three executed ci jobs).",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/38971660865"
+    },
+    {
+      "question": "Why keep Draft fast-loop and Ready required checks?",
+      "answer": "Thrift must not weaken branch protection; Draft still runs fast-loop; Ready still requires ci/governance/attack/CodeQL. Metrics classify Draft skip separately instead of inventing PASS.",
+      "evidence_ref": ".github/workflows/ci.yml"
+    },
+    {
+      "question": "Why INCOMPLETE / INSUFFICIENT_BASELINE instead of fake savings?",
+      "answer": "Without complete attempt/job evidence or a pre-reform baseline, publishing a savings percentage would be a false PASS. Fail closed and label legacy synthetic arrays as non-publishable.",
+      "evidence_ref": "harness/scripts/governance-metrics.mjs"
+    },
+    {
+      "question": "Why expand from the old exact six-file candidate?",
+      "answer": "User ordered the original #404 16P positive E2E repairs; 12 actual non-docket files now implement genuine operation probes, guarded negative writes, real existing Evidence verification and disposable PostgreSQL/Chromium tests. Old six-file approval cannot apply.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/39009245208"
+    }
+  ],
+  "alternatives": [
+    "Keep one-shot Push branch forever (rejected; wastes full CI).",
+    "Count only distinct headSha once (rejected; hides Ready re-run cost).",
+    "Fold into #402/#403 (rejected; exact digests already frozen)."
+  ],
+  "no_change": "Without this fix, metrics remain distorted and Push-branch full CI continues to violate #3 thrift semantics.",
+  "rollback": "Revert the six-file PR; Push again triggers on the one-shot branch; metrics revert to run-name counting.",
+  "negative_tests": [
+    "Offline classifier must mark incomplete attempt/job sets INCOMPLETE",
+    "Legacy synthetic run arrays must not publish as full_ci_runs",
+    "Draft PR must still skip required ci job while running fast-loop",
+    "GitHub Action #D must actually execute >0 PostgreSQL and >0 Chromium tests and refuse any skipped tests"
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Human 2026-10-17 authorized proceeding with #404 correction, trusted positive E2E and nonproduction real PG/Chromium tests. Original six-file approved SHA is obsolete; this exact 12-file governance-only candidate must be independently approved before Merge. The Human work authorization is not an independently authenticated GitHub Environment review.",
+    "risk": "Changes GitHub CI workflows and guarded governance tooling. 16P operation success does not prove true Human approval, Product PASS, mandatory tool enforcement, protected merge or task closure. Postgres/Chromium suites use disposable database/test production-handler harness, not deployed Production.",
+    "owner": "Human（NFF98）",
+    "follow_up": "Preserve #D real PG/Chromium job receipts. Verify 12-file exact candidate and independent Human decision/GitHub provenance. Complete four required GitHub checks, BCE, then separate protected Human Merge; continue 16P real positive lifecycle without fake closure.",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": "SP-P1-003",
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793427964,
+    "expires_at_rule": "14 days from directly issued Human ChatGPT exact candidate approval, current GitHub governance policy max_ttl_seconds=1209600"
+  },
+  "human_approval": {
+    "case_id": "GOV-16P-CI-METRICS-3-9-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "95eda63dd9400c9881b32997353292c01249f1b0e7e4b87c3771d93c07c093ea",
+    "human_message_ref": "Human direct ChatGPT message 2026-10-17 JST: 「正式批准 PR #404 精確候選：BASE=398079ed4cc7864f72143571ee6ccfbbd074898a，HEAD=ed329d0dd07ebd42f3b0e22f33b8f072e3cea998，candidate_digest_sha256=95eda63dd9400c9881b32997353292c01249f1b0e7e4b87c3771d93c07c093ea。批准此精確候選進入正式 GitHub Gate 與 GPT BCE；Merge 仍須獨立核准。」 GPT-only transcription (not a GitHub-native Human approval): https://github.com/NFF98/appf2-build/pull/404#issuecomment-6230666774. Independently verify source/provenance before Merge.",
+    "approved_at_unix": 1792218364,
+    "expires_at_unix": 1793427964
+  },
+  "status": "EXACT_CANDIDATE_CHAT_APPROVED_READY_GATES_AND_BCE_ONLY_NOT_MERGE",
+  "notes": "Human exact ChatGPT candidate approval 2026-10-17 binds PR #404 BASE 398079ed4cc7864f72143571ee6ccfbbd074898a; pre-docket HEAD ed329d0dd07ebd42f3b0e22f33b8f072e3cea998; SHA256 95eda63dd9400c9881b32997353292c01249f1b0e7e4b87c3771d93c07c093ea; 12 exact non-docket paths. Approval posted as GPT-authored GitHub transcription 6230666774; not GitHub-native Environment reviewer approval. Human Merge must be independently approved. #D real Postgres 4 PASS/Chromium 4 PASS, 0 SKIP; NOT deployed Product PASS. No new Task/Sprint.",
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "Corrects CI thrift triggers and metrics classification only; creates no Product/Task Acceptance deferral and adds no permanent GAP beyond existing Main register truth."
+  },
+  "known_limitations": [
+    "CI cannot prove human_approval is from a person; Human provenance check remains mandatory.",
+    "Does not authorize Merge, Sprint 4, Product PASS, or folding into #402/#403.",
+    "Scheduled metrics observation still requires a real workflow run after Merge (or Human-authorized workflow_dispatch).",
+    "Other 14 of 16P items remain separate E2E obligations; this PR does not claim 16/16 VERIFIED.",
+    "User explicitly authorized #404 work and nonproduction positive tests in ChatGPT: '1， 2 我馬上授權核准！3 也OK'. This is not an exact byte-bound approval to the later 12-file final digest, not a GitHub Environment action, and not a merge authorization."
+  ]
+}

@@ -3,7 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [main, governance/task-one-approval-20261016]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -107,4 +107,227 @@ jobs:
         with:
           name: task-evidence-ledger
           path: ${{ runner.temp }}/task-evidence-report.json
+          if-no-files-found: warn
+
+  real-e2e-16p:
+    name: 16P strict real E2E (16 actual operations; no fake PASS)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: read
+      checks: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies for real tests
+        run: npm ci
+      - name: Verify 14 live canonical T008 Evidence documents against merged GitHub PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TASK_EVIDENCE_RECEIPT: ${{ runner.temp }}/16p-t008-canonical-live.json
+        run: node harness/scripts/16p-task-evidence-live.mjs
+      - name: Upload verified live canonical Evidence receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-t008-real-evidence-audit
+          path: ${{ runner.temp }}/16p-t008-canonical-live.json
+          if-no-files-found: warn
+      - name: Execute strict 16P REAL E2E operations (never conflate local PASS with Main Closure)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node harness/scripts/16p-real-e2e.mjs
+      - name: Upload 16 separate raw GitHub E2E operation receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-strict-real-e2e-receipts
+          path: ${{ runner.temp }}/16p-real-e2e/*.json
+          if-no-files-found: warn
+      - name: Upload only v2 operation receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-strict-real-e2e-summary
+          path: ${{ runner.temp }}/16p-real-e2e.json
+          if-no-files-found: warn
+
+  real-e2e-d:
+    name: 16P #D real PostgreSQL + Chromium (non-synthetic proof)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      APPF2_TEST_ADMIN_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Bootstrap Supabase request roles in disposable real PostgreSQL
+        run: |
+          mkdir -p "$RUNNER_TEMP/16p-d"
+          node --input-type=module <<'PG'
+          import {Client} from 'pg';
+          const c=new Client({connectionString:process.env.APPF2_TEST_ADMIN_DATABASE_URL});
+          await c.connect();
+          try{
+           await c.query('CREATE ROLE anon NOLOGIN');
+           await c.query('CREATE ROLE authenticated NOLOGIN');
+           await c.query('CREATE ROLE service_role NOLOGIN BYPASSRLS');
+           const result=await c.query("SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = ANY($1)",[['anon','authenticated','service_role']]);
+           if(result.rows.length!==3||!result.rows.some(r=>r.rolname==='service_role'&&r.rolbypassrls))
+            throw Error('Real PostgreSQL role bootstrap did not succeed');
+           console.log('REAL POSTGRES bootstrap PASS: 3 distinct request roles verified');
+          }finally{await c.end()}
+          PG
+      - name: Real PostgreSQL migration / RLS / PostgREST exposure tests (no SKIP accepted)
+        run: |
+          set -euo pipefail
+          npx vitest run tests/api/pg001-postgrest-exposure.integration.test.ts --reporter=json --outputFile="$RUNNER_TEMP/16p-d/postgres-report.json" > "$RUNNER_TEMP/16p-d/postgres-runner.log"
+          node --input-type=module <<'CHECK'
+          import fs from 'node:fs';
+          const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/16p-d/postgres-report.json'));
+          if(d.numPassedTests<1||d.numFailedTests!==0||d.numPendingTests!==0||d.numTotalTests!==d.numPassedTests)
+           throw Error('Postgres tests not actually executed/pass: '+JSON.stringify({total:d.numTotalTests,passed:d.numPassedTests,failed:d.numFailedTests,skipped:d.numPendingTests}));
+          console.log('REAL POSTGRES verified executed=',d.numPassedTests,'no skipped tests');
+          CHECK
+      - name: Install actual Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Real Chromium UI interactions and production-handler harness (no SKIP accepted)
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: ${{ runner.temp }}/16p-d/browser-report.json
+        run: |
+          set -euo pipefail
+          npx playwright test tests/e2e/sp2-production-contract.spec.ts --project=chromium --reporter=json > "$RUNNER_TEMP/16p-d/browser-report.json"
+          node --input-type=module <<'CHECK'
+          import fs from 'node:fs';
+          const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/16p-d/browser-report.json'));
+          const a=d.stats||{};
+          if(a.expected<1||a.unexpected!==0||a.skipped!==0)
+           throw Error('Chromium real-browser tests absent/failed/skipped: '+JSON.stringify(a));
+          console.log('REAL CHROMIUM verified executed=',a.expected,'unexpected=',a.unexpected,'skipped=',a.skipped);
+          CHECK
+      - name: Preserve true PostgreSQL and browser runner receipts (not deployed Product PASS)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-d-real-postgres-browser
+          path: ${{ runner.temp }}/16p-d/*.json
+          if-no-files-found: warn
+
+  six-gap-prewrite-live:
+    name: 16P #1/#6/#8/#A/#E/#F guarded GitHub write denials (real API)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Real GitHub negative-operation enforcement before unauthorized write
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_PR: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/16p-write"
+          set +e
+          node harness/scripts/guarded-github-write.mjs --operation PR_CREATE --task T099 --out "$RUNNER_TEMP/16p-write/pr-create.json"
+          a=$?
+          node harness/scripts/guarded-github-write.mjs --operation EVIDENCE_NORMALIZE --pr "$TARGET_PR" --apply --out "$RUNNER_TEMP/16p-write/evidence.json"
+          b=$?
+          node harness/scripts/guarded-github-write.mjs --operation TASK_MERGE --pr "$TARGET_PR" --apply --out "$RUNNER_TEMP/16p-write/merge.json"
+          c=$?
+          node harness/scripts/guarded-github-write.mjs --operation TASK_CLOSURE --pr "$TARGET_PR" --apply --out "$RUNNER_TEMP/16p-write/closure.json"
+          d=$?
+          set -e
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const base=process.env.RUNNER_TEMP+"/16p-write/";
+            const names=["pr-create.json","evidence.json","merge.json","closure.json"];
+            for(const name of names){
+              const j=JSON.parse(fs.readFileSync(base+name,"utf8"));
+              if(j.ok!==false||j.write_performed!==false||!/^BLOCK_|^HARD_STOP/.test(j.decision))
+                throw Error("FAIL CLOSED not demonstrated: "+name);
+              console.log("REAL GITHUB DENIAL VERIFIED",name,j.decision);
+            }
+          '
+          if [[ "$a" -ne 3 || "$b" -ne 3 || "$c" -ne 3 || "$d" -ne 3 ]]; then exit 2; fi
+      - name: Existing merged Task PR must be reused, never opened again
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          node harness/scripts/guarded-github-write.mjs --operation PR_CREATE --task T008 --out "$RUNNER_TEMP/16p-write/reuse-task.json"
+          rc=$?
+          set -e
+          test "$rc" -eq 3
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/16p-write/reuse-task.json","utf8"));
+            if(d.decision!=="BLOCK_REUSE_EXISTING_TASK_PR"||d.write_performed!==false||
+               !d.existing?.some(p=>p.number===386&&p.merged===true))
+              throw Error("Historical Task #386 merged PR must block a new T008 PR");
+            console.log("LIVE GitHub Task reuse PASS: T008 #386 already merged; no new PR created");
+          '
+      - name: Real #1 GitHub Task lifecycle source-to-evidence audit (not Closure)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node harness/scripts/guarded-github-write.mjs --operation TASK_HISTORY_AUDIT --pr 386 --evidence-pr 387 --out "$RUNNER_TEMP/16p-write/task-history.json"
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import {execFileSync} from "node:child_process";
+            import {taskIdentityOfPr} from "./harness/scripts/task-pr-lifecycle.mjs";
+            const gh=n=>JSON.parse(execFileSync("gh",["api","repos/"+process.env.GITHUB_REPOSITORY+"/pulls/"+n],{encoding:"utf8"}));
+            if(taskIdentityOfPr(gh(386)).task_id!=="T008"||taskIdentityOfPr(gh(323)).task_id!=="T004"||taskIdentityOfPr(gh(404)).ok)
+              throw Error("Real Task PR classification wrong");
+            const a=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/16p-write/task-history.json"));
+            if(!a.ok||a.status!=="PARTIAL_TWO_PR_HISTORY_AND_CLOSURE_PENDING"||a.complete_one_pr_e2e_verified||a.same_primary_pr||
+               !a.source_merged||!a.evidence_merged||!a.verified_pr_merge_sequence||a.canonical_task_status!=="REVIEW"||a.canonical_evidence_count!==14)
+              throw Error("Task #1 real GitHub receipt does not prove expected partial history");
+            console.log("LIVE #1 PARTIAL: PR #386 merged -> #387 Evidence merged -> T008 REVIEW, 14 Evidence; NOT one-PR closure");
+          '
+      - name: Upload real GitHub prewrite denial receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 16p-guarded-prewrite-evidence
+          path: ${{ runner.temp }}/16p-write/*.json
           if-no-files-found: warn

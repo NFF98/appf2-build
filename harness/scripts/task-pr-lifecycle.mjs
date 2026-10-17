@@ -45,6 +45,19 @@ const delegationErrors=({actor})=>
     null;
 
 
+// A protected Task PR needs a matching title and an explicit declaration.
+// Recognize real historical Markdown Task: Txxx and - Task：Txxx forms.
+export function taskIdentityOfPr(pr){
+ const title=/^(T\d{3})(?:[：:\s]|$)/.exec(String(pr?.title||""))?.[1]||null;
+ const body=String(pr?.body||"").replace(/\x60/g,"");
+ const ids=[...new Set([...body.matchAll(
+  /(?:^|[｜|])\s*(?:[-*]\s*)?Task\s*[：:]\s*(T\d{3})(?=\s|$|[（(｜|])/gim
+ )].map(m=>m[1]))];
+ if(!title||ids.length!==1||ids[0]!==title)
+  return {ok:false,task_id:null,decision:"BLOCK_TASK_IDENTITY_MISSING_OR_CONFLICTING",title_task:title,body_tasks:ids};
+ return {ok:true,task_id:title,decision:"VERIFIED_TITLE_AND_BODY_TASK_MATCH"};
+}
+
 /** Any new commit invalidates every HEAD-bound claim; post-merge commits never inherit authority. */
 export function onNewHead(record,newHead){
   if(record.head===newHead) return {ok:true,record,invalidated:[]};
@@ -397,7 +410,7 @@ export async function delegatedTaskExecutor({prNumber,token,action="CHECK"}={}){
     changedFiles:changed,candidateDigest:digest,repo:DELEGATED_REPO,
     verifiedGrant:grant,verifiedPrRunOrigins});
   const sprint=readJson("delivery/CURRENT-SPRINT.json"),build=readJson("build-spec/CURRENT.json");
-  const taskId=pr.body?.match(/^Task:\s*(T\d{3})\b/m)?.[1];
+  const taskId=taskIdentityOfPr(pr).task_id;
   const task=(readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks||[])
     .find(t=>t.task_id===taskId);
   const result=delegatedPremergePolicy({pr,grant,task,sprint,build,localHead:head,
