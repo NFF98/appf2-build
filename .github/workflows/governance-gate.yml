@@ -277,6 +277,24 @@ jobs:
             }
           '
           if [[ "$a" -ne 3 || "$b" -ne 3 || "$c" -ne 3 || "$d" -ne 3 ]]; then exit 2; fi
+      - name: Real #1 GitHub Task lifecycle source-to-evidence audit (not Closure)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node harness/scripts/guarded-github-write.mjs --operation TASK_HISTORY_AUDIT --pr 386 --evidence-pr 387 --out "$RUNNER_TEMP/16p-write/task-history.json"
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import {execFileSync} from "node:child_process";
+            import {taskIdentityOfPr} from "./harness/scripts/task-pr-lifecycle.mjs";
+            const gh=n=>JSON.parse(execFileSync("gh",["api","repos/"+process.env.GITHUB_REPOSITORY+"/pulls/"+n],{encoding:"utf8"}));
+            if(taskIdentityOfPr(gh(386)).task_id!=="T008"||taskIdentityOfPr(gh(323)).task_id!=="T004"||taskIdentityOfPr(gh(404)).ok)
+              throw Error("Real Task PR classification wrong");
+            const a=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/16p-write/task-history.json"));
+            if(!a.ok||a.status!=="PARTIAL_TWO_PR_HISTORY_AND_CLOSURE_PENDING"||a.complete_one_pr_e2e_verified||a.same_primary_pr||
+               !a.source_merged||!a.evidence_merged||!a.verified_pr_merge_sequence||a.canonical_task_status!=="REVIEW"||a.canonical_evidence_count!==14)
+              throw Error("Task #1 real GitHub receipt does not prove expected partial history");
+            console.log("LIVE #1 PARTIAL: PR #386 merged -> #387 Evidence merged -> T008 REVIEW, 14 Evidence; NOT one-PR closure");
+          '
       - name: Upload real GitHub prewrite denial receipts
         if: always()
         uses: actions/upload-artifact@v4

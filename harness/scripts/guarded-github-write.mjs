@@ -5,11 +5,11 @@ import {execFileSync} from "node:child_process";
 import {pathToFileURL} from "node:url";
 import {preflight,prCreationDecision} from "./gpt-preflight.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck} from "./evidence-ledger-report.mjs";
-import {delegatedTaskExecutor} from "./task-pr-lifecycle.mjs";
+import {delegatedTaskExecutor,taskIdentityOfPr} from "./task-pr-lifecycle.mjs";
 import {GOVERNANCE_REFORM_POLICY_PATH} from "./human-exception.mjs";
 
 const read=p=>JSON.parse(fs.readFileSync(p,"utf8"));
-const taskOfBody=b=>/^Task:\s*(T\d{3})\b/m.exec(b||"")?.[1]||null;
+const taskOfPr=p=>taskIdentityOfPr(p).task_id;
 const fail=(decision,reason,extra={})=>({ok:false,decision,reason,write_performed:false,...extra});
 const repoName=()=>process.env.GITHUB_REPOSITORY||"NFF98/appf2-build";
 const auth=()=>process.env.GH_TOKEN||process.env.GITHUB_TOKEN;
@@ -57,7 +57,7 @@ function realPrecreate(taskId,governanceCase){
 }
 async function realEvidence(prNumber,apply){
  const source=api("pulls/"+prNumber);
- const task=taskOfBody(source.body);
+ const task=taskOfPr(source);
  if(source.state!=="open"||source.base?.ref!=="main"||source.head?.repo?.full_name!==repoName()||
     !task||!/^T\d{3}$/.test(task))
   return fail("BLOCK_NOT_REAL_TASK_PR","Governance PR or wrong branch is not a Task Evidence mutation target",
@@ -69,16 +69,46 @@ async function realEvidence(prNumber,apply){
 }
 async function realMerge(prNumber,apply){
  const pr=api("pulls/"+prNumber);
- if(pr.state!=="open"||!taskOfBody(pr.body))
+ if(pr.state!=="open"||!taskOfPr(pr))
   return fail("BLOCK_NOT_REAL_TASK_PR","Cannot delegate Merge of a governance or unbound PR");
  const result=await delegatedTaskExecutor({prNumber,token:auth(),action:apply?"MERGE":"CHECK"});
  return {...result,write_performed:result.merged===true};
 }
+// Live, read-only historical Task transition audit; no simulated Merge/Closure.
+function auditTaskHistory(sourceNumber,evidenceNumber){
+ if(!Number.isSafeInteger(sourceNumber)||sourceNumber<=0||
+    !Number.isSafeInteger(evidenceNumber)||evidenceNumber<=0)
+  return fail("BLOCK_PR_NUMBER","Both real PR numbers required");
+ const source=api("pulls/"+sourceNumber),proof=api("pulls/"+evidenceNumber);
+ const identity=taskIdentityOfPr(source);
+ if(!identity.ok)return fail("BLOCK_NOT_REAL_TASK_PR","Primary PR identity mismatch",{identity});
+ const taskId=identity.task_id,ctx=canonical();
+ const task=ctx.tasks.find(t=>t.task_id===taskId);
+ const merged=p=>p.state==="closed"&&p.merged===true&&/^[a-f0-9]{40}$/.test(p.merge_commit_sha||"");
+ const src=merged(source),ev=merged(proof);
+ const sequence=src&&ev&&proof.base?.sha===source.merge_commit_sha&&
+  source.base?.ref==="main"&&proof.base?.ref==="main"&&
+  source.head?.repo?.full_name===repoName()&&proof.head?.repo?.full_name===repoName();
+ const n=Array.isArray(task?.completion_evidence)?task.completion_evidence.length:0;
+ const evidenceLinked=String(proof.body||"").includes(taskId);
+ const same=sourceNumber===evidenceNumber,closed=task?.status==="CLOSED";
+ return {ok:true,decision:"REAL_GITHUB_TASK_HISTORY_OBSERVED",task_id:taskId,
+  source_pr:sourceNumber,evidence_pr:evidenceNumber,
+  source_merged:src,evidence_merged:ev,
+  verified_pr_merge_sequence:sequence,linked_evidence_body:evidenceLinked,
+  canonical_task_status:task?.status||"MISSING",
+  canonical_evidence_count:n,same_primary_pr:same,task_closed:closed,
+  complete_one_pr_e2e_verified:Boolean(sequence&&evidenceLinked&&same&&closed&&n),
+  status:sequence&&evidenceLinked?"PARTIAL_TWO_PR_HISTORY_AND_CLOSURE_PENDING":"NOT_VERIFIED",
+  write_performed:false};
+}
+
 async function realClosure(prNumber){
  const r=await liveTaskClosureCheck({prNumber,token:auth()});
  return {...r,write_performed:false};
 }
-export async function runOperation({operation,taskId,governanceCase,prNumber,apply=false}={}){
+export async function runOperation({operation,taskId,governanceCase,prNumber,evidencePrNumber,apply=false}={}){
+ if(operation==="TASK_HISTORY_AUDIT")return auditTaskHistory(prNumber,evidencePrNumber);
  if(operation==="PR_CREATE"){
   if(apply)return fail("BLOCK_PR_CREATE_APPLY","No verified protected create authority; no PR is created");
   return realPrecreate(taskId,governanceCase);
@@ -101,7 +131,7 @@ async function main(args){
  try{
   result=await runOperation({operation,taskId:a(args,"task"),
    governanceCase:a(args,"governance-case"),
-   prNumber:Number(a(args,"pr")),apply});
+   prNumber:Number(a(args,"pr")),evidencePrNumber:Number(a(args,"evidence-pr")),apply});
  }catch(e){result=fail("HARD_STOP",String(e.message||e));}
  const report={schema:"APPF2-GUARDED-GITHUB-WRITE-1",operation,apply,repo:repoName(),
   ...result};
