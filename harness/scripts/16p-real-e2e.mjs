@@ -55,7 +55,23 @@ const t008=taskState?.tasks?.find(t=>t.task_id==="T008");
 const ssotFetch=gh("contents/harness/policy/governance-reform.json?ref=main");
 const ssotEnvelope=parse(ssotFetch);
 const ssotPolicy=ssotFetch.exit===0?decode(ssotEnvelope):null;
-const rulesetFetch=gh("rulesets/23969502");
+const tokenRulesetFetch=gh("rulesets/23969502");
+// Public repository Ruleset GET is a read-only provider endpoint. The minimal
+// GitHub Actions token can lack Ruleset-read capability; use an unauthenticated
+// TLS-validated HTTPS read ONLY if the authenticated request is unavailable.
+// Never supply an elevated token or leak credentials into PR-triggered jobs.
+const publicRulesetFetch=tokenRulesetFetch.exit===0?null:exec("curl",[
+ "--fail","--silent","--show-error","--max-time","20",
+ "--header","Accept: application/vnd.github+json",
+ "https://api.github.com/repos/"+repo+"/rulesets/23969502"
+],30000);
+const rulesetFetch=tokenRulesetFetch.exit===0?tokenRulesetFetch:
+ (publicRulesetFetch?.exit===0?publicRulesetFetch:tokenRulesetFetch);
+console.log("16P PROVIDER RULESET SOURCE: "+
+ (tokenRulesetFetch.exit===0?"GITHUB_ACTIONS_TOKEN":
+  publicRulesetFetch?.exit===0?"PUBLIC_PROVIDER_HTTPS":"UNAVAILABLE_FAIL_CLOSED")+
+ "; authenticated_exit="+tokenRulesetFetch.exit+
+ "; public_read_exit="+(publicRulesetFetch?.exit??"NOT_NEEDED"));
 const providerRuleset=parse(rulesetFetch);
 const REQUIRED_GATES=["ci","attack","governance","Analyze JavaScript / TypeScript"];
 const humanEvents=["MARK_FINAL_READY","APPROVE_MERGE","APPROVE_CLOSURE"];
