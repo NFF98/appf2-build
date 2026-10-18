@@ -247,8 +247,45 @@ function policyInvariantCases(policy){
     ["only BUILD_SPEC_ACTIVATION may move CURRENT/Activation",true,Object.entries(ex.lanes).every(([n,l])=>n==="BUILD_SPEC_ACTIVATION" ||
       l.forbidden_paths.includes("build-spec/") || ["build-spec/CURRENT.json","build-spec/activations/"].every(p=>l.forbidden_paths.includes(p)))],
     ["BUILD_SPEC_ACTIVATION cannot touch baselines/Deltas/Evidence",true,["build-spec/baselines/","delivery/deltas/","delivery/evidence/"].every(p=>ex.lanes.BUILD_SPEC_ACTIVATION.forbidden_paths.includes(p))],
-    ["only HOTFIX may touch Product source",true,Object.entries(ex.lanes).every(([n,l])=>n==="HOTFIX" || l.forbidden_paths.includes("src/"))]
+    ["only HOTFIX may touch Product source",true,Object.entries(ex.lanes).every(([n,l])=>n==="HOTFIX" || l.forbidden_paths.includes("src/"))],
+    ["16P_ACCEPTANCE_LEASE lane present",true,Boolean(ex.lanes["16P_ACCEPTANCE_LEASE"])],
+    ["16P_ACCEPTANCE_LEASE preserves HOLD pointers",true,["delivery/CURRENT-SPRINT.json","delivery/sprints/","delivery/backlog/","build-spec/","src/"].every(p=>ex.lanes["16P_ACCEPTANCE_LEASE"].forbidden_paths.includes(p))],
+    ["16P_ACCEPTANCE_LEASE policy forbids Sprint4/T008 reuse",true,policy.sixteen_p_acceptance_lease?.canonical_task_id==="T016"&&
+      policy.sixteen_p_acceptance_lease.forbidden_reuse_task_ids.includes("T008")&&
+      policy.sixteen_p_acceptance_lease.forbidden_sprint_ids.includes("SP-P1-004")&&
+      policy.sixteen_p_acceptance_lease.direct_connector_prewrite_default===false]
   ],x=>x);
+}
+
+function sixteenPAcceptanceLeaseCases(policy){
+  const lease={
+    schema:"APPF2-16P-ACCEPTANCE-LEASE-1",lease_id:"16P-LEASE-001",task_id:"T016",status:"ACTIVE",
+    product_hold_preserved:true,sprint4_forbidden:true,bound_sprint_id:null,
+    never_converts_fail_or_untested_to_pass:true,activated_at_unix:NOW-60,expires_at_unix:NOW+3600,
+    allowed_write_paths:["delivery/audits/","harness/scripts/16p-real-e2e.mjs"],
+    activation_case_id:"GOV-16P-ACCEPTANCE-LEASE-ACT-001",title:"16P acceptance",
+    direct_connector_prewrite_proven:false
+  };
+  const hold={active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD"};
+  const build={active_baseline:"BS-P1-025",implementation_enabled:false};
+  const base=()=>{
+    const c=fixture(policy,{lane:"16P_ACCEPTANCE_LEASE",
+      files:{"delivery/16p-acceptance-lease/CURRENT.json":lease,"delivery/audits/note.json":{"ok":true}},
+      scope:{affected_tasks:["T016"],affected_sprint:null,product_hold_preserved:true,sprint4_forbidden:true,
+        covered_gates:["CHANGE_SCOPE"]}});
+    c.state={baseSprint:hold,headSprint:{...hold},baseBuild:build,headBuild:{...build}};
+    return rebindDigest(c);
+  };
+  return [
+    ["16P_ACCEPTANCE_LEASE exact ACTIVE lease",true,base()],
+    ["16P lease cannot bind Sprint4",false,(()=>{const c=base();c.docket.scope_exception.affected_sprint="SP-P1-004";return rebindDigest(c);})()],
+    ["16P lease cannot mutate CURRENT-SPRINT",false,(()=>{const c=base();c.state.headSprint={...hold,status:"ACTIVE",active_task:"T016"};return c;})()],
+    ["16P lease cannot reuse T008",false,(()=>{const c=base();c.docket.scope_exception.affected_tasks=["T008"];
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({...lease,task_id:"T008"})));return rebindDigest(c);})()],
+    ["16P lease cannot self-attest connector proven",false,(()=>{const c=base();c.docket.scope_exception.direct_connector_prewrite_proven=true;return c;})()],
+    ["16P lease missing CURRENT.json",false,(()=>{const c=base();c.files.delete("delivery/16p-acceptance-lease/CURRENT.json");
+      c.changed=c.changed.filter(p=>p!=="delivery/16p-acceptance-lease/CURRENT.json");return rebindDigest(c);})()]
+  ];
 }
 
 function lifecycleCases(){
@@ -561,7 +598,7 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
   const policy=JSON.parse(fs.readFileSync(path.join(root,GOVERNANCE_REFORM_POLICY_PATH),"utf8"));
   const repoPolicy=JSON.parse(fs.readFileSync(path.join(root,"harness/policy/repo-policy.json"),"utf8"));
   const counts={
-    human_exception:expectCases("human exception",[...governanceLaneCases(policy),...ssotClosureHotfixCases(policy)],ok),
+    human_exception:expectCases("human exception",[...governanceLaneCases(policy),...ssotClosureHotfixCases(policy),...sixteenPAcceptanceLeaseCases(policy)],ok),
     persistent_waiver:persistentWaiverCases(policy),
     build_spec_activation:buildSpecActivationCases(policy),
     policy_invariants:policyInvariantCases(policy),

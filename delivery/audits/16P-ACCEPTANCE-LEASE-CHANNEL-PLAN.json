@@ -1,0 +1,31 @@
+{
+  "schema": "APPF2-16P-ACCEPTANCE-LEASE-CHANNEL-PLAN-1",
+  "human_authority": "DIRECT_HUMAN_MESSAGE path B — establish 16P_ACCEPTANCE_LEASE channel",
+  "goal": "Shortest legal path to 16/16 REAL PASS without Sprint4 / Product HOLD break / T006-T008-T009 mutation",
+  "this_pr": {
+    "case_id": "GOV-16P-ACCEPTANCE-LEASE-001",
+    "lane": "GOVERNANCE_REFORM",
+    "delivers": [
+      "New exception lane 16P_ACCEPTANCE_LEASE",
+      "Lease SSOT schema + template",
+      "Preflight/guarded-write/16p-real-e2e recognition under Product HOLD",
+      "H3 host-wide readonly probe (NOT_PROVEN; boolean stays false)"
+    ],
+    "does_not": [
+      "Activate live lease",
+      "Start Sprint4",
+      "Flip implementation_enabled",
+      "Merge/Closure",
+      "Claim 16/16 PASS",
+      "Set directConnectorPrewriteProven=true"
+    ]
+  },
+  "after_human_exact_approve_and_push": [
+    "Channel Gate on this PR",
+    "Human Merge of channel PR",
+    "Second PR under lane 16P_ACCEPTANCE_LEASE: ACTIVE T016 lease (ttl≤14d)",
+    "Task PR Task: T016 under lease (separate Human create authority)",
+    "Collect 16 provider receipts + Host-wide connector proof wiring (separate exact approve)",
+    "Task PR Merge then separate Closure — each Human-approved"
+  ]
+}

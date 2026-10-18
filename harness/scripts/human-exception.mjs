@@ -266,17 +266,55 @@ const closureBindingErrors=(state,s)=>{
   return errors;
 };
 const sprintBindingErrors=(state,s,laneName)=>{
+  if(laneName==="16P_ACCEPTANCE_LEASE"){
+    const errors=[];
+    if(s.affected_sprint!=null) errors.push("16P_ACCEPTANCE_LEASE must keep affected_sprint null (Product HOLD; no Sprint4)");
+    if(!sameJson(state.baseSprint,state.headSprint))
+      errors.push("delivery/CURRENT-SPRINT.json must stay unchanged in lane 16P_ACCEPTANCE_LEASE");
+    return errors;
+  }
   const errors=(s.affected_sprint??null)!==(state.headSprint?.active_sprint??null)?["exception is bound to a different Sprint than the active Sprint"]:[];
   if(laneName==="BUILD_SPEC_ACTIVATION") return errors;
   if(laneName==="CLOSURE_DEFERRAL") return [...errors,...closureBindingErrors(state,s)];
   return sameJson(state.baseSprint,state.headSprint)?errors:
     [...errors,"delivery/CURRENT-SPRINT.json must stay unchanged in lane "+laneName];
 };
+const LEASE_FILE="delivery/16p-acceptance-lease/CURRENT.json";
+const sixteenPAcceptanceLeaseLaneErrors=ctx=>{
+  const s=ctx.docket.scope_exception||{},errors=[];
+  const tasks=s.affected_tasks||[];
+  if(tasks.length!==1||tasks[0]!=="T016") errors.push("16P_ACCEPTANCE_LEASE requires affected_tasks exactly [\"T016\"]");
+  if(s.product_hold_preserved!==true) errors.push("scope_exception.product_hold_preserved must be true");
+  if(s.sprint4_forbidden!==true) errors.push("scope_exception.sprint4_forbidden must be true");
+  if(s.direct_connector_prewrite_proven===true)
+    errors.push("scope_exception must not claim direct_connector_prewrite_proven");
+  const leasePaths=ctx.changed.filter(p=>p.startsWith("delivery/16p-acceptance-lease/"));
+  if(!leasePaths.includes(LEASE_FILE)) errors.push("16P_ACCEPTANCE_LEASE requires "+LEASE_FILE);
+  if(leasePaths.some(p=>p!==LEASE_FILE)) errors.push("only "+LEASE_FILE+" may change under delivery/16p-acceptance-lease/");
+  const lease=ctx.readHeadJson(LEASE_FILE);
+  const pol=ctx.readHeadJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||
+    ctx.readBaseJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||{};
+  // Inline minimal checks (avoid import cycle with 16p-acceptance-lease.mjs).
+  if(lease?.schema!==(pol.lease_schema||"APPF2-16P-ACCEPTANCE-LEASE-1")) errors.push("lease schema invalid");
+  if(lease?.task_id!=="T016") errors.push("lease.task_id must be T016");
+  if(["T006","T008","T009"].includes(lease?.task_id)) errors.push("lease reuses forbidden Task");
+  if(lease?.bound_sprint_id!=null) errors.push("lease.bound_sprint_id must be null");
+  if(lease?.product_hold_preserved!==true||lease?.sprint4_forbidden!==true)
+    errors.push("lease must preserve Product HOLD and forbid Sprint4");
+  if(lease?.direct_connector_prewrite_proven===true)
+    errors.push("lease must not self-attest connector prewrite proven");
+  if(!["PENDING","ACTIVE","EXPIRED","REVOKED"].includes(lease?.status||""))
+    errors.push("lease.status invalid");
+  if(lease?.never_converts_fail_or_untested_to_pass!==true)
+    errors.push("lease never_converts_fail_or_untested_to_pass required");
+  return errors;
+};
 const laneSpecificErrors={
   GOVERNANCE_REFORM:ctx=>(ctx.docket.scope_exception?.affected_tasks||[]).length?["GOVERNANCE_REFORM cannot claim Task authority"]:[],
   PROTECTED_SSOT_AMENDMENT:ssotLaneErrors,
   BUILD_SPEC_ACTIVATION:buildSpecActivationLaneErrors,
-  HOTFIX:hotfixLaneErrors
+  HOTFIX:hotfixLaneErrors,
+  "16P_ACCEPTANCE_LEASE":sixteenPAcceptanceLeaseLaneErrors
 };
 const checkLaneState=(ctx,laneName)=>{
   const {state,docket}=ctx,s=docket.scope_exception||{},errors=[];

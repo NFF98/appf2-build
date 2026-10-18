@@ -185,8 +185,58 @@
           "governance",
           "Analyze JavaScript / TypeScript"
         ]
+      },
+      "16P_ACCEPTANCE_LEASE": {
+        "change_class": "SIXTEEN_P_ACCEPTANCE",
+        "waivable_gates": [
+          "CHANGE_SCOPE"
+        ],
+        "allowed_paths": [
+          "delivery/16p-acceptance-lease/",
+          "delivery/audits/",
+          "delivery/findings/"
+        ],
+        "forbidden_paths": [
+          "src/",
+          "tests/",
+          "supabase/",
+          "generated/",
+          "harness/",
+          ".github/",
+          "ci/",
+          "package.json",
+          "package-lock.json",
+          "tooling/",
+          "build-spec/",
+          "delivery/CURRENT-SPRINT.json",
+          "delivery/sprints/",
+          "delivery/backlog/",
+          "delivery/deltas/",
+          "delivery/evidence/",
+          "releases/",
+          "deploy/"
+        ],
+        "notes": "Time-boxed 16P REAL acceptance Task lease only. Preserves Product HOLD. Never Sprint4 / T006 / T008 / T009. Merge and Closure remain separate Human approvals."
       }
     }
+  },
+  "sixteen_p_acceptance_lease": {
+    "schema": "APPF2-16P-ACCEPTANCE-LEASE-POLICY-1",
+    "lease_path": "delivery/16p-acceptance-lease/CURRENT.json",
+    "lease_schema": "APPF2-16P-ACCEPTANCE-LEASE-1",
+    "canonical_task_id": "T016",
+    "forbidden_reuse_task_ids": [
+      "T006",
+      "T008",
+      "T009"
+    ],
+    "forbidden_sprint_ids": [
+      "SP-P1-004"
+    ],
+    "max_ttl_seconds": 1209600,
+    "requires_product_hold": true,
+    "never_enables_product_implementation": true,
+    "direct_connector_prewrite_default": false
   },
   "carry_forward": {
     "schema": "APPF2-CARRY-FORWARD-1",

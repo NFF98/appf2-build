@@ -1,0 +1,48 @@
+{
+  "schema": "APPF2-16P-HOST-CONNECTOR-PROBE-1",
+  "generated_at_unix": 1792328658,
+  "repo": "NFF98/appf2-build",
+  "write_performed": false,
+  "mutating_probes_executed": false,
+  "harness_rejection": {
+    "status": "SEPARATE_EVIDENCE",
+    "note": "Use guarded-github-write.mjs apply=false / #407 BLOCK_* receipts; harness≠host-wide"
+  },
+  "host_wide_forced_protection": {
+    "status": "NOT_PROVEN",
+    "reason": [
+      "Protected branch Ruleset does not intercept raw pull-request create",
+      "No host connector prewrite attestation collected in this probe",
+      "directConnectorPrewriteProven remains false by policy"
+    ],
+    "directConnectorPrewriteProven": false
+  },
+  "readonly_inventory": {
+    "main_ruleset": {
+      "http_ok": true,
+      "current_user_can_bypass": "never",
+      "bypass_actors_len": 0
+    },
+    "design_ruleset": {
+      "http_ok": false,
+      "current_user_can_bypass": null
+    },
+    "human_approval_environment": {
+      "http_ok": true,
+      "name": "appf2-task-human-approval",
+      "protection_rules_len": 1
+    }
+  },
+  "required_before_flag_true": [
+    "Human-supervised host connector that invokes guarded prewrite on every mutating GitHub path",
+    "Live denial with write_performed=false outside harness-only path",
+    "ITEM_OPERATION_EVIDENCE + independent host policy attestation (API denial alone insufficient)",
+    "Separate Human exact-candidate approval to wire proof into 16p-real-e2e.mjs"
+  ],
+  "unsafe_forbidden": [
+    "Open real PR to test protection",
+    "Push branch to trigger ruleset",
+    "Flip directConnectorPrewriteProven to true",
+    "Forge interception receipts"
+  ]
+}
