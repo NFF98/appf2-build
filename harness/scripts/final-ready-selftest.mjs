@@ -115,6 +115,17 @@ holdCheck({comments:[mk({...holdLocal,verdict:"PASS"},1),mk(holdBce,2),mk(human,
 holdCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
   x.command==="npm run product:ci"?{...x,product_disposition:undefined}:x)},1),mk(holdBce,2),mk(human,3)]},false);
 holdCheck({mainSprint:undefined,mainBuild:undefined},false);
+// Forged product:ci PASS under HOLD/NOT_RUN exception must be rejected
+// (even with exit_code=0 and/or leftover HOLD_NOT_RUN disposition).
+holdCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:"HOLD_NOT_RUN"}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+holdCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:undefined}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+// Real HOLD / NOT_RUN remains legally admissible (holdCheck({},true) above).
 console.log("Product HOLD Main-proven control admission + negatives: PASS (synthetic).");
 // Actual canonical repo-policy.json governance roots, not a guessed whitelist.
 // Source and destination must both be unprotected in Ready admission.

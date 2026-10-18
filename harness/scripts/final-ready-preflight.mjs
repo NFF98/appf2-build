@@ -99,7 +99,14 @@ const localEvidenceErrors=(record,ctx)=>{
     assertion(matched.length===1,"local command missing or duplicated: "+name,e);
   }
   for(const run of runs){
-    const admissible=[numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
+    // Under Product HOLD / NOT_RUN control exception, product:ci must be
+    // strictly NOT_RUN + HOLD_NOT_RUN. Forged PASS (even exit_code=0) is rejected —
+    // numericPass must not admit a fake Product PASS beside the CONTROL_VERDICT.
+    const holdProductCi=run?.command==="npm run product:ci" &&
+      controlAdmission(ctx) && record.verdict===CONTROL_VERDICT;
+    const admissible=holdProductCi
+      ? adminHoldRun(run,record,ctx)
+      : [numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
     assertion(admissible,"local test skipped/failed or missing immutable log digest: "+run?.command,e);
     assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
       "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
