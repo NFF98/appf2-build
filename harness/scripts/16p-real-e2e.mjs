@@ -35,7 +35,8 @@ const receipt=(id,description,operations,observed,...tail)=>{
  const item={id,description,operation_verdict:verdict,
   complete_real_e2e:"NOT_VERIFIED",protected_mutation_performed:false,
   authenticated_main_ssot_contract_verified:ssotContractVerified,
-  github_provider_main_ruleset_verified:providerMainRulesetVerified,
+  github_provider_main_ruleset_verified_for_runner_only:providerMainRulesetVerified,
+  provider_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
   provider_prewrite_authority_verified:false,
   observed,missing,operations};
  rows.push(item);
@@ -85,14 +86,17 @@ const ssotContractVerified=Boolean(
 );
 const providerCheckRule=providerRuleset?.rules?.find(x=>x.type==="required_status_checks");
 const providerContexts=(providerCheckRule?.parameters?.required_status_checks||[]).map(x=>x.context);
+// The Actions token can prove its own no-bypass status, but GitHub may omit
+// the admin-only global bypass_actors list. Never infer [] from absence.
+const providerGlobalBypassInventoryVerified=Array.isArray(providerRuleset?.bypass_actors) &&
+ providerRuleset.bypass_actors.length===0;
 const providerMainRulesetVerified=Boolean(
  rulesetFetch.exit===0 && providerRuleset?.id===23969502 &&
  providerRuleset?.source==="NFF98/appf2-build" &&
  providerRuleset?.enforcement==="active" &&
  providerRuleset?.target==="branch" &&
  providerRuleset?.conditions?.ref_name?.include?.includes("~DEFAULT_BRANCH") &&
- Array.isArray(providerRuleset?.bypass_actors) &&
- providerRuleset.bypass_actors.length===0 &&
+ providerRuleset?.current_user_can_bypass==="never" &&
  providerRuleset?.rules?.some(x=>x.type==="pull_request") &&
  providerCheckRule?.parameters?.strict_required_status_checks_policy===true &&
  REQUIRED_GATES.every(x=>providerContexts.includes(x))
@@ -189,7 +193,8 @@ const pre=node("harness/scripts/guarded-github-write.mjs",
 receipt("8","Prewrite Task lease / PR / scope preflight",
  [pre,ssotFetch,rulesetFetch],{blocked_unapproved_create:pre.exit===3,
   authenticated_main_ssot_contract_verified:ssotContractVerified,
-  github_provider_main_ruleset_verified:providerMainRulesetVerified,
+  github_provider_main_ruleset_verified_for_runner_only:providerMainRulesetVerified,
+  provider_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
   direct_connector_prewrite_verified:directConnectorPrewriteProven,
   host_side_pr_creation_interception:"NOT_VERIFIED"},
  ["Every GPT/external write tool routed through a non-bypassable host-side preflight"],
@@ -294,7 +299,8 @@ receipt("F","GPT orchestration must refuse unauthorized merge and closure",
  [denyMerge,denyClosure,ssotFetch,rulesetFetch],{unauthorized_merge_denied:denyMerge.exit===3,
  unauthorized_closure_denied:denyClosure.exit===3,
  authenticated_main_ssot_contract_verified:ssotContractVerified,
- provider_main_ruleset_verified:providerMainRulesetVerified,
+ provider_main_ruleset_verified_for_runner_only:providerMainRulesetVerified,
+ provider_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
  direct_connector_human_authority_enforced:"NOT_VERIFIED"},
  ["Connector/UI/API host-level mandatory preflight proven across every authorized and rejected action"],
  denyMerge.exit===3&&denyClosure.exit===3?"PARTIAL":"FAIL");
@@ -323,7 +329,9 @@ const result={schema:"APPF2-16P-REAL-EOE-STRICT-1",source:"LIVE_GITHUB_ACTIONS",
   main_policy_ref:"main",main_policy_blob_sha:ssotEnvelope?.sha||null,
   policy_contract_verified:ssotContractVerified,
   github_ruleset_id:providerRuleset?.id||null,
-  github_ruleset_protected_default_branch:providerMainRulesetVerified,
+  github_ruleset_protected_default_branch_for_runner:providerMainRulesetVerified,
+  github_ruleset_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
+  github_ruleset_global_bypass_inventory_status:providerGlobalBypassInventoryVerified?"ZERO_BYPASS_ACTORS_VERIFIED":"NOT_VERIFIED_BY_GITHUB_ACTIONS_TOKEN",
   github_ruleset_contexts:providerContexts,
   direct_connector_prewrite_authority:"NOT_VERIFIED",
   human_only_events:humanEvents
@@ -336,7 +344,7 @@ const result={schema:"APPF2-16P-REAL-EOE-STRICT-1",source:"LIVE_GITHUB_ACTIONS",
 // read-only runner. A 16/16 local probe inventory is not a 16/16 E2E acceptance.
 const fullyAdmitted=verifiedFullCount===REQUIRED.length &&
   result.main_closure_pass_count>0 && ssotContractVerified && providerMainRulesetVerified &&
-  directConnectorPrewriteProven && fatal.length===0 && tally.FAIL===0;
+  providerGlobalBypassInventoryVerified && directConnectorPrewriteProven && fatal.length===0 && tally.FAIL===0;
 result.full_real_e2e_admitted=fullyAdmitted;
 result.final_verdict=fullyAdmitted?"FULL_REAL_E2E_PASS":"INCOMPLETE_REAL_E2E_HARD_STOP";
 fs.writeFileSync(path.join(tmp,"16p-real-e2e.json"),JSON.stringify(result,null,2)+"\n");
@@ -345,7 +353,8 @@ const summary=["## 16P STRICT REAL E2E: "+
  "Actual GitHub APIs and runnable commands performed: "+rows.length+"/16;",
  "Local-operation CHECK_PASS is NOT a full protected lifecycle PASS.",
  "GitHub MAIN SSOT verified="+ssotContractVerified+
- "; provider protected-main Ruleset verified="+providerMainRulesetVerified+
+ "; protected-main Ruleset verified for Runner="+providerMainRulesetVerified+
+ "; global bypass inventory verified="+providerGlobalBypassInventoryVerified+
  "; connector-wide prewrite authority=NOT_VERIFIED.",
  "Full real E2E admission: "+result.final_verdict+"; required 16/16 plus authenticated Main closure evidence.",
  "Operation verdicts "+JSON.stringify(tally),
