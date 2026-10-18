@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {resolveRunnablePlan} from "./select-impacted-tests.mjs";
+import {admitProviderReceipts} from "./16p-provider-admission.mjs";
 const REQUIRED=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","16"];
 const repo=process.env.GITHUB_REPOSITORY;
 const prNumber=Number(process.env.PR_NUMBER);
@@ -34,6 +35,10 @@ const receipt=(id,description,operations,observed,...tail)=>{
  if(!Array.isArray(operations)||!operations.length)throw Error("no operation for "+id);
  const item={id,description,operation_verdict:verdict,
   complete_real_e2e:"NOT_VERIFIED",protected_mutation_performed:false,
+  authenticated_main_ssot_contract_verified:ssotContractVerified,
+  github_provider_main_ruleset_verified_for_runner_only:providerMainRulesetVerified,
+  provider_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
+  provider_prewrite_authority_verified:false,
   observed,missing,operations};
  rows.push(item);
  fs.writeFileSync(path.join(evidenceDir,id+".json"),JSON.stringify(item,null,2)+"\n");
@@ -47,13 +52,114 @@ const mainState=mainDoc?.type==="file"?decode(mainDoc):null;
 const taskFile=gh("contents/delivery/sprints/SP-P1-003/tasks.json?ref=main");
 const taskState=taskFile.exit===0?decode(parse(taskFile)):null;
 const t008=taskState?.tasks?.find(t=>t.task_id==="T008");
+// Verify governance from the authenticated GitHub MAIN SSOT and actual provider ruleset.
+// Checking a PR-local JSON file alone lets the PR author alter its own authority.
+const ssotFetch=gh("contents/harness/policy/governance-reform.json?ref=main");
+const ssotEnvelope=parse(ssotFetch);
+const ssotPolicy=ssotFetch.exit===0?decode(ssotEnvelope):null;
+const tokenRulesetFetch=gh("rulesets/23969502");
+// Public repository Ruleset GET is a read-only provider endpoint. The minimal
+// GitHub Actions token can lack Ruleset-read capability; use an unauthenticated
+// TLS-validated HTTPS read ONLY if the authenticated request is unavailable.
+// Never supply an elevated token or leak credentials into PR-triggered jobs.
+const publicRulesetFetch=tokenRulesetFetch.exit===0?null:exec("curl",[
+ "--fail","--silent","--show-error","--max-time","20",
+ "--header","Accept: application/vnd.github+json",
+ "https://api.github.com/repos/"+repo+"/rulesets/23969502"
+],30000);
+const rulesetFetch=tokenRulesetFetch.exit===0?tokenRulesetFetch:
+ (publicRulesetFetch?.exit===0?publicRulesetFetch:tokenRulesetFetch);
+console.log("16P PROVIDER RULESET SOURCE: "+
+ (tokenRulesetFetch.exit===0?"GITHUB_ACTIONS_TOKEN":
+  publicRulesetFetch?.exit===0?"PUBLIC_PROVIDER_HTTPS":"UNAVAILABLE_FAIL_CLOSED")+
+ "; authenticated_exit="+tokenRulesetFetch.exit+
+ "; public_read_exit="+(publicRulesetFetch?.exit??"NOT_NEEDED"));
+const providerRuleset=parse(rulesetFetch);
+const REQUIRED_GATES=["ci","attack","governance","Analyze JavaScript / TypeScript"];
+const humanEvents=["MARK_FINAL_READY","APPROVE_MERGE","APPROVE_CLOSURE"];
+const ssotContractVerified=Boolean(
+ ssotPolicy?.human_authority_accounts?.includes("NFF98") &&
+ humanEvents.every(x=>ssotPolicy?.lifecycle?.human_only_events?.includes(x)) &&
+ REQUIRED_GATES.every(x=>ssotPolicy?.full_gate_contexts?.includes(x)) &&
+ ssotPolicy?.exception?.non_waivable_gates?.includes("HUMAN_MERGE") &&
+ ssotPolicy?.lifecycle?.conditional_task_approval?.external_executor_required===true &&
+ ssotPolicy?.lifecycle?.conditional_task_approval?.github_trust_anchor?.mandatory_environment_required_reviewers===true
+);
+const providerCheckRule=providerRuleset?.rules?.find(x=>x.type==="required_status_checks");
+const providerContexts=(providerCheckRule?.parameters?.required_status_checks||[]).map(x=>x.context);
+// The Actions token can prove its own no-bypass status, but GitHub may omit
+// the admin-only global bypass_actors list. Never infer [] from absence.
+const providerGlobalBypassInventoryVerified=Array.isArray(providerRuleset?.bypass_actors) &&
+ providerRuleset.bypass_actors.length===0;
+const providerMainRulesetVerified=Boolean(
+ rulesetFetch.exit===0 && providerRuleset?.id===23969502 &&
+ providerRuleset?.source==="NFF98/appf2-build" &&
+ providerRuleset?.enforcement==="active" &&
+ providerRuleset?.target==="branch" &&
+ providerRuleset?.conditions?.ref_name?.include?.includes("~DEFAULT_BRANCH") &&
+ providerRuleset?.current_user_can_bypass==="never" &&
+ providerRuleset?.rules?.some(x=>x.type==="pull_request") &&
+ providerCheckRule?.parameters?.strict_required_status_checks_policy===true &&
+ REQUIRED_GATES.every(x=>providerContexts.includes(x))
+);
+requireBool(ssotContractVerified,"Live authenticated MAIN SSOT policy contract missing or weakened");
+requireBool(providerMainRulesetVerified,"Live provider MAIN ruleset missing, untrusted, or bypassable");
+// A protected default-branch Ruleset does NOT intercept direct creation of PRs
+// and is NOT a connector permission boundary. These require separately proven
+// scoped tokens / trusted write executor before #8/#A/#F can fully PASS.
+const directConnectorPrewriteProven=false;
 const live=gh("pulls/"+prNumber);
 const livePr=parse(live);
 requireBool(live.exit===0&&livePr?.state==="open"&&livePr?.head?.sha===head,
  "REAL PR HEAD/state does not match the event");
-requireBool(mainState?.active_sprint==="SP-P1-003"&&t008?.task_id==="T008",
- "Canonical Main Task/Sprint record unexpectedly changed; no inherited authority");
-const ctx=[canonical,taskFile,live];
+const mainBuildOp=gh("contents/build-spec/CURRENT.json?ref=main");
+const mainBuildState=mainBuildOp.exit===0?decode(parse(mainBuildOp)):null;
+// Accept a genuinely active NEW Sprint/Task for future real lifecycle audits.
+// Prior harness was incorrectly pinned to SP-P1-003/T008 forever; no legitimate
+// future authorized Task could even enter the 16P collector.
+const canonicalHistoricalTask=mainState?.status==="HOLD"&&
+ mainState?.active_sprint===null&&mainState?.active_task===null&&
+ mainState?.active_build_spec===null;
+const sprintIdPattern=/^SP-P\d+-\d{3}$/;
+const taskIdPattern=/^T\d{3}$/;
+requireBool(sprintIdPattern.test("SP-P1-003")&&taskIdPattern.test("T008"),
+ "16P canonical ID regex self-test failed; no false future Task lease");
+const liveTaskLease=Boolean(
+ sprintIdPattern.test(mainState?.active_sprint||"") &&
+ taskIdPattern.test(mainState?.active_task||"") &&
+ ["ACTIVE","REVIEW"].includes(mainState?.status) &&
+ mainState?.active_build_spec===mainBuildState?.active_baseline &&
+ mainBuildState?.implementation_enabled===true
+);
+// An active Task cannot be inferred from a current-sprint pointer alone.
+// Authenticate the CURRENT Sprint Task document against GitHub Main, and check
+// exact baseline and mapped AC/Test/allowed paths before recording any lease.
+const currentTaskFile=liveTaskLease?
+ gh("contents/delivery/sprints/"+mainState.active_sprint+"/tasks.json?ref=main"):
+ {command:"No current Task: Main HOLD",exit:null,stdout:"",stderr:"",error:null};
+const activeTaskList=currentTaskFile.exit===0?decode(parse(currentTaskFile)):null;
+const activeTask=activeTaskList?.tasks?.find(x=>x.task_id===mainState.active_task);
+const liveTaskRecordVerified=Boolean(
+ liveTaskLease && currentTaskFile.exit===0 &&
+ activeTaskList?.sprint_id===mainState?.active_sprint &&
+ activeTask?.build_spec_id===mainBuildState?.active_baseline &&
+ ["IN_PROGRESS","REVIEW"].includes(activeTask?.status) &&
+ Array.isArray(activeTask?.acceptance_links) && activeTask.acceptance_links.length>0 &&
+ activeTask.acceptance_links.every(x=>typeof x.acceptance_id==="string"&&
+  typeof x.test_id==="string") &&
+ Array.isArray(activeTask?.allowed_write_paths) &&
+ activeTask.allowed_write_paths.length>0
+);
+const validMainTaskState=canonicalHistoricalTask?
+ t008?.task_id==="T008"&&t008?.status==="REVIEW"&&
+ mainBuildState?.implementation_enabled===false:
+ liveTaskRecordVerified;
+requireBool(validMainTaskState,
+ "Canonical Main Task/Sprint/Build and mapped Scope failed authoritative Main binding; no inherited authority");
+if(canonicalHistoricalTask)console.log("16P CANONICAL: Main HOLD, T008 historic="+t008?.status+"; no live Task authority");
+else if(liveTaskRecordVerified)console.log("16P CANONICAL: real Main Task/Sprint/Build/AC/path scope verified for "+
+ activeTask.task_id+"; this is NOT Human authorization");
+const ctx=[canonical,taskFile,live,mainBuildOp,currentTaskFile,ssotFetch,rulesetFetch];
 const history=node("harness/scripts/guarded-github-write.mjs","--operation","TASK_HISTORY_AUDIT",
  "--pr","386","--evidence-pr","387");
 const p386=gh("pulls/386"),p387=gh("pulls/387");
@@ -69,12 +175,29 @@ receipt("1","One Task / one PR / merge / evidence / closure",
  historicReady?"PARTIAL":"FAIL");
 requireBool(historicReady,"#1 historical real PR->Evidence linkage invalid");
 const env=gh("environments/appf2-task-human-approval");
+const envConfig=parse(env);
+const environmentRequiredReviewer=Boolean(
+ env.exit===0 && envConfig?.name==="appf2-task-human-approval" &&
+ envConfig?.protection_rules?.some(x=>x.type==="required_reviewers" &&
+  x.reviewers?.some(y=>y.type==="User"&&y.reviewer?.login==="NFF98"))
+);
+// A HUMAN-approved Actions environment is meaningless if an admin can use
+// GitHub's provider bypass button instead of submitting a genuine review.
+const environmentNoAdminBypass=env.exit===0 &&
+ envConfig?.can_admins_bypass===false;
+requireBool(environmentRequiredReviewer,
+ "#2 GitHub Human approval environment missing verified NFF98 Required Reviewer");
+requireBool(environmentNoAdminBypass,
+ "#2 GitHub Human approval environment allows ADMIN BYPASS; turn off 'Allow administrators to bypass configured protection rules' in GitHub Settings > Environments > appf2-task-human-approval");
 const taskGrant=node("harness/scripts/gpt-preflight.mjs","state",
  "--task","T008","--intent","REQUEST_APPROVAL");
 receipt("2","One trusted Human grant from activation through merge/closure",
  [env,taskGrant],{github_environment_http_success:env.exit===0,
+ actual_required_reviewer_NFF98:environmentRequiredReviewer,
+ github_environment_admin_bypass_allowed:envConfig?.can_admins_bypass??"NOT_VERIFIED",
+ provider_enforced_human_gate_without_admin_bypass:environmentRequiredReviewer&&environmentNoAdminBypass,
  canonical_status:t008?.status,command_exit:taskGrant.exit},
- ["Real single Human grant + independently verified approval provenance + completed positive merge/closure"],
+ ["Disable GitHub Environment admin bypass; verify real NFF98 approval run and positive protected Merge/Closure"],
  "AUTHORITY_REQUIRED");
 const workflowRuns=gh("actions/workflows/ci.yml/runs?branch="+
  encodeURIComponent(livePr?.head?.ref||"")+"&per_page=100");
@@ -113,16 +236,27 @@ receipt("6","Evidence automatically aggregated in same Task PR",
 const exceptCase=gh("contents/delivery/constitutional-cases/GOV-ATTACK-FIXTURE-CF-ISOLATION-001.json?ref=fix/attack-fixture-carry-forward-isolation");
 const exception=decode(parse(exceptCase));
 const special=node("harness/scripts/validate-special-approvals-and-carry-forward.mjs");
+const liveClock=node("harness/scripts/16p-human-exception-live-clock.mjs");
 receipt("7","Live scoped Human exception, expiry/revocation & protected effect",
- [exceptCase,special],{existing_docket:exceptCase.exit===0,
+ [exceptCase,special,liveClock],{existing_docket:exceptCase.exit===0,
  human_approval_recorded:!!exception?.human_approval,
- policy_gate_exit:special.exit},
- ["Authorized positive exception actually applied to eligible procedural gate, and real expiry/revocation behavior"],
- "AUTHORITY_REQUIRED");
+ policy_gate_exit:special.exit,
+ actual_wall_clock_temp_engine_exit:liveClock.exit,
+ actual_wall_clock_engine_only:liveClock.exit===0,
+ genuine_human_approved_closure_deferral_main:false,
+ github_provider_protected_expiry_denial_observed:false,
+ github_provider_protected_revocation_denial_observed:false},
+ ["Authorized protected positive CLOSURE_DEFERRAL, real merged expiry/revocation, and provider rejection (temporary wall-clock sandbox is insufficient)"],
+ liveClock.exit===0?"PARTIAL":"FAIL");
 const pre=node("harness/scripts/guarded-github-write.mjs",
  "--operation","PR_CREATE","--task","T099");
 receipt("8","Prewrite Task lease / PR / scope preflight",
- [pre],{blocked_unapproved_create:pre.exit===3},
+ [pre,ssotFetch,rulesetFetch],{blocked_unapproved_create:pre.exit===3,
+  authenticated_main_ssot_contract_verified:ssotContractVerified,
+  github_provider_main_ruleset_verified_for_runner_only:providerMainRulesetVerified,
+  provider_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
+  direct_connector_prewrite_verified:directConnectorPrewriteProven,
+  host_side_pr_creation_interception:"NOT_VERIFIED"},
  ["Every GPT/external write tool routed through a non-bypassable host-side preflight"],
  pre.exit===3?"PARTIAL":"FAIL");
 requireBool(pre.exit===3,"#8 unauthorized new Task PR not rejected");
@@ -139,8 +273,10 @@ requireBool(metricOldLie.exit===0,"#9 sampled metrics still claim entire window"
 const reuse=node("harness/scripts/guarded-github-write.mjs",
  "--operation","PR_CREATE","--task","T008");
 receipt("A","Creation-time guard against duplicate PR even after previous merge",
- [reuse],{real_historical_merge:historicReady,
- blocked_duplicate_task_pr:reuse.exit===3},
+ [reuse,ssotFetch,rulesetFetch],{real_historical_merge:historicReady,
+ blocked_duplicate_task_pr:reuse.exit===3,
+ provider_precreate_authorization_enforced:"NOT_VERIFIED",
+ historical_repo_guard_not_host_permission:directConnectorPrewriteProven===false},
  ["Direct GitHub UI/API creation requires non-bypassable provider-level enforcement"],
  reuse.exit===3?"PARTIAL":"FAIL");
 requireBool(reuse.exit===3,"#A existing Task still able to issue unguarded PR");
@@ -167,10 +303,46 @@ receipt("C","Actual file-based impacted test selection and executing real tests"
 requireBool(absent&&selected&&test.exit===0,"#C file selector or actual Vitest failed");
 const integrity=node("harness/scripts/validate-test-integrity.mjs");
 const proofLevel=node("harness/scripts/validate-evidence.mjs");
+// An earlier real GitHub Actions run on the SAME exact HEAD can supply #D
+// operational proof. The matching job must actually complete both real test
+// steps successfully. Current/unfinished jobs, other SHAs and mock fixtures
+// are never admissible, and this never implies a Product/Main closure.
+const dRunsQuery=gh("actions/runs?head_sha="+head+"&per_page=30");
+const dRuns=(parse(dRunsQuery)?.workflow_runs||[]).filter(r=>
+ r.head_sha===head &&
+ (r.id===Number(process.env.GITHUB_RUN_ID) || r.status==="completed") &&
+ r.event==="pull_request" &&
+ r.path===".github/workflows/governance-gate.yml" &&
+ r.head_repository?.full_name===repo).slice(0,5);
+const dInventories=dRuns.map(r=>({
+ run:r,operation:gh("actions/runs/"+r.id+"/jobs?per_page=100")}));
+const dSteps=[
+ "Bootstrap Supabase request roles in disposable real PostgreSQL",
+ "Real PostgreSQL migration / RLS / PostgREST exposure tests (no SKIP accepted)",
+ "Install actual Chromium browser",
+ "Real Chromium UI interactions and production-handler harness (no SKIP accepted)"
+];
+const dMatches=dInventories.flatMap(({run,operation})=>{
+ const list=parse(operation);
+ if(operation.exit!==0 || !Array.isArray(list?.jobs) ||
+   list.total_count!==list.jobs.length || list.jobs.length>100)return [];
+ return list.jobs.filter(job=>job.run_id===run.id && job.head_sha===head &&
+   job.status==="completed" && job.conclusion==="success" &&
+   dSteps.every(name=>job.steps?.some(s=>s.name===name &&
+      s.status==="completed" && s.conclusion==="success"))).map(job=>({
+    run_id:run.id,job_id:job.id,run_head:run.head_sha,
+    run_url:run.html_url,job_url:job.html_url
+   }));
+});
+const dRealProof=dMatches.length>0;
 receipt("D","REAL PostgreSQL and browser proof classification (no Mock upgrade)",
- [integrity,proofLevel],{integrity_exit:integrity.exit,evidence_gate_exit:proofLevel.exit},
- ["Live PostgreSQL-backed and real Playwright/browser positive acceptance receipts under the requested proof policy"],
- "AUTHORITY_REQUIRED");
+ [integrity,proofLevel,dRunsQuery,...dInventories.map(x=>x.operation)],
+ {integrity_exit:integrity.exit,evidence_gate_exit:proofLevel.exit,
+  exact_head_completed_real_pg_chromium_jobs:dMatches,
+  real_pg_browser_operations_verified:dRealProof,
+  protected_product_main_acceptance_proven:false},
+ ["Actual PostgreSQL and Chromium job proof is independent of the required protected Product/Main acceptance and closure"],
+ dRealProof?"CHECK_PASS":"AUTHORITY_REQUIRED");
 const evidencePre=node("harness/scripts/guarded-github-write.mjs",
  "--operation","EVIDENCE_NORMALIZE","--pr",String(prNumber),"--apply");
 receipt("E","Canonical evidence dedupe + protected Registry mutation",
@@ -184,42 +356,109 @@ const denyMerge=node("harness/scripts/guarded-github-write.mjs",
 const denyClosure=node("harness/scripts/guarded-github-write.mjs",
  "--operation","TASK_CLOSURE","--pr",String(prNumber),"--apply");
 receipt("F","GPT orchestration must refuse unauthorized merge and closure",
- [denyMerge,denyClosure],{unauthorized_merge_denied:denyMerge.exit===3,
- unauthorized_closure_denied:denyClosure.exit===3},
+ [denyMerge,denyClosure,ssotFetch,rulesetFetch],{unauthorized_merge_denied:denyMerge.exit===3,
+ unauthorized_closure_denied:denyClosure.exit===3,
+ authenticated_main_ssot_contract_verified:ssotContractVerified,
+ provider_main_ruleset_verified_for_runner_only:providerMainRulesetVerified,
+ provider_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
+ direct_connector_human_authority_enforced:"NOT_VERIFIED"},
  ["Connector/UI/API host-level mandatory preflight proven across every authorized and rejected action"],
  denyMerge.exit===3&&denyClosure.exit===3?"PARTIAL":"FAIL");
 requireBool(denyMerge.exit===3&&denyClosure.exit===3,"#F unauthorized protected action not denied");
 const design=exec("gh",["api","repos/NFF98/appf2-design/branches/main"],60000);
 const buildMain=gh("branches/main");
+const designRulesetOp=exec("gh",["api","repos/NFF98/appf2-design/rulesets/25298230"],60000);
+const designRuleset=parse(designRulesetOp);
+const designRuleChecks=designRuleset?.rules?.find(x=>x.type==="required_status_checks");
+const designProviderProtected=Boolean(
+ design.exit===0&&designRulesetOp.exit===0 &&
+ designRuleset?.id===25298230 &&
+ designRuleset?.target==="branch" && designRuleset?.enforcement==="active" &&
+ designRuleset?.conditions?.ref_name?.include?.includes("~DEFAULT_BRANCH") &&
+ designRuleset?.current_user_can_bypass==="never" &&
+ designRuleset?.rules?.some(x=>x.type==="pull_request") &&
+ designRuleChecks?.parameters?.required_status_checks?.some(x=>x.context==="design-integrity")
+);
+const designStrictCheck=designRuleChecks?.parameters?.strict_required_status_checks_policy===true;
+const designReviewCount=designRuleset?.rules?.find(x=>x.type==="pull_request")?.parameters?.required_approving_review_count;
 receipt("16","Design+Build protected two-repository change and truthful combined closure",
- [design,buildMain],{design_main_read:design.exit===0,
- build_main_read:buildMain.exit===0},
- ["Human-approved real Design+Build protected change, separate exact-head checks, protected Main writes, independent closure"],
+ [design,designRulesetOp,buildMain],{design_main_read:design.exit===0,
+ build_main_read:buildMain.exit===0,
+ design_provider_main_protected_for_runner:designProviderProtected,
+ design_integrity_strict:designStrictCheck,
+ design_required_approving_review_count:designReviewCount,
+ human_approval_environment_no_admin_bypass:environmentNoAdminBypass,
+ design_protected_write_and_closure:"NOT_VERIFIED"},
+ ["Enable strict Design design-integrity gate and true Human authorization; then perform actual protected writes, Main merges and independent two-repo closure"],
  "AUTHORITY_REQUIRED");
+requireBool(designProviderProtected,"Actual Design Main provider Ruleset missing; cross-repo E2E blocked");
+requireBool(designStrictCheck,
+ "#16 Design Main Ruleset design-integrity is NOT strict; enable Require branches to be up to date before merging");
 requireBool(rows.length===16&&REQUIRED.every((x,i)=>rows[i]?.id===x),"16P missing/duplicate operations");
+// Provider / protected-operation admission (fail-closed).
+// CHECK_PASS / AUTHORITY_REQUIRED / synthetic fixtures NEVER promote complete_real_e2e.
+// Only live-verified receipts under APPF2_16P_PROVIDER_RECEIPTS_DIR may set PASS.
+// Empty/absent directory => 0 admissions (legacy 0/16 until real proofs exist).
+// Live Main active_task ONLY — historical HOLD T008 must never fake Task lifecycle.
+const admissionTaskId=mainState?.active_task||null;
+const providerAdmission=admitProviderReceipts({
+ required:REQUIRED,rows,head,prNumber,repo,taskId:admissionTaskId,
+ gh,parse,evidenceDir,fatal});
 const tally=Object.fromEntries(["CHECK_PASS","PARTIAL","AUTHORITY_REQUIRED","NOT_RUN","FAIL"].map(s=>
  [s,rows.filter(r=>r.operation_verdict===s).length]));
 // IMPORTANT: CHECK_PASS is NOT E2E PASS. Only independently proven protected
-// lifecycle receipts can mark full E2E complete, which this read-only token cannot obtain.
+// lifecycle receipts (via APPF2_16P_PROVIDER_RECEIPTS_DIR) may mark full E2E complete.
+const verifiedFullCount=rows.filter(r=>r.complete_real_e2e==="PASS").length;
 const result={schema:"APPF2-16P-REAL-EOE-STRICT-1",source:"LIVE_GITHUB_ACTIONS",
  pr:prNumber,head,run_id:process.env.GITHUB_RUN_ID,
  attempted_items:rows.length,operational_counts:tally,
- full_real_e2e_pass_count:rows.filter(r=>r.complete_real_e2e==="PASS").length,
- main_closure_pass_count:0,
- no_unauthorized_mutations:true,
+ full_real_e2e_pass_count:verifiedFullCount,
+ main_closure_pass_count:providerAdmission.main_closure_admitted,
+ provider_admission:providerAdmission,
+ runner_attempted_protected_mutations:false,
+ provider_wide_no_unauthorized_mutations:"NOT_VERIFIED",
+ ssot_protection_receipt:{
+  main_policy_ref:"main",main_policy_blob_sha:ssotEnvelope?.sha||null,
+  policy_contract_verified:ssotContractVerified,
+  github_ruleset_id:providerRuleset?.id||null,
+  github_ruleset_protected_default_branch_for_runner:providerMainRulesetVerified,
+  github_ruleset_global_bypass_inventory_verified:providerGlobalBypassInventoryVerified,
+  github_ruleset_global_bypass_inventory_status:providerGlobalBypassInventoryVerified?"ZERO_BYPASS_ACTORS_VERIFIED":"NOT_VERIFIED_BY_GITHUB_ACTIONS_TOKEN",
+  github_ruleset_contexts:providerContexts,
+  direct_connector_prewrite_authority:"NOT_VERIFIED",
+  human_only_events:humanEvents
+ },
  historical_invalid_run:"39003122776:VOID_INVALID_METHOD",
  harness_failures:fatal,items:rows.map(({operations,...rest})=>({...rest,
   operation_count:operations.length,
   operation_failure_count:operations.filter(o=>o.exit!==0&&o.exit!==3).length}))};
+// Fail CLOSED: zero real protected Main closure receipts cannot be promoted by a green
+// read-only runner. A 16/16 local probe inventory is not a 16/16 E2E acceptance.
+const fullyAdmitted=verifiedFullCount===REQUIRED.length &&
+  result.main_closure_pass_count>0 && ssotContractVerified && providerMainRulesetVerified &&
+  providerGlobalBypassInventoryVerified && directConnectorPrewriteProven && fatal.length===0 && tally.FAIL===0;
+result.full_real_e2e_admitted=fullyAdmitted;
+result.final_verdict=fullyAdmitted?"FULL_REAL_E2E_PASS":"INCOMPLETE_REAL_E2E_HARD_STOP";
 fs.writeFileSync(path.join(tmp,"16p-real-e2e.json"),JSON.stringify(result,null,2)+"\n");
 const summary=["## 16P STRICT REAL E2E: "+
  result.full_real_e2e_pass_count+"/16 complete",
  "Actual GitHub APIs and runnable commands performed: "+rows.length+"/16;",
  "Local-operation CHECK_PASS is NOT a full protected lifecycle PASS.",
+ "Provider admissions scanned="+providerAdmission.scanned+
+ " admitted=["+providerAdmission.admitted.join(",")+"]"+
+ " rejected="+providerAdmission.rejected.length+
+ " (dir="+((providerAdmission.directory)||"NONE")+").",
+ "GitHub MAIN SSOT verified="+ssotContractVerified+
+ "; protected-main Ruleset verified for Runner="+providerMainRulesetVerified+
+ "; global bypass inventory verified="+providerGlobalBypassInventoryVerified+
+ "; connector-wide prewrite authority=NOT_VERIFIED.",
+ "Full real E2E admission: "+result.final_verdict+"; required 16/16 plus authenticated Main closure evidence.",
  "Operation verdicts "+JSON.stringify(tally),
  "Human approval, protected Merge/Closure and cross-repo writes NEVER simulated.",
  ...rows.map(r=>"- #"+r.id+" "+r.operation_verdict+" (full="+r.complete_real_e2e+") — "+r.missing.join("; ")),
  ...(fatal.length?["HARD_STOP: "+fatal.join("; ")]:[])].join("\n")+"\n";
 console.log(summary);
 if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,summary);
-if(fatal.length||tally.FAIL)process.exitCode=1;
+if(!fullyAdmitted)console.error("16P HARD_STOP: real protected E2E incomplete; "+
+ verifiedFullCount+"/16; authenticated Main closures="+result.main_closure_pass_count);
+if(fatal.length||tally.FAIL||!fullyAdmitted)process.exitCode=1;

@@ -1,0 +1,141 @@
+{
+  "case_id": "GOV-16P-EXCEPTION-LIVE-CLOCK-001",
+  "base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
+  "constitution_version": "1.0",
+  "title": "16P #7 actual-clock expiry/revocation engine integration on GitHub Actions with explicit non-provider proof limit",
+  "change_class": "GOVERNANCE",
+  "exact_changed_paths": [
+    "harness/scripts/16p-human-exception-live-clock.mjs",
+    "harness/scripts/16p-provider-admission.mjs",
+    "harness/scripts/16p-real-e2e.mjs",
+    "harness/scripts/16p-task-evidence-live.mjs"
+  ],
+  "candidate_digest_sha256": "2c7ee12244a47615e89eb91fa3a5ddd790c0021f6587bbf89293a399caeca29a",
+  "why5": [
+    {
+      "question": "Why cannot 16P #7 claim verified expiry and revocation?",
+      "answer": "Main currently has no merged CLOSURE_DEFERRAL and no real revocation docket; synthetic positive/negative self-tests cannot establish provider-end-to-end enforcement.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389#issuecomment-6234373399"
+    },
+    {
+      "question": "Why add a real-clock integration probe?",
+      "answer": "The existing negative suite injects fake time. A GitHub-hosted job using actual wall-clock expiry and actual on-disk revocation events strengthens engine-level evidence without requiring Product changes.",
+      "evidence_ref": "harness/scripts/governance-reform-selftest.mjs"
+    },
+    {
+      "question": "Why retain AUTHORITY_REQUIRED for protected lifecycle?",
+      "answer": "Temporary synthetic approval-shaped dockets are not Human-authorized merged exceptions. Only a correctly approved protected lifecycle can prove external host enforcement.",
+      "evidence_ref": "harness/scripts/16p-real-e2e.mjs"
+    },
+    {
+      "question": "Why use exactly two harness paths?",
+      "answer": "The new isolated clock runner is invoked from the existing 16P PR workflow. The other change recognizes already-authorized Sprint3 HOLD historical T008 evidence without inventing active execution authority.",
+      "evidence_ref": "delivery/sprints/SP-P1-003/manifest.json"
+    },
+    {
+      "question": "Why does this remain a Draft?",
+      "answer": "Exact source SHA/digest awaits separate Human approval; no authority to auto-merge, change Main, or treat fixture owner data as a real signature.",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/issues/389"
+    }
+  ],
+  "alternatives": [
+    "Wait for current governance exception TTL (does not test CLOSURE_DEFERRAL).",
+    "Reopen Sprint3/Task T008 (prohibited).",
+    "Temporarily disable branch protection or bypass Human controls (prohibited).",
+    "Add bounded GitHub runner real-clock engine evidence; keep full provider E2E NOT_VERIFIED (chosen)."
+  ],
+  "no_change": "Expiry/revocation remain only synthetic fixtures; 16P #7 full protected lifecycle stays AUTHORITY_REQUIRED.",
+  "rollback": "Remove this candidate-only 16P runner probe if authorized independent review identifies any false-green or side effect.",
+  "status": "HUMAN_EXACT_CANDIDATE_APPROVED_GATES_AND_BCE_ONLY",
+  "human_approval": {
+    "case_id": "GOV-16P-EXCEPTION-LIVE-CLOCK-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "2c7ee12244a47615e89eb91fa3a5ddd790c0021f6587bbf89293a399caeca29a",
+    "human_message_ref": "Human Cursor instruction on 2026-10-18 JST: execute approved #407 exact candidate with BASE=312b923221f5d5d18c887302a60d30493fa66129 HEAD=73c9bb4f64332f7bd984726e0b02e91d687b2db0 SOURCE_DIGEST/candidate_digest_sha256=2c7ee12244a47615e89eb91fa3a5ddd790c0021f6587bbf89293a399caeca29a. Agent-registered provenance https://github.com/NFF98/appf2-build/pull/407#issuecomment-6249750748; NOT independent GitHub/cryptographic Human signature; NOT GitHub identity authentication; manual Human provenance check required. Limited to docket approval record, four formal GitHub Gates, seven Cloud Evidence, independent GPT BCE; NOT Merge/Closure/Product Truth/Sprint4/T009/CHECK_PASS→FULL PASS.",
+    "approved_at_unix": 1792325453
+  },
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Bounded governance-only 16P #7 truthful real wall-clock engine test on an isolated PR; no live Human waiver, Product PASS or protected merge.",
+    "risk": "Confusing a GitHub runner with a genuinely merged authorized CLOSURE_DEFERRAL and provider denial; result explicitly remains NOT_VERIFIED.",
+    "owner": "Human NFF98 (separate approval required)",
+    "follow_up": "Independently verify GitHub execution then obtain exact-candidate approval and separately plan real protected test provider denial without touching Sprint3 Main truth.",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": null,
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1792897200
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "This test adds no Product completion claim and defers no acceptance; both protected lifecycle gaps remain open in 16P receipt, no canonical product truth edit."
+  },
+  "notes": "SHA256 of exact two non-docket paths computed independently using SHA256 implementation validated with standard abc/empty vectors. Human approval intentionally null; CI governance fail-closed until exact candidate approval. After first draft CI, broadened from two to three harness paths solely to correct 16P historical HOLD Task evidence reporting; zero-gap marker normalized to [NONE]. Exact candidate remains pending Human approval. Existing 16P historical evidence reporter corrected to explicitly return NOT_RUN_NO_ACTIVE_SPRINT instead of READY_TO_REPORT under Main HOLD; code complexity extraction only, no new Task authority. Human direct one-word exact candidate approval transcribed 2026-10-17T20:27:18.000Z after unambiguous SHA/digest listing; any further program file mutation or Main change invalidates approval. GitHub owner attribution not standalone Human identity proof.\n2026-10-18 NEW UNAPPROVED SOURCE REVISION (user requested continuing same PR): changed only harness/scripts/16p-real-e2e.mjs strict acceptance. 16P 0/16 or missing authenticated Main closure now exits nonzero, rather than green for incomplete. All 16 original operation receipts remain intact. Old Human approval preserved under previous_exact_approval as archival-only and set active human_approval=null. No Product claim, no Merge, no new PR, no new Task/Sprint. Revised code source SHA256 7732c517cb377fc1b01f330d7f6fe2879b60bc62c841d7c83dc28472585d2121.\n2026-10-18: existing PR #407 harness 16P #D only: verify successful GitHub Actions real PostgreSQL and Chromium via completed noncurrent pull_request workflow run, same exact source HEAD SHA, trusted governance-gate workflow, enumerated live successful job steps and bounded complete job inventory; count as CHECK_PASS operation ONLY; protected Main/Product E2E remains NOT_VERIFIED; fail-closed 0/16 remains until each real protected lifecycle is proven. Revised source digest 5704ddf4aeea5d3b69dd5037583b5c642d7b92bc3725e3186a70a7c94d4e9e98. Historical Human exact approval remains archived only; active human_approval=null; no Merge / Task / Sprint activation.\n2026-10-18 timing correction: Parallel sibling job in SAME workflow can finish before the run itself completes. Exact source SHA workflow run, trusted workflow path and completed successful full PG+Chromium job steps are sufficient operational receipts; only the current run ID may be in_progress, all external candidate runs must be completed. Product/Main full E2E still NOT_VERIFIED. digest ec54944e006bac331715c26cdd0a5d5d09e91832f3b9d958721011ffcebabe3e.\n2026-10-18: Same PR #407: 16-item receipts now re-fetch canonical Governance Reform SSOT from GitHub Main and actual enforced provider Main Ruleset #23969502. Fail closed on drift; record policy/ruleset SHA/scope in every item; #8/#A/#F explicitly label direct connector/API PR-create and Human Merge/Closure authority NOT_VERIFIED. No host-wide write enforcement asserted; no merge, Task, Sprint, or Product mutations. Revised source digest 5344f2ef8583077355cae053264248b4fa74cc806a00bda7bf63e721115ce7a8; old approvals archival only.\n2026-10-18 GitHub Actions runner could not independently read Ruleset via default token. Exact same PR #407 adds read-only public GitHub provider HTTPS fallback, retaining fail closed on both unavailable/invalid responses. Does NOT establish connector write enforcement; no synthetic PASS. Source digest a56fd37deb23389f07fdf05d1eff6f2ca450736186c135fac5ca35f318ba6bfd.\n2026-10-18: Independently inspected raw GitHub Actions artifact 12119936707: Ruleset endpoint returns valid protected Main rule, current_user_can_bypass=never but omits bypass_actors. Strict audit now separately verifies rule enforcement for Runner and marks global bypass inventory NOT_VERIFIED (no assumed empty list). Global bypass inventory and direct connector prewrite remain additional explicit full-E2E blockers. Exact candidate digest 5ab4e0334aa1a6ef8ba2e6b74483fed08f076df14120427fe7c1d47db31e7f21.\n2026-10-18 16P multi-item correction: Main lease probe now accepts future genuinely active Task/Sprint (not only old Sprint3 T008), without granting authority. #16 now independently reads Design Main and actual provider Ruleset #25298230, requiring real design-integrity check; its strict flag and required reviewer count are recorded accurately, with protected Design+Build write/closure still NOT_VERIFIED. Digest 791ae8912e2170ef08159f56e21c3052b68ce3c6f28dc1032e2871f07f180456.\n2026-10-18: Corrected future Task/Sprint regex escaping and added a self-test using real canonical ID shapes SP-P1-003 and T008; prevents future positive lifecycle audit from being mistakenly rejected. No Human grant or Task activation asserted. digest da47205e79cf38dc6ae29abb9e36cda8987e78cc087bb41f4ceede7424f30b1d.\n2026-10-18: Actual runner evidence revealed Human environment can_admins_bypass=true and Design strict status checks=false. Extended current #407 16P real E2E verifier to HARD STOP on admin bypass, REQUIRE official NFF98 environment reviewer, REQUIRE strict Design design-integrity, and verify actual newly active Task/Sprint/Build/AC/allowed paths directly against GitHub MAIN. No Main/Product/Task mutations or fake E2E PASS. Exact candidate digest 877c829ccc01988b19dc22fa6bbd9df3338ab092eec71513257a381e5ea54054.\n2026-10-18 GATE-H1: Human exact candidate approval for current digest 877c829ccc01988b19dc22fa6bbd9df3338ab092eec71513257a381e5ea54054 / HEAD 9a9ead5537ab60afa28b1225ca7efdda21306aba transcribed after GitHub BASE/HEAD/digest re-verification; three harness source files unchanged; previous_exact_approval remains HISTORICAL_ONLY; active human_approval set to APPROVE_EXACT_CANDIDATE for gates/BCE only. Provenance https://github.com/NFF98/appf2-build/pull/407#issuecomment-6247546427. No cryptographic signature claimed. No Merge/Closure/Sprint4/Product Truth mutation.\n2026-10-18 CI shortest fix (pending Human exact re-approval): removed duplicate build_main_read key in 16p-real-e2e.mjs; added fail-closed harness/scripts/16p-provider-admission.mjs so APPF2_16P_PROVIDER_RECEIPTS_DIR live provider receipts can accumulate complete_real_e2e=PASS without promoting CHECK_PASS. GATE-H1 approval for digest 877c829ccc01988b19dc22fa6bbd9df3338ab092eec71513257a381e5ea54054 / HEAD 56e150c1e2cbb3f4cfa605759e74611c4d40b63c archived only. Product HOLD untouched. No Merge/Closure/Sprint reopen/T009. New digest 10c01ee10c212f9a9c00ceffef7ba54e0e99fc38d46ecf62a18ce8dd8aa98e2a.\n2026-10-18 BCE7 hardening (local only, pending independent GPT BCE; NOT pushed): Provider admission now requires mandatory HEAD/PR/Repo/Task binding; forbids denial-alone PASS; rejects NOT_RUN/FAIL upgrades; Main Closure only via verified MAIN_MERGE_COMMIT (no self-declared counts_as_main_closure); CI jobs must bind item/head/PR; rejects duplicate/replay digests and item_ids; receipts cannot request GitHub write methods; two-phase validate-then-PASS. Digest ac9c68c63be04256a44a62e36177e05c78b8313fb989c638a3bbdab9b2ada73e.\n2026-10-18 BCE5 five-class harden (local only, pending independent GPT BCE; NOT pushed): each PASS requires ITEM_OPERATION_EVIDENCE bound to that item row.operations; AUTHORITY_REQUIRED cannot auto-upgrade; live Main active_task only (historical HOLD T008 never fakes Task lifecycle); receipt batch all-or-nothing (any reject aborts all PASS writes); MAIN_MERGE_COMMIT never increments main_closure_admitted — only verified MAIN_CLOSURE_ATTESTATION does (Merge≠Closure). Digest b24668d3955ab104ec994d8efa643bf4fa592a85bc460b311ba3c552cd46e639.\n2026-10-18 BCE5R2 (local only, pending independent GPT BCE; NOT pushed): Actions Job requires candidate PR association + trusted governance-gate workflow + pull_request event; Closure requires human_approver=NFF98 + approval_event=APPROVE_CLOSURE + live Main administrative_closure (commit message never authorizes); prior fatal forbids all PASS writes; batch write failure rolls back file+memory. Digest a50113c35a3a9bc3e756a976e440c00645867f752304bbc6b7ac118b10c04e42.\n2026-10-18 BCE5R2 one-line Closure commit SHA reconciliation (local; NOT pushed): verify provider commit body.sha === proof.closure_commit_sha before Main ancestry. Digest 2c7ee12244a47615e89eb91fa3a5ddd790c0021f6587bbf89293a399caeca29a.\n2026-10-18 GATE-H1: Human exact candidate approval for digest 2c7ee12244a47615e89eb91fa3a5ddd790c0021f6587bbf89293a399caeca29a / program HEAD 73c9bb4f64332f7bd984726e0b02e91d687b2db0 transcribed after GitHub BASE/HEAD/digest re-verification; four harness source files unchanged by this docket-only registration; previous_exact_approval remains HISTORICAL_ONLY; active human_approval set to APPROVE_EXACT_CANDIDATE for gates/BCE only. Provenance https://github.com/NFF98/appf2-build/pull/407#issuecomment-6249750748. No cryptographic signature claimed. No Merge/Closure/Sprint4/Product Truth/T009 mutation.",
+  "previous_exact_approval": {
+    "approved_source_digest_sha256": "a50113c35a3a9bc3e756a976e440c00645867f752304bbc6b7ac118b10c04e42",
+    "approved_old_head_sha": "daaf0577127cbb661006f15a07cc02f7e9d4794e",
+    "old_approval": null,
+    "disposition": "HISTORICAL_ONLY_SUPERSEDED_BY_BCE5R2_ONE_LINE_SHA_FIX_NO_MERGE_AUTHORITY",
+    "note": "Prior BCE5R2 candidate daaf057 / a50113c35a3a9bc3e756a976e440c00645867f752304bbc6b7ac118b10c04e42; GPT reviewed; one-line SHA fix applied locally.",
+    "prior_archive": {
+      "approved_source_digest_sha256": "b24668d3955ab104ec994d8efa643bf4fa592a85bc460b311ba3c552cd46e639",
+      "approved_old_head_sha": "5e4024f0bb4fa78a8087ec3dc6bc9cac53d6d870",
+      "old_approval": null,
+      "disposition": "HISTORICAL_ONLY_SUPERSEDED_BY_BCE5R2_FIVE_ATTACK_HARDENING_NO_MERGE_AUTHORITY",
+      "note": "Prior local BCE5 candidate 5e4024f / b24668d3955ab104ec994d8efa643bf4fa592a85bc460b311ba3c552cd46e639 GPT-BCE-BLOCKED on 5 independent attacks; archived only.",
+      "prior_archive": {
+        "approved_source_digest_sha256": "ac9c68c63be04256a44a62e36177e05c78b8313fb989c638a3bbdab9b2ada73e",
+        "approved_old_head_sha": "30ee339f20f5b32334b9edb615c43d9895c691c8",
+        "old_approval": null,
+        "disposition": "HISTORICAL_ONLY_SUPERSEDED_BY_BCE5_FIVE_CLASS_HARDENING_NO_MERGE_AUTHORITY",
+        "note": "Prior local BCE7 candidate 30ee339 / ac9c68c63be04256a44a62e36177e05c78b8313fb989c638a3bbdab9b2ada73e GPT-BCE-BLOCKED; archived for provenance only.",
+        "prior_archive": {
+          "approved_source_digest_sha256": "10c01ee10c212f9a9c00ceffef7ba54e0e99fc38d46ecf62a18ce8dd8aa98e2a",
+          "approved_old_head_sha": "a07274390d308b96b96a5f95976474bac4b0145a",
+          "old_approval": null,
+          "disposition": "HISTORICAL_ONLY_SUPERSEDED_BY_BCE7_PROVIDER_ADMISSION_HARDENING_NO_MERGE_AUTHORITY",
+          "note": "Prior local CI-fix candidate a072743 / 10c01ee10c212f9a9c00ceffef7ba54e0e99fc38d46ecf62a18ce8dd8aa98e2a not Human-approved; archived for provenance only.",
+          "prior_archive": {
+            "approved_source_digest_sha256": "877c829ccc01988b19dc22fa6bbd9df3338ab092eec71513257a381e5ea54054",
+            "approved_old_head_sha": "56e150c1e2cbb3f4cfa605759e74611c4d40b63c",
+            "old_approval": {
+              "case_id": "GOV-16P-EXCEPTION-LIVE-CLOCK-001",
+              "approver": "NFF98",
+              "source_kind": "DIRECT_HUMAN_MESSAGE",
+              "decision": "APPROVE_EXACT_CANDIDATE",
+              "scope": "EXACT_PR_DIFF",
+              "candidate_digest_sha256": "877c829ccc01988b19dc22fa6bbd9df3338ab092eec71513257a381e5ea54054",
+              "human_message_ref": "Human Cursor instruction on 2026-10-18 JST: execute GATE-H1; Human formally approved PR #407 exact candidate with BASE=312b923221f5d5d18c887302a60d30493fa66129 HEAD=9a9ead5537ab60afa28b1225ca7efdda21306aba SOURCE_DIGEST/candidate_digest_sha256=877c829ccc01988b19dc22fa6bbd9df3338ab092eec71513257a381e5ea54054. Agent-registered provenance https://github.com/NFF98/appf2-build/pull/407#issuecomment-6247546427; NOT independent GitHub/cryptographic Human signature; NOT GitHub identity authentication; manual Human provenance check required. Limited to docket approval record, four formal GitHub Gates, seven Cloud Evidence, independent GPT BCE; NOT Merge/Closure/Product Truth/Sprint4/CHECK_PASS→FULL PASS.",
+              "approved_at_unix": 1792311459
+            },
+            "disposition": "HISTORICAL_ONLY_INVALIDATED_BY_CI_LINT_DUP_KEY_FIX_AND_PROVIDER_ADMISSION_PATH_NO_MERGE_AUTHORITY",
+            "prior_archive": {
+              "approved_source_digest_sha256": "67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441",
+              "approved_old_head_sha": "3b7b1fba276b1a9235f86770ca2252607a186aff",
+              "old_approval": {
+                "case_id": "GOV-16P-EXCEPTION-LIVE-CLOCK-001",
+                "approver": "NFF98",
+                "source_kind": "DIRECT_HUMAN_MESSAGE",
+                "decision": "APPROVE_EXACT_CANDIDATE",
+                "scope": "EXACT_PR_DIFF",
+                "candidate_digest_sha256": "67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441",
+                "human_message_ref": "Human direct ChatGPT reply on 2026-10-18 JST: \"批准\", directly responding to prior GPT exact #407 candidate listing BASE=312b923221f5d5d18c887302a60d30493fa66129 HEAD=a9b1c24a3348a3446301b3eb4964af9ec9b8daaf candidate_digest_sha256=67de985474e40fbb4c057f84a6bc2a262e10dea861979dfd5459f724bc856441. GPT-registered provenance https://github.com/NFF98/appf2-build/pull/407#issuecomment-6240507324; NOT independent GitHub/cryptographic Human signature; manual Human provenance check required. Limited to docket approval record, GitHub gates, independent BCE; NOT Merge.",
+                "approved_at_unix": 1792268838
+              },
+              "disposition": "HISTORICAL_ONLY_INVALIDATED_BY_16P_RUNNER_SOURCE_CHANGE_NO_MERGE_AUTHORITY"
+            }
+          }
+        }
+      }
+    }
+  }
+}
