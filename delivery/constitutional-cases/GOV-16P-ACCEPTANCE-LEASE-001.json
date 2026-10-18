@@ -19,13 +19,19 @@
     "harness/scripts/guarded-github-write.mjs",
     "harness/scripts/human-exception.mjs"
   ],
-  "candidate_digest_sha256": "1bcb19985399160520d4857950b12f25324cb3d0df12a8bd908d9b59f99c2664",
+  "candidate_digest_sha256": "dc1c8d0b70afc287b3594ac52a28f5654a9710ea2c6cef7894b47a006bd70522",
   "previous_candidate_digest_sha256_bce_blocked": "0e414cc91789358acddbae56167fd5f36eeeadbdd9e5fb1a33bb36ae64be563d",
+  "previous_candidate_digest_sha256_bce_fix": "1bcb19985399160520d4857950b12f25324cb3d0df12a8bd908d9b59f99c2664",
   "bce_blocked_minimal_fix": [
     "16p-real-e2e: Product HOLD requires Main ACTIVE approved non-revoked non-expired lease+Activation or HARD_STOP",
     "16p-acceptance-lease: strict permitted write-path prefixes; activated_at <= now < expires_at; TTL<=14d",
     "gpt-preflight/guarded-github-write: Task authority only via Main-evaluated lease+Activation (local CURRENT.json insufficient)",
     "selftest: added negatives; CLI exits nonzero on failure; synthetic PASS is NOT 16P REAL PASS"
+  ],
+  "bce_r3_minimal_fix": [
+    "Main lease authority locked to NFF98/appf2-build; GITHUB_REPOSITORY override rejected",
+    "16p-real-e2e lease/Activation reads use locked Build repo only",
+    "Activation Gate requires status=ACTIVE with valid window+TTL; PENDING/EXPIRED/REVOKED denied"
   ],
   "why5": [
     {
@@ -91,5 +97,5 @@
     "justification": "residual_gaps 明示 Activation／Host-wide／16/16 仍開放；本 PR 不關閉任何 Product GAP。"
   },
   "human_approval": null,
-  "notes": "BASE=312b923221f5d5d18c887302a60d30493fa66129. BCE-BLOCKED minimal fix supersedes digest 0e414cc9… → 1bcb1998…. Same case/branch/B path. Awaiting Human APPROVE_EXACT_CANDIDATE before Push. scope_exception.expires_at_unix=1793538337. Do not Merge/Closure/Activate lease; Product HOLD unchanged; H3 connector proven remains false; selftest PASS ≠ 16P REAL PASS."
+  "notes": "BASE=312b923221f5d5d18c887302a60d30493fa66129. BCE-R3 minimal fix supersedes digest 1bcb1998… → dc1c8d0b…. Same case/branch/B path. Awaiting Human APPROVE_EXACT_CANDIDATE before Push. Do not Merge/Closure/Activate; H3 NOT_PROVEN; 16P 0/16; selftest PASS ≠ 16P REAL PASS."
 }

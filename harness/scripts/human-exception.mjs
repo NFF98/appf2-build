@@ -303,9 +303,10 @@ const sixteenPAcceptanceLeaseLaneErrors=ctx=>{
     errors.push("lease must preserve Product HOLD and forbid Sprint4");
   if(lease?.direct_connector_prewrite_proven===true)
     errors.push("lease must not self-attest connector prewrite proven");
-  if(!["PENDING","ACTIVE","EXPIRED","REVOKED"].includes(lease?.status||""))
-    errors.push("lease.status invalid");
-  if(lease?.status==="REVOKED") errors.push("lease revoked");
+  // Formal Activation Gate: only ACTIVE with valid window/TTL may PASS.
+  // PENDING / EXPIRED / REVOKED never receive Activation PASS.
+  if(lease?.status!=="ACTIVE")
+    errors.push("Activation Gate requires lease.status=ACTIVE (PENDING/EXPIRED/REVOKED denied)");
   if(lease?.never_converts_fail_or_untested_to_pass!==true)
     errors.push("lease never_converts_fail_or_untested_to_pass required");
   if(lease?.activation_case_id!==ctx.docket.case_id)
@@ -321,14 +322,15 @@ const sixteenPAcceptanceLeaseLaneErrors=ctx=>{
     else if(!prefixes.some(pre=>p===pre||(pre.endsWith("/")&&p.startsWith(pre))))
       errors.push("lease.allowed_write_paths not under permitted prefix: "+p);
   }
-  if(lease?.status==="ACTIVE"){
-    const a=lease.activated_at_unix,e=lease.expires_at_unix,now=ctx.now;
-    if(!Number.isSafeInteger(a)||!Number.isSafeInteger(e)) errors.push("ACTIVE lease requires activated_at/expires_at unix");
-    else{
-      if(!(a<=now&&now<e)) errors.push("ACTIVE lease requires activated_at_unix <= now < expires_at_unix");
-      const maxTtl=pol.max_ttl_seconds||1209600;
-      if(!(e-a>0&&e-a<=maxTtl)) errors.push("ACTIVE lease TTL must be >0 and <= 14d policy max");
-    }
+  const a=lease?.activated_at_unix,e=lease?.expires_at_unix,now=ctx.now;
+  if(!Number.isSafeInteger(a)||!Number.isSafeInteger(e))
+    errors.push("Activation Gate requires activated_at_unix and expires_at_unix");
+  else{
+    if(!(a<=now&&now<e))
+      errors.push("Activation Gate requires activated_at_unix <= now < expires_at_unix");
+    const maxTtl=pol.max_ttl_seconds||1209600;
+    if(!(e-a>0&&e-a<=maxTtl))
+      errors.push("Activation Gate TTL must be >0 and <= 14d policy max");
   }
   return errors;
 };

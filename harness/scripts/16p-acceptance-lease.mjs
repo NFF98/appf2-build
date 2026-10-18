@@ -8,11 +8,19 @@ import {GOVERNANCE_REFORM_POLICY_PATH} from "./human-exception.mjs";
 
 export const LEASE_REL="delivery/16p-acceptance-lease/CURRENT.json";
 export const LEASE_SCHEMA="APPF2-16P-ACCEPTANCE-LEASE-1";
+/** Main lease/Activation authority is locked to this Build repo — env cannot redirect it. */
+export const CANONICAL_BUILD_REPO="NFF98/appf2-build";
 export const DEFAULT_PERMITTED_WRITE_PREFIXES=Object.freeze([
   "delivery/16p-acceptance-lease/",
   "delivery/audits/",
   "harness/scripts/"
 ]);
+export function resolveCanonicalBuildRepo(envRepo=process.env.GITHUB_REPOSITORY){
+  if(envRepo && envRepo!==CANONICAL_BUILD_REPO)
+    return {ok:false,error:"GITHUB_REPOSITORY override rejected; Main authority locked to "+
+      CANONICAL_BUILD_REPO+" got "+envRepo};
+  return {ok:true,repo:CANONICAL_BUILD_REPO};
+}
 const RE_TASK=/^T\d{3}$/;
 const RE_CASE=/^GOV-[A-Z0-9-]{3,90}$/;
 const nonEmpty=v=>typeof v==="string"&&v.trim().length>0;
@@ -154,31 +162,35 @@ export function isActiveSixteenPLease(lease,opts={}){
 }
 
 function ghMainJson(relPath){
-  const repo=process.env.GITHUB_REPOSITORY||"NFF98/appf2-build";
+  const locked=resolveCanonicalBuildRepo();
+  if(!locked.ok) return {ok:false,error:locked.error};
   if(!process.env.GH_TOKEN&&!process.env.GITHUB_TOKEN) return {ok:false,error:"no GitHub token"};
   try{
-    const raw=execFileSync("gh",["api","repos/"+repo+"/contents/"+relPath+"?ref=main"],{
+    const raw=execFileSync("gh",["api","repos/"+CANONICAL_BUILD_REPO+"/contents/"+relPath+"?ref=main"],{
       encoding:"utf8",timeout:60000,maxBuffer:8000000,env:process.env
     });
     const entry=JSON.parse(raw);
     if(entry?.type!=="file"||!entry.content) return {ok:false,error:"not a file on Main"};
     const text=Buffer.from(String(entry.content).replace(/\s/g,""),"base64").toString("utf8");
-    return {ok:true,json:JSON.parse(text)};
+    return {ok:true,json:JSON.parse(text),repo:CANONICAL_BUILD_REPO};
   }catch(e){
     return {ok:false,error:String(e.message||e)};
   }
 }
 
-/** Load lease+activation from GitHub Main only. Never reads local CURRENT.json for authority. */
+/** Load lease+activation from locked Build Main only. Never reads local CURRENT.json for authority. */
 export function loadMainSixteenPLeaseAuthority({now=Math.floor(Date.now()/1000),policy=null,root=process.cwd()}={}){
+  const locked=resolveCanonicalBuildRepo();
+  if(!locked.ok) return {ok:false,errors:[locked.error],lease:null,source:"main",repo:null};
   const pol=policy||loadLeasePolicy(root)||{};
   const leaseRes=ghMainJson(LEASE_REL);
-  if(!leaseRes.ok) return {ok:false,errors:["Main lease missing/unreadable: "+leaseRes.error],lease:null,source:"main"};
+  if(!leaseRes.ok) return {ok:false,errors:["Main lease missing/unreadable: "+leaseRes.error],lease:null,source:"main",repo:CANONICAL_BUILD_REPO};
   const lease=leaseRes.json;
   const actRel="delivery/constitutional-cases/"+(lease.activation_case_id||"MISSING")+".json";
   const actRes=ghMainJson(actRel);
-  if(!actRes.ok) return {ok:false,errors:["Main activation docket missing/unreadable: "+actRes.error],lease:null,source:"main"};
-  return evaluateSixteenPLeaseAuthority({lease,activationDocket:actRes.json,now,policy:pol,source:"main"});
+  if(!actRes.ok) return {ok:false,errors:["Main activation docket missing/unreadable: "+actRes.error],lease:null,source:"main",repo:CANONICAL_BUILD_REPO};
+  return {...evaluateSixteenPLeaseAuthority({lease,activationDocket:actRes.json,now,policy:pol,source:"main"}),
+    repo:CANONICAL_BUILD_REPO};
 }
 
 /** Synthetic Task row for preflight when Main authority is ok and Product CURRENT stays HOLD. */

@@ -5,7 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {resolveRunnablePlan} from "./select-impacted-tests.mjs";
-import {evaluateSixteenPLeaseAuthority,loadLeasePolicy} from "./16p-acceptance-lease.mjs";
+import {
+  evaluateSixteenPLeaseAuthority,loadLeasePolicy,
+  CANONICAL_BUILD_REPO,resolveCanonicalBuildRepo
+} from "./16p-acceptance-lease.mjs";
 const REQUIRED=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","16"];
 const repo=process.env.GITHUB_REPOSITORY;
 const prNumber=Number(process.env.PR_NUMBER);
@@ -25,6 +28,8 @@ const exec=(cmd,args=[],timeout=120000)=>{
   stdout:r.stdout||"",stderr:(r.stderr||"").slice(-5000)};
 };
 const gh=(route)=>exec("gh",["api","repos/"+repo+"/"+route],60000);
+/** Main lease/Activation authority always reads locked Build repo — never env-redirected. */
+const ghAuthMain=(route)=>exec("gh",["api","repos/"+CANONICAL_BUILD_REPO+"/"+route],60000);
 const node=(...args)=>exec(process.execPath,args,120000);
 const parse=r=>{try{return JSON.parse(r.stdout)}catch{return null}};
 const receipt=(id,description,operations,observed,...tail)=>{
@@ -59,10 +64,13 @@ requireBool((historicSprintBound||(productHold&&t008?.task_id==="T008")),
  "Canonical Main Task/Sprint record unexpectedly changed; no inherited authority");
 // Product HOLD requires a Main-approved ACTIVE 16P lease (not local CURRENT.json).
 // Missing/invalid/revoked/expired => HARD_STOP. Never invent connector prewrite proof.
-const leaseOp=gh("contents/delivery/16p-acceptance-lease/CURRENT.json?ref=main");
+// Lease authority is locked to NFF98/appf2-build — reject GITHUB_REPOSITORY redirects.
+const authRepo=resolveCanonicalBuildRepo(process.env.GITHUB_REPOSITORY);
+requireBool(authRepo.ok,authRepo.error||"Main authority repo lock failed");
+const leaseOp=ghAuthMain("contents/delivery/16p-acceptance-lease/CURRENT.json?ref=main");
 const leaseDoc=leaseOp.exit===0?decode(parse(leaseOp)):null;
 const actId=leaseDoc?.activation_case_id;
-const actOp=actId?gh("contents/delivery/constitutional-cases/"+actId+".json?ref=main"):
+const actOp=actId?ghAuthMain("contents/delivery/constitutional-cases/"+actId+".json?ref=main"):
  {command:"no activation case",exit:1,stdout:"",stderr:"",error:null};
 const actDoc=actOp.exit===0?decode(parse(actOp)):null;
 const leasePolicy=loadLeasePolicy(process.cwd())||{};
@@ -71,9 +79,10 @@ const leaseAuth=evaluateSixteenPLeaseAuthority({
  policy:leasePolicy,source:"main"});
 if(productHold){
  requireBool(leaseAuth.ok,
-  "Product HOLD requires approved ACTIVE non-revoked non-expired Main 16P lease+Activation: "+
-  (leaseAuth.errors||[]).join("; "));
- console.log("16P CANONICAL: Product HOLD + Main 16P lease authority ok task="+leaseAuth.lease.task_id);
+  "Product HOLD requires approved ACTIVE non-revoked non-expired Main 16P lease+Activation on "+
+  CANONICAL_BUILD_REPO+": "+(leaseAuth.errors||[]).join("; "));
+ console.log("16P CANONICAL: Product HOLD + Main 16P lease authority ok repo="+
+  CANONICAL_BUILD_REPO+" task="+leaseAuth.lease.task_id);
 }
 const directConnectorPrewriteProven=false;
 const ctx=[canonical,taskFile,live,leaseOp,actOp];

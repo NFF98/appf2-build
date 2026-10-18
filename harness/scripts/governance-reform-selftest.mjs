@@ -19,7 +19,8 @@ import { planTaskEvidenceReferences,planTaskClosureReadiness,
 import { computeGovernanceMetrics,fullCiRuns } from "./governance-metrics.mjs";
 import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
 import {
-  validateSixteenPLeaseDocument,evaluateSixteenPLeaseAuthority,writePathErrors
+  validateSixteenPLeaseDocument,evaluateSixteenPLeaseAuthority,writePathErrors,
+  resolveCanonicalBuildRepo,CANONICAL_BUILD_REPO,loadMainSixteenPLeaseAuthority
 } from "./16p-acceptance-lease.mjs";
 
 const NOW=1792000000,BASE="a".repeat(40),DOCKET="delivery/constitutional-cases/GOV-TEST-EXCEPTION-001.json";
@@ -303,6 +304,18 @@ function sixteenPAcceptanceLeaseCases(policy){
     ["16P lease rejects activation_case_id mismatch",false,(()=>{const c=base();
       c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
         ...lease,activation_case_id:"GOV-OTHER-001"})));
+      return rebindDigest(c);})()],
+    ["Activation Gate denies PENDING lease",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,status:"PENDING",activated_at_unix:null,expires_at_unix:null})));
+      return rebindDigest(c);})()],
+    ["Activation Gate denies EXPIRED lease",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,status:"EXPIRED",activated_at_unix:NOW-100,expires_at_unix:NOW-1})));
+      return rebindDigest(c);})()],
+    ["Activation Gate denies REVOKED lease",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,status:"REVOKED"})));
       return rebindDigest(c);})()]
   ];
 }
@@ -350,7 +363,21 @@ function sixteenPLeaseAuthorityCases(policy){
     ["preflight denies local-only lease authority",true,()=>preflight({build,sprint:hold,tasks:[],openPrs:[],guard,
       intent:"NEW_PR",taskId:"T016",sixteenPAuthority:{ok:false,errors:["local"],source:"main",lease:null}}).decision==="STOP"],
     ["preflight denies raw lease without Main authority object",true,()=>preflight({build,sprint:hold,tasks:[],openPrs:[],guard,
-      intent:"NEW_PR",taskId:"T016"}).decision==="STOP"]
+      intent:"NEW_PR",taskId:"T016"}).decision==="STOP"],
+    ["canonical Build repo constant locked",true,()=>CANONICAL_BUILD_REPO==="NFF98/appf2-build"],
+    ["unset GITHUB_REPOSITORY resolves to locked repo",true,()=>resolveCanonicalBuildRepo(undefined).ok&&
+      resolveCanonicalBuildRepo(undefined).repo===CANONICAL_BUILD_REPO],
+    ["GITHUB_REPOSITORY override to other repo rejected",false,()=>resolveCanonicalBuildRepo("evil/other-repo").ok],
+    ["loadMain authority rejects env repo override",true,()=>{
+      const prev=process.env.GITHUB_REPOSITORY;
+      process.env.GITHUB_REPOSITORY="evil/other-repo";
+      try{
+        const r=loadMainSixteenPLeaseAuthority({now:NOW,policy:pol});
+        return r.ok===false && (r.errors||[]).some(e=>/override rejected|locked/i.test(e));
+      }finally{
+        if(prev===undefined) delete process.env.GITHUB_REPOSITORY; else process.env.GITHUB_REPOSITORY=prev;
+      }
+    }]
   ],fn=>fn());
 }
 
