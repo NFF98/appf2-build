@@ -5,7 +5,7 @@
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { GOVERNANCE_REFORM_POLICY_PATH } from "./human-exception.mjs";
-import { isActiveSixteenPLease, readSixteenPLease, syntheticTaskFromLease } from "./16p-acceptance-lease.mjs";
+import { loadMainSixteenPLeaseAuthority, syntheticTaskFromLease } from "./16p-acceptance-lease.mjs";
 
 export function taskKeyOfPr(pr,guard){
   const declared=new RegExp(guard.task_declaration_pattern,"m").exec(pr.body||"");
@@ -44,14 +44,16 @@ const validTaskLease=({build,sprint,task,taskId})=>
   sprint.active_build_spec===build.active_baseline &&
   Boolean(sprint.active_sprint);
 const productHold=sprint=>sprint?.status==="HOLD"&&sprint.active_sprint===null&&sprint.active_task===null;
-const validSixteenPLease=({sprint,taskId,sixteenPLease,now})=>
-  productHold(sprint) && isActiveSixteenPLease(sixteenPLease,{now}) && sixteenPLease?.task_id===taskId;
-const intentDecision=({intent,build,sprint,task,taskId,sixteenPLease,now})=>{
+/** Task authority from Main-evaluated 16P lease only — never from local CURRENT.json bytes alone. */
+const validSixteenPLease=({sprint,taskId,sixteenPAuthority})=>
+  productHold(sprint) && sixteenPAuthority?.ok===true && sixteenPAuthority?.source==="main" &&
+  sixteenPAuthority?.lease?.task_id===taskId;
+const intentDecision=({intent,build,sprint,task,taskId,sixteenPAuthority})=>{
   const isActive=validTaskLease({build,sprint,task,taskId});
-  const is16p=validSixteenPLease({sprint,taskId,sixteenPLease,now});
+  const is16p=validSixteenPLease({sprint,taskId,sixteenPAuthority});
   switch(intent){
     case "CONTINUE_TASK_WORK":
-      if(is16p) return {decision:"CONTINUE_SAME_LEASE",reason:"active 16P_ACCEPTANCE_LEASE under Product HOLD"};
+      if(is16p) return {decision:"CONTINUE_SAME_LEASE",reason:"Main-approved 16P_ACCEPTANCE_LEASE under Product HOLD"};
       return isActive && build.implementation_enabled?{decision:"CONTINUE_SAME_LEASE",reason:"same active Task; no new approval needed"}:
         {decision:"STOP",reason:"Task "+taskId+" is not the ACTIVE/REVIEW Task (status "+sprint.status+", active "+sprint.active_task+")"};
     case "REQUEST_ACTIVATION":
@@ -70,22 +72,25 @@ const DENIED=new Set(["STOP","REDUNDANT_ACTIVATION_DENIED","REDUNDANT_APPROVAL_D
   "BLOCKED_MISSING_TASK_OR_GOVERNANCE_CASE"]);
 
 /** Pure preflight over canonical state; returns auditable facts plus one decision. */
-export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId,sixteenPLease=null,now=Math.floor(Date.now()/1000)}){
-  const leaseTask=validSixteenPLease({sprint,taskId,sixteenPLease,now})?syntheticTaskFromLease(sixteenPLease):null;
+export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId,sixteenPAuthority=null}){
+  const leaseTask=validSixteenPLease({sprint,taskId,sixteenPAuthority})?
+    syntheticTaskFromLease(sixteenPAuthority.lease):null;
   const task=(tasks||[]).find(t=>t.task_id===taskId)||leaseTask;
   const facts={
     active_baseline:build.active_baseline,implementation_enabled:build.implementation_enabled,
     active_sprint:sprint.active_sprint,sprint_status:sprint.status,active_task:sprint.active_task,
     task_status:task?.status||null,task_build_spec:task?.build_spec_id||null,
     sixteen_p_lease_active:Boolean(leaseTask),
+    sixteen_p_authority_source:sixteenPAuthority?.source||null,
+    sixteen_p_authority_ok:sixteenPAuthority?.ok===true,
     open_prs_for_task:prCreationDecision({taskKey:taskId,openPrs,guard}).existing
   };
   const valid=(validTaskLease({build,sprint,task,taskId}) && build.implementation_enabled) ||
-    validSixteenPLease({sprint,taskId,sixteenPLease,now});
+    validSixteenPLease({sprint,taskId,sixteenPAuthority});
   const result=intent==="NEW_PR" && !valid?
     {decision:"STOP",reason:"new product PR needs genuine active non-BLOCKED Task, Build match and execution authority"}:
     intent==="NEW_PR"?prCreationDecision({taskKey:taskId,openPrs,guard}):
-      intentDecision({intent,build,sprint,task,taskId,sixteenPLease,now});
+      intentDecision({intent,build,sprint,task,taskId,sixteenPAuthority});
   return {facts,intent,task_id:taskId,...result,denied:DENIED.has(result.decision)};
 }
 
@@ -112,8 +117,12 @@ function stateCli({arg,guard,openPrs}){
   if(!openPrs) console.error("PREFLIGHT WARNING: no --open-prs inventory; PR reuse cannot be proven (treat as NOT_READY for NEW_PR).");
   const sprint=readJson("delivery/CURRENT-SPRINT.json");
   const tasks=sprint.active_sprint?readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
-  const sixteenPLease=readSixteenPLease(process.cwd());
-  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs,guard,intent:arg("intent")||"CONTINUE_TASK_WORK",taskId:arg("task")||sixteenPLease?.task_id||sprint.active_task,sixteenPLease});
+  // Local CURRENT.json never grants authority — Main lease + Activation only.
+  const sixteenPAuthority=loadMainSixteenPLeaseAuthority({});
+  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs,guard,
+    intent:arg("intent")||"CONTINUE_TASK_WORK",
+    taskId:arg("task")||sixteenPAuthority.lease?.task_id||sprint.active_task,
+    sixteenPAuthority});
   console.log(JSON.stringify(out,null,2));
   return out.denied || (!openPrs && out.intent==="NEW_PR")?3:0;
 }

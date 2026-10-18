@@ -236,7 +236,14 @@
     "max_ttl_seconds": 1209600,
     "requires_product_hold": true,
     "never_enables_product_implementation": true,
-    "direct_connector_prewrite_default": false
+    "direct_connector_prewrite_default": false,
+    "permitted_allowed_write_path_prefixes": [
+      "delivery/16p-acceptance-lease/",
+      "delivery/audits/",
+      "harness/scripts/"
+    ],
+    "authority_source": "main_ref_only",
+    "local_working_tree_lease_insufficient": true
   },
   "carry_forward": {
     "schema": "APPF2-CARRY-FORWARD-1",

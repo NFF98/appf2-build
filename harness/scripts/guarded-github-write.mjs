@@ -7,7 +7,7 @@ import {preflight,prCreationDecision} from "./gpt-preflight.mjs";
 import {reconcileTaskEvidencePr,liveTaskClosureCheck} from "./evidence-ledger-report.mjs";
 import {delegatedTaskExecutor,taskIdentityOfPr} from "./task-pr-lifecycle.mjs";
 import {GOVERNANCE_REFORM_POLICY_PATH} from "./human-exception.mjs";
-import {readSixteenPLease} from "./16p-acceptance-lease.mjs";
+import {loadMainSixteenPLeaseAuthority} from "./16p-acceptance-lease.mjs";
 
 const read=p=>JSON.parse(fs.readFileSync(p,"utf8"));
 const taskOfPr=p=>taskIdentityOfPr(p).task_id;
@@ -45,15 +45,16 @@ function taskPrHistory(){
 function canonical(){
  const sprint=read("delivery/CURRENT-SPRINT.json"),build=read("build-spec/CURRENT.json");
  const tasks=sprint.active_sprint?read("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
+ // Main-approved lease authority only — never local working-tree CURRENT.json.
  return {sprint,build,tasks,policy:read(GOVERNANCE_REFORM_POLICY_PATH).pr_guard,
-  sixteenPLease:readSixteenPLease(process.cwd())};
+  sixteenPAuthority:loadMainSixteenPLeaseAuthority({})};
 }
 // Query historical primary PRs before the lease preflight even after HOLD.
 const historicalPrimaryPrs=(taskId,allPrs)=>Array.isArray(allPrs)?
  allPrs.filter(row=>taskIdentityOfPr(row).task_id===taskId)
   .map(row=>({number:row.number,state:row.state,merged:!!row.mergedAt}))
   .sort((a,b)=>a.number-b.number):[];
-export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,governanceCase=null,allPrs=null,sixteenPLease=null}){
+export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,governanceCase=null,allPrs=null,sixteenPAuthority=null}){
  if(!Array.isArray(openPrs))return fail("BLOCK_NO_INVENTORY","Live inventory required");
  if(openPrs.length>=200)return fail("BLOCK_TRUNCATED","Live PR inventory truncated");
  if(governanceCase){
@@ -68,7 +69,7 @@ export function classifyPrecreate({taskId,openPrs,build,sprint,tasks,guard,gover
  if(previous.length)return fail("BLOCK_REUSE_EXISTING_TASK_PR",
   "Historical Task primary PR exists; do not create a duplicate",
   {task_id:taskId,existing:previous});
- const out=preflight({build,sprint,tasks,openPrs,guard,intent:"NEW_PR",taskId,sixteenPLease});
+ const out=preflight({build,sprint,tasks,openPrs,guard,intent:"NEW_PR",taskId,sixteenPAuthority});
  if(out.denied||out.decision!=="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY")
   return fail("BLOCK_NEW_PR",out.reason||out.decision,{preflight:out});
  if(!Array.isArray(allPrs))

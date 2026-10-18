@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {resolveRunnablePlan} from "./select-impacted-tests.mjs";
+import {evaluateSixteenPLeaseAuthority,loadLeasePolicy} from "./16p-acceptance-lease.mjs";
 const REQUIRED=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","16"];
 const repo=process.env.GITHUB_REPOSITORY;
 const prNumber=Number(process.env.PR_NUMBER);
@@ -56,18 +57,26 @@ const productHold=mainState?.status==="HOLD"&&mainState?.active_sprint===null&&
 const historicSprintBound=mainState?.active_sprint==="SP-P1-003"&&t008?.task_id==="T008";
 requireBool((historicSprintBound||(productHold&&t008?.task_id==="T008")),
  "Canonical Main Task/Sprint record unexpectedly changed; no inherited authority");
-// 16P_ACCEPTANCE_LEASE may supply live Task authority while Product HOLD remains.
-// Never invent connector prewrite proof here.
+// Product HOLD requires a Main-approved ACTIVE 16P lease (not local CURRENT.json).
+// Missing/invalid/revoked/expired => HARD_STOP. Never invent connector prewrite proof.
 const leaseOp=gh("contents/delivery/16p-acceptance-lease/CURRENT.json?ref=main");
 const leaseDoc=leaseOp.exit===0?decode(parse(leaseOp)):null;
-const leaseActive=Boolean(productHold&&leaseDoc?.status==="ACTIVE"&&leaseDoc?.task_id==="T016"&&
- leaseDoc?.product_hold_preserved===true&&leaseDoc?.sprint4_forbidden===true&&
- leaseDoc?.direct_connector_prewrite_proven!==true&&
- Number.isSafeInteger(leaseDoc?.expires_at_unix)&&leaseDoc.expires_at_unix>Math.floor(Date.now()/1000));
-if(productHold) console.log("16P CANONICAL: Product HOLD preserved; 16P lease active="+leaseActive+
- (leaseActive?" task="+leaseDoc.task_id:""));
+const actId=leaseDoc?.activation_case_id;
+const actOp=actId?gh("contents/delivery/constitutional-cases/"+actId+".json?ref=main"):
+ {command:"no activation case",exit:1,stdout:"",stderr:"",error:null};
+const actDoc=actOp.exit===0?decode(parse(actOp)):null;
+const leasePolicy=loadLeasePolicy(process.cwd())||{};
+const leaseAuth=evaluateSixteenPLeaseAuthority({
+ lease:leaseDoc,activationDocket:actDoc,now:Math.floor(Date.now()/1000),
+ policy:leasePolicy,source:"main"});
+if(productHold){
+ requireBool(leaseAuth.ok,
+  "Product HOLD requires approved ACTIVE non-revoked non-expired Main 16P lease+Activation: "+
+  (leaseAuth.errors||[]).join("; "));
+ console.log("16P CANONICAL: Product HOLD + Main 16P lease authority ok task="+leaseAuth.lease.task_id);
+}
 const directConnectorPrewriteProven=false;
-const ctx=[canonical,taskFile,live,leaseOp];
+const ctx=[canonical,taskFile,live,leaseOp,actOp];
 const history=node("harness/scripts/guarded-github-write.mjs","--operation","TASK_HISTORY_AUDIT",
  "--pr","386","--evidence-pr","387");
 const p386=gh("pulls/386"),p387=gh("pulls/387");

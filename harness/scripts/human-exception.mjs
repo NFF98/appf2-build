@@ -294,7 +294,7 @@ const sixteenPAcceptanceLeaseLaneErrors=ctx=>{
   const lease=ctx.readHeadJson(LEASE_FILE);
   const pol=ctx.readHeadJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||
     ctx.readBaseJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||{};
-  // Inline minimal checks (avoid import cycle with 16p-acceptance-lease.mjs).
+  // Keep Gate checks aligned with 16p-acceptance-lease.mjs (no import cycle).
   if(lease?.schema!==(pol.lease_schema||"APPF2-16P-ACCEPTANCE-LEASE-1")) errors.push("lease schema invalid");
   if(lease?.task_id!=="T016") errors.push("lease.task_id must be T016");
   if(["T006","T008","T009"].includes(lease?.task_id)) errors.push("lease reuses forbidden Task");
@@ -305,8 +305,31 @@ const sixteenPAcceptanceLeaseLaneErrors=ctx=>{
     errors.push("lease must not self-attest connector prewrite proven");
   if(!["PENDING","ACTIVE","EXPIRED","REVOKED"].includes(lease?.status||""))
     errors.push("lease.status invalid");
+  if(lease?.status==="REVOKED") errors.push("lease revoked");
   if(lease?.never_converts_fail_or_untested_to_pass!==true)
     errors.push("lease never_converts_fail_or_untested_to_pass required");
+  if(lease?.activation_case_id!==ctx.docket.case_id)
+    errors.push("lease.activation_case_id must equal this Activation docket case_id");
+  const prefixes=pol.permitted_allowed_write_path_prefixes||[
+    "delivery/16p-acceptance-lease/","delivery/audits/","harness/scripts/"
+  ];
+  const paths=lease?.allowed_write_paths;
+  if(!Array.isArray(paths)||!paths.length) errors.push("lease.allowed_write_paths required");
+  else for(const p of paths){
+    if(typeof p!=="string"||!p||p.includes("..")||p.includes("\\")||p.startsWith("/"))
+      errors.push("lease.allowed_write_paths unsafe: "+p);
+    else if(!prefixes.some(pre=>p===pre||(pre.endsWith("/")&&p.startsWith(pre))))
+      errors.push("lease.allowed_write_paths not under permitted prefix: "+p);
+  }
+  if(lease?.status==="ACTIVE"){
+    const a=lease.activated_at_unix,e=lease.expires_at_unix,now=ctx.now;
+    if(!Number.isSafeInteger(a)||!Number.isSafeInteger(e)) errors.push("ACTIVE lease requires activated_at/expires_at unix");
+    else{
+      if(!(a<=now&&now<e)) errors.push("ACTIVE lease requires activated_at_unix <= now < expires_at_unix");
+      const maxTtl=pol.max_ttl_seconds||1209600;
+      if(!(e-a>0&&e-a<=maxTtl)) errors.push("ACTIVE lease TTL must be >0 and <= 14d policy max");
+    }
+  }
   return errors;
 };
 const laneSpecificErrors={
