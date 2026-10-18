@@ -134,6 +134,29 @@ holdCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
 //    (covered by holdCheck({},true) above)
 // 4) Non-HOLD legitimate PASS path must not regress (covered by check({},true) above)
 console.log("Product HOLD Main-proven control admission + negatives: PASS (synthetic).");
+// Admin-closure five-file exception: same product:ci forge must REJECT;
+// legitimate NOT_RUN / HOLD_NOT_RUN must still PASS.
+const adminClosureFiles=[[
+  {filename:"build-spec/CURRENT.json"},
+  {filename:"delivery/CURRENT-SPRINT.json"},
+  {filename:"delivery/PROJECT-OPEN-ITEMS.json"},
+  {filename:"delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json"},
+  {filename:"delivery/sprints/SP-P1-003/manifest.json"}
+]];
+const adminCheck=(over={},want=true)=>check({comments:holdComments,changedFiles:adminClosureFiles,
+  mainSprint:undefined,mainBuild:undefined,...over},want);
+// Positive: admin closure + CONTROL + product:ci NOT_RUN/HOLD_NOT_RUN → PASS
+adminCheck({},true);
+// Negative: admin closure + CONTROL + forged product:ci PASS → REJECT
+adminCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:undefined}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+adminCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:"HOLD_NOT_RUN"}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+console.log("Admin-closure CONTROL product:ci forge reject + legit NOT_RUN: PASS (synthetic).");
 // Actual canonical repo-policy.json governance roots, not a guessed whitelist.
 // Source and destination must both be unprotected in Ready admission.
 const l1File=(filename,status="modified",previous_filename)=>({
