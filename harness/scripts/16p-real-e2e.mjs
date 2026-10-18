@@ -119,9 +119,13 @@ const mainBuildState=mainBuildOp.exit===0?decode(parse(mainBuildOp)):null;
 const canonicalHistoricalTask=mainState?.status==="HOLD"&&
  mainState?.active_sprint===null&&mainState?.active_task===null&&
  mainState?.active_build_spec===null;
+const sprintIdPattern=/^SP-P\d+-\d{3}$/;
+const taskIdPattern=/^T\d{3}$/;
+requireBool(sprintIdPattern.test("SP-P1-003")&&taskIdPattern.test("T008"),
+ "16P canonical ID regex self-test failed; no false future Task lease");
 const liveTaskLease=Boolean(
- /^SP-P\\d+-\\d{3}$/.test(mainState?.active_sprint||"") &&
- /^T\\d{3}$/.test(mainState?.active_task||"") &&
+ sprintIdPattern.test(mainState?.active_sprint||"") &&
+ taskIdPattern.test(mainState?.active_task||"") &&
  ["ACTIVE","REVIEW"].includes(mainState?.status) &&
  mainState?.active_build_spec===mainBuildState?.active_baseline &&
  mainBuildState?.implementation_enabled===true
