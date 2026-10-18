@@ -182,6 +182,7 @@ const closureCommitOnMain=(proof,ctx)=>{
   const c=ctx.gh("commits/"+proof.closure_commit_sha);
   const body=ctx.parse(c);
   if(c.exit!==0||!body?.sha)return "closure commit unreadable";
+  if(body.sha!==proof.closure_commit_sha)return "closure commit SHA mismatch";
   const main=ctx.gh("branches/main");
   const mainBody=ctx.parse(main);
   const mainSha=mainBody?.commit?.sha;
