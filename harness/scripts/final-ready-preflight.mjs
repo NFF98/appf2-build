@@ -99,11 +99,13 @@ const localEvidenceErrors=(record,ctx)=>{
     assertion(matched.length===1,"local command missing or duplicated: "+name,e);
   }
   for(const run of runs){
-    // Under Product HOLD / NOT_RUN control exception, product:ci must be
-    // strictly NOT_RUN + HOLD_NOT_RUN. Forged PASS (even exit_code=0) is rejected —
-    // numericPass must not admit a fake Product PASS beside the CONTROL_VERDICT.
-    const holdProductCi=run?.command==="npm run product:ci" &&
-      controlAdmission(ctx) && record.verdict===CONTROL_VERDICT;
+    // When Main Product HOLD control is proven, product:ci must be strictly
+    // NOT_RUN + HOLD_NOT_RUN via adminHoldRun. Do not gate this on
+    // record.verdict===CONTROL_VERDICT — forging LOCAL_TESTS verdict to PASS
+    // plus a fake product:ci PASS/exit_code=0 must still be rejected.
+    const holdProductCi=
+      run?.command==="npm run product:ci" &&
+      ctx.productHoldControl===true;
     const admissible=holdProductCi
       ? adminHoldRun(run,record,ctx)
       : [numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
