@@ -15,11 +15,18 @@ const WRITE_METHODS=new Set(["POST","PUT","PATCH","DELETE"]);
 const SOLE_INSUFFICIENT=new Set(["GITHUB_API_DENIAL_RECEIPT"]);
 /** Items whose PASS would imply a live Task lifecycle. Historical T008 ≠ live Task. */
 const TASK_LIFECYCLE_ITEMS=new Set(["1","2","4","5","6","A","B","E"]);
+/** Only these workflows may back a GITHUB_ACTIONS_JOB admission proof. */
+const TRUSTED_WORKFLOWS=new Set([".github/workflows/governance-gate.yml"]);
 const emptyReport=dir=>({schema:"APPF2-16P-PROVIDER-ADMISSION-REPORT-1",
   directory:dir||null,scanned:0,admitted:[],rejected:[],main_closure_admitted:0});
 const nonEmpty=v=>typeof v==="string"&&v.trim().length>0;
 const sha256=buf=>createHash("sha256").update(buf).digest("hex");
 const numEq=(a,b)=>Number(a)===Number(b);
+const decodeMainFile=body=>{
+  if(!body||body.type!=="file"||!nonEmpty(body.content))return null;
+  try{return JSON.parse(Buffer.from(body.content,"base64").toString("utf8"));}
+  catch{return null;}
+};
 
 /** Canonical digest of a row's real operations — required per-item PASS evidence. */
 export function itemOperationsDigest(operations){
@@ -40,6 +47,27 @@ const verifyJobBody=(proof,ctx)=>{
   const want=proof.required_conclusion||"success";
   if(body.status!=="completed"||body.conclusion!==want)return "job conclusion not "+want;
   if(proof.required_name&&body.name!==proof.required_name)return "job name mismatch";
+  if(body.head_sha&&body.head_sha!==ctx.head)return "job head_sha mismatch";
+  return null;
+};
+
+const verifyJobRunPrLink=(runBody,ctx)=>{
+  const prs=runBody.pull_requests;
+  if(!Array.isArray(prs)||prs.length===0)
+    return "actions run missing required candidate PR association";
+  if(!prs.some(p=>numEq(p.number,ctx.prNumber)))
+    return "actions run not linked to candidate PR";
+  return null;
+};
+
+const verifyJobRunWorkflow=(proof,runBody)=>{
+  const want=proof.required_workflow_path||".github/workflows/governance-gate.yml";
+  if(!TRUSTED_WORKFLOWS.has(want))
+    return "required_workflow_path is not a trusted admission workflow";
+  if(runBody.path!==want)
+    return "actions run workflow path mismatch: need "+want;
+  if(runBody.event!=="pull_request")
+    return "actions run event must be pull_request for admission";
   return null;
 };
 
@@ -50,10 +78,7 @@ const verifyJobRun=(proof,ctx)=>{
   if(runBody.head_sha!==ctx.head)return "actions run head_sha mismatch";
   const repoName=runBody.head_repository?.full_name||runBody.repository?.full_name||"";
   if(repoName&&repoName!==ctx.repo)return "actions run repository mismatch";
-  const prs=runBody.pull_requests;
-  if(Array.isArray(prs)&&prs.length>0&&!prs.some(p=>numEq(p.number,ctx.prNumber)))
-    return "actions run not linked to candidate PR";
-  return null;
+  return verifyJobRunPrLink(runBody,ctx)||verifyJobRunWorkflow(proof,runBody);
 };
 
 const verifyActionsJob=(proof,doc,ctx)=>{
@@ -152,21 +177,54 @@ const closurePrPrerequisite=(proof,ctx)=>{
   return null;
 };
 
-const closureCommitMessage=(proof,ctx)=>{
+/** Closure commit must be an ancestor of Main — message text never authorizes. */
+const closureCommitOnMain=(proof,ctx)=>{
   const c=ctx.gh("commits/"+proof.closure_commit_sha);
   const body=ctx.parse(c);
   if(c.exit!==0||!body?.sha)return "closure commit unreadable";
-  const msg=String(body.commit?.message||"");
-  if(!/APPROVE_CLOSURE|TASK_CLOSURE/i.test(msg))
-    return "closure commit message missing APPROVE_CLOSURE/TASK_CLOSURE attestation";
-  if(!msg.includes("#"+ctx.prNumber))
-    return "closure commit does not reference candidate PR";
+  const main=ctx.gh("branches/main");
+  const mainBody=ctx.parse(main);
+  const mainSha=mainBody?.commit?.sha;
+  if(main.exit!==0||!RE_SHA.test(mainSha||""))return "Main branch tip unreadable for closure ancestry";
+  if(mainSha===proof.closure_commit_sha)return null;
+  const cmp=ctx.gh("compare/"+proof.closure_commit_sha+"..."+mainSha);
+  const cmpBody=ctx.parse(cmp);
+  if(cmp.exit!==0||!cmpBody)return "closure/main compare unreadable";
+  if(cmpBody.status!=="ahead"&&cmpBody.status!=="identical")
+    return "closure_commit_sha is not an ancestor of Main";
   return null;
 };
 
-/** Distinct Closure attestation. Merge commit SHA must never serve as closure SHA. */
+/**
+ * Independent Human APPROVE_CLOSURE + live Main administrative_closure evidence.
+ * Commit message alone NEVER authorizes Closure.
+ */
+const closureHumanAndMainAdmin=(proof,ctx)=>{
+  if(proof.human_approver!=="NFF98")
+    return "MAIN_CLOSURE_ATTESTATION requires human_approver=NFF98";
+  if(proof.approval_event!=="APPROVE_CLOSURE")
+    return "MAIN_CLOSURE_ATTESTATION requires approval_event=APPROVE_CLOSURE";
+  const rel=proof.main_admin_path||"delivery/CURRENT-SPRINT.json";
+  if(!/^[A-Za-z0-9_./-]+$/.test(rel))return "main_admin_path unsafe";
+  const f=ctx.gh("contents/"+rel+"?ref=main");
+  const env=decodeMainFile(ctx.parse(f));
+  if(f.exit!==0||!env)return "Main administrative closure evidence unreadable";
+  const ac=env.administrative_closure;
+  if(!ac||typeof ac!=="object")
+    return "Main administrative_closure evidence missing";
+  if(ac.decision!=="APPROVE_CLOSURE"||ac.approver!=="NFF98")
+    return "Main administrative_closure Human approval mismatch";
+  if(!numEq(ac.pr_number,ctx.prNumber))
+    return "Main administrative_closure pr_number mismatch";
+  if(ac.closure_commit_sha!==proof.closure_commit_sha)
+    return "Main administrative_closure closure_commit_sha mismatch";
+  return null;
+};
+
+/** Distinct Closure attestation. Merge≠Closure; message alone never authorizes. */
 const verifyMainClosure=(proof,ctx)=>
-  closureIdentityOk(proof,ctx)||closurePrPrerequisite(proof,ctx)||closureCommitMessage(proof,ctx);
+  closureIdentityOk(proof,ctx)||closurePrPrerequisite(proof,ctx)||
+  closureCommitOnMain(proof,ctx)||closureHumanAndMainAdmin(proof,ctx);
 
 /** Per-item real operation evidence bound to the live 16P row.operations. */
 const verifyItemOpEvidence=(proof,doc,row)=>{
@@ -256,6 +314,21 @@ const validateRow=(row)=>{
   return null;
 };
 
+const snapshotRow=(row)=>({
+  complete_real_e2e:row.complete_real_e2e,
+  protected_mutation_performed:row.protected_mutation_performed,
+  provider_prewrite_authority_verified:row.provider_prewrite_authority_verified,
+  provider_admission:row.provider_admission
+});
+
+const restoreRow=(row,prior)=>{
+  row.complete_real_e2e=prior.complete_real_e2e;
+  row.protected_mutation_performed=prior.protected_mutation_performed;
+  row.provider_prewrite_authority_verified=prior.provider_prewrite_authority_verified;
+  if(prior.provider_admission===undefined)delete row.provider_admission;
+  else row.provider_admission=prior.provider_admission;
+};
+
 const applyAdmission=(row,doc,file,evidenceDir,flags)=>{
   row.complete_real_e2e="PASS";
   row.protected_mutation_performed=flags.hasMerge===true;
@@ -267,6 +340,16 @@ const applyAdmission=(row,doc,file,evidenceDir,flags)=>{
     bound_repo:doc.bound_repo,bound_task_id:doc.bound_task_id||null,
     main_closure_attested:flags.hasClosure===true};
   fs.writeFileSync(path.join(evidenceDir,doc.item_id+".json"),JSON.stringify(row,null,2)+"\n");
+};
+
+const rollbackWrites=(snaps)=>{
+  for(const s of snaps){
+    restoreRow(s.row,s.prior);
+    try{
+      if(s.existed)fs.writeFileSync(s.path,s.priorFile);
+      else if(fs.existsSync(s.path))fs.unlinkSync(s.path);
+    }catch{/* best-effort rollback */}
+  }
 };
 
 const readReceipt=(full)=>{
@@ -303,19 +386,49 @@ const rejectOne=(report,fatal,r)=>{
   fatal.push("provider receipt "+r.file+": "+r.reason);
 };
 
-const applyAccepted=(accepted,report)=>{
-  for(const r of accepted){
-    applyAdmission(r.row,r.doc,r.file,r.evidenceDir,
-      {hasMerge:r.hasMerge,hasClosure:r.hasClosure});
-    report.admitted.push(r.item_id);
-    // Merge never increments closure count; only MAIN_CLOSURE_ATTESTATION does.
-    if(r.hasClosure)report.main_closure_admitted++;
-    console.log("16P "+r.item_id+" | PROVIDER_ADMITTED complete_real_e2e=PASS | "+r.file);
+const readPriorFile=(p)=>{
+  try{
+    if(!fs.existsSync(p)||!fs.statSync(p).isFile())return {existed:false,priorFile:null};
+    return {existed:true,priorFile:fs.readFileSync(p)};
+  }catch{return {existed:false,priorFile:null};}
+};
+
+const applyAcceptedAtomic=(accepted,report,ctx)=>{
+  const snaps=accepted.map(r=>{
+    const p=path.join(r.evidenceDir,r.doc.item_id+".json");
+    const priorFile=readPriorFile(p);
+    return {row:r.row,path:p,prior:snapshotRow(r.row),...priorFile};
+  });
+  try{
+    for(const r of accepted){
+      applyAdmission(r.row,r.doc,r.file,r.evidenceDir,
+        {hasMerge:r.hasMerge,hasClosure:r.hasClosure});
+      report.admitted.push(r.item_id);
+      // Merge never increments closure count; only MAIN_CLOSURE_ATTESTATION does.
+      if(r.hasClosure)report.main_closure_admitted++;
+      console.log("16P "+r.item_id+" | PROVIDER_ADMITTED complete_real_e2e=PASS | "+r.file);
+    }
+  }catch(err){
+    rollbackWrites(snaps);
+    report.admitted.length=0;
+    report.main_closure_admitted=0;
+    for(const r of accepted){
+      rejectOne(report,ctx.fatal,{file:r.file,item_id:r.item_id,
+        reason:"batch write failed; rolled back file+memory: "+(err?.message||String(err))});
+    }
   }
 };
 
-/** All-or-nothing: any rejection aborts the entire batch; zero PASS writes. */
+/** All-or-nothing: any rejection / prior fatal aborts; write failures roll back. */
 const commitBatch=(accepted,report,ctx)=>{
+  if((ctx.fatal||[]).length>0&&report.rejected.length===0&&accepted.length>0){
+    // Prior fatal (from runner before admission) blocks every PASS write.
+    for(const r of accepted){
+      rejectOne(report,ctx.fatal,{file:r.file,item_id:r.item_id,
+        reason:"batch aborted: prior fatal present (no PASS writes)"});
+    }
+    return;
+  }
   if(report.rejected.length>0){
     for(const r of accepted){
       rejectOne(report,ctx.fatal,{file:r.file,item_id:r.item_id,
@@ -323,7 +436,7 @@ const commitBatch=(accepted,report,ctx)=>{
     }
     return;
   }
-  applyAccepted(accepted,report);
+  applyAcceptedAtomic(accepted,report,ctx);
 };
 
 const ctxReady=ctx=>RE_SHA.test(ctx.head||"")&&Number.isInteger(Number(ctx.prNumber))&&
@@ -349,8 +462,17 @@ export function admitProviderReceipts(ctx){
     ctx.fatal.push("APPF2_16P_PROVIDER_RECEIPTS_DIR missing or not a directory: "+dir);
     return report;
   }
+  // Capture prior fatal count: any pre-existing fatal forbids PASS writes.
+  const priorFatal=(ctx.fatal||[]).length;
   const files=fs.readdirSync(dir).filter(n=>n.endsWith(".json")).sort();
   report.scanned=files.length;
+  if(priorFatal>0){
+    for(const file of files){
+      rejectOne(report,ctx.fatal,{file,item_id:null,
+        reason:"prior fatal present; provider admission PASS writes forbidden"});
+    }
+    return report;
+  }
   const seenItems=new Set(),seenDigests=new Set(),accepted=[];
   for(const file of files){
     const r=validateOne(file,dir,ctx,seenItems,seenDigests);
