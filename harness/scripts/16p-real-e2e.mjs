@@ -111,12 +111,26 @@ const live=gh("pulls/"+prNumber);
 const livePr=parse(live);
 requireBool(live.exit===0&&livePr?.state==="open"&&livePr?.head?.sha===head,
  "REAL PR HEAD/state does not match the event");
-const canonicalHistoricalTask=mainState?.status==="HOLD"&&mainState?.active_sprint===null&&
- mainState?.active_task===null&&t008?.status==="REVIEW";
-requireBool((mainState?.active_sprint==="SP-P1-003"||canonicalHistoricalTask)&&t008?.task_id==="T008",
- "Canonical Main Task/Sprint record unexpectedly changed; no inherited authority");
-if(canonicalHistoricalTask) console.log("16P CANONICAL: Sprint3 administrative HOLD, T008 historic REVIEW; no live Task authority");
-const ctx=[canonical,taskFile,live,ssotFetch,rulesetFetch];
+const mainBuildOp=gh("contents/build-spec/CURRENT.json?ref=main");
+const mainBuildState=mainBuildOp.exit===0?decode(parse(mainBuildOp)):null;
+// Accept a genuinely active NEW Sprint/Task for future real lifecycle audits.
+// Prior harness was incorrectly pinned to SP-P1-003/T008 forever; no legitimate
+// future authorized Task could even enter the 16P collector.
+const canonicalHistoricalTask=mainState?.status==="HOLD"&&
+ mainState?.active_sprint===null&&mainState?.active_task===null&&
+ mainState?.active_build_spec===null;
+const liveTaskLease=Boolean(
+ /^SP-P\\d+-\\d{3}$/.test(mainState?.active_sprint||"") &&
+ /^T\\d{3}$/.test(mainState?.active_task||"") &&
+ ["ACTIVE","REVIEW"].includes(mainState?.status) &&
+ mainState?.active_build_spec===mainBuildState?.active_baseline &&
+ mainBuildState?.implementation_enabled===true
+);
+requireBool((canonicalHistoricalTask||liveTaskLease)&&t008?.task_id==="T008",
+ "Canonical Main Sprint/Task or Build lease inconsistent; no inherited authority");
+if(canonicalHistoricalTask)console.log("16P CANONICAL: Main HOLD, T008 historic="+t008?.status+"; no live Task authority");
+else if(liveTaskLease)console.log("16P CANONICAL: live Task lease is observable ONLY, not a substitute for Human grant");
+const ctx=[canonical,taskFile,live,mainBuildOp,ssotFetch,rulesetFetch];
 const history=node("harness/scripts/guarded-github-write.mjs","--operation","TASK_HISTORY_AUDIT",
  "--pr","386","--evidence-pr","387");
 const p386=gh("pulls/386"),p387=gh("pulls/387");
@@ -307,11 +321,31 @@ receipt("F","GPT orchestration must refuse unauthorized merge and closure",
 requireBool(denyMerge.exit===3&&denyClosure.exit===3,"#F unauthorized protected action not denied");
 const design=exec("gh",["api","repos/NFF98/appf2-design/branches/main"],60000);
 const buildMain=gh("branches/main");
+const designRulesetOp=exec("gh",["api","repos/NFF98/appf2-design/rulesets/25298230"],60000);
+const designRuleset=parse(designRulesetOp);
+const designRuleChecks=designRuleset?.rules?.find(x=>x.type==="required_status_checks");
+const designProviderProtected=Boolean(
+ design.exit===0&&designRulesetOp.exit===0 &&
+ designRuleset?.id===25298230 &&
+ designRuleset?.target==="branch" && designRuleset?.enforcement==="active" &&
+ designRuleset?.conditions?.ref_name?.include?.includes("~DEFAULT_BRANCH") &&
+ designRuleset?.current_user_can_bypass==="never" &&
+ designRuleset?.rules?.some(x=>x.type==="pull_request") &&
+ designRuleChecks?.parameters?.required_status_checks?.some(x=>x.context==="design-integrity")
+);
+const designStrictCheck=designRuleChecks?.parameters?.strict_required_status_checks_policy===true;
+const designReviewCount=designRuleset?.rules?.find(x=>x.type==="pull_request")?.parameters?.required_approving_review_count;
 receipt("16","Design+Build protected two-repository change and truthful combined closure",
- [design,buildMain],{design_main_read:design.exit===0,
+ [design,designRulesetOp,buildMain],{design_main_read:design.exit===0,
+ build_main_read:buildMain.exit===0,
+ design_provider_main_protected_for_runner:designProviderProtected,
+ design_integrity_strict:designStrictCheck,
+ design_required_approving_review_count:designReviewCount,
+ design_protected_write_and_closure:"NOT_VERIFIED",
  build_main_read:buildMain.exit===0},
- ["Human-approved real Design+Build protected change, separate exact-head checks, protected Main writes, independent closure"],
+ ["Human-approved real Design+Build protected change, strict exact-head gates in BOTH repos, protected Main writes and independent closure"],
  "AUTHORITY_REQUIRED");
+requireBool(designProviderProtected,"Actual Design Main provider Ruleset missing; cross-repo E2E blocked");
 requireBool(rows.length===16&&REQUIRED.every((x,i)=>rows[i]?.id===x),"16P missing/duplicate operations");
 const tally=Object.fromEntries(["CHECK_PASS","PARTIAL","AUTHORITY_REQUIRED","NOT_RUN","FAIL"].map(s=>
  [s,rows.filter(r=>r.operation_verdict===s).length]));
