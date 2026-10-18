@@ -4,7 +4,7 @@
   "constitution_version": "1.0",
   "title": "建立 16P_ACCEPTANCE_LEASE 專用治理通道（Product HOLD 相容、禁止 Sprint4／T006–T009）",
   "change_class": "L3_CONSTITUTIONAL",
-  "status": "HUMAN_EXACT_CANDIDATE_APPROVED_GATES_AND_BCE_ONLY",
+  "status": "CANDIDATE_PENDING_BCE_AND_HUMAN_EXACT_APPROVAL",
   "exact_changed_paths": [
     "delivery/audits/16P-ACCEPTANCE-LEASE-ACTIVATION-FOLLOWUP.json",
     "delivery/audits/16P-ACCEPTANCE-LEASE-CHANNEL-PLAN.json",
@@ -14,15 +14,23 @@
     "harness/scripts/16p-acceptance-lease.mjs",
     "harness/scripts/16p-host-connector-probe.mjs",
     "harness/scripts/16p-real-e2e.mjs",
+    "harness/scripts/final-ready-preflight.mjs",
+    "harness/scripts/final-ready-selftest.mjs",
     "harness/scripts/governance-reform-selftest.mjs",
     "harness/scripts/gpt-preflight.mjs",
     "harness/scripts/guarded-github-write.mjs",
     "harness/scripts/human-exception.mjs"
   ],
-  "candidate_digest_sha256": "bb70c3fa2a094517144f2563bddc4f1304f0eba8c1edff3d79133e14233fbf17",
+  "candidate_digest_sha256": "a71e4b2b054b6044f6fb1108ab620a914714beb5bdc1de57cf97ba296a765be2",
+  "previous_candidate_digest_sha256_gate_recovery": "bb70c3fa2a094517144f2563bddc4f1304f0eba8c1edff3d79133e14233fbf17",
   "previous_candidate_digest_sha256_human_approved_gates_bce_only": "dc1c8d0b70afc287b3594ac52a28f5654a9710ea2c6cef7894b47a006bd70522",
   "previous_candidate_digest_sha256_bce_blocked": "0e414cc91789358acddbae56167fd5f36eeeadbdd9e5fb1a33bb36ae64be563d",
   "previous_candidate_digest_sha256_bce_fix": "1bcb19985399160520d4857950b12f25324cb3d0df12a8bd908d9b59f99c2664",
+  "final_ready_hold_control_minimal_fix": [
+    "final-ready-preflight: admit CONTROL_GATES_PASS_PRODUCT_NOT_RUN when trusted Main (BASE) proves Product HOLD and PR does not touch build-spec/CURRENT.json or delivery/CURRENT-SPRINT.json",
+    "final-ready-selftest: positive Main-HOLD control + negatives (active sprint, enabled build, enablement path touch, missing HOLD_NOT_RUN)",
+    "product:ci remains NOT_RUN/HOLD_NOT_RUN; XGATE FAIL retained; no Product PASS; no 16P PASS"
+  ],
   "gate_recovery_minimal_fix": [
     "eslint: equivalent function splits only (no lease TTL/authority/reject semantics change)",
     "16p-real-e2e: remove unused directConnectorPrewriteProven binding (H3 remains false/NOT_PROVEN)",
@@ -99,22 +107,12 @@
     "zero_gap": true,
     "justification": "GOVERNANCE_REFORM 通道 PR 不建立／不延遲／不豁免任何 Product GAP register 列；canonical register 無連結本 case 的 OPEN GAP。Activation／Host-wide／16/16／Human provenance 留在 follow_up，非 RESOLVED。"
   },
-  "human_approval": {
-    "case_id": "GOV-16P-ACCEPTANCE-LEASE-001",
-    "approver": "NFF98",
-    "source_kind": "DIRECT_HUMAN_MESSAGE",
-    "decision": "APPROVE_EXACT_CANDIDATE",
-    "scope": "EXACT_PR_DIFF",
-    "candidate_digest_sha256": "bb70c3fa2a094517144f2563bddc4f1304f0eba8c1edff3d79133e14233fbf17",
-    "approved_implementation_head": "e0204cb375fbf35e40c79102d572b0856f1c9b9f",
-    "approved_base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
-    "human_message_ref": "Human Cursor instruction 2026-10-18 JST: APPROVE_EXACT_CANDIDATE BASE=312b923221f5d5d18c887302a60d30493fa66129 HEAD=e0204cb375fbf35e40c79102d572b0856f1c9b9f SOURCE_DIGEST=bb70c3fa2a094517144f2563bddc4f1304f0eba8c1edff3d79133e14233fbf17 case=GOV-16P-ACCEPTANCE-LEASE-001. Agent-registered docket-only provenance; NOT independent GitHub/cryptographic Human signature; manual Human provenance check required. Limited to docket approval, four formal Gates, seven Cloud Evidence, GPT BCE; NOT Merge/Closure/Activation/Sprint4/Product HOLD change/H3 true/16P FULL PASS.",
-    "approved_at_unix": 1792333807
-  },
+  "human_approval": null,
   "prior_human_approval_superseded": {
-    "note": "Prior APPROVE_EXACT_CANDIDATE bound SOURCE_DIGEST=dc1c8d0b… / IMPL_HEAD=0f1e46e7… only; superseded by gate-recovery digest bb70c3fa… / IMPL_HEAD=e0204cb….",
-    "superseded_digest_sha256": "dc1c8d0b70afc287b3594ac52a28f5654a9710ea2c6cef7894b47a006bd70522",
-    "superseded_implementation_head": "0f1e46e7a028ecd58e0bf7c502713a9b24e7d075"
+    "note": "Prior APPROVE_EXACT_CANDIDATE bound SOURCE_DIGEST=bb70c3fa… / tip after docket-only 96d13cc only. Final Ready Main-HOLD control adds final-ready-preflight/selftest → new digest requires new Human APPROVE_EXACT_CANDIDATE. Not Merge/Activation/Closure.",
+    "superseded_digest_sha256": "bb70c3fa2a094517144f2563bddc4f1304f0eba8c1edff3d79133e14233fbf17",
+    "superseded_implementation_head": "e0204cb375fbf35e40c79102d572b0856f1c9b9f",
+    "superseded_tip": "96d13ccfcebafe958f9ff925b0cfdfe3a933a45a"
   },
-  "notes": "BASE=312b923… IMPL_HEAD=e0204cb… SOURCE_DIGEST=bb70c3fa… Human APPROVE_EXACT_CANDIDATE registered 1792333807. Docket-only tip may follow; exact_changed_paths digest unchanged. NOT Merge/Activation/Closure; H3 NOT_PROVEN; 16P 0/16; Product HOLD; Sprint4 forbidden."
+  "notes": "Final Ready Product HOLD control candidate: Main BASE proves HOLD; PR does not touch enablement paths; product:ci NOT_RUN/HOLD_NOT_RUN; XGATE FAIL retained; 16P 0/16; H3 NOT_PROVEN. Pending new Human exact approve + Gates/BCE. Not Merge/Activation/Closure/Sprint4."
 }
