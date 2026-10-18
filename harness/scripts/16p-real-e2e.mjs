@@ -399,8 +399,12 @@ requireBool(rows.length===16&&REQUIRED.every((x,i)=>rows[i]?.id===x),"16P missin
 // CHECK_PASS and synthetic fixtures NEVER promote complete_real_e2e.
 // Only live-verified receipts under APPF2_16P_PROVIDER_RECEIPTS_DIR may set PASS.
 // Empty/absent directory => 0 admissions (legacy 0/16 until real proofs exist).
+// task evidence id: live Main active task, else historical T008 when Main HOLD.
+const admissionTaskId=mainState?.active_task||
+ (canonicalHistoricalTask?t008?.task_id||null:null);
 const providerAdmission=admitProviderReceipts({
- required:REQUIRED,rows,head,repo,gh,parse,exec,evidenceDir,fatal});
+ required:REQUIRED,rows,head,prNumber,repo,taskId:admissionTaskId,
+ gh,parse,evidenceDir,fatal});
 const tally=Object.fromEntries(["CHECK_PASS","PARTIAL","AUTHORITY_REQUIRED","NOT_RUN","FAIL"].map(s=>
  [s,rows.filter(r=>r.operation_verdict===s).length]));
 // IMPORTANT: CHECK_PASS is NOT E2E PASS. Only independently proven protected
