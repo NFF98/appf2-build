@@ -396,12 +396,11 @@ requireBool(designStrictCheck,
  "#16 Design Main Ruleset design-integrity is NOT strict; enable Require branches to be up to date before merging");
 requireBool(rows.length===16&&REQUIRED.every((x,i)=>rows[i]?.id===x),"16P missing/duplicate operations");
 // Provider / protected-operation admission (fail-closed).
-// CHECK_PASS and synthetic fixtures NEVER promote complete_real_e2e.
+// CHECK_PASS / AUTHORITY_REQUIRED / synthetic fixtures NEVER promote complete_real_e2e.
 // Only live-verified receipts under APPF2_16P_PROVIDER_RECEIPTS_DIR may set PASS.
 // Empty/absent directory => 0 admissions (legacy 0/16 until real proofs exist).
-// task evidence id: live Main active task, else historical T008 when Main HOLD.
-const admissionTaskId=mainState?.active_task||
- (canonicalHistoricalTask?t008?.task_id||null:null);
+// Live Main active_task ONLY — historical HOLD T008 must never fake Task lifecycle.
+const admissionTaskId=mainState?.active_task||null;
 const providerAdmission=admitProviderReceipts({
  required:REQUIRED,rows,head,prNumber,repo,taskId:admissionTaskId,
  gh,parse,evidenceDir,fatal});

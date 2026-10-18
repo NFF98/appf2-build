@@ -1,7 +1,8 @@
 // Fail-closed importer for original 16P Acceptance provider / protected proofs.
-// CHECK_PASS, NOT_RUN, synthetic fixtures, and self-attested denials NEVER promote PASS.
+// CHECK_PASS, NOT_RUN, AUTHORITY_REQUIRED, synthetic fixtures NEVER promote PASS.
 // Only live-verified APPF2-16P-PROVIDER-ADMISSION-1 receipts may admit PASS.
 // Receipts NEVER trigger GitHub write methods (GET/read-only verification only).
+// Merge ≠ Closure. Batch is all-or-nothing. No live Task ⇒ no Task-lifecycle PASS.
 import fs from "node:fs";
 import path from "node:path";
 import {createHash} from "node:crypto";
@@ -9,14 +10,22 @@ import {createHash} from "node:crypto";
 const SCHEMA="APPF2-16P-PROVIDER-ADMISSION-1";
 const RE_SHA=/^[a-f0-9]{40}$/;
 const RE_DIGITS=/^\d+$/;
-const INCOMPLETE_VERDICTS=new Set(["FAIL","NOT_RUN"]);
+const BLOCKED_VERDICTS=new Set(["FAIL","NOT_RUN","AUTHORITY_REQUIRED"]);
 const WRITE_METHODS=new Set(["POST","PUT","PATCH","DELETE"]);
 const SOLE_INSUFFICIENT=new Set(["GITHUB_API_DENIAL_RECEIPT"]);
+/** Items whose PASS would imply a live Task lifecycle. Historical T008 ≠ live Task. */
+const TASK_LIFECYCLE_ITEMS=new Set(["1","2","4","5","6","A","B","E"]);
 const emptyReport=dir=>({schema:"APPF2-16P-PROVIDER-ADMISSION-REPORT-1",
   directory:dir||null,scanned:0,admitted:[],rejected:[],main_closure_admitted:0});
 const nonEmpty=v=>typeof v==="string"&&v.trim().length>0;
 const sha256=buf=>createHash("sha256").update(buf).digest("hex");
 const numEq=(a,b)=>Number(a)===Number(b);
+
+/** Canonical digest of a row's real operations — required per-item PASS evidence. */
+export function itemOperationsDigest(operations){
+  const norm=(operations||[]).map(o=>({command:o?.command??null,exit:o?.exit??null}));
+  return sha256(JSON.stringify(norm));
+}
 
 const jobIdentityOk=(proof,doc,ctx)=>
   proof.bound_item_id===doc.item_id &&
@@ -92,7 +101,6 @@ const verifyDenial=(proof,ctx)=>{
   if(proof.live_reprobe!==true)return null;
   const route=String(proof.path).replace(/^\/+/,"");
   if(!/^[A-Za-z0-9_./?&=%-]+$/.test(route))return "denial reprobe path unsafe";
-  // Read-only GET via injected gh helper only — never receipt-controlled writes.
   return ctx.gh(route).exit===0?"live reprobe unexpectedly succeeded":null;
 };
 
@@ -117,7 +125,7 @@ const verifyMergePrState=(proof,ctx)=>{
   return null;
 };
 
-/** Protected Main merge/closure proof — not a self-declared boolean. */
+/** Protected Main merge proof — never counts as Closure by itself. */
 const verifyMerge=(proof,ctx)=>{
   if(!RE_SHA.test(proof.merge_commit_sha||""))return "merge_commit_sha required";
   if(!numEq(proof.required_pr,ctx.prNumber))
@@ -125,13 +133,67 @@ const verifyMerge=(proof,ctx)=>{
   return verifyMergeCommitReadable(proof,ctx)||verifyMergePrState(proof,ctx);
 };
 
-const verifyProof=(proof,doc,ctx)=>{
+const closureIdentityOk=(proof,ctx)=>{
+  if(!RE_SHA.test(proof.closure_commit_sha||""))return "closure_commit_sha required";
+  if(!numEq(proof.required_pr,ctx.prNumber))
+    return "MAIN_CLOSURE_ATTESTATION required_pr must equal candidate PR";
+  if(RE_SHA.test(proof.merge_commit_sha||"")&&proof.merge_commit_sha===proof.closure_commit_sha)
+    return "closure_commit_sha must not equal merge_commit_sha; Merge≠Closure";
+  return null;
+};
+
+const closurePrPrerequisite=(proof,ctx)=>{
+  const pr=ctx.gh("pulls/"+ctx.prNumber);
+  const prBody=ctx.parse(pr);
+  if(pr.exit!==0||!prBody)return "candidate PR unreadable for closure proof";
+  if(prBody.merged!==true)return "closure attestation requires merged PR prerequisite";
+  if(prBody.merge_commit_sha===proof.closure_commit_sha)
+    return "provider merge_commit_sha cannot serve as closure_commit_sha";
+  return null;
+};
+
+const closureCommitMessage=(proof,ctx)=>{
+  const c=ctx.gh("commits/"+proof.closure_commit_sha);
+  const body=ctx.parse(c);
+  if(c.exit!==0||!body?.sha)return "closure commit unreadable";
+  const msg=String(body.commit?.message||"");
+  if(!/APPROVE_CLOSURE|TASK_CLOSURE/i.test(msg))
+    return "closure commit message missing APPROVE_CLOSURE/TASK_CLOSURE attestation";
+  if(!msg.includes("#"+ctx.prNumber))
+    return "closure commit does not reference candidate PR";
+  return null;
+};
+
+/** Distinct Closure attestation. Merge commit SHA must never serve as closure SHA. */
+const verifyMainClosure=(proof,ctx)=>
+  closureIdentityOk(proof,ctx)||closurePrPrerequisite(proof,ctx)||closureCommitMessage(proof,ctx);
+
+/** Per-item real operation evidence bound to the live 16P row.operations. */
+const verifyItemOpEvidence=(proof,doc,row)=>{
+  if(proof.bound_item_id!==doc.item_id)
+    return "ITEM_OPERATION_EVIDENCE bound_item_id must equal receipt item_id";
+  if(!Array.isArray(row.operations)||!row.operations.length)
+    return "row has no real operations to bind";
+  const exits=row.operations.map(o=>o.exit);
+  if(!Array.isArray(proof.observed_exits)||proof.observed_exits.length!==exits.length)
+    return "ITEM_OPERATION_EVIDENCE observed_exits length mismatch";
+  if(!proof.observed_exits.every((e,i)=>Number(e)===Number(exits[i])))
+    return "ITEM_OPERATION_EVIDENCE observed_exits mismatch row.operations";
+  const want=itemOperationsDigest(row.operations);
+  if(proof.operations_digest!==want)
+    return "ITEM_OPERATION_EVIDENCE operations_digest mismatch for this item";
+  return null;
+};
+
+const verifyProof=(proof,doc,ctx,row)=>{
   if(!proof||typeof proof!=="object"||!proof.kind)return "proof.kind required";
+  if(proof.kind==="ITEM_OPERATION_EVIDENCE")return verifyItemOpEvidence(proof,doc,row);
   if(proof.kind==="GITHUB_ACTIONS_JOB")return verifyActionsJob(proof,doc,ctx);
   if(proof.kind==="GITHUB_ENVIRONMENT_NO_ADMIN_BYPASS")return verifyEnvironment(proof,ctx);
   if(proof.kind==="GITHUB_RULESET_STRICT_CONTEXT")return verifyRuleset(proof,ctx);
   if(proof.kind==="GITHUB_API_DENIAL_RECEIPT")return verifyDenial(proof,ctx);
   if(proof.kind==="MAIN_MERGE_COMMIT")return verifyMerge(proof,ctx);
+  if(proof.kind==="MAIN_CLOSURE_ATTESTATION")return verifyMainClosure(proof,ctx);
   return "unknown proof.kind: "+proof.kind;
 };
 
@@ -151,9 +213,11 @@ const validateIdentity=(doc,ctx)=>{
 const validateTaskBinding=(doc,ctx)=>{
   if(nonEmpty(ctx.taskId)){
     if(!nonEmpty(doc.bound_task_id)||doc.bound_task_id!==ctx.taskId)
-      return "bound_task_id required and must equal candidate task evidence id";
+      return "bound_task_id required and must equal live Main active_task";
   }else if(nonEmpty(doc.bound_task_id)){
-    return "bound_task_id present but runner has no task evidence id";
+    return "bound_task_id present but runner has no live Main active_task";
+  }else if(TASK_LIFECYCLE_ITEMS.has(doc.item_id)){
+    return "no live Main active_task; cannot admit Task lifecycle item "+doc.item_id;
   }
   return null;
 };
@@ -164,10 +228,14 @@ const validateFlagsAndProofs=(doc)=>{
   if(doc.never_converts_fail_or_untested_to_pass!==true)
     return "must declare never_converts_fail_or_untested_to_pass=true";
   if(Object.hasOwn(doc,"counts_as_main_closure"))
-    return "counts_as_main_closure self-declaration forbidden; use MAIN_MERGE_COMMIT proof";
+    return "counts_as_main_closure self-declaration forbidden; use MAIN_CLOSURE_ATTESTATION proof";
   if(!Array.isArray(doc.provider_proofs)||!doc.provider_proofs.length)
     return "provider_proofs required";
   const kinds=doc.provider_proofs.map(p=>p?.kind);
+  if(!kinds.includes("ITEM_OPERATION_EVIDENCE"))
+    return "ITEM_OPERATION_EVIDENCE required for each PASS admission";
+  if(kinds.every(k=>SOLE_INSUFFICIENT.has(k)||k==="ITEM_OPERATION_EVIDENCE"))
+    return "ITEM_OPERATION_EVIDENCE alone (or with denial only) cannot admit PASS; need protected provider proof";
   if(kinds.every(k=>SOLE_INSUFFICIENT.has(k)))
     return "HTTP denial alone cannot admit PASS; need protected non-denial proof";
   if(kinds.includes("GITHUB_ACTIONS_JOB")&&
@@ -181,22 +249,23 @@ const validateBinding=(doc,ctx)=>
 
 const validateRow=(row)=>{
   if(!row)return "row missing";
-  if(INCOMPLETE_VERDICTS.has(row.operation_verdict))
-    return "cannot admit incomplete operation_verdict="+row.operation_verdict;
+  if(BLOCKED_VERDICTS.has(row.operation_verdict))
+    return "cannot admit blocked operation_verdict="+row.operation_verdict;
   if(row.complete_real_e2e==="PASS")
     return "item already PASS; replay/duplicate admission forbidden";
   return null;
 };
 
-const applyAdmission=(row,doc,file,evidenceDir,hasMergeProof)=>{
+const applyAdmission=(row,doc,file,evidenceDir,flags)=>{
   row.complete_real_e2e="PASS";
-  row.protected_mutation_performed=hasMergeProof===true;
+  row.protected_mutation_performed=flags.hasMerge===true;
   row.provider_prewrite_authority_verified=doc.provider_proofs.some(p=>
     p.kind==="GITHUB_ENVIRONMENT_NO_ADMIN_BYPASS");
   row.provider_admission={file,schema:doc.schema,
     proof_kinds:doc.provider_proofs.map(p=>p.kind),
     bound_head_sha:doc.bound_head_sha,bound_pr_number:doc.bound_pr_number,
-    bound_repo:doc.bound_repo,bound_task_id:doc.bound_task_id||null};
+    bound_repo:doc.bound_repo,bound_task_id:doc.bound_task_id||null,
+    main_closure_attested:flags.hasClosure===true};
   fs.writeFileSync(path.join(evidenceDir,doc.item_id+".json"),JSON.stringify(row,null,2)+"\n");
 };
 
@@ -210,7 +279,6 @@ const validateOne=(file,dir,ctx,seenItems,seenDigests)=>{
   if(!parsed)return {ok:false,file,reason:"invalid JSON"};
   const {raw,doc}=parsed;
   const digest=sha256(raw);
-  // Record digest immediately so identical forged/replay bytes are always caught.
   if(seenDigests.has(digest))
     return {ok:false,file,item_id:doc?.item_id||null,reason:"replay: duplicate receipt digest"};
   seenDigests.add(digest);
@@ -222,11 +290,12 @@ const validateOne=(file,dir,ctx,seenItems,seenDigests)=>{
   const row=ctx.rows.find(r=>r.id===doc.item_id);
   const rowErr=validateRow(row);
   if(rowErr)return {ok:false,file,item_id:doc.item_id,reason:rowErr};
-  const proofErrors=doc.provider_proofs.map(p=>verifyProof(p,doc,ctx)).filter(Boolean);
+  const proofErrors=doc.provider_proofs.map(p=>verifyProof(p,doc,ctx,row)).filter(Boolean);
   if(proofErrors.length)
     return {ok:false,file,item_id:doc.item_id,reason:proofErrors.join("; ")};
   return {ok:true,file,item_id:doc.item_id,doc,row,digest,
-    hasMerge:doc.provider_proofs.some(p=>p.kind==="MAIN_MERGE_COMMIT")};
+    hasMerge:doc.provider_proofs.some(p=>p.kind==="MAIN_MERGE_COMMIT"),
+    hasClosure:doc.provider_proofs.some(p=>p.kind==="MAIN_CLOSURE_ATTESTATION")};
 };
 
 const rejectOne=(report,fatal,r)=>{
@@ -236,19 +305,34 @@ const rejectOne=(report,fatal,r)=>{
 
 const applyAccepted=(accepted,report)=>{
   for(const r of accepted){
-    applyAdmission(r.row,r.doc,r.file,r.evidenceDir,r.hasMerge);
+    applyAdmission(r.row,r.doc,r.file,r.evidenceDir,
+      {hasMerge:r.hasMerge,hasClosure:r.hasClosure});
     report.admitted.push(r.item_id);
-    if(r.hasMerge)report.main_closure_admitted++;
+    // Merge never increments closure count; only MAIN_CLOSURE_ATTESTATION does.
+    if(r.hasClosure)report.main_closure_admitted++;
     console.log("16P "+r.item_id+" | PROVIDER_ADMITTED complete_real_e2e=PASS | "+r.file);
   }
+};
+
+/** All-or-nothing: any rejection aborts the entire batch; zero PASS writes. */
+const commitBatch=(accepted,report,ctx)=>{
+  if(report.rejected.length>0){
+    for(const r of accepted){
+      rejectOne(report,ctx.fatal,{file:r.file,item_id:r.item_id,
+        reason:"batch aborted: sibling receipt rejected (all-or-nothing)"});
+    }
+    return;
+  }
+  applyAccepted(accepted,report);
 };
 
 const ctxReady=ctx=>RE_SHA.test(ctx.head||"")&&Number.isInteger(Number(ctx.prNumber))&&
   Number(ctx.prNumber)>0&&nonEmpty(ctx.repo);
 
 /**
- * Two-phase admit: validate ALL receipts first; only then write PASS for legal ones.
+ * Two-phase admit: validate ALL receipts first; commit only if zero rejects.
  * @param {object} ctx {required,rows,head,prNumber,repo,taskId,gh,parse,evidenceDir,fatal}
+ *   taskId must be live Main active_task only (never historical HOLD T008).
  */
 export function admitProviderReceipts(ctx){
   const dir=process.env.APPF2_16P_PROVIDER_RECEIPTS_DIR||"";
@@ -273,6 +357,6 @@ export function admitProviderReceipts(ctx){
     if(!r.ok){rejectOne(report,ctx.fatal,r);continue;}
     accepted.push({...r,evidenceDir:ctx.evidenceDir});
   }
-  applyAccepted(accepted,report);
+  commitBatch(accepted,report,ctx);
   return report;
 }
