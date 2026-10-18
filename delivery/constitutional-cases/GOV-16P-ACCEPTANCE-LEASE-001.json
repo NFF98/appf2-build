@@ -4,7 +4,7 @@
   "constitution_version": "1.0",
   "title": "建立 16P_ACCEPTANCE_LEASE 專用治理通道（Product HOLD 相容、禁止 Sprint4／T006–T009）",
   "change_class": "L3_CONSTITUTIONAL",
-  "status": "PENDING_HUMAN_EXACT_CANDIDATE_APPROVAL",
+  "status": "HUMAN_EXACT_CANDIDATE_APPROVED_GATES_AND_BCE_ONLY",
   "exact_changed_paths": [
     "delivery/audits/16P-ACCEPTANCE-LEASE-ACTIVATION-FOLLOWUP.json",
     "delivery/audits/16P-ACCEPTANCE-LEASE-CHANNEL-PLAN.json",
@@ -96,6 +96,17 @@
     "zero_gap": false,
     "justification": "residual_gaps 明示 Activation／Host-wide／16/16 仍開放；本 PR 不關閉任何 Product GAP。"
   },
-  "human_approval": null,
-  "notes": "BASE=312b923221f5d5d18c887302a60d30493fa66129. BCE-R3 minimal fix supersedes digest 1bcb1998… → dc1c8d0b…. Same case/branch/B path. Awaiting Human APPROVE_EXACT_CANDIDATE before Push. Do not Merge/Closure/Activate; H3 NOT_PROVEN; 16P 0/16; selftest PASS ≠ 16P REAL PASS."
+  "human_approval": {
+    "case_id": "GOV-16P-ACCEPTANCE-LEASE-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "dc1c8d0b70afc287b3594ac52a28f5654a9710ea2c6cef7894b47a006bd70522",
+    "approved_implementation_head": "0f1e46e7a028ecd58e0bf7c502713a9b24e7d075",
+    "approved_base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
+    "human_message_ref": "Human Cursor instruction 2026-10-18 JST: APPROVE_EXACT_CANDIDATE BASE=312b923221f5d5d18c887302a60d30493fa66129 HEAD=0f1e46e7a028ecd58e0bf7c502713a9b24e7d075 SOURCE_DIGEST=dc1c8d0b70afc287b3594ac52a28f5654a9710ea2c6cef7894b47a006bd70522 case=GOV-16P-ACCEPTANCE-LEASE-001. Agent-registered docket-only provenance; NOT independent GitHub/cryptographic Human signature; manual Human provenance check required. Limited to docket approval, four formal Gates, seven Cloud Evidence, GPT BCE; NOT Merge/Closure/Activation/Sprint4/Product HOLD change/H3 true/16P FULL PASS.",
+    "approved_at_unix": 1792331362
+  },
+  "notes": "BASE=312b923… IMPL_HEAD=0f1e46e7… SOURCE_DIGEST=dc1c8d0b… Human APPROVE_EXACT_CANDIDATE registered 1792331362. Docket-only tip may follow; exact_changed_paths digest unchanged. NOT Merge/Activation/Closure; H3 NOT_PROVEN; 16P 0/16."
 }
