@@ -71,26 +71,30 @@ const DENIED=new Set(["STOP","REDUNDANT_ACTIVATION_DENIED","REDUNDANT_APPROVAL_D
   "REBIND_NOT_REQUIRED","REUSE_EXISTING_PR","BLOCKED_NO_LIVE_PR_INVENTORY",
   "BLOCKED_MISSING_TASK_OR_GOVERNANCE_CASE"]);
 
+const preflightFacts=({build,sprint,task,leaseTask,taskId,openPrs,guard,sixteenPAuthority})=>({
+  active_baseline:build.active_baseline,implementation_enabled:build.implementation_enabled,
+  active_sprint:sprint.active_sprint,sprint_status:sprint.status,active_task:sprint.active_task,
+  task_status:task?.status||null,task_build_spec:task?.build_spec_id||null,
+  sixteen_p_lease_active:Boolean(leaseTask),
+  sixteen_p_authority_source:sixteenPAuthority?.source||null,
+  sixteen_p_authority_ok:sixteenPAuthority?.ok===true,
+  open_prs_for_task:prCreationDecision({taskKey:taskId,openPrs,guard}).existing
+});
+const preflightDecision=({intent,build,sprint,task,taskId,sixteenPAuthority,openPrs,guard,valid})=>{
+  if(intent==="NEW_PR" && !valid)
+    return {decision:"STOP",reason:"new product PR needs genuine active non-BLOCKED Task, Build match and execution authority"};
+  if(intent==="NEW_PR") return prCreationDecision({taskKey:taskId,openPrs,guard});
+  return intentDecision({intent,build,sprint,task,taskId,sixteenPAuthority});
+};
 /** Pure preflight over canonical state; returns auditable facts plus one decision. */
 export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId,sixteenPAuthority=null}){
   const leaseTask=validSixteenPLease({sprint,taskId,sixteenPAuthority})?
     syntheticTaskFromLease(sixteenPAuthority.lease):null;
   const task=(tasks||[]).find(t=>t.task_id===taskId)||leaseTask;
-  const facts={
-    active_baseline:build.active_baseline,implementation_enabled:build.implementation_enabled,
-    active_sprint:sprint.active_sprint,sprint_status:sprint.status,active_task:sprint.active_task,
-    task_status:task?.status||null,task_build_spec:task?.build_spec_id||null,
-    sixteen_p_lease_active:Boolean(leaseTask),
-    sixteen_p_authority_source:sixteenPAuthority?.source||null,
-    sixteen_p_authority_ok:sixteenPAuthority?.ok===true,
-    open_prs_for_task:prCreationDecision({taskKey:taskId,openPrs,guard}).existing
-  };
+  const facts=preflightFacts({build,sprint,task,leaseTask,taskId,openPrs,guard,sixteenPAuthority});
   const valid=(validTaskLease({build,sprint,task,taskId}) && build.implementation_enabled) ||
     validSixteenPLease({sprint,taskId,sixteenPAuthority});
-  const result=intent==="NEW_PR" && !valid?
-    {decision:"STOP",reason:"new product PR needs genuine active non-BLOCKED Task, Build match and execution authority"}:
-    intent==="NEW_PR"?prCreationDecision({taskKey:taskId,openPrs,guard}):
-      intentDecision({intent,build,sprint,task,taskId,sixteenPAuthority});
+  const result=preflightDecision({intent,build,sprint,task,taskId,sixteenPAuthority,openPrs,guard,valid});
   return {facts,intent,task_id:taskId,...result,denied:DENIED.has(result.decision)};
 }
 

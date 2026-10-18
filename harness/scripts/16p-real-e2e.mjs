@@ -84,7 +84,6 @@ if(productHold){
  console.log("16P CANONICAL: Product HOLD + Main 16P lease authority ok repo="+
   CANONICAL_BUILD_REPO+" task="+leaseAuth.lease.task_id);
 }
-const directConnectorPrewriteProven=false;
 const ctx=[canonical,taskFile,live,leaseOp,actOp];
 const history=node("harness/scripts/guarded-github-write.mjs","--operation","TASK_HISTORY_AUDIT",
  "--pr","386","--evidence-pr","387");

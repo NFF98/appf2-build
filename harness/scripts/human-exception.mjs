@@ -280,59 +280,93 @@ const sprintBindingErrors=(state,s,laneName)=>{
     [...errors,"delivery/CURRENT-SPRINT.json must stay unchanged in lane "+laneName];
 };
 const LEASE_FILE="delivery/16p-acceptance-lease/CURRENT.json";
-const sixteenPAcceptanceLeaseLaneErrors=ctx=>{
-  const s=ctx.docket.scope_exception||{},errors=[];
-  const tasks=s.affected_tasks||[];
+const sixteenPScopeFlagErrors=s=>{
+  const errors=[],tasks=s.affected_tasks||[];
   if(tasks.length!==1||tasks[0]!=="T016") errors.push("16P_ACCEPTANCE_LEASE requires affected_tasks exactly [\"T016\"]");
   if(s.product_hold_preserved!==true) errors.push("scope_exception.product_hold_preserved must be true");
   if(s.sprint4_forbidden!==true) errors.push("scope_exception.sprint4_forbidden must be true");
   if(s.direct_connector_prewrite_proven===true)
     errors.push("scope_exception must not claim direct_connector_prewrite_proven");
+  return errors;
+};
+const sixteenPLeasePathPresenceErrors=ctx=>{
+  const errors=[];
   const leasePaths=ctx.changed.filter(p=>p.startsWith("delivery/16p-acceptance-lease/"));
   if(!leasePaths.includes(LEASE_FILE)) errors.push("16P_ACCEPTANCE_LEASE requires "+LEASE_FILE);
   if(leasePaths.some(p=>p!==LEASE_FILE)) errors.push("only "+LEASE_FILE+" may change under delivery/16p-acceptance-lease/");
-  const lease=ctx.readHeadJson(LEASE_FILE);
-  const pol=ctx.readHeadJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||
-    ctx.readBaseJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||{};
+  return errors;
+};
+const sixteenPLeaseIdentityFieldErrors=(lease,pol)=>{
+  const errors=[];
   // Keep Gate checks aligned with 16p-acceptance-lease.mjs (no import cycle).
   if(lease?.schema!==(pol.lease_schema||"APPF2-16P-ACCEPTANCE-LEASE-1")) errors.push("lease schema invalid");
   if(lease?.task_id!=="T016") errors.push("lease.task_id must be T016");
   if(["T006","T008","T009"].includes(lease?.task_id)) errors.push("lease reuses forbidden Task");
   if(lease?.bound_sprint_id!=null) errors.push("lease.bound_sprint_id must be null");
+  return errors;
+};
+const sixteenPLeasePolicyFieldErrors=(lease,caseId)=>{
+  const errors=[];
   if(lease?.product_hold_preserved!==true||lease?.sprint4_forbidden!==true)
     errors.push("lease must preserve Product HOLD and forbid Sprint4");
   if(lease?.direct_connector_prewrite_proven===true)
     errors.push("lease must not self-attest connector prewrite proven");
-  // Formal Activation Gate: only ACTIVE with valid window/TTL may PASS.
-  // PENDING / EXPIRED / REVOKED never receive Activation PASS.
-  if(lease?.status!=="ACTIVE")
-    errors.push("Activation Gate requires lease.status=ACTIVE (PENDING/EXPIRED/REVOKED denied)");
   if(lease?.never_converts_fail_or_untested_to_pass!==true)
     errors.push("lease never_converts_fail_or_untested_to_pass required");
-  if(lease?.activation_case_id!==ctx.docket.case_id)
+  if(lease?.activation_case_id!==caseId)
     errors.push("lease.activation_case_id must equal this Activation docket case_id");
+  return errors;
+};
+const sixteenPLeaseFieldErrors=(lease,pol,caseId)=>[
+  ...sixteenPLeaseIdentityFieldErrors(lease,pol),
+  ...sixteenPLeasePolicyFieldErrors(lease,caseId)
+];
+const sixteenPLeaseFileErrors=(ctx,lease,pol)=>[
+  ...sixteenPLeasePathPresenceErrors(ctx),
+  ...sixteenPLeaseFieldErrors(lease,pol,ctx.docket.case_id)
+];
+const sixteenPLeaseWritePathErrors=(lease,pol)=>{
+  const errors=[];
   const prefixes=pol.permitted_allowed_write_path_prefixes||[
     "delivery/16p-acceptance-lease/","delivery/audits/","harness/scripts/"
   ];
   const paths=lease?.allowed_write_paths;
-  if(!Array.isArray(paths)||!paths.length) errors.push("lease.allowed_write_paths required");
-  else for(const p of paths){
+  if(!Array.isArray(paths)||!paths.length) return ["lease.allowed_write_paths required"];
+  for(const p of paths){
     if(typeof p!=="string"||!p||p.includes("..")||p.includes("\\")||p.startsWith("/"))
       errors.push("lease.allowed_write_paths unsafe: "+p);
     else if(!prefixes.some(pre=>p===pre||(pre.endsWith("/")&&p.startsWith(pre))))
       errors.push("lease.allowed_write_paths not under permitted prefix: "+p);
   }
-  const a=lease?.activated_at_unix,e=lease?.expires_at_unix,now=ctx.now;
-  if(!Number.isSafeInteger(a)||!Number.isSafeInteger(e))
-    errors.push("Activation Gate requires activated_at_unix and expires_at_unix");
-  else{
-    if(!(a<=now&&now<e))
-      errors.push("Activation Gate requires activated_at_unix <= now < expires_at_unix");
-    const maxTtl=pol.max_ttl_seconds||1209600;
-    if(!(e-a>0&&e-a<=maxTtl))
-      errors.push("Activation Gate TTL must be >0 and <= 14d policy max");
-  }
   return errors;
+};
+const sixteenPActivationWindowErrors=(lease,now,pol)=>{
+  const errors=[];
+  // Formal Activation Gate: only ACTIVE with valid window/TTL may PASS.
+  // PENDING / EXPIRED / REVOKED never receive Activation PASS.
+  if(lease?.status!=="ACTIVE")
+    errors.push("Activation Gate requires lease.status=ACTIVE (PENDING/EXPIRED/REVOKED denied)");
+  const a=lease?.activated_at_unix,e=lease?.expires_at_unix;
+  if(!Number.isSafeInteger(a)||!Number.isSafeInteger(e))
+    return [...errors,"Activation Gate requires activated_at_unix and expires_at_unix"];
+  if(!(a<=now&&now<e))
+    errors.push("Activation Gate requires activated_at_unix <= now < expires_at_unix");
+  const maxTtl=pol.max_ttl_seconds||1209600;
+  if(!(e-a>0&&e-a<=maxTtl))
+    errors.push("Activation Gate TTL must be >0 and <= 14d policy max");
+  return errors;
+};
+const sixteenPAcceptanceLeaseLaneErrors=ctx=>{
+  const s=ctx.docket.scope_exception||{};
+  const lease=ctx.readHeadJson(LEASE_FILE);
+  const pol=ctx.readHeadJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||
+    ctx.readBaseJson(GOVERNANCE_REFORM_POLICY_PATH)?.sixteen_p_acceptance_lease||{};
+  return [
+    ...sixteenPScopeFlagErrors(s),
+    ...sixteenPLeaseFileErrors(ctx,lease,pol),
+    ...sixteenPLeaseWritePathErrors(lease,pol),
+    ...sixteenPActivationWindowErrors(lease,ctx.now,pol)
+  ];
 };
 const laneSpecificErrors={
   GOVERNANCE_REFORM:ctx=>(ctx.docket.scope_exception?.affected_tasks||[]).length?["GOVERNANCE_REFORM cannot claim Task authority"]:[],

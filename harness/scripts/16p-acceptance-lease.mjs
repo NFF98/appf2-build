@@ -43,6 +43,13 @@ export function readSixteenPLease(root=process.cwd()){
 const pathEscapes=p=>!nonEmpty(p)||p.includes("\0")||p.includes("..")||p.startsWith("/")||
   /^[A-Za-z]:/.test(p)||p.includes("\\");
 
+const opensForbiddenProductArea=p=>p.startsWith("src/")||p.startsWith("delivery/sprints/")||
+  p==="delivery/CURRENT-SPRINT.json"||p.startsWith("build-spec/")||p==="package.json"||
+  p.startsWith("delivery/backlog/")||p.startsWith("delivery/evidence/");
+
+const underPermittedPrefix=(p,prefixes)=>prefixes.some(pre=>p===pre||
+  (pre.endsWith("/")&&p.startsWith(pre))||p===pre.replace(/\/$/,""));
+
 /** Every lease allowed_write_paths entry must sit under a policy-permitted prefix. */
 export function writePathErrors(paths,permittedPrefixes){
   const prefixes=permittedPrefixes?.length?permittedPrefixes:DEFAULT_PERMITTED_WRITE_PREFIXES;
@@ -50,20 +57,16 @@ export function writePathErrors(paths,permittedPrefixes){
   const errors=[];
   for(const p of paths){
     if(pathEscapes(p)){errors.push("allowed_write_paths unsafe: "+p);continue;}
-    if(!prefixes.some(pre=>p===pre||(pre.endsWith("/")&&p.startsWith(pre))||p===pre.replace(/\/$/,"")))
+    if(!underPermittedPrefix(p,prefixes))
       errors.push("allowed_write_paths not under permitted prefix: "+p);
-    if(p.startsWith("src/")||p.startsWith("delivery/sprints/")||p==="delivery/CURRENT-SPRINT.json"||
-       p.startsWith("build-spec/")||p==="package.json"||p.startsWith("delivery/backlog/")||
-       p.startsWith("delivery/evidence/"))
+    if(opensForbiddenProductArea(p))
       errors.push("allowed_write_paths opens forbidden Product/Sprint/Build area: "+p);
   }
   return errors;
 }
 
-/** Pure structural + policy validation. Does not grant GitHub write authority. */
-export function validateSixteenPLeaseDocument(lease,{now=Math.floor(Date.now()/1000),policy=null}={}){
-  const errors=[],pol=policy||{};
-  if(!lease||typeof lease!=="object") return ["lease document missing"];
+const leaseIdentityErrors=(lease,pol)=>{
+  const errors=[];
   if(lease.schema!==(pol.lease_schema||LEASE_SCHEMA)) errors.push("lease.schema mismatch");
   if(!nonEmpty(lease.lease_id)) errors.push("lease_id required");
   if(!RE_TASK.test(lease.task_id||"")) errors.push("task_id must match T###");
@@ -74,50 +77,71 @@ export function validateSixteenPLeaseDocument(lease,{now=Math.floor(Date.now()/1
   if((pol.forbidden_sprint_ids||[]).includes(lease.bound_sprint_id))
     errors.push("bound_sprint_id forbids Sprint4 / listed sprint: "+lease.bound_sprint_id);
   if(lease.bound_sprint_id!=null) errors.push("bound_sprint_id must be null (Product HOLD preserved; no Sprint activation)");
+  return errors;
+};
+
+const leaseFlagErrors=lease=>{
+  const errors=[];
   if(lease.product_hold_preserved!==true) errors.push("product_hold_preserved must be true");
   if(lease.never_converts_fail_or_untested_to_pass!==true)
     errors.push("never_converts_fail_or_untested_to_pass must be true");
   if(lease.sprint4_forbidden!==true) errors.push("sprint4_forbidden must be true");
-  if(!["PENDING","ACTIVE","EXPIRED","REVOKED"].includes(lease.status))
-    errors.push("status invalid");
-  if(lease.status==="REVOKED") errors.push("lease revoked");
-  if(lease.status==="EXPIRED") errors.push("lease expired (status)");
-  errors.push(...writePathErrors(lease.allowed_write_paths,
-    pol.permitted_allowed_write_path_prefixes||DEFAULT_PERMITTED_WRITE_PREFIXES));
   if(!RE_CASE.test(lease.activation_case_id||"")) errors.push("activation_case_id required");
   if(lease.direct_connector_prewrite_proven===true)
     errors.push("lease must not self-attest direct_connector_prewrite_proven=true");
-
-  if(lease.status==="ACTIVE"){
-    if(!isUnix(lease.activated_at_unix)) errors.push("ACTIVE lease requires activated_at_unix");
-    if(!isUnix(lease.expires_at_unix)) errors.push("expires_at_unix required");
-    if(isUnix(lease.activated_at_unix)&&isUnix(lease.expires_at_unix)){
-      if(!(lease.activated_at_unix<=now && now<lease.expires_at_unix))
-        errors.push("ACTIVE lease requires activated_at_unix <= now < expires_at_unix");
-      const maxTtl=pol.max_ttl_seconds||1209600;
-      const ttl=lease.expires_at_unix-lease.activated_at_unix;
-      if(!(ttl>0&&ttl<=maxTtl)) errors.push("TTL must be >0 and <= policy max_ttl_seconds (14d)");
-    }
-  }else if(lease.status==="PENDING"){
-    // PENDING may omit window; still reject absurd future windows if both set.
-    if(isUnix(lease.activated_at_unix)&&isUnix(lease.expires_at_unix)){
-      const maxTtl=pol.max_ttl_seconds||1209600;
-      const ttl=lease.expires_at_unix-lease.activated_at_unix;
-      if(!(ttl>0&&ttl<=maxTtl)) errors.push("TTL must be >0 and <= policy max_ttl_seconds (14d)");
-    }
-  }else if(!isUnix(lease.expires_at_unix)&&lease.status!=="PENDING"){
-    errors.push("expires_at_unix required");
-  }
   return errors;
+};
+
+const leaseStatusErrors=lease=>{
+  const errors=[];
+  if(!["PENDING","ACTIVE","EXPIRED","REVOKED"].includes(lease.status)) errors.push("status invalid");
+  if(lease.status==="REVOKED") errors.push("lease revoked");
+  if(lease.status==="EXPIRED") errors.push("lease expired (status)");
+  return errors;
+};
+const ttlBoundsErrors=(a,e,maxTtl)=>{
+  const ttl=e-a;
+  return (ttl>0&&ttl<=maxTtl)?[]:["TTL must be >0 and <= policy max_ttl_seconds (14d)"];
+};
+const activeLeaseWindowErrors=(lease,now,maxTtl)=>{
+  const errors=[],a=lease.activated_at_unix,e=lease.expires_at_unix;
+  if(!isUnix(a)) errors.push("ACTIVE lease requires activated_at_unix");
+  if(!isUnix(e)) errors.push("expires_at_unix required");
+  if(!isUnix(a)||!isUnix(e)) return errors;
+  if(!(a<=now && now<e))
+    errors.push("ACTIVE lease requires activated_at_unix <= now < expires_at_unix");
+  return [...errors,...ttlBoundsErrors(a,e,maxTtl)];
+};
+const pendingOrOtherWindowErrors=(lease,maxTtl)=>{
+  const a=lease.activated_at_unix,e=lease.expires_at_unix;
+  if(lease.status==="PENDING"){
+    // PENDING may omit window; still reject absurd future windows if both set.
+    return (isUnix(a)&&isUnix(e))?ttlBoundsErrors(a,e,maxTtl):[];
+  }
+  return isUnix(e)?[]:["expires_at_unix required"];
+};
+const leaseWindowErrors=(lease,now,pol)=>{
+  const maxTtl=pol.max_ttl_seconds||1209600;
+  const status=leaseStatusErrors(lease);
+  if(lease.status==="ACTIVE") return [...status,...activeLeaseWindowErrors(lease,now,maxTtl)];
+  return [...status,...pendingOrOtherWindowErrors(lease,maxTtl)];
+};
+
+/** Pure structural + policy validation. Does not grant GitHub write authority. */
+export function validateSixteenPLeaseDocument(lease,{now=Math.floor(Date.now()/1000),policy=null}={}){
+  if(!lease||typeof lease!=="object") return ["lease document missing"];
+  const pol=policy||{};
+  return [
+    ...leaseIdentityErrors(lease,pol),
+    ...leaseFlagErrors(lease),
+    ...writePathErrors(lease.allowed_write_paths,
+      pol.permitted_allowed_write_path_prefixes||DEFAULT_PERMITTED_WRITE_PREFIXES),
+    ...leaseWindowErrors(lease,now,pol)
+  ];
 }
 
-/** Activation docket on Main must be Human exact-candidate for 16P_ACCEPTANCE_LEASE. */
-export function validateSixteenPActivationDocket(activationDocket,lease,{now=Math.floor(Date.now()/1000)}={}){
+const activationScopeErrors=(s)=>{
   const errors=[];
-  if(!activationDocket||typeof activationDocket!=="object") return ["activation docket missing on Main"];
-  if(activationDocket.case_id!==lease?.activation_case_id)
-    errors.push("activation docket case_id must equal lease.activation_case_id");
-  const s=activationDocket.scope_exception||{};
   if(s.schema!=="APPF2-HUMAN-EXCEPTION-1") errors.push("activation scope_exception.schema invalid");
   if(s.lane!=="16P_ACCEPTANCE_LEASE") errors.push("activation lane must be 16P_ACCEPTANCE_LEASE");
   if(s.never_converts_fail_or_untested_to_pass!==true)
@@ -127,13 +151,28 @@ export function validateSixteenPActivationDocket(activationDocket,lease,{now=Mat
   if(s.affected_sprint!=null) errors.push("activation affected_sprint must be null");
   const tasks=s.affected_tasks||[];
   if(tasks.length!==1||tasks[0]!=="T016") errors.push("activation affected_tasks must be [\"T016\"]");
-  const a=activationDocket.human_approval;
+  return errors;
+};
+
+const activationApprovalErrors=(activationDocket,now)=>{
+  const errors=[],a=activationDocket.human_approval,s=activationDocket.scope_exception||{};
   if(!a||a.decision!=="APPROVE_EXACT_CANDIDATE"||a.scope!=="EXACT_PR_DIFF")
     errors.push("activation requires Human APPROVE_EXACT_CANDIDATE / EXACT_PR_DIFF");
   if(a&&a.case_id!==activationDocket.case_id) errors.push("activation approval case_id mismatch");
   if(a&&a.candidate_digest_sha256!==activationDocket.candidate_digest_sha256)
     errors.push("activation approval digest mismatch");
   if(isUnix(s.expires_at_unix)&&now>s.expires_at_unix) errors.push("activation exception expired");
+  return errors;
+};
+
+/** Activation docket on Main must be Human exact-candidate for 16P_ACCEPTANCE_LEASE. */
+export function validateSixteenPActivationDocket(activationDocket,lease,{now=Math.floor(Date.now()/1000)}={}){
+  if(!activationDocket||typeof activationDocket!=="object") return ["activation docket missing on Main"];
+  const errors=[];
+  if(activationDocket.case_id!==lease?.activation_case_id)
+    errors.push("activation docket case_id must equal lease.activation_case_id");
+  errors.push(...activationScopeErrors(activationDocket.scope_exception||{}));
+  errors.push(...activationApprovalErrors(activationDocket,now));
   if(activationDocket.status==="REVOKED"||lease?.status==="REVOKED") errors.push("activation/lease revoked");
   const paths=activationDocket.exact_changed_paths||[];
   if(!paths.includes(LEASE_REL)) errors.push("activation exact_changed_paths must include "+LEASE_REL);
