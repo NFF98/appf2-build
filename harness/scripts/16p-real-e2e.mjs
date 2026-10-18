@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {resolveRunnablePlan} from "./select-impacted-tests.mjs";
+import {admitProviderReceipts} from "./16p-provider-admission.mjs";
 const REQUIRED=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","16"];
 const repo=process.env.GITHUB_REPOSITORY;
 const prNumber=Number(process.env.PR_NUMBER);
@@ -387,24 +388,30 @@ receipt("16","Design+Build protected two-repository change and truthful combined
  design_integrity_strict:designStrictCheck,
  design_required_approving_review_count:designReviewCount,
  human_approval_environment_no_admin_bypass:environmentNoAdminBypass,
- design_protected_write_and_closure:"NOT_VERIFIED",
- build_main_read:buildMain.exit===0},
+ design_protected_write_and_closure:"NOT_VERIFIED"},
  ["Enable strict Design design-integrity gate and true Human authorization; then perform actual protected writes, Main merges and independent two-repo closure"],
  "AUTHORITY_REQUIRED");
 requireBool(designProviderProtected,"Actual Design Main provider Ruleset missing; cross-repo E2E blocked");
 requireBool(designStrictCheck,
  "#16 Design Main Ruleset design-integrity is NOT strict; enable Require branches to be up to date before merging");
 requireBool(rows.length===16&&REQUIRED.every((x,i)=>rows[i]?.id===x),"16P missing/duplicate operations");
+// Provider / protected-operation admission (fail-closed).
+// CHECK_PASS and synthetic fixtures NEVER promote complete_real_e2e.
+// Only live-verified receipts under APPF2_16P_PROVIDER_RECEIPTS_DIR may set PASS.
+// Empty/absent directory => 0 admissions (legacy 0/16 until real proofs exist).
+const providerAdmission=admitProviderReceipts({
+ required:REQUIRED,rows,head,repo,gh,parse,exec,evidenceDir,fatal});
 const tally=Object.fromEntries(["CHECK_PASS","PARTIAL","AUTHORITY_REQUIRED","NOT_RUN","FAIL"].map(s=>
  [s,rows.filter(r=>r.operation_verdict===s).length]));
 // IMPORTANT: CHECK_PASS is NOT E2E PASS. Only independently proven protected
-// lifecycle receipts can mark full E2E complete, which this read-only token cannot obtain.
+// lifecycle receipts (via APPF2_16P_PROVIDER_RECEIPTS_DIR) may mark full E2E complete.
 const verifiedFullCount=rows.filter(r=>r.complete_real_e2e==="PASS").length;
 const result={schema:"APPF2-16P-REAL-EOE-STRICT-1",source:"LIVE_GITHUB_ACTIONS",
  pr:prNumber,head,run_id:process.env.GITHUB_RUN_ID,
  attempted_items:rows.length,operational_counts:tally,
  full_real_e2e_pass_count:verifiedFullCount,
- main_closure_pass_count:0, // Not yet authenticated; NEVER extrapolate from tests or PR checks.
+ main_closure_pass_count:providerAdmission.main_closure_admitted,
+ provider_admission:providerAdmission,
  runner_attempted_protected_mutations:false,
  provider_wide_no_unauthorized_mutations:"NOT_VERIFIED",
  ssot_protection_receipt:{
@@ -434,6 +441,10 @@ const summary=["## 16P STRICT REAL E2E: "+
  result.full_real_e2e_pass_count+"/16 complete",
  "Actual GitHub APIs and runnable commands performed: "+rows.length+"/16;",
  "Local-operation CHECK_PASS is NOT a full protected lifecycle PASS.",
+ "Provider admissions scanned="+providerAdmission.scanned+
+ " admitted=["+providerAdmission.admitted.join(",")+"]"+
+ " rejected="+providerAdmission.rejected.length+
+ " (dir="+((providerAdmission.directory)||"NONE")+").",
  "GitHub MAIN SSOT verified="+ssotContractVerified+
  "; protected-main Ruleset verified for Runner="+providerMainRulesetVerified+
  "; global bypass inventory verified="+providerGlobalBypassInventoryVerified+
