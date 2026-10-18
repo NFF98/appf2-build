@@ -130,11 +130,35 @@ const liveTaskLease=Boolean(
  mainState?.active_build_spec===mainBuildState?.active_baseline &&
  mainBuildState?.implementation_enabled===true
 );
-requireBool((canonicalHistoricalTask||liveTaskLease)&&t008?.task_id==="T008",
- "Canonical Main Sprint/Task or Build lease inconsistent; no inherited authority");
+// An active Task cannot be inferred from a current-sprint pointer alone.
+// Authenticate the CURRENT Sprint Task document against GitHub Main, and check
+// exact baseline and mapped AC/Test/allowed paths before recording any lease.
+const currentTaskFile=liveTaskLease?
+ gh("contents/delivery/sprints/"+mainState.active_sprint+"/tasks.json?ref=main"):
+ {command:"No current Task: Main HOLD",exit:null,stdout:"",stderr:"",error:null};
+const activeTaskList=currentTaskFile.exit===0?decode(parse(currentTaskFile)):null;
+const activeTask=activeTaskList?.tasks?.find(x=>x.task_id===mainState.active_task);
+const liveTaskRecordVerified=Boolean(
+ liveTaskLease && currentTaskFile.exit===0 &&
+ activeTaskList?.sprint_id===mainState?.active_sprint &&
+ activeTask?.build_spec_id===mainBuildState?.active_baseline &&
+ ["IN_PROGRESS","REVIEW"].includes(activeTask?.status) &&
+ Array.isArray(activeTask?.acceptance_links) && activeTask.acceptance_links.length>0 &&
+ activeTask.acceptance_links.every(x=>typeof x.acceptance_id==="string"&&
+  typeof x.test_id==="string") &&
+ Array.isArray(activeTask?.allowed_write_paths) &&
+ activeTask.allowed_write_paths.length>0
+);
+const validMainTaskState=canonicalHistoricalTask?
+ t008?.task_id==="T008"&&t008?.status==="REVIEW"&&
+ mainBuildState?.implementation_enabled===false:
+ liveTaskRecordVerified;
+requireBool(validMainTaskState,
+ "Canonical Main Task/Sprint/Build and mapped Scope failed authoritative Main binding; no inherited authority");
 if(canonicalHistoricalTask)console.log("16P CANONICAL: Main HOLD, T008 historic="+t008?.status+"; no live Task authority");
-else if(liveTaskLease)console.log("16P CANONICAL: live Task lease is observable ONLY, not a substitute for Human grant");
-const ctx=[canonical,taskFile,live,mainBuildOp,ssotFetch,rulesetFetch];
+else if(liveTaskRecordVerified)console.log("16P CANONICAL: real Main Task/Sprint/Build/AC/path scope verified for "+
+ activeTask.task_id+"; this is NOT Human authorization");
+const ctx=[canonical,taskFile,live,mainBuildOp,currentTaskFile,ssotFetch,rulesetFetch];
 const history=node("harness/scripts/guarded-github-write.mjs","--operation","TASK_HISTORY_AUDIT",
  "--pr","386","--evidence-pr","387");
 const p386=gh("pulls/386"),p387=gh("pulls/387");
@@ -150,12 +174,29 @@ receipt("1","One Task / one PR / merge / evidence / closure",
  historicReady?"PARTIAL":"FAIL");
 requireBool(historicReady,"#1 historical real PR->Evidence linkage invalid");
 const env=gh("environments/appf2-task-human-approval");
+const envConfig=parse(env);
+const environmentRequiredReviewer=Boolean(
+ env.exit===0 && envConfig?.name==="appf2-task-human-approval" &&
+ envConfig?.protection_rules?.some(x=>x.type==="required_reviewers" &&
+  x.reviewers?.some(y=>y.type==="User"&&y.reviewer?.login==="NFF98"))
+);
+// A HUMAN-approved Actions environment is meaningless if an admin can use
+// GitHub's provider bypass button instead of submitting a genuine review.
+const environmentNoAdminBypass=env.exit===0 &&
+ envConfig?.can_admins_bypass===false;
+requireBool(environmentRequiredReviewer,
+ "#2 GitHub Human approval environment missing verified NFF98 Required Reviewer");
+requireBool(environmentNoAdminBypass,
+ "#2 GitHub Human approval environment allows ADMIN BYPASS; turn off 'Allow administrators to bypass configured protection rules' in GitHub Settings > Environments > appf2-task-human-approval");
 const taskGrant=node("harness/scripts/gpt-preflight.mjs","state",
  "--task","T008","--intent","REQUEST_APPROVAL");
 receipt("2","One trusted Human grant from activation through merge/closure",
  [env,taskGrant],{github_environment_http_success:env.exit===0,
+ actual_required_reviewer_NFF98:environmentRequiredReviewer,
+ github_environment_admin_bypass_allowed:envConfig?.can_admins_bypass??"NOT_VERIFIED",
+ provider_enforced_human_gate_without_admin_bypass:environmentRequiredReviewer&&environmentNoAdminBypass,
  canonical_status:t008?.status,command_exit:taskGrant.exit},
- ["Real single Human grant + independently verified approval provenance + completed positive merge/closure"],
+ ["Disable GitHub Environment admin bypass; verify real NFF98 approval run and positive protected Merge/Closure"],
  "AUTHORITY_REQUIRED");
 const workflowRuns=gh("actions/workflows/ci.yml/runs?branch="+
  encodeURIComponent(livePr?.head?.ref||"")+"&per_page=100");
@@ -345,11 +386,14 @@ receipt("16","Design+Build protected two-repository change and truthful combined
  design_provider_main_protected_for_runner:designProviderProtected,
  design_integrity_strict:designStrictCheck,
  design_required_approving_review_count:designReviewCount,
+ human_approval_environment_no_admin_bypass:environmentNoAdminBypass,
  design_protected_write_and_closure:"NOT_VERIFIED",
  build_main_read:buildMain.exit===0},
- ["Human-approved real Design+Build protected change, strict exact-head gates in BOTH repos, protected Main writes and independent closure"],
+ ["Enable strict Design design-integrity gate and true Human authorization; then perform actual protected writes, Main merges and independent two-repo closure"],
  "AUTHORITY_REQUIRED");
 requireBool(designProviderProtected,"Actual Design Main provider Ruleset missing; cross-repo E2E blocked");
+requireBool(designStrictCheck,
+ "#16 Design Main Ruleset design-integrity is NOT strict; enable Require branches to be up to date before merging");
 requireBool(rows.length===16&&REQUIRED.every((x,i)=>rows[i]?.id===x),"16P missing/duplicate operations");
 const tally=Object.fromEntries(["CHECK_PASS","PARTIAL","AUTHORITY_REQUIRED","NOT_RUN","FAIL"].map(s=>
  [s,rows.filter(r=>r.operation_verdict===s).length]));
