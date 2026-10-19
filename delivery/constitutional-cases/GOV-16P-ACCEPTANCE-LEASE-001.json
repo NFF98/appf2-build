@@ -109,7 +109,7 @@
   },
   "human_approval": null,
   "prior_human_approval_superseded": {
-    "note": "Prior APPROVE_EXACT_CANDIDATE bound SOURCE_DIGEST=a71e4b2b… / IMPL_HEAD=baea8bd…; subsequent forged-product:ci HOLD fixes produced SOURCE_DIGEST=9dfa8e38… / tip=98df829…; superseded by eslint complexity recovery digest 7168354b… pending new BCE + Human APPROVE_EXACT_CANDIDATE.",
+    "note": "Prior APPROVE_EXACT_CANDIDATE bound SOURCE_DIGEST=a71e4b2b… / IMPL_HEAD=baea8bd…; subsequent forged-product:ci HOLD fixes produced SOURCE_DIGEST=9dfa8e38… / tip=98df829…; superseded by eslint complexity recovery digest 2835d9b3… pending new BCE + Human APPROVE_EXACT_CANDIDATE.",
     "superseded_digest_sha256": "a71e4b2b054b6044f6fb1108ab620a914714beb5bdc1de57cf97ba296a765be2",
     "superseded_implementation_head": "baea8bdfeb4d5b18b2c6166f85b70e73a59431c6",
     "intermediate_hold_fix_digest_sha256": "9dfa8e3824de599411d2d89407e0b34a1a148bc1ef43d2443c6152314000a349",
