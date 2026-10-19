@@ -89,6 +89,28 @@ const adminHoldRun=(run,record,ctx)=>[
   HEX64.test(run?.log_sha256||""),nonEmpty(run?.node_version),
   stamp(run?.completed_at)
 ].every(Boolean);
+// Product HOLD control: always require adminHoldRun for product:ci
+// (do not wait for CONTROL_VERDICT — forged LOCAL PASS + fake product:ci
+// PASS must still be rejected). Admin-closure five-file exception: same
+// strict path when CONTROL_VERDICT is claimed (forged product:ci PASS
+// must not fall through to numericPass).
+const productCiHoldStrict=(run,record,ctx)=>
+  run?.command==="npm run product:ci" &&
+  (ctx.productHoldControl===true ||
+   (ctx.adminClosure===true && record.verdict===CONTROL_VERDICT));
+const localRunAdmissible=(run,record,ctx)=>productCiHoldStrict(run,record,ctx)
+  ? adminHoldRun(run,record,ctx)
+  : [numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
+const localRunBindingErrors=(run,ctx)=>{
+  const e=[];
+  assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
+    "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
+  assertion(run?.head_sha===ctx.head && run?.base_sha===ctx.base,
+    "local test log must bind current exact HEAD and BASE: "+run?.command,e);
+  assertion(Date.parse(run?.completed_at)<=Date.parse(ctx.localCommentCreatedAt),
+    "local run completed after its claimed attestation comment: "+run?.command,e);
+  return e;
+};
 const localEvidenceErrors=(record,ctx)=>{
   const e=[],runs=safeArray(record.test_runs);
   assertion(runs.length>=REQUIRED_LOCAL.length,"local test manifest missing required commands",e);
@@ -99,26 +121,9 @@ const localEvidenceErrors=(record,ctx)=>{
     assertion(matched.length===1,"local command missing or duplicated: "+name,e);
   }
   for(const run of runs){
-    // Product HOLD control: always require adminHoldRun for product:ci
-    // (do not wait for CONTROL_VERDICT — forged LOCAL PASS + fake product:ci
-    // PASS must still be rejected). Admin-closure five-file exception: same
-    // strict path when CONTROL_VERDICT is claimed (forged product:ci PASS
-    // must not fall through to numericPass).
-    const holdProductCi=
-      run?.command==="npm run product:ci" &&
-      (ctx.productHoldControl===true ||
-       (ctx.adminClosure===true &&
-        record.verdict===CONTROL_VERDICT));
-    const admissible=holdProductCi
-      ? adminHoldRun(run,record,ctx)
-      : [numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
-    assertion(admissible,"local test skipped/failed or missing immutable log digest: "+run?.command,e);
-    assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
-      "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
-    assertion(run?.head_sha===ctx.head && run?.base_sha===ctx.base,
-      "local test log must bind current exact HEAD and BASE: "+run?.command,e);
-    assertion(Date.parse(run?.completed_at)<=Date.parse(ctx.localCommentCreatedAt),
-      "local run completed after its claimed attestation comment: "+run?.command,e);
+    assertion(localRunAdmissible(run,record,ctx),
+      "local test skipped/failed or missing immutable log digest: "+run?.command,e);
+    e.push(...localRunBindingErrors(run,ctx));
   }
   return e;
 };
