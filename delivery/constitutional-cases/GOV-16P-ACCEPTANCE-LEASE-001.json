@@ -4,7 +4,7 @@
   "constitution_version": "1.0",
   "title": "建立 16P_ACCEPTANCE_LEASE 專用治理通道（Product HOLD 相容、禁止 Sprint4／T006–T009）",
   "change_class": "L3_CONSTITUTIONAL",
-  "status": "CANDIDATE_PENDING_BCE_AND_HUMAN_EXACT_APPROVAL",
+  "status": "HUMAN_EXACT_CANDIDATE_APPROVED_GATES_AND_BCE_ONLY",
   "exact_changed_paths": [
     "delivery/audits/16P-ACCEPTANCE-LEASE-ACTIVATION-FOLLOWUP.json",
     "delivery/audits/16P-ACCEPTANCE-LEASE-CHANNEL-PLAN.json",
@@ -107,15 +107,26 @@
     "zero_gap": true,
     "justification": "GOVERNANCE_REFORM 通道 PR 不建立／不延遲／不豁免任何 Product GAP register 列；canonical register 無連結本 case 的 OPEN GAP。Activation／Host-wide／16/16／Human provenance 留在 follow_up，非 RESOLVED。"
   },
-  "human_approval": null,
+  "human_approval": {
+    "case_id": "GOV-16P-ACCEPTANCE-LEASE-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712",
+    "approved_implementation_head": "ac592b01dbbe7e4b1f0356d3459436b621d4eb14",
+    "approved_base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
+    "human_message_ref": "NFF98 OWNER GitHub PR #409 comment 6283669026 (2026-10-20T04:52:17Z): APPROVE_EXACT_CANDIDATE PR=#409 BASE=312b923221f5d5d18c887302a60d30493fa66129 IMPL_HEAD=ac592b01dbbe7e4b1f0356d3459436b621d4eb14 SOURCE_DIGEST=2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712 SCOPE=Exact candidate approval only; NOT Human Final Ready or Merge. Records Human decision already made in ChatGPT. https://github.com/NFF98/appf2-build/pull/409#issuecomment-6283669026 — NOT independent cryptographic Human signature; manual provenance check required. NOT Merge/Closure/Activation/Sprint4/HOLD lift/H3 true/16P FULL.",
+    "approved_at_unix": 1792471937
+  },
   "prior_human_approval_superseded": {
-    "note": "Prior APPROVE_EXACT_CANDIDATE bound SOURCE_DIGEST=a71e4b2b… / IMPL_HEAD=baea8bd…; subsequent forged-product:ci HOLD fixes produced SOURCE_DIGEST=9dfa8e38… / tip=98df829…; superseded by eslint complexity recovery digest 2835d9b3… pending new BCE + Human APPROVE_EXACT_CANDIDATE.",
+    "note": "Prior APPROVE_EXACT_CANDIDATE bound SOURCE_DIGEST=a71e4b2b… / IMPL_HEAD=baea8bd…; subsequent forged-product:ci HOLD fixes produced SOURCE_DIGEST=9dfa8e38… / tip=98df829…; superseded by eslint complexity recovery digest 2835d9b3… now rebound via Human comment 6283669026.",
     "superseded_digest_sha256": "a71e4b2b054b6044f6fb1108ab620a914714beb5bdc1de57cf97ba296a765be2",
     "superseded_implementation_head": "baea8bdfeb4d5b18b2c6166f85b70e73a59431c6",
     "intermediate_hold_fix_digest_sha256": "9dfa8e3824de599411d2d89407e0b34a1a148bc1ef43d2443c6152314000a349",
     "intermediate_hold_fix_head": "98df8293a6ed6cb35ed91f46ade1c7708b1f4159"
   },
-  "notes": "Gate recovery candidate: eslint equivalent complexity split for localEvidenceErrors only. Intermediate HOLD-fix digest 9dfa8e38… / HEAD 98df829 verified. New SOURCE_DIGEST=2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712 supersedes a71e4b2b… docket binding. human_approval cleared (not forged). Digest computed from git index/blob bytes (LF). H3 false; 16P 0/16; Product HOLD; product:ci NOT_RUN; XGATE FAIL retained; Sprint4 forbidden. Pending independent GPT BCE + Human APPROVE_EXACT_CANDIDATE. No Push/Merge/Activation.",
+  "notes": "BASE=312b923221f5d5d18c887302a60d30493fa66129 IMPL_HEAD=ac592b01dbbe7e4b1f0356d3459436b621d4eb14 SOURCE_DIGEST=2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712 Human APPROVE_EXACT_CANDIDATE registered from GitHub comment 6283669026 at approved_at_unix=1792471937. Docket-only tip; exact_changed_paths (14 files) digest unchanged. NOT Merge/Activation/Closure; H3 NOT_PROVEN; 16P 0/16; Product HOLD; product:ci NOT_RUN; XGATE FAIL retained; Sprint4 forbidden.",
   "previous_candidate_digest_sha256_hold_control_approved": "a71e4b2b054b6044f6fb1108ab620a914714beb5bdc1de57cf97ba296a765be2",
   "previous_candidate_digest_sha256_forged_product_ci_hold_fix": "9dfa8e3824de599411d2d89407e0b34a1a148bc1ef43d2443c6152314000a349",
   "eslint_complexity_recovery_minimal_fix": [
