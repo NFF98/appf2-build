@@ -1,0 +1,62 @@
+{
+  "case_id": "GOV-16P-ACCEPTANCE-LEASE-ACT-001",
+  "base_sha": "f6ae9a83db0c207171236e2b684f315679084082",
+  "constitution_version": "1.0",
+  "title": "獨立啟動 T016 16P REAL Acceptance Lease（保留 Product HOLD；禁止 Sprint4）",
+  "change_class": "SIXTEEN_P_ACCEPTANCE",
+  "status": "HUMAN_EXACT_CANDIDATE_APPROVED_GATES_AND_BCE_ONLY",
+  "exact_changed_paths": [
+    "delivery/16p-acceptance-lease/CURRENT.json"
+  ],
+  "candidate_digest_sha256": "0379cd92d7918d9a796bec4332e35b3fbddab463f3712a36359621694c64ea16",
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "16P_ACCEPTANCE_LEASE",
+    "reason": "在 #409 專用治理通道已受保護合併的前提下，為 T016 建立限時 16P 真實驗收權限；不解除 Product HOLD、不啟動 Sprint 4。",
+    "risk": "限時驗收可能被誤解成 Product Activation、Human 核准或 16P 16/16 PASS。Main-only lease + 溯源批准 + TTL + 禁止路徑 + 獨立驗收緩解。",
+    "owner": "Human NFF98",
+    "follow_up": "本案獨立 Human exact-candidate 核准及受保護 Merge 後，仍須 Task T016 PR 專屬 Human create authority、16 個真實 provider receipt、Host-wide Connector 攔截實證、獨立 Merge/Closure；H3 維持 NOT_PROVEN。歷史 Product GAP 未有新狀態轉移，本案不註冊 Product GAP。",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "product_hold_preserved": true,
+    "sprint4_forbidden": true,
+    "direct_connector_prewrite_proven": false,
+    "affected_sprint": null,
+    "affected_tasks": [
+      "T016"
+    ],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793712000
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "此 PR 只啟用獨立 T016 驗收控制通道，不更動 Product GAP 既有狀態；未完成的 REAL E2E / H3 僅列 follow_up，均非 RESOLVED。"
+  },
+  "human_approval": {
+    "case_id": "GOV-16P-ACCEPTANCE-LEASE-ACT-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "0379cd92d7918d9a796bec4332e35b3fbddab463f3712a36359621694c64ea16",
+    "approved_base_sha": "f6ae9a83db0c207171236e2b684f315679084082",
+    "human_message_ref": "Direct Human approval in ChatGPT conversation dated 2026-10-20: APPROVE_EXACT_CANDIDATE; CASE=GOV-16P-ACCEPTANCE-LEASE-ACT-001; BASE=f6ae9a83db0c207171236e2b684f315679084082; DIGEST=0379cd92d7918d9a796bec4332e35b3fbddab463f3712a36359621694c64ea16; SCOPE=Activation PR / Gates / BCE only; NOT Merge. Recorded by GPT; independent Human-origin cryptographic proof absent; provenance manual check required.",
+    "approved_at_unix": 1792503200,
+    "human_provenance_manual_check_required": true,
+    "approval_excludes": [
+      "HUMAN_FINAL_READY",
+      "HUMAN_MERGE",
+      "TASK_CREATE",
+      "SPRINT4",
+      "PRODUCT_HOLD_LIFT",
+      "16P_PASS"
+    ]
+  },
+  "no_change": "若不啟動：Main 繼續 Product HOLD，T016 尚未取得執行權，不得宣稱 16/16 REAL E2E PASS。",
+  "rollback": "到期即 fail-closed；撤銷或回復均須 Human 授權的治理 PR，不可直接改 Main。",
+  "notes": "Activation exact-lease candidate digest 0379cd92d7918d9a796bec4332e35b3fbddab463f3712a36359621694c64ea16 approved in direct Human ChatGPT message; docked without changing any approved lease bytes. PR/Gates/BCE allowed only; Merge/Closure/Task/Sprint/Product activation not authorized. Main Product HOLD until separate authorized Merge."
+}
