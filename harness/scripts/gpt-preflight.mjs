@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { GOVERNANCE_REFORM_POLICY_PATH } from "./human-exception.mjs";
+import { loadMainSixteenPLeaseAuthority, syntheticTaskFromLease } from "./16p-acceptance-lease.mjs";
 
 export function taskKeyOfPr(pr,guard){
   const declared=new RegExp(guard.task_declaration_pattern,"m").exec(pr.body||"");
@@ -42,17 +43,25 @@ const validTaskLease=({build,sprint,task,taskId})=>
   task?.build_spec_id===build.active_baseline &&
   sprint.active_build_spec===build.active_baseline &&
   Boolean(sprint.active_sprint);
-const intentDecision=({intent,build,sprint,task,taskId})=>{
+const productHold=sprint=>sprint?.status==="HOLD"&&sprint.active_sprint===null&&sprint.active_task===null;
+/** Task authority from Main-evaluated 16P lease only — never from local CURRENT.json bytes alone. */
+const validSixteenPLease=({sprint,taskId,sixteenPAuthority})=>
+  productHold(sprint) && sixteenPAuthority?.ok===true && sixteenPAuthority?.source==="main" &&
+  sixteenPAuthority?.lease?.task_id===taskId;
+const intentDecision=({intent,build,sprint,task,taskId,sixteenPAuthority})=>{
   const isActive=validTaskLease({build,sprint,task,taskId});
+  const is16p=validSixteenPLease({sprint,taskId,sixteenPAuthority});
   switch(intent){
     case "CONTINUE_TASK_WORK":
+      if(is16p) return {decision:"CONTINUE_SAME_LEASE",reason:"Main-approved 16P_ACCEPTANCE_LEASE under Product HOLD"};
       return isActive && build.implementation_enabled?{decision:"CONTINUE_SAME_LEASE",reason:"same active Task; no new approval needed"}:
         {decision:"STOP",reason:"Task "+taskId+" is not the ACTIVE/REVIEW Task (status "+sprint.status+", active "+sprint.active_task+")"};
     case "REQUEST_ACTIVATION":
-      return isActive?{decision:"REDUNDANT_ACTIVATION_DENIED",reason:"Task already holds execution authority"}:{decision:"ACTIVATION_MAY_BE_REQUESTED",reason:"Human Activation decision required"};
+      return (isActive||is16p)?{decision:"REDUNDANT_ACTIVATION_DENIED",reason:"Task already holds execution authority"}:{decision:"ACTIVATION_MAY_BE_REQUESTED",reason:"Human Activation decision required"};
     case "REQUEST_APPROVAL":
-      return isActive?{decision:"REDUNDANT_APPROVAL_DENIED",reason:"same Task + same scope continues without a new grant"}:{decision:"APPROVAL_MAY_BE_REQUESTED",reason:"no active authority for this Task"};
+      return (isActive||is16p)?{decision:"REDUNDANT_APPROVAL_DENIED",reason:"same Task + same scope continues without a new grant"}:{decision:"APPROVAL_MAY_BE_REQUESTED",reason:"no active authority for this Task"};
     case "REQUEST_REBIND":
+      if(is16p) return {decision:"REBIND_NOT_REQUIRED",reason:"16P acceptance lease does not rebind Product baselines"};
       return task && task.build_spec_id===build.active_baseline?{decision:"REBIND_NOT_REQUIRED",reason:"Task already bound to active baseline; code fixes never need Rebind"}:{decision:"REBIND_MAY_BE_REQUIRED",reason:"baseline/mapping differs; Human governance decides"};
     default:
       return {decision:"STOP",reason:"unknown intent "+intent};
@@ -62,20 +71,30 @@ const DENIED=new Set(["STOP","REDUNDANT_ACTIVATION_DENIED","REDUNDANT_APPROVAL_D
   "REBIND_NOT_REQUIRED","REUSE_EXISTING_PR","BLOCKED_NO_LIVE_PR_INVENTORY",
   "BLOCKED_MISSING_TASK_OR_GOVERNANCE_CASE"]);
 
+const preflightFacts=({build,sprint,task,leaseTask,taskId,openPrs,guard,sixteenPAuthority})=>({
+  active_baseline:build.active_baseline,implementation_enabled:build.implementation_enabled,
+  active_sprint:sprint.active_sprint,sprint_status:sprint.status,active_task:sprint.active_task,
+  task_status:task?.status||null,task_build_spec:task?.build_spec_id||null,
+  sixteen_p_lease_active:Boolean(leaseTask),
+  sixteen_p_authority_source:sixteenPAuthority?.source||null,
+  sixteen_p_authority_ok:sixteenPAuthority?.ok===true,
+  open_prs_for_task:prCreationDecision({taskKey:taskId,openPrs,guard}).existing
+});
+const preflightDecision=({intent,build,sprint,task,taskId,sixteenPAuthority,openPrs,guard,valid})=>{
+  if(intent==="NEW_PR" && !valid)
+    return {decision:"STOP",reason:"new product PR needs genuine active non-BLOCKED Task, Build match and execution authority"};
+  if(intent==="NEW_PR") return prCreationDecision({taskKey:taskId,openPrs,guard});
+  return intentDecision({intent,build,sprint,task,taskId,sixteenPAuthority});
+};
 /** Pure preflight over canonical state; returns auditable facts plus one decision. */
-export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId}){
-  const task=(tasks||[]).find(t=>t.task_id===taskId)||null;
-  const facts={
-    active_baseline:build.active_baseline,implementation_enabled:build.implementation_enabled,
-    active_sprint:sprint.active_sprint,sprint_status:sprint.status,active_task:sprint.active_task,
-    task_status:task?.status||null,task_build_spec:task?.build_spec_id||null,
-    open_prs_for_task:prCreationDecision({taskKey:taskId,openPrs,guard}).existing
-  };
-  const valid=validTaskLease({build,sprint,task,taskId}) && build.implementation_enabled;
-  const result=intent==="NEW_PR" && !valid?
-    {decision:"STOP",reason:"new product PR needs genuine active non-BLOCKED Task, Build match and execution authority"}:
-    intent==="NEW_PR"?prCreationDecision({taskKey:taskId,openPrs,guard}):
-      intentDecision({intent,build,sprint,task,taskId});
+export function preflight({build,sprint,tasks,openPrs,guard,intent,taskId,sixteenPAuthority=null}){
+  const leaseTask=validSixteenPLease({sprint,taskId,sixteenPAuthority})?
+    syntheticTaskFromLease(sixteenPAuthority.lease):null;
+  const task=(tasks||[]).find(t=>t.task_id===taskId)||leaseTask;
+  const facts=preflightFacts({build,sprint,task,leaseTask,taskId,openPrs,guard,sixteenPAuthority});
+  const valid=(validTaskLease({build,sprint,task,taskId}) && build.implementation_enabled) ||
+    validSixteenPLease({sprint,taskId,sixteenPAuthority});
+  const result=preflightDecision({intent,build,sprint,task,taskId,sixteenPAuthority,openPrs,guard,valid});
   return {facts,intent,task_id:taskId,...result,denied:DENIED.has(result.decision)};
 }
 
@@ -102,7 +121,12 @@ function stateCli({arg,guard,openPrs}){
   if(!openPrs) console.error("PREFLIGHT WARNING: no --open-prs inventory; PR reuse cannot be proven (treat as NOT_READY for NEW_PR).");
   const sprint=readJson("delivery/CURRENT-SPRINT.json");
   const tasks=sprint.active_sprint?readJson("delivery/sprints/"+sprint.active_sprint+"/tasks.json").tasks:[];
-  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs,guard,intent:arg("intent")||"CONTINUE_TASK_WORK",taskId:arg("task")||sprint.active_task});
+  // Local CURRENT.json never grants authority — Main lease + Activation only.
+  const sixteenPAuthority=loadMainSixteenPLeaseAuthority({});
+  const out=preflight({build:readJson("build-spec/CURRENT.json"),sprint,tasks,openPrs,guard,
+    intent:arg("intent")||"CONTINUE_TASK_WORK",
+    taskId:arg("task")||sixteenPAuthority.lease?.task_id||sprint.active_task,
+    sixteenPAuthority});
   console.log(JSON.stringify(out,null,2));
   return out.denied || (!openPrs && out.intent==="NEW_PR")?3:0;
 }

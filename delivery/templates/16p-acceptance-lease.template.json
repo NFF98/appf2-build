@@ -1,0 +1,28 @@
+{
+  "schema": "APPF2-16P-ACCEPTANCE-LEASE-1",
+  "lease_id": "16P-LEASE-001",
+  "task_id": "T016",
+  "status": "PENDING",
+  "title": "16P REAL protected-path acceptance lease",
+  "product_hold_preserved": true,
+  "sprint4_forbidden": true,
+  "bound_sprint_id": null,
+  "never_converts_fail_or_untested_to_pass": true,
+  "direct_connector_prewrite_proven": false,
+  "forbidden_reuse_task_ids": ["T006", "T008", "T009"],
+  "allowed_write_paths": [
+    "delivery/16p-acceptance-lease/",
+    "delivery/audits/",
+    "harness/scripts/"
+  ],
+  "acceptance_links": [
+    {
+      "acceptance_id": "16P-AC-LEASE",
+      "test_id": "TEST-16P-LEASE"
+    }
+  ],
+  "activated_at_unix": null,
+  "expires_at_unix": null,
+  "activation_case_id": "GOV-16P-ACCEPTANCE-LEASE-ACT-001",
+  "notes": "Activate only via 16P_ACCEPTANCE_LEASE Human exact-candidate PR after channel merge. Does not start Sprint4. Merge/Closure of Task PR remain separate Human approvals."
+}

@@ -1,0 +1,136 @@
+{
+  "case_id": "GOV-16P-ACCEPTANCE-LEASE-001",
+  "base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
+  "constitution_version": "1.0",
+  "title": "建立 16P_ACCEPTANCE_LEASE 專用治理通道（Product HOLD 相容、禁止 Sprint4／T006–T009）",
+  "change_class": "L3_CONSTITUTIONAL",
+  "status": "HUMAN_EXACT_CANDIDATE_APPROVED_GATES_AND_BCE_ONLY",
+  "exact_changed_paths": [
+    "delivery/audits/16P-ACCEPTANCE-LEASE-ACTIVATION-FOLLOWUP.json",
+    "delivery/audits/16P-ACCEPTANCE-LEASE-CHANNEL-PLAN.json",
+    "delivery/audits/16P-HOST-CONNECTOR-PROBE-LOCAL.json",
+    "delivery/templates/16p-acceptance-lease.template.json",
+    "harness/policy/governance-reform.json",
+    "harness/scripts/16p-acceptance-lease.mjs",
+    "harness/scripts/16p-host-connector-probe.mjs",
+    "harness/scripts/16p-real-e2e.mjs",
+    "harness/scripts/final-ready-preflight.mjs",
+    "harness/scripts/final-ready-selftest.mjs",
+    "harness/scripts/governance-reform-selftest.mjs",
+    "harness/scripts/gpt-preflight.mjs",
+    "harness/scripts/guarded-github-write.mjs",
+    "harness/scripts/human-exception.mjs"
+  ],
+  "candidate_digest_sha256": "2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712",
+  "previous_candidate_digest_sha256_gate_recovery": "bb70c3fa2a094517144f2563bddc4f1304f0eba8c1edff3d79133e14233fbf17",
+  "previous_candidate_digest_sha256_human_approved_gates_bce_only": "dc1c8d0b70afc287b3594ac52a28f5654a9710ea2c6cef7894b47a006bd70522",
+  "previous_candidate_digest_sha256_bce_blocked": "0e414cc91789358acddbae56167fd5f36eeeadbdd9e5fb1a33bb36ae64be563d",
+  "previous_candidate_digest_sha256_bce_fix": "1bcb19985399160520d4857950b12f25324cb3d0df12a8bd908d9b59f99c2664",
+  "final_ready_hold_control_minimal_fix": [
+    "final-ready-preflight: admit CONTROL_GATES_PASS_PRODUCT_NOT_RUN when trusted Main (BASE) proves Product HOLD and PR does not touch build-spec/CURRENT.json or delivery/CURRENT-SPRINT.json",
+    "final-ready-selftest: positive Main-HOLD control + negatives (active sprint, enabled build, enablement path touch, missing HOLD_NOT_RUN)",
+    "product:ci remains NOT_RUN/HOLD_NOT_RUN; XGATE FAIL retained; no Product PASS; no 16P PASS"
+  ],
+  "gate_recovery_minimal_fix": [
+    "eslint: equivalent function splits only (no lease TTL/authority/reject semantics change)",
+    "16p-real-e2e: remove unused directConnectorPrewriteProven binding (H3 remains false/NOT_PROVEN)",
+    "carry_forward: zero_gap — channel creates no Product GAP register rows; Activation/Host-wide/16/16 stay in follow_up"
+  ],
+  "bce_blocked_minimal_fix": [
+    "16p-real-e2e: Product HOLD requires Main ACTIVE approved non-revoked non-expired lease+Activation or HARD_STOP",
+    "16p-acceptance-lease: strict permitted write-path prefixes; activated_at <= now < expires_at; TTL<=14d",
+    "gpt-preflight/guarded-github-write: Task authority only via Main-evaluated lease+Activation (local CURRENT.json insufficient)",
+    "selftest: added negatives; CLI exits nonzero on failure; synthetic PASS is NOT 16P REAL PASS"
+  ],
+  "bce_r3_minimal_fix": [
+    "Main lease authority locked to NFF98/appf2-build; GITHUB_REPOSITORY override rejected",
+    "16p-real-e2e lease/Activation reads use locked Build repo only",
+    "Activation Gate requires status=ACTIVE with valid window+TTL; PENDING/EXPIRED/REVOKED denied"
+  ],
+  "why5": [
+    {
+      "question": "為什麼需要新通道而不是 Sprint4／重開 T008？",
+      "answer": "Main 為 HOLD 且 READY backlog=0；下一序號 SP-P1-004 即 Sprint4；Admin closure 後需 Product Alignment。Human 特批 B 路線要求獨立 16P 驗收 lease，不啟動 Sprint4、不借用已結案／T008／T009。",
+      "evidence_ref": "delivery/audits/16P-ACCEPTANCE-LEASE-CHANNEL-PLAN.json"
+    },
+    {
+      "question": "為什麼本 PR 不直接寫 ACTIVE lease？",
+      "answer": "通道與 Activation 必須分離：本 PR 僅以 GOVERNANCE_REFORM 引入 lane／harness；ACTIVE T016 lease 屬後續 16P_ACCEPTANCE_LEASE exact-candidate（GOV-16P-ACCEPTANCE-LEASE-ACT-001），避免一次 PR 同時自我授權與放寬。",
+      "evidence_ref": "delivery/audits/16P-ACCEPTANCE-LEASE-ACTIVATION-FOLLOWUP.json"
+    },
+    {
+      "question": "如何保證 Product HOLD 與歷史 Task 不被改寫？",
+      "answer": "新 lane 禁止 CURRENT-SPRINT、sprints/、backlog/、build-spec/、src/；lease.bound_sprint_id 必須 null；T006／T008／T009 列入 forbidden_reuse；selftest 覆蓋負向。",
+      "evidence_ref": "harness/policy/governance-reform.json"
+    },
+    {
+      "question": "H3 Host-wide 為何不把 false 改 true？",
+      "answer": "Ruleset 不攔截 raw PR create；本 PR 僅提供 readonly probe，明確 host_wide=NOT_PROVEN；directConnectorPrewriteProven 維持 false，禁止偽造攔截。",
+      "evidence_ref": "delivery/audits/16P-HOST-CONNECTOR-PROBE-LOCAL.json"
+    },
+    {
+      "question": "為何不會假綠 16/16？",
+      "answer": "never_converts_fail_or_untested_to_pass；本 PR 不宣告 FULL E2E PASS；Merge／Closure 仍各需 Human；16 項真實收據與 Host-wide 接線皆在通道 Merge 與 Activation 之後。",
+      "evidence_ref": "harness/scripts/16p-real-e2e.mjs"
+    }
+  ],
+  "alternatives": [
+    "啟動 Sprint4 Product Activation：違反 Human 禁令且需 READY backlog + Product Alignment。",
+    "重開 T008／T009：違反 CLOSED_TASK_IMMUTABILITY／admission live-task 規則。",
+    "僅 Merge #407：無法提供 live Task lease，無法 16/16。"
+  ],
+  "no_change": "若無本通道：16P 在 HOLD 下永無合法 live Task 權威，FULL REAL PASS 不可達。",
+  "rollback": "Human 核准的 revert PR 還原本 docket exact_changed_paths；docket append-only 保留。",
+  "negative_tests": [
+    "harness/scripts/governance-reform-selftest.mjs（含 16P_ACCEPTANCE_LEASE 6 案例與 policy invariants）",
+    "gpt-preflight：HOLD+ACTIVE T016 lease → NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY；T099/T008 仍 STOP"
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "Human 正式特批 B 路線：建立 16P_ACCEPTANCE_LEASE 專用治理通道，使 Product HOLD 下可合法進行限時 16P 真實驗收 Task lease，而不啟動 Sprint4。",
+    "risk": "CI 無法證明核准者為真人；通道被濫用為假 Product Activation。以 forbidden paths、T016-only、connector 禁止自證、Activation 分離緩解。",
+    "owner": "Human NFF98",
+    "follow_up": "本通道 Merge 後仍須各自 Human 核准：GOV-16P-ACCEPTANCE-LEASE-ACT-001 ACTIVE lease；Task PR／16 收據；Host-wide connector 接線（H3 維持 false／NOT_PROVEN 至獨立證明）；Merge／Closure。CI 無法證明 human_approval 來自真人。上述皆非本 docket 的 Product GAP register 義務，不得寫成 RESOLVED。",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": null,
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793538337
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "GOVERNANCE_REFORM 通道 PR 不建立／不延遲／不豁免任何 Product GAP register 列；canonical register 無連結本 case 的 OPEN GAP。Activation／Host-wide／16/16／Human provenance 留在 follow_up，非 RESOLVED。"
+  },
+  "human_approval": {
+    "case_id": "GOV-16P-ACCEPTANCE-LEASE-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712",
+    "approved_implementation_head": "ac592b01dbbe7e4b1f0356d3459436b621d4eb14",
+    "approved_base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
+    "human_message_ref": "NFF98 OWNER GitHub PR #409 comment 6283669026 (2026-10-20T04:52:17Z): APPROVE_EXACT_CANDIDATE PR=#409 BASE=312b923221f5d5d18c887302a60d30493fa66129 IMPL_HEAD=ac592b01dbbe7e4b1f0356d3459436b621d4eb14 SOURCE_DIGEST=2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712 SCOPE=Exact candidate approval only; Final Ready and Merge excluded. Records Human decision already made in ChatGPT. https://github.com/NFF98/appf2-build/pull/409#issuecomment-6283669026 — independent cryptographic Human signature absent; manual provenance check required. Merge/Closure/Activation/Sprint4/HOLD lift/H3 true/16P FULL excluded.",
+    "approved_at_unix": 1792471937
+  },
+  "prior_human_approval_superseded": {
+    "note": "Prior APPROVE_EXACT_CANDIDATE bound SOURCE_DIGEST=a71e4b2b… / IMPL_HEAD=baea8bd…; subsequent forged-product:ci HOLD fixes produced SOURCE_DIGEST=9dfa8e38… / tip=98df829…; superseded by eslint complexity recovery digest 2835d9b3… now rebound via Human comment 6283669026.",
+    "superseded_digest_sha256": "a71e4b2b054b6044f6fb1108ab620a914714beb5bdc1de57cf97ba296a765be2",
+    "superseded_implementation_head": "baea8bdfeb4d5b18b2c6166f85b70e73a59431c6",
+    "intermediate_hold_fix_digest_sha256": "9dfa8e3824de599411d2d89407e0b34a1a148bc1ef43d2443c6152314000a349",
+    "intermediate_hold_fix_head": "98df8293a6ed6cb35ed91f46ade1c7708b1f4159"
+  },
+  "notes": "BASE=312b923221f5d5d18c887302a60d30493fa66129 IMPL_HEAD=ac592b01dbbe7e4b1f0356d3459436b621d4eb14 SOURCE_DIGEST=2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712 Human APPROVE_EXACT_CANDIDATE registered from GitHub comment 6283669026 at approved_at_unix=1792471937. Docket-only tip; exact_changed_paths (14 files) digest unchanged. NOT Merge/Activation/Closure; H3 NOT_PROVEN; 16P 0/16; Product HOLD; product:ci NOT_RUN; XGATE FAIL retained; Sprint4 forbidden.",
+  "previous_candidate_digest_sha256_hold_control_approved": "a71e4b2b054b6044f6fb1108ab620a914714beb5bdc1de57cf97ba296a765be2",
+  "previous_candidate_digest_sha256_forged_product_ci_hold_fix": "9dfa8e3824de599411d2d89407e0b34a1a148bc1ef43d2443c6152314000a349",
+  "eslint_complexity_recovery_minimal_fix": [
+    "final-ready-preflight: equivalent complexity splits for localEvidenceErrors only (productCiHoldStrict/localRunAdmissible/localRunBindingErrors); no HOLD/admin-closure/Product PASS semantics change",
+    "selftest HOLD + admin-closure forge reject positives/negatives retained; product:ci remains NOT_RUN/HOLD_NOT_RUN"
+  ]
+}

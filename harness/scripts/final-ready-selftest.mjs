@@ -1,8 +1,12 @@
 // Synthetic-only regression. No test comment is a real Human/GPT approval.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness,inspectReadyRecheckBinding,inspectReadyRecheckFreshness} from "./final-ready-preflight.mjs";
+import {inspectPrReadiness,inspectNonPrInvocation,bceCiConsistency,READY_MARKER,READY_SCHEMA,REQUIRED_LOCAL,l1TaskChangedPathsValid,checkReadyPrRunOrigin,inspectTaskPrReadiness,inspectReadyRecheckBinding,inspectReadyRecheckFreshness,mainProductHoldProven,productHoldControlEligible,PRODUCT_HOLD_ENABLEMENT_PATHS} from "./final-ready-preflight.mjs";
 const HEAD="a".repeat(40),BASE="b".repeat(40),REPO="NFF98/appf2-build",D="c".repeat(64);
+const holdSprint={status:"HOLD",active_sprint:null,active_task:null,active_build_spec:null};
+const holdBuild={implementation_enabled:false};
+const activeSprint={status:"ACTIVE",active_sprint:"SP-P1-003",active_task:"T008",active_build_spec:"BS-P1-025"};
+const enabledBuild={implementation_enabled:true};
 const u="https://github.com/"+REPO+"/pull/395#issuecomment-123";
 const live={number:395,state:"open",draft:false,head:{sha:HEAD,repo:{full_name:REPO}},base:{sha:BASE,ref:"main"}};
 const event={pull_request:{number:395,head:{sha:HEAD},base:{sha:BASE},draft:false}};
@@ -82,6 +86,77 @@ check({checks:{check_runs:[]}},false);
 check({comments:comments.map(x=>({...x,body:"PR body checkbox PASS"}))},false);
 check({event:{pull_request:{...event.pull_request,base:null}}},false);
 check({comments:[mk({...local,test_runs:[...local.test_runs,{...local.test_runs[0],command:"npm run product:ci",status:"NOT_RUN"}]},1),mk(bce,2),mk(human,3)]},false);
+// Product HOLD control: Main HOLD proven + PR did not touch enablement paths.
+assert.equal(mainProductHoldProven(holdSprint,holdBuild),true);
+assert.equal(mainProductHoldProven(activeSprint,holdBuild),false);
+assert.equal(mainProductHoldProven(holdSprint,enabledBuild),false);
+assert.equal(productHoldControlEligible({changedPaths:["harness/scripts/final-ready-preflight.mjs"],mainSprint:holdSprint,mainBuild:holdBuild}),true);
+assert.equal(productHoldControlEligible({changedPaths:[...PRODUCT_HOLD_ENABLEMENT_PATHS],mainSprint:holdSprint,mainBuild:holdBuild}),false);
+assert.equal(productHoldControlEligible({changedPaths:["harness/x.mjs"],mainSprint:activeSprint,mainBuild:holdBuild}),false);
+const holdLocal={...r("LOCAL_TESTS"),verdict:"CONTROL_GATES_PASS_PRODUCT_NOT_RUN",lock_sha256:D,
+  environment:"GitHub-hosted Cloud Evidence under Product HOLD",
+  test_runs:REQUIRED_LOCAL.map(command=>({command,
+    status:command==="npm run product:ci"?"NOT_RUN":"PASS",
+    exit_code:0,log_url:u,log_sha256:D,head_sha:HEAD,base_sha:BASE,node_version:"v22.23.3",
+    completed_at:"2026-10-15T00:00:00Z",
+    ...(command==="npm run product:ci"?{product_disposition:"HOLD_NOT_RUN"}:{})}))};
+const holdBce={...bce,execution_evidence_verdict:"CONTROL_GATES_PASS_PRODUCT_NOT_RUN"};
+const holdComments=[mk(holdLocal,1),mk(holdBce,2),mk(human,3)];
+const holdGovFiles=[[{filename:"harness/scripts/final-ready-preflight.mjs"},
+  {filename:"harness/scripts/final-ready-selftest.mjs"}]];
+const holdCheck=(over={},want=true)=>check({comments:holdComments,changedFiles:holdGovFiles,
+  mainSprint:holdSprint,mainBuild:holdBuild,...over},want);
+holdCheck({},true);
+holdCheck({mainSprint:activeSprint},false);
+holdCheck({mainBuild:enabledBuild},false);
+holdCheck({changedFiles:[[{filename:"build-spec/CURRENT.json"},{filename:"harness/scripts/x.mjs"}]]},false);
+holdCheck({changedFiles:[[{filename:"delivery/CURRENT-SPRINT.json"}]]},false);
+holdCheck({comments:[mk({...holdLocal,verdict:"PASS"},1),mk(holdBce,2),mk(human,3)]},false);
+holdCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"?{...x,product_disposition:undefined}:x)},1),mk(holdBce,2),mk(human,3)]},false);
+holdCheck({mainSprint:undefined,mainBuild:undefined},false);
+// 1) HOLD + LOCAL_TESTS verdict PASS + product:ci PASS → REJECT
+//    (protection must not require CONTROL_VERDICT to activate)
+holdCheck({comments:[mk({...holdLocal,verdict:"PASS",test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:undefined}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+// 2) HOLD + CONTROL verdict + product:ci PASS → REJECT
+holdCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:"HOLD_NOT_RUN"}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+holdCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:undefined}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+// 3) HOLD + CONTROL verdict + product:ci NOT_RUN/HOLD_NOT_RUN → PASS
+//    (covered by holdCheck({},true) above)
+// 4) Non-HOLD legitimate PASS path must not regress (covered by check({},true) above)
+console.log("Product HOLD Main-proven control admission + negatives: PASS (synthetic).");
+// Admin-closure five-file exception: same product:ci forge must REJECT;
+// legitimate NOT_RUN / HOLD_NOT_RUN must still PASS.
+const adminClosureFiles=[[
+  {filename:"build-spec/CURRENT.json"},
+  {filename:"delivery/CURRENT-SPRINT.json"},
+  {filename:"delivery/PROJECT-OPEN-ITEMS.json"},
+  {filename:"delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json"},
+  {filename:"delivery/sprints/SP-P1-003/manifest.json"}
+]];
+const adminCheck=(over={},want=true)=>check({comments:holdComments,changedFiles:adminClosureFiles,
+  mainSprint:undefined,mainBuild:undefined,...over},want);
+// Positive: admin closure + CONTROL + product:ci NOT_RUN/HOLD_NOT_RUN → PASS
+adminCheck({},true);
+// Negative: admin closure + CONTROL + forged product:ci PASS → REJECT
+adminCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:undefined}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+adminCheck({comments:[mk({...holdLocal,test_runs:holdLocal.test_runs.map(x=>
+  x.command==="npm run product:ci"
+    ?{...x,status:"PASS",exit_code:0,product_disposition:"HOLD_NOT_RUN"}:x)},1),
+  mk(holdBce,2),mk(human,3)]},false);
+console.log("Admin-closure CONTROL product:ci forge reject + legit NOT_RUN: PASS (synthetic).");
 // Actual canonical repo-policy.json governance roots, not a guessed whitelist.
 // Source and destination must both be unprotected in Ready admission.
 const l1File=(filename,status="modified",previous_filename)=>({

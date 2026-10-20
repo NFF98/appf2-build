@@ -2,6 +2,7 @@
 // This is an admission gate, not proof of Human identity or a replacement for GCCA.
 // Evidence is external to HEAD (append-only PR comments); the code HEAD never embeds its own SHA.
 import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { finalGateVerdict, readLiveDelegationEvidence } from "./task-pr-lifecycle.mjs";
 import { exceptionDigest, matchesPathRule } from "./human-exception.mjs";
@@ -13,8 +14,13 @@ export const REQUIRED_LOCAL=[
   "npm ci","npm run check:lint","npm run gate","npm run dry-run:attack",
   "npm run product:ci","node harness/scripts/final-ready-selftest.mjs"
 ];
+/** Paths that would lift or rebind Product execution authority — PR must not touch them for HOLD control. */
+export const PRODUCT_HOLD_ENABLEMENT_PATHS=Object.freeze([
+  "build-spec/CURRENT.json","delivery/CURRENT-SPRINT.json"
+]);
 const HEX40=/^[0-9a-f]{40}$/, HEX64=/^[0-9a-f]{64}$/;
 const KINDS=["LOCAL_TESTS","GPT_BCE","HUMAN_FINAL_READY"];
+const CONTROL_VERDICT="CONTROL_GATES_PASS_PRODUCT_NOT_RUN";
 const validUrl=(s,repo)=>{
   if(typeof s!=="string") return false;
   const prefix="https://github.com/"+repo+"/";
@@ -49,29 +55,62 @@ const sourceErrors=(c,owner)=>{
   assertion(stamp(c.created_at) && c.created_at===c.updated_at,"comment must be unedited and dated",errors);
   return errors;
 };
+/** Trusted Main (BASE) Product HOLD — never trust a PR-local self-attestation field. */
+export const mainProductHoldProven=(sprint,build)=>
+  sprint?.status==="HOLD" && sprint.active_sprint===null && sprint.active_task===null &&
+  sprint.active_build_spec===null && build?.implementation_enabled===false;
+/** Main HOLD + PR did not touch Product enablement paths. PR cannot declare this itself. */
+export const productHoldControlEligible=({changedPaths,mainSprint,mainBuild})=>{
+  const paths=safeArray(changedPaths).filter(nonEmpty);
+  if(paths.some(p=>PRODUCT_HOLD_ENABLEMENT_PATHS.includes(p))) return false;
+  return mainProductHoldProven(mainSprint,mainBuild);
+};
+const controlAdmission=(ctx)=>ctx.adminClosure===true || ctx.productHoldControl===true;
 const commonErrors=(c,record,ctx)=>{
   const e=[];
   assertion(record.schema===READY_SCHEMA,"unknown readiness schema",e);
   assertion(record.pr_number===ctx.live.number,"readiness PR number mismatch",e);
   assertion(record.head_sha===ctx.head && HEX40.test(record.head_sha||""),"stale or malformed readiness HEAD",e);
   assertion(record.base_sha===ctx.base && HEX40.test(record.base_sha||""),"stale or malformed readiness BASE",e);
-  const control=ctx.adminClosure===true && record.kind==="LOCAL_TESTS" &&
-    record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN";
+  const control=controlAdmission(ctx) && record.kind==="LOCAL_TESTS" &&
+    record.verdict===CONTROL_VERDICT;
   assertion(record.verdict==="PASS" || control ||
     (record.kind==="HUMAN_FINAL_READY" && record.verdict==="APPROVED"),
     "readiness verdict is not PASS/APPROVED",e);
   assertion(KINDS.includes(record.kind),"unknown readiness stage",e);
   return e.concat(sourceErrors(c,ctx.owner));
 };
-// A narrowly authenticated administrative HOLD is not Product PASS.
+// Narrow Product HOLD / admin-closure control is not Product PASS.
 const adminHoldRun=(run,record,ctx)=>[
-  ctx.adminClosure===true,
-  record.verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN",
+  controlAdmission(ctx),
+  record.verdict===CONTROL_VERDICT,
   run?.command==="npm run product:ci",run?.status==="NOT_RUN",
   run?.product_disposition==="HOLD_NOT_RUN",run?.exit_code===0,
   HEX64.test(run?.log_sha256||""),nonEmpty(run?.node_version),
   stamp(run?.completed_at)
 ].every(Boolean);
+// Product HOLD control: always require adminHoldRun for product:ci
+// (do not wait for CONTROL_VERDICT — forged LOCAL PASS + fake product:ci
+// PASS must still be rejected). Admin-closure five-file exception: same
+// strict path when CONTROL_VERDICT is claimed (forged product:ci PASS
+// must not fall through to numericPass).
+const productCiHoldStrict=(run,record,ctx)=>
+  run?.command==="npm run product:ci" &&
+  (ctx.productHoldControl===true ||
+   (ctx.adminClosure===true && record.verdict===CONTROL_VERDICT));
+const localRunAdmissible=(run,record,ctx)=>productCiHoldStrict(run,record,ctx)
+  ? adminHoldRun(run,record,ctx)
+  : [numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
+const localRunBindingErrors=(run,ctx)=>{
+  const e=[];
+  assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
+    "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
+  assertion(run?.head_sha===ctx.head && run?.base_sha===ctx.base,
+    "local test log must bind current exact HEAD and BASE: "+run?.command,e);
+  assertion(Date.parse(run?.completed_at)<=Date.parse(ctx.localCommentCreatedAt),
+    "local run completed after its claimed attestation comment: "+run?.command,e);
+  return e;
+};
 const localEvidenceErrors=(record,ctx)=>{
   const e=[],runs=safeArray(record.test_runs);
   assertion(runs.length>=REQUIRED_LOCAL.length,"local test manifest missing required commands",e);
@@ -82,21 +121,16 @@ const localEvidenceErrors=(record,ctx)=>{
     assertion(matched.length===1,"local command missing or duplicated: "+name,e);
   }
   for(const run of runs){
-    const admissible=[numericPass(run),adminHoldRun(run,record,ctx)].some(Boolean);
-    assertion(admissible,"local test skipped/failed or missing immutable log digest: "+run?.command,e);
-    assertion(specificEvidenceUrl(run?.log_url,ctx.repo),
-      "local test proof needs an exact workflow job or GitHub comment, not a mutable issue root: "+run?.command,e);
-    assertion(run?.head_sha===ctx.head && run?.base_sha===ctx.base,
-      "local test log must bind current exact HEAD and BASE: "+run?.command,e);
-    assertion(Date.parse(run?.completed_at)<=Date.parse(ctx.localCommentCreatedAt),
-      "local run completed after its claimed attestation comment: "+run?.command,e);
+    assertion(localRunAdmissible(run,record,ctx),
+      "local test skipped/failed or missing immutable log digest: "+run?.command,e);
+    e.push(...localRunBindingErrors(run,ctx));
   }
   return e;
 };
 const bceEvidenceErrors=(r,ctx)=>{
   const e=[];
-  const administrativeControl=ctx.adminClosure===true &&
-    r.execution_evidence_verdict==="CONTROL_GATES_PASS_PRODUCT_NOT_RUN";
+  const administrativeControl=controlAdmission(ctx) &&
+    r.execution_evidence_verdict===CONTROL_VERDICT;
   assertion(r.scope_verdict==="PASS" && (r.execution_evidence_verdict==="PASS" || administrativeControl),
     "GPT BCE requires separate scope and execution-evidence PASS",e);
   assertion(r.reviewer_role==="GPT_INDEPENDENT" && nonEmpty(r.independent_review_note),
@@ -198,20 +232,32 @@ export function candidateDigestOf(changedFiles,readBytes){
   const others=dockets.length===1?paths.filter(x=>x!==dockets[0]):paths;
   return exceptionDigest(readBytes,others);
 };
+const readBaseJson=(base,rel)=>{
+  if(!HEX40.test(base||"") || !nonEmpty(rel) || rel.includes("..") || rel.includes("\\")) return null;
+  try{
+    const raw=execFileSync("git",["show",base+":"+rel],{encoding:"utf8",maxBuffer:8*1024*1024,stdio:["ignore","pipe","ignore"]});
+    return JSON.parse(raw);
+  }catch{return null;}
+};
 /** Pure verifier. A shared GitHub OWNER credential is NOT cryptographic Human provenance. */
 export function inspectPrReadiness({event,live,comments,checks,changedFiles,
-  candidateDigest,repo,verifiedPrRunOrigins}){
+  candidateDigest,repo,verifiedPrRunOrigins,mainSprint,mainBuild}){
   const errors=prMetadataErrors(event,live,repo),head=live?.head?.sha,base=live?.base?.sha;
-  // Only an exact-five-file administrative closure may carry a truthful
-  // Product HOLD/NOT_RUN; unrelated PRs must supply six real PASS commands.
+  // CONTROL Product NOT_RUN is admitted only for (a) exact five-file admin
+  // closure, or (b) trusted Main Product HOLD when the PR did not touch
+  // Product enablement paths. Six real PASS remains the default.
   const approvedPaths=["build-spec/CURRENT.json","delivery/CURRENT-SPRINT.json",
     "delivery/PROJECT-OPEN-ITEMS.json",
     "delivery/constitutional-cases/GOV-SP-P1-003-ADMIN-CLOSURE-002.json",
     "delivery/sprints/SP-P1-003/manifest.json"].sort();
-  const paths=Array.isArray(changedFiles)?changedFiles.flat().map(x=>x?.filename).sort():[];
+  const paths=Array.isArray(changedFiles)?changedFiles.flat().map(x=>x?.filename).filter(nonEmpty).sort():[];
   const adminClosure=paths.length===approvedPaths.length &&
     paths.every((x,i)=>x===approvedPaths[i]);
-  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest,adminClosure};
+  // Main HOLD bytes must be injected from trusted BASE readers (live Git show).
+  // Omitted injection ⇒ no Product HOLD control (tests/default). Never a PR claim field.
+  const productHoldControl=(mainSprint!==undefined || mainBuild!==undefined) &&
+    productHoldControlEligible({changedPaths:paths,mainSprint,mainBuild});
+  const ctx={head,base,live,repo,owner:repo.split("/")[0],candidateDigest,adminClosure,productHoldControl};
   assertion(HEX64.test(candidateDigest||""),"cannot compute exact Git-byte candidate SHA256",errors);
   // L3 governance changes cannot obtain Final Ready from Draft fast-loop or
   // a successful branch push. Reuse the L1 trusted GitHub PR-run provenance.
@@ -448,8 +494,12 @@ async function inspectReadyWithLiveApi({event,live,repo,token}){
   const verifiedPrRunOrigins=await verifyLiveRequiredPrRunOrigins({
     head:live.head?.sha,base:live.base?.sha,prNumber:live.number,
     checks,token});
+  const baseSha=live?.base?.sha;
   const facts={event,live,comments,checks,changedFiles:changed,
-    candidateDigest,repo,verifiedPrRunOrigins};
+    candidateDigest,repo,verifiedPrRunOrigins,
+    // Trusted Main Product HOLD from BASE objects — not from PR working tree claims.
+    mainSprint:readBaseJson(baseSha,"delivery/CURRENT-SPRINT.json"),
+    mainBuild:readBaseJson(baseSha,"build-spec/CURRENT.json")};
   if(/^Task:\s*T\d{3}\b/m.test(live.body||"")){
     const verifiedGrant=await verifyLiveGrant({pr:live,token});
     return inspectTaskPrReadiness({...facts,verifiedGrant});

@@ -1,0 +1,30 @@
+{
+  "schema": "APPF2-16P-ACCEPTANCE-LEASE-ACTIVATION-FOLLOWUP-1",
+  "status": "DRAFT_AFTER_CHANNEL_MERGE_ONLY",
+  "lane": "16P_ACCEPTANCE_LEASE",
+  "case_id_planned": "GOV-16P-ACCEPTANCE-LEASE-ACT-001",
+  "exact_lease_candidate": {
+    "path": "delivery/16p-acceptance-lease/CURRENT.json",
+    "task_id": "T016",
+    "status": "ACTIVE",
+    "product_hold_preserved": true,
+    "sprint4_forbidden": true,
+    "bound_sprint_id": null,
+    "forbidden_reuse": ["T006", "T008", "T009"],
+    "max_ttl_seconds": 1209600,
+    "direct_connector_prewrite_proven": false,
+    "allowed_write_paths": [
+      "delivery/16p-acceptance-lease/",
+      "delivery/audits/",
+      "harness/scripts/"
+    ]
+  },
+  "main_must_remain": {
+    "CURRENT-SPRINT.status": "HOLD",
+    "active_sprint": null,
+    "active_task": null,
+    "implementation_enabled": false,
+    "SP-P1-003/T006/T008/T009": "unchanged"
+  },
+  "not_executable_until": "GOV-16P-ACCEPTANCE-LEASE-001 Merged to Main"
+}

@@ -3,6 +3,7 @@
 // is NOT Human approval and NOT Product evidence.
 import fs from "node:fs";
 import path from "node:path";
+import {pathToFileURL} from "node:url";
 import {
   evaluateHumanException,isPersistentProceduralWaiver,exceptionDigest,
   HUMAN_EXCEPTION_SCHEMA,GOVERNANCE_REFORM_POLICY_PATH
@@ -17,6 +18,10 @@ import { planTaskEvidenceReferences,planTaskClosureReadiness,
   planProtectedClosureMutation,inspectProtectedControlPrProvenance } from "./evidence-ledger-report.mjs";
 import { computeGovernanceMetrics,fullCiRuns } from "./governance-metrics.mjs";
 import { preflight,prCreationDecision,taskKeyOfPr,hasPrJustification,governanceCaseOfPr,hasHumanFacingChinese } from "./gpt-preflight.mjs";
+import {
+  validateSixteenPLeaseDocument,evaluateSixteenPLeaseAuthority,writePathErrors,
+  resolveCanonicalBuildRepo,CANONICAL_BUILD_REPO,loadMainSixteenPLeaseAuthority
+} from "./16p-acceptance-lease.mjs";
 
 const NOW=1792000000,BASE="a".repeat(40),DOCKET="delivery/constitutional-cases/GOV-TEST-EXCEPTION-001.json";
 const RULESET_CONTEXTS=["ci","attack","governance","Analyze JavaScript / TypeScript"];
@@ -247,8 +252,133 @@ function policyInvariantCases(policy){
     ["only BUILD_SPEC_ACTIVATION may move CURRENT/Activation",true,Object.entries(ex.lanes).every(([n,l])=>n==="BUILD_SPEC_ACTIVATION" ||
       l.forbidden_paths.includes("build-spec/") || ["build-spec/CURRENT.json","build-spec/activations/"].every(p=>l.forbidden_paths.includes(p)))],
     ["BUILD_SPEC_ACTIVATION cannot touch baselines/Deltas/Evidence",true,["build-spec/baselines/","delivery/deltas/","delivery/evidence/"].every(p=>ex.lanes.BUILD_SPEC_ACTIVATION.forbidden_paths.includes(p))],
-    ["only HOTFIX may touch Product source",true,Object.entries(ex.lanes).every(([n,l])=>n==="HOTFIX" || l.forbidden_paths.includes("src/"))]
+    ["only HOTFIX may touch Product source",true,Object.entries(ex.lanes).every(([n,l])=>n==="HOTFIX" || l.forbidden_paths.includes("src/"))],
+    ["16P_ACCEPTANCE_LEASE lane present",true,Boolean(ex.lanes["16P_ACCEPTANCE_LEASE"])],
+    ["16P_ACCEPTANCE_LEASE preserves HOLD pointers",true,["delivery/CURRENT-SPRINT.json","delivery/sprints/","delivery/backlog/","build-spec/","src/"].every(p=>ex.lanes["16P_ACCEPTANCE_LEASE"].forbidden_paths.includes(p))],
+    ["16P_ACCEPTANCE_LEASE policy forbids Sprint4/T008 reuse",true,policy.sixteen_p_acceptance_lease?.canonical_task_id==="T016"&&
+      policy.sixteen_p_acceptance_lease.forbidden_reuse_task_ids.includes("T008")&&
+      policy.sixteen_p_acceptance_lease.forbidden_sprint_ids.includes("SP-P1-004")&&
+      policy.sixteen_p_acceptance_lease.direct_connector_prewrite_default===false],
+    ["16P lease policy Main-only authority + path prefixes",true,
+      policy.sixteen_p_acceptance_lease?.authority_source==="main_ref_only"&&
+      policy.sixteen_p_acceptance_lease.local_working_tree_lease_insufficient===true&&
+      (policy.sixteen_p_acceptance_lease.permitted_allowed_write_path_prefixes||[]).includes("harness/scripts/")]
   ],x=>x);
+}
+
+function sixteenPAcceptanceLeaseCases(policy){
+  const lease={
+    schema:"APPF2-16P-ACCEPTANCE-LEASE-1",lease_id:"16P-LEASE-001",task_id:"T016",status:"ACTIVE",
+    product_hold_preserved:true,sprint4_forbidden:true,bound_sprint_id:null,
+    never_converts_fail_or_untested_to_pass:true,activated_at_unix:NOW-60,expires_at_unix:NOW+3600,
+    allowed_write_paths:["delivery/audits/","harness/scripts/16p-real-e2e.mjs"],
+    activation_case_id:"GOV-TEST-EXCEPTION-001",title:"16P acceptance",
+    direct_connector_prewrite_proven:false
+  };
+  const hold={active_sprint:null,active_build_spec:null,active_task:null,status:"HOLD"};
+  const build={active_baseline:"BS-P1-025",implementation_enabled:false};
+  const base=()=>{
+    const c=fixture(policy,{lane:"16P_ACCEPTANCE_LEASE",
+      files:{"delivery/16p-acceptance-lease/CURRENT.json":lease,"delivery/audits/note.json":{"ok":true}},
+      scope:{affected_tasks:["T016"],affected_sprint:null,product_hold_preserved:true,sprint4_forbidden:true,
+        covered_gates:["CHANGE_SCOPE"]}});
+    c.state={baseSprint:hold,headSprint:{...hold},baseBuild:build,headBuild:{...build}};
+    return rebindDigest(c);
+  };
+  return [
+    ["16P_ACCEPTANCE_LEASE exact ACTIVE lease",true,base()],
+    ["16P lease cannot bind Sprint4",false,(()=>{const c=base();c.docket.scope_exception.affected_sprint="SP-P1-004";return rebindDigest(c);})()],
+    ["16P lease cannot mutate CURRENT-SPRINT",false,(()=>{const c=base();c.state.headSprint={...hold,status:"ACTIVE",active_task:"T016"};return c;})()],
+    ["16P lease cannot reuse T008",false,(()=>{const c=base();c.docket.scope_exception.affected_tasks=["T008"];
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({...lease,task_id:"T008"})));return rebindDigest(c);})()],
+    ["16P lease cannot self-attest connector proven",false,(()=>{const c=base();c.docket.scope_exception.direct_connector_prewrite_proven=true;return c;})()],
+    ["16P lease missing CURRENT.json",false,(()=>{const c=base();c.files.delete("delivery/16p-acceptance-lease/CURRENT.json");
+      c.changed=c.changed.filter(p=>p!=="delivery/16p-acceptance-lease/CURRENT.json");return rebindDigest(c);})()],
+    ["16P lease rejects unapproved write path",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({...lease,allowed_write_paths:["src/evil/"]})));
+      return rebindDigest(c);})()],
+    ["16P lease rejects TTL longer than 14d",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,activated_at_unix:NOW-60,expires_at_unix:NOW-60+1209601})));
+      return rebindDigest(c);})()],
+    ["16P lease rejects activation_case_id mismatch",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,activation_case_id:"GOV-OTHER-001"})));
+      return rebindDigest(c);})()],
+    ["Activation Gate denies PENDING lease",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,status:"PENDING",activated_at_unix:null,expires_at_unix:null})));
+      return rebindDigest(c);})()],
+    ["Activation Gate denies EXPIRED lease",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,status:"EXPIRED",activated_at_unix:NOW-100,expires_at_unix:NOW-1})));
+      return rebindDigest(c);})()],
+    ["Activation Gate denies REVOKED lease",false,(()=>{const c=base();
+      c.files.set("delivery/16p-acceptance-lease/CURRENT.json",Buffer.from(JSON.stringify({
+        ...lease,status:"REVOKED"})));
+      return rebindDigest(c);})()]
+  ];
+}
+
+function sixteenPLeaseAuthorityCases(policy){
+  const pol=policy.sixteen_p_acceptance_lease||{};
+  const lease={
+    schema:"APPF2-16P-ACCEPTANCE-LEASE-1",lease_id:"16P-LEASE-001",task_id:"T016",status:"ACTIVE",
+    product_hold_preserved:true,sprint4_forbidden:true,bound_sprint_id:null,
+    never_converts_fail_or_untested_to_pass:true,activated_at_unix:NOW-60,expires_at_unix:NOW+3600,
+    allowed_write_paths:["delivery/audits/","harness/scripts/"],
+    activation_case_id:"GOV-16P-ACCEPTANCE-LEASE-ACT-001",title:"16P acceptance",
+    direct_connector_prewrite_proven:false
+  };
+  const act={
+    case_id:"GOV-16P-ACCEPTANCE-LEASE-ACT-001",candidate_digest_sha256:"c".repeat(64),
+    exact_changed_paths:["delivery/16p-acceptance-lease/CURRENT.json"],
+    scope_exception:{schema:HUMAN_EXCEPTION_SCHEMA,lane:"16P_ACCEPTANCE_LEASE",
+      never_converts_fail_or_untested_to_pass:true,product_hold_preserved:true,sprint4_forbidden:true,
+      affected_sprint:null,affected_tasks:["T016"],covered_gates:["CHANGE_SCOPE"],expires_at_unix:NOW+86400},
+    human_approval:{case_id:"GOV-16P-ACCEPTANCE-LEASE-ACT-001",decision:"APPROVE_EXACT_CANDIDATE",
+      scope:"EXACT_PR_DIFF",candidate_digest_sha256:"c".repeat(64),approver:"NFF98",
+      source_kind:"DIRECT_HUMAN_MESSAGE",human_message_ref:"Human approved exact",approved_at_unix:NOW-120}
+  };
+  const hold={status:"HOLD",active_sprint:null,active_task:null,active_build_spec:null};
+  const build={active_baseline:"BS-P1-025",implementation_enabled:false};
+  const guard={task_declaration_pattern:"^Task:\\s*(T\\d{3})\\b",title_task_pattern:"^(T\\d{3})[：:\\s]",
+    justification_pattern:"^PR-Justification:"};
+  const good=evaluateSixteenPLeaseAuthority({lease,activationDocket:act,now:NOW,policy:pol,source:"main"});
+  return expectCases("16p lease authority",[
+    ["Main authority ACCEPT with Activation",true,()=>good.ok],
+    ["local source rejected",false,()=>evaluateSixteenPLeaseAuthority({lease,activationDocket:act,now:NOW,policy:pol,source:"local"}).ok],
+    ["missing Activation rejected",false,()=>evaluateSixteenPLeaseAuthority({lease,activationDocket:null,now:NOW,policy:pol,source:"main"}).ok],
+    ["expired window rejected",false,()=>evaluateSixteenPLeaseAuthority({
+      lease:{...lease,activated_at_unix:NOW-100,expires_at_unix:NOW-1},activationDocket:act,now:NOW,policy:pol,source:"main"}).ok],
+    ["before activation rejected",false,()=>evaluateSixteenPLeaseAuthority({
+      lease:{...lease,activated_at_unix:NOW+10,expires_at_unix:NOW+100},activationDocket:act,now:NOW,policy:pol,source:"main"}).ok],
+    ["TTL >14d rejected",false,()=>validateSixteenPLeaseDocument({
+      ...lease,activated_at_unix:NOW,expires_at_unix:NOW+1209601},{now:NOW,policy:pol}).length===0],
+    ["unapproved path rejected",false,()=>writePathErrors(["src/x.js"],pol.permitted_allowed_write_path_prefixes).length===0],
+    ["revoked lease rejected",false,()=>evaluateSixteenPLeaseAuthority({
+      lease:{...lease,status:"REVOKED"},activationDocket:act,now:NOW,policy:pol,source:"main"}).ok],
+    ["preflight grants only Main authority",true,()=>preflight({build,sprint:hold,tasks:[],openPrs:[],guard,
+      intent:"NEW_PR",taskId:"T016",sixteenPAuthority:good}).decision==="NEW_PR_ALLOWED_PENDING_HUMAN_AUTHORITY"],
+    ["preflight denies local-only lease authority",true,()=>preflight({build,sprint:hold,tasks:[],openPrs:[],guard,
+      intent:"NEW_PR",taskId:"T016",sixteenPAuthority:{ok:false,errors:["local"],source:"main",lease:null}}).decision==="STOP"],
+    ["preflight denies raw lease without Main authority object",true,()=>preflight({build,sprint:hold,tasks:[],openPrs:[],guard,
+      intent:"NEW_PR",taskId:"T016"}).decision==="STOP"],
+    ["canonical Build repo constant locked",true,()=>CANONICAL_BUILD_REPO==="NFF98/appf2-build"],
+    ["unset GITHUB_REPOSITORY resolves to locked repo",true,()=>resolveCanonicalBuildRepo(undefined).ok&&
+      resolveCanonicalBuildRepo(undefined).repo===CANONICAL_BUILD_REPO],
+    ["GITHUB_REPOSITORY override to other repo rejected",false,()=>resolveCanonicalBuildRepo("evil/other-repo").ok],
+    ["loadMain authority rejects env repo override",true,()=>{
+      const prev=process.env.GITHUB_REPOSITORY;
+      process.env.GITHUB_REPOSITORY="evil/other-repo";
+      try{
+        const r=loadMainSixteenPLeaseAuthority({now:NOW,policy:pol});
+        return r.ok===false && (r.errors||[]).some(e=>/override rejected|locked/i.test(e));
+      }finally{
+        if(prev===undefined) delete process.env.GITHUB_REPOSITORY; else process.env.GITHUB_REPOSITORY=prev;
+      }
+    }]
+  ],fn=>fn());
 }
 
 function lifecycleCases(){
@@ -561,7 +691,7 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
   const policy=JSON.parse(fs.readFileSync(path.join(root,GOVERNANCE_REFORM_POLICY_PATH),"utf8"));
   const repoPolicy=JSON.parse(fs.readFileSync(path.join(root,"harness/policy/repo-policy.json"),"utf8"));
   const counts={
-    human_exception:expectCases("human exception",[...governanceLaneCases(policy),...ssotClosureHotfixCases(policy)],ok),
+    human_exception:expectCases("human exception",[...governanceLaneCases(policy),...ssotClosureHotfixCases(policy),...sixteenPAcceptanceLeaseCases(policy)],ok),
     persistent_waiver:persistentWaiverCases(policy),
     build_spec_activation:buildSpecActivationCases(policy),
     policy_invariants:policyInvariantCases(policy),
@@ -575,7 +705,19 @@ export function runGovernanceReformSelfTests(root=process.cwd()){
     protected_closure:closurePlanningCases(),
     protected_closure_writer:protectedClosureWriterCases(),
     protected_control_provenance:protectedControlProvenanceCases(),
-    metrics_preflight:metricsPreflightCases(policy.pr_guard)
+    metrics_preflight:metricsPreflightCases(policy.pr_guard),
+    sixteen_p_lease_authority:sixteenPLeaseAuthorityCases(policy)
   };
   return {counts,total:Object.values(counts).reduce((a,n)=>a+n,0)};
+}
+
+if(import.meta.url===pathToFileURL(process.argv[1]||"").href){
+  try{
+    const r=runGovernanceReformSelfTests();
+    console.log(JSON.stringify({ok:true,total:r.total,counts:r.counts,note:"synthetic selftest PASS is NOT 16P REAL PASS"},null,2));
+    process.exit(0);
+  }catch(e){
+    console.error(String(e&&e.stack||e));
+    process.exit(1);
+  }
 }
