@@ -116,7 +116,7 @@
     "candidate_digest_sha256": "2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712",
     "approved_implementation_head": "ac592b01dbbe7e4b1f0356d3459436b621d4eb14",
     "approved_base_sha": "312b923221f5d5d18c887302a60d30493fa66129",
-    "human_message_ref": "NFF98 OWNER GitHub PR #409 comment 6283669026 (2026-10-20T04:52:17Z): APPROVE_EXACT_CANDIDATE PR=#409 BASE=312b923221f5d5d18c887302a60d30493fa66129 IMPL_HEAD=ac592b01dbbe7e4b1f0356d3459436b621d4eb14 SOURCE_DIGEST=2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712 SCOPE=Exact candidate approval only; NOT Human Final Ready or Merge. Records Human decision already made in ChatGPT. https://github.com/NFF98/appf2-build/pull/409#issuecomment-6283669026 — NOT independent cryptographic Human signature; manual provenance check required. NOT Merge/Closure/Activation/Sprint4/HOLD lift/H3 true/16P FULL.",
+    "human_message_ref": "NFF98 OWNER GitHub PR #409 comment 6283669026 (2026-10-20T04:52:17Z): APPROVE_EXACT_CANDIDATE PR=#409 BASE=312b923221f5d5d18c887302a60d30493fa66129 IMPL_HEAD=ac592b01dbbe7e4b1f0356d3459436b621d4eb14 SOURCE_DIGEST=2835d9b3cf32f0f6eaf589aac9f6a935ae9e20ebff0c8c40697e8616ee4b3712 SCOPE=Exact candidate approval only; Final Ready and Merge excluded. Records Human decision already made in ChatGPT. https://github.com/NFF98/appf2-build/pull/409#issuecomment-6283669026 — independent cryptographic Human signature absent; manual provenance check required. Merge/Closure/Activation/Sprint4/HOLD lift/H3 true/16P FULL excluded.",
     "approved_at_unix": 1792471937
   },
   "prior_human_approval_superseded": {
