@@ -1,0 +1,87 @@
+{
+  "case_id": "GOV-T016-T008-HOLD-AUDIT-001",
+  "base_sha": "2972d909cbb2cb6b4b69539d9d5d33f4321d7d00",
+  "constitution_version": "1.0",
+  "title": "T016: Product HOLD 下舊 T008 歷史 Evidence 唯讀審核相容修復",
+  "change_class": "GOVERNANCE",
+  "approval_status": "HUMAN_EXACT_CANDIDATE_APPROVED_PR_GATES_BCE_ONLY_NOT_MERGE",
+  "exact_changed_paths": [
+    "harness/scripts/16p-task-evidence-live.mjs"
+  ],
+  "candidate_digest_sha256": "41085dcce7ae8a26ba209896ef1587cac8d474adf2cb6ab74ec32bdb754ab78c",
+  "candidate_head_sha_before_docket": "3a0be80910d4dfd5708dd853b2219efc58f0024c",
+  "candidate_code_git_blob_sha1": "54cc909ec3d70f6db2de259993338fcbffe64d57",
+  "why5": [
+    {
+      "question": "為何 #415 必須修復歷史核對？",
+      "answer": "Main 行政 HOLD 後 active_sprint=null，舊 T008 唯讀審核錯把 Main 合法 HOLD 判成非 canonical，令 real E2E 前置 job fail-closed。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/415"
+    },
+    {
+      "question": "為何不修改 reportContext 或重啟 T008？",
+      "answer": "reportContext 在 HOLD 必須回 NOT_RUN_NO_ACTIVE_SPRINT；改成 READY_TO_REPORT 會擴張產品報證權。候選僅讓唯讀歷史檢驗接受原有 NOT_RUN。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/blob/2972d909cbb2cb6b4b69539d9d5d33f4321d7d00/harness/scripts/evidence-ledger-report.mjs"
+    },
+    {
+      "question": "為何不改動 14 份 Evidence 或忽略 Stale？",
+      "answer": "歷史 #386、#387 均 merged，14 份 Evidence 的 source_commit=1919a722 是 Main 真正祖先；本機缺 Git 歷史才誤判，補足後實際 ledger 無 stale/duplicates，仍保留完整祖先和硬阻斷驗證。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/compare/1919a7225cd80551c7b610afe0bbdae0b185c774...2972d909cbb2cb6b4b69539d9d5d33f4321d7d00"
+    },
+    {
+      "question": "為何僅允許這個單檔修復？",
+      "answer": "只調整歷史唯讀 T008 路徑與 11 正／12 負 synthetic selftest；保留既有 #386/#387 身份與 Merge-chain、14 筆真 Evidence、Task REVIEW、全部 HARD_STOP；不變更任何 SSOT/Product/Evidence。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/pull/415/files"
+    },
+    {
+      "question": "為何需要新憲法案卷而不能用舊 T016 Lease 代替？",
+      "answer": "harness/scripts 是 constitution-protected，#415 官方 CI 與 Governance 明確報 exactly one changed human approval case docket required；16P_ACCEPTANCE_LEASE lane 禁止 harness，必須使用獨立 GOVERNANCE_REFORM 範圍與 Human 精確候選批准。",
+      "evidence_ref": "https://github.com/NFF98/appf2-build/actions/runs/39510533180/job/118930136534"
+    }
+  ],
+  "scope_exception": {
+    "schema": "APPF2-HUMAN-EXCEPTION-1",
+    "lane": "GOVERNANCE_REFORM",
+    "reason": "僅補全 T016 16P 唯讀歷史 Evidence 前置審核在 Main Product HOLD 下的正確判讀，不開放產品執行。",
+    "risk": "若錯把 HOLD 當 active Sprint、放寬 reportContext、跳過 14 Evidence / Merge / provenance 核對，會讓 16P 看似綠燈卻沒有真實證明。",
+    "owner": "Human NFF98",
+    "follow_up": "Human 精確雙檔候選已核准；原 #415 只追加本案 docket；執行正式四項 Gate、GPT BCE，另待獨立 Final Ready 與 Human Merge。16P REAL E2E 按 16/16 真 receipts 審核。",
+    "residual_gaps": [
+      "NONE"
+    ],
+    "never_converts_fail_or_untested_to_pass": true,
+    "affected_sprint": null,
+    "affected_tasks": [],
+    "covered_gates": [
+      "CHANGE_SCOPE"
+    ],
+    "expires_at_unix": 1793712000,
+    "product_hold_preserved": true,
+    "sprint4_forbidden": true,
+    "direct_connector_prewrite_proven": false
+  },
+  "carry_forward": {
+    "zero_gap": true,
+    "justification": "本案只是歷史驗證器的唯讀相容修復，不新建／延後／核銷任何產品 Acceptance、Task 或既有 GAP；16P 真實驗收與 H3 未證保持既有狀態。"
+  },
+  "human_approval": {
+    "case_id": "GOV-T016-T008-HOLD-AUDIT-001",
+    "approver": "NFF98",
+    "source_kind": "DIRECT_HUMAN_MESSAGE",
+    "decision": "APPROVE_EXACT_CANDIDATE",
+    "scope": "EXACT_PR_DIFF",
+    "candidate_digest_sha256": "41085dcce7ae8a26ba209896ef1587cac8d474adf2cb6ab74ec32bdb754ab78c",
+    "approved_base_sha": "2972d909cbb2cb6b4b69539d9d5d33f4321d7d00",
+    "approved_at_unix": 1792537220,
+    "human_message_ref": "Direct Human instruction in ChatGPT conversation on 2026-10-21 JST: APPROVE_EXACT_CANDIDATE; CASE=GOV-T016-T008-HOLD-AUDIT-001; BASE=2972d909cbb2cb6b4b69539d9d5d33f4321d7d00; DIGEST=41085dcce7ae8a26ba209896ef1587cac8d474adf2cb6ab74ec32bdb754ab78c; SCOPE=#415 原程式檔 + 唯一治理案卷；PR/Gates/BCE ONLY；NOT Merge.",
+    "approval_excludes": [
+      "HUMAN_FINAL_READY",
+      "HUMAN_MERGE",
+      "PRODUCT_HOLD_LIFT",
+      "SPRINT4",
+      "T008_REACTIVATION",
+      "16P_REAL_E2E_PASS"
+    ]
+  },
+  "human_provenance_manual_check_required": true,
+  "note": "Human explicitly approved exact candidate for PR/Gates/BCE only, not Merge. GPT transcribed approval; manual human provenance check required. No product or evidence claim is upgraded."
+}
