@@ -30,31 +30,44 @@ function actualMainFile(relative,sha){
 }
 const ancestry=(source,main)=>spawnSync("git",["merge-base","--is-ancestor",source,main],
  {encoding:"utf8",timeout:15000}).status===0;
+/** Product HOLD is not an active Sprint. reportContext stays fail-closed (NOT_RUN). */
+export const productHoldSprint=s=>s?.status==="HOLD"&&s.active_sprint===null&&
+ s.active_task===null&&s.active_build_spec===null;
+export const t008CanonicalUnderMain=(mainSprint,task)=>{
+ const historic=mainSprint?.active_sprint===sprint&&task?.task_id==="T008";
+ return historic||(productHoldSprint(mainSprint)&&task?.task_id==="T008");
+};
+/** HOLD: historic Task PR must stay NOT_RUN. Live Sprint: still READY_TO_REPORT. */
+export const historicReporterAccepted=(productHold,status)=>productHold?
+ status==="NOT_RUN_NO_ACTIVE_SPRINT":status==="READY_TO_REPORT";
+export const historicMergeChainOk=(ident,primary,evidencePr)=>ident?.ok===true&&
+ ident.task_id==="T008"&&primary?.merged===true&&evidencePr?.merged===true&&
+ evidencePr?.base?.sha===primary?.merge_commit_sha&&
+ String(evidencePr?.body||"").includes("T008");
+export const evidenceCountOk=ids=>Array.isArray(ids)&&ids.length===14&&new Set(ids).size===14;
 function verifyHistoricalPrs(mainSprint){
  const primary=api("pulls/386"),evidencePr=api("pulls/387"),current=api("pulls/404");
- const ident=taskIdentityOfPr(primary);
- const historicValid=ident.ok&&ident.task_id==="T008"&&
-  primary.merged===true&&evidencePr.merged===true&&
-  evidencePr.base?.sha===primary.merge_commit_sha&&
-  String(evidencePr.body||"").includes("T008");
- hard(historicValid,"real #386 and #387 merge chain or Task declaration invalid");
+ const productHold=productHoldSprint(mainSprint);
+ hard(historicMergeChainOk(taskIdentityOfPr(primary),primary,evidencePr),
+  "real #386 and #387 merge chain or Task declaration invalid");
  hard(taskIdentityOfPr(current).ok===false,"governance PR accepted as Product");
- hard(reportContext({pull_request:primary},mainSprint).status==="READY_TO_REPORT",
-  "valid historic Task PR rejected by Evidence reporter");
+ hard(historicReporterAccepted(productHold,reportContext({pull_request:primary},mainSprint).status),
+  productHold?"HOLD must keep Evidence reporter blocked for historic Task PR":
+   "valid historic Task PR rejected by Evidence reporter");
  hard(reportContext({pull_request:current},mainSprint).status==="NOT_RUN_NO_TASK_PR",
   "governance PR accepted by Evidence reporter");
  return {primary,evidencePr};
 }
 function loadMainEvidence(task,mainSha){
- const ids=task.completion_evidence||[],unique=new Set(ids);
- hard(ids.length===14&&unique.size===14,"T008 canonical Evidence list not 14 unique IDs");
+ const ids=task.completion_evidence||[];
+ hard(evidenceCountOk(ids),"T008 canonical Evidence list not 14 unique IDs");
  const inventory=api("contents/delivery/evidence?ref="+mainSha);
  hard(Array.isArray(inventory),"Main Evidence inventory unavailable");
  const filenames=inventory.filter(e=>e.name?.startsWith("EV-SP-P1-003-T008-")&&
   e.name?.endsWith(".json")).map(e=>e.name);
  hard(filenames.length===14&&filenames.every(f=>ids.includes(f.slice(0,-5))),
   "Existing T008 Evidence files conflict with canonical Task refs");
- return {ids,unique,docs:ids.map(id=>actualMainFile("delivery/evidence/"+id+".json",mainSha))};
+ return {ids,unique:new Set(ids),docs:ids.map(id=>actualMainFile("delivery/evidence/"+id+".json",mainSha))};
 }
 function run(){
  hard(repository==="NFF98/appf2-build","unexpected repository");
@@ -63,7 +76,7 @@ function run(){
  const mainSprint=actualMainFile("delivery/CURRENT-SPRINT.json",mainSha);
  const taskDoc=actualMainFile(pathOfTask,mainSha);
  const task=taskDoc.tasks?.find(x=>x.task_id==="T008");
- hard(mainSprint.active_sprint===sprint&&task?.task_id==="T008","T008 not canonical");
+ hard(t008CanonicalUnderMain(mainSprint,task),"T008 not canonical");
  const {primary,evidencePr}=verifyHistoricalPrs(mainSprint);
  const {ids,unique,docs}=loadMainEvidence(task,mainSha);
  const ci=actualMainFile("ci/policy.json",mainSha);
@@ -98,6 +111,69 @@ function run(){
    "GitHub Main evidence not correctly normalized; see receipt");
  hard(task.status==="REVIEW","Must preserve Task status; no closure inferred");
 }
+const expectStop=(fn,part)=>{
+ let message="";
+ try{fn();}catch(e){message=String(e.message||"");}
+ if(!message.includes("REAL_EVIDENCE_HARD_STOP")||!message.includes(part))
+  throw Error("NEGATIVE_FAILED_OPEN: "+part+" got "+message);
+};
+/** Synthetic only. Does not call GitHub and does not change reportContext. */
+export function runHoldCompatSelftest(){
+ const hold={status:"HOLD",active_sprint:null,active_task:null,active_build_spec:null};
+ const live={status:"REVIEW",active_sprint:sprint,active_task:"T008",active_build_spec:"BS-P1-025"};
+ const t008Pr={title:"T008: historical evidence",body:"Task: T008\n"};
+ const govPr={title:"governance fix",body:"no task declaration"};
+ const holdCtx=reportContext({pull_request:t008Pr},hold);
+ const liveCtx=reportContext({pull_request:t008Pr},live);
+ const govCtx=reportContext({pull_request:govPr},hold);
+ hard(holdCtx.status==="NOT_RUN_NO_ACTIVE_SPRINT","reportContext HOLD contract drifted");
+ hard(liveCtx.status==="READY_TO_REPORT","reportContext live Sprint contract drifted");
+ hard(govCtx.status==="NOT_RUN_NO_TASK_PR","reportContext governance contract drifted");
+ hard(historicReporterAccepted(true,holdCtx.status),"HOLD historic reporter");
+ hard(historicReporterAccepted(false,liveCtx.status),"live historic reporter");
+ hard(t008CanonicalUnderMain(hold,{task_id:"T008"}),"HOLD T008 canonical");
+ hard(t008CanonicalUnderMain(live,{task_id:"T008"}),"live T008 canonical");
+ const ids=[...Array(14)].map((_,i)=>"EV-SP-P1-003-T008-"+String(i+1).padStart(3,"0"));
+ hard(evidenceCountOk(ids),"14 unique evidence");
+ const ident={ok:true,task_id:"T008"},primary={merged:true,merge_commit_sha:"abc"};
+ const evidencePr={merged:true,base:{sha:"abc"},body:"includes T008"};
+ hard(historicMergeChainOk(ident,primary,evidencePr),"historic merge chain");
+ hard(taskIdentityOfPr(govPr).ok===false,"governance identity stays negative");
+ hard({status:"REVIEW"}.status==="REVIEW","T008 REVIEW preserved");
+ expectStop(()=>hard(historicReporterAccepted(true,"READY_TO_REPORT"),
+  "HOLD must keep Evidence reporter blocked for historic Task PR"),
+  "HOLD must keep Evidence reporter blocked");
+ expectStop(()=>hard(historicReporterAccepted(false,"NOT_RUN_NO_ACTIVE_SPRINT"),
+  "valid historic Task PR rejected by Evidence reporter"),
+  "valid historic Task PR rejected");
+ expectStop(()=>hard(t008CanonicalUnderMain(hold,null),"T008 not canonical"),"T008 not canonical");
+ expectStop(()=>hard(t008CanonicalUnderMain(
+  {status:"HOLD",active_sprint:null,active_task:"T016",active_build_spec:null},{task_id:"T008"}),
+  "T008 not canonical"),"T008 not canonical");
+ expectStop(()=>hard(t008CanonicalUnderMain(
+  {status:"ACTIVE",active_sprint:"SP-P1-004"},{task_id:"T008"}),"T008 not canonical"),
+  "T008 not canonical");
+ expectStop(()=>hard(evidenceCountOk(ids.slice(0,13)),
+  "T008 canonical Evidence list not 14 unique IDs"),"not 14 unique");
+ expectStop(()=>hard(evidenceCountOk([...ids.slice(0,13),ids[0]]),
+  "T008 canonical Evidence list not 14 unique IDs"),"not 14 unique");
+ expectStop(()=>hard(historicMergeChainOk(ident,{merged:false,merge_commit_sha:"abc"},evidencePr),
+  "real #386 and #387 merge chain or Task declaration invalid"),"merge chain");
+ expectStop(()=>hard(historicMergeChainOk(ident,primary,
+  {merged:true,base:{sha:"other"},body:"T008"}),
+  "real #386 and #387 merge chain or Task declaration invalid"),"merge chain");
+ expectStop(()=>hard(historicMergeChainOk({ok:false,task_id:null},primary,evidencePr),
+  "real #386 and #387 merge chain or Task declaration invalid"),"merge chain");
+ expectStop(()=>hard(taskIdentityOfPr(t008Pr).ok===false,"governance PR accepted as Product"),
+  "governance PR accepted as Product");
+ expectStop(()=>hard({status:"CLOSED"}.status==="REVIEW",
+  "Must preserve Task status; no closure inferred"),"Must preserve Task status");
+ console.log("16P T008 HOLD COMPAT positive=11 negative=12 PASS (synthetic; reportContext unchanged)");
+}
 if(import.meta.url===pathToFileURL(process.argv[1]||"").href){
- try{run();}catch(e){console.error("16P LIVE EVIDENCE FAIL "+e.message);process.exitCode=1;}
+ const entry=process.argv.includes("--selftest")?runHoldCompatSelftest:run;
+ try{entry();}catch(e){
+  console.error((process.argv.includes("--selftest")?"16P T008 HOLD COMPAT SELFTEST FAIL ":"16P LIVE EVIDENCE FAIL ")+e.message);
+  process.exitCode=1;
+ }
 }
