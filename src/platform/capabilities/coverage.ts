@@ -196,7 +196,12 @@ function orderedCandidates(
   request: CoverageResolutionRequest,
   state: ResolutionState
 ): readonly CapabilityDefinition[] {
-  const semanticMatches = state.definitionsBySemanticNeed.get(requirement.semantic_need) ?? [];
+  const exact = state.definitionsBySemanticNeed.get(requirement.semantic_need) ?? [];
+  // The model writes a human-language semantic_need, but the registry indexes
+  // exact canonical phrases. Use only a unique, registered intent class when
+  // no exact phrase matches: never fuzzy-match or guess between capabilities.
+  const classMatches = state.definitionsBySemanticNeed.get(requirement.interaction_class) ?? [];
+  const semanticMatches = exact.length > 0 ? exact : classMatches.length === 1 ? classMatches : [];
   const matchingRefs = new Set(semanticMatches.map((definition) => refKey(toRef(definition))));
   const suggestedRefs = request.suggestedCapabilities?.[requirement.requirement_id] ?? [];
   recordUnregisteredSuggestions(suggestedRefs, state);
