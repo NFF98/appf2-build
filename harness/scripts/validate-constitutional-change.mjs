@@ -262,6 +262,7 @@ const sp35ComplexAllowed=new Set([
   "tests/api/sp35-complex-intent-budget.api.test.ts",
   "tests/api/sp35-required-feature-coverage.api.test.ts",
   "tests/api/sp35-list-edit-runtime.api.test.ts",
+  "tests/api/sp35-record-list-runtime.api.test.ts",
   "tests/api/sp35-tab-persistence.api.test.ts",
   "tests/runtime/runtime-fixtures.ts",
   "tests/runtime/sp35-state-restore.runtime.test.ts",
