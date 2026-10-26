@@ -12,7 +12,7 @@ import { ephemeralValueDetector } from "./ephemeral-binding.js";
 import { IntentApiError, isF01ErrorCode } from "./f01-errors.js";
 import { guardNow, requireTransition, type ResolvedServiceDependencies } from "./intent-operation.js";
 import type { RequestDeadline } from "./model-gateway.js";
-import { COMPOSE_RESPONSE_SCHEMA, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION } from "./prompts.js";
+import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION } from "./prompts.js";
 import { StaleAttemptError, callProviderWithBoundedRetry } from "./provider-attempts.js";
 import { classifyRejection, isFixableClass, type ClassifiedRejection } from "./rejection-classification.js";
 
@@ -174,7 +174,7 @@ class ComposeLoop {
     try {
       const composed = await callProviderWithBoundedRetry(
         { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence },
-        { operation: "BLUEPRINT_COMPOSE", promptVersion: PROMPT_B_VERSION, schemaVersion: BLUEPRINT_SCHEMA_VERSION, responseSchema: COMPOSE_RESPONSE_SCHEMA, inputPayload: composeInput(this.scope, this.coverage, feedback), accept: this.acceptCandidate, rejectedOutputCode: "F01-ERR-007" }
+        { operation: "BLUEPRINT_COMPOSE", promptVersion: PROMPT_B_VERSION, schemaVersion: BLUEPRINT_SCHEMA_VERSION, responseSchema: composeResponseSchema(this.coverage.selected), inputPayload: composeInput(this.scope, this.coverage, feedback), accept: this.acceptCandidate, rejectedOutputCode: "F01-ERR-007" }
       );
       evidence.add("F01-EVT-010", { ...versions, attempt_no: composed.attemptNo, latency_ms: composed.latencyMs });
       this.scope.progress?.complete("F01-CREATE-CP-05");
