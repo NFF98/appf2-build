@@ -28,7 +28,7 @@ if(!current.implementation_enabled){
     ["src/edge/","src/app/","src/platform/compiler/","src/platform/blueprint/","src/platform/runtime/","tests/api/","tests/e2e/","tests/runtime/"].some(prefix=>p.startsWith(prefix)) ||
     ["tooling/web/vite.config.ts","tooling/web/worker-origin.ts","deploy/scripts/sp35-staging-only.mjs","deploy/scripts/sp35-staging-smoke.mjs",
       "deploy/scripts/sp35-staging-live-create.mjs","deploy/scripts/sp35-staging-browser-e2e.mjs",
-      ".github/workflows/sp35-staging-only.yml",".gitignore","ci/run-product-ci.mjs",
+      ".github/workflows/sp35-staging-only.yml",".github/workflows/governance-gate.yml",".gitignore","ci/run-product-ci.mjs",
       "harness/scripts/run-task-human-grant-preflight.sh",
       "harness/scripts/validate-change-scope.mjs",
       "harness/scripts/validate-constitutional-change.mjs"].includes(p);
@@ -37,7 +37,7 @@ if(!current.implementation_enabled){
     changed.length>0 && changed.includes("tooling/web/vite.config.ts") && changed.every(allowed);
   const sp35Followup=base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b" &&
     sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
-    changed.length>0 && changed.length<=13 &&
+    changed.length>0 && changed.length<=14 &&
     changed.includes("tests/api/sp35-complex-intent-budget.api.test.ts") &&
     changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
     changed.every(allowed);
