@@ -35,7 +35,13 @@ if(!current.implementation_enabled){
   const sp35=base==="04e44228354a659c3742c8666316bc42aa455aba" &&
     sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
     changed.length>0 && changed.includes("tooling/web/vite.config.ts") && changed.every(allowed);
-  if(sp35){
+  const sp35Followup=base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b" &&
+    sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
+    changed.length>0 && changed.length<=13 &&
+    changed.includes("tests/api/sp35-complex-intent-budget.api.test.ts") &&
+    changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
+    changed.every(allowed);
+  if(sp35 || sp35Followup){
     console.log("PRODUCT CI: Sprint 3.5 narrowly bounded HOLD recovery — running product tests, NOT live E2E");
     for(const script of ["check:types","check:lint","build","test:api","test:runtime"]){
       console.log("\n> npm run "+script);
