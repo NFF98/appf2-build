@@ -66,6 +66,13 @@ try {
     const u = new URL(r.url());
     return r.request().method() === "POST" && u.pathname === "/api/v1/intents";
   }, {timeout:100_000});
+  // Observe the actual browser's second step BEFORE submitting, so a fast
+  // compile response cannot race the response listener. No bypasses/mocks.
+  const compileResponse = page.waitForResponse(r => {
+    const u = new URL(r.url());
+    return r.request().method() === "POST" &&
+      /^\\/api\\/v1\\/intents\\/[^/]+\\/compile$/.test(u.pathname);
+  }, {timeout:190_000}).catch(() => null);
   await page.locator(".composer-create").click();
   const resp = await analysisResponse;
   const result = await resp.json().catch(()=>({}));
@@ -77,7 +84,33 @@ try {
   if(resp.status()!==200 || !["READY","NEEDS_CLARIFICATION","READY_WITH_VISIBLE_ASSUMPTIONS"].includes(status)){
     throw Error("STAGING COMPLEX ANALYSIS: not yet verified for multi-feature LifePilot (no fake PASS)");
   }
-  console.log("STAGING COMPLEX ANALYSIS: real 5-feature Prompt A PASS; full 5-feature app NOT VERIFIED.");
+  console.log("STAGING COMPLEX ANALYSIS: real 5-feature Prompt A PASS; compile/interactive proof follows.");
+  if(status !== "READY"){
+    console.log("STAGING COMPLEX COMPILE: NEEDS_USER_DECISION; cannot pretend automatic app completion.");
+    throw Error("STAGING COMPLEX: AI analysis passed but app requires user decision; full E2E NOT VERIFIED");
+  }
+  const response = await compileResponse;
+  if(response === null)throw Error("STAGING COMPLEX COMPILE: no browser compile response; full E2E NOT VERIFIED");
+  const payload = await response.json().catch(() => ({}));
+  const compileOk = response.status() === 200 &&
+    payload?.data?.status === "VALIDATED" &&
+    /^sha256:[0-9a-f]{64}$/.test(String(payload?.data?.content_hash||""));
+  console.log("STAGING COMPLEX COMPILE: HTTP="+response.status()+
+    " CODE="+String(payload?.error?.code||"NONE")+" VALIDATED="+compileOk);
+  if(!compileOk)throw Error("STAGING COMPLEX: F02 Blueprint compile/validation NOT VERIFIED");
+  await page.locator(".s03-app").waitFor({state:"visible",timeout:140_000});
+  const appText = (await page.locator(".s03-app").innerText())||"";
+  const requested = ["My Today", "Smart Tasks", "Shopping List", "Money Snapshot", "Healthy Habits"];
+  const missing = requested.filter(feature => !appText.toLowerCase().includes(feature.toLowerCase()));
+  console.log("STAGING COMPLEX RUNTIME: S03_MOUNTED=true FEATURE_LABELS_PRESENT="+
+    (requested.length-missing.length)+"/"+requested.length+" MISSING="+missing.join(","));
+  if(missing.length)throw Error("STAGING COMPLEX: generated app omitted requested named features; full E2E NOT VERIFIED");
+  // A rendered mockup is not evidence of working state or persistence.
+  const app = page.locator(".s03-app");
+  const interactiveCount = await app.locator("button:not([disabled]),input:not([disabled]),textarea:not([disabled])").count();
+  console.log("STAGING COMPLEX INTERACTION: ACTIVE_CONTROLS="+interactiveCount);
+  if(interactiveCount===0)throw Error("STAGING COMPLEX: all requested features appear static; interactivity NOT VERIFIED");
+  console.log("STAGING COMPLEX: Blueprint validated and five labels visible, but CRUD and persisted data still NOT VERIFIED.");
 } catch(error) {
   await page.screenshot({path:screenshot,fullPage:true}).catch(()=>{});
   throw Error("STAGING BROWSER: real user journey FAILED ("+String(error?.name||"unknown")+
