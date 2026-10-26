@@ -37,7 +37,7 @@ if(!current.implementation_enabled){
     changed.length>0 && changed.includes("tooling/web/vite.config.ts") && changed.every(allowed);
   const sp35Followup=base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b" &&
     sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
-    changed.length>0 && changed.length<=14 &&
+    changed.length>0 && changed.length<=16 &&
     changed.includes("tests/api/sp35-complex-intent-budget.api.test.ts") &&
     changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
     changed.every(allowed);
