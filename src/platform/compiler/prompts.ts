@@ -45,6 +45,8 @@ const PROMPT_B_POLICY = [
   "Each node has id starting node_, capability {id,version} from compiler_catalog, props object, bindings object, events object, children array. Event action IDs start action_.",
   "CRITICAL: EVERY rules[] entry MUST have an id matching ^rule_[a-z0-9_]{1,58}$ exactly. Use rule_task_total, not task_total; every RULE ValueSource.rule_id must reference that exact id. All rule names must be unique.",
   "Each capability prop and binding is a ValueSource object: {kind:LITERAL,value:non-null JSON}, {kind:STATE,key}, {kind:EVENT,path}, {kind:RULE,rule_id}, {kind:SCOPE,name,path}, or {kind:OP,op,args}. NEVER put a raw primitive directly into node props/bindings.",
+  "CRITICAL V02: ValueSource fields depend EXACTLY on kind. STATE has only kind/key; EVENT only kind/path; SCOPE only kind/name/path; RULE only kind/rule_id; LITERAL only kind/value; OP only kind/op/args. Never mix these fields or include extras.",
+  "CRITICAL V02: Every STATE key and SCOPE name must match ^[a-z][a-z0-9_]{0,63}$; EVENT.path and SCOPE.path must be empty or lowercase snake_case dot-separated segments. Do not use $, /, brackets, camelCase, indexes, or special characters in paths.",
   "State map entries use {mode:MUTABLE,type,initial} or {mode:DERIVED,type,expr}; actions have {id:action_...,steps:[...]} and steps have type SET_STATE, INVOKE_CAPABILITY, or RESET_STATE. Do not invent unknown actions.",
   "CRITICAL: Every state and rule result_type MUST be one of the exact uppercase descriptors NUMBER, STRING, BOOLEAN, ENUM, LIST, RECORD. Array of tasks is LIST, never ARRAY or OBJECT. Object records are RECORD. Match MUTABLE initial values to that descriptor and follow compiler_catalog constraints.",
   "Always use only compiler_catalog capability IDs and versions. Do not add unlisted capabilities. Follow the capability prop, binding and event contracts exactly, including required properties and types.",
@@ -189,13 +191,34 @@ export const ANALYSIS_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
 // enforces. F02 still independently performs ALL semantic/security validation.
 const BP_REF = { type: "object", required: ["id", "version"], additionalProperties: false,
   properties: { id: { type: "string" }, version: { type: "string" } } };
-const BP_VALUE = { type: "object", required: ["kind"],
-  properties: {
-    kind: { type: "string", enum: ["LITERAL", "STATE", "RULE", "EVENT", "SCOPE", "OP"] },
-    value: {}, key: { type: "string" }, rule_id: { type: "string" },
-    path: { type: "string" }, name: { type: "string" },
-    op: { type: "string" }, args: { type: "array", items: { type: "object" } }
+// Match the actual F02 V02 discriminator: rejecting extra keys at generation is
+// cheaper and safer than letting the provider invent hybrid ValueSources.
+const BP_IDENTIFIER = { type: "string", pattern: "^[a-z][a-z0-9_]{0,63}$" };
+const BP_PATH = { type: "string", pattern: "^(?:[a-z][a-z0-9_]{0,63}(?:[.][a-z][a-z0-9_]{0,63})*)?$" };
+const BP_LITERAL = { type: "object", additionalProperties: false,
+  required: ["kind", "value"], properties: {
+    kind: { const: "LITERAL" }, value: { type: ["string", "number", "boolean", "object", "array"] }
   } };
+const BP_VALUE_BRANCHES = [
+  BP_LITERAL,
+  { type: "object", additionalProperties: false, required: ["kind", "key"],
+    properties: { kind: { const: "STATE" }, key: BP_IDENTIFIER } },
+  { type: "object", additionalProperties: false, required: ["kind", "rule_id"],
+    properties: { kind: { const: "RULE" }, rule_id: { type: "string", pattern: "^rule_[a-z0-9_]{1,58}$" } } },
+  { type: "object", additionalProperties: false, required: ["kind", "path"],
+    properties: { kind: { const: "EVENT" }, path: BP_PATH } },
+  { type: "object", additionalProperties: false, required: ["kind", "name", "path"],
+    properties: { kind: { const: "SCOPE" }, name: BP_IDENTIFIER, path: BP_PATH } },
+  { type: "object", additionalProperties: false, required: ["kind", "op", "args"],
+    properties: { kind: { const: "OP" }, op: { type: "string" },
+      args: { type: "array", items: { type: "object" } } } }
+];
+const BP_VALUE = { anyOf: BP_VALUE_BRANCHES };
+const BP_OUTPUT_VALUE = { anyOf: [
+  { ...BP_LITERAL, properties: { kind: { const: "LITERAL" },
+    value: { type: ["string", "number", "boolean"] } } },
+  ...BP_VALUE_BRANCHES.slice(1)
+] };
 const BP_STYLE_LITERAL = (values: readonly string[]) => ({
   type: "object", additionalProperties: false, required: ["kind", "value"],
   properties: { kind: { const: "LITERAL" }, value: { type: "string", enum: values } }
@@ -258,7 +281,7 @@ export const COMPOSE_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
       properties: { outputs: { type: "array", items: { type: "object",
         required: ["id", "label", "value", "sensitivity"],
         properties: { id: { type: "string" }, label: { type: "string" },
-          value: { ...BP_VALUE, properties: { ...BP_VALUE.properties, value: { type: ["string", "number", "boolean"] } } }, sensitivity: { enum: ["NORMAL", "SENSITIVE", "DO_NOT_PERSIST"] } } } } } }
+          value: BP_OUTPUT_VALUE, sensitivity: { enum: ["NORMAL", "SENSITIVE", "DO_NOT_PERSIST"] } } } } } }
   }
 });
 
