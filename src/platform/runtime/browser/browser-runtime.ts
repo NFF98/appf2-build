@@ -43,7 +43,7 @@ function tabStorageKey(intentId: string | undefined, hash: string): string | nul
     ? "appf2.tab-state.v1:" + intentId.toLowerCase() + ":" + hash : null;
 }
 
-function savedTabState(intentId: string | undefined, hash: string): unknown {
+export function savedTabState(intentId: string | undefined, hash: string): unknown {
   const key = tabStorageKey(intentId, hash);
   if (key === null) return undefined;
   try {
