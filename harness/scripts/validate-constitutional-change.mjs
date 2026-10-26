@@ -239,6 +239,7 @@ const sp35ComplexAllowed=new Set([
   "src/platform/compiler/appf2-model-provider.ts",
   "src/platform/compiler/rate-limit-failover-gateway.ts",
   "tests/api/sp35-model-failover.api.test.ts",
+  "tests/api/sp35-rate-limit-ui.api.test.ts",
   ".github/workflows/governance-gate.yml",
   "deploy/scripts/sp35-staging-browser-e2e.mjs",
   "deploy/scripts/sp35-staging-live-create.mjs",
