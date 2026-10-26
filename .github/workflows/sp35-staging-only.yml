@@ -30,7 +30,7 @@ jobs:
       - name: Deploy ONLY isolated staging Worker with bundled SPA
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           APPF2_STAGING_WORKER_NAME: ${{ vars.APPF2_STAGING_WORKER_NAME }}
           APPF2_HYPERDRIVE_FRESH_ID: ${{ secrets.APPF2_HYPERDRIVE_FRESH_ID }}
           APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
