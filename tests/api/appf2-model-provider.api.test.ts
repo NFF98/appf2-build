@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { OpenAiCompatibleModelGateway } from "../../src/platform/compiler/openai-compatible-gateway.js";
 import { appf2ModelProviderConfig } from "../../src/platform/compiler/appf2-model-provider.js";
 
 describe("APPf2 multi-provider server-only selection", () => {
@@ -11,6 +12,38 @@ describe("APPf2 multi-provider server-only selection", () => {
     APPF2_DEEPSEEK_API_KEY: "test-deepseek-private",
     APPF2_DEEPSEEK_MODEL_NAME: "deepseek-flash"
   };
+
+  it("calls native fetch with its original global receiver (Workers runtime)", async () => {
+    let observedReceiver: unknown;
+    vi.stubGlobal("fetch", function (this: unknown): Promise<Response> {
+      observedReceiver = this;
+      return Promise.resolve(new Response(JSON.stringify({
+        choices: [{ message: { content: '{"ok":true}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 1 },
+        model: "gpt-4.1"
+      }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    });
+    try {
+      const gateway = new OpenAiCompatibleModelGateway({
+        baseUrl: "https://api.openai.com/v1",
+        apiKey: "test-key",
+        model: "gpt-4.1"
+      });
+      const result = await gateway.analyzeIntent({
+        operation: "INTENT_ANALYSIS",
+        prompt_version: "test",
+        response_schema: { type: "object", properties: { ok: { type: "boolean" } } },
+        input_payload: { test: true },
+        timeout_ms: 3_000,
+        trace_id: "test-trace",
+        provider_policy: { max_attempts: 2, structured_output: "JSON_SCHEMA" }
+      });
+      expect(observedReceiver).toBe(globalThis);
+      expect(result.status).toBe("SUCCEEDED");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 
   it("defaults to OpenAI, does not fall back to other configured keys", () => {
     const selected = appf2ModelProviderConfig(env);
