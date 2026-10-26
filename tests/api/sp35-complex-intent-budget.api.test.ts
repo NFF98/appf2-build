@@ -94,7 +94,7 @@ describe("Sprint 3.5 Blueprint operator compliance", () => {
       } } } } }
     };
     const ops = schema.properties.nodes.items.properties.bindings.additionalProperties.anyOf[5]?.properties.op.enum;
-    expect(ops).toHaveLength(35);
+    expect(ops).toHaveLength(37);
     expect(ops).toContain("COUNT");
     expect(ops).toContain("IF");
     for (const nonexistent of ["FILTER", "MAP", "PUSH", "APPEND", "REMOVE", "TODAY"]) {
@@ -115,6 +115,8 @@ describe("Sprint 3.5 Blueprint operator compliance", () => {
     expect(recursiveOperators).toContain("LIST_APPEND");
     expect(recursiveOperators).toContain("LIST_REMOVE_AT");
     expect(recursiveOperators).toContain("LIST_REPLACE_AT");
+    expect(recursiveOperators).toContain("RECORD_SET");
+    expect(recursiveOperators).toContain("LIST_FILTER_EQ");
     expect(recursiveOperators).not.toContain("FILTER");
     expect(recursiveOperators).not.toContain("MAP");
     expect(schema.properties.rules.items.properties.expr.anyOf).toHaveLength(6);
