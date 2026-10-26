@@ -191,6 +191,23 @@ function recordUnregisteredSuggestions(
   }
 }
 
+/** Only canonical scalar form hints can choose an unambiguous registered input.
+ * Multi-field workflows and compound task CRUD stay UNSUPPORTED until proven;
+ * no fuzzy text matching, new registry entry or fabricated capability grant. */
+function typedFormCandidate(
+  requirement: CapabilityRequirement,
+  matches: readonly CapabilityDefinition[]
+): readonly CapabilityDefinition[] {
+  if (requirement.interaction_class !== "form" ||
+      requirement.input_types.length !== 1 ||
+      requirement.output_types.length !== 1 ||
+      requirement.input_types[0] !== requirement.output_types[0]) return [];
+  const id = requirement.input_types[0] === "BOOLEAN" ? "input.toggle" :
+    requirement.input_types[0] === "STRING" ? "input.text" : null;
+  if (id === null) return [];
+  return matches.filter((candidate) => candidate.id === id);
+}
+
 function orderedCandidates(
   requirement: CapabilityRequirement,
   request: CoverageResolutionRequest,
@@ -201,7 +218,9 @@ function orderedCandidates(
   // exact canonical phrases. Use only a unique, registered intent class when
   // no exact phrase matches: never fuzzy-match or guess between capabilities.
   const classMatches = state.definitionsBySemanticNeed.get(requirement.interaction_class) ?? [];
-  const semanticMatches = exact.length > 0 ? exact : classMatches.length === 1 ? classMatches : [];
+  const typedForm = typedFormCandidate(requirement, classMatches);
+  const semanticMatches = exact.length > 0 ? exact :
+    classMatches.length === 1 ? classMatches : typedForm.length === 1 ? typedForm : [];
   const matchingRefs = new Set(semanticMatches.map((definition) => refKey(toRef(definition))));
   const suggestedRefs = request.suggestedCapabilities?.[requirement.requirement_id] ?? [];
   recordUnregisteredSuggestions(suggestedRefs, state);
