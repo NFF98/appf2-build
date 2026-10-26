@@ -195,11 +195,11 @@ const BP_REF = { type: "object", required: ["id", "version"], additionalProperti
 // cheaper and safer than letting the provider invent hybrid ValueSources.
 const BP_IDENTIFIER = { type: "string", pattern: "^[a-z][a-z0-9_]{0,63}$" };
 const BP_PATH = { type: "string", pattern: "^(?:[a-z][a-z0-9_]{0,63}(?:[.][a-z][a-z0-9_]{0,63})*)?$" };
-const BP_LITERAL = { type: "object", additionalProperties: false,
+const BP_LITERAL: JsonRecord = { type: "object", additionalProperties: false,
   required: ["kind", "value"], properties: {
     kind: { const: "LITERAL" }, value: { type: ["string", "number", "boolean", "object", "array"] }
   } };
-const BP_VALUE_BRANCHES = [
+const BP_VALUE_BRANCHES: JsonRecord[] = [
   BP_LITERAL,
   { type: "object", additionalProperties: false, required: ["kind", "key"],
     properties: { kind: { const: "STATE" }, key: BP_IDENTIFIER } },
@@ -213,8 +213,8 @@ const BP_VALUE_BRANCHES = [
     properties: { kind: { const: "OP" }, op: { type: "string" },
       args: { type: "array", items: { type: "object" } } } }
 ];
-const BP_VALUE = { anyOf: BP_VALUE_BRANCHES };
-const BP_OUTPUT_VALUE = { anyOf: [
+const BP_VALUE: JsonRecord = { anyOf: BP_VALUE_BRANCHES };
+const BP_OUTPUT_VALUE: JsonRecord = { anyOf: [
   { ...BP_LITERAL, properties: { kind: { const: "LITERAL" },
     value: { type: ["string", "number", "boolean"] } } },
   ...BP_VALUE_BRANCHES.slice(1)
