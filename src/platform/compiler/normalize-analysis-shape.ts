@@ -53,6 +53,18 @@ function fixScalarMetadata(item: JsonValue): JsonValue {
   return { ...item, expected_value_type: expectedType, question_type: requiredQuestion };
 }
 
+/** Only lossless, widely used type synonyms in non-authoritative capability-hint
+ * metadata. Never guess arbitrary tokens or rewrite actual user facts/values. */
+const HINT_TYPE_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  ARRAY: "LIST", OBJECT: "RECORD", INTEGER: "NUMBER", FLOAT: "NUMBER"
+});
+
+function canonicalHintTypes(value: JsonValue): JsonValue {
+  if (!Array.isArray(value)) return value;
+  return value.map((token) => typeof token === "string" &&
+    Object.hasOwn(HINT_TYPE_ALIASES, token) ? HINT_TYPE_ALIASES[token]! : token);
+}
+
 export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
   if (!isPlainRecord(value)) return value;
   const output = value.requested_outputs;
@@ -66,8 +78,13 @@ export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
     return { ...entry, required: entry.source === "USER_EXPLICIT" };
   });
   const capabilities = hints.map(entry => {
-    if (!isPlainRecord(entry) || entry.required !== undefined) return entry;
-    return { ...entry, required: false };
+    if (!isPlainRecord(entry)) return entry;
+    const normalized = {
+      ...entry,
+      input_types: canonicalHintTypes(entry.input_types),
+      output_types: canonicalHintTypes(entry.output_types)
+    };
+    return entry.required === undefined ? { ...normalized, required: false } : normalized;
   });
   const policy = Object.fromEntries(COLLECTIONS.flatMap(name => {
     const items = value[name];
