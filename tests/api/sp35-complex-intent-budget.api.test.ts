@@ -90,6 +90,22 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("Input/text/button/stat leaf nodes always have children:[]");
   });
 
+  it("exposes only Runtime-implemented operators to F02, not invented list CRUD", () => {
+    const schema = COMPOSE_RESPONSE_SCHEMA as unknown as {
+      properties: { nodes: { items: { properties: { bindings: {
+        additionalProperties: { anyOf: Array<{ properties: Record<string, { enum?: string[] }> }> }
+      } } } } }
+    };
+    const ops = schema.properties.nodes.items.properties.bindings.additionalProperties.anyOf[5]?.properties.op.enum;
+    expect(ops).toHaveLength(32);
+    expect(ops).toContain("COUNT");
+    expect(ops).toContain("IF");
+    for (const nonexistent of ["FILTER", "MAP", "PUSH", "APPEND", "REMOVE", "TODAY"]) {
+      expect(ops).not.toContain(nonexistent);
+    }
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("NEVER invent operations");
+  });
+
   it("still strictly clips each model attempt to remaining lease time", () => {
     let now = 1000;
     const deadline = new RequestDeadline(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.create], () => now);
