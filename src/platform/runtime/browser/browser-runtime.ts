@@ -33,8 +33,40 @@ export const BROWSER_HYDRATION_TRUST: HydrationTrust = {
   trustedNow: () => Date.now()
 };
 
+/** Limited to this browser tab, this exact authorized intent and the immutable Blueprint hash.
+ * No localStorage, cookies, network, or cross-tab data sharing. */
+const MAX_TAB_STATE_BYTES = 128 * 1024;
+function tabStorageKey(intentId: string | undefined, hash: string): string | null {
+  return typeof intentId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(intentId) &&
+    /^sha256:[0-9a-f]{64}$/.test(hash)
+    ? "appf2.tab-state.v1:" + intentId.toLowerCase() + ":" + hash : null;
+}
+
+function savedTabState(intentId: string | undefined, hash: string): unknown {
+  const key = tabStorageKey(intentId, hash);
+  if (key === null) return undefined;
+  try {
+    const raw = globalThis.sessionStorage.getItem(key);
+    return raw !== null && raw.length <= MAX_TAB_STATE_BYTES ? JSON.parse(raw) as unknown : undefined;
+  } catch {
+    return undefined; // Private browsing and denied storage are safe non-persistent modes.
+  }
+}
+
+export function persistBrowserTabState(runtime: RuntimeInstance, intentId: string | undefined, hash: string): void {
+  const key = tabStorageKey(intentId, hash);
+  if (key === null || runtime.status !== "READY") return;
+  try {
+    const json = JSON.stringify(runtime.snapshotMutableState());
+    if (json.length <= MAX_TAB_STATE_BYTES) globalThis.sessionStorage.setItem(key, json);
+  } catch {
+    // Quota/security exceptions must never stop an already-committed Action.
+  }
+}
+
 /** One F03 Instance in this tab: monotonic clock, real timers, Web Crypto seed, production handler catalog only. */
-export function createBrowserRuntime(admitted: AdmittedBlueprint): RuntimeInstance {
+export function createBrowserRuntime(admitted: AdmittedBlueprint, intentId?: string): RuntimeInstance {
   return new RuntimeInstance(admitted, {
     trust: BROWSER_HYDRATION_TRUST,
     services: {
@@ -45,7 +77,8 @@ export function createBrowserRuntime(admitted: AdmittedBlueprint): RuntimeInstan
           return () => globalThis.clearTimeout(handle);
         }
       },
-      seedSource: () => globalThis.crypto.getRandomValues(new Uint8Array(PRNG_SEED_BYTES))
+      seedSource: () => globalThis.crypto.getRandomValues(new Uint8Array(PRNG_SEED_BYTES)),
+      restoreState: (verifiedHash) => savedTabState(intentId, verifiedHash)
     }
   });
 }
