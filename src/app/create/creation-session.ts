@@ -34,7 +34,7 @@ export type CreationPhase =
   | { readonly kind: "ASSUMPTION_REVIEW" }
   | { readonly kind: "BUILDING" }
   | { readonly kind: "BUILD_VALIDATED"; readonly contentHash: string }
-  | { readonly kind: "RECOVERABLE_FAILURE"; readonly step: CreationStep; readonly reason: RecoveryReason; readonly code?: string; readonly unsupportedFeatures?: readonly string[]; readonly unsupportedCount?: number }
+  | { readonly kind: "RECOVERABLE_FAILURE"; readonly step: CreationStep; readonly reason: RecoveryReason; readonly code?: string; readonly httpStatus?: number; readonly unsupportedFeatures?: readonly string[]; readonly unsupportedCount?: number }
   | { readonly kind: "INTERRUPTED"; readonly step: CreationStep };
 
 export type ProvidedAnswer = { readonly key: string; readonly label: string; readonly value: JsonValue };
