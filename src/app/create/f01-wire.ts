@@ -54,8 +54,8 @@ export type F01Failure =
       readonly retryable: boolean;
       readonly httpStatus: number;
       readonly violations: readonly { readonly path: string; readonly reason: string }[];
-      readonly unsupportedFeatures: readonly string[];
-      readonly unsupportedCount: number;
+      readonly unsupportedFeatures?: readonly string[];
+      readonly unsupportedCount?: number;
     }
   | { readonly kind: "NETWORK" }
   | { readonly kind: "IDENTITY_UNAVAILABLE" }
