@@ -97,7 +97,7 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
       } } } } }
     };
     const ops = schema.properties.nodes.items.properties.bindings.additionalProperties.anyOf[5]?.properties.op.enum;
-    expect(ops).toHaveLength(32);
+    expect(ops).toHaveLength(35);
     expect(ops).toContain("COUNT");
     expect(ops).toContain("IF");
     for (const nonexistent of ["FILTER", "MAP", "PUSH", "APPEND", "REMOVE", "TODAY"]) {
@@ -116,6 +116,9 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     const recursiveOperators = schema.$defs.valueSource.anyOf[5]?.properties.op?.enum ?? [];
     expect(recursiveOperators).toContain("COUNT");
     expect(recursiveOperators).toContain("IF");
+    expect(recursiveOperators).toContain("LIST_APPEND");
+    expect(recursiveOperators).toContain("LIST_REMOVE_AT");
+    expect(recursiveOperators).toContain("LIST_REPLACE_AT");
     expect(recursiveOperators).not.toContain("FILTER");
     expect(recursiveOperators).not.toContain("MAP");
     expect(schema.properties.rules.items.properties.expr.anyOf).toHaveLength(6);
