@@ -172,13 +172,13 @@ function readViolations(details: unknown): { path: string; reason: string }[] {
 /** F04 diagnostics are owned by the same authorized request, never model traces. */
 function readUnsupported(details: unknown): { unsupportedFeatures: string[]; unsupportedCount: number } {
   if (!isRecord(details) || !Array.isArray(details.unsupported_features) ||
-      !Number.isSafeInteger(details.unsupported_count) || (details.unsupported_count as number) < 0) {
+      typeof details.unsupported_count !== "number" || !Number.isSafeInteger(details.unsupported_count) || details.unsupported_count < 0) {
     return { unsupportedFeatures: [], unsupportedCount: 0 };
   }
   const unsupportedFeatures = details.unsupported_features.slice(0, 6).filter(
     (value): value is string => typeof value === "string" && value.length > 0 && value.length <= 160
   );
-  return { unsupportedFeatures, unsupportedCount: details.unsupported_count as number };
+  return { unsupportedFeatures, unsupportedCount: details.unsupported_count };
 }
 
 /** Shared API §6 stable error envelope → bounded failure; message text and stacks are never surfaced. */
