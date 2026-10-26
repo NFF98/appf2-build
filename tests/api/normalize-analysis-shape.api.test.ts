@@ -61,6 +61,25 @@ describe("untrusted Prompt A descriptor flag completion", () => {
     expect(original.constraints[0]?.expected_value_type).toBe("ENUM");
   });
 
+  test("promotes user-required and risky cosmetics to MATERIAL without losing facts", () => {
+    const value = {
+      requested_outputs: [], capability_hints: [],
+      constraints: [
+        {id:"daily_tracking", materiality:"COSMETIC", required_for_execution:true,
+          policy_risk_flags:[], resolved_value:"working habit checkboxes"},
+        {id:"payments", materiality:"COSMETIC", required_for_execution:false,
+          policy_risk_flags:["MONEY"], resolved_value:"not allowed"},
+        {id:"accent_color", materiality:"COSMETIC", required_for_execution:false,
+          policy_risk_flags:[], resolved_value:"soft teal"}
+      ]
+    };
+    const output = normalizeAnalysisDescriptorFlags(value as unknown as JsonValue) as typeof value;
+    expect(output.constraints.map(x=>x.materiality)).toEqual(["MATERIAL","MATERIAL","COSMETIC"]);
+    expect(output.constraints.map(x=>x.resolved_value)).toEqual(value.constraints.map(x=>x.resolved_value));
+    expect(output.constraints.map(x=>x.policy_risk_flags)).toEqual(value.constraints.map(x=>x.policy_risk_flags));
+    expect(value.constraints.every(x=>x.materiality==="COSMETIC")).toBe(true);
+  });
+
   test("never repairs malformed root, unknown source or non-boolean provided flag", () => {
     expect(normalizeAnalysisDescriptorFlags([])).toEqual([]);
     const value = {
