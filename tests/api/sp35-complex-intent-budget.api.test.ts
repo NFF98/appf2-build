@@ -108,7 +108,7 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
 
   it("applies the same allowlisted OP recursively to rules and every nested OP argument", () => {
     const schema = COMPOSE_RESPONSE_SCHEMA as unknown as {
-      $defs: { valueSource: { anyOf: Array<{ properties: { op?: { enum: string[] }; args?: { items: { $ref: string } } }> } };
+      $defs: { valueSource: { anyOf: Array<{ properties: { op?: { enum: string[] }; args?: { items: { $ref: string } } } }> } };
       properties: { rules: { items: { properties: { expr: { anyOf: unknown[] } } } } };
     };
     const rootOp = schema.$defs.valueSource.anyOf[5];
