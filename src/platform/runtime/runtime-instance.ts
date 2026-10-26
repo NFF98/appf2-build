@@ -470,7 +470,8 @@ export class RuntimeInstance {
 
   /** Saved browser data is never admission truth: restore only a complete typed snapshot. */
   private restoreSavedMutable(index: ExecutionIndex, store: CommittedStore, hash: string): StoreTransaction | undefined {
-    if (this.host.services.restoreState === undefined) return undefined;
+    if (this.host.services.restoreState === undefined ||
+        index.blueprint.result.outputs.some((output) => output.sensitivity === "DO_NOT_PERSIST")) return undefined;
     try {
       const snapshot = this.host.services.restoreState(hash);
       const keys = [...index.mutable.keys()];
