@@ -45,6 +45,13 @@ describe("Sprint 3.5 user-required feature preservation", () => {
     expect(coverage.selected).toHaveLength(0);
   });
 
+  it("requires honest atomic UI hints instead of an impossible RECORD-to-LIST form", () => {
+    expect(SYSTEM_POLICY.INTENT_ANALYSIS).toContain("Do NOT model the entire add/edit/delete task workflow");
+    expect(SYSTEM_POLICY.INTENT_ANALYSIS).toContain("Each hint's input_types/output_types describe ONLY that individual primitive");
+    expect(SYSTEM_POLICY.INTENT_ANALYSIS).toContain("source_item_ids referring back to the original mandatory feature");
+    expect(SYSTEM_POLICY.INTENT_ANALYSIS).toContain("do not claim that an unsupported composite workflow");
+  });
+
   it("requires F01 analysis to preserve explicit product requirements", () => {
     expect(SYSTEM_POLICY.INTENT_ANALYSIS).toContain("Never downgrade requested functionality");
   });
