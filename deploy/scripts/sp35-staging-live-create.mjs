@@ -21,7 +21,7 @@ async function safeRead(url, options, label, timeoutMs = 25_000) {
       const response = await fetch(url, {
         ...options,
         method: "GET",
-        signal: AbortSignal.timeout(timeoutMs)
+        signal: globalThis.AbortSignal.timeout(timeoutMs)
       });
       if (![502, 503, 504].includes(response.status) || attempt === 3) return response;
       await response.body?.cancel().catch(() => {});
