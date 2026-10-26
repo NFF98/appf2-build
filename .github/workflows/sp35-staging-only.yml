@@ -189,55 +189,11 @@ jobs:
           console.log("OPENAI CREDENTIAL: " + (response.ok ? "ACCEPTED" : "REJECTED_HTTP_" + response.status));
           if (!response.ok) process.exitCode = 1;
           JS
-      - name: Verify OpenAI chat generation access (one small live call, no text logged)
+      # Do not burn an extra model completion before the actual signed CREATE.
+      # The real request, database receipt and Chromium render verify generation.
+      - name: Use only real signed CREATE as live model generation proof
         if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
-        env:
-          APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
-          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
-        run: |
-          node --input-type=module <<'JS'
-          import fs from "node:fs";
-          const actualFields=[
-            "envelope_version","goal","actors","entities","known_inputs",
-            "constraints","requested_outputs","candidate_rules","missing_fields",
-            "ambiguities","assumptions","capability_hints","analysis_metadata"
-          ];
-          const response=await fetch("https://api.openai.com/v1/chat/completions",{
-            method:"POST",
-            headers:{
-              Authorization:"Bearer "+process.env.APPF2_MODEL_API_KEY,
-              "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-              model:process.env.APPF2_MODEL_NAME,temperature:0,
-              messages:[
-                {role:"system",content:"Return a JSON intent analysis containing the named fields."},
-                {role:"user",content:"Create a simple task tracker."}
-              ],
-              response_format:{
-                type:"json_schema",
-                json_schema:{
-                  name:"intent_analysis",strict:false,
-                  schema:{type:"object",required:actualFields,
-                    properties:Object.fromEntries(actualFields.map(f=>[f,{}]))}
-                }
-              }
-            }),
-            signal:AbortSignal.timeout(25000)
-          });
-          const payload=await response.json().catch(()=>({}));
-          const errorType=String(payload?.error?.type||"NONE").slice(0,64);
-          const errorCode=String(payload?.error?.code||"NONE").slice(0,64);
-          console.log("OPENAI CHAT: HTTP "+response.status+
-            " ERROR_TYPE="+errorType+" ERROR_CODE="+errorCode+" (response text hidden)");
-          if(!response.ok){
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-              "OpenAI model generation BLOCKED: HTTP "+response.status+
-              ", error type "+errorType+", code "+errorCode+". No real CREATE retried.\n");
-            process.exit(1);
-          }
-          fs.appendFileSync(process.env.GITHUB_ENV,"APPF2_MODEL_CHAT_READY=1\n");
-          JS
+        run: echo "APPF2_MODEL_CHAT_READY=1" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -262,6 +218,7 @@ jobs:
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
           APPF2_MODEL_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER }}
+          APPF2_MODEL_FALLBACK_PROVIDER: ${{ vars.APPF2_MODEL_FALLBACK_PROVIDER }}
           APPF2_XAI_MODEL_NAME: ${{ vars.APPF2_XAI_MODEL_NAME }}
           APPF2_XAI_API_KEY: ${{ secrets.APPF2_XAI_API_KEY }}
           APPF2_DEEPSEEK_MODEL_NAME: ${{ vars.APPF2_DEEPSEEK_MODEL_NAME }}
