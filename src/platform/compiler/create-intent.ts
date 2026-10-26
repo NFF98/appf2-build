@@ -96,8 +96,8 @@ function acceptAnalysis(output: JsonValue): TrustedIntentState | null {
     if (error instanceof IntentContractError) {
       // Safe production diagnostics: only fixed validator reason codes, never AI output or user text.
       const reasons = error.violations.slice(0, 8).map(v => {
-        const fieldPath = v.path.replace(/\\[[^\\]]*\\]/gu, "[]")
-          .replace(/[^a-zA-Z0-9_.\\[\\]$]/gu, "").slice(0, 92);
+        const fieldPath = v.path.replace(/\[[^\]]*\]/gu, "[]")
+          .replace(/[^a-zA-Z0-9_.\[\]$]/gu, "").slice(0, 92);
         const reason = v.reason.replace(/[^A-Z0-9_]/gu, "").slice(0, 55);
         return reason + ":" + fieldPath;
       });
