@@ -155,7 +155,8 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
       <h1 className="workspace-title" tabIndex={-1}>
         目前沒完成，但你的內容還在。
       </h1>
-      <p className="workspace-detail">{RECOVERY_DETAIL[phase.reason]}</p>
+      <p className="workspace-detail">{phase.code !== undefined ? (SPECIFIC_FAILURE_DETAIL[phase.code] ?? RECOVERY_DETAIL[phase.reason]) : RECOVERY_DETAIL[phase.reason]}</p>
+      {phase.code !== undefined ? <p className="workspace-detail">錯誤代碼：{phase.code}</p> : null}
       <UnsentSummary step={phase.step} />
       <div className="workspace-actions">
         <button type="button" className="btn btn-secondary" onClick={onEditIntent}>
