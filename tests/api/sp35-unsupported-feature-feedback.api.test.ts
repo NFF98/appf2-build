@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolveCapabilityCoverage, type CapabilityRequirement } from "../../src/platform/capabilities/coverage.js";
+import { resolveCapabilityCoverage } from "../../src/platform/capabilities/coverage.js";
+import type { CapabilityRequirement } from "../../src/platform/intent/capability-requirements.js";
 import { unsupportedCoverageDetails } from "../../src/platform/compiler/compile-intent.js";
 import { readFailure } from "../../src/app/create/f01-wire.js";
 
