@@ -216,6 +216,24 @@ const filterRecordList: Operator = (args, evaluate) => {
   });
 };
 
+/** Deterministic total of a validated numeric RECORD field; empty lists sum to zero. */
+const sumRecordField: Operator = (args, evaluate) => {
+  arity(args, 2, 2);
+  const list = asList(evaluate(args[0] as ValueSource));
+  const field = asString(evaluate(args[1] as ValueSource));
+  if (!/^[a-z][a-z0-9_]{0,63}$/.test(field)) {
+    return operandFailure("LIST_SUM_BY field is invalid.");
+  }
+  let sum = 0;
+  for (const item of list) {
+    if (!isRuntimeRecord(item) || !Object.hasOwn(item, field)) {
+      return operandFailure("LIST_SUM_BY field is absent.");
+    }
+    sum = finite(sum + asNumber(item[field]));
+  }
+  return sum;
+};
+
 const OPERATORS: Readonly<Record<string, Operator>> = {
   ADD: (args, evaluate) => finite(numbers(args, evaluate, 2).reduce((sum, value) => sum + value, 0)),
   SUB: (args, evaluate) => {
@@ -291,7 +309,8 @@ const OPERATORS: Readonly<Record<string, Operator>> = {
   LIST_REMOVE_AT: listEdit("REMOVE_AT"),
   LIST_REPLACE_AT: listEdit("REPLACE_AT"),
   RECORD_SET: setRecordField,
-  LIST_FILTER_EQ: filterRecordList
+  LIST_FILTER_EQ: filterRecordList,
+  LIST_SUM_BY: sumRecordField
 };
 
 function resolvePath(root: RuntimeValue, path: string): RuntimeValue | undefined {
