@@ -201,3 +201,6 @@ jobs:
         run: node deploy/scripts/sp35-staging-only.mjs
       - name: Real Worker first-hop smoke (not full Creation)
         run: node deploy/scripts/sp35-staging-smoke.mjs
+      - name: Live signed CREATE through PostgreSQL and OpenAI (never mock, one attempt)
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
+        run: node deploy/scripts/sp35-staging-live-create.mjs
