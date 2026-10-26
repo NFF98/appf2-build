@@ -39,6 +39,11 @@ jobs:
           const curve = createECDH("prime256v1");
           curve.setPrivateKey(derive);
           console.log("APPF2_DB_BRIDGE_PUBLIC_KEY="+curve.getPublicKey().toString("base64url"));
+          const probe=await fetch("https://api.cloudflare.com/client/v4/accounts/"+account+"/hyperdrive/configs",{
+            headers:{Authorization:"Bearer "+token,Accept:"application/json"}
+          });
+          console.log("CLOUDFLARE HYPERDRIVE API: "+(probe.ok?"ACCESS_OK":"ACCESS_DENIED_HTTP_"+probe.status));
+          if(!probe.ok)throw Error("DB BRIDGE: Hyperdrive list permission unavailable");
           const encoded = process.env.APPF2_DB_ENVELOPE?.trim();
           if(!encoded) {
             console.log("DB BRIDGE: awaiting encrypted staging-only credentials; existing bootstrap remains unchanged");
@@ -94,9 +99,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           APPF2_STAGING_WORKER_NAME: ${{ vars.APPF2_STAGING_WORKER_NAME }}
-          APPF2_HYPERDRIVE_FRESH_ID: ${{ secrets.APPF2_HYPERDRIVE_FRESH_ID }}
-          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
-          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
+          APPF2_HYPERDRIVE_FRESH_ID: ${{ env.APPF2_HYPERDRIVE_FRESH_ID || secrets.APPF2_HYPERDRIVE_FRESH_ID }}
+          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ env.APPF2_HYPERDRIVE_F02_ADMISSION_ID || secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
+          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ env.APPF2_HYPERDRIVE_F07_EVENTS_ID || secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
           APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL }}
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME }}
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
@@ -123,11 +128,25 @@ jobs:
           check(response.ok && a.success === true && a.result?.id === account,
             "ACCOUNT_ACCESS_DENIED_OR_MISMATCH_HTTP_" + response.status);
           console.log("CLOUDFLARE ACCOUNT: VERIFIED (ID omitted from log)");
+          import {createHmac} from "node:crypto";
+          const defaults={
+            APPF2_STAGING_WORKER_NAME: "appf2-sp35-417-staging",
+            APPF2_MODEL_BASE_URL: "https://api.openai.com/v1",
+            APPF2_MODEL_NAME: "gpt-4.1",
+            APPF2_IDENTITY_COOKIE_SECRET: createHmac("sha256",token)
+              .update("appf2-sp35-staging-identity-secret-v1").digest("hex")
+          };
+          // GitHub runner env is set without printing any default secret.
+          for(const [name,value] of Object.entries(defaults)){
+            if(!process.env[name]?.trim()){
+              if(name==="APPF2_IDENTITY_COOKIE_SECRET") console.log("::add-mask::"+value);
+              fs.appendFileSync(process.env.GITHUB_ENV,name+"="+value+"\n");
+              process.env[name]=value;
+            }
+          }
           const names = [
-            "APPF2_STAGING_WORKER_NAME", "APPF2_HYPERDRIVE_FRESH_ID",
-            "APPF2_HYPERDRIVE_F02_ADMISSION_ID", "APPF2_HYPERDRIVE_F07_EVENTS_ID",
-            "APPF2_MODEL_BASE_URL", "APPF2_MODEL_NAME", "APPF2_MODEL_API_KEY",
-            "APPF2_IDENTITY_COOKIE_SECRET"
+            "APPF2_HYPERDRIVE_FRESH_ID", "APPF2_HYPERDRIVE_F02_ADMISSION_ID",
+            "APPF2_HYPERDRIVE_F07_EVENTS_ID", "APPF2_MODEL_API_KEY"
           ];
           const missing = names.filter(name => !process.env[name]?.trim());
           if (missing.length) {
@@ -174,9 +193,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           APPF2_STAGING_WORKER_NAME: ${{ vars.APPF2_STAGING_WORKER_NAME }}
-          APPF2_HYPERDRIVE_FRESH_ID: ${{ secrets.APPF2_HYPERDRIVE_FRESH_ID }}
-          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
-          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
+          APPF2_HYPERDRIVE_FRESH_ID: ${{ env.APPF2_HYPERDRIVE_FRESH_ID || secrets.APPF2_HYPERDRIVE_FRESH_ID }}
+          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ env.APPF2_HYPERDRIVE_F02_ADMISSION_ID || secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
+          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ env.APPF2_HYPERDRIVE_F07_EVENTS_ID || secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
           APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL }}
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME }}
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
