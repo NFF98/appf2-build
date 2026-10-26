@@ -84,12 +84,12 @@ try {
   process.stdout.write(redact(r.stdout));
   process.stderr.write(redact(r.stderr));
   if (r.status !== 0) throw new Error("STAGING DEPLOY: Wrangler failed (exit " + r.status + ")");
-  const output = String(r.stdout || "") + "\\n" + String(r.stderr || "");
-  const urls = output.match(/https:\\/\\/[a-z0-9.-]+\\.workers\\.dev\\/?/gi) || [];
+  const output = String(r.stdout || "") + "\n" + String(r.stderr || "");
+  const urls = output.match(/https:\/\/[a-z0-9.-]+\.workers\.dev\/?/gi) || [];
   const url = urls.map(s => new URL(s)).find(u => u.hostname.startsWith(name + "."));
   if (!url) throw new Error("STAGING DEPLOY: Wrangler reported success but no verifiable workers.dev URL");
   if (process.env.GITHUB_ENV)
-    fs.appendFileSync(process.env.GITHUB_ENV, "APPF2_STAGING_URL=" + url.origin + "\\n");
+    fs.appendFileSync(process.env.GITHUB_ENV, "APPF2_STAGING_URL=" + url.origin + "\n");
   console.log("STAGING URL: " + url.origin);
   console.log(bootstrapOnly
     ? "STAGING FIRST-HOP ONLY: real Worker + SPA; AI/Postgres/Creation NOT CONFIGURED"
