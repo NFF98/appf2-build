@@ -196,6 +196,11 @@ jobs:
         run: |
           node --input-type=module <<'JS'
           import fs from "node:fs";
+          const actualFields=[
+            "envelope_version","goal","actors","entities","known_inputs",
+            "constraints","requested_outputs","candidate_rules","missing_fields",
+            "ambiguities","assumptions","capability_hints","analysis_metadata"
+          ];
           const response=await fetch("https://api.openai.com/v1/chat/completions",{
             method:"POST",
             headers:{
@@ -205,14 +210,15 @@ jobs:
             body:JSON.stringify({
               model:process.env.APPF2_MODEL_NAME,temperature:0,
               messages:[
-                {role:"system",content:"Return one JSON object with a boolean ok field."},
-                {role:"user",content:"Return ok true."}
+                {role:"system",content:"Return a JSON intent analysis containing the named fields."},
+                {role:"user",content:"Create a simple task tracker."}
               ],
               response_format:{
                 type:"json_schema",
                 json_schema:{
-                  name:"appf2_health",strict:false,
-                  schema:{type:"object",required:["ok"],properties:{ok:{type:"boolean"}}}
+                  name:"intent_analysis",strict:false,
+                  schema:{type:"object",required:actualFields,
+                    properties:Object.fromEntries(actualFields.map(f=>[f,{}]))}
                 }
               }
             }),
