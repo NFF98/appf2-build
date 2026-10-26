@@ -208,6 +208,20 @@ function typedFormCandidate(
   return matches.filter((candidate) => candidate.id === id);
 }
 
+/** A read-only numeric counter is a data.stat, not a new stateful control.
+ * Only the display-only NUMBER shape can be resolved without inventing APIs. */
+function typedNumericCounter(
+  requirement: CapabilityRequirement,
+  matches: ReadonlyMap<string, CapabilityDefinition>
+): readonly CapabilityDefinition[] {
+  if (requirement.interaction_class !== "counter" ||
+    requirement.input_types.length !== 0 ||
+    requirement.output_types.length !== 1 ||
+    requirement.output_types[0] !== "NUMBER") return [];
+  const candidate = matches.get("data.stat@1.0.0");
+  return candidate === undefined ? [] : [candidate];
+}
+
 function orderedCandidates(
   requirement: CapabilityRequirement,
   request: CoverageResolutionRequest,
@@ -219,8 +233,10 @@ function orderedCandidates(
   // no exact phrase matches: never fuzzy-match or guess between capabilities.
   const classMatches = state.definitionsBySemanticNeed.get(requirement.interaction_class) ?? [];
   const typedForm = typedFormCandidate(requirement, classMatches);
+  const numericCounter = typedNumericCounter(requirement, state.definitionsByRef);
   const semanticMatches = exact.length > 0 ? exact :
-    classMatches.length === 1 ? classMatches : typedForm.length === 1 ? typedForm : [];
+    classMatches.length === 1 ? classMatches :
+      typedForm.length === 1 ? typedForm : numericCounter;
   const matchingRefs = new Set(semanticMatches.map((definition) => refKey(toRef(definition))));
   const suggestedRefs = request.suggestedCapabilities?.[requirement.requirement_id] ?? [];
   recordUnregisteredSuggestions(suggestedRefs, state);
