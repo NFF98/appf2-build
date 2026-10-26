@@ -35,6 +35,32 @@ describe("untrusted Prompt A descriptor flag completion", () => {
     });
   });
 
+  test("preserves an AI scalar fact but fixes inconsistent nonrisk choice metadata", () => {
+    const original = {
+      requested_outputs: [],
+      capability_hints: [],
+      constraints: [
+        { id: "color", resolution_state: "CONFIRMED", resolved_value: "red",
+          expected_value_type: "ENUM", question_type: "SINGLE_CHOICE",
+          alternatives: ["blue"], policy_risk_flags: [] },
+        { id: "pay", resolution_state: "CONFIRMED", resolved_value: "yes",
+          expected_value_type: "ENUM", question_type: "SINGLE_CHOICE",
+          alternatives: ["no"], policy_risk_flags: ["MONEY"] },
+        { id: "valid", resolution_state: "CONFIRMED", resolved_value: "yes",
+          expected_value_type: "ENUM", question_type: "SINGLE_CHOICE",
+          alternatives: ["yes", "no"], policy_risk_flags: [] }
+      ]
+    };
+    const normalized = normalizeAnalysisDescriptorFlags(original as JsonValue) as typeof original;
+    expect(normalized.constraints[0]).toMatchObject({
+      id: "color", resolved_value: "red",
+      expected_value_type: "STRING", question_type: "FREE_TEXT"
+    });
+    expect(normalized.constraints[1]).toEqual(original.constraints[1]);
+    expect(normalized.constraints[2]).toEqual(original.constraints[2]);
+    expect(original.constraints[0]?.expected_value_type).toBe("ENUM");
+  });
+
   test("never repairs malformed root, unknown source or non-boolean provided flag", () => {
     expect(normalizeAnalysisDescriptorFlags([])).toEqual([]);
     const value = {
