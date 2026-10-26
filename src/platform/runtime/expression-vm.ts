@@ -229,7 +229,9 @@ const sumRecordField: Operator = (args, evaluate) => {
     if (!isRuntimeRecord(item) || !Object.hasOwn(item, field)) {
       return operandFailure("LIST_SUM_BY field is absent.");
     }
-    sum = finite(sum + asNumber(item[field]));
+    const value = item[field];
+    if (typeof value !== "number") return operandFailure("LIST_SUM_BY field is not NUMBER.");
+    sum = finite(sum + value);
   }
   return sum;
 };
