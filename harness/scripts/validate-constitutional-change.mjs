@@ -230,12 +230,49 @@ const sp35RecoveryDiffMatches = changed =>
   changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
   changed.every(p=>typeof p==="string" && sp35RecoveryAllowedPaths.some(re=>re.test(p)));
 
+// PR419 follows #417's isolated Staging success. This strictly permits
+// *executing* real gates on the exact follow-up diff. It is not approval.
+const sp35ComplexAllowed=new Set([
+  ".github/workflows/sp35-staging-only.yml",
+  "deploy/scripts/sp35-staging-browser-e2e.mjs",
+  "src/app/create/CreateWorkspace.tsx",
+  "src/app/create/creation-controller.ts",
+  "src/app/create/creation-session.ts",
+  "src/platform/compiler/idempotency.ts",
+  "src/platform/compiler/model-gateway.ts",
+  "src/platform/compiler/prompts.ts",
+  "tests/api/intent-api.api.test.ts",
+  "tests/api/sp35-complex-intent-budget.api.test.ts",
+  "harness/scripts/run-task-human-grant-preflight.sh",
+  "harness/scripts/validate-constitutional-change.mjs",
+  "ci/run-product-ci.mjs"
+]);
+function sp35ComplexRecoveryTestOnly({changed,base,cs,build},event) {
+  const pr=event?.pull_request;
+  return [
+    base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b",
+    cs?.status==="HOLD",cs?.active_sprint===null,cs?.active_build_spec===null,cs?.active_task===null,
+    build?.active_baseline==="BS-P1-025",build?.implementation_enabled===false,
+    process.env.GITHUB_EVENT_NAME==="pull_request",
+    process.env.GITHUB_REPOSITORY==="NFF98/appf2-build",
+    event?.repository?.full_name==="NFF98/appf2-build",
+    pr?.number===419,pr?.state==="open",pr?.base?.ref==="main",pr?.base?.sha===base,
+    pr?.head?.ref==="product/sprint-3.5-complex-intent-recovery-20261026",
+    pr?.head?.repo?.full_name==="NFF98/appf2-build",
+    Array.isArray(changed),changed?.length>0,changed?.length<=sp35ComplexAllowed.size,
+    changed?.includes("harness/scripts/run-task-human-grant-preflight.sh"),
+    changed?.includes("tests/api/sp35-complex-intent-budget.api.test.ts"),
+    changed?.every(p=>sp35ComplexAllowed.has(p))
+  ].every(Boolean);
+}
+
 export function isSp35ProductRecoveryTestOnly({changed,base,cs,build}) {
-  if(!sp35RecoveryStateMatches({base,cs,build})) return false;
   let event;
   try{event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,"utf8"));}
   catch{return false;}
-  return sp35RecoveryEventMatches(event,base) && sp35RecoveryDiffMatches(changed);
+  const oldPr=sp35RecoveryStateMatches({base,cs,build}) &&
+    sp35RecoveryEventMatches(event,base) && sp35RecoveryDiffMatches(changed);
+  return oldPr || sp35ComplexRecoveryTestOnly({changed,base,cs,build},event);
 }
 
 export function inspectConstitutionalChange({changed,base,cs,build,policy,root}){
