@@ -64,7 +64,7 @@ export interface ModelGateway {
 
 /** F01-POL-007 Phase 1 timeouts and attempt ceiling. */
 export const MODEL_OPERATION_TIMEOUT_MS: Readonly<Record<ModelOperation, number>> = Object.freeze({
-  INTENT_ANALYSIS: 20_000,
+  INTENT_ANALYSIS: 35_000,
   BLUEPRINT_COMPOSE: 20_000
 });
 /** F02: one initial Blueprint and at most two validation-guided corrections. */
