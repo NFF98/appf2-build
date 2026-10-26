@@ -45,7 +45,7 @@ describe("Sprint 3.5 LifePilot F01 resilience", () => {
     }, {
       operation: "INTENT_ANALYSIS", promptVersion: "test", schemaVersion: "test",
       responseSchema: { type: "object" }, inputPayload: original,
-      accept: value => typeof value === "object" && value !== null && !Array.isArray(value) && value.valid === true ? value : null,
+      accept: value => JSON.stringify(value) === '{"valid":true}' ? value : null,
       rejectedOutputCode: "F01-ERR-002"
     });
     expect(result.attemptNo).toBe(2);
