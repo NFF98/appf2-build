@@ -30,7 +30,7 @@ export class BlueprintAttemptBudget {
 
   public take(deadline: RequestDeadline): number {
     if (this.remaining <= 0) return 0;
-    const limit = BLUEPRINT_ATTEMPT_TIMEOUTS_MS[this.used];
+    const limit = BLUEPRINT_ATTEMPT_TIMEOUTS_MS[this.used] ?? 0;
     this.used += 1;
     return deadline.attemptTimeoutMs("BLUEPRINT_COMPOSE", limit);
   }
