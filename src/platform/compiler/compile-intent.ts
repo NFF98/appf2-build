@@ -162,6 +162,25 @@ function observe(run: CompileRun, progress: CreateProgressOperation | null, life
   if (progress !== null) run.dependencies.progressObserver?.(progress.snapshot(lifecycle));
 }
 
+/** Fail with bounded, user-readable missing feature names from trusted F01 projection.
+ * The server never exposes model/provider errors, secrets, or unbounded raw prompts. */
+export function unsupportedCoverageDetails(
+  coverage: CoverageResult,
+  requirements: readonly CapabilityRequirement[]
+): IntentApiErrorDetails {
+  const byId = new Map(requirements.map((r) => [r.requirement_id, r]));
+  const missing = coverage.requirements
+    .filter((result) => result.status === "UNSUPPORTED" || result.status === "EXTERNAL_REQUIRED")
+    .map((result) => byId.get(result.requirementId))
+    .filter((requirement): requirement is CapabilityRequirement =>
+      requirement !== undefined && requirement.required);
+  return {
+    coverage_status: coverage.status,
+    unsupported_count: missing.length,
+    unsupported_features: missing.slice(0, 6).map((requirement) => requirement.semantic_need.slice(0, 160))
+  };
+}
+
 async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
   const { dependencies, guard, record, evidence } = run;
   const projection = verifiedResolvedIntent(record);
@@ -174,7 +193,7 @@ async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
   if (!isCoverageAllowed(coverage)) {
     const expires = new Date(dependencies.clock().getTime() + RAW_INTENT_RETENTION_MS).toISOString();
     requireTransition(await dependencies.intents.transitionIntent(guardNow(guard, dependencies), { intent_id: record.intent_id, expected_version: record.intent_version, lifecycle_status: "INCOMPATIBLE", expires_at: expires }));
-    throw new IntentApiError("F01-ERR-008", { details: { coverage_status: coverage.status } });
+    throw new IntentApiError("F01-ERR-008", { details: unsupportedCoverageDetails(coverage, projection.resolved_intent.capability_requirements) });
   }
   progress?.complete("F01-CREATE-CP-04");
   const composingVersion = requireTransition(
@@ -248,7 +267,7 @@ async function terminalReplayDetails(
   }
   if (code === "F01-ERR-008" && record.resolved_intent !== null) {
     const coverage = dependencies.coverage({ requirements: requirementsOf(record.resolved_intent) });
-    return isCoverageAllowed(coverage) ? {} : { coverage_status: coverage.status };
+    return isCoverageAllowed(coverage) ? {} : unsupportedCoverageDetails(coverage, requirementsOf(record.resolved_intent));
   }
   return {};
 }
