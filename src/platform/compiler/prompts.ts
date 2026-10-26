@@ -252,12 +252,19 @@ export const COMPOSE_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
  * capability ID/version pairs, not all catalog or invented names. F02 remains
  * the authoritative independent validator. */
 export function composeResponseSchema(selected: readonly { readonly id: string; readonly version: string }[]): JsonRecord {
-  const pairs = selected.map(ref => ({
-    type: "object", additionalProperties: false, required: ["id", "version"],
-    properties: { id: { const: ref.id }, version: { const: ref.version } }
-  }));
-  const schemaRef = { anyOf: pairs };
-  const node = { ...BP_NODE, properties: { ...BP_NODE.properties, capability: schemaRef } };
+  // json_schema's anyOf with zero branches causes an OpenAI HTTP 400.
+  // Distinct allowed values are constrained when coverage selected something.
+  // F02 independently verifies each exact ID/version pair and every node contract.
+  const ids = [...new Set(selected.map(ref => ref.id))];
+  const versions = [...new Set(selected.map(ref => ref.version))];
+  const capability = selected.length === 0 ? BP_REF : {
+    ...BP_REF,
+    properties: {
+      id: { type: "string", enum: ids },
+      version: { type: "string", enum: versions }
+    }
+  };
+  const node = { ...BP_NODE, properties: { ...BP_NODE.properties, capability } };
   return {
     ...COMPOSE_RESPONSE_SCHEMA,
     properties: { ...(COMPOSE_RESPONSE_SCHEMA.properties as JsonRecord),
