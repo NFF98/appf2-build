@@ -75,7 +75,7 @@ export class AppLauncher {
     const { host } = this.dependencies;
     if (host === null) return this.set({ kind: "FAILED", contentHash: target.contentHash, failure: "RUNTIME_REJECTED" });
     this.set({ kind: "HYDRATING", contentHash: target.contentHash });
-    const launched = await host.launch(delivered.admitted);
+    const launched = await host.launch(delivered.admitted, target.intentId);
     if (attempt !== this.attempt) {
       if (launched.ok) launched.app.release();
       return;
