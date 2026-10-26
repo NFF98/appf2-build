@@ -123,6 +123,7 @@ const allowed=new Set([
   "tests/runtime/sp35-state-restore.runtime.test.ts",
   "tests/runtime/sp35-list-actions.runtime.test.ts",
   "tests/runtime/sp35-live-counter.runtime.test.ts",
+  "tests/runtime/sp35-expense-total.runtime.test.ts",
   "tests/api/sp35-delivery-retry.api.test.ts",
   "harness/scripts/run-task-human-grant-preflight.sh",
   "harness/scripts/validate-constitutional-change.mjs",
