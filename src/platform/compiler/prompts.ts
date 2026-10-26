@@ -1,5 +1,6 @@
 import { BLUEPRINT_SCHEMA_VERSION } from "../blueprint/validation-types.js";
 import type { JsonRecord } from "../intent/json-value.js";
+import { COMPILER_CATALOG_INTENT_CLASSES } from "../intent/semantic-descriptors.js";
 import type { ModelOperation } from "./model-gateway.js";
 
 export const PROMPT_A_VERSION = "f01-prompt-a-v1";
@@ -24,7 +25,9 @@ const PROMPT_A_POLICY = [
   "For an LLM proposal use source LLM_PROPOSED and resolution_state PROPOSED plus proposed_default; never claim the User accepted it. Use UNRESOLVED without a value when the fact is unknown.",
   "QUESTION_TYPE must match expected_value_type: FREE_TEXT=STRING, NUMBER=NUMBER, BOOLEAN=BOOLEAN, SINGLE_CHOICE=ENUM, MULTI_CHOICE=LIST, STRUCTURED_FIELDS=RECORD.",
   "All semantic IDs use lowercase snake_case. IDs are unique across all arrays; empty arrays are valid when there are genuinely no items in that collection.",
-  "For actors, entities, requested_outputs, known_inputs, and capability_hints follow every required nested field in the supplied JSON Schema. Make no unsupported capability IDs."
+  "For actors, entities, requested_outputs, known_inputs, and capability_hints follow every required nested field in the supplied JSON Schema. Every requested_output and every capability_hint MUST include required: true or false. Make no unsupported capability IDs.",
+  "Capability hint interaction_class must exactly match one string in capability_semantic_catalog from the input; if no catalog class matches, omit the hint instead of inventing a class.",
+  "For each policy item choose exactly one state: CONFIRMED with resolved_value, PROPOSED with proposed_default, or UNRESOLVED with neither. Never include the other state's value."
 ].join("\n");
 
 const PROMPT_B_POLICY = [
@@ -84,31 +87,53 @@ const KNOWN_INPUT = { type: "object", additionalProperties: false,
     source_ref: SOURCE_REF, sensitivity: { type: "string", enum: ["NORMAL", "SENSITIVE", "DO_NOT_PERSIST"] },
     confidence: { type: "number", minimum: 0, maximum: 1 }
   } };
-const POLICY_ITEM = { type: "object", additionalProperties: false,
-  required: [
-    "id", "semantic_role", "description", "source", "resolution_state",
-    "expected_value_type", "question_type", "required_for_execution",
-    "impact_level", "materiality", "policy_risk_flags", "depends_on_ids",
-    "confidence", "can_default", "alternatives", "user_visible", "rationale"
-  ],
-  properties: {
-    id: ID, semantic_role: TEXT, description: TEXT, source: SOURCE, source_ref: SOURCE_REF,
-    resolution_state: { type: "string", enum: ["CONFIRMED", "UNRESOLVED", "PROPOSED"] },
-    resolved_value: {}, proposed_default: {},
-    expected_value_type: VALUE_TYPE,
-    question_type: { type: "string", enum: [
-      "FREE_TEXT", "NUMBER", "BOOLEAN", "SINGLE_CHOICE", "MULTI_CHOICE", "STRUCTURED_FIELDS"
-    ] },
-    required_for_execution: BOOLEAN, impact_level: IMPACT,
-    materiality: { type: "string", enum: ["MATERIAL", "COSMETIC"] },
-    policy_risk_flags: { type: "array", items: {
-      type: "string", enum: ["MONEY", "PERMISSION", "EXTERNAL_COST", "IRREVERSIBLE"]
-    } },
-    depends_on_ids: ARRAY_OF_STRINGS,
-    confidence: { type: "number", minimum: 0, maximum: 1 },
-    can_default: BOOLEAN, alternatives: { type: "array", items: {} },
-    user_visible: BOOLEAN, rationale: TEXT
-  } };
+const POLICY_REQUIRED = [
+  "id", "semantic_role", "description", "source", "resolution_state",
+  "expected_value_type", "question_type", "required_for_execution",
+  "impact_level", "materiality", "policy_risk_flags", "depends_on_ids",
+  "confidence", "can_default", "alternatives", "user_visible", "rationale"
+];
+const POLICY_PROPERTIES = {
+  id: ID, semantic_role: TEXT, description: TEXT, source_ref: SOURCE_REF,
+  expected_value_type: VALUE_TYPE,
+  question_type: { type: "string", enum: [
+    "FREE_TEXT", "NUMBER", "BOOLEAN", "SINGLE_CHOICE", "MULTI_CHOICE", "STRUCTURED_FIELDS"
+  ] },
+  required_for_execution: BOOLEAN, impact_level: IMPACT,
+  materiality: { type: "string", enum: ["MATERIAL", "COSMETIC"] },
+  policy_risk_flags: { type: "array", items: {
+    type: "string", enum: ["MONEY", "PERMISSION", "EXTERNAL_COST", "IRREVERSIBLE"]
+  } },
+  depends_on_ids: ARRAY_OF_STRINGS,
+  confidence: { type: "number", minimum: 0, maximum: 1 },
+  alternatives: { type: "array", items: {} },
+  user_visible: BOOLEAN, rationale: TEXT
+};
+// The LLM cannot simultaneously emit resolved_value and proposed_default.
+// Distinct JSON Schema branches encode this server-validated invariant.
+const POLICY_ITEM = { anyOf: [
+  { type: "object", additionalProperties: false,
+    required: [...POLICY_REQUIRED, "resolved_value"],
+    properties: {
+      ...POLICY_PROPERTIES, source: { type: "string", enum: ["USER_EXPLICIT", "DOMAIN_KNOWN"] },
+      resolution_state: { const: "CONFIRMED" }, resolved_value: {}, can_default: { const: false }
+    }
+  },
+  { type: "object", additionalProperties: false,
+    required: [...POLICY_REQUIRED, "proposed_default"],
+    properties: {
+      ...POLICY_PROPERTIES, source: { const: "LLM_PROPOSED" },
+      resolution_state: { const: "PROPOSED" }, proposed_default: {}, can_default: BOOLEAN
+    }
+  },
+  { type: "object", additionalProperties: false,
+    required: POLICY_REQUIRED,
+    properties: {
+      ...POLICY_PROPERTIES, source: { const: "DOMAIN_KNOWN" },
+      resolution_state: { const: "UNRESOLVED" }, can_default: { const: false }
+    }
+  }
+] };
 const CAPABILITY_HINT = { type: "object", additionalProperties: false,
   required: ["hint_id", "semantic_need", "required", "impact_level",
     "input_types", "output_types", "interaction_class", "constraint_item_ids", "source_item_ids"],
@@ -116,7 +141,8 @@ const CAPABILITY_HINT = { type: "object", additionalProperties: false,
     hint_id: ID, semantic_need: TEXT, required: BOOLEAN, impact_level: IMPACT,
     input_types: { type: "array", items: VALUE_TYPE },
     output_types: { type: "array", items: VALUE_TYPE },
-    interaction_class: TEXT, constraint_item_ids: ARRAY_OF_STRINGS,
+    interaction_class: { type: "string", enum: [...COMPILER_CATALOG_INTENT_CLASSES].sort() },
+    constraint_item_ids: ARRAY_OF_STRINGS,
     source_item_ids: ARRAY_OF_STRINGS
   } };
 
