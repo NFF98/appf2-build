@@ -17,11 +17,10 @@ const post=await fetch(new URL("/api/v1/intents",base),{
 });
 const body=await post.text();let parsed;
 try{parsed=JSON.parse(body)}catch{throw new Error("STAGING SMOKE: intents response not JSON, status "+post.status)}
-if(!post.headers.get("content-type")?.includes("application/json") || post.status===404 && !parsed?.error?.code){
- throw new Error("STAGING SMOKE: intents API not routed to Worker, status "+post.status);
-}
-if(post.status>=500 || post.status<400 || !parsed?.error?.code){
- throw new Error("STAGING SMOKE: unsigned intents not fail-closed as Worker JSON, status "+post.status);
+if (!post.headers.get("content-type")?.includes("application/json")
+    || post.status !== 400
+    || parsed?.error?.code !== "F01-ERR-001") {
+ throw new Error("STAGING SMOKE: unsigned intents must reach Worker's F01 proof guard (400/F01-ERR-001), got status "+post.status+" code "+(parsed?.error?.code||"NONE"));
 }
 console.log("STAGING SMOKE: POST /api/v1/intents JSON denied as expected; status "+post.status+", code "+parsed.error.code);
 console.log("STAGING SMOKE: API FIRST-HOP PASS ONLY; LIVE MODEL/POSTGRES/CREATION NOT VERIFIED");
