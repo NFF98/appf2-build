@@ -44,6 +44,21 @@ export type ComposeOutcome = {
 
 type ValidationIssueFeedback = { readonly error_code: string; readonly stage: string; readonly json_path: string };
 
+/** Keep distinct F02 diagnostics across all bounded attempts: a repair must
+ * not re-introduce an earlier V02 error while fixing a later V05 error. */
+export function accumulateValidationIssues(
+  previous: readonly ValidationIssueFeedback[],
+  latest: readonly ValidationIssueFeedback[]
+): readonly ValidationIssueFeedback[] {
+  const combined = new Map<string, ValidationIssueFeedback>();
+  for (const issue of [...previous, ...latest]) {
+    const id = issue.error_code + "|" + issue.stage + "|" + issue.json_path;
+    if (!combined.has(id)) combined.set(id, issue);
+  }
+  return [...combined.values()].slice(-16);
+}
+
+
 type Verdict =
   | { readonly admitted: true; readonly validationRunId: string; readonly contentHash: string }
   | { readonly admitted: false; readonly classified: ClassifiedRejection; readonly incompatible: boolean; readonly issues: readonly ValidationIssueFeedback[] };
@@ -220,7 +235,7 @@ class ComposeLoop {
         await this.fail(disposition.lifecycle, disposition.error, disposition.terminal);
       }
       await this.prepareRecompose(verdict);
-      feedback = verdict.issues;
+      feedback = accumulateValidationIssues(feedback, verdict.issues);
     }
   }
 }
