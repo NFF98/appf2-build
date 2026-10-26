@@ -47,3 +47,20 @@ export function appf2ModelProviderConfig(
   }
   return alternateProviderConfig(provider, env);
 }
+
+/** Explicit opt-in only. Fallback never selects itself or transfers to an
+ * unconfigured provider; no key or model name is emitted to logs. */
+export function appf2ModelFallbackConfig(
+  env: Readonly<Record<string, string | undefined>>
+): { readonly provider: Appf2ModelProvider; readonly config: OpenAiCompatibleConfig } | undefined {
+  const value = env.APPF2_MODEL_FALLBACK_PROVIDER?.trim().toLowerCase() || "";
+  if (!value) return undefined;
+  if (value !== "xai" && value !== "deepseek") {
+    throw new ModelGatewayConfigError(["APPF2_MODEL_FALLBACK_PROVIDER (expected xai or deepseek)"]);
+  }
+  const primary = (env.APPF2_MODEL_PROVIDER || "openai").trim().toLowerCase();
+  if (value === primary) {
+    throw new ModelGatewayConfigError(["APPF2_MODEL_FALLBACK_PROVIDER (must differ from primary)"]);
+  }
+  return alternateProviderConfig(value, env);
+}
