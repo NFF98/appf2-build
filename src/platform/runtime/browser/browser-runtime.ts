@@ -56,7 +56,8 @@ export function savedTabState(intentId: string | undefined, hash: string): unkno
 
 export function persistBrowserTabState(runtime: RuntimeInstance, intentId: string | undefined, hash: string): void {
   const key = tabStorageKey(intentId, hash);
-  if (key === null || runtime.status !== "READY") return;
+  if (key === null || runtime.status !== "READY" ||
+      runtime.blueprint?.result.outputs.some((output) => output.sensitivity === "DO_NOT_PERSIST")) return;
   try {
     const json = JSON.stringify(runtime.snapshotMutableState());
     if (json.length <= MAX_TAB_STATE_BYTES) globalThis.sessionStorage.setItem(key, json);
