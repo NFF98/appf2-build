@@ -19,6 +19,7 @@ const PROMPT_A_POLICY = [
   "Mark provenance, resolution_state, value or proposed default, impact, materiality, policy_risk_flags, depends_on_ids and answer shape on every policy-visible item.",
   "Propose only safe and reversible defaults. Do not decide the final clarification status.",
   "capability_hints describe semantic needs only: never name a Capability ID, registration key, provider, model, module path or code.",
+  "CRITICAL F01: For every explicitly requested material feature marked required_for_execution:true (including edit/add/delete, updates and data persistence), the corresponding capability_hint.required MUST be true. Do not mark user-mandated features optional merely because the current registry may lack support. Never downgrade requested functionality to make capability coverage look FULLY_SUPPORTED.",
   "Every policy item must include id, semantic_role, description, source, resolution_state, expected_value_type, question_type, required_for_execution, impact_level, materiality, policy_risk_flags, depends_on_ids, confidence, can_default, alternatives, user_visible and rationale.",
   "Never include server-owned clarification_policy_state or ephemeral_input_requirements. Do not add fields absent from the JSON schema.",
   "For confirmed USER_EXPLICIT facts use resolution_state CONFIRMED and resolved_value; never put proposed_default on confirmed items.",
