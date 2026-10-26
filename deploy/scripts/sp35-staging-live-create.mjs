@@ -1,6 +1,6 @@
 // REAL staging-only signed F01 CREATE: one bounded production-path request.
 // Tests browser PoP wire protocol against deployed Cloudflare Worker + Hyperdrive + OpenAI.
-// No retries, no mocks, no secret or response bodies logged, no Production targets.
+// No POST retries, no mocks, no secret or response bodies logged, no Production targets.
 import { randomUUID, webcrypto } from "node:crypto";
 import { TextEncoder } from "node:util";
 
@@ -13,6 +13,27 @@ if (origin.protocol !== "https:" || origin.username || origin.password ||
   throw Error("STAGING REAL CREATE: refused non-isolated or non-HTTPS target");
 }
 const { subtle } = webcrypto;
+// Retry ONLY safe, read-only GET requests after a transient transport/reset or
+// temporary gateway error. Never replay CREATE/COMPILE POSTs or grant assumptions.
+async function safeRead(url, options, label, timeoutMs = 25_000) {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        method: "GET",
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (![502, 503, 504].includes(response.status) || attempt === 3) return response;
+      await response.body?.cancel().catch(() => {});
+      console.log("STAGING REAL OPEN: " + label + " transient HTTP " + response.status + " retry " + attempt + "/2");
+    } catch (error) {
+      if (attempt === 3) throw Error("STAGING REAL OPEN: " + label + " GET transport failed after 3 tries (" + String(error?.name || "unknown") + ")", { cause: error });
+      console.log("STAGING REAL OPEN: " + label + " transient GET connection failure; retry " + attempt + "/2");
+    }
+    await new Promise(resolve => setTimeout(resolve, attempt * 400));
+  }
+  throw Error("STAGING REAL OPEN: unreachable GET retry state");
+}
 const base64url = bytes => Buffer.from(bytes).toString("base64url");
 const sha256 = async bytes => new Uint8Array(await subtle.digest("SHA-256", bytes));
 const pair = await subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]);
@@ -106,7 +127,7 @@ try {
     },
     body:compileBody,
     redirect:"error",
-    signal:globalThis.AbortSignal.timeout(90_000)
+    signal:globalThis.AbortSignal.timeout(125_000)
   });
 }catch(error){
   throw Error("STAGING REAL COMPILE: network or timeout; no Blueprint PASS",{cause:error});
@@ -134,15 +155,14 @@ const grantTranscript=new TextEncoder().encode(JSON.stringify([
 const grantSignature=new Uint8Array(await subtle.sign(
   {name:"ECDSA",hash:"SHA-256"},pair.privateKey,grantTranscript
 ));
-const grantResponse=await fetch(
+const grantResponse=await safeRead(
   new URL(grantPath+"?content_hash="+encodeURIComponent(hash),origin),{
     method:"GET",redirect:"error",
     headers:{Origin:origin.origin,Cookie:cookie,
       "X-Appf2-PoP-Key":base64url(publicKey),
       "X-Appf2-PoP-Signature":base64url(grantSignature),
       "X-Appf2-PoP-Timestamp":String(grantTimestamp)},
-    signal:globalThis.AbortSignal.timeout(25_000)
-  }
+  }, "holder grant", 25_000
 );
 const grantData=await grantResponse.json().catch(()=>({}));
 const accessGrant=grantData?.data?.intent_blueprint_access_grant;
@@ -151,10 +171,9 @@ console.log("STAGING REAL OPEN: grant HTTP "+grantResponse.status+
 if(grantResponse.status!==200||typeof accessGrant!=="string"||accessGrant.length<30)
   throw Error("STAGING REAL OPEN: original-holder grant NOT VERIFIED");
 const authorization={Authorization:"Bearer "+accessGrant,Origin:origin.origin};
-const bodyResponse=await fetch(new URL("/b/"+hash,origin),{
-  headers:authorization,redirect:"error",
-  signal:globalThis.AbortSignal.timeout(20_000)
-});
+const bodyResponse=await safeRead(new URL("/b/"+hash,origin),{
+  headers:authorization,redirect:"error"
+}, "Blueprint body", 20_000);
 const bodyText=await bodyResponse.text();
 const hasApp=bodyResponse.status===200 && (()=>{try{
   const bp=JSON.parse(bodyText);
@@ -163,11 +182,10 @@ const hasApp=bodyResponse.status===200 && (()=>{try{
 console.log("STAGING REAL OPEN: Blueprint body HTTP "+bodyResponse.status+
   " PARSED_APP="+hasApp);
 if(!hasApp)throw Error("STAGING REAL OPEN: canonical Blueprint body NOT VERIFIED");
-const admissionResponse=await fetch(
+const admissionResponse=await safeRead(
   new URL("/api/v1/blueprints/"+hash+"/execution-admission",origin),{
-    headers:authorization,redirect:"error",
-    signal:globalThis.AbortSignal.timeout(25_000)
-  }
+    headers:authorization,redirect:"error"
+  }, "execution admission", 25_000
 );
 const admissionData=await admissionResponse.json().catch(()=>({}));
 const executable=admissionResponse.status===200 &&
