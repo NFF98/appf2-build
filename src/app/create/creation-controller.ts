@@ -31,6 +31,8 @@ type Answer = AnswerSubmissionRequest["answers"][number];
 function recoveryReason(failure: F01Failure): RecoveryReason {
   if (failure.kind === "MALFORMED_RESPONSE") return "MALFORMED";
   if (failure.kind !== "API") return "RETRYABLE";
+  if (failure.code === "F01-ERR-002") return "AI_FORMAT";
+  if (failure.code === "F01-ERR-009") return "AI_TIMEOUT";
   if (failure.code === "F01-ERR-004") return "STALE_VERSION";
   if (failure.code === "F01-ERR-015") return "NOT_FOUND";
   return failure.retryable ? "RETRYABLE" : "REJECTED";
@@ -199,7 +201,7 @@ export class CreationController {
   public retry(): void {
     const phase = this.session?.phase;
     if (this.inFlight !== null || phase === undefined) return;
-    if ((phase.kind === "RECOVERABLE_FAILURE" && phase.reason === "RETRYABLE") || phase.kind === "INTERRUPTED") {
+    if ((phase.kind === "RECOVERABLE_FAILURE" && (phase.reason === "RETRYABLE" || phase.reason === "AI_FORMAT" || phase.reason === "AI_TIMEOUT")) || phase.kind === "INTERRUPTED") {
       this.patch(() => ({ checkpoints: null }));
       void this.run(phase.step);
     }
@@ -258,7 +260,7 @@ export class CreationController {
   private fail(step: CreationStep, failure: F01Failure): void {
     if (failure.kind === "ABORTED") return this.patch(() => ({ busy: false, phase: { kind: "INTERRUPTED", step } }));
     const reason = recoveryReason(failure);
-    if (reason !== "RETRYABLE") this.keys.settle();
+    if (reason !== "RETRYABLE" && reason !== "AI_FORMAT" && reason !== "AI_TIMEOUT") this.keys.settle();
     const rejected = step.kind === "ANSWERS" ? rejectedTargets(step.body, failure) : {};
     if (step.kind === "ANSWERS" && Object.keys(rejected).length > 0) {
       return this.patch(() => ({ busy: false, phase: decisionPhase(step.decision), problems: rejected }));
