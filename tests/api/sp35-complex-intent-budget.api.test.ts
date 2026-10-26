@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { INTENT_ROUTE_KEYS, ROUTE_LEASE_MS } from "../../src/platform/compiler/idempotency.js";
 import { MAX_PROVIDER_ATTEMPTS, MODEL_OPERATION_TIMEOUT_MS, RequestDeadline } from "../../src/platform/compiler/model-gateway.js";
+import { COMPOSE_RESPONSE_SCHEMA, SYSTEM_POLICY } from "../../src/platform/compiler/prompts.js";
 
 describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
   it("allows two full legitimate analysis attempts within the CREATE route budget", () => {
@@ -11,6 +12,18 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     const time = 1000;
     const deadline = new RequestDeadline(total, () => time);
     expect(deadline.attemptTimeoutMs("INTENT_ANALYSIS")).toBe(perAttempt);
+  });
+
+  it("gives F02 two bounded validation-correction calls and constrains invalid rule IDs", () => {
+    const lease = ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.compile];
+    expect(lease).toBeGreaterThanOrEqual(MAX_PROVIDER_ATTEMPTS * MODEL_OPERATION_TIMEOUT_MS.BLUEPRINT_COMPOSE + 5_000);
+    const rule = (COMPOSE_RESPONSE_SCHEMA as unknown as {
+      properties: { rules: { items: { properties: { id: { pattern: string } } } } }
+    }).properties.rules.items.properties.id;
+    const idPattern = new RegExp(rule.pattern);
+    expect(idPattern.test("task_total")).toBe(false);
+    expect(idPattern.test("rule_task_total")).toBe(true);
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("EVERY rules[] entry");
   });
 
   it("still strictly clips each model attempt to remaining lease time", () => {

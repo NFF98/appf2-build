@@ -14,7 +14,7 @@ export type IntentRouteKey = (typeof INTENT_ROUTE_KEYS)[keyof typeof INTENT_ROUT
 export const ROUTE_LEASE_MS: Readonly<Record<IntentRouteKey, number>> = Object.freeze({
   [INTENT_ROUTE_KEYS.create]: 50_000,
   [INTENT_ROUTE_KEYS.answers]: 20_000,
-  [INTENT_ROUTE_KEYS.compile]: 30_000
+  [INTENT_ROUTE_KEYS.compile]: 50_000
 });
 export const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 
