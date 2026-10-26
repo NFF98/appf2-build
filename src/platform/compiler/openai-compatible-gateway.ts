@@ -116,7 +116,9 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
 
   public constructor(
     private readonly config: OpenAiCompatibleConfig,
-    private readonly fetchImpl: FetchLike = fetch as unknown as FetchLike,
+    // Workers' native fetch requires its global receiver. Never invoke a saved
+    // unbound native fetch as this.fetchImpl (Illegal invocation / TypeError).
+    private readonly fetchImpl: FetchLike = (url, init) => globalThis.fetch(url, init),
     private readonly clock: () => number = Date.now
   ) {}
 
