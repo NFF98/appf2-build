@@ -83,6 +83,7 @@ jobs:
         run: |
           npm run check:types
           npm run check:lint
+          npm run test:api
           npm run web:build
       - name: Deploy ONLY isolated staging Worker with bundled SPA
         env:
@@ -96,6 +97,11 @@ jobs:
           APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL }}
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME }}
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
+          APPF2_MODEL_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER }}
+          APPF2_XAI_MODEL_NAME: ${{ vars.APPF2_XAI_MODEL_NAME }}
+          APPF2_XAI_API_KEY: ${{ secrets.APPF2_XAI_API_KEY }}
+          APPF2_DEEPSEEK_MODEL_NAME: ${{ vars.APPF2_DEEPSEEK_MODEL_NAME }}
+          APPF2_DEEPSEEK_API_KEY: ${{ secrets.APPF2_DEEPSEEK_API_KEY }}
           APPF2_IDENTITY_COOKIE_SECRET: ${{ secrets.APPF2_IDENTITY_COOKIE_SECRET }}
         run: node deploy/scripts/sp35-staging-only.mjs
       - name: Real Worker first-hop smoke (not full Creation)
