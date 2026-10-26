@@ -21,7 +21,7 @@ export type CreationStep =
  * MALFORMED — the response broke the F01 contract and nothing from it is shown or applied;
  * NOT_FOUND — the Intent is gone; REJECTED — any other non-retryable F01 outcome.
  */
-export type RecoveryReason = "RETRYABLE" | "STALE_VERSION" | "MALFORMED" | "NOT_FOUND" | "REJECTED";
+export type RecoveryReason = "RETRYABLE" | "AI_FORMAT" | "AI_TIMEOUT" | "STALE_VERSION" | "MALFORMED" | "NOT_FOUND" | "REJECTED";
 
 /**
  * F00-STATE-002 Creation states rendered by S02. BUILD_VALIDATED is the F01 VALIDATED boundary: HYDRATING /
