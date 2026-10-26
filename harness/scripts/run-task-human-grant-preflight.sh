@@ -85,6 +85,7 @@ const allowed=new Set([
   ".github/workflows/sp35-staging-only.yml",
   ".github/workflows/governance-gate.yml",
   "deploy/scripts/sp35-staging-browser-e2e.mjs",
+  "deploy/scripts/sp35-staging-live-create.mjs",
   "src/app/create/CreateWorkspace.tsx",
   "src/app/create/creation-controller.ts",
   "src/app/create/creation-session.ts",
