@@ -111,7 +111,7 @@ const POLICY_PROPERTIES = {
 };
 // The LLM cannot simultaneously emit resolved_value and proposed_default.
 // Distinct JSON Schema branches encode this server-validated invariant.
-const POLICY_ITEM = { anyOf: [
+const POLICY_ITEM: JsonRecord = { anyOf: [
   { type: "object", additionalProperties: false,
     required: [...POLICY_REQUIRED, "resolved_value"],
     properties: {
