@@ -97,6 +97,7 @@ const allowed=new Set([
   "tests/api/sp35-complex-intent-budget.api.test.ts",
   "harness/scripts/run-task-human-grant-preflight.sh",
   "harness/scripts/validate-constitutional-change.mjs",
+  "harness/scripts/gpt-preflight.mjs",
   "ci/run-product-ci.mjs"
 ]);
 const paths=changed.map(x=>x.filename);
