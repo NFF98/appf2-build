@@ -85,9 +85,18 @@ try {
     throw Error("STAGING COMPLEX ANALYSIS: not yet verified for multi-feature LifePilot (no fake PASS)");
   }
   console.log("STAGING COMPLEX ANALYSIS: real 5-feature Prompt A PASS; compile/interactive proof follows.");
-  if(status !== "READY"){
-    console.log("STAGING COMPLEX COMPILE: NEEDS_USER_DECISION; cannot pretend automatic app completion.");
-    throw Error("STAGING COMPLEX: AI analysis passed but app requires user decision; full E2E NOT VERIFIED");
+  if(status === "READY_WITH_VISIBLE_ASSUMPTIONS"){
+    // This is a synthetic fixture. Confirm through the actual browser UI.
+    const answersResponse = page.waitForResponse(r => r.request().method()==="POST" &&
+      new URL(r.url()).pathname.endsWith("/answers"), {timeout:100_000});
+    await page.getByRole("button", {name:"用這些設定繼續"}).click();
+    const answerResponse = await answersResponse;
+    const answerJson = await answerResponse.json().catch(()=>({}));
+    console.log("STAGING COMPLEX CONFIRM: HTTP="+answerResponse.status()+" STATUS="+String(answerJson?.data?.status||"NONE"));
+    if(answerResponse.status()!==200 || answerJson?.data?.status!=="READY")
+      throw Error("STAGING COMPLEX: confirmation not READY; no false E2E PASS");
+  } else if(status!=="READY"){
+    throw Error("STAGING COMPLEX: essential questions require real user answers; no false E2E PASS");
   }
   const response = await compileResponse;
   if(response === null)throw Error("STAGING COMPLEX COMPILE: no browser compile response; full E2E NOT VERIFIED");
