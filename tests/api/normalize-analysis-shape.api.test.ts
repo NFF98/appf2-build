@@ -80,6 +80,24 @@ describe("untrusted Prompt A descriptor flag completion", () => {
     expect(value.constraints.every(x=>x.materiality==="COSMETIC")).toBe(true);
   });
 
+  test("canonicalizes only exact harmless capability type synonyms, never arbitrary tokens", () => {
+    const hint = {
+      hint_id: "task_list", required: true,
+      input_types: ["ARRAY", "INTEGER", "BOOLEAN", "UNKNOWN_TYPE"],
+      output_types: ["OBJECT", "FLOAT", "LIST", "STRING"],
+      source_item_ids: ["feature_smart_tasks"]
+    };
+    const envelope = { requested_outputs: [], capability_hints: [hint] };
+    const result = normalizeAnalysisDescriptorFlags(envelope as unknown as JsonValue) as {
+      capability_hints: Array<typeof hint>;
+    };
+    expect(result.capability_hints[0]?.input_types).toEqual(["LIST", "NUMBER", "BOOLEAN", "UNKNOWN_TYPE"]);
+    expect(result.capability_hints[0]?.output_types).toEqual(["RECORD", "NUMBER", "LIST", "STRING"]);
+    expect(result.capability_hints[0]?.required).toBe(true);
+    expect(result.capability_hints[0]?.source_item_ids).toEqual(["feature_smart_tasks"]);
+    expect(hint.input_types[0]).toBe("ARRAY");
+  });
+
   test("never repairs malformed root, unknown source or non-boolean provided flag", () => {
     expect(normalizeAnalysisDescriptorFlags([])).toEqual([]);
     const value = {
