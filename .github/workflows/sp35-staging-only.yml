@@ -41,6 +41,24 @@ jobs:
           if(!existing.ok)throw Error("STAGING DB: no Hyperdrive API permissions");
           const payload=await existing.json();
           if(payload.success!==true)throw Error("STAGING DB: Hyperdrive list failed");
+          // Reuse the 3 previously created staging resources without touching passwords.
+          const existingConfigs=Array.isArray(payload.result)?payload.result:[];
+          const existingNames=[
+            ["fresh","APPF2_HYPERDRIVE_FRESH_ID"],
+            ["f02","APPF2_HYPERDRIVE_F02_ADMISSION_ID"],
+            ["f07","APPF2_HYPERDRIVE_F07_EVENTS_ID"]
+          ];
+          const resolved=existingNames.map(([suffix,envName]) => ({
+            suffix,envName,config:existingConfigs.find(c=>c.name==="appf2-sp35-417-staging-"+suffix)
+          }));
+          if(resolved.every(x=>typeof x.config?.id==="string")){
+            for(const entry of resolved){
+              fs.appendFileSync(process.env.GITHUB_ENV,entry.envName+"="+entry.config.id+"\n");
+              console.log("STAGING DB: Hyperdrive "+entry.suffix+" REUSED id="+entry.config.id);
+            }
+            console.log("STAGING DB: all 3 existing configs reused; no credentials required");
+            process.exit(0);
+          }
           const raw=process.env.APPF2_STAGING_DB_CREDS?.trim();
           if(!raw){
             console.log("STAGING DB: waiting for one protected APPF2_STAGING_DB_CREDS GitHub secret");
