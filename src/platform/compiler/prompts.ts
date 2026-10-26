@@ -46,6 +46,7 @@ const PROMPT_B_POLICY = [
   "State map entries use {mode:MUTABLE,type,initial} or {mode:DERIVED,type,expr}; actions have {id:action_...,steps:[...]} and steps have type SET_STATE, INVOKE_CAPABILITY, or RESET_STATE. Do not invent unknown actions.",
   "CRITICAL: Every state and rule result_type MUST be one of the exact uppercase descriptors NUMBER, STRING, BOOLEAN, ENUM, LIST, RECORD. Array of tasks is LIST, never ARRAY or OBJECT. Object records are RECORD. Match MUTABLE initial values to that descriptor and follow compiler_catalog constraints.",
   "Always use only compiler_catalog capability IDs and versions. Do not add unlisted capabilities. Follow the capability prop, binding and event contracts exactly, including required properties and types.",
+  "Copy node.capability.id and node.capability.version EXACTLY from compiler_catalog, including dots and numeric version (e.g. layout.container and 1.0.0). Never use a display label, nickname, invented alias or underscore substitute. Use only the selected compiler_catalog entries.",
   "When previous_validation_issues is nonempty, correct those exact error_code/json_path issues. Do not repeat an incomplete top-level Blueprint or remove User facts.",
   "Before output, self-check all 11 top-level fields, nonempty nodes, valid node_ root, and every nested required field. Output the full Blueprint, not a partial plan or explanatory text."
 ].join("\n");
@@ -246,3 +247,20 @@ export const COMPOSE_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
           value: BP_VALUE, sensitivity: { enum: ["NORMAL", "SENSITIVE", "DO_NOT_PERSIST"] } } } } } }
   }
 });
+
+/** Prompt B schema: restrict model to the *currently selected* registered
+ * capability ID/version pairs, not all catalog or invented names. F02 remains
+ * the authoritative independent validator. */
+export function composeResponseSchema(selected: readonly { readonly id: string; readonly version: string }[]): JsonRecord {
+  const pairs = selected.map(ref => ({
+    type: "object", additionalProperties: false, required: ["id", "version"],
+    properties: { id: { const: ref.id }, version: { const: ref.version } }
+  }));
+  const schemaRef = { anyOf: pairs };
+  const node = { ...BP_NODE, properties: { ...BP_NODE.properties, capability: schemaRef } };
+  return {
+    ...COMPOSE_RESPONSE_SCHEMA,
+    properties: { ...(COMPOSE_RESPONSE_SCHEMA.properties as JsonRecord),
+      nodes: { type: "array", minItems: 1, items: node } }
+  };
+}
