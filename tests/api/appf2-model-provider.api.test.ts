@@ -14,9 +14,8 @@ describe("APPf2 multi-provider server-only selection", () => {
   };
 
   it("calls native fetch with its original global receiver (Workers runtime)", async () => {
-    let observedReceiver: unknown;
     vi.stubGlobal("fetch", function (this: unknown): Promise<Response> {
-      observedReceiver = this;
+      expect(this).toBe(globalThis);
       return Promise.resolve(new Response(JSON.stringify({
         choices: [{ message: { content: '{"ok":true}' } }],
         usage: { prompt_tokens: 1, completion_tokens: 1 },
@@ -38,7 +37,6 @@ describe("APPf2 multi-provider server-only selection", () => {
         trace_id: "test-trace",
         provider_policy: { max_attempts: 2, structured_output: "JSON_SCHEMA" }
       });
-      expect(observedReceiver).toBe(globalThis);
       expect(result.status).toBe("SUCCEEDED");
     } finally {
       vi.unstubAllGlobals();
