@@ -106,6 +106,22 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("NEVER invent operations");
   });
 
+  it("applies the same allowlisted OP recursively to rules and every nested OP argument", () => {
+    const schema = COMPOSE_RESPONSE_SCHEMA as unknown as {
+      $defs: { valueSource: { anyOf: Array<{ properties: { op?: { enum: string[] }; args?: { items: { $ref: string } } }> } };
+      properties: { rules: { items: { properties: { expr: { anyOf: unknown[] } } } } };
+    };
+    const rootOp = schema.$defs.valueSource.anyOf[5];
+    expect(rootOp?.properties.args?.items.$ref).toBe("#/$defs/valueSource");
+    const recursiveOperators = schema.$defs.valueSource.anyOf[5]?.properties.op?.enum ?? [];
+    expect(recursiveOperators).toContain("COUNT");
+    expect(recursiveOperators).toContain("IF");
+    expect(recursiveOperators).not.toContain("FILTER");
+    expect(recursiveOperators).not.toContain("MAP");
+    expect(schema.properties.rules.items.properties.expr.anyOf).toHaveLength(6);
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("applies recursively");
+  });
+
   it("still strictly clips each model attempt to remaining lease time", () => {
     let now = 1000;
     const deadline = new RequestDeadline(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.create], () => now);
