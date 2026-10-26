@@ -247,23 +247,37 @@ const sp35ComplexAllowed=new Set([
   "harness/scripts/validate-constitutional-change.mjs",
   "ci/run-product-ci.mjs"
 ]);
-function sp35ComplexRecoveryTestOnly({changed,base,cs,build},event) {
-  const pr=event?.pull_request;
+function sp35ComplexStateMatches({base,cs,build}) {
   return [
     base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b",
-    cs?.status==="HOLD",cs?.active_sprint===null,cs?.active_build_spec===null,cs?.active_task===null,
-    build?.active_baseline==="BS-P1-025",build?.implementation_enabled===false,
+    cs?.status==="HOLD", cs?.active_sprint===null, cs?.active_build_spec===null,
+    cs?.active_task===null, build?.active_baseline==="BS-P1-025",
+    build?.implementation_enabled===false
+  ].every(Boolean);
+}
+function sp35ComplexEventMatches(event,base) {
+  const pr=event?.pull_request;
+  return [
     process.env.GITHUB_EVENT_NAME==="pull_request",
     process.env.GITHUB_REPOSITORY==="NFF98/appf2-build",
     event?.repository?.full_name==="NFF98/appf2-build",
-    pr?.number===419,pr?.state==="open",pr?.base?.ref==="main",pr?.base?.sha===base,
+    pr?.number===419, pr?.state==="open",
+    pr?.base?.ref==="main", pr?.base?.sha===base,
     pr?.head?.ref==="product/sprint-3.5-complex-intent-recovery-20261026",
-    pr?.head?.repo?.full_name==="NFF98/appf2-build",
-    Array.isArray(changed),changed?.length>0,changed?.length<=sp35ComplexAllowed.size,
-    changed?.includes("harness/scripts/run-task-human-grant-preflight.sh"),
-    changed?.includes("tests/api/sp35-complex-intent-budget.api.test.ts"),
-    changed?.every(p=>sp35ComplexAllowed.has(p))
+    pr?.head?.repo?.full_name==="NFF98/appf2-build"
   ].every(Boolean);
+}
+function sp35ComplexDiffMatches(changed) {
+  return Array.isArray(changed) &&
+    changed.length>0 && changed.length<=sp35ComplexAllowed.size &&
+    changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
+    changed.includes("tests/api/sp35-complex-intent-budget.api.test.ts") &&
+    changed.every(p=>sp35ComplexAllowed.has(p));
+}
+function sp35ComplexRecoveryTestOnly(context,event) {
+  return sp35ComplexStateMatches(context) &&
+    sp35ComplexEventMatches(event,context.base) &&
+    sp35ComplexDiffMatches(context.changed);
 }
 
 export function isSp35ProductRecoveryTestOnly({changed,base,cs,build}) {
