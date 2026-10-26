@@ -83,6 +83,7 @@ if(!Array.isArray(pages)||pages.length===0)throw Error("PR419 changed-files inve
 const changed=pages.flat();
 const allowed=new Set([
   ".github/workflows/sp35-staging-only.yml",
+  ".github/workflows/governance-gate.yml",
   "deploy/scripts/sp35-staging-browser-e2e.mjs",
   "src/app/create/CreateWorkspace.tsx",
   "src/app/create/creation-controller.ts",
