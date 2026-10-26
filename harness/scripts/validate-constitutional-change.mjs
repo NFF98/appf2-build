@@ -265,6 +265,7 @@ const sp35ComplexAllowed=new Set([
   "tests/api/sp35-tab-persistence.api.test.ts",
   "tests/runtime/runtime-fixtures.ts",
   "tests/runtime/sp35-state-restore.runtime.test.ts",
+  "tests/runtime/sp35-list-actions.runtime.test.ts",
   "tests/api/sp35-delivery-retry.api.test.ts",
   "harness/scripts/run-task-human-grant-preflight.sh",
   "harness/scripts/validate-constitutional-change.mjs",
