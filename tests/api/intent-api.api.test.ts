@@ -246,14 +246,14 @@ describe("F01-AC-014 POST /compile retries never duplicate a logical compile", (
 
     const g = createF01Harness();
     const ready = await g.readyIntent();
-    g.gateway.queueCompose(succeeded(registryIncompatible()), succeeded(registryIncompatible()));
+    g.gateway.queueCompose(succeeded(registryIncompatible()), succeeded(registryIncompatible()), succeeded(registryIncompatible()));
     const incompatible = await g.compile(ready.intentId, ready.version);
     expect(incompatible.status).toBe(422);
     expect(errorOf(incompatible)).toMatchObject({ code: "F01-ERR-011", retryable: false, details: { rejection_class: "CAPABILITY_FIXABLE" } });
     expect(g.db.intents.get(ready.intentId)?.lifecycle_status).toBe("INCOMPATIBLE");
     const incompatibleReplay = await g.compile(ready.intentId, ready.version);
     expect([incompatibleReplay.status, errorOf(incompatibleReplay)]).toEqual([422, errorOf(incompatible)]);
-    expect(g.gateway.calls("BLUEPRINT_COMPOSE")).toHaveLength(2);
+    expect(g.gateway.calls("BLUEPRINT_COMPOSE")).toHaveLength(3);
   });
 });
 
