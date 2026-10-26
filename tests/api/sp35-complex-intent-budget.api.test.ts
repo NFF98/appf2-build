@@ -38,6 +38,21 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("EVERY rules[] entry");
   });
 
+  it("requires exact V02 ValueSource keys and canonical path patterns in model schema", () => {
+    const properties = COMPOSE_RESPONSE_SCHEMA.properties as Record<string, unknown>;
+    const nodes = properties.nodes as { items: { properties: {
+      bindings: { additionalProperties: { anyOf: Array<{ required: string[]; additionalProperties: boolean; properties: Record<string, { pattern?: string }> }> } }
+    } } };
+    const variants = nodes.items.properties.bindings.additionalProperties.anyOf;
+    expect(variants).toHaveLength(6);
+    expect(variants.every(v => v.additionalProperties === false)).toBe(true);
+    expect(variants.map(v => v.required.join(","))).toEqual([
+      "kind,value", "kind,key", "kind,rule_id", "kind,path", "kind,name,path", "kind,op,args"
+    ]);
+    expect(new RegExp(variants[4].properties.path.pattern ?? "").test("$.wrong")).toBe(false);
+    expect(new RegExp(variants[4].properties.path.pattern ?? "").test("item.title")).toBe(true);
+  });
+
   it("still strictly clips each model attempt to remaining lease time", () => {
     let now = 1000;
     const deadline = new RequestDeadline(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.create], () => now);
