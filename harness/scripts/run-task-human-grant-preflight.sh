@@ -91,6 +91,8 @@ const allowed=new Set([
   "src/platform/compiler/idempotency.ts",
   "src/platform/compiler/model-gateway.ts",
   "src/platform/compiler/prompts.ts",
+  "src/platform/compiler/normalize-analysis-shape.ts",
+  "tests/api/normalize-analysis-shape.api.test.ts",
   "tests/api/intent-api.api.test.ts",
   "tests/api/sp35-complex-intent-budget.api.test.ts",
   "harness/scripts/run-task-human-grant-preflight.sh",
