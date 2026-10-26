@@ -71,7 +71,7 @@ try {
   const compileResponse = page.waitForResponse(r => {
     const u = new URL(r.url());
     return r.request().method() === "POST" &&
-      /^\\/api\\/v1\\/intents\\/[^/]+\\/compile$/.test(u.pathname);
+      u.pathname.startsWith("/api/v1/intents/") && u.pathname.endsWith("/compile");
   }, {timeout:190_000}).catch(() => null);
   await page.locator(".composer-create").click();
   const resp = await analysisResponse;
