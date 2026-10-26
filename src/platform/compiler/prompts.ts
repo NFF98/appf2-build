@@ -43,6 +43,8 @@ const PROMPT_B_POLICY = [
   "registry_version must be the registry_version from the input; support.coverage_status must match capability_coverage_result.coverage_status, and support.degradations matches its permitted degradations. Do not invent a PASS or a capability.",
   "meta has title (nonempty) and optional description. state is a map; rules and actions are arrays; nodes is a NONEMPTY array; result is an object with outputs array; root_node_id references a real root node.",
   "Each node has id starting node_, capability {id,version} from compiler_catalog, props object, bindings object, events object, children array. Event action IDs start action_.",
+  "CRITICAL V02: Every node MUST have children:[] (empty JSON array) unless its registered capability contract explicitly supports child nodes. For layout.container and content.card, children is an array of existing node_ IDs only, never nested node objects, null, or comma-separated text. No self-links, duplicate child refs, dangling refs or cycles. Every referenced child exists in nodes exactly once. Input/text/button/stat leaf nodes always have children:[], even when they have repeat.",
+  "CRITICAL V02: nodes[].repeat may be present ONLY when allowed by that capability; content.list REQUIRES repeat:{items:{kind:STATE,key:declared_list_state},item_alias:item,max_items:30}. All repeat aliases must be canonical lowercase identifiers, and max_items must be an INTEGER within 0..500. Other leaf nodes should OMIT repeat instead of using null or an empty object.",
   "CRITICAL: EVERY rules[] entry MUST have an id matching ^rule_[a-z0-9_]{1,58}$ exactly. Use rule_task_total, not task_total; every RULE ValueSource.rule_id must reference that exact id. All rule names must be unique.",
   "Each capability prop and binding is a ValueSource object: {kind:LITERAL,value:non-null JSON}, {kind:STATE,key}, {kind:EVENT,path}, {kind:RULE,rule_id}, {kind:SCOPE,name,path}, or {kind:OP,op,args}. NEVER put a raw primitive directly into node props/bindings.",
   "CRITICAL V02: ValueSource fields depend EXACTLY on kind. STATE has only kind/key; EVENT only kind/path; SCOPE only kind/name/path; RULE only kind/rule_id; LITERAL only kind/value; OP only kind/op/args. Never mix these fields or include extras.",
@@ -241,10 +243,10 @@ const BP_NODE = { type: "object", additionalProperties: false,
       } },
     bindings: { type: "object", additionalProperties: BP_VALUE },
     events: { type: "object", additionalProperties: { type: "string" } },
-    children: { type: "array", items: { type: "string" } },
+    children: { type: "array", maxItems: 500, uniqueItems: true, items: { type: "string", pattern: "^node_[a-z0-9_]{1,58}$" } },
     repeat: { type: "object", required: ["items", "item_alias", "max_items"],
       properties: { items: BP_VALUE, item_alias: { type: "string" },
-        index_alias: { type: "string" }, max_items: { type: "integer", minimum: 0, maximum: 500 } } }
+        index_alias: BP_IDENTIFIER, max_items: { type: "integer", minimum: 0, maximum: 500 } } }
   } };
 export const COMPOSE_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
   type: "object",
