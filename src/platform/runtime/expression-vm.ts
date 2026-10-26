@@ -171,6 +171,51 @@ const listEdit = (mode: "APPEND" | "REMOVE_AT" | "REPLACE_AT"): Operator =>
     return list;
   };
 
+/** Immutable, locally typed RECORD edit; the validated Blueprint restricts keys. */
+const setRecordField: Operator = (args, evaluate) => {
+  arity(args, 3, 3);
+  const source = args[0];
+  const fieldSource = args[1];
+  const newValue = args[2];
+  if (source === undefined || fieldSource === undefined || newValue === undefined) {
+    return operandFailure("Missing RECORD_SET operand.");
+  }
+  const current = present(evaluate(source));
+  const field = asString(evaluate(fieldSource));
+  if (!isRuntimeRecord(current) || !/^[a-z][a-z0-9_]{0,63}$/.test(field) ||
+      !Object.hasOwn(current, field)) {
+    return operandFailure("RECORD_SET requires an existing safe field.");
+  }
+  return { ...current, [field]: present(evaluate(newValue)) };
+};
+
+/** Bounded pure filtering, without any dynamic code or mutation. */
+const filterRecordList: Operator = (args, evaluate) => {
+  arity(args, 3, 3);
+  const first = args[0];
+  const fieldSource = args[1];
+  const needleSource = args[2];
+  if (first === undefined || fieldSource === undefined || needleSource === undefined) {
+    return operandFailure("Missing LIST_FILTER_EQ operand.");
+  }
+  const list = asList(evaluate(first));
+  const field = asString(evaluate(fieldSource));
+  if (!/^[a-z][a-z0-9_]{0,63}$/.test(field)) {
+    return operandFailure("LIST_FILTER_EQ field is invalid.");
+  }
+  const needle = primitiveOperand(evaluate(needleSource));
+  return list.filter((item) => {
+    if (!isRuntimeRecord(item) || !Object.hasOwn(item, field)) {
+      return operandFailure("LIST_FILTER_EQ field is absent.");
+    }
+    const value = item[field];
+    if (typeof value !== typeof needle || !["string", "number", "boolean"].includes(typeof value)) {
+      return operandFailure("LIST_FILTER_EQ field type mismatch.");
+    }
+    return value === needle;
+  });
+};
+
 const OPERATORS: Readonly<Record<string, Operator>> = {
   ADD: (args, evaluate) => finite(numbers(args, evaluate, 2).reduce((sum, value) => sum + value, 0)),
   SUB: (args, evaluate) => {
@@ -244,7 +289,9 @@ const OPERATORS: Readonly<Record<string, Operator>> = {
   TRIM: stringTransform((value) => value.trim()),
   LIST_APPEND: listEdit("APPEND"),
   LIST_REMOVE_AT: listEdit("REMOVE_AT"),
-  LIST_REPLACE_AT: listEdit("REPLACE_AT")
+  LIST_REPLACE_AT: listEdit("REPLACE_AT"),
+  RECORD_SET: setRecordField,
+  LIST_FILTER_EQ: filterRecordList
 };
 
 function resolvePath(root: RuntimeValue, path: string): RuntimeValue | undefined {
