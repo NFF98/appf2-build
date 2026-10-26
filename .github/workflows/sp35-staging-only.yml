@@ -296,3 +296,16 @@ jobs:
             : "NO_MODEL_MARKERS_OBSERVED (tail permission/connection may be unavailable)"));
           JS
           exit "$CREATE_RC"
+      - name: Live Chromium real Create App + render + Home navigation
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1'
+        run: |
+          npx playwright install chromium
+          node deploy/scripts/sp35-staging-browser-e2e.mjs
+      - name: Upload browser screenshot (staging Hello World only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sp35-staging-browser
+          path: ${{ runner.temp }}/appf2-sp35-browser.png
+          retention-days: 3
+          if-no-files-found: ignore
