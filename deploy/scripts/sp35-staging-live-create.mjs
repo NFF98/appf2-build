@@ -67,3 +67,60 @@ if (response.status!==200 || typeof intent!=="string" || !/^[0-9a-f-]{36}$/i.tes
   throw Error("STAGING REAL CREATE: NOT VERIFIED HTTP "+response.status+" CODE="+code);
 }
 console.log("STAGING REAL CREATE: SIGNED CREATE 200; verify PostgreSQL durable row and real model receipts separately.");
+
+// Continue with the *same* proof-of-possession key and continuity cookie.
+// No mocks or bypass of F01 original-holder identity. One compile request only.
+const decision = result?.data;
+const version = decision?.intent_version;
+console.log("STAGING REAL CREATE: F01 STATUS="+String(decision?.status||"UNKNOWN")+
+  " HAS_VERSION="+Number.isInteger(version));
+if(decision?.status !== "READY" || !Number.isInteger(version) || version<1) {
+  throw Error("STAGING REAL COMPILE: Intent is not READY (no fake Blueprint PASS)");
+}
+const cookie = response.headers.get("set-cookie")?.split(";",1)[0];
+if (!cookie?.includes("=")) throw Error("STAGING REAL COMPILE: continuity cookie missing");
+const compilePath="/api/v1/intents/"+encodeURIComponent(intent)+"/compile";
+const compileKey="appf2-sp35-compile-"+randomUUID();
+const compileBody=JSON.stringify({intent_version:version});
+const compileTimestamp=Date.now();
+const compileTranscript=new TextEncoder().encode(JSON.stringify([
+  "APPF2_MUTATION_PoP_V1", "POST", compilePath,
+  base64url(await sha256(new TextEncoder().encode(compileBody))),
+  compileKey, compileTimestamp
+]));
+const compileSignature=new Uint8Array(await subtle.sign(
+  {name:"ECDSA",hash:"SHA-256"},pair.privateKey,compileTranscript
+));
+let compiled;
+try {
+  compiled=await fetch(new URL(compilePath,origin),{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      Origin:origin.origin,
+      Cookie:cookie,
+      "Idempotency-Key":compileKey,
+      "X-Appf2-PoP-Key":base64url(publicKey),
+      "X-Appf2-PoP-Signature":base64url(compileSignature),
+      "X-Appf2-PoP-Timestamp":String(compileTimestamp)
+    },
+    body:compileBody,
+    redirect:"error",
+    signal:globalThis.AbortSignal.timeout(90_000)
+  });
+}catch(error){
+  throw Error("STAGING REAL COMPILE: network or timeout; no Blueprint PASS",{cause:error});
+}
+if(!compiled.headers.get("content-type")?.includes("application/json"))
+  throw Error("STAGING REAL COMPILE: non-JSON HTTP "+compiled.status);
+const compileData=await compiled.json().catch(()=>({}));
+const hash=compileData?.data?.content_hash;
+const validHash=typeof hash==="string" && /^sha256:[a-f0-9]{64}$/.test(hash);
+console.log("STAGING REAL COMPILE: HTTP "+compiled.status+
+  " API_CODE="+String(compileData?.error?.code||"NONE")+
+  " VALIDATED_HASH="+validHash);
+if(compiled.status!==200 || compileData?.data?.status!=="VALIDATED" || !validHash){
+  throw Error("STAGING REAL COMPILE: NOT VERIFIED; do not claim executable App");
+}
+console.log("STAGING REAL COMPILE: validated Blueprint from real OpenAI + PostgreSQL; browser hydration NOT VERIFIED.");
+
