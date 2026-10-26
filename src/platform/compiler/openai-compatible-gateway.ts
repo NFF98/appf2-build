@@ -188,6 +188,8 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
         signal: controller.signal
       });
       if (response.status < 200 || response.status >= 300) {
+        // Safe diagnostics only: never log request payload, provider response or bearer key.
+        console.warn("APPF2_MODEL_UPSTREAM_STATUS=" + response.status);
         return failed(failureKindForStatus(response.status), retryAfterSeconds(response.headers.get("retry-after")));
       }
       const parsed = parseCompletion(parseJson(await response.text()));
@@ -200,7 +202,10 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
         latency_ms: Math.max(0, this.clock() - started),
         estimated_cost: this.estimatedCost(parsed.usage)
       };
-    } catch {
+    } catch (error: unknown) {
+      const kind = error instanceof Error ? error.name.replace(/[^A-Za-z]/gu, "").slice(0,32) : "UNKNOWN";
+      console.warn("APPF2_MODEL_UPSTREAM_TRANSPORT=" + kind +
+        " ABORTED=" + String(controller.signal.aborted));
       return failed(controller.signal.aborted ? "TIMEOUT" : "NETWORK");
     } finally {
       clearTimeout(timer);
