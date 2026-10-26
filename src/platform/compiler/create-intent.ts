@@ -95,9 +95,13 @@ function acceptAnalysis(output: JsonValue): TrustedIntentState | null {
   } catch (error: unknown) {
     if (error instanceof IntentContractError) {
       // Safe production diagnostics: only fixed validator reason codes, never AI output or user text.
-      const reasons = error.violations.slice(0, 6)
-        .map(v => v.reason.replace(/[^A-Z0-9_]/gu, "").slice(0, 55));
-      console.warn("APPF2_MODEL_ANALYSIS_INVALID=" + reasons.join(","));
+      const reasons = error.violations.slice(0, 8).map(v => {
+        const fieldPath = v.path.replace(/\\[[^\\]]*\\]/gu, "[]")
+          .replace(/[^a-zA-Z0-9_.\\[\\]$]/gu, "").slice(0, 92);
+        const reason = v.reason.replace(/[^A-Z0-9_]/gu, "").slice(0, 55);
+        return reason + ":" + fieldPath;
+      });
+      console.warn("APPF2_MODEL_ANALYSIS_INVALID=" + reasons.join("|"));
       return null;
     }
     throw error;
