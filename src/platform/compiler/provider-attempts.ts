@@ -3,6 +3,7 @@ import type { F01EvidenceBuffer } from "./compiler-evidence.js";
 import type { AttemptGuard, CompilerRunRepository, CompilerRunStatus } from "./compiler-records.js";
 import { IntentApiError, type F01ErrorCode } from "./f01-errors.js";
 import {
+  BLUEPRINT_ATTEMPT_TIMEOUTS_MS,
   DEFAULT_PROVIDER_POLICY,
   MAX_PROVIDER_ATTEMPTS,
   isRetryableFailure,
@@ -21,6 +22,20 @@ export class StaleAttemptError extends IntentApiError {
   }
 }
 
+/** Shared across the full F02 validation/recompose loop; provider retries also spend one slot. */
+export class BlueprintAttemptBudget {
+  private used = 0;
+
+  public get remaining(): number { return BLUEPRINT_ATTEMPT_TIMEOUTS_MS.length - this.used; }
+
+  public take(deadline: RequestDeadline): number {
+    if (this.remaining <= 0) return 0;
+    const limit = BLUEPRINT_ATTEMPT_TIMEOUTS_MS[this.used];
+    this.used += 1;
+    return deadline.attemptTimeoutMs("BLUEPRINT_COMPOSE", limit);
+  }
+}
+
 export type ProviderCallContext = {
   readonly gateway: ModelGateway;
   readonly runs: CompilerRunRepository;
@@ -32,6 +47,8 @@ export type ProviderCallContext = {
   readonly now: () => Date;
   readonly newId: () => string;
   readonly evidence: F01EvidenceBuffer;
+  /** F02-only: three total provider calls across retries and validator-guided corrections. */
+  readonly blueprintBudget?: BlueprintAttemptBudget;
 };
 
 export type ProviderCallSpec<T> = {
@@ -114,7 +131,8 @@ async function attempt<T>(context: ProviderCallContext, spec: ProviderCallSpec<T
     trace_id: context.traceId
   });
   if (started === "STALE_ATTEMPT") throw new StaleAttemptError();
-  const timeoutMs = context.deadline.attemptTimeoutMs(spec.operation);
+  const timeoutMs = spec.operation === "BLUEPRINT_COMPOSE" && context.blueprintBudget !== undefined
+    ? context.blueprintBudget.take(context.deadline) : context.deadline.attemptTimeoutMs(spec.operation);
   const response: ModelGatewayResponse = timeoutMs > 0
     ? await invoke(context, spec as ProviderCallSpec<unknown>, timeoutMs)
     : { status: "FAILED", provider_metadata: { model_adapter: context.gateway.modelAdapter, provider_model: null }, latency_ms: 0, failure: { kind: "TIMEOUT" } };
@@ -148,9 +166,12 @@ async function attempt<T>(context: ProviderCallContext, spec: ProviderCallSpec<T
 export async function callProviderWithBoundedRetry<T>(context: ProviderCallContext, spec: ProviderCallSpec<T>): Promise<ProviderCallSuccess<T>> {
   let localAttempt = 1;
   for (;;) {
+    if (spec.operation === "BLUEPRINT_COMPOSE" && context.blueprintBudget?.remaining === 0) {
+      throw new IntentApiError("F01-ERR-010");
+    }
     const outcome = await attempt(context, spec);
     if (outcome.ok) return outcome.success;
-    if (localAttempt >= MAX_PROVIDER_ATTEMPTS || !isRetryableFailure(outcome.failure.kind, localAttempt) || context.deadline.remainingMs() <= 0) {
+    if (localAttempt >= MAX_PROVIDER_ATTEMPTS || context.blueprintBudget?.remaining === 0 || !isRetryableFailure(outcome.failure.kind, localAttempt) || context.deadline.remainingMs() <= 0) {
       throw new IntentApiError(outcome.code, { retryAfterSeconds: outcome.failure.retry_after_seconds ?? null });
     }
     localAttempt += 1;
