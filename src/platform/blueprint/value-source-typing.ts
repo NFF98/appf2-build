@@ -221,6 +221,54 @@ const listEdit = (mode: "APPEND" | "REMOVE_AT" | "REPLACE_AT"): OperatorTyping =
     return list;
   };
 
+/** Typecheck a declared RECORD field edit; no dynamic field names or schema expansion. */
+const recordSet: OperatorTyping = (args, path, context) => {
+  assertArity(args, path, context, { min: 3, max: 3 });
+  const recordSource = args[0];
+  if (recordSource === undefined) return typingError(context, path, "Missing RECORD operand.");
+  const record = inferValueSource(recordSource, `${path}.args[0]`, context);
+  if (record.type !== "RECORD") return typingError(context, path, "RECORD_SET requires RECORD.");
+  const key = args[1];
+  if (key?.kind !== "LITERAL" || typeof key.value !== "string") {
+    return typingError(context, `${path}.args[1]`, "RECORD_SET field must be a static STRING.");
+  }
+  const field = record.constraints.fields[key.value];
+  if (field === undefined) return typingError(context, `${path}.args[1]`, "RECORD_SET field is undeclared.");
+  const replacement = args[2];
+  if (replacement === undefined) return typingError(context, path, "Missing replacement.");
+  const typed = inferValueSource(replacement, `${path}.args[2]`, context, field);
+  if (!isAssignable(typed, field)) {
+    return typingError(context, `${path}.args[2]`, "RECORD_SET field type mismatch.");
+  }
+  return record;
+};
+
+/** Filter a bounded LIST of RECORDs by equality on a declared scalar field. */
+const filterListEq: OperatorTyping = (args, path, context) => {
+  assertArity(args, path, context, { min: 3, max: 3 });
+  const source = args[0];
+  if (source === undefined) return typingError(context, path, "Missing LIST operand.");
+  const list = inferValueSource(source, `${path}.args[0]`, context);
+  if (list.type !== "LIST" || list.constraints.item.type !== "RECORD") {
+    return typingError(context, `${path}.args[0]`, "LIST_FILTER_EQ requires LIST of RECORD.");
+  }
+  const key = args[1];
+  if (key?.kind !== "LITERAL" || typeof key.value !== "string") {
+    return typingError(context, `${path}.args[1]`, "LIST_FILTER_EQ requires a static field.");
+  }
+  const field = list.constraints.item.constraints.fields[key.value];
+  if (field === undefined || !["STRING", "NUMBER", "BOOLEAN", "ENUM"].includes(field.type)) {
+    return typingError(context, `${path}.args[1]`, "LIST_FILTER_EQ requires a declared scalar field.");
+  }
+  const needle = args[2];
+  if (needle === undefined) return typingError(context, path, "Missing comparison.");
+  const typed = inferValueSource(needle, `${path}.args[2]`, context, field);
+  if (!isAssignable(typed, field)) {
+    return typingError(context, `${path}.args[2]`, "LIST_FILTER_EQ comparison type mismatch.");
+  }
+  return list;
+};
+
 const OPERATORS: Readonly<Record<string, OperatorTyping>> = {
   ADD: numeric(2),
   SUB: numeric(2, 2),
@@ -256,7 +304,9 @@ const OPERATORS: Readonly<Record<string, OperatorTyping>> = {
   TRIM: stringTransform,
   LIST_APPEND: listEdit("APPEND"),
   LIST_REMOVE_AT: listEdit("REMOVE_AT"),
-  LIST_REPLACE_AT: listEdit("REPLACE_AT")
+  LIST_REPLACE_AT: listEdit("REPLACE_AT"),
+  RECORD_SET: recordSet,
+  LIST_FILTER_EQ: filterListEq
 };
 
 function inferLiteral(
