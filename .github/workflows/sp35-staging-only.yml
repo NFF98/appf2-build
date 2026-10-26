@@ -60,17 +60,19 @@ jobs:
             "APPF2_STAGING_WORKER_NAME", "APPF2_HYPERDRIVE_FRESH_ID",
             "APPF2_HYPERDRIVE_F02_ADMISSION_ID", "APPF2_HYPERDRIVE_F07_EVENTS_ID",
             "APPF2_MODEL_BASE_URL", "APPF2_MODEL_NAME", "APPF2_MODEL_API_KEY",
-            "APPF2_IDENTITY_COOKIE_SECRET", "APPF2_STAGING_URL"
+            "APPF2_IDENTITY_COOKIE_SECRET"
           ];
           const missing = names.filter(name => !process.env[name]?.trim());
-          if(missing.length) {
-            const summary = "### Staging deployment NOT STARTED: missing configuration\\n" +
-              missing.map(name => "- `" + name + "`").join("\\n") +
-              "\\nCloudflare token and account verification succeeded; no deployment attempted.\\n";
+          if (missing.length) {
+            const summary = "### Bootstrap-only: AI/PostgreSQL/Creation NOT CONFIGURED\n" +
+              missing.map(name => "- `" + name + "`").join("\n") +
+              "\nCloudflare token and account verified. Running real Worker + SPA first-hop smoke only.\n";
             fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
-            throw new Error("STAGING CONFIG INCOMPLETE: missing " + missing.join(", "));
+            fs.appendFileSync(process.env.GITHUB_ENV, "APPF2_STAGING_BOOTSTRAP_ONLY=1\n");
+            console.log("STAGING BOOTSTRAP ONLY: missing " + missing.join(", "));
+          } else {
+            console.log("STAGING FULL MODE: all AI/PG bindings present");
           }
-          console.log("STAGING PREFLIGHT: inputs present; proceed to real deployment (NOT E2E PASS)");
           JS
       - uses: actions/setup-node@v4
         with:
@@ -84,6 +86,7 @@ jobs:
           npm run web:build
       - name: Deploy ONLY isolated staging Worker with bundled SPA
         env:
+          APPF2_STAGING_BOOTSTRAP_ONLY: ${{ env.APPF2_STAGING_BOOTSTRAP_ONLY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           APPF2_STAGING_WORKER_NAME: ${{ vars.APPF2_STAGING_WORKER_NAME }}
@@ -96,6 +99,4 @@ jobs:
           APPF2_IDENTITY_COOKIE_SECRET: ${{ secrets.APPF2_IDENTITY_COOKIE_SECRET }}
         run: node deploy/scripts/sp35-staging-only.mjs
       - name: Real Worker first-hop smoke (not full Creation)
-        env:
-          APPF2_STAGING_URL: ${{ vars.APPF2_STAGING_URL }}
         run: node deploy/scripts/sp35-staging-smoke.mjs
