@@ -289,7 +289,7 @@ jobs:
           const raw=fs.existsSync(p)?fs.readFileSync(p,"utf8"):"";
           const statuses=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_STATUS=[0-9]{3}/g)||[])];
           const failures=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_TRANSPORT=[A-Za-z]{1,32} ABORTED=(true|false)/g)||[])];
-          const validations=[...new Set(raw.match(/APPF2_MODEL_ANALYSIS_INVALID=[A-Z0-9_,]{1,240}/g)||[])];
+          const validations=[...new Set(raw.match(/APPF2_MODEL_ANALYSIS_INVALID=[^"\r\n]{1,700}/g)||[])];
           console.log("STAGING MODEL DIAGNOSTICS: "+(statuses.length||failures.length||validations.length
             ? [...statuses,...failures,...validations].join("; ")
             : "NO_MODEL_MARKERS_OBSERVED (tail permission/connection may be unavailable)"));
