@@ -45,7 +45,7 @@ const allowed=[
   /^deploy\/scripts\/sp35-staging-(?:only|smoke)\.mjs$/,
   /^\.github\/workflows\/sp35-staging-only\.yml$/,
   /^ci\/run-product-ci\.mjs$/,
-  /^harness\/scripts\/run-task-human-grant-preflight\.sh$/,
+  /^harness\/scripts\/(?:run-task-human-grant-preflight\.sh|validate-change-scope\.mjs|validate-constitutional-change\.mjs)$/,
   /^\.gitignore$/
 ];
 if(changed.length>30||!changed.some(x=>x.filename==="tooling/web/vite.config.ts")||
