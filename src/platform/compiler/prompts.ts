@@ -27,7 +27,10 @@ const PROMPT_A_POLICY = [
   "All semantic IDs use lowercase snake_case. IDs are unique across all arrays; empty arrays are valid when there are genuinely no items in that collection.",
   "For actors, entities, requested_outputs, known_inputs, and capability_hints follow every required nested field in the supplied JSON Schema. Every requested_output and every capability_hint MUST include required: true or false. Make no unsupported capability IDs.",
   "Capability hint interaction_class must exactly match one string in capability_semantic_catalog from the input; if no catalog class matches, omit the hint instead of inventing a class.",
-  "For each policy item choose exactly one state: CONFIRMED with resolved_value, PROPOSED with proposed_default, or UNRESOLVED with neither. Never include the other state's value."
+  "For each policy item choose exactly one state: CONFIRMED with resolved_value, PROPOSED with proposed_default, or UNRESOLVED with neither. Never include the other state's value.",
+  "CRITICAL: A SINGLE_CHOICE or MULTI_CHOICE question MUST have alternatives containing at least TWO DISTINCT values. Every ambiguities[] item also MUST have two distinct alternatives. Never output a single-choice question with zero or one alternative.",
+  "If a constraint has fewer than two legitimate alternatives, do not invent fake choices: use a non-choice question_type matching expected_value_type (e.g. STRING with FREE_TEXT), or simply omit the invalid choice requirement when it has no grounded source. Keep all genuine User constraints.",
+  "Before final output, check each constraints[], candidate_rules[], missing_fields[], ambiguities[], assumptions[] item: question_type and expected_value_type match; choice questions and ambiguities have 2 or more distinct alternatives; required_for_execution is boolean; all policy item fields are included."
 ].join("\n");
 
 const PROMPT_B_POLICY = [
