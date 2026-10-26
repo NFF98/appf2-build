@@ -13,7 +13,7 @@ import { IntentApiError, isF01ErrorCode } from "./f01-errors.js";
 import { guardNow, requireTransition, type ResolvedServiceDependencies } from "./intent-operation.js";
 import type { RequestDeadline } from "./model-gateway.js";
 import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION } from "./prompts.js";
-import { StaleAttemptError, callProviderWithBoundedRetry } from "./provider-attempts.js";
+import { BlueprintAttemptBudget, StaleAttemptError, callProviderWithBoundedRetry } from "./provider-attempts.js";
 import { classifyRejection, isFixableClass, type ClassifiedRejection } from "./rejection-classification.js";
 
 export const RAW_INTENT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -30,6 +30,8 @@ export type ComposeScope = {
   readonly ephemeral: EphemeralResolvedContext;
   /** False when this logical compile operation already spent its single validation-driven recompose. */
   readonly recomposeAvailable: boolean;
+  /** Optional opt-in for a second validator-guided correction; existing callers default to one. */
+  readonly maxValidationRecomposes?: number;
   readonly refreshCoverage: () => CoverageResult;
 };
 
@@ -138,13 +140,14 @@ function terminalDisposition(verdict: Extract<Verdict, { admitted: false }>): Te
 class ComposeLoop {
   private version: number;
   private coverage: CoverageResult;
-  private recomposeAvailable: boolean;
+  private recomposesRemaining: number;
+  private readonly blueprintBudget = new BlueprintAttemptBudget();
   private readonly acceptCandidate: (output: JsonValue) => JsonValue | null;
 
   public constructor(private readonly scope: ComposeScope, startVersion: number, coverage: CoverageResult) {
     this.version = startVersion;
     this.coverage = coverage;
-    this.recomposeAvailable = scope.recomposeAvailable;
+    this.recomposesRemaining = scope.recomposeAvailable ? (scope.maxValidationRecomposes ?? 1) : 0;
     this.acceptCandidate = candidateAcceptor(scope.ephemeral);
   }
 
@@ -175,7 +178,7 @@ class ComposeLoop {
       " STATUS=" + this.coverage.status);
     try {
       const composed = await callProviderWithBoundedRetry(
-        { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence },
+        { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence, blueprintBudget: this.blueprintBudget },
         { operation: "BLUEPRINT_COMPOSE", promptVersion: PROMPT_B_VERSION, schemaVersion: BLUEPRINT_SCHEMA_VERSION, responseSchema: composeResponseSchema(this.coverage.selected), inputPayload: composeInput(this.scope, this.coverage, feedback), accept: this.acceptCandidate, rejectedOutputCode: "F01-ERR-007" }
       );
       evidence.add("F01-EVT-010", { ...versions, attempt_no: composed.attemptNo, latency_ms: composed.latencyMs });
@@ -190,7 +193,7 @@ class ComposeLoop {
 
   /** CAPABILITY_FIXABLE: refresh F04 once before the single recompose; UNSUPPORTED / EXTERNAL becomes F01-ERR-008. */
   private async prepareRecompose(verdict: Extract<Verdict, { admitted: false }>): Promise<void> {
-    this.recomposeAvailable = false;
+    this.recomposesRemaining -= 1;
     this.scope.evidence.add("F01-EVT-012", { blueprint_schema_version: BLUEPRINT_SCHEMA_VERSION, registry_version: this.coverage.registryVersion });
     if (verdict.classified.rejection_class === "CAPABILITY_FIXABLE") {
       this.coverage = this.scope.refreshCoverage();
@@ -212,7 +215,7 @@ class ComposeLoop {
         this.scope.evidence.add("F01-EVT-013", { blueprint_schema_version: BLUEPRINT_SCHEMA_VERSION, registry_version: this.coverage.registryVersion, coverage_status: this.coverage.status });
         return { validationRunId: verdict.validationRunId, contentHash: verdict.contentHash, coverage: this.coverage, intentVersion: this.version };
       }
-      if (!isFixableClass(verdict.classified.rejection_class) || !this.recomposeAvailable) {
+      if (!isFixableClass(verdict.classified.rejection_class) || this.recomposesRemaining <= 0 || this.blueprintBudget.remaining <= 0) {
         const disposition = terminalDisposition(verdict);
         await this.fail(disposition.lifecycle, disposition.error, disposition.terminal);
       }
