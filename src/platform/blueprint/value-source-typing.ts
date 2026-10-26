@@ -269,6 +269,26 @@ const filterListEq: OperatorTyping = (args, path, context) => {
   return list;
 };
 
+/** Verified dynamic total for expense lists, without arbitrary field access or executable code. */
+const listSumBy: OperatorTyping = (args, path, context) => {
+  assertArity(args, path, context, { min: 2, max: 2 });
+  const source = args[0];
+  if (source === undefined) return typingError(context, path, "Missing expense LIST.");
+  const list = inferValueSource(source, `${path}.args[0]`, context);
+  if (list.type !== "LIST" || list.constraints.item.type !== "RECORD") {
+    return typingError(context, `${path}.args[0]`, "LIST_SUM_BY requires LIST of RECORD.");
+  }
+  const key = args[1];
+  if (key?.kind !== "LITERAL" || typeof key.value !== "string") {
+    return typingError(context, `${path}.args[1]`, "LIST_SUM_BY requires a static numeric field.");
+  }
+  const field = list.constraints.item.constraints.fields[key.value];
+  if (field?.type !== "NUMBER") {
+    return typingError(context, `${path}.args[1]`, "LIST_SUM_BY field must be declared NUMBER.");
+  }
+  return UNBOUNDED_NUMBER;
+};
+
 const OPERATORS: Readonly<Record<string, OperatorTyping>> = {
   ADD: numeric(2),
   SUB: numeric(2, 2),
@@ -306,7 +326,8 @@ const OPERATORS: Readonly<Record<string, OperatorTyping>> = {
   LIST_REMOVE_AT: listEdit("REMOVE_AT"),
   LIST_REPLACE_AT: listEdit("REPLACE_AT"),
   RECORD_SET: recordSet,
-  LIST_FILTER_EQ: filterListEq
+  LIST_FILTER_EQ: filterListEq,
+  LIST_SUM_BY: listSumBy
 };
 
 function inferLiteral(
