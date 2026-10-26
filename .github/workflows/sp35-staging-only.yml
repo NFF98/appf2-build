@@ -22,77 +22,60 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Securely provision dedicated Hyperdrive credentials without printing them
+      - name: Provision 3 isolated staging Hyperdrives from one protected GitHub secret
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          APPF2_DB_ENVELOPE: ''
+          APPF2_STAGING_DB_CREDS: ${{ secrets.APPF2_STAGING_DB_CREDS }}
         run: |
           node --input-type=module <<'JS'
           import fs from "node:fs";
-          import {createHash,createECDH,createDecipheriv,hkdfSync} from "node:crypto";
-          const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
-          const account = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
-          if(!token || !/^[a-f0-9]{32}$/i.test(account || ""))
-            throw Error("DB BRIDGE: Cloudflare token/account missing");
-          const derive = createHash("sha256").update("appf2-sp35-db-bridge-v1:").update(token).digest();
-          const curve = createECDH("prime256v1");
-          curve.setPrivateKey(derive);
-          console.log("APPF2_DB_BRIDGE_PUBLIC_KEY="+curve.getPublicKey().toString("base64url"));
-          const probe=await fetch("https://api.cloudflare.com/client/v4/accounts/"+account+"/hyperdrive/configs",{
-            headers:{Authorization:"Bearer "+token,Accept:"application/json"}
-          });
-          console.log("CLOUDFLARE HYPERDRIVE API: "+(probe.ok?"ACCESS_OK":"ACCESS_DENIED_HTTP_"+probe.status));
-          if(!probe.ok)throw Error("DB BRIDGE: Hyperdrive list permission unavailable");
-          const encoded = process.env.APPF2_DB_ENVELOPE?.trim();
-          if(!encoded) {
-            console.log("DB BRIDGE: awaiting encrypted staging-only credentials; existing bootstrap remains unchanged");
+          const token=process.env.CLOUDFLARE_API_TOKEN?.trim();
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+          if(!token || !/^[a-f0-9]{32}$/i.test(account||""))
+            throw Error("STAGING DB: missing Cloudflare authorization");
+          const headers={Authorization:"Bearer "+token,Accept:"application/json","Content-Type":"application/json"};
+          const endpoint="https://api.cloudflare.com/client/v4/accounts/"+account+"/hyperdrive/configs";
+          const existing=await fetch(endpoint,{headers});
+          console.log("HYPERDRIVE API: "+(existing.ok?"ACCESS_OK":"DENIED_HTTP_"+existing.status));
+          if(!existing.ok)throw Error("STAGING DB: no Hyperdrive API permissions");
+          const payload=await existing.json();
+          if(payload.success!==true)throw Error("STAGING DB: Hyperdrive list failed");
+          const raw=process.env.APPF2_STAGING_DB_CREDS?.trim();
+          if(!raw){
+            console.log("STAGING DB: waiting for one protected APPF2_STAGING_DB_CREDS GitHub secret");
             process.exit(0);
           }
-          const envelope=JSON.parse(Buffer.from(encoded,"base64url").toString("utf8"));
-          if(envelope.v!==1)throw Error("DB BRIDGE: bad envelope version");
-          const secret=curve.computeSecret(Buffer.from(envelope.epk,"base64url"));
-          const key=Buffer.from(hkdfSync("sha256",secret,Buffer.from("appf2-sp35-salt-v1"),Buffer.from("hyperdrive-credentials-v1"),32));
-          const ciphertext=Buffer.from(envelope.ct,"base64url");
-          const iv=Buffer.from(envelope.iv,"base64url");
-          const dec=createDecipheriv("aes-256-gcm",key,iv);
-          dec.setAuthTag(ciphertext.subarray(-16));
-          const credentials=JSON.parse(Buffer.concat([dec.update(ciphertext.subarray(0,-16)),dec.final()]).toString("utf8"));
+          let credentials;
+          try{credentials=JSON.parse(raw)}catch{throw Error("STAGING DB: credential JSON invalid")}
           const expected=[
             ["fresh","appf2_sp35_worker_login","APPF2_HYPERDRIVE_FRESH_ID"],
             ["f02","appf2_sp35_f02_login","APPF2_HYPERDRIVE_F02_ADMISSION_ID"],
             ["f07","appf2_sp35_f07_login","APPF2_HYPERDRIVE_F07_EVENTS_ID"]
           ];
-          const headers={Authorization:"Bearer "+token,Accept:"application/json","Content-Type":"application/json"};
-          const endpoint="https://api.cloudflare.com/client/v4/accounts/"+account+"/hyperdrive/configs";
-          const listResponse=await fetch(endpoint,{headers});
-          if(!listResponse.ok)throw Error("DB BRIDGE: list Hyperdrive HTTP "+listResponse.status);
-          const listJson=await listResponse.json();
-          if(listJson.success!==true)throw Error("DB BRIDGE: list Hyperdrive unavailable");
-          const list=Array.isArray(listJson.result)?listJson.result:[];
-          for(const [keyName,user,outKey] of expected){
-            const name="appf2-sp35-417-staging-"+keyName;
-            const password=credentials[keyName];
+          const list=Array.isArray(payload.result)?payload.result:[];
+          for(const [key,user,outKey] of expected){
+            const name="appf2-sp35-417-staging-"+key;
+            const password=credentials[key];
             if(typeof password!=="string"||password.length<48)
-              throw Error("DB BRIDGE: missing strong credential for "+keyName);
+              throw Error("STAGING DB: credential missing or too short ("+key+")");
             const found=list.find(x=>x.name===name);
             let id=found?.id;
             if(!id){
               const create=await fetch(endpoint,{method:"POST",headers,body:JSON.stringify({
-                name,
-                origin:{scheme:"postgres",host:"db.xxwnxetwufwyiisgaqhl.supabase.co",port:5432,
-                  database:"postgres",user,password},
+                name,origin:{scheme:"postgres",host:"db.xxwnxetwufwyiisgaqhl.supabase.co",
+                  port:5432,database:"postgres",user,password},
                 caching:{disabled:true},mtls:{sslmode:"require"},origin_connection_limit:5
               })});
               const result=await create.json().catch(()=>({}));
-              if(!create.ok||result.success!==true||typeof result.result?.id!=="string")
-                throw Error("DB BRIDGE: create "+keyName+" HTTP "+create.status+" (no credential printed)");
+              if(!create.ok || result.success!==true || !result.result?.id)
+                throw Error("STAGING DB: Hyperdrive "+key+" create HTTP "+create.status+" (secret hidden)");
               id=result.result.id;
             }
             fs.appendFileSync(process.env.GITHUB_ENV,outKey+"="+id+"\n");
-            console.log("DB BRIDGE: "+keyName+" Hyperdrive "+(found?"EXISTS":"CREATED")+" (id="+id+")");
+            console.log("STAGING DB: Hyperdrive "+key+" "+(found?"REUSED":"CREATED")+" id="+id);
           }
-          console.log("DB BRIDGE: 3 isolated configs provisioned; database login not yet proven");
+          console.log("STAGING DB: three isolated Hyperdrive resources prepared; live database connection pending");
           JS
       - name: Verify token, account and complete staging inputs (no secret values printed)
         env:
