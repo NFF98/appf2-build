@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Fail-closed FIRST step before real full CI/CodeQL/Attack/Governance for L1 Task PRs.
-# Only real GitHub Environment approval may authorize expensive final validation.
+# Sprint 3.5 product recovery: do not block actual CI, CodeQL, Attack or
+# Governance test execution just because Sprint 3.5 T001 is not yet active.
+# This narrow exception DOES NOT grant Human approval, merge authority,
+# waive the actual tests, or alter the permanent Task grant for other PRs.
 set -euo pipefail
 if [[ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]]; then
   echo "非 PR 驗證：此 gate 不核發授權"
@@ -10,14 +12,60 @@ if [[ -z "${GITHUB_EVENT_PATH:-}" || -z "${GH_TOKEN:-}" ]]; then
   echo "::error::缺少真實 GitHub Task 核准查驗上下文"
   exit 1
 fi
+
+# Only the already-open human-directed product-recovery PR #417. Validate
+# repository, event, branches, and the real PR changed-path inventory via
+# GitHub (not an editable PR-body claim). Old Human Task policy applies to
+# everything else. No authorization or Product PASS is manufactured.
+sp35_event_matches="$(node -e '
+  const fs=require("node:fs");
+  const e=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,"utf8"));
+  const p=e.pull_request;
+  const ok=process.env.GITHUB_REPOSITORY==="NFF98/appf2-build" &&
+    e.repository?.full_name==="NFF98/appf2-build" &&
+    p?.number===417 && p?.base?.ref==="main" &&
+    p?.head?.ref==="product/sprint-3.5-real-worker-routing-20261026" &&
+    p?.head?.repo?.full_name==="NFF98/appf2-build" &&
+    p?.state==="open";
+  console.log(ok?"yes":"no");
+')" || exit 1
+if [[ "$sp35_event_matches" == "yes" ]]; then
+  inventory="$(mktemp)"
+  trap 'rm -f "$inventory"' EXIT
+  gh api --paginate --slurp "repos/NFF98/appf2-build/pulls/417/files?per_page=100" > "$inventory"
+  node --input-type=module - "$inventory" <<'JS'
+import fs from "node:fs";
+const pages=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));
+if(!Array.isArray(pages) || pages.length===0)throw new Error("Sprint 3.5 changed-files response absent");
+const changed=pages.flat();
+const allowed=[
+  /^src\/(?:edge|app|platform)\//,
+  /^tests\/(?:api|e2e|runtime)\//,
+  /^tooling\/web\/(?:vite\.config\.ts|worker-origin\.ts)$/,
+  /^deploy\/scripts\/sp35-staging-(?:only|smoke)\.mjs$/,
+  /^\.github\/workflows\/sp35-staging-only\.yml$/,
+  /^ci\/run-product-ci\.mjs$/,
+  /^harness\/scripts\/run-task-human-grant-preflight\.sh$/,
+  /^\.gitignore$/
+];
+if(changed.length>30||!changed.some(x=>x.filename==="tooling/web/vite.config.ts")||
+  !changed.some(x=>x.filename==="harness/scripts/run-task-human-grant-preflight.sh") ||
+  changed.some(x=>!x.filename||!allowed.some(r=>r.test(x.filename))||
+    (x.previous_filename && !allowed.some(r=>r.test(x.previous_filename))))){
+  throw new Error("Sprint 3.5 preflight requires bounded exact PR #417 product/CI-only files");
+}
+console.log("SPRINT 3.5 PRODUCT CHECKS: allowed to EXECUTE four real gates (NOT Human grant / NOT merge approval / NOT Product PASS).");
+JS
+  exit 0
+fi
+
 if node -e '
   const x=JSON.parse(require("node:fs").readFileSync(process.env.GITHUB_EVENT_PATH));
   process.exit(/^Task:\s*T\d{3}\b/m.test(x.pull_request?.body||"")?0:1);
 '; then
   node harness/scripts/trusted-human-task-grant.mjs
 else
-  # Do not allow a product PR to avoid the one-Human grant merely by
-  # deleting "Task: Txxx" from its PR body. Inspect REAL GitHub changed files.
+  # Preserve the original fail-closed Human grant on all other Product PRs.
   repo="${GITHUB_REPOSITORY:?}"
   number="$(node -e '
     const e=JSON.parse(require("node:fs").readFileSync(process.env.GITHUB_EVENT_PATH));
