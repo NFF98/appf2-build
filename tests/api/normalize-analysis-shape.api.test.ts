@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { normalizeAnalysisDescriptorFlags } from "../../src/platform/compiler/normalize-analysis-shape.js";
+import type { JsonValue } from "../../src/platform/intent/json-value.js";
 
 describe("untrusted Prompt A descriptor flag completion", () => {
   test("completes only missing descriptor required flags without changing facts or policy content", () => {
@@ -18,7 +19,7 @@ describe("untrusted Prompt A descriptor flag completion", () => {
       assumptions: [{ id: "privacy", resolution_state: "UNRESOLVED" }]
     };
     const before = structuredClone(value);
-    const normalized = normalizeAnalysisDescriptorFlags(value);
+    const normalized = normalizeAnalysisDescriptorFlags(value as unknown as JsonValue);
     expect(value).toEqual(before);
     expect(normalized).toEqual({
       ...value,
@@ -40,6 +41,6 @@ describe("untrusted Prompt A descriptor flag completion", () => {
       requested_outputs: [{ source: "FORGED", id: "x" }, { id: "bad", source: "USER_EXPLICIT", required: "yes" }],
       capability_hints: []
     };
-    expect(normalizeAnalysisDescriptorFlags(value)).toEqual(value);
+    expect(normalizeAnalysisDescriptorFlags(value as unknown as JsonValue)).toEqual(value);
   });
 });
