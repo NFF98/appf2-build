@@ -42,7 +42,20 @@ export type ComposeOutcome = {
   readonly intentVersion: number;
 };
 
-type ValidationIssueFeedback = { readonly error_code: string; readonly stage: string; readonly json_path: string };
+type ValidationIssueFeedback = {
+  readonly error_code: string;
+  readonly stage: string;
+  readonly json_path: string;
+  /** Static system guidance only; never verbatim provider, secret or user data. */
+  readonly repair_hint?: string;
+};
+
+function canonicalRepairHint(code: string, stage: string, path: string): string | undefined {
+  if (code === "F02-ERR-007" && stage === "V06" && /^\\$\\.nodes\\[\\d+\\]$/.test(path)) {
+    return "Orphan node: connect this node to exactly one reachable parent.children from root_node_id. Every node must belong to ONE rooted tree.";
+  }
+  return undefined;
+}
 
 /** Keep distinct F02 diagnostics across all bounded attempts: a repair must
  * not re-introduce an earlier V02 error while fixing a later V05 error. */
@@ -135,7 +148,11 @@ async function validateAndAdmit(scope: ComposeScope, candidate: JsonValue, compi
     const code = admission.trustStatus === "REVOKED" ? "F02-ERR-016" : "F02-ERR-017";
     return { admitted: false, classified: classifyRejection([code]), incompatible: admission.trustStatus === "INCOMPATIBLE", issues: [{ error_code: code, stage: "V12", json_path: "$" }] };
   }
-  const issues = admission.report.issues.slice(0, 16).map((issue) => ({ error_code: issue.error_code, stage: issue.stage, json_path: issue.json_path }));
+  const issues = admission.report.issues.slice(0, 16).map((issue) => ({
+    error_code: issue.error_code, stage: issue.stage, json_path: issue.json_path,
+    ...(canonicalRepairHint(issue.error_code, issue.stage, issue.json_path) === undefined ? {} :
+      { repair_hint: canonicalRepairHint(issue.error_code, issue.stage, issue.json_path) })
+  }));
   return { admitted: false, classified: classifyRejection(admission.report.issues.map((issue) => issue.error_code)), incompatible: admission.report.status === "INCOMPATIBLE", issues };
 }
 
