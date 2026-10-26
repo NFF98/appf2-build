@@ -137,6 +137,40 @@ function stringTransform(transform: (value: string) => string): Operator {
   };
 }
 
+/** Local deterministic LIST changes. No network, mutable shared arrays or silent index coercion. */
+function listIndex(value: EvaluatedValue, length: number): number {
+  const index = asNumber(value);
+  if (!Number.isSafeInteger(index) || index < 0 || index >= length) {
+    return operandFailure("LIST index must reference an existing item.");
+  }
+  return index;
+}
+
+const listEdit = (mode: "APPEND" | "REMOVE_AT" | "REPLACE_AT"): Operator =>
+  (args, evaluate) => {
+    arity(args, mode === "REPLACE_AT" ? 3 : 2, mode === "REPLACE_AT" ? 3 : 2);
+    const first = args[0];
+    if (first === undefined) return operandFailure("Missing LIST source.");
+    const list = [...asList(evaluate(first))];
+    if (mode === "APPEND") {
+      if (list.length >= 500) return operandFailure("LIST exceeds 500 items.");
+      const source = args[1];
+      if (source === undefined) return operandFailure("Missing LIST item.");
+      list.push(present(evaluate(source)));
+    } else {
+      const indexSource = args[1];
+      if (indexSource === undefined) return operandFailure("Missing LIST index.");
+      const index = listIndex(evaluate(indexSource), list.length);
+      if (mode === "REMOVE_AT") list.splice(index, 1);
+      else {
+        const replacement = args[2];
+        if (replacement === undefined) return operandFailure("Missing replacement.");
+        list[index] = present(evaluate(replacement));
+      }
+    }
+    return list;
+  };
+
 const OPERATORS: Readonly<Record<string, Operator>> = {
   ADD: (args, evaluate) => finite(numbers(args, evaluate, 2).reduce((sum, value) => sum + value, 0)),
   SUB: (args, evaluate) => {
@@ -207,7 +241,10 @@ const OPERATORS: Readonly<Record<string, Operator>> = {
   },
   LOWER: stringTransform((value) => value.toLowerCase()),
   UPPER: stringTransform((value) => value.toUpperCase()),
-  TRIM: stringTransform((value) => value.trim())
+  TRIM: stringTransform((value) => value.trim()),
+  LIST_APPEND: listEdit("APPEND"),
+  LIST_REMOVE_AT: listEdit("REMOVE_AT"),
+  LIST_REPLACE_AT: listEdit("REPLACE_AT")
 };
 
 function resolvePath(root: RuntimeValue, path: string): RuntimeValue | undefined {
