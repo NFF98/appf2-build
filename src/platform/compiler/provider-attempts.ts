@@ -147,12 +147,19 @@ async function attempt<T>(context: ProviderCallContext, spec: ProviderCallSpec<T
  */
 export async function callProviderWithBoundedRetry<T>(context: ProviderCallContext, spec: ProviderCallSpec<T>): Promise<ProviderCallSuccess<T>> {
   let localAttempt = 1;
+  let previousFailure: ModelFailure["kind"] | null = null;
   for (;;) {
-    const outcome = await attempt(context, spec);
+    // One bounded corrective retry only. Never send raw rejected model output,
+    // untrusted diagnostics, or a modified user request back to the provider.
+    const currentSpec = localAttempt === 2 && previousFailure === "INVALID_OUTPUT" && spec.operation === "INTENT_ANALYSIS"
+      ? { ...spec, inputPayload: { ...spec.inputPayload, schema_retry_status: "PREVIOUS_OUTPUT_FAILED_VALIDATION" } }
+      : spec;
+    const outcome = await attempt(context, currentSpec);
     if (outcome.ok) return outcome.success;
     if (localAttempt >= MAX_PROVIDER_ATTEMPTS || !isRetryableFailure(outcome.failure.kind, localAttempt) || context.deadline.remainingMs() <= 0) {
       throw new IntentApiError(outcome.code, { retryAfterSeconds: outcome.failure.retry_after_seconds ?? null });
     }
+    previousFailure = outcome.failure.kind;
     localAttempt += 1;
   }
 }
