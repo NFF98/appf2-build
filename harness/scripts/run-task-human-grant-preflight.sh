@@ -111,6 +111,7 @@ const allowed=new Set([
   "tests/api/normalize-analysis-shape.api.test.ts",
   "tests/api/intent-api.api.test.ts",
   "tests/api/sp35-complex-intent-budget.api.test.ts",
+  "tests/api/sp35-root-tree-repair.api.test.ts",
   "tests/api/sp35-required-feature-coverage.api.test.ts",
   "tests/api/sp35-unsupported-feature-feedback.api.test.ts",
   "tests/api/sp35-coverage-class.api.test.ts",
