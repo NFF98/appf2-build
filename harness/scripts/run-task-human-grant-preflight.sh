@@ -59,6 +59,56 @@ JS
   exit 0
 fi
 
+# Exact follow-up to approved Sprint 3.5 real-product user testing: PR #419.
+# Gate execution only; no Human grant, PASS, merge, or altered 16P results.
+sp35_complex_event="$(node -e '
+  const e=JSON.parse(require("node:fs").readFileSync(process.env.GITHUB_EVENT_PATH,"utf8"));
+  const p=e.pull_request;
+  const ok=process.env.GITHUB_REPOSITORY==="NFF98/appf2-build" &&
+    e.repository?.full_name==="NFF98/appf2-build" &&
+    p?.number===419 && p?.base?.ref==="main" &&
+    p?.base?.sha==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b" &&
+    p?.head?.ref==="product/sprint-3.5-complex-intent-recovery-20261026" &&
+    p?.head?.repo?.full_name==="NFF98/appf2-build" && p?.state==="open";
+  console.log(ok?"yes":"no");
+')" || exit 1
+if [[ "$sp35_complex_event" == "yes" ]]; then
+  inventory="$(mktemp)"
+  trap 'rm -f "$inventory"' EXIT
+  gh api --paginate --slurp "repos/NFF98/appf2-build/pulls/419/files?per_page=100" > "$inventory"
+  node --input-type=module - "$inventory" <<'JS'
+import fs from "node:fs";
+const pages=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));
+if(!Array.isArray(pages)||pages.length===0)throw Error("PR419 changed-files inventory absent");
+const changed=pages.flat();
+const allowed=new Set([
+  ".github/workflows/sp35-staging-only.yml",
+  "deploy/scripts/sp35-staging-browser-e2e.mjs",
+  "src/app/create/CreateWorkspace.tsx",
+  "src/app/create/creation-controller.ts",
+  "src/app/create/creation-session.ts",
+  "src/platform/compiler/idempotency.ts",
+  "src/platform/compiler/model-gateway.ts",
+  "src/platform/compiler/prompts.ts",
+  "tests/api/intent-api.api.test.ts",
+  "tests/api/sp35-complex-intent-budget.api.test.ts",
+  "harness/scripts/run-task-human-grant-preflight.sh",
+  "harness/scripts/validate-constitutional-change.mjs",
+  "ci/run-product-ci.mjs"
+]);
+const paths=changed.map(x=>x.filename);
+if(changed.length>allowed.size ||
+   !paths.includes("harness/scripts/run-task-human-grant-preflight.sh") ||
+   !paths.includes("tests/api/sp35-complex-intent-budget.api.test.ts") ||
+   !paths.includes("src/platform/compiler/idempotency.ts") ||
+   changed.some(x=>!allowed.has(x.filename)||x.previous_filename)){
+  throw Error("PR419 must contain only enumerated real-product repair paths");
+}
+console.log("SP35 PR419: execute four real checks; no Human grant, simulated PASS or merge.");
+JS
+  exit 0
+fi
+
 if node -e '
   const x=JSON.parse(require("node:fs").readFileSync(process.env.GITHUB_EVENT_PATH));
   process.exit(/^Task:\s*T\d{3}\b/m.test(x.pull_request?.body||"")?0:1);
