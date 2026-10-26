@@ -287,26 +287,7 @@ export class RuntimeInstance {
       const store = emptyStore(seedPcg32(this.instanceSeed()));
       let tx = new StoreTransaction(index, store);
       tx.initialize();
-      // Restore only an all-or-nothing, descriptor-conforming snapshot after verifying
-      // the signed admission and immutable Blueprint. Corrupt data cannot poison H08.
-      if (this.host.services.restoreState !== undefined) {
-        try {
-          const snapshot = this.host.services.restoreState(verified.contentHash);
-          const keys = [...index.mutable.keys()];
-          if (isRuntimeRecord(snapshot) &&
-              Object.keys(snapshot).length === keys.length &&
-              keys.every((key) => Object.hasOwn(snapshot, key) &&
-                valueConforms(snapshot[key], index.mutable.get(key)!))) {
-            const restored = new StoreTransaction(index, store);
-            restored.initialize();
-            for (const key of keys) restored.writeMutable(key, deepFreeze(structuredClone(snapshot[key]!)));
-            tx = restored;
-          }
-        } catch {
-          // Invalid, unavailable or outdated tab state falls back to the signed
-          // Blueprint's safe defaults; do not expose stored values as admissions.
-        }
-      }
+      tx = this.restoreSavedMutable(index, store, verified.contentHash) ?? tx;
       this.lifecycle.reconcile(
         expandNodeInstances(index, tx.env),
         this.lifecycleHost((incarnation, instance) => tx.stageCapability(incarnation.keyId, { key: instance.key, state: this.initialState(index, instance, tx.env) }))
@@ -485,6 +466,24 @@ export class RuntimeInstance {
 
   private readView(): ReadView | undefined {
     return this.index === undefined || this.store === undefined ? undefined : { index: this.index, tx: new StoreTransaction(this.index, this.store) };
+  }
+
+  /** Saved browser data is never admission truth: restore only a complete typed snapshot. */
+  private restoreSavedMutable(index: ExecutionIndex, store: CommittedStore, hash: string): StoreTransaction | undefined {
+    if (this.host.services.restoreState === undefined) return undefined;
+    try {
+      const snapshot = this.host.services.restoreState(hash);
+      const keys = [...index.mutable.keys()];
+      if (!isRuntimeRecord(snapshot) || Object.keys(snapshot).length !== keys.length ||
+        !keys.every((key) => Object.hasOwn(snapshot, key) &&
+          valueConforms(snapshot[key], index.mutable.get(key)!))) return undefined;
+      const tx = new StoreTransaction(index, store);
+      tx.initialize();
+      for (const key of keys) tx.writeMutable(key, deepFreeze(structuredClone(snapshot[key]!)));
+      return tx;
+    } catch {
+      return undefined; // Bad local state leaves immutable Blueprint defaults untouched.
+    }
   }
 
   /** H08 / added clone: one capability-local slot per NodeInstanceKey (BF-036), within the pinned local-state budget. */
