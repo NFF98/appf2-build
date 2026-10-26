@@ -24,7 +24,7 @@ try {
   const helloAnalysis = page.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === "/api/v1/intents", {timeout:110_000});
   const helloCompile = page.waitForResponse(r => r.request().method() === "POST" &&
-    /^\\/api\\/v1\\/intents\\/[^/]+\\/compile$/.test(new URL(r.url()).pathname),
+    new URL(r.url()).pathname.startsWith("/api/v1/intents/") && new URL(r.url()).pathname.endsWith("/compile"),
     {timeout:150_000}).catch(() => null);
   await page.locator(".composer-create").click();
   console.log("STAGING BROWSER: clicked actual Create App button");
