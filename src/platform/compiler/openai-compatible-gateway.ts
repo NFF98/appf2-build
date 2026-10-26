@@ -31,6 +31,8 @@ export type OpenAiCompatibleConfig = {
   readonly apiKey: string;
   readonly model: string;
   readonly pricing?: ModelPricing;
+  /** DeepSeek ChatCompletions supports JSON object mode; keep schema mode for OpenAI/xAI. */
+  readonly outputFormat?: "json_schema" | "json_object";
 };
 
 export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body?: string; signal: AbortSignal }) => Promise<{
@@ -114,7 +116,9 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
 
   public constructor(
     private readonly config: OpenAiCompatibleConfig,
-    private readonly fetchImpl: FetchLike = fetch as unknown as FetchLike,
+    // Workers' native fetch requires its global receiver. Never invoke a saved
+    // unbound native fetch as this.fetchImpl (Illegal invocation / TypeError).
+    private readonly fetchImpl: FetchLike = (url, init) => globalThis.fetch(url, init),
     private readonly clock: () => number = Date.now
   ) {}
 
@@ -151,10 +155,12 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
         { role: "system", content: SYSTEM_POLICY[request.operation] },
         { role: "user", content: JSON.stringify(request.input_payload) }
       ],
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: request.operation.toLowerCase(), strict: false, schema: request.response_schema }
-      }
+      response_format: this.config.outputFormat === "json_object"
+        ? { type: "json_object" }
+        : {
+          type: "json_schema",
+          json_schema: { name: request.operation.toLowerCase(), strict: false, schema: request.response_schema }
+        }
     });
   }
 
@@ -184,6 +190,8 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
         signal: controller.signal
       });
       if (response.status < 200 || response.status >= 300) {
+        // Safe diagnostics only: never log request payload, provider response or bearer key.
+        console.warn("APPF2_MODEL_UPSTREAM_STATUS=" + response.status);
         return failed(failureKindForStatus(response.status), retryAfterSeconds(response.headers.get("retry-after")));
       }
       const parsed = parseCompletion(parseJson(await response.text()));
@@ -196,7 +204,10 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
         latency_ms: Math.max(0, this.clock() - started),
         estimated_cost: this.estimatedCost(parsed.usage)
       };
-    } catch {
+    } catch (error: unknown) {
+      const kind = error instanceof Error ? error.name.replace(/[^A-Za-z]/gu, "").slice(0,32) : "UNKNOWN";
+      console.warn("APPF2_MODEL_UPSTREAM_TRANSPORT=" + kind +
+        " ABORTED=" + String(controller.signal.aborted));
       return failed(controller.signal.aborted ? "TIMEOUT" : "NETWORK");
     } finally {
       clearTimeout(timer);

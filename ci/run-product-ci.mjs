@@ -15,7 +15,37 @@ const runNpmScript=script=>spawnSync(
 );
 
 if(!current.implementation_enabled){
-  console.log("PRODUCT CI: HOLD — implementation not enabled.");
+  // Sprint 3.5 product RECOVERY work must execute real local tests even when
+  // historical Sprint state remains HOLD. This does not claim Sprint ACTIVE,
+  // waive npm run gate, or substitute fixture tests for live Cloudflare/PG/AI.
+  const base=process.env.BASE_SHA,head=process.env.HEAD_SHA||"HEAD";
+  let changed=[];
+  try{
+    if(base && /^[0-9a-f]{40}$/.test(base))
+      changed=execFileSync("git",["diff","--name-only",base,head],{encoding:"utf8"}).trim().split("\n").filter(Boolean);
+  }catch{ changed=[]; }
+  const allowed=(p)=>
+    ["src/edge/","src/app/","src/platform/compiler/","src/platform/blueprint/","src/platform/runtime/","tests/api/","tests/e2e/","tests/runtime/"].some(prefix=>p.startsWith(prefix)) ||
+    ["tooling/web/vite.config.ts","tooling/web/worker-origin.ts","deploy/scripts/sp35-staging-only.mjs","deploy/scripts/sp35-staging-smoke.mjs",
+      "deploy/scripts/sp35-staging-live-create.mjs","deploy/scripts/sp35-staging-browser-e2e.mjs",
+      ".github/workflows/sp35-staging-only.yml",".gitignore","ci/run-product-ci.mjs",
+      "harness/scripts/run-task-human-grant-preflight.sh",
+      "harness/scripts/validate-change-scope.mjs",
+      "harness/scripts/validate-constitutional-change.mjs"].includes(p);
+  const sp35=base==="04e44228354a659c3742c8666316bc42aa455aba" &&
+    sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
+    changed.length>0 && changed.includes("tooling/web/vite.config.ts") && changed.every(allowed);
+  if(sp35){
+    console.log("PRODUCT CI: Sprint 3.5 narrowly bounded HOLD recovery — running product tests, NOT live E2E");
+    for(const script of ["check:types","check:lint","build","test:api","test:runtime"]){
+      console.log("\n> npm run "+script);
+      const r=runNpmScript(script);
+      if(r.status!==0) process.exit(r.status||1);
+    }
+    console.log("PRODUCT CI: SP35 RECOVERY TESTS PASS (NOT full live Worker/AI/PostgreSQL)");
+    process.exit(0);
+  }
+  console.log("PRODUCT CI: HOLD — implementation not enabled; Product CI NOT_RUN.");
   process.exit(0);
 }
 

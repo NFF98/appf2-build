@@ -9,3 +9,7 @@ test-results/
 .env
 .env.*
 !.env.example
+
+# Sprint 3.5 staging-only ephemeral Wrangler configuration / secrets
+.sp35-staging.wrangler.json
+.sp35-staging.secrets.json

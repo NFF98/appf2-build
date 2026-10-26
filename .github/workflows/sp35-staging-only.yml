@@ -1,0 +1,311 @@
+name: Sprint 3.5 staging only (never production)
+on:
+  # Explicitly scoped to this staging repair branch; pull requests cannot receive secrets.
+  push:
+    branches:
+      - product/sprint-3.5-real-worker-routing-20261026
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: appf2-sp35-staging-only
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: github.repository == 'NFF98/appf2-build' && (github.ref == 'refs/heads/product/sprint-3.5-real-worker-routing-20261026' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Provision 3 isolated staging Hyperdrives from one protected GitHub secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_STAGING_DB_CREDS: ${{ secrets.APPF2_STAGING_DB_CREDS }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          const token=process.env.CLOUDFLARE_API_TOKEN?.trim();
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+          if(!token || !/^[a-f0-9]{32}$/i.test(account||""))
+            throw Error("STAGING DB: missing Cloudflare authorization");
+          const headers={Authorization:"Bearer "+token,Accept:"application/json","Content-Type":"application/json"};
+          const endpoint="https://api.cloudflare.com/client/v4/accounts/"+account+"/hyperdrive/configs";
+          const existing=await fetch(endpoint,{headers});
+          console.log("HYPERDRIVE API: "+(existing.ok?"ACCESS_OK":"DENIED_HTTP_"+existing.status));
+          if(!existing.ok)throw Error("STAGING DB: no Hyperdrive API permissions");
+          const payload=await existing.json();
+          if(payload.success!==true)throw Error("STAGING DB: Hyperdrive list failed");
+          // Reuse the 3 previously created staging resources without touching passwords.
+          const existingConfigs=Array.isArray(payload.result)?payload.result:[];
+          const existingNames=[
+            ["fresh","APPF2_HYPERDRIVE_FRESH_ID"],
+            ["f02","APPF2_HYPERDRIVE_F02_ADMISSION_ID"],
+            ["f07","APPF2_HYPERDRIVE_F07_EVENTS_ID"]
+          ];
+          const resolved=existingNames.map(([suffix,envName]) => ({
+            suffix,envName,config:existingConfigs.find(c=>c.name==="appf2-sp35-417-staging-"+suffix)
+          }));
+          if(resolved.every(x=>typeof x.config?.id==="string")){
+            for(const entry of resolved){
+              fs.appendFileSync(process.env.GITHUB_ENV,entry.envName+"="+entry.config.id+"\n");
+              console.log("STAGING DB: Hyperdrive "+entry.suffix+" REUSED id="+entry.config.id);
+            }
+            console.log("STAGING DB: all 3 existing configs reused; no credentials required");
+            process.exit(0);
+          }
+          const raw=process.env.APPF2_STAGING_DB_CREDS?.trim();
+          if(!raw){
+            console.log("STAGING DB: waiting for one protected APPF2_STAGING_DB_CREDS GitHub secret");
+            process.exit(0);
+          }
+          let credentials;
+          try{credentials=JSON.parse(raw)}catch{throw Error("STAGING DB: credential JSON invalid")}
+          const expected=[
+            ["fresh","appf2_sp35_worker_login","APPF2_HYPERDRIVE_FRESH_ID"],
+            ["f02","appf2_sp35_f02_login","APPF2_HYPERDRIVE_F02_ADMISSION_ID"],
+            ["f07","appf2_sp35_f07_login","APPF2_HYPERDRIVE_F07_EVENTS_ID"]
+          ];
+          const list=Array.isArray(payload.result)?payload.result:[];
+          for(const [key,user,outKey] of expected){
+            const name="appf2-sp35-417-staging-"+key;
+            const password=credentials[key];
+            if(typeof password!=="string"||password.length<48)
+              throw Error("STAGING DB: credential missing or too short ("+key+")");
+            const found=list.find(x=>x.name===name);
+            let id=found?.id;
+            if(!id){
+              const create=await fetch(endpoint,{method:"POST",headers,body:JSON.stringify({
+                name,origin:{scheme:"postgres",host:"db.xxwnxetwufwyiisgaqhl.supabase.co",
+                  port:5432,database:"postgres",user,password},
+                caching:{disabled:true},mtls:{sslmode:"require"},origin_connection_limit:5
+              })});
+              const result=await create.json().catch(()=>({}));
+              if(!create.ok || result.success!==true || !result.result?.id)
+                throw Error("STAGING DB: Hyperdrive "+key+" create HTTP "+create.status+" (secret hidden)");
+              id=result.result.id;
+            }
+            fs.appendFileSync(process.env.GITHUB_ENV,outKey+"="+id+"\n");
+            console.log("STAGING DB: Hyperdrive "+key+" "+(found?"REUSED":"CREATED")+" id="+id);
+          }
+          console.log("STAGING DB: three isolated Hyperdrive resources prepared; live database connection pending");
+          JS
+      - name: Verify token, account and complete staging inputs (no secret values printed)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_STAGING_WORKER_NAME: ${{ vars.APPF2_STAGING_WORKER_NAME }}
+          APPF2_HYPERDRIVE_FRESH_ID: ${{ env.APPF2_HYPERDRIVE_FRESH_ID || secrets.APPF2_HYPERDRIVE_FRESH_ID }}
+          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ env.APPF2_HYPERDRIVE_F02_ADMISSION_ID || secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
+          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ env.APPF2_HYPERDRIVE_F07_EVENTS_ID || secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
+          APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL }}
+          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME }}
+          APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
+          APPF2_IDENTITY_COOKIE_SECRET: ${{ secrets.APPF2_IDENTITY_COOKIE_SECRET }}
+          APPF2_STAGING_URL: ${{ vars.APPF2_STAGING_URL }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          const check = (condition, reason) => {
+            if (!condition) throw new Error("STAGING PREFLIGHT: " + reason);
+          };
+          const token = process.env.CLOUDFLARE_API_TOKEN?.trim();
+          const account = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+          check(Boolean(token), "MISSING CLOUDFLARE_API_TOKEN (Repository Secret)");
+          check(/^[a-f0-9]{32}$/i.test(account || ""), "MISSING_OR_INVALID CLOUDFLARE_ACCOUNT_ID (Repository Variable)");
+          const headers = {Authorization: "Bearer " + token, Accept: "application/json"};
+          const verify = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {headers});
+          const v = await verify.json().catch(() => ({}));
+          check(verify.ok && v.success === true && v.result?.status === "active",
+            "TOKEN_VERIFICATION_FAILED_HTTP_" + verify.status);
+          console.log("CLOUDFLARE AUTH: ACTIVE TOKEN VERIFIED (token not printed)");
+          const response = await fetch("https://api.cloudflare.com/client/v4/accounts/" + account, {headers});
+          const a = await response.json().catch(() => ({}));
+          check(response.ok && a.success === true && a.result?.id === account,
+            "ACCOUNT_ACCESS_DENIED_OR_MISMATCH_HTTP_" + response.status);
+          console.log("CLOUDFLARE ACCOUNT: VERIFIED (ID omitted from log)");
+          import {createHmac} from "node:crypto";
+          const defaults={
+            APPF2_STAGING_WORKER_NAME: "appf2-sp35-417-staging",
+            APPF2_MODEL_BASE_URL: "https://api.openai.com/v1",
+            APPF2_MODEL_NAME: "gpt-4.1",
+            APPF2_IDENTITY_COOKIE_SECRET: createHmac("sha256",token)
+              .update("appf2-sp35-staging-identity-secret-v1").digest("hex")
+          };
+          // GitHub runner env is set without printing any default secret.
+          for(const [name,value] of Object.entries(defaults)){
+            if(!process.env[name]?.trim()){
+              if(name==="APPF2_IDENTITY_COOKIE_SECRET") console.log("::add-mask::"+value);
+              fs.appendFileSync(process.env.GITHUB_ENV,name+"="+value+"\n");
+              process.env[name]=value;
+            }
+          }
+          // Subsequent deploy step inherits these values without re-reading secrets.
+          for(const name of ["APPF2_HYPERDRIVE_FRESH_ID",
+            "APPF2_HYPERDRIVE_F02_ADMISSION_ID","APPF2_HYPERDRIVE_F07_EVENTS_ID"]){
+            if(process.env[name]?.trim())
+              fs.appendFileSync(process.env.GITHUB_ENV,name+"="+process.env[name].trim()+"\n");
+          }
+          if(process.env.APPF2_IDENTITY_COOKIE_SECRET?.trim()){
+            console.log("::add-mask::"+process.env.APPF2_IDENTITY_COOKIE_SECRET.trim());
+            fs.appendFileSync(process.env.GITHUB_ENV,
+              "APPF2_IDENTITY_COOKIE_SECRET="+process.env.APPF2_IDENTITY_COOKIE_SECRET.trim()+"\n");
+          }
+          const names = [
+            "APPF2_HYPERDRIVE_FRESH_ID", "APPF2_HYPERDRIVE_F02_ADMISSION_ID",
+            "APPF2_HYPERDRIVE_F07_EVENTS_ID", "APPF2_MODEL_API_KEY"
+          ];
+          const missing = names.filter(name => !process.env[name]?.trim());
+          if (missing.length) {
+            const summary = "### Bootstrap-only: AI/PostgreSQL/Creation NOT CONFIGURED\n" +
+              missing.map(name => "- `" + name + "`").join("\n") +
+              "\nCloudflare token and account verified. Running real Worker + SPA first-hop smoke only.\n";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+            fs.appendFileSync(process.env.GITHUB_ENV, "APPF2_STAGING_BOOTSTRAP_ONLY=1\n");
+            console.log("STAGING BOOTSTRAP ONLY: missing " + missing.join(", "));
+          } else {
+            console.log("STAGING FULL MODE: all AI/PG bindings present");
+          }
+          JS
+      - name: Confirm OpenAI credential works (no key or response exposed)
+        env:
+          APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          if (!process.env.APPF2_MODEL_API_KEY?.trim()) {
+            console.log("OPENAI CREDENTIAL: NOT CONFIGURED");
+            process.exit(0);
+          }
+          const response = await fetch("https://api.openai.com/v1/models", {
+            headers: { Authorization: "Bearer " + process.env.APPF2_MODEL_API_KEY },
+            signal: AbortSignal.timeout(15000)
+          });
+          console.log("OPENAI CREDENTIAL: " + (response.ok ? "ACCEPTED" : "REJECTED_HTTP_" + response.status));
+          if (!response.ok) process.exitCode = 1;
+          JS
+      - name: Verify OpenAI chat generation access (one small live call, no text logged)
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
+        env:
+          APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
+          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          const actualFields=[
+            "envelope_version","goal","actors","entities","known_inputs",
+            "constraints","requested_outputs","candidate_rules","missing_fields",
+            "ambiguities","assumptions","capability_hints","analysis_metadata"
+          ];
+          const response=await fetch("https://api.openai.com/v1/chat/completions",{
+            method:"POST",
+            headers:{
+              Authorization:"Bearer "+process.env.APPF2_MODEL_API_KEY,
+              "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+              model:process.env.APPF2_MODEL_NAME,temperature:0,
+              messages:[
+                {role:"system",content:"Return a JSON intent analysis containing the named fields."},
+                {role:"user",content:"Create a simple task tracker."}
+              ],
+              response_format:{
+                type:"json_schema",
+                json_schema:{
+                  name:"intent_analysis",strict:false,
+                  schema:{type:"object",required:actualFields,
+                    properties:Object.fromEntries(actualFields.map(f=>[f,{}]))}
+                }
+              }
+            }),
+            signal:AbortSignal.timeout(25000)
+          });
+          const payload=await response.json().catch(()=>({}));
+          const errorType=String(payload?.error?.type||"NONE").slice(0,64);
+          const errorCode=String(payload?.error?.code||"NONE").slice(0,64);
+          console.log("OPENAI CHAT: HTTP "+response.status+
+            " ERROR_TYPE="+errorType+" ERROR_CODE="+errorCode+" (response text hidden)");
+          if(!response.ok){
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+              "OpenAI model generation BLOCKED: HTTP "+response.status+
+              ", error type "+errorType+", code "+errorCode+". No real CREATE retried.\n");
+            process.exit(1);
+          }
+          fs.appendFileSync(process.env.GITHUB_ENV,"APPF2_MODEL_CHAT_READY=1\n");
+          JS
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Product build (no fixture counted as LIVE PASS)
+        run: |
+          npm run check:types
+          npm run check:lint
+          npm run test:api
+          npm run web:build
+      - name: Deploy ONLY isolated staging Worker with bundled SPA
+        env:
+          APPF2_STAGING_BOOTSTRAP_ONLY: ${{ env.APPF2_STAGING_BOOTSTRAP_ONLY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_STAGING_WORKER_NAME: ${{ vars.APPF2_STAGING_WORKER_NAME }}
+          APPF2_HYPERDRIVE_FRESH_ID: ${{ env.APPF2_HYPERDRIVE_FRESH_ID || secrets.APPF2_HYPERDRIVE_FRESH_ID }}
+          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ env.APPF2_HYPERDRIVE_F02_ADMISSION_ID || secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
+          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ env.APPF2_HYPERDRIVE_F07_EVENTS_ID || secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
+          APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL || 'https://api.openai.com/v1' }}
+          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
+          APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
+          APPF2_MODEL_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER }}
+          APPF2_XAI_MODEL_NAME: ${{ vars.APPF2_XAI_MODEL_NAME }}
+          APPF2_XAI_API_KEY: ${{ secrets.APPF2_XAI_API_KEY }}
+          APPF2_DEEPSEEK_MODEL_NAME: ${{ vars.APPF2_DEEPSEEK_MODEL_NAME }}
+          APPF2_DEEPSEEK_API_KEY: ${{ secrets.APPF2_DEEPSEEK_API_KEY }}
+        run: node deploy/scripts/sp35-staging-only.mjs
+      - name: Real Worker first-hop smoke (not full Creation)
+        run: node deploy/scripts/sp35-staging-smoke.mjs
+      - name: Live signed CREATE with sanitized Cloudflare upstream diagnostics
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          npx --yes wrangler@4.135.0 tail appf2-sp35-417-staging --format json > "$RUNNER_TEMP/sp35-worker-tail.log" 2>&1 &
+          TAIL_PID=$!
+          sleep 9
+          node deploy/scripts/sp35-staging-live-create.mjs
+          CREATE_RC=$?
+          sleep 4
+          kill "$TAIL_PID" 2>/dev/null || true
+          wait "$TAIL_PID" 2>/dev/null || true
+          node --input-type=module <<'JS'
+          import fs from "node:fs";
+          const p=process.env.RUNNER_TEMP+"/sp35-worker-tail.log";
+          const raw=fs.existsSync(p)?fs.readFileSync(p,"utf8"):"";
+          const statuses=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_STATUS=[0-9]{3}/g)||[])];
+          const failures=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_TRANSPORT=[A-Za-z]{1,32} ABORTED=(true|false)/g)||[])];
+          const validations=[...new Set(raw.match(/APPF2_MODEL_ANALYSIS_INVALID=[^"\r\n]{1,700}/g)||[])];
+          const coverage=[...new Set(raw.match(/APPF2_F02_COVERAGE_SELECTED_COUNT=[0-9]+ STATUS=(FULLY_SUPPORTED|PARTIALLY_SUPPORTED|UNSUPPORTED)/g)||[])];
+          console.log("STAGING MODEL DIAGNOSTICS: "+(statuses.length||failures.length||validations.length||coverage.length
+            ? [...statuses,...failures,...validations,...coverage].join("; ")
+            : "NO_MODEL_MARKERS_OBSERVED (tail permission/connection may be unavailable)"));
+          JS
+          exit "$CREATE_RC"
+      - name: Live Chromium real Create App + render + Home navigation
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1'
+        run: |
+          npx playwright install chromium
+          node deploy/scripts/sp35-staging-browser-e2e.mjs
+      - name: Upload browser screenshot (staging Hello World only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sp35-staging-browser
+          path: ${{ runner.temp }}/appf2-sp35-browser.png
+          retention-days: 3
+          if-no-files-found: ignore
