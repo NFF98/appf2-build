@@ -218,7 +218,10 @@ jobs:
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
           APPF2_MODEL_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER }}
-          APPF2_MODEL_FALLBACK_PROVIDER: ${{ vars.APPF2_MODEL_FALLBACK_PROVIDER }}
+          # Isolated staging only: the owner explicitly requested Grok alongside OpenAI.
+          # Use it on OpenAI 429 only if BOTH server-side key and model are configured.
+          # Production remains controlled by its separate deployment configuration.
+          APPF2_MODEL_FALLBACK_PROVIDER: ${{ vars.APPF2_MODEL_FALLBACK_PROVIDER || (vars.APPF2_MODEL_PROVIDER != 'xai' && secrets.APPF2_XAI_API_KEY != '' && vars.APPF2_XAI_MODEL_NAME != '' && 'xai') || '' }}
           APPF2_XAI_MODEL_NAME: ${{ vars.APPF2_XAI_MODEL_NAME }}
           APPF2_XAI_API_KEY: ${{ secrets.APPF2_XAI_API_KEY }}
           APPF2_DEEPSEEK_MODEL_NAME: ${{ vars.APPF2_DEEPSEEK_MODEL_NAME }}
