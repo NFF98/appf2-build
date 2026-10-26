@@ -75,6 +75,21 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     });
   });
 
+  it("requires canonical unique node children and keeps leaf-node rule explicit", () => {
+    const schema = COMPOSE_RESPONSE_SCHEMA as unknown as {
+      properties: { nodes: { items: { properties: {
+        children: { type: string; maxItems: number; uniqueItems: boolean; items: { pattern: string } }
+      } } } }
+    };
+    const children = schema.properties.nodes.items.properties.children;
+    expect(children.type).toBe("array");
+    expect(children.uniqueItems).toBe(true);
+    expect(children.maxItems).toBe(500);
+    expect(new RegExp(children.items.pattern).test("node_card")).toBe(true);
+    expect(new RegExp(children.items.pattern).test("not_registered_node")).toBe(false);
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("Input/text/button/stat leaf nodes always have children:[]");
+  });
+
   it("still strictly clips each model attempt to remaining lease time", () => {
     let now = 1000;
     const deadline = new RequestDeadline(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.create], () => now);
