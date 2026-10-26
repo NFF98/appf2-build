@@ -81,8 +81,8 @@ export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
     if (!isPlainRecord(entry)) return entry;
     const normalized = {
       ...entry,
-      input_types: canonicalHintTypes(entry.input_types),
-      output_types: canonicalHintTypes(entry.output_types)
+      ...(Array.isArray(entry.input_types) ? { input_types: canonicalHintTypes(entry.input_types) } : {}),
+      ...(Array.isArray(entry.output_types) ? { output_types: canonicalHintTypes(entry.output_types) } : {})
     };
     return entry.required === undefined ? { ...normalized, required: false } : normalized;
   });
