@@ -127,6 +127,17 @@ jobs:
               process.env[name]=value;
             }
           }
+          // Subsequent deploy step inherits these values without re-reading secrets.
+          for(const name of ["APPF2_HYPERDRIVE_FRESH_ID",
+            "APPF2_HYPERDRIVE_F02_ADMISSION_ID","APPF2_HYPERDRIVE_F07_EVENTS_ID"]){
+            if(process.env[name]?.trim())
+              fs.appendFileSync(process.env.GITHUB_ENV,name+"="+process.env[name].trim()+"\n");
+          }
+          if(process.env.APPF2_IDENTITY_COOKIE_SECRET?.trim()){
+            console.log("::add-mask::"+process.env.APPF2_IDENTITY_COOKIE_SECRET.trim());
+            fs.appendFileSync(process.env.GITHUB_ENV,
+              "APPF2_IDENTITY_COOKIE_SECRET="+process.env.APPF2_IDENTITY_COOKIE_SECRET.trim()+"\n");
+          }
           const names = [
             "APPF2_HYPERDRIVE_FRESH_ID", "APPF2_HYPERDRIVE_F02_ADMISSION_ID",
             "APPF2_HYPERDRIVE_F07_EVENTS_ID", "APPF2_MODEL_API_KEY"
@@ -179,15 +190,14 @@ jobs:
           APPF2_HYPERDRIVE_FRESH_ID: ${{ env.APPF2_HYPERDRIVE_FRESH_ID || secrets.APPF2_HYPERDRIVE_FRESH_ID }}
           APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ env.APPF2_HYPERDRIVE_F02_ADMISSION_ID || secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
           APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ env.APPF2_HYPERDRIVE_F07_EVENTS_ID || secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
-          APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL }}
-          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME }}
+          APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL || 'https://api.openai.com/v1' }}
+          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
           APPF2_MODEL_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER }}
           APPF2_XAI_MODEL_NAME: ${{ vars.APPF2_XAI_MODEL_NAME }}
           APPF2_XAI_API_KEY: ${{ secrets.APPF2_XAI_API_KEY }}
           APPF2_DEEPSEEK_MODEL_NAME: ${{ vars.APPF2_DEEPSEEK_MODEL_NAME }}
           APPF2_DEEPSEEK_API_KEY: ${{ secrets.APPF2_DEEPSEEK_API_KEY }}
-          APPF2_IDENTITY_COOKIE_SECRET: ${{ secrets.APPF2_IDENTITY_COOKIE_SECRET }}
         run: node deploy/scripts/sp35-staging-only.mjs
       - name: Real Worker first-hop smoke (not full Creation)
         run: node deploy/scripts/sp35-staging-smoke.mjs
