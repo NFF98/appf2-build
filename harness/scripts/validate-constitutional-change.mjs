@@ -218,7 +218,7 @@ const sp35RecoveryAllowedPaths=[
   /^src\/(?:edge|app|platform)\//,
   /^tests\/(?:api|e2e|runtime)\//,
   /^tooling\/web\/(?:vite\.config\.ts|worker-origin\.ts)$/,
-  /^deploy\/scripts\/sp35-staging-(?:only|smoke)\.mjs$/,
+  /^deploy\/scripts\/sp35-staging-(?:only|smoke|live-create|browser-e2e)\.mjs$/,
   /^\.github\/workflows\/sp35-staging-only\.yml$/,
   /^ci\/run-product-ci\.mjs$/,
   /^harness\/scripts\/(?:run-task-human-grant-preflight\.sh|validate-change-scope\.mjs|validate-constitutional-change\.mjs)$/,
