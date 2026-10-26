@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { createHash } from "node:crypto";
-import { isOneTimeConstitutionFounding, isGov392TestOnly } from "./validate-constitutional-change.mjs";
+import { isOneTimeConstitutionFounding, isGov392TestOnly, isSp35ProductRecoveryTestOnly } from "./validate-constitutional-change.mjs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { isExactT005PercentGovernanceRepair, testT005PercentRepairGuard, T005_PERCENT_GATE_MARKER } from "./t005-percent-test-compat.mjs";
@@ -933,7 +933,11 @@ if(isAdminClosureAttempt({changed,readBaseJson:showBaseJson,readHeadJson})){
 }
 
 if(cs.active_sprint===null){
-  if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate && !humanExceptionScope){
+  const sp35RecoveryTestOnly=isSp35ProductRecoveryTestOnly({
+    changed,base:baseSha,cs,build:currentBuild
+  });
+  if(sp35RecoveryTestOnly) console.log("- Sprint 3.5 #417 limited REAL test execution while HOLD; NOT Activation/Human approval/Production deploy/Creation PASS.");
+  if(!approvedPfr06WebReadinessTransition && !pg001DependencyHoldUpdate && !humanExceptionScope && !sp35RecoveryTestOnly){
     for(const p of changed) if(isImpl(p)) errors.push("Product/task-scoped implementation changed while Sprint HOLD: "+p);
   }
 }else if(safeControlTransition || t006FocusSwitch || t006R2MaintenanceRepair || approvedRebaselineTransition || boundedT005PercentRepair || foundedConstitutionException || approvedP0GovernanceCandidate || approvedF06DeferL3Candidate || bs026ProtectedAmendment || approvedBs026FreezeOnly || humanExceptionScope){
