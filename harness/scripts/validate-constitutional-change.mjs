@@ -118,7 +118,6 @@ export const GOV16_TEST_ONLY_PATHS=Object.freeze([
   "harness/scripts/trusted-human-task-grant.mjs",
   "harness/scripts/validate-change-scope.mjs",
   "harness/scripts/validate-constitutional-change.mjs",
-  "harness/scripts/gpt-preflight.mjs",
   "harness/scripts/w1-01-evidence-mirror.mjs"
 ]);
 // Test-only constitutional exception must NEVER apply to a Ready PR.
