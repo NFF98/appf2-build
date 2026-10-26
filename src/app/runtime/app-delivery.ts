@@ -21,19 +21,30 @@ class DeliveryStop extends Error {
 
 function statusFailure(status: number): DeliveryFailure {
   if (status === 404) return "NOT_FOUND";
-  if (status === 503) return "TEMPORARILY_UNAVAILABLE";
+  if (status === 502 || status === 503 || status === 504) return "TEMPORARILY_UNAVAILABLE";
   return status === 410 || status === 422 || status === 500 ? "NOT_EXECUTABLE" : "MALFORMED";
 }
 
+/** Transient GET-only retry: grants, Blueprint body and admission are read-only;
+ * POST mutations are never replayed here. Do not retry 401/403/404, revoked or
+ * non-executable responses; any last failure still fails closed. */
 async function getOk(fetchImpl: FetchLike, path: string, headers: Record<string, string>): Promise<Response> {
-  let response: Response;
-  try {
-    response = await fetchImpl(path, { method: "GET", headers, credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer" });
-  } catch {
-    throw new DeliveryStop("NETWORK");
+  const init: RequestInit = { method: "GET", headers, credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer" };
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    let response: Response;
+    try {
+      response = await fetchImpl(path, init);
+    } catch {
+      if (attempt === 3) throw new DeliveryStop("NETWORK");
+      continue;
+    }
+    if (response.ok) return response;
+    if (![502, 503, 504].includes(response.status) || attempt === 3) {
+      throw new DeliveryStop(statusFailure(response.status));
+    }
+    await response.body?.cancel().catch(() => {});
   }
-  if (!response.ok) throw new DeliveryStop(statusFailure(response.status));
-  return response;
+  throw new DeliveryStop("NETWORK");
 }
 
 async function dataOf(response: Response): Promise<Record<string, unknown>> {
