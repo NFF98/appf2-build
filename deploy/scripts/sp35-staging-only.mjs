@@ -43,6 +43,15 @@ if (!["openai", "xai", "deepseek"].includes(provider)) {
 }
 const xaiKey = bootstrapOnly ? null : process.env.APPF2_XAI_API_KEY?.trim();
 const deepseekKey = bootstrapOnly ? null : process.env.APPF2_DEEPSEEK_API_KEY?.trim();
+const fallback = process.env.APPF2_MODEL_FALLBACK_PROVIDER?.trim().toLowerCase() || "";
+if (fallback && !["xai", "deepseek"].includes(fallback))
+  throw new Error("STAGING PRECHECK: invalid APPF2_MODEL_FALLBACK_PROVIDER");
+if (fallback && fallback === provider)
+  throw new Error("STAGING PRECHECK: fallback must differ from primary");
+if (!bootstrapOnly && fallback === "xai" && (!xaiKey || !process.env.APPF2_XAI_MODEL_NAME?.trim()))
+  throw new Error("STAGING PRECHECK: missing configured xAI fallback");
+if (!bootstrapOnly && fallback === "deepseek" && (!deepseekKey || !process.env.APPF2_DEEPSEEK_MODEL_NAME?.trim()))
+  throw new Error("STAGING PRECHECK: missing configured DeepSeek fallback");
 if (!bootstrapOnly && provider === "xai" && !xaiKey) throw new Error("STAGING PRECHECK: missing APPF2_XAI_API_KEY");
 if (!bootstrapOnly && provider === "deepseek" && !deepseekKey) throw new Error("STAGING PRECHECK: missing APPF2_DEEPSEEK_API_KEY");
 const cookieSecret = bootstrapOnly ? randomBytes(48).toString("base64url") : required("APPF2_IDENTITY_COOKIE_SECRET");
@@ -72,6 +81,7 @@ const config = {
     APPF2_MODEL_BASE_URL: modelBase.toString(),
     APPF2_MODEL_NAME: model,
     APPF2_MODEL_PROVIDER: provider,
+    ...(fallback ? {APPF2_MODEL_FALLBACK_PROVIDER: fallback} : {}),
     ...(process.env.APPF2_XAI_MODEL_NAME?.trim() ? {APPF2_XAI_MODEL_NAME: process.env.APPF2_XAI_MODEL_NAME.trim()} : {}),
     ...(process.env.APPF2_DEEPSEEK_MODEL_NAME?.trim() ? {APPF2_DEEPSEEK_MODEL_NAME: process.env.APPF2_DEEPSEEK_MODEL_NAME.trim()} : {})
   }})
