@@ -31,6 +31,8 @@ export type OpenAiCompatibleConfig = {
   readonly apiKey: string;
   readonly model: string;
   readonly pricing?: ModelPricing;
+  /** DeepSeek ChatCompletions supports JSON object mode; keep schema mode for OpenAI/xAI. */
+  readonly outputFormat?: "json_schema" | "json_object";
 };
 
 export type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body?: string; signal: AbortSignal }) => Promise<{
@@ -151,10 +153,12 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
         { role: "system", content: SYSTEM_POLICY[request.operation] },
         { role: "user", content: JSON.stringify(request.input_payload) }
       ],
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: request.operation.toLowerCase(), strict: false, schema: request.response_schema }
-      }
+      response_format: this.config.outputFormat === "json_object"
+        ? { type: "json_object" }
+        : {
+          type: "json_schema",
+          json_schema: { name: request.operation.toLowerCase(), strict: false, schema: request.response_schema }
+        }
     });
   }
 
