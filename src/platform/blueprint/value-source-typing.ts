@@ -5,7 +5,8 @@ import {
   resolveDescriptorPath,
   scalarSingletonDescriptor,
   STRING_MAX_LENGTH_CEILING,
-  valueConforms
+  valueConforms,
+  isAssignable
 } from "./type-descriptor.js";
 import { fail, type F02ErrorCode, type ValidationStage, type ValueSource } from "./validation-types.js";
 
@@ -194,6 +195,32 @@ const stringTransform: OperatorTyping = (args, path, context) => {
   return operand;
 };
 
+/** Type-checked bounded local list edits; the target descriptor enforces the final length and item type. */
+const listEdit = (mode: "APPEND" | "REMOVE_AT" | "REPLACE_AT"): OperatorTyping =>
+  (args, path, context) => {
+    const count = mode === "REPLACE_AT" ? 3 : 2;
+    assertArity(args, path, context, { min: count, max: count });
+    const source = args[0];
+    if (source === undefined) return typingError(context, path, "Missing LIST operand.");
+    const list = inferValueSource(source, `${path}.args[0]`, context);
+    if (list.type !== "LIST") return typingError(context, `${path}.args[0]`, "LIST edit requires LIST.");
+    if (mode !== "APPEND") {
+      const index = args[1];
+      if (index === undefined) return typingError(context, path, "Missing LIST index.");
+      requireTypes([inferValueSource(index, `${path}.args[1]`, context)], ["NUMBER"], path, context);
+    }
+    if (mode !== "REMOVE_AT") {
+      const itemIndex = mode === "APPEND" ? 1 : 2;
+      const item = args[itemIndex];
+      if (item === undefined) return typingError(context, path, "Missing LIST item.");
+      const typed = inferValueSource(item, `${path}.args[${itemIndex}]`, context, list.constraints.item);
+      if (!isAssignable(typed, list.constraints.item)) {
+        return typingError(context, `${path}.args[${itemIndex}]`, "LIST item is not assignable.");
+      }
+    }
+    return list;
+  };
+
 const OPERATORS: Readonly<Record<string, OperatorTyping>> = {
   ADD: numeric(2),
   SUB: numeric(2, 2),
@@ -226,7 +253,10 @@ const OPERATORS: Readonly<Record<string, OperatorTyping>> = {
   CONCAT: concat,
   LOWER: stringTransform,
   UPPER: stringTransform,
-  TRIM: stringTransform
+  TRIM: stringTransform,
+  LIST_APPEND: listEdit("APPEND"),
+  LIST_REMOVE_AT: listEdit("REMOVE_AT"),
+  LIST_REPLACE_AT: listEdit("REPLACE_AT")
 };
 
 function inferLiteral(
