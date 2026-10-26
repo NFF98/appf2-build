@@ -53,7 +53,7 @@ import {
   type OperationListener,
   type RuntimeOperationHandle
 } from "./runtime-operation.js";
-import { deepFreeze, type RuntimeValue } from "./runtime-value.js";
+import { deepFreeze, isRuntimeRecord, type RuntimeValue } from "./runtime-value.js";
 
 export interface RuntimeServices {
   readonly clock: MonotonicClock;
@@ -64,6 +64,8 @@ export interface RuntimeServices {
   readonly effects?: LocalEffectPort;
   /** F07 PRODUCT_SAMPLE decision for this Instance session (F03-EVT-011 / -012); unsampled when omitted. */
   readonly productEvidenceSampled?: boolean;
+  /** Optional browser-only, untrusted saved state loaded after verified admission. */
+  readonly restoreState?: (contentHash: string) => unknown;
 }
 
 export interface RuntimeHostContext {
@@ -283,8 +285,28 @@ export class RuntimeInstance {
       const index = buildExecutionIndex(verified.blueprint, pinnedNodeBinder(this.host.trust));
       assertStaticResourceCeilings(index);
       const store = emptyStore(seedPcg32(this.instanceSeed()));
-      const tx = new StoreTransaction(index, store);
+      let tx = new StoreTransaction(index, store);
       tx.initialize();
+      // Restore only an all-or-nothing, descriptor-conforming snapshot after verifying
+      // the signed admission and immutable Blueprint. Corrupt data cannot poison H08.
+      if (this.host.services.restoreState !== undefined) {
+        try {
+          const snapshot = this.host.services.restoreState(verified.contentHash);
+          const keys = [...index.mutable.keys()];
+          if (isRuntimeRecord(snapshot) &&
+              Object.keys(snapshot).length === keys.length &&
+              keys.every((key) => Object.hasOwn(snapshot, key) &&
+                valueConforms(snapshot[key], index.mutable.get(key)!))) {
+            const restored = new StoreTransaction(index, store);
+            restored.initialize();
+            for (const key of keys) restored.writeMutable(key, deepFreeze(structuredClone(snapshot[key]!)));
+            tx = restored;
+          }
+        } catch {
+          // Invalid, unavailable or outdated tab state falls back to the signed
+          // Blueprint's safe defaults; do not expose stored values as admissions.
+        }
+      }
       this.lifecycle.reconcile(
         expandNodeInstances(index, tx.env),
         this.lifecycleHost((incarnation, instance) => tx.stageCapability(incarnation.keyId, { key: instance.key, state: this.initialState(index, instance, tx.env) }))
@@ -339,6 +361,14 @@ export class RuntimeInstance {
   public readState(key: string): RuntimeValue | undefined {
     return this.store?.mutable.get(key) ?? this.store?.derived.get(key);
   }
+  /** Tab-local app host projection: mutable fields only, never execution internals. */
+  public snapshotMutableState(): Readonly<Record<string, RuntimeValue>> {
+    if (this.currentStatus !== "READY" || this.store === undefined || this.index === undefined) return {};
+    return Object.fromEntries([...this.index.mutable.keys()].map((key) => [
+      key, deepFreeze(structuredClone(this.store!.mutable.get(key)!))
+    ]));
+  }
+
 
   public readRule(ruleId: string): RuleEntry | undefined {
     return this.store?.rules.get(ruleId);
