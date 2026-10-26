@@ -2,6 +2,7 @@
 // Tests browser PoP wire protocol against deployed Cloudflare Worker + Hyperdrive + OpenAI.
 // No retries, no mocks, no secret or response bodies logged, no Production targets.
 import { randomUUID, webcrypto } from "node:crypto";
+import { TextEncoder } from "node:util";
 
 const raw = process.env.APPF2_STAGING_URL?.trim();
 if (!raw) throw Error("STAGING REAL CREATE: missing APPF2_STAGING_URL");
@@ -47,11 +48,11 @@ try {
     },
     body,
     redirect: "error",
-    signal: AbortSignal.timeout(85_000)
+    signal: globalThis.AbortSignal.timeout(85_000)
   });
 } catch (error) {
   throw Error("STAGING REAL CREATE: network/timeout failure (" +
-    String(error?.name || "unknown") + "): no E2E PASS");
+    String(error?.name || "unknown") + "): no E2E PASS", { cause: error });
 }
 if (!response.headers.get("content-type")?.includes("application/json")) {
   throw Error("STAGING REAL CREATE: non-JSON response HTTP " + response.status);
