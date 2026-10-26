@@ -30,6 +30,9 @@ const PROMPT_A_POLICY = [
   "For each policy item choose exactly one state: CONFIRMED with resolved_value, PROPOSED with proposed_default, or UNRESOLVED with neither. Never include the other state's value.",
   "CRITICAL: A SINGLE_CHOICE or MULTI_CHOICE question MUST have alternatives containing at least TWO DISTINCT values. Every ambiguities[] item also MUST have two distinct alternatives. Never output a single-choice question with zero or one alternative.",
   "If a constraint has fewer than two legitimate alternatives, do not invent fake choices: use a non-choice question_type matching expected_value_type (e.g. STRING with FREE_TEXT), or simply omit the invalid choice requirement when it has no grounded source. Keep all genuine User constraints.",
+  "For a large multi-feature App request, preserve every user-requested feature. Group only closely related features into requested_outputs and capability_hints, enumerating their features in descriptions; never silently drop material requirements.",
+  "Keep the envelope concise: do not turn every screen label, button or implementation detail into separate actors, entities or policy items; policy items represent actual clarification, material constraints or safety needs.",
+  "If schema_retry_status equals PREVIOUS_OUTPUT_FAILED_VALIDATION, this is the one corrective retry. Verify all nested required fields, cross-references, unique IDs, valid enums and value/resolution states; preserve all facts and features from raw_user_intent.",
   "Before final output, check each constraints[], candidate_rules[], missing_fields[], ambiguities[], assumptions[] item: question_type and expected_value_type match; choice questions and ambiguities have 2 or more distinct alternatives; required_for_execution is boolean; all policy item fields are included."
 ].join("\n");
 
