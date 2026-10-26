@@ -19,9 +19,31 @@ try {
   await input.waitFor({state:"visible",timeout:15_000});
   console.log("STAGING BROWSER: REAL Discover React UI rendered");
   await input.fill("Create a read-only one-screen welcome app titled Hello World. Show the text Hello World. No user input, payments, accounts, or external services.");
+  // Watch actual signed API responses BEFORE clicking. A terminal 422 must fail
+  // immediately, not spend 210s pretending the generated App might still mount.
+  const helloAnalysis = page.waitForResponse(r => r.request().method() === "POST" &&
+    new URL(r.url()).pathname === "/api/v1/intents", {timeout:110_000});
+  const helloCompile = page.waitForResponse(r => r.request().method() === "POST" &&
+    /^\\/api\\/v1\\/intents\\/[^/]+\\/compile$/.test(new URL(r.url()).pathname),
+    {timeout:150_000}).catch(() => null);
   await page.locator(".composer-create").click();
   console.log("STAGING BROWSER: clicked actual Create App button");
-  await page.locator(".s03-app").waitFor({state:"visible",timeout:210_000});
+  const initial = await helloAnalysis;
+  const initialData = await initial.json().catch(() => ({}));
+  console.log("STAGING BROWSER HELLO ANALYSIS: HTTP="+initial.status()+
+    " CODE="+String(initialData?.error?.code || "NONE")+
+    " STATUS="+String(initialData?.data?.status || "NONE"));
+  if (initial.status() !== 200 || initialData?.data?.status !== "READY")
+    throw Error("STAGING BROWSER: Hello World analysis not READY; no generated App PASS");
+  const build = await helloCompile;
+  if (build === null) throw Error("STAGING BROWSER: Hello World compile never reached Worker");
+  const buildData = await build.json().catch(() => ({}));
+  const buildOk = build.status() === 200 && buildData?.data?.status === "VALIDATED" &&
+    /^sha256:[a-f0-9]{64}$/.test(String(buildData?.data?.content_hash || ""));
+  console.log("STAGING BROWSER HELLO COMPILE: HTTP="+build.status()+
+    " CODE="+String(buildData?.error?.code || "NONE")+" VALIDATED="+buildOk);
+  if (!buildOk) throw Error("STAGING BROWSER: Hello World F02 compile failed; App cannot mount");
+  await page.locator(".s03-app").waitFor({state:"visible",timeout:45_000});
   const content=await page.locator(".s03-app").textContent();
   const hasText=Boolean(content?.includes("Hello World"));
   console.log("STAGING BROWSER: generated S03 app mounted; EXPECTED_HELLO_TEXT="+hasText);
