@@ -124,3 +124,58 @@ if(compiled.status!==200 || compileData?.data?.status!=="VALIDATED" || !validHas
 }
 console.log("STAGING REAL COMPILE: validated Blueprint from real OpenAI + PostgreSQL; browser hydration NOT VERIFIED.");
 
+// Read the Blueprint as the same real original Intent holder; never expose
+// grants or canonical content to CI logs. No mock or privileged API.
+const grantPath="/api/v1/intents/"+encodeURIComponent(intent)+"/blueprint-access-grant";
+const grantTimestamp=Date.now();
+const grantTranscript=new TextEncoder().encode(JSON.stringify([
+  "APPF2_READ_PoP_V1","GET",grantPath,hash,grantTimestamp
+]));
+const grantSignature=new Uint8Array(await subtle.sign(
+  {name:"ECDSA",hash:"SHA-256"},pair.privateKey,grantTranscript
+));
+const grantResponse=await fetch(
+  new URL(grantPath+"?content_hash="+encodeURIComponent(hash),origin),{
+    method:"GET",redirect:"error",
+    headers:{Origin:origin.origin,Cookie:cookie,
+      "X-Appf2-PoP-Key":base64url(publicKey),
+      "X-Appf2-PoP-Signature":base64url(grantSignature),
+      "X-Appf2-PoP-Timestamp":String(grantTimestamp)},
+    signal:globalThis.AbortSignal.timeout(25_000)
+  }
+);
+const grantData=await grantResponse.json().catch(()=>({}));
+const accessGrant=grantData?.data?.intent_blueprint_access_grant;
+console.log("STAGING REAL OPEN: grant HTTP "+grantResponse.status+
+  " HAS_GRANT="+Boolean(typeof accessGrant==="string"&&accessGrant.length>30));
+if(grantResponse.status!==200||typeof accessGrant!=="string"||accessGrant.length<30)
+  throw Error("STAGING REAL OPEN: original-holder grant NOT VERIFIED");
+const authorization={Authorization:"Bearer "+accessGrant,Origin:origin.origin};
+const bodyResponse=await fetch(new URL("/b/"+hash,origin),{
+  headers:authorization,redirect:"error",
+  signal:globalThis.AbortSignal.timeout(20_000)
+});
+const bodyText=await bodyResponse.text();
+const hasApp=bodyResponse.status===200 && (()=>{try{
+  const bp=JSON.parse(bodyText);
+  return bp.kind==="APP"&&Array.isArray(bp.nodes)&&bp.nodes.length>0;
+}catch{return false}})();
+console.log("STAGING REAL OPEN: Blueprint body HTTP "+bodyResponse.status+
+  " PARSED_APP="+hasApp);
+if(!hasApp)throw Error("STAGING REAL OPEN: canonical Blueprint body NOT VERIFIED");
+const admissionResponse=await fetch(
+  new URL("/api/v1/blueprints/"+hash+"/execution-admission",origin),{
+    headers:authorization,redirect:"error",
+    signal:globalThis.AbortSignal.timeout(25_000)
+  }
+);
+const admissionData=await admissionResponse.json().catch(()=>({}));
+const executable=admissionResponse.status===200 &&
+  admissionData?.data?.executable===true &&
+  admissionData?.data?.content_hash===hash;
+console.log("STAGING REAL OPEN: execution-admission HTTP "+admissionResponse.status+
+  " EXECUTABLE="+executable);
+if(!executable)throw Error("STAGING REAL OPEN: runtime execution admission NOT VERIFIED");
+console.log("STAGING REAL OPEN: ORIGINAL-HOLDER BLUEPRINT DELIVERY + EXECUTION ADMISSION PASS; browser render NOT VERIFIED.");
+
+
