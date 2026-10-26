@@ -49,6 +49,10 @@ const PROMPT_B_POLICY = [
   "CRITICAL V02: Every STATE key and SCOPE name must match ^[a-z][a-z0-9_]{0,63}$; EVENT.path and SCOPE.path must be empty or lowercase snake_case dot-separated segments. Do not use $, /, brackets, camelCase, indexes, or special characters in paths.",
   "State map entries use {mode:MUTABLE,type,initial} or {mode:DERIVED,type,expr}; actions have {id:action_...,steps:[...]} and steps have type SET_STATE, INVOKE_CAPABILITY, or RESET_STATE. Do not invent unknown actions.",
   "CRITICAL: Every state and rule result_type MUST be one of the exact uppercase descriptors NUMBER, STRING, BOOLEAN, ENUM, LIST, RECORD. Array of tasks is LIST, never ARRAY or OBJECT. Object records are RECORD. Match MUTABLE initial values to that descriptor and follow compiler_catalog constraints.",
+  "CRITICAL V02: nodes[].repeat.max_items must be a JSON integer from 0 through 500 inclusive, for example 30. Never use a string, null, negative value, or a number above 500.",
+  "CRITICAL V05: For each MUTABLE state, constraints must be a valid TypeDescriptor constraints object, not natural language or an arbitrary schema. BOOLEAN has NO constraints; NUMBER may omit constraints or use {min:0,max:100}; STRING REQUIRES {max_length:120} (0..8192); ENUM REQUIRES {allowed:[unique primitive values]}; LIST REQUIRES {item:{type:STRING,constraints:{max_length:120}},max_length:30}; RECORD REQUIRES {fields:{name:{type:STRING,constraints:{max_length:120}}}}. Do not use maxItems, items, required, nullable, or arbitrary keys.",
+  "For a LIST of task RECORD items use constraints:{item:{type:RECORD,constraints:{fields:{title:{type:STRING,constraints:{max_length:120}},done:{type:BOOLEAN}}}},max_length:100}. Every initial task item must match its declared descriptor. Never omit LIST max_length or item descriptor.",
+  "On a retry, previous_validation_issues contains all distinct earlier F02 issues, not just the latest. Fix EVERY listed error path at once; do not reintroduce an earlier error.",
   "Always use only compiler_catalog capability IDs and versions. Do not add unlisted capabilities. Follow the capability prop, binding and event contracts exactly, including required properties and types.",
   "For layout.container: set props.direction to LITERAL ROW or COLUMN; props.gap to LITERAL NONE/XS/SM/MD/LG/XL; props.align to LITERAL START/CENTER/END/STRETCH. Never use LEFT, RIGHT, MIDDLE, TOP, BOTTOM, center, horizontal or vertical.",
   "Copy node.capability.id and node.capability.version EXACTLY from compiler_catalog, including dots and numeric version (e.g. layout.container and 1.0.0). Never use a display label, nickname, invented alias or underscore substitute. Use only the selected compiler_catalog entries.",
@@ -240,7 +244,7 @@ const BP_NODE = { type: "object", additionalProperties: false,
     children: { type: "array", items: { type: "string" } },
     repeat: { type: "object", required: ["items", "item_alias", "max_items"],
       properties: { items: BP_VALUE, item_alias: { type: "string" },
-        index_alias: { type: "string" }, max_items: { type: "integer" } } }
+        index_alias: { type: "string" }, max_items: { type: "integer", minimum: 0, maximum: 500 } } }
   } };
 export const COMPOSE_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
   type: "object",
