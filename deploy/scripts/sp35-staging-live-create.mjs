@@ -22,7 +22,7 @@ const path = "/api/v1/intents";
 const body = JSON.stringify({
   anonymous_id: randomUUID(),
   intent_kind: "CREATE",
-  raw_intent: "Create a small personal task tracker with a task name, done checkbox and a list.",
+  raw_intent: "Create a read-only one-screen welcome app titled Hello World. Show the text Hello World. No user input, payments, accounts, or external services.",
   source: { type: "DIRECT_PROMPT", capsule_id: null }
 });
 const bodyBytes = new TextEncoder().encode(body);
