@@ -1,0 +1,46 @@
+name: Sprint 3.5 staging only (never production)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: appf2-sp35-staging-only
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Product build (no fixture counted as LIVE PASS)
+        run: |
+          npm run check:types
+          npm run check:lint
+          npm run web:build
+      - name: Deploy ONLY isolated staging Worker with bundled SPA
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_STAGING_WORKER_NAME: ${{ vars.APPF2_STAGING_WORKER_NAME }}
+          APPF2_HYPERDRIVE_FRESH_ID: ${{ secrets.APPF2_HYPERDRIVE_FRESH_ID }}
+          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ secrets.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
+          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ secrets.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
+          APPF2_MODEL_BASE_URL: ${{ vars.APPF2_MODEL_BASE_URL }}
+          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME }}
+          APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
+          APPF2_IDENTITY_COOKIE_SECRET: ${{ secrets.APPF2_IDENTITY_COOKIE_SECRET }}
+        run: node deploy/scripts/sp35-staging-only.mjs
+      - name: Real Worker first-hop smoke (not full Creation)
+        env:
+          APPF2_STAGING_URL: ${{ vars.APPF2_STAGING_URL }}
+        run: node deploy/scripts/sp35-staging-smoke.mjs
