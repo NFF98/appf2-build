@@ -171,6 +171,8 @@ class ComposeLoop {
     const { dependencies, guard, deadline, intentId, traceId, evidence } = this.scope;
     const versions = { prompt_version: PROMPT_B_VERSION, model_adapter: dependencies.gateway.modelAdapter, blueprint_schema_version: BLUEPRINT_SCHEMA_VERSION, registry_version: this.coverage.registryVersion };
     evidence.add("F01-EVT-009", versions);
+    console.warn("APPF2_F02_COVERAGE_SELECTED_COUNT=" + this.coverage.selected.length +
+      " STATUS=" + this.coverage.status);
     try {
       const composed = await callProviderWithBoundedRetry(
         { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence },
