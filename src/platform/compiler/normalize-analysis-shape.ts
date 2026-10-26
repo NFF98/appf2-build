@@ -15,6 +15,16 @@ const QUESTIONS: Readonly<Record<string, string>> = {
   ENUM: "SINGLE_CHOICE", LIST: "MULTI_CHOICE", RECORD: "STRUCTURED_FIELDS"
 };
 
+/** Never discard an execution requirement or risk flag because the LLM
+ * mistakenly called it cosmetic. Conservatively promote its classification. */
+function promoteRequiredMateriality(item: JsonValue): JsonValue {
+  if (!isPlainRecord(item) || item.materiality !== "COSMETIC") return item;
+  const hasRisk = Array.isArray(item.policy_risk_flags) && item.policy_risk_flags.length > 0;
+  return item.required_for_execution === true || hasRisk
+    ? { ...item, materiality: "MATERIAL" }
+    : item;
+}
+
 function safePolicyItem(item: JsonValue): boolean {
   return isPlainRecord(item) && Array.isArray(item.policy_risk_flags) &&
     item.policy_risk_flags.length === 0 && Array.isArray(item.alternatives);
@@ -61,7 +71,7 @@ export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
   });
   const policy = Object.fromEntries(COLLECTIONS.flatMap(name => {
     const items = value[name];
-    return Array.isArray(items) ? [[name, items.map(fixScalarMetadata)]] : [];
+    return Array.isArray(items) ? [[name, items.map(item => fixScalarMetadata(promoteRequiredMateriality(item)))]] : [];
   }));
   return { ...value, requested_outputs: outputs, capability_hints: capabilities, ...policy };
 }
