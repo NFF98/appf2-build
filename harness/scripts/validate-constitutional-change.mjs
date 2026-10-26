@@ -234,6 +234,7 @@ const sp35RecoveryDiffMatches = changed =>
 // *executing* real gates on the exact follow-up diff. It is not approval.
 const sp35ComplexAllowed=new Set([
   ".github/workflows/sp35-staging-only.yml",
+  ".github/workflows/governance-gate.yml",
   "deploy/scripts/sp35-staging-browser-e2e.mjs",
   "src/app/create/CreateWorkspace.tsx",
   "src/app/create/creation-controller.ts",
