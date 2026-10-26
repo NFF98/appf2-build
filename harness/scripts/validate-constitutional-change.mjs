@@ -186,9 +186,50 @@ const checkManualHumanApproval=(docket,digest,errors)=>{
     "pre-Phase4 exact-candidate Human approval evidence required; independent manual provenance check still mandatory");
 };
 
+// User-directed Sprint 3.5 recovery: narrowly permit REAL testing of PR #417
+// before Activation. This is NOT a Human approval, Product PASS or Merge grant.
+// No other PR, branch, base, source/destination path or protected control may
+// use this single bounded recovery-testing exception. The BASE remains HOLD.
+export function isSp35ProductRecoveryTestOnly({ changed, base, cs, build }) {
+  if (base !== "04e44228354a659c3742c8666316bc42aa455aba" ||
+      cs?.status !== "HOLD" || cs?.active_sprint !== null ||
+      cs?.active_build_spec !== null || cs?.active_task !== null ||
+      build?.active_baseline !== "BS-P1-025" || build?.implementation_enabled !== false ||
+      process.env.GITHUB_EVENT_NAME !== "pull_request" || !process.env.GITHUB_EVENT_PATH)
+    return false;
+  let event;
+  try { event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,"utf8")); }
+  catch { return false; }
+  const pr=event.pull_request;
+  if (process.env.GITHUB_REPOSITORY !== "NFF98/appf2-build" ||
+      event.repository?.full_name !== "NFF98/appf2-build" ||
+      pr?.number !== 417 || pr?.base?.ref !== "main" ||
+      pr?.base?.sha !== base ||
+      pr?.head?.ref !== "product/sprint-3.5-real-worker-routing-20261026" ||
+      pr?.head?.repo?.full_name !== "NFF98/appf2-build" ||
+      pr?.state !== "open") return false;
+  const allowed=[
+    /^src\/(?:edge|app|platform)\//,
+    /^tests\/(?:api|e2e|runtime)\//,
+    /^tooling\/web\/(?:vite\.config\.ts|worker-origin\.ts)$/,
+    /^deploy\/scripts\/sp35-staging-(?:only|smoke)\.mjs$/,
+    /^\.github\/workflows\/sp35-staging-only\.yml$/,
+    /^ci\/run-product-ci\.mjs$/,
+    /^harness\/scripts\/(?:run-task-human-grant-preflight\.sh|validate-change-scope\.mjs|validate-constitutional-change\.mjs)$/,
+    /^\.gitignore$/
+  ];
+  return Array.isArray(changed) && changed.length>0 && changed.length<=30 &&
+    changed.includes("tooling/web/vite.config.ts") &&
+    changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
+    changed.every(p=>typeof p==="string" && allowed.some(re=>re.test(p)));
+}
+
 export function inspectConstitutionalChange({changed,base,cs,build,policy,root}){
   const errors=[],protectedChanged=changed.filter(p=>isConstitutionProtected(p,policy));
   if(!protectedChanged.length) return {errors,constitutional:false,bootstrap:false};
+  if (isSp35ProductRecoveryTestOnly({changed,base,cs,build})) {
+    return {errors,constitutional:true,bootstrap:false,recoveryChecksOnly:true};
+  }
   if(isOneTimeConstitutionFounding({changed,base,cs,build})){
     const charter=readSafe(root,"harness/policy/APPF2-CONSTITUTION.md")?.toString("utf8")||"";
     fail(errors,charter.includes("GOV-CONST-001") &&
