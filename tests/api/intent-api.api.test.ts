@@ -165,7 +165,7 @@ describe("F01-AC-014 POST /compile retries never duplicate a logical compile", (
     const { intentId, version } = await h.readyIntent();
     let takeover: Awaited<ReturnType<F01Harness["compile"]>> | undefined;
     h.gateway.queueCompose(async () => {
-      h.clock.advance(31_000);
+      h.clock.advance(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.compile] + 1_000);
       takeover = await h.compile(intentId, version);
       return succeeded(blueprintCandidate());
     }, succeeded(blueprintCandidate()));
@@ -214,7 +214,7 @@ describe("F01-AC-014 POST /compile retries never duplicate a logical compile", (
     const { intentId, version } = await h.readyIntent(dnpReadyAnalysis());
     let takeover: Awaited<ReturnType<F01Harness["compile"]>> | undefined;
     h.gateway.queueCompose(async () => {
-      h.clock.advance(31_000);
+      h.clock.advance(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.compile] + 1_000);
       takeover = await h.compileWith(intentId, version, [PAN_INPUT]);
       return succeeded(blueprintCandidate());
     }, succeeded(blueprintCandidate()));
@@ -493,7 +493,7 @@ describe("F01-AC-020 timeout keeps the Intent and the logical operation retryabl
     const { intentId, version } = await h.readyIntent();
     let takeover: Awaited<ReturnType<F01Harness["compile"]>> | undefined;
     h.gateway.queueCompose(async () => {
-      h.clock.advance(31_000);
+      h.clock.advance(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.compile] + 1_000);
       takeover = await h.compile(intentId, version);
       return failedWith("TIMEOUT");
     }, succeeded(blueprintCandidate()));
