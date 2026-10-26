@@ -1,0 +1,27 @@
+// Proves Cloudflare Worker routing, not completion of model/PG execution.
+const raw=process.env.APPF2_STAGING_URL;
+if(!raw) throw new Error("STAGING SMOKE: missing APPF2_STAGING_URL");
+const base=new URL(raw);
+if(base.protocol!=="https:"||base.username||base.password||base.search||base.hash) throw new Error("STAGING SMOKE: require HTTPS origin");
+const get=await fetch(new URL("/api/v1/health",base),{redirect:"error"});
+const getText=await get.text();
+if(get.status!==200 || !get.headers.get("content-type")?.includes("application/json")){
+  throw new Error("STAGING SMOKE: health not Worker JSON, status "+get.status);
+}
+let json;try{json=JSON.parse(getText)}catch{throw new Error("STAGING SMOKE: health JSON parse failed")}
+if(json?.data?.status!=="UP")throw new Error("STAGING SMOKE: Worker health invalid");
+console.log("STAGING SMOKE: GET /api/v1/health 200 JSON UP");
+const post=await fetch(new URL("/api/v1/intents",base),{
+  method:"POST",headers:{"Content-Type":"application/json","Origin":base.origin},
+  body:JSON.stringify({intent_kind:"CREATE",raw_intent:"smoke unauthorized"})
+});
+const body=await post.text();let parsed;
+try{parsed=JSON.parse(body)}catch{throw new Error("STAGING SMOKE: intents response not JSON, status "+post.status)}
+if(!post.headers.get("content-type")?.includes("application/json") || post.status===404 && !parsed?.error?.code){
+ throw new Error("STAGING SMOKE: intents API not routed to Worker, status "+post.status);
+}
+if(post.status>=500 || post.status<400 || !parsed?.error?.code){
+ throw new Error("STAGING SMOKE: unsigned intents not fail-closed as Worker JSON, status "+post.status);
+}
+console.log("STAGING SMOKE: POST /api/v1/intents JSON denied as expected; status "+post.status+", code "+parsed.error.code);
+console.log("STAGING SMOKE: API FIRST-HOP PASS ONLY; LIVE MODEL/POSTGRES/CREATION NOT VERIFIED");
