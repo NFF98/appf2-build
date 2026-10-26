@@ -6,10 +6,11 @@ import { decidableAssumptions } from "./assumptions.js";
 import { AssumptionList } from "./AssumptionList.js";
 import { createProgressView } from "./create-progress.js";
 import type { CreationController } from "./creation-controller.js";
-import { stepAnswers, type CreationSession, type CreationStep, type ProvidedAnswer, type RecoveryReason } from "./creation-session.js";
+import { stepAnswers, type CreationSession, type CreationStep, type ProvidedAnswer } from "./creation-session.js";
 import { IntentDisclosure, type DisclosureMode } from "./IntentDisclosure.js";
 import { QuestionField } from "./QuestionField.js";
 import { StageProgress } from "./StageProgress.js";
+import { recoveryDetail } from "./recovery-message.js";
 import { ValueView } from "./ValueView.js";
 
 type WorkspaceProps = {
@@ -30,14 +31,6 @@ const STATUS_COPY = {
   BUILD_VALIDATED: { title: "已完成互動檢查", detail: "你的 App 內容已整理並檢查完成。" },
   INTERRUPTED: { title: "已暫停等待", detail: "你的內容還在，可以從這裡繼續。" }
 } as const;
-
-const RECOVERY_DETAIL: Readonly<Record<RecoveryReason, string>> = {
-  RETRYABLE: "連線或服務暫時沒有回應，可以再試一次。",
-  STALE_VERSION: "這個需求剛在其他地方更新過，請重新整理後再確認。",
-  MALFORMED: "這次收到的結果不完整，我們沒有顯示或自動接受任何設定。",
-  NOT_FOUND: "找不到這個需求的進度，可以用同樣的內容重新整理。",
-  REJECTED: "這個內容目前無法處理，請修改後再試。"
-};
 
 const DECISION_LABELS = { ACCEPT: "接受", REJECT: "不使用", EDIT: "修改為" } as const;
 
@@ -148,7 +141,7 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
       <h1 className="workspace-title" tabIndex={-1}>
         目前沒完成，但你的內容還在。
       </h1>
-      <p className="workspace-detail">{RECOVERY_DETAIL[phase.reason]}</p>
+      <p className="workspace-detail">{recoveryDetail(phase.reason, phase.failureCode)}</p>
       <UnsentSummary step={phase.step} />
       <div className="workspace-actions">
         <button type="button" className="btn btn-secondary" onClick={onEditIntent}>
