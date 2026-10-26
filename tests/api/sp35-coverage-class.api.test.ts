@@ -64,6 +64,24 @@ describe("AI-generated semantic needs map only through unambiguous registered cl
     }
   });
 
+  it("maps a read-only numeric count to real reactive data.stat", () => {
+    const coverage = resolveCapabilityCoverage({ requirements: [{
+      ...requirement("counter", "Show remaining shopping item count"),
+      input_types: [], output_types: ["NUMBER"]
+    }] });
+    expect(coverage.status).toBe("FULLY_SUPPORTED");
+    expect(coverage.selected).toEqual([{ id: "data.stat", version: "1.0.0" }]);
+  });
+
+  it("refuses to mistake record-list mutation for a numeric counter", () => {
+    const coverage = resolveCapabilityCoverage({ requirements: [{
+      ...requirement("counter", "Add expenses and update all entries"),
+      input_types: ["RECORD"], output_types: ["LIST", "NUMBER"]
+    }] });
+    expect(coverage.status).toBe("UNSUPPORTED");
+    expect(coverage.selected).toEqual([]);
+  });
+
   it("does not match a made-up interaction class or arbitrary capability", () => {
     const result = resolveCapabilityCoverage({
       requirements: [requirement("unregistered_intent_class", "Display secret data")]
