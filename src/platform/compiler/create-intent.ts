@@ -93,7 +93,13 @@ function acceptAnalysis(output: JsonValue): TrustedIntentState | null {
   try {
     return startIntentClarification({ ...output, analysis_metadata: { ...metadata, prompt_version: PROMPT_A_VERSION } });
   } catch (error: unknown) {
-    if (error instanceof IntentContractError) return null;
+    if (error instanceof IntentContractError) {
+      // Safe production diagnostics: only fixed validator reason codes, never AI output or user text.
+      const reasons = error.violations.slice(0, 6)
+        .map(v => v.reason.replace(/[^A-Z0-9_]/gu, "").slice(0, 55));
+      console.warn("APPF2_MODEL_ANALYSIS_INVALID=" + reasons.join(","));
+      return null;
+    }
     throw error;
   }
 }
