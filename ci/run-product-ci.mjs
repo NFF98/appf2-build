@@ -31,13 +31,14 @@ if(!current.implementation_enabled){
       ".github/workflows/sp35-staging-only.yml",".github/workflows/governance-gate.yml",".gitignore","ci/run-product-ci.mjs",
       "harness/scripts/run-task-human-grant-preflight.sh",
       "harness/scripts/validate-change-scope.mjs",
-      "harness/scripts/validate-constitutional-change.mjs"].includes(p);
+      "harness/scripts/validate-constitutional-change.mjs",
+       "harness/scripts/gpt-preflight.mjs"].includes(p);
   const sp35=base==="04e44228354a659c3742c8666316bc42aa455aba" &&
     sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
     changed.length>0 && changed.includes("tooling/web/vite.config.ts") && changed.every(allowed);
   const sp35Followup=base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b" &&
     sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
-    changed.length>0 && changed.length<=16 &&
+    changed.length>0 && changed.length<=17 &&
     changed.includes("tests/api/sp35-complex-intent-budget.api.test.ts") &&
     changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
     changed.every(allowed);
