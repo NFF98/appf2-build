@@ -12,7 +12,7 @@ export type IntentRouteKey = (typeof INTENT_ROUTE_KEYS)[keyof typeof INTENT_ROUT
 
 /** Shared API rule 12: the lease is the host route's locked server budget (F01 §23), never a hidden timeout. */
 export const ROUTE_LEASE_MS: Readonly<Record<IntentRouteKey, number>> = Object.freeze({
-  [INTENT_ROUTE_KEYS.create]: 20_000,
+  [INTENT_ROUTE_KEYS.create]: 48_000,
   [INTENT_ROUTE_KEYS.answers]: 20_000,
   [INTENT_ROUTE_KEYS.compile]: 30_000
 });
