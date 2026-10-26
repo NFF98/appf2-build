@@ -13,7 +13,8 @@ import {
 } from "../platform/blueprint/worker-postgres-executor.js";
 import { IntentCompilerService } from "../platform/compiler/intent-service.js";
 import { OpenAiCompatibleModelGateway } from "../platform/compiler/openai-compatible-gateway.js";
-import { appf2ModelProviderConfig } from "../platform/compiler/appf2-model-provider.js";
+import { appf2ModelProviderConfig, appf2ModelFallbackConfig } from "../platform/compiler/appf2-model-provider.js";
+import { RateLimitFailoverGateway } from "../platform/compiler/rate-limit-failover-gateway.js";
 import {
   PostgresCompilerRunRepository,
   PostgresIdempotencyRepository,
@@ -41,6 +42,8 @@ export interface Appf2WorkerEnv {
   readonly APPF2_MODEL_API_KEY: string;
   readonly APPF2_MODEL_NAME: string;
   readonly APPF2_MODEL_PROVIDER?: "openai" | "xai" | "deepseek";
+  /** Set only with explicit authorization to send a 429 retry to this provider. */
+  readonly APPF2_MODEL_FALLBACK_PROVIDER?: "xai" | "deepseek";
   readonly APPF2_XAI_API_KEY?: string;
   readonly APPF2_XAI_MODEL_NAME?: string;
   readonly APPF2_DEEPSEEK_API_KEY?: string;
@@ -88,8 +91,9 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
     now: () => new Date()
   });
   const runs = new PostgresCompilerRunRepository(executor);
-  const gateway = new OpenAiCompatibleModelGateway(appf2ModelProviderConfig({
+  const aiConfig = {
     APPF2_MODEL_PROVIDER: env.APPF2_MODEL_PROVIDER,
+    APPF2_MODEL_FALLBACK_PROVIDER: env.APPF2_MODEL_FALLBACK_PROVIDER,
     APPF2_MODEL_BASE_URL: env.APPF2_MODEL_BASE_URL,
     APPF2_MODEL_API_KEY: env.APPF2_MODEL_API_KEY,
     APPF2_MODEL_NAME: env.APPF2_MODEL_NAME,
@@ -99,7 +103,13 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
     APPF2_DEEPSEEK_MODEL_NAME: env.APPF2_DEEPSEEK_MODEL_NAME,
     APPF2_MODEL_INPUT_COST_PER_MILLION: env.APPF2_MODEL_INPUT_COST_PER_MILLION,
     APPF2_MODEL_OUTPUT_COST_PER_MILLION: env.APPF2_MODEL_OUTPUT_COST_PER_MILLION
-  }).config);
+  };
+  const primary = new OpenAiCompatibleModelGateway(appf2ModelProviderConfig(aiConfig).config);
+  const alternative = appf2ModelFallbackConfig(aiConfig);
+  const gateway = alternative === undefined ? primary :
+    new RateLimitFailoverGateway(primary, new OpenAiCompatibleModelGateway(alternative.config));
+  /* Existing compiler request remains one logical operation, even if explicit
+   * failover after 429 uses one consented alternative. */
   const service = new IntentCompilerService({
     intents: new PostgresIntentRepository(executor),
     runs,
