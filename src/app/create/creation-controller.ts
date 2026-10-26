@@ -28,9 +28,11 @@ export type StartOutcome = "STARTED" | "RESUMED" | "IGNORED";
 type Answer = AnswerSubmissionRequest["answers"][number];
 
 /** F01 retry instruction: retryable failures repeat the same logical operation; F01-ERR-004 needs fresh state. */
-function recoveryReason(failure: F01Failure): RecoveryReason {
+export function recoveryReason(failure: F01Failure): RecoveryReason {
   if (failure.kind === "MALFORMED_RESPONSE") return "MALFORMED";
   if (failure.kind !== "API") return "RETRYABLE";
+  if (failure.code === "F01-ERR-002" || failure.code === "F01-ERR-007" || failure.code === "F01-ERR-010") return "MODEL_INVALID";
+  if (failure.code === "F01-ERR-009") return "MODEL_TIMEOUT";
   if (failure.code === "F01-ERR-004") return "STALE_VERSION";
   if (failure.code === "F01-ERR-015") return "NOT_FOUND";
   return failure.retryable ? "RETRYABLE" : "REJECTED";
