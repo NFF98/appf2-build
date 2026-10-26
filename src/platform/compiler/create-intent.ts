@@ -23,6 +23,7 @@ import {
   type ResolvedServiceDependencies
 } from "./intent-operation.js";
 import { RequestDeadline } from "./model-gateway.js";
+import { normalizeAnalysisDescriptorFlags } from "./normalize-analysis-shape.js";
 import { ANALYSIS_RESPONSE_SCHEMA, ENVELOPE_VERSION, PROMPT_A_VERSION } from "./prompts.js";
 import { StaleAttemptError, callProviderWithBoundedRetry, type ProviderCallSuccess } from "./provider-attempts.js";
 
@@ -91,7 +92,7 @@ function acceptAnalysis(output: JsonValue): TrustedIntentState | null {
   if (!isPlainRecord(output)) return null;
   const metadata = isPlainRecord(output.analysis_metadata) ? output.analysis_metadata : {};
   try {
-    return startIntentClarification({ ...output, analysis_metadata: { ...metadata, prompt_version: PROMPT_A_VERSION } });
+    return startIntentClarification({ ...normalizeAnalysisDescriptorFlags(output) as typeof output, analysis_metadata: { ...metadata, prompt_version: PROMPT_A_VERSION } });
   } catch (error: unknown) {
     if (error instanceof IntentContractError) {
       // Safe production diagnostics: only fixed validator reason codes, never AI output or user text.
