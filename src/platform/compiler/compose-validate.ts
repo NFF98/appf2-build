@@ -50,7 +50,7 @@ type ValidationIssueFeedback = {
   readonly repair_hint?: string;
 };
 
-function canonicalRepairHint(code: string, stage: string, path: string): string | undefined {
+export function canonicalRepairHint(code: string, stage: string, path: string): string | undefined {
   if (code === "F02-ERR-007" && stage === "V06" && /^\$\.nodes\[\d+\]$/.test(path)) {
     return "Orphan node: connect this node to exactly one reachable parent.children from root_node_id. Every node must belong to ONE rooted tree.";
   }
