@@ -54,6 +54,8 @@ export type F01Failure =
       readonly retryable: boolean;
       readonly httpStatus: number;
       readonly violations: readonly { readonly path: string; readonly reason: string }[];
+      readonly unsupportedFeatures: readonly string[];
+      readonly unsupportedCount: number;
     }
   | { readonly kind: "NETWORK" }
   | { readonly kind: "IDENTITY_UNAVAILABLE" }
@@ -167,11 +169,23 @@ function readViolations(details: unknown): { path: string; reason: string }[] {
   );
 }
 
+/** F04 diagnostics are owned by the same authorized request, never model traces. */
+function readUnsupported(details: unknown): { unsupportedFeatures: string[]; unsupportedCount: number } {
+  if (!isRecord(details) || !Array.isArray(details.unsupported_features) ||
+      !Number.isSafeInteger(details.unsupported_count) || (details.unsupported_count as number) < 0) {
+    return { unsupportedFeatures: [], unsupportedCount: 0 };
+  }
+  const unsupportedFeatures = details.unsupported_features.slice(0, 6).filter(
+    (value): value is string => typeof value === "string" && value.length > 0 && value.length <= 160
+  );
+  return { unsupportedFeatures, unsupportedCount: details.unsupported_count as number };
+}
+
 /** Shared API §6 stable error envelope → bounded failure; message text and stacks are never surfaced. */
 export function readFailure(httpStatus: number, body: unknown): F01Failure {
   const error = isRecord(body) ? body.error : undefined;
   if (!isRecord(error) || typeof error.code !== "string" || typeof error.retryable !== "boolean") return { kind: "MALFORMED_RESPONSE" };
-  return { kind: "API", code: error.code, retryable: error.retryable, httpStatus, violations: readViolations(error.details) };
+  return { kind: "API", code: error.code, retryable: error.retryable, httpStatus, violations: readViolations(error.details), ...readUnsupported(error.details) };
 }
 
 export type CreateIntentRequest = {
