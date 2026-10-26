@@ -33,6 +33,8 @@ const STATUS_COPY = {
 
 const RECOVERY_DETAIL: Readonly<Record<RecoveryReason, string>> = {
   RETRYABLE: "連線或服務暫時沒有回應，可以再試一次。",
+  MODEL_INVALID: "AI 已回傳內容，但無法通過 App 需求格式檢查。你的原始需求還在；可以縮小範圍，或重新分析（會再次呼叫 AI）。",
+  MODEL_TIMEOUT: "AI 分析超過時間限制，不是網站斷線。你的需求還在；可以先保留核心功能，或重新分析（會再次呼叫 AI）。",
   STALE_VERSION: "這個需求剛在其他地方更新過，請重新整理後再確認。",
   MALFORMED: "這次收到的結果不完整，我們沒有顯示或自動接受任何設定。",
   NOT_FOUND: "找不到這個需求的進度，可以用同樣的內容重新整理。",
@@ -142,7 +144,7 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
   const phase = session.phase;
   if (phase.kind !== "RECOVERABLE_FAILURE") return null;
   const revisable = phase.step.kind === "ANSWERS" && (phase.reason === "RETRYABLE" || phase.reason === "REJECTED");
-  const reanalysable = phase.reason === "STALE_VERSION" || phase.reason === "MALFORMED" || phase.reason === "NOT_FOUND";
+  const reanalysable = phase.reason === "STALE_VERSION" || phase.reason === "MALFORMED" || phase.reason === "NOT_FOUND" || phase.reason === "MODEL_INVALID" || phase.reason === "MODEL_TIMEOUT";
   return (
     <div className="workspace-card recovery">
       <h1 className="workspace-title" tabIndex={-1}>
@@ -166,7 +168,7 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
         ) : null}
         {reanalysable ? (
           <button type="button" className="btn btn-primary" disabled={session.busy} onClick={() => controller.reanalyze()}>
-            重新整理需求
+            {phase.reason === "MODEL_INVALID" || phase.reason === "MODEL_TIMEOUT" ? "重新分析（再次呼叫 AI）" : "重新整理需求"}
           </button>
         ) : null}
       </div>
