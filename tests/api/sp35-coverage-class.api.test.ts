@@ -30,10 +30,38 @@ describe("AI-generated semantic needs map only through unambiguous registered cl
 
   it("fails closed for a class shared by different capabilities", () => {
     const result = resolveCapabilityCoverage({
-      requirements: [requirement("form", "Unrecognized arbitrary UI request")]
+      requirements: [{ ...requirement("form", "Unrecognized arbitrary UI request"), input_types: ["LIST", "STRING"], output_types: ["LIST"] }]
     });
     expect(result.status).toBe("UNSUPPORTED");
     expect(result.selected).toEqual([]);
+  });
+
+  it("selects a registered text input for exact STRING form input and output", () => {
+    const result = resolveCapabilityCoverage({ requirements: [
+      requirement("form", "Enter a new task title as text")
+    ] });
+    expect(result.status).toBe("FULLY_SUPPORTED");
+    expect(result.selected).toEqual([{ id: "input.text", version: "1.0.0" }]);
+  });
+
+  it("selects a registered toggle for exact BOOLEAN form input and output", () => {
+    const result = resolveCapabilityCoverage({ requirements: [{
+      ...requirement("form", "Toggle task completion"),
+      input_types: ["BOOLEAN"], output_types: ["BOOLEAN"]
+    }] });
+    expect(result.status).toBe("FULLY_SUPPORTED");
+    expect(result.selected).toEqual([{ id: "input.toggle", version: "1.0.0" }]);
+  });
+
+  it("never pretends mixed task CRUD or unknown numeric form input is covered", () => {
+    for (const types of [["STRING", "LIST"], ["NUMBER"]]) {
+      const result = resolveCapabilityCoverage({ requirements: [{
+        ...requirement("form", "Add, edit, delete, complete, group and filter all tasks"),
+        input_types: types, output_types: ["LIST"]
+      }] });
+      expect(result.status).toBe("UNSUPPORTED");
+      expect(result.selected).toEqual([]);
+    }
   });
 
   it("does not match a made-up interaction class or arbitrary capability", () => {
