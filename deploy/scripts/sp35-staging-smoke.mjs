@@ -3,10 +3,28 @@ const raw=process.env.APPF2_STAGING_URL;
 if(!raw) throw new Error("STAGING SMOKE: missing APPF2_STAGING_URL");
 const base=new URL(raw);
 if(base.protocol!=="https:"||base.username||base.password||base.search||base.hash) throw new Error("STAGING SMOKE: require HTTPS origin");
-const get=await fetch(new URL("/api/v1/health",base),{redirect:"error"});
-const getText=await get.text();
+// workers.dev hostname activation can lag a successful upload; test the live
+// API repeatedly rather than treating the first DNS/edge 404 as final proof.
+const sleep = ms => new Promise(resolve => setTimeout(resolve,ms));
+let get, getText="";
+const delays=[0,2500,5000,7500,10000,15000,20000];
+for(let i=0;i<delays.length;i++){
+  if(delays[i]) await sleep(delays[i]);
+  try {
+    get=await fetch(new URL("/api/v1/health",base),{redirect:"error"});
+    getText=await get.text();
+    const ok=get.status===200 && get.headers.get("content-type")?.includes("application/json");
+    console.log("STAGING HEALTH TRY "+(i+1)+": HTTP "+get.status+" content-type="+(get.headers.get("content-type")||"NONE"));
+    if(ok)break;
+  } catch(e){
+    console.error("STAGING HEALTH TRY "+(i+1)+": NETWORK ERROR "+String(e?.name||"unknown"));
+  }
+}
+if(!get)throw new Error("STAGING SMOKE: health request never reached an HTTP server");
 if(get.status!==200 || !get.headers.get("content-type")?.includes("application/json")){
-  throw new Error("STAGING SMOKE: health not Worker JSON, status "+get.status);
+  throw new Error("STAGING SMOKE: health not Worker JSON; status="+get.status+
+    " content-type="+(get.headers.get("content-type")||"NONE")+
+    " body-prefix="+getText.slice(0,120).replaceAll(/[^\\x20-\\x7e]/g,"?"));
 }
 let json;try{json=JSON.parse(getText)}catch{throw new Error("STAGING SMOKE: health JSON parse failed")}
 if(json?.data?.status!=="UP")throw new Error("STAGING SMOKE: Worker health invalid");
