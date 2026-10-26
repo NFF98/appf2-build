@@ -15,17 +15,27 @@ const QUESTIONS: Readonly<Record<string, string>> = {
   ENUM: "SINGLE_CHOICE", LIST: "MULTI_CHOICE", RECORD: "STRUCTURED_FIELDS"
 };
 
+function safePolicyItem(item: JsonValue): boolean {
+  return isPlainRecord(item) && Array.isArray(item.policy_risk_flags) &&
+    item.policy_risk_flags.length === 0 && Array.isArray(item.alternatives);
+}
+
+function actualScalarType(value: JsonValue | undefined): string | null {
+  if (typeof value === "string") return "STRING";
+  if (typeof value === "number") return "NUMBER";
+  if (typeof value === "boolean") return "BOOLEAN";
+  return null;
+}
+
 function fixScalarMetadata(item: JsonValue): JsonValue {
-  if (!isPlainRecord(item) || !Array.isArray(item.policy_risk_flags) ||
-      item.policy_risk_flags.length !== 0 || !Array.isArray(item.alternatives)) return item;
+  if (!isPlainRecord(item) || !safePolicyItem(item)) return item;
   const value = item.resolution_state === "CONFIRMED" ? item.resolved_value :
     item.resolution_state === "PROPOSED" ? item.proposed_default : undefined;
-  if (value === undefined || value === null ||
-      (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean")) return item;
-  // The actual scalar is never modified; only erroneous model-selected UI metadata.
-  const scalarType = typeof value === "string" ? "STRING" :
-    typeof value === "number" ? "NUMBER" : "BOOLEAN";
-  const enumMatches = item.expected_value_type === "ENUM" &&
+  const scalarType = actualScalarType(value);
+  if (scalarType === null) return item;
+  // Only presentation/type metadata changes: no user value, safety flag,
+  // policy decision or dependency is created, discarded or modified.
+  const enumMatches = item.expected_value_type === "ENUM" && Array.isArray(item.alternatives) &&
     item.alternatives.some(option => option === value);
   const expectedType = enumMatches ? "ENUM" : scalarType;
   const requiredQuestion = QUESTIONS[expectedType];
