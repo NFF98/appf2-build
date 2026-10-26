@@ -46,6 +46,7 @@ const PROMPT_B_POLICY = [
   "State map entries use {mode:MUTABLE,type,initial} or {mode:DERIVED,type,expr}; actions have {id:action_...,steps:[...]} and steps have type SET_STATE, INVOKE_CAPABILITY, or RESET_STATE. Do not invent unknown actions.",
   "CRITICAL: Every state and rule result_type MUST be one of the exact uppercase descriptors NUMBER, STRING, BOOLEAN, ENUM, LIST, RECORD. Array of tasks is LIST, never ARRAY or OBJECT. Object records are RECORD. Match MUTABLE initial values to that descriptor and follow compiler_catalog constraints.",
   "Always use only compiler_catalog capability IDs and versions. Do not add unlisted capabilities. Follow the capability prop, binding and event contracts exactly, including required properties and types.",
+  "For layout.container: set props.direction to LITERAL ROW or COLUMN; props.gap to LITERAL NONE/XS/SM/MD/LG/XL; props.align to LITERAL START/CENTER/END/STRETCH. Never use LEFT, RIGHT, MIDDLE, TOP, BOTTOM, center, horizontal or vertical.",
   "Copy node.capability.id and node.capability.version EXACTLY from compiler_catalog, including dots and numeric version (e.g. layout.container and 1.0.0). Never use a display label, nickname, invented alias or underscore substitute. Use only the selected compiler_catalog entries.",
   "When previous_validation_issues is nonempty, correct those exact error_code/json_path issues. Do not repeat an incomplete top-level Blueprint or remove User facts.",
   "Before output, self-check all 11 top-level fields, nonempty nodes, valid node_ root, and every nested required field. Output the full Blueprint, not a partial plan or explanatory text."
@@ -192,12 +193,22 @@ const BP_VALUE = { type: "object", required: ["kind"],
     path: { type: "string" }, name: { type: "string" },
     op: { type: "string" }, args: { type: "array", items: { type: "object" } }
   } };
+const BP_STYLE_LITERAL = (values: readonly string[]) => ({
+  type: "object", additionalProperties: false, required: ["kind", "value"],
+  properties: { kind: { const: "LITERAL" }, value: { type: "string", enum: values } }
+});
 const BP_NODE = { type: "object", additionalProperties: false,
   required: ["id", "capability", "props", "bindings", "events", "children"],
   properties: {
     id: { type: "string", pattern: "^node_[a-z0-9_]+$" },
     capability: BP_REF,
-    props: { type: "object", additionalProperties: BP_VALUE },
+    props: { type: "object", additionalProperties: BP_VALUE,
+      properties: {
+        align: BP_STYLE_LITERAL(["START", "CENTER", "END", "STRETCH"]),
+        direction: BP_STYLE_LITERAL(["ROW", "COLUMN"]),
+        gap: BP_STYLE_LITERAL(["NONE", "XS", "SM", "MD", "LG", "XL"]),
+        role: BP_STYLE_LITERAL(["BODY", "LABEL", "HEADING", "CAPTION"])
+      } },
     bindings: { type: "object", additionalProperties: BP_VALUE },
     events: { type: "object", additionalProperties: { type: "string" } },
     children: { type: "array", items: { type: "string" } },
