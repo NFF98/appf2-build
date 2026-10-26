@@ -42,7 +42,7 @@ const blueprint = () => blueprintWith({
       props: { label: lit("Done") }, events: { press: "action_complete" }
     })
   ]
-});
+}, ["node_list"]);
 
 describe("Sprint 3.5 complete task Blueprint through actual F02/F03 gate", () => {
   it("admits the real Blueprint and commits a repeated-row button action", async () => {
