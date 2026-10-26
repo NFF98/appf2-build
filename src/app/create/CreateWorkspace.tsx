@@ -39,6 +39,13 @@ const RECOVERY_DETAIL: Readonly<Record<RecoveryReason, string>> = {
   REJECTED: "這個內容目前無法處理，請修改後再試。"
 };
 
+const SPECIFIC_FAILURE_DETAIL: Readonly<Record<string, string>> = {
+  "F01-ERR-002": "AI 已回覆，但需求分析的資料格式不符合要求。原文仍保留；可先縮小範圍再試。",
+  "F01-ERR-009": "AI 分析超過時間上限。原文仍保留；複雜需求可分成幾個步驟建立。",
+  "F01-ERR-011": "AI 產生的 App 未通過正式規格檢查。原文仍保留，可修改後再試。",
+  "F01-ERR-008": "目前的元件還不支援部分要求。原文仍保留，可先建立支援的核心功能。"
+};
+
 const DECISION_LABELS = { ACCEPT: "接受", REJECT: "不使用", EDIT: "修改為" } as const;
 
 function ProvidedSummary({ provided }: { readonly provided: readonly ProvidedAnswer[] }) {
