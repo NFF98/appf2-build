@@ -37,6 +37,14 @@ const model = bootstrapOnly ? null : required("APPF2_MODEL_NAME");
 const token = required("CLOUDFLARE_API_TOKEN");
 const account = required("CLOUDFLARE_ACCOUNT_ID");
 const modelSecret = bootstrapOnly ? null : required("APPF2_MODEL_API_KEY");
+const provider = process.env.APPF2_MODEL_PROVIDER?.trim().toLowerCase() || "openai";
+if (!["openai", "xai", "deepseek"].includes(provider)) {
+  throw new Error("STAGING PRECHECK: invalid APPF2_MODEL_PROVIDER");
+}
+const xaiKey = bootstrapOnly ? null : process.env.APPF2_XAI_API_KEY?.trim();
+const deepseekKey = bootstrapOnly ? null : process.env.APPF2_DEEPSEEK_API_KEY?.trim();
+if (!bootstrapOnly && provider === "xai" && !xaiKey) throw new Error("STAGING PRECHECK: missing APPF2_XAI_API_KEY");
+if (!bootstrapOnly && provider === "deepseek" && !deepseekKey) throw new Error("STAGING PRECHECK: missing APPF2_DEEPSEEK_API_KEY");
 const cookieSecret = bootstrapOnly ? randomBytes(48).toString("base64url") : required("APPF2_IDENTITY_COOKIE_SECRET");
 if (cookieSecret.length < 32) throw new Error("STAGING PRECHECK: identity secret too short");
 if (!fs.existsSync(path.join(process.cwd(), "dist/web/index.html"))) {
@@ -62,13 +70,18 @@ const config = {
   ...(bootstrapOnly ? {} : {hyperdrive}),
   ...(bootstrapOnly ? {} : {vars: {
     APPF2_MODEL_BASE_URL: modelBase.toString(),
-    APPF2_MODEL_NAME: model
+    APPF2_MODEL_NAME: model,
+    APPF2_MODEL_PROVIDER: provider,
+    ...(process.env.APPF2_XAI_MODEL_NAME?.trim() ? {APPF2_XAI_MODEL_NAME: process.env.APPF2_XAI_MODEL_NAME.trim()} : {}),
+    ...(process.env.APPF2_DEEPSEEK_MODEL_NAME?.trim() ? {APPF2_DEEPSEEK_MODEL_NAME: process.env.APPF2_DEEPSEEK_MODEL_NAME.trim()} : {})
   }})
 };
 try {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", { flag: "wx", mode: 0o600 });
   fs.writeFileSync(secretsPath, JSON.stringify({
     ...(bootstrapOnly ? {} : {APPF2_MODEL_API_KEY: modelSecret}),
+    ...(xaiKey ? {APPF2_XAI_API_KEY: xaiKey} : {}),
+    ...(deepseekKey ? {APPF2_DEEPSEEK_API_KEY: deepseekKey} : {}),
     APPF2_IDENTITY_COOKIE_SECRET: cookieSecret
   }), { flag: "wx", mode: 0o600 });
   const r = spawnSync(
@@ -80,7 +93,9 @@ try {
   );
   const redact = value => String(value || "")
     .replaceAll(token, "[REDACTED]").replaceAll(cookieSecret, "[REDACTED]")
-    .replaceAll(modelSecret || "[NO_MODEL_SECRET]", "[REDACTED]");
+    .replaceAll(modelSecret || "[NO_MODEL_SECRET]", "[REDACTED]")
+    .replaceAll(xaiKey || "[NO_XAI_SECRET]", "[REDACTED]")
+    .replaceAll(deepseekKey || "[NO_DEEPSEEK_SECRET]", "[REDACTED]");
   process.stdout.write(redact(r.stdout));
   process.stderr.write(redact(r.stderr));
   if (r.status !== 0) throw new Error("STAGING DEPLOY: Wrangler failed (exit " + r.status + ")");
