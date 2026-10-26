@@ -50,6 +50,7 @@ const PROMPT_B_POLICY = [
   "For layout.container: set props.direction to LITERAL ROW or COLUMN; props.gap to LITERAL NONE/XS/SM/MD/LG/XL; props.align to LITERAL START/CENTER/END/STRETCH. Never use LEFT, RIGHT, MIDDLE, TOP, BOTTOM, center, horizontal or vertical.",
   "Copy node.capability.id and node.capability.version EXACTLY from compiler_catalog, including dots and numeric version (e.g. layout.container and 1.0.0). Never use a display label, nickname, invented alias or underscore substitute. Use only the selected compiler_catalog entries.",
   "When previous_validation_issues is nonempty, correct those exact error_code/json_path issues. Do not repeat an incomplete top-level Blueprint or remove User facts.",
+  "CRITICAL: result.outputs[].value must never be a composite LITERAL (object or array). For an output list or record use a typed STATE reference {kind:STATE,key:<declared state key>}. For a simple static text output use {kind:LITERAL,value:<string>}. Uncontextualized composite literal outputs fail F02 V07 validation.",
   "Before output, self-check all 11 top-level fields, nonempty nodes, valid node_ root, and every nested required field. Output the full Blueprint, not a partial plan or explanatory text."
 ].join("\n");
 
@@ -256,7 +257,7 @@ export const COMPOSE_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
       properties: { outputs: { type: "array", items: { type: "object",
         required: ["id", "label", "value", "sensitivity"],
         properties: { id: { type: "string" }, label: { type: "string" },
-          value: BP_VALUE, sensitivity: { enum: ["NORMAL", "SENSITIVE", "DO_NOT_PERSIST"] } } } } } }
+          value: { ...BP_VALUE, properties: { ...BP_VALUE.properties, value: { type: ["string", "number", "boolean"] } } }, sensitivity: { enum: ["NORMAL", "SENSITIVE", "DO_NOT_PERSIST"] } } } } } }
   }
 });
 
