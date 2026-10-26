@@ -144,6 +144,18 @@ function DecisionBody({ session, controller, onEditIntent }: BodyProps) {
   );
 }
 
+function MissingFeatureNotice({ features, total }: { readonly features?: readonly string[]; readonly total?: number }) {
+  if (features === undefined || features.length === 0) return null;
+  const remaining = Math.max(0, (total ?? features.length) - features.length);
+  return (
+    <div className="workspace-detail">
+      <p>目前尚無法提供的必要功能（不是已完成的 App）：</p>
+      <ul>{features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+      {remaining > 0 ? <p>另外還有 {remaining} 項尚未支援。</p> : null}
+    </div>
+  );
+}
+
 /** F12 recovery: only actions that can actually help — no Retry when the identical request must fail again. */
 function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
   const phase = session.phase;
@@ -156,16 +168,7 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
         目前沒完成，但你的內容還在。
       </h1>
       <p className="workspace-detail">{phase.code !== undefined ? (SPECIFIC_FAILURE_DETAIL[phase.code] ?? RECOVERY_DETAIL[phase.reason]) : RECOVERY_DETAIL[phase.reason]}</p>
-      {phase.code === "F01-ERR-008" && (phase.unsupportedFeatures?.length ?? 0) > 0 ? (
-        <div className="workspace-detail">
-          <p>目前尚無法提供的必要功能（不是已完成的 App）：</p>
-          <ul>
-            {phase.unsupportedFeatures?.map((feature, index) => <li key={index}>{feature}</li>)}
-          </ul>
-          {(phase.unsupportedCount ?? 0) > (phase.unsupportedFeatures?.length ?? 0) ?
-            <p>另外還有 {(phase.unsupportedCount ?? 0) - (phase.unsupportedFeatures?.length ?? 0)} 項尚未支援。</p> : null}
-        </div>
-      ) : null}
+      {phase.code === "F01-ERR-008" ? <MissingFeatureNotice features={phase.unsupportedFeatures} total={phase.unsupportedCount} /> : null}
       {phase.code !== undefined ? <p className="workspace-detail">錯誤代碼：{phase.code}</p> : null}
       <UnsentSummary step={phase.step} />
       <div className="workspace-actions">
