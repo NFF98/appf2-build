@@ -47,6 +47,8 @@ const PROMPT_B_POLICY = [
   "CRITICAL V02: nodes[].repeat may be present ONLY when allowed by that capability; content.list REQUIRES repeat:{items:{kind:STATE,key:declared_list_state},item_alias:item,max_items:30}. All repeat aliases must be canonical lowercase identifiers, and max_items must be an INTEGER within 0..500. Other leaf nodes should OMIT repeat instead of using null or an empty object.",
   "CRITICAL: EVERY rules[] entry MUST have an id matching ^rule_[a-z0-9_]{1,58}$ exactly. Use rule_task_total, not task_total; every RULE ValueSource.rule_id must reference that exact id. All rule names must be unique.",
   "Each capability prop and binding is a ValueSource object: {kind:LITERAL,value:non-null JSON}, {kind:STATE,key}, {kind:EVENT,path}, {kind:RULE,rule_id}, {kind:SCOPE,name,path}, or {kind:OP,op,args}. NEVER put a raw primitive directly into node props/bindings.",
+  "CRITICAL F02 V07: ValueSource OP.op MUST be one of the 32 exact supported uppercase operations: ADD, SUB, MUL, DIV, MOD, ABS, ROUND, FLOOR, CEIL, MIN, MAX, EQ, NEQ, GT, GTE, LT, LTE, AND, OR, NOT, IF, COALESCE, LENGTH, COUNT, SUM, AVG, LIST_MIN, LIST_MAX, CONCAT, LOWER, UPPER, TRIM. NEVER invent operations such as FILTER, MAP, PUSH, APPEND, REMOVE, UPDATE, ANY, ALL, REDUCE, FORMAT, DATE, JOIN, or TODAY. If list CRUD requires unavailable operators, do not fake it; stay within registered capability support and report an unsupported limitation.",
+  "For count of a LIST use {kind:OP,op:COUNT,args:[{kind:STATE,key:declared_list_state}]}; for totals use SUM only on LIST of NUMBER; for text labels use CONCAT with STRING operands; for boolean condition use IF with exactly three arguments. All OP.args elements must be complete ValueSources, never raw primitives.",
   "CRITICAL V02: ValueSource fields depend EXACTLY on kind. STATE has only kind/key; EVENT only kind/path; SCOPE only kind/name/path; RULE only kind/rule_id; LITERAL only kind/value; OP only kind/op/args. Never mix these fields or include extras.",
   "CRITICAL V02: Every STATE key and SCOPE name must match ^[a-z][a-z0-9_]{0,63}$; EVENT.path and SCOPE.path must be empty or lowercase snake_case dot-separated segments. Do not use $, /, brackets, camelCase, indexes, or special characters in paths.",
   "State map entries use {mode:MUTABLE,type,initial} or {mode:DERIVED,type,expr}; actions have {id:action_...,steps:[...]} and steps have type SET_STATE, INVOKE_CAPABILITY, or RESET_STATE. Do not invent unknown actions.",
@@ -216,7 +218,7 @@ const BP_VALUE_BRANCHES: JsonRecord[] = [
   { type: "object", additionalProperties: false, required: ["kind", "name", "path"],
     properties: { kind: { const: "SCOPE" }, name: BP_IDENTIFIER, path: BP_PATH } },
   { type: "object", additionalProperties: false, required: ["kind", "op", "args"],
-    properties: { kind: { const: "OP" }, op: { type: "string" },
+    properties: { kind: { const: "OP" }, op: { type: "string", enum: ["ADD", "SUB", "MUL", "DIV", "MOD", "ABS", "ROUND", "FLOOR", "CEIL", "MIN", "MAX", "EQ", "NEQ", "GT", "GTE", "LT", "LTE", "AND", "OR", "NOT", "IF", "COALESCE", "LENGTH", "COUNT", "SUM", "AVG", "LIST_MIN", "LIST_MAX", "CONCAT", "LOWER", "UPPER", "TRIM"] },
       args: { type: "array", items: { type: "object" } } } }
 ];
 const BP_VALUE: JsonRecord = { anyOf: BP_VALUE_BRANCHES };
