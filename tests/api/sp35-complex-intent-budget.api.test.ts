@@ -84,6 +84,9 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     expect(new RegExp(children.items.pattern).test("not_registered_node")).toBe(false);
     expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("Input/text/button/stat leaf nodes always have children:[]");
   });
+});
+
+describe("Sprint 3.5 Blueprint operator compliance", () => {
   it("exposes only Runtime-implemented operators to F02, not invented list CRUD", () => {
     const schema = COMPOSE_RESPONSE_SCHEMA as unknown as {
       properties: { nodes: { items: { properties: { bindings: {
