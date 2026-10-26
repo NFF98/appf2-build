@@ -49,6 +49,7 @@ const PROMPT_B_POLICY = [
   "Each capability prop and binding is a ValueSource object: {kind:LITERAL,value:non-null JSON}, {kind:STATE,key}, {kind:EVENT,path}, {kind:RULE,rule_id}, {kind:SCOPE,name,path}, or {kind:OP,op,args}. NEVER put a raw primitive directly into node props/bindings.",
   "CRITICAL F02 V07: ValueSource OP.op MUST be one of the 32 exact supported uppercase operations: ADD, SUB, MUL, DIV, MOD, ABS, ROUND, FLOOR, CEIL, MIN, MAX, EQ, NEQ, GT, GTE, LT, LTE, AND, OR, NOT, IF, COALESCE, LENGTH, COUNT, SUM, AVG, LIST_MIN, LIST_MAX, CONCAT, LOWER, UPPER, TRIM. NEVER invent operations such as FILTER, MAP, PUSH, APPEND, REMOVE, UPDATE, ANY, ALL, REDUCE, FORMAT, DATE, JOIN, or TODAY. If list CRUD requires unavailable operators, do not fake it; stay within registered capability support and report an unsupported limitation.",
   "For count of a LIST use {kind:OP,op:COUNT,args:[{kind:STATE,key:declared_list_state}]}; for totals use SUM only on LIST of NUMBER; for text labels use CONCAT with STRING operands; for boolean condition use IF with exactly three arguments. All OP.args elements must be complete ValueSources, never raw primitives.",
+  "CRITICAL nested F02 V07: the OP whitelist applies recursively to EVERY OP inside OP.args, including rules[0].expr.args[0].op. Never insert FILTER/MAP/REDUCE or any unsupported nested operator. For progress on a list of RECORDs, COUNT returns total entries, NOT count of done items; do not claim it computes completion percentages or filtered counts.",
   "CRITICAL V02: ValueSource fields depend EXACTLY on kind. STATE has only kind/key; EVENT only kind/path; SCOPE only kind/name/path; RULE only kind/rule_id; LITERAL only kind/value; OP only kind/op/args. Never mix these fields or include extras.",
   "CRITICAL V02: Every STATE key and SCOPE name must match ^[a-z][a-z0-9_]{0,63}$; EVENT.path and SCOPE.path must be empty or lowercase snake_case dot-separated segments. Do not use $, /, brackets, camelCase, indexes, or special characters in paths.",
   "State map entries use {mode:MUTABLE,type,initial} or {mode:DERIVED,type,expr}; actions have {id:action_...,steps:[...]} and steps have type SET_STATE, INVOKE_CAPABILITY, or RESET_STATE. Do not invent unknown actions.",
@@ -219,7 +220,7 @@ const BP_VALUE_BRANCHES: JsonRecord[] = [
     properties: { kind: { const: "SCOPE" }, name: BP_IDENTIFIER, path: BP_PATH } },
   { type: "object", additionalProperties: false, required: ["kind", "op", "args"],
     properties: { kind: { const: "OP" }, op: { type: "string", enum: ["ADD", "SUB", "MUL", "DIV", "MOD", "ABS", "ROUND", "FLOOR", "CEIL", "MIN", "MAX", "EQ", "NEQ", "GT", "GTE", "LT", "LTE", "AND", "OR", "NOT", "IF", "COALESCE", "LENGTH", "COUNT", "SUM", "AVG", "LIST_MIN", "LIST_MAX", "CONCAT", "LOWER", "UPPER", "TRIM"] },
-      args: { type: "array", items: { type: "object" } } } }
+      args: { type: "array", items: { $ref: "#/$defs/valueSource" } } } }
 ];
 const BP_VALUE: JsonRecord = { anyOf: BP_VALUE_BRANCHES };
 const BP_OUTPUT_VALUE: JsonRecord = { anyOf: [
@@ -252,6 +253,7 @@ const BP_NODE = { type: "object", additionalProperties: false,
   } };
 export const COMPOSE_RESPONSE_SCHEMA: JsonRecord = Object.freeze({
   type: "object",
+  $defs: { valueSource: BP_VALUE },
   additionalProperties: false,
   required: [
     "schema_version", "registry_version", "kind", "meta", "support",
