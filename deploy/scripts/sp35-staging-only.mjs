@@ -21,6 +21,7 @@ const IDs = [
 ];
 const hyperdrive = IDs.map(([binding, env]) => ({ binding, id: required(env) }));
 const modelBase = new URL(required("APPF2_MODEL_BASE_URL"));
+if (modelBase.username || modelBase.password) throw new Error("STAGING PRECHECK: model URL cannot include credentials");
 if (modelBase.protocol !== "https:") throw new Error("STAGING PRECHECK: model URL must be HTTPS");
 const model = required("APPF2_MODEL_NAME");
 const token = required("CLOUDFLARE_API_TOKEN");
@@ -61,9 +62,9 @@ try {
     APPF2_IDENTITY_COOKIE_SECRET: cookieSecret
   }), { flag: "wx", mode: 0o600 });
   const r = spawnSync(
-    "npx",
+    process.platform === "win32" ? "npx.cmd" : "npx",
     ["--yes", "wrangler@4.135.0", "deploy", "--config", path.basename(configPath), "--secrets-file", path.basename(secretsPath)],
-    { stdio: "inherit", env: { ...process.env, CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: account }, shell: false }
+    { stdio: "inherit", env: { ...process.env, CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: account }, shell: process.platform === "win32" }
   );
   if (r.status !== 0) throw new Error("STAGING DEPLOY: Wrangler failed (exit " + r.status + ")");
   console.log("STAGING DEPLOY: command succeeded; LIVE AI/PG E2E NOT VERIFIED");
