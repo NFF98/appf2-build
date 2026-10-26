@@ -11,6 +11,15 @@ if(get.status!==200 || !get.headers.get("content-type")?.includes("application/j
 let json;try{json=JSON.parse(getText)}catch{throw new Error("STAGING SMOKE: health JSON parse failed")}
 if(json?.data?.status!=="UP")throw new Error("STAGING SMOKE: Worker health invalid");
 console.log("STAGING SMOKE: GET /api/v1/health 200 JSON UP");
+// Worker must also deliver the real SPA on the SAME origin; checking API alone
+// can falsely pass while Browser still loads an unrelated Vite static preview.
+const home=await fetch(new URL("/",base),{redirect:"error"});
+const html=await home.text();
+if(home.status!==200 || !home.headers.get("content-type")?.includes("text/html") ||
+   !html.includes('id="root"')){
+  throw new Error("STAGING SMOKE: real SPA not delivered on same Worker origin (status "+home.status+")");
+}
+console.log("STAGING SMOKE: GET / 200 real SPA on SAME origin");
 const post=await fetch(new URL("/api/v1/intents",base),{
   method:"POST",headers:{"Content-Type":"application/json","Origin":base.origin},
   body:JSON.stringify({intent_kind:"CREATE",raw_intent:"smoke unauthorized"})
