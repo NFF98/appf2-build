@@ -234,9 +234,13 @@ function orderedCandidates(
   const classMatches = state.definitionsBySemanticNeed.get(requirement.interaction_class) ?? [];
   const typedForm = typedFormCandidate(requirement, classMatches);
   const numericCounter = typedNumericCounter(requirement, state.definitionsByRef);
-  const semanticMatches = exact.length > 0 ? exact :
-    classMatches.length === 1 ? classMatches :
-      typedForm.length === 1 ? typedForm : numericCounter;
+  // The "counter" class also denotes mutable logic.score in the registry.
+  // Only a display-only NUMBER requirement maps to data.stat; mutating or
+  // list-shaped counter demands must not silently become a scoring widget.
+  const semanticMatches = requirement.interaction_class === "counter" ? numericCounter :
+    exact.length > 0 ? exact :
+      classMatches.length === 1 ? classMatches :
+        typedForm.length === 1 ? typedForm : [];
   const matchingRefs = new Set(semanticMatches.map((definition) => refKey(toRef(definition))));
   const suggestedRefs = request.suggestedCapabilities?.[requirement.requirement_id] ?? [];
   recordUnregisteredSuggestions(suggestedRefs, state);
