@@ -33,6 +33,8 @@ const STATUS_COPY = {
 
 const RECOVERY_DETAIL: Readonly<Record<RecoveryReason, string>> = {
   RETRYABLE: "連線或服務暫時沒有回應，可以再試一次。",
+  AI_FORMAT: "AI 已回覆，但需求格式不符合檢查，尚未建立 App。完整需求已保留；再次嘗試可能產生 AI 費用。",
+  AI_TIMEOUT: "AI 分析超過等待時間，這次尚未建立 App。完整需求已保留；再次嘗試可能產生 AI 費用。",
   STALE_VERSION: "這個需求剛在其他地方更新過，請重新整理後再確認。",
   MALFORMED: "這次收到的結果不完整，我們沒有顯示或自動接受任何設定。",
   NOT_FOUND: "找不到這個需求的進度，可以用同樣的內容重新整理。",
@@ -159,7 +161,7 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
             回去修改
           </button>
         ) : null}
-        {phase.reason === "RETRYABLE" ? (
+        {phase.reason === "RETRYABLE" || phase.reason === "AI_FORMAT" || phase.reason === "AI_TIMEOUT" ? (
           <button type="button" className="btn btn-primary" disabled={session.busy} onClick={() => controller.retry()}>
             再試一次
           </button>
