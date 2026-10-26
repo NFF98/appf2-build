@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { INTENT_ROUTE_KEYS, ROUTE_LEASE_MS } from "../../src/platform/compiler/idempotency.js";
+import { accumulateValidationIssues } from "../../src/platform/compiler/compose-validate.js";
 import { BLUEPRINT_ATTEMPT_TIMEOUTS_MS, MAX_PROVIDER_ATTEMPTS, MODEL_OPERATION_TIMEOUT_MS, RequestDeadline } from "../../src/platform/compiler/model-gateway.js";
 import { BlueprintAttemptBudget } from "../../src/platform/compiler/provider-attempts.js";
 import { COMPOSE_RESPONSE_SCHEMA, SYSTEM_POLICY } from "../../src/platform/compiler/prompts.js";
@@ -51,6 +52,27 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     ]);
     expect(new RegExp(variants[4].properties.path.pattern ?? "").test("$.wrong")).toBe(false);
     expect(new RegExp(variants[4].properties.path.pattern ?? "").test("item.title")).toBe(true);
+  });
+
+  it("remembers distinct F02 V02 and V05 errors across all three attempts", () => {
+    const wrongRepeat = { error_code: "F02-ERR-002", stage: "V02", json_path: "$.nodes[3].repeat.max_items" };
+    const wrongState = { error_code: "F02-ERR-006", stage: "V05", json_path: "$.state.today_tasks.constraints" };
+    const first = accumulateValidationIssues([], [wrongRepeat]);
+    const second = accumulateValidationIssues(first, [wrongState]);
+    const third = accumulateValidationIssues(second, [wrongRepeat]);
+    expect(first).toEqual([wrongRepeat]);
+    expect(second).toEqual([wrongRepeat, wrongState]);
+    expect(third).toEqual([wrongRepeat, wrongState]);
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("EVERY listed error path");
+  });
+
+  it("constrains repeat.max_items to F02 V02's actual integer 0..500 range", () => {
+    const schema = COMPOSE_RESPONSE_SCHEMA as unknown as {
+      properties: { nodes: { items: { properties: { repeat: { properties: { max_items: { type: string; minimum: number; maximum: number } } } } } } }
+    };
+    expect(schema.properties.nodes.items.properties.repeat.properties.max_items).toEqual({
+      type: "integer", minimum: 0, maximum: 500
+    });
   });
 
   it("still strictly clips each model attempt to remaining lease time", () => {
