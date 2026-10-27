@@ -167,7 +167,7 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
       <h1 className="workspace-title" tabIndex={-1}>
         目前沒完成，但你的內容還在。
       </h1>
-      <p className="workspace-detail">{phase.httpStatus === 429 ? "AI 供應商目前限制請求次數，這不是你的需求內容出錯。內容已保留；請稍後再試，立即反覆重試通常無法解除限流。" : phase.code !== undefined ? (SPECIFIC_FAILURE_DETAIL[phase.code] ?? RECOVERY_DETAIL[phase.reason]) : RECOVERY_DETAIL[phase.reason]}</p>
+      <p className="workspace-detail">{phase.httpStatus === 429 ? "AI 供應商無法處理這次建立，可能是 API 可用點數不足或請求頻率受限，並非你的需求寫錯。內容已保留；若一直出現，需檢查 API 帳單與可用餘額，反覆重試不會補足點數。" : phase.code !== undefined ? (SPECIFIC_FAILURE_DETAIL[phase.code] ?? RECOVERY_DETAIL[phase.reason]) : RECOVERY_DETAIL[phase.reason]}</p>
       {phase.code === "F01-ERR-008" ? <MissingFeatureNotice features={phase.unsupportedFeatures} total={phase.unsupportedCount} /> : null}
       {phase.code !== undefined ? <p className="workspace-detail">錯誤代碼：{phase.code}</p> : null}
       <UnsentSummary step={phase.step} />
