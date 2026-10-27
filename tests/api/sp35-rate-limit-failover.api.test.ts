@@ -32,7 +32,7 @@ function failed(kind: "RATE_LIMITED" | "PROVIDER_5XX" | "TIMEOUT", latency_ms = 
 }
 function gateway(result: ModelGatewayResponse) {
   const composeBlueprint = vi.fn(async (requestValue: ModelGatewayRequest) => { void requestValue; return result; });
-  const analyzeIntent = vi.fn(async (_request: ModelGatewayRequest) => result);
+  const analyzeIntent = vi.fn(async (requestValue: ModelGatewayRequest) => { void requestValue; return result; });
   const model: ModelGateway = {
     modelAdapter: "openai-compatible", composeBlueprint, analyzeIntent,
     health: async () => ({ status: "OK", model_adapter: "openai-compatible" })
