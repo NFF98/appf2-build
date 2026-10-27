@@ -336,6 +336,7 @@ function priorityListControls(b:Builder,p:string,rows:string,maxItems:number): {
   return {controls,masterItems,filteredList};
 }
 
+// eslint-disable-next-line complexity -- Closed row edit, daily date and optional priority filters preserve index safety.
 function recordList(b: Builder, p: string, mod: RecordListModule, daily = false): string {
   if (daily && (mod.record_title_key === "completed_day" || mod.record_done_key === "completed_day"))
     fail("PLAN_SCHEMA_INVALID", "$.record_title_key");
