@@ -244,12 +244,15 @@ jobs:
           PRIMARY_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER || 'openai' }}
           TRIGGER: ${{ github.event_name }}
           ONE_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-LIVE-CREATE-ONCE]') }}
+          BROWSER_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-BROWSER-ONCE]') }}
         run: |
-          if [[ "$TRIGGER" == 'workflow_dispatch' || "$ONE_SHOT" == 'true' ]] || \
-             [[ "$PRIMARY_PROVIDER" == 'openai' && "$HAS_XAI_KEY" == 'true' && "$HAS_XAI_MODEL" == 'true' && ( -z "$CONFIGURED_FALLBACK" || "$CONFIGURED_FALLBACK" == 'xai' ) ]] || \
-             [[ "$HAS_DEEPSEEK_KEY" == 'true' && "$HAS_DEEPSEEK_MODEL" == 'true' && "$CONFIGURED_FALLBACK" == 'deepseek' && "$PRIMARY_PROVIDER" != 'deepseek' ]]; then
+          # No surprise model charges on a push, even when a backup provider is configured.
+          if [[ "$TRIGGER" == 'workflow_dispatch' || "$ONE_SHOT" == 'true' || "$BROWSER_SHOT" == 'true' ]]; then
             echo "APPF2_SP35_LIVE_E2E_ALLOWED=1" >> "$GITHUB_ENV"
             echo "STAGING LIVE E2E: one signed CREATE allowed; no separate probe completion"
+            if [[ "$BROWSER_SHOT" == 'true' ]]; then
+              echo "APPF2_SP35_LIVE_BROWSER_ALLOWED=1" >> "$GITHUB_ENV"
+            fi
           else
             echo "APPF2_SP35_LIVE_E2E_ALLOWED=0" >> "$GITHUB_ENV"
             echo "STAGING LIVE E2E: SKIPPED; last OpenAI 429 and no configured fallback; use manual workflow dispatch to retry when ready"
@@ -284,7 +287,7 @@ jobs:
           JS
           exit "$CREATE_RC"
       - name: Live Chromium real Create App + render + Home navigation
-        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1' && env.APPF2_SP35_LIVE_E2E_ALLOWED == '1'
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1' && env.APPF2_SP35_LIVE_BROWSER_ALLOWED == '1'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
