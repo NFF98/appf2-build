@@ -289,7 +289,7 @@ jobs:
           fi
           if [[ "$COMPLEX_SHOT" == 'true' ]]; then
             echo "APPF2_SP35_BROWSER_COMPLEX_ALLOWED=1" >> "$GITHUB_ENV"
-            echo "STAGING LIVE BROWSER: additional complex model analysis explicitly requested"
+            echo "STAGING LIVE BROWSER: full five-function LifePilot F01-F02-F03 browser E2E explicitly requested"
           fi
       - name: Live signed CREATE with sanitized Cloudflare upstream diagnostics
         if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1' && env.APPF2_SP35_LIVE_CREATE_ALLOWED == '1'
@@ -332,10 +332,12 @@ jobs:
           TAIL_PID=$!
           sleep 8
           set +e
-          if [[ "${APPF2_SP35_BROWSER_MOVING_ALLOWED:-0}" == "1" ]]; then
-            node deploy/scripts/sp35-moving-analysis-e2e.mjs
-          elif [[ "${APPF2_SP35_BROWSER_COMPLEX_ALLOWED:-0}" == "1" ]]; then
+          # Five-function proof takes priority if both one-shot flags are present.
+          # Moving verifies only three functions and MUST NOT silently replace LifePilot.
+          if [[ "${APPF2_SP35_BROWSER_COMPLEX_ALLOWED:-0}" == "1" ]]; then
             node deploy/scripts/sp35-lifepilot-browser-e2e.mjs
+          elif [[ "${APPF2_SP35_BROWSER_MOVING_ALLOWED:-0}" == "1" ]]; then
+            node deploy/scripts/sp35-moving-analysis-e2e.mjs
           else
             node deploy/scripts/sp35-staging-browser-e2e.mjs
           fi
@@ -365,10 +367,10 @@ jobs:
           JS
           exit "$BROWSER_RC"
       - name: Upload real browser screenshot (staging five-feature LifePilot)
-        if: always()
+        if: always() && env.APPF2_SP35_LIVE_BROWSER_ALLOWED == '1'
         uses: actions/upload-artifact@v4
         with:
           name: sp35-staging-browser
           path: ${{ runner.temp }}/appf2-sp35-browser.png
           retention-days: 3
-          if-no-files-found: ignore
+          if-no-files-found: error
