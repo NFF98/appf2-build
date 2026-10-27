@@ -71,6 +71,20 @@ export function openAiCompatibleConfigFromEnv(env: Readonly<Record<string, strin
   return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model, ...(pricing === undefined ? {} : { pricing }) };
 }
 
+/** Never log provider body, arbitrary error strings, request IDs or secrets. */
+const SAFE_UPSTREAM_429_CODES = new Set([
+  "rate_limit_exceeded", "insufficient_quota", "credit_balance_exhausted",
+  "organization_usage_limit_exceeded", "organization_spend_limit_exceeded",
+  "project_spend_limit_exceeded"
+]);
+
+export function safeUpstream429Code(body: unknown): string {
+  if (!isPlainRecord(body) || !isPlainRecord(body.error)) return "unknown";
+  const code = body.error.code;
+  if (typeof code === "string" && SAFE_UPSTREAM_429_CODES.has(code)) return code;
+  return body.error.type === "insufficient_quota" ? "insufficient_quota" : "unknown";
+}
+
 function failureKindForStatus(status: number): ModelFailureKind {
   if (status === 429) return "RATE_LIMITED";
   if (status >= 500) return "PROVIDER_5XX";
@@ -183,27 +197,48 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), request.timeout_ms);
     try {
-      const response = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: this.headers(),
-        body: this.requestBody(request),
-        signal: controller.signal
-      });
-      if (response.status < 200 || response.status >= 300) {
-        // Safe diagnostics only: never log request payload, provider response or bearer key.
-        console.warn("APPF2_MODEL_UPSTREAM_STATUS=" + response.status);
-        return failed(failureKindForStatus(response.status), retryAfterSeconds(response.headers.get("retry-after")));
+      // One bounded retry ONLY for an explicitly identified transient provider
+      // rate limit. Never retry exhausted billing/quota, unknown 429, or other
+      // failures. Keep the operation's original deadline and attempt policy.
+      const maxAttempts = Math.min(2, request.provider_policy.max_attempts);
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const response = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
+          method: "POST",
+          headers: this.headers(),
+          body: this.requestBody(request),
+          signal: controller.signal
+        });
+        if (response.status < 200 || response.status >= 300) {
+          // Safe diagnostics only: never log request payload, provider body or bearer key.
+          console.warn("APPF2_MODEL_UPSTREAM_STATUS=" + response.status);
+          const after = retryAfterSeconds(response.headers.get("retry-after"));
+          if (response.status === 429) {
+            const raw = await response.text().catch(() => "");
+            const code = raw.length <= 8192 ? safeUpstream429Code(parseJson(raw)) : "unknown";
+            console.warn("APPF2_MODEL_UPSTREAM_429_CODE=" + code);
+            const delay = (after ?? 1) * 1000;
+            const remaining = request.timeout_ms - (this.clock() - started);
+            if (code === "rate_limit_exceeded" && attempt + 1 < maxAttempts &&
+                delay <= 2000 && remaining >= delay + 2000 && !controller.signal.aborted) {
+              if (delay > 0) await new Promise<void>(resolve => setTimeout(resolve, delay));
+              if (controller.signal.aborted) return failed("TIMEOUT");
+              continue;
+            }
+          }
+          return failed(failureKindForStatus(response.status), after);
+        }
+        const parsed = parseCompletion(parseJson(await response.text()));
+        if (parsed.output === undefined) return { ...failed("INVALID_OUTPUT"), token_usage: parsed.usage };
+        return {
+          status: "SUCCEEDED",
+          structured_output: parsed.output,
+          provider_metadata: { ...metadata, provider_model: parsed.providerModel ?? this.config.model },
+          token_usage: parsed.usage,
+          latency_ms: Math.max(0, this.clock() - started),
+          estimated_cost: this.estimatedCost(parsed.usage)
+        };
       }
-      const parsed = parseCompletion(parseJson(await response.text()));
-      if (parsed.output === undefined) return { ...failed("INVALID_OUTPUT"), token_usage: parsed.usage };
-      return {
-        status: "SUCCEEDED",
-        structured_output: parsed.output,
-        provider_metadata: { ...metadata, provider_model: parsed.providerModel ?? this.config.model },
-        token_usage: parsed.usage,
-        latency_ms: Math.max(0, this.clock() - started),
-        estimated_cost: this.estimatedCost(parsed.usage)
-      };
+      return failed("RATE_LIMITED");
     } catch (error: unknown) {
       const kind = error instanceof Error ? error.name.replace(/[^A-Za-z]/gu, "").slice(0,32) : "UNKNOWN";
       console.warn("APPF2_MODEL_UPSTREAM_TRANSPORT=" + kind +
