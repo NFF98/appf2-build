@@ -246,6 +246,7 @@ jobs:
           ONE_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-LIVE-CREATE-ONCE]') }}
           BROWSER_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-BROWSER-ONCE]') }}
           COMPLEX_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-COMPLEX-ONCE]') }}
+          TASK_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-TASKS-ONCE]') }}
         run: |
           # Each paid test is an independently authorized, bounded, one-shot choice.
           # Ordinary pushes and configured backups do not trigger paid requests.
@@ -253,9 +254,13 @@ jobs:
             echo "APPF2_SP35_LIVE_CREATE_ALLOWED=1" >> "$GITHUB_ENV"
             echo "STAGING LIVE E2E: signed API CREATE/COMPILE authorized exactly once"
           fi
-          if [[ "$BROWSER_SHOT" == 'true' || "$COMPLEX_SHOT" == 'true' ]]; then
+          if [[ "$BROWSER_SHOT" == 'true' || "$COMPLEX_SHOT" == 'true' || "$TASK_SHOT" == 'true' ]]; then
             echo "APPF2_SP35_LIVE_BROWSER_ALLOWED=1" >> "$GITHUB_ENV"
             echo "STAGING LIVE BROWSER: browser Create App authorized separately"
+          fi
+          if [[ "$TASK_SHOT" == 'true' ]]; then
+            echo "APPF2_SP35_BROWSER_TASKS_ALLOWED=1" >> "$GITHUB_ENV"
+            echo "STAGING LIVE BROWSER: one natural-language task-list create authorized"
           fi
           if [[ "$COMPLEX_SHOT" == 'true' ]]; then
             echo "APPF2_SP35_BROWSER_COMPLEX_ALLOWED=1" >> "$GITHUB_ENV"
@@ -295,6 +300,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_SP35_BROWSER_TASKS_ALLOWED: ${{ env.APPF2_SP35_BROWSER_TASKS_ALLOWED }}
         run: |
           npx playwright install chromium
           npx --yes wrangler@4.135.0 tail appf2-sp35-417-staging --format json > "$RUNNER_TEMP/sp35-complex-tail.log" 2>&1 &

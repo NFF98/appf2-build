@@ -9,6 +9,7 @@ if(origin.protocol!=="https:" ||
    origin.pathname!=="/" || origin.search || origin.hash){
   throw Error("STAGING BROWSER: isolated workers.dev HTTPS target required");
 }
+const taskMode=process.env.APPF2_SP35_BROWSER_TASKS_ALLOWED === "1";
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:1365,height:900}});
 const page=await context.newPage();
@@ -18,7 +19,9 @@ try {
   const input=page.locator("#composer-input");
   await input.waitFor({state:"visible",timeout:15_000});
   console.log("STAGING BROWSER: REAL Discover React UI rendered");
-  await input.fill("Create a read-only one-screen welcome app titled Hello World. Show the text Hello World. No user input, payments, accounts, or external services.");
+  await input.fill(taskMode
+    ? "幫我做一個漂亮又好用的待辦清單，可以新增任務、勾選完成、刪除任務，還能看到今天完成多少。"
+    : "Create a read-only one-screen welcome app titled Hello World. Show the text Hello World. No user input, payments, accounts, or external services.");
   // Watch actual signed API responses BEFORE clicking. A terminal 422 must fail
   // immediately, not spend 210s pretending the generated App might still mount.
   const helloAnalysis = page.waitForResponse(r => r.request().method() === "POST" &&
@@ -45,9 +48,21 @@ try {
   if (!buildOk) throw Error("STAGING BROWSER: Hello World F02 compile failed; App cannot mount");
   await page.locator(".s03-app").waitFor({state:"visible",timeout:45_000});
   const content=await page.locator(".s03-app").textContent();
-  const hasText=Boolean(content?.includes("Hello World"));
-  console.log("STAGING BROWSER: generated S03 app mounted; EXPECTED_HELLO_TEXT="+hasText);
-  if(!hasText)throw Error("STAGING BROWSER: Generated App visible but requested text not rendered");
+  const hasText=taskMode ? Boolean(content?.trim()) : Boolean(content?.includes("Hello World"));
+  console.log("STAGING BROWSER: generated S03 app mounted; REQUESTED_CONTENT_PRESENT="+hasText);
+  if(!hasText)throw Error("STAGING BROWSER: Generated App visible but expected content missing");
+  if(taskMode){
+    const app=page.locator(".s03-app");
+    const taskInput=app.locator("input[type=text], input:not([type]), textarea").first();
+    if(await taskInput.count()===0)throw Error("STAGING TASKS: missing editable task input");
+    const add=app.getByRole("button",{name:/新增|加入|add|create|\+/i}).first();
+    if(await add.count()===0)throw Error("STAGING TASKS: missing labeled add action");
+    const marker="實際操作測試任務";
+    await taskInput.fill(marker);
+    await add.click();
+    await page.getByText(marker,{exact:true}).first().waitFor({state:"visible",timeout:12000});
+    console.log("STAGING TASKS: REAL INPUT + ADD + RENDER PASS; complete/delete still require User check");
+  }
   await page.screenshot({path:screenshot,fullPage:true});
   await page.getByRole("button",{name:"更多選項"}).click();
   await page.getByRole("menuitem",{name:"回到首頁 / 建立新的 App"}).click();
@@ -55,7 +70,9 @@ try {
   console.log("STAGING BROWSER: runtime app + home navigation PASS; screenshot saved");
 
   if (process.env.APPF2_SP35_BROWSER_COMPLEX_ALLOWED !== "1") {
-    console.log("STAGING BROWSER: HELLO_WORLD_ONLY PASS; avoided extra paid LifePilot model request");
+    console.log(taskMode
+    ? "STAGING BROWSER: NATURAL_TASK_LIST ADD PASS; avoided extra paid LifePilot model request"
+    : "STAGING BROWSER: HELLO_WORLD_ONLY PASS; avoided extra paid LifePilot model request");
   } else {
   // A single complex 5-feature analysis verifies the reported real-world
   // LifePilot incident (invalid schema followed by a short timeout budget).
