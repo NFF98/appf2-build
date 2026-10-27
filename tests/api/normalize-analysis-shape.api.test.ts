@@ -2,7 +2,8 @@ import { describe, expect, test } from "vitest";
 import { normalizeAnalysisDescriptorFlags } from "../../src/platform/compiler/normalize-analysis-shape.js";
 import type { JsonValue } from "../../src/platform/intent/json-value.js";
 
-// eslint-disable-next-line max-lines-per-function -- Each distinct F01 factual shape case has its own safety regression.\ndescribe("untrusted Prompt A descriptor flag completion", () => {
+// eslint-disable-next-line max-lines-per-function -- Each distinct F01 factual shape case has its own safety regression.
+describe("untrusted Prompt A descriptor flag completion", () => {
   test("completes only missing descriptor required flags without changing facts or policy content", () => {
     const value = {
       envelope_version: "1.0.0",
