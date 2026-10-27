@@ -51,6 +51,9 @@ type ValidationIssueFeedback = {
 };
 
 export function canonicalRepairHint(code: string, stage: string, path: string): string | undefined {
+  if (code === "F02-ERR-002" && stage === "V02" && /^\\$\\.nodes\\[\\d+\\]\\.events\\.[a-z_]+$/.test(path)) {
+    return "Event binding must be a STRING that exactly matches a declared actions[].id using action_ plus lowercase snake_case, e.g. events.change:'action_update_input'. Never use an inline action object, ValueSource, camelCase ID or unprefixed name. Omit the event key if there is no declared handler.";
+  }
   if (code === "F02-ERR-007" && stage === "V06" && /^\$\.nodes\[\d+\]$/.test(path)) {
     return "Orphan node: connect this node to exactly one reachable parent.children from root_node_id. Every node must belong to ONE rooted tree.";
   }
