@@ -323,6 +323,12 @@ jobs:
           const reasons=[...new Set(raw.match(/APPF2_MODEL_ANALYSIS_INVALID=[^"\r\n]{1,700}/g)||[])];
           console.log("STAGING COMPLEX VALIDATION PATHS: "+
             (reasons.length?reasons.slice(-5).join("; "):"NOT_OBSERVED"));
+          // Fixed labels/codes only: no AI response body, prompts, DB rows or API keys.
+          const coverage=[...new Set(raw.match(/APPF2_F02_COVERAGE_SELECTED_COUNT=[0-9]+ STATUS=(FULLY_SUPPORTED|PARTIALLY_SUPPORTED|UNSUPPORTED) PROFILE=[A-Z_]+/g)||[])];
+          const upstream=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_STATUS=[0-9]{3}/g)||[])];
+          const transport=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_TRANSPORT=[A-Za-z]{1,32} ABORTED=(true|false)/g)||[])];
+          console.log("STAGING COMPLEX COMPOSE DIAGNOSTICS: "+
+            ([...coverage,...upstream,...transport].slice(-8).join("; ")||"NOT_OBSERVED"));
           JS
           exit "$BROWSER_RC"
       - name: Upload browser screenshot (staging Hello World only)
