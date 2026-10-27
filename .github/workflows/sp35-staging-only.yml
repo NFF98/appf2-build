@@ -247,6 +247,7 @@ jobs:
           BROWSER_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-BROWSER-ONCE]') }}
           COMPLEX_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-COMPLEX-ONCE]') }}
           TASK_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-TASKS-ONCE]') }}
+          MOVING_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-MOVING-ONCE]') }}
         run: |
           # Each paid test is an independently authorized, bounded, one-shot choice.
           # Ordinary pushes and configured backups do not trigger paid requests.
@@ -254,9 +255,12 @@ jobs:
             echo "APPF2_SP35_LIVE_CREATE_ALLOWED=1" >> "$GITHUB_ENV"
             echo "STAGING LIVE E2E: signed API CREATE/COMPILE authorized exactly once"
           fi
-          if [[ "$BROWSER_SHOT" == 'true' || "$COMPLEX_SHOT" == 'true' || "$TASK_SHOT" == 'true' ]]; then
+          if [[ "$BROWSER_SHOT" == 'true' || "$COMPLEX_SHOT" == 'true' || "$TASK_SHOT" == 'true' || "$MOVING_SHOT" == 'true' ]]; then
             echo "APPF2_SP35_LIVE_BROWSER_ALLOWED=1" >> "$GITHUB_ENV"
             echo "STAGING LIVE BROWSER: browser Create App authorized separately"
+          fi
+          if [[ "$MOVING_SHOT" == 'true' ]]; then
+            echo "APPF2_SP35_BROWSER_MOVING_ALLOWED=1" >> "$GITHUB_ENV"
           fi
           if [[ "$TASK_SHOT" == 'true' ]]; then
             echo "APPF2_SP35_BROWSER_TASKS_ALLOWED=1" >> "$GITHUB_ENV"
@@ -307,7 +311,9 @@ jobs:
           TAIL_PID=$!
           sleep 8
           set +e
-          if [[ "${APPF2_SP35_BROWSER_COMPLEX_ALLOWED:-0}" == "1" ]]; then
+          if [[ "${APPF2_SP35_BROWSER_MOVING_ALLOWED:-0}" == "1" ]]; then
+            node deploy/scripts/sp35-moving-analysis-e2e.mjs
+          elif [[ "${APPF2_SP35_BROWSER_COMPLEX_ALLOWED:-0}" == "1" ]]; then
             node deploy/scripts/sp35-lifepilot-browser-e2e.mjs
           else
             node deploy/scripts/sp35-staging-browser-e2e.mjs
