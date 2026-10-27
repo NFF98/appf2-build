@@ -222,6 +222,22 @@ function typedNumericCounter(
   return candidate === undefined ? [] : [candidate];
 }
 
+/** A UI primitive is not a CRUD workflow. In particular, a button has no
+ * record/list payload, and a list only PRESENTS records (it does not edit them).
+ * Reject composite hint signatures before class-only capability matching can
+ * incorrectly report FULLY_SUPPORTED. Exact registry admission still applies. */
+function matchesPrimitiveShape(requirement: CapabilityRequirement, candidate: CapabilityDefinition): boolean {
+  const inputs = requirement.input_types;
+  const outputs = requirement.output_types;
+  if (candidate.id === "action.button") return inputs.length === 0 && outputs.length === 0;
+  if (candidate.id === "content.list") return (
+    (inputs.length === 0 || (inputs.length === 1 && inputs[0] === "LIST")) &&
+    outputs.length === 1 && outputs[0] === "LIST");
+  if (candidate.id === "data.stat") return inputs.length === 0 &&
+    outputs.length === 1 && ["NUMBER", "STRING", "BOOLEAN", "ENUM"].includes(outputs[0]!);
+  return true;
+}
+
 function orderedCandidates(
   requirement: CapabilityRequirement,
   request: CoverageResolutionRequest,
@@ -241,7 +257,8 @@ function orderedCandidates(
     exact.length > 0 ? exact :
       classMatches.length === 1 ? classMatches :
         typedForm.length === 1 ? typedForm : [];
-  const matchingRefs = new Set(semanticMatches.map((definition) => refKey(toRef(definition))));
+  const atomicMatches = semanticMatches.filter((candidate) => matchesPrimitiveShape(requirement, candidate));
+  const matchingRefs = new Set(atomicMatches.map((definition) => refKey(toRef(definition))));
   const suggestedRefs = request.suggestedCapabilities?.[requirement.requirement_id] ?? [];
   recordUnregisteredSuggestions(suggestedRefs, state);
   const suggested = suggestedRefs
@@ -251,7 +268,7 @@ function orderedCandidates(
         definition !== undefined && matchingRefs.has(refKey(toRef(definition)))
     );
   const ordered = new Map<string, CapabilityDefinition>();
-  for (const definition of [...suggested, ...semanticMatches]) {
+  for (const definition of [...suggested, ...atomicMatches]) {
     ordered.set(refKey(toRef(definition)), definition);
   }
   return [...ordered.values()];

@@ -89,4 +89,37 @@ describe("AI-generated semantic needs map only through unambiguous registered cl
     expect(result.status).toBe("UNSUPPORTED");
     expect(result.selected).toEqual([]);
   });
+  it("never mistakes a button/list/stat display for full mutable task CRUD", () => {
+    for (const invalid of [
+      { interaction_class: "button", input_types: ["RECORD", "LIST"], output_types: ["LIST"] },
+      { interaction_class: "action", input_types: ["RECORD"], output_types: ["LIST"] },
+      { interaction_class: "list", input_types: ["RECORD"], output_types: ["LIST"] },
+      { interaction_class: "repeated_content", input_types: ["STRING", "LIST"], output_types: ["LIST"] },
+      { interaction_class: "statistic", input_types: ["LIST"], output_types: ["NUMBER"] }
+    ]) {
+      const coverage = resolveCapabilityCoverage({ requirements: [{
+        ...requirement(invalid.interaction_class, "Edit all task records and filter completion"),
+        input_types: invalid.input_types, output_types: invalid.output_types
+      }] });
+      expect(coverage.status).toBe("UNSUPPORTED");
+      expect(coverage.selected).toEqual([]);
+    }
+  });
+
+  it("still admits an actual atomic button, bounded list and display metric", () => {
+    const cases = [
+      { interaction_class: "button", input_types: [], output_types: [], id: "action.button" },
+      { interaction_class: "list", input_types: [], output_types: ["LIST"], id: "content.list" },
+      { interaction_class: "statistic", input_types: [], output_types: ["NUMBER"], id: "data.stat" }
+    ];
+    for (const shape of cases) {
+      const result = resolveCapabilityCoverage({ requirements: [{
+        ...requirement(shape.interaction_class, "Atomic display or button"),
+        input_types: shape.input_types, output_types: shape.output_types
+      }] });
+      expect(result.status).toBe("FULLY_SUPPORTED");
+      expect(result.selected.map(ref => ref.id)).toEqual([shape.id]);
+    }
+  });
+
 });
