@@ -68,6 +68,7 @@ function validateField(raw: unknown, path: string): FormField {
   return f as FormField;
 }
 /** Parser is strict on every key/range; trusted requirement IDs never come from the provider. */
+// eslint-disable-next-line complexity -- Closed BD-026 plan schema validation explicitly checks all four discriminated module contracts.
 export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string>): CompositionPlan {
   const p = obj(raw, "$");
   shape(p, ["plan_version", "title", "modules"], ["description"], "$");
@@ -138,6 +139,7 @@ class Builder {
   public constructor(selected: CoverageResult["selected"]) {
     this.roleRefs = new Map(selected.map(ref => [ref.id, ref]));
   }
+  // eslint-disable-next-line complexity -- Safety-critical F04 selected/ref/availability and structural contract checks remain atomic.
   public node(id: string, capability: string, fields: Partial<Pick<BlueprintNode, "props" | "bindings" | "events" | "children" | "repeat">> = {}): string {
     const ref = this.roleRefs.get(capability);
     const registered = CAPABILITY_REGISTRY_SOURCE.capabilities.find(x => x.id === capability && x.version === ref?.version);
