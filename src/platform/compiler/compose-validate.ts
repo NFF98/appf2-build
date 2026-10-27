@@ -14,7 +14,7 @@ import { guardNow, requireTransition, type ResolvedServiceDependencies } from ".
 import { COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS, type RequestDeadline } from "./model-gateway.js";
 import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION, PROMPT_B_PLAN_VERSION } from "./prompts.js";
 import COMPOSITION_PLAN_SCHEMA from "./composition-plan-v1.schema.json";
-import { lowerCompositionPlan, parseCompositionPlan, CompositionPlanError } from "./typed-composition.js";
+import { certifyTypedModuleRoles, lowerCompositionPlan, parseCompositionPlan, CompositionPlanError } from "./typed-composition.js";
 import { BlueprintAttemptBudget, StaleAttemptError, callProviderWithBoundedRetry } from "./provider-attempts.js";
 import { classifyRejection, isFixableClass, type ClassifiedRejection } from "./rejection-classification.js";
 
@@ -299,7 +299,7 @@ class ComposeLoop {
             return this.fail("INCOMPATIBLE", new IntentApiError("F01-ERR-008"), true);
           }
           const candidate = lowerCompositionPlan(plan, {
-            coverage: this.coverage,
+            coverage: certifiedListPlan ? this.coverage : certifyTypedModuleRoles(this.coverage, plan),
             validRequirementIds: new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id))
           });
           return { candidate: candidate as unknown as JsonValue, compilerRunId: composed.compilerRunId };
@@ -309,7 +309,13 @@ class ComposeLoop {
           console.warn("APPF2_F02_TYPED_FAILURE=" + error.code + " PATH=" +
             (/^\$\.(?:capability\.[a-z.]+|coverage|modules(?:\[\d+\])?(?:\.[a-z_]+)?)$/.test(error.path)
               ? error.path : "OMITTED"));
-          if (error.code === "COMPOSITION_UNSUPPORTED") return this.fail("INCOMPATIBLE", new IntentApiError("F01-ERR-008"), true);
+          if (error.code === "COMPOSITION_UNSUPPORTED") {
+            // Only allowlisted role identifiers and the error category; never
+            // log model output, user intent, authentication or private fields.
+            const role = /^\$\.capability\.([a-z]+\.[a-z]+)$/.exec(error.path)?.[1];
+            console.warn("APPF2_F02_TYPED_ROLE_REJECT=" + (role ?? "UNKNOWN"));
+            return this.fail("INCOMPATIBLE", new IntentApiError("F01-ERR-008"), true);
+          }
           return this.fail("COMPOSITION_FAILED", new IntentApiError(error.code === "LOWERING_GRAPH_INVALID" ? "F01-ERR-014" : "F01-ERR-007"), false);
         }
       }

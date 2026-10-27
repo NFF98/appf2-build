@@ -1,4 +1,6 @@
 import { CAPABILITY_REGISTRY_SOURCE } from "../capabilities/registry.js";
+import { CapabilityAdmissionError, createCapabilityAdmissionResolver } from "../capabilities/admission.js";
+import { computeRegistryDigest } from "../capabilities/generate-registry.js";
 import type { CoverageResult } from "../capabilities/coverage.js";
 import type { JsonValue } from "../intent/json-value.js";
 import type { Blueprint, BlueprintNode, BlueprintAction, ValueSource, StateEntry } from "../blueprint/validation-types.js";
@@ -30,6 +32,66 @@ export type CompositionModule = DisplayModule | FormModule | ArithmeticModule | 
   BudgetModule | HabitModule | TodaySummaryModule | ShoppingModule;
 export type CompositionPlan = { readonly plan_version: "1.0.0"; readonly title: string; readonly description?: string; readonly modules: readonly CompositionModule[] };
 export type AssemblerContext = { readonly coverage: CoverageResult; readonly validRequirementIds: ReadonlySet<string> };
+
+/** Server-only bounded F04 role closure for typed modules, never model-supplied refs.
+ * Does not change a coverage status or user requirement. Every added primitive
+ * must pass the canonical F04 admission resolver; independent F02 validation
+ * still verifies the resulting exact refs and actual resource use. */
+export function certifyTypedModuleRoles(coverage: CoverageResult, plan: CompositionPlan): CoverageResult {
+  if (coverage.status !== "FULLY_SUPPORTED" || coverage.gaps.length > 0 ||
+      coverage.registryVersion !== CAPABILITY_REGISTRY_SOURCE.registryVersion ||
+      coverage.registryDigest !== computeRegistryDigest(CAPABILITY_REGISTRY_SOURCE))
+    throw new CompositionPlanError("COMPOSITION_UNSUPPORTED", "$.coverage");
+  const definitions = CAPABILITY_REGISTRY_SOURCE.capabilities;
+  const resolver = createCapabilityAdmissionResolver({
+    source: CAPABILITY_REGISTRY_SOURCE,
+    trustedRuntimeRegistrationKeys: new Set(definitions.map(x => x.runtime.registrationKey)),
+    allowExperimental: false
+  });
+  const roleIds = new Set<string>(["layout.container", "content.text"]);
+  for (const module of plan.modules) {
+    if (module.kind === "RECORD_LIST") {
+      for (const id of ["content.list", "input.text", "action.button", "data.stat"]) roleIds.add(id);
+    } else if (module.kind === "SHOPPING_LIST") {
+      for (const id of ["content.list", "input.text", "input.number", "action.button", "data.stat"]) roleIds.add(id);
+    } else if (module.kind === "BUDGET") {
+      for (const id of ["input.number", "action.button", "data.stat"]) roleIds.add(id);
+    } else if (module.kind === "HABIT") {
+      for (const id of ["action.button", "data.stat"]) roleIds.add(id);
+    } else if (module.kind === "TODAY_SUMMARY") {
+      roleIds.add("data.stat");
+    } else if (module.kind === "FORM") {
+      if (module.reset_label !== undefined) roleIds.add("action.button");
+      for (const field of module.fields)
+        roleIds.add(field.kind === "TEXT" ? "input.text" :
+          field.kind === "NUMBER" ? "input.number" : "input.toggle");
+    } else if (module.kind === "ARITHMETIC") {
+      roleIds.add("input.number");
+      roleIds.add("data.stat");
+    }
+  }
+  const refs = new Map(coverage.selected.map(ref => [ref.id + "@" + ref.version, ref]));
+  for (const id of roleIds) {
+    const definition = definitions.find(d => d.id === id && d.lifecycle.availability === "ENABLED" &&
+      d.lifecycle.executionStatus === "ACTIVE");
+    if (definition === undefined) throw new CompositionPlanError("COMPOSITION_UNSUPPORTED", "$.capability." + id);
+    try {
+      const approved = resolver.admit({ capability: {id,version:definition.version},
+        resourceUsage: {
+          maxInstancesPerBlueprint:0, maxSerializedPropsBytes:0,
+          maxLocalStateBytes:0, maxEventBindings:0,
+          maxActionBindings:0, maxConcurrentTimers:0
+        } });
+      for(const ref of [approved.capability,...approved.requiredDependencies])
+        refs.set(ref.id + "@" + ref.version, ref);
+    } catch (error) {
+      if (error instanceof CapabilityAdmissionError)
+        throw new CompositionPlanError("COMPOSITION_UNSUPPORTED", "$.capability." + id);
+      throw error;
+    }
+  }
+  return {...coverage,selected:[...refs.values()]};
+}
 
 export class CompositionPlanError extends Error {
   public constructor(public readonly code: "PLAN_SCHEMA_INVALID" | "PLAN_UNTRUSTED_REFERENCE" | "COMPOSITION_UNSUPPORTED" | "LOWERING_GRAPH_INVALID", public readonly path: string) {
