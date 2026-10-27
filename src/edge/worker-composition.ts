@@ -50,6 +50,8 @@ export interface Appf2WorkerEnv {
   readonly APPF2_DEEPSEEK_MODEL_NAME?: string;
   readonly APPF2_MODEL_INPUT_COST_PER_MILLION?: string;
   readonly APPF2_MODEL_OUTPUT_COST_PER_MILLION?: string;
+  readonly APPF2_MODEL_OUTPUT_CAP_ANALYSIS?: string;
+  readonly APPF2_MODEL_OUTPUT_CAP_BLUEPRINT?: string;
   readonly APPF2_IDENTITY_COOKIE_SECRET: string;
 }
 
@@ -102,7 +104,9 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
     APPF2_DEEPSEEK_API_KEY: env.APPF2_DEEPSEEK_API_KEY,
     APPF2_DEEPSEEK_MODEL_NAME: env.APPF2_DEEPSEEK_MODEL_NAME,
     APPF2_MODEL_INPUT_COST_PER_MILLION: env.APPF2_MODEL_INPUT_COST_PER_MILLION,
-    APPF2_MODEL_OUTPUT_COST_PER_MILLION: env.APPF2_MODEL_OUTPUT_COST_PER_MILLION
+    APPF2_MODEL_OUTPUT_COST_PER_MILLION: env.APPF2_MODEL_OUTPUT_COST_PER_MILLION,
+    APPF2_MODEL_OUTPUT_CAP_ANALYSIS: env.APPF2_MODEL_OUTPUT_CAP_ANALYSIS,
+    APPF2_MODEL_OUTPUT_CAP_BLUEPRINT: env.APPF2_MODEL_OUTPUT_CAP_BLUEPRINT
   };
   const primary = new OpenAiCompatibleModelGateway(appf2ModelProviderConfig(aiConfig).config);
   const alternative = appf2ModelFallbackConfig(aiConfig);

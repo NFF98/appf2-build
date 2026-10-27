@@ -18,7 +18,9 @@ export const MODEL_GATEWAY_ENV = Object.freeze({
   apiKey: "APPF2_MODEL_API_KEY",
   model: "APPF2_MODEL_NAME",
   inputCostPerMillion: "APPF2_MODEL_INPUT_COST_PER_MILLION",
-  outputCostPerMillion: "APPF2_MODEL_OUTPUT_COST_PER_MILLION"
+  outputCostPerMillion: "APPF2_MODEL_OUTPUT_COST_PER_MILLION",
+  analysisOutputCap: "APPF2_MODEL_OUTPUT_CAP_ANALYSIS",
+  blueprintOutputCap: "APPF2_MODEL_OUTPUT_CAP_BLUEPRINT"
 });
 
 export type ModelPricing = {
@@ -31,6 +33,7 @@ export type OpenAiCompatibleConfig = {
   readonly apiKey: string;
   readonly model: string;
   readonly pricing?: ModelPricing;
+  readonly outputCaps?: { readonly INTENT_ANALYSIS: number; readonly BLUEPRINT_COMPOSE: number };
   /** DeepSeek ChatCompletions supports JSON object mode; keep schema mode for OpenAI/xAI. */
   readonly outputFormat?: "json_schema" | "json_object";
 };
@@ -68,7 +71,23 @@ export function openAiCompatibleConfigFromEnv(env: Readonly<Record<string, strin
   ].filter(([, value]) => value === "").map(([name]) => name as string);
   if (missing.length > 0) throw new ModelGatewayConfigError(missing);
   const pricing = pricingFrom(env);
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model, ...(pricing === undefined ? {} : { pricing }) };
+  const a = env[MODEL_GATEWAY_ENV.analysisOutputCap];
+  const b = env[MODEL_GATEWAY_ENV.blueprintOutputCap];
+  let outputCaps: OpenAiCompatibleConfig["outputCaps"];
+  if (a !== undefined || b !== undefined) {
+    const analysis = Number(a);
+    const blueprint = Number(b);
+    if (!Number.isInteger(analysis) || analysis < 1024 || analysis > 20000 ||
+        !Number.isInteger(blueprint) || blueprint < 1024 || blueprint > 20000) {
+      throw new ModelGatewayConfigError(["APPF2_MODEL_OUTPUT_CAP_ANALYSIS/BLUEPRINT (1024..20000)"]);
+    }
+    outputCaps = { INTENT_ANALYSIS: analysis, BLUEPRINT_COMPOSE: blueprint };
+  }
+  return {
+    baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model,
+    ...(pricing === undefined ? {} : { pricing }),
+    ...(outputCaps === undefined ? {} : { outputCaps })
+  };
 }
 
 /** Never log provider body, arbitrary error strings, request IDs or secrets. */
@@ -165,6 +184,9 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
     return JSON.stringify({
       model: this.config.model,
       temperature: 0,
+      ...(this.config.outputCaps === undefined ? {} : {
+        max_completion_tokens: this.config.outputCaps[request.operation]
+      }),
       messages: [
         { role: "system", content: SYSTEM_POLICY[request.operation] },
         { role: "user", content: JSON.stringify(request.input_payload) }

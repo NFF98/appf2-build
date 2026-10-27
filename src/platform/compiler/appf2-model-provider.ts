@@ -38,7 +38,9 @@ export function appf2ModelProviderConfig(
     const config = openAiCompatibleConfigFromEnv({
       ...env,
       APPF2_MODEL_BASE_URL: env.APPF2_MODEL_BASE_URL?.trim() || "https://api.openai.com/v1",
-      APPF2_MODEL_NAME: env.APPF2_MODEL_NAME?.trim() || "gpt-4.1"
+      APPF2_MODEL_NAME: env.APPF2_MODEL_NAME?.trim() || "gpt-4.1",
+      APPF2_MODEL_OUTPUT_CAP_ANALYSIS: env.APPF2_MODEL_OUTPUT_CAP_ANALYSIS,
+      APPF2_MODEL_OUTPUT_CAP_BLUEPRINT: env.APPF2_MODEL_OUTPUT_CAP_BLUEPRINT
     });
     if (new URL(config.baseUrl).origin !== "https://api.openai.com") {
       throw new ModelGatewayConfigError(["APPF2_MODEL_BASE_URL (OpenAI provider must use api.openai.com)"]);

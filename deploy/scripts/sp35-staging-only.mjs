@@ -94,6 +94,9 @@ const config = {
     APPF2_MODEL_BASE_URL: modelBase.toString(),
     APPF2_MODEL_NAME: model,
     APPF2_MODEL_PROVIDER: provider,
+    // Cost guard for staging only. Production keeps its own unchanged settings.
+    APPF2_MODEL_OUTPUT_CAP_ANALYSIS: "6000",
+    APPF2_MODEL_OUTPUT_CAP_BLUEPRINT: "16000",
     ...(fallback ? {APPF2_MODEL_FALLBACK_PROVIDER: fallback} : {}),
     ...(process.env.APPF2_XAI_MODEL_NAME?.trim() ? {APPF2_XAI_MODEL_NAME: process.env.APPF2_XAI_MODEL_NAME.trim()} : {}),
     ...(process.env.APPF2_DEEPSEEK_MODEL_NAME?.trim() ? {APPF2_DEEPSEEK_MODEL_NAME: process.env.APPF2_DEEPSEEK_MODEL_NAME.trim()} : {})
