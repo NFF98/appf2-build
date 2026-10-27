@@ -1,6 +1,6 @@
 import { chromium } from "@playwright/test";
 const origin = new URL(process.env.APPF2_STAGING_URL?.trim() || "");
-if (origin.protocol !== "https:" || !origin.hostname.startsWith("appf2-sp35-417-staging.")) throw Error("isolated staging only");
+if (origin.protocol !== "https:" || !/^appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/i.test(origin.hostname) || origin.pathname!=="/" || origin.search || origin.hash) throw Error("isolated staging only");
 const input = [
  "我下個月要搬家，事情好多，常常忘記自己做了什麼、還有什麼沒做。你可以幫我做一個簡單好用的搬家管理 App 嗎？",
  "我想隨時記下要做的事情，可以修改、刪除、打勾完成，還能分成高、中、低優先順序，方便先處理重要的事。最好也能看到今天完成了幾件事。",
