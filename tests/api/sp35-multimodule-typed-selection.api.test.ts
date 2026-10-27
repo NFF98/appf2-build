@@ -19,7 +19,9 @@ const coverage = (): CoverageResult => ({
 describe("Sprint 3.5 bounded multi-module Prompt B route", () => {
   it("selects concise typed composition only for fully-covered complex role sets", () => {
     expect(isMultiModulePlanEligible(coverage(), 8)).toBe(true);
-    expect(isMultiModulePlanEligible(coverage(), 7)).toBe(false);
+    expect(isMultiModulePlanEligible(coverage(), 4)).toBe(true);
+    expect(isMultiModulePlanEligible(coverage(), 3)).toBe(false);
+    expect(isMultiModulePlanEligible({...coverage(), selected:roles.slice(0,6)},8)).toBe(false);
     expect(isMultiModulePlanEligible({...coverage(), status: "PARTIALLY_SUPPORTED"}, 10)).toBe(false);
     expect(isMultiModulePlanEligible({...coverage(), gaps: [{
       requirementId: "x", description: "unsupported", evidenceCode: "UNSUPPORTED"

@@ -134,7 +134,7 @@ export function isCertifiedPlanEligible(coverage: CoverageResult): boolean {
  * trust rule, capability grant or unsupported-feature disposition. */
 export function isMultiModulePlanEligible(coverage: CoverageResult, requirementCount: number): boolean {
   if (coverage.certifiedProfile !== undefined || coverage.status !== "FULLY_SUPPORTED" ||
-      coverage.gaps.length !== 0 || requirementCount < 8) return false;
+      coverage.gaps.length !== 0 || requirementCount < 4 || coverage.selected.length < 7) return false;
   // The model chooses module KINDS, never Capability refs. The trusted
   // lowering Builder checks every selected exact ACTIVE role it actually uses,
   // and F02 rejects any missing role. Requiring unused primitives up front
@@ -263,6 +263,9 @@ class ComposeLoop {
     console.warn("APPF2_F02_COVERAGE_SELECTED_COUNT=" + this.coverage.selected.length +
       " STATUS=" + this.coverage.status +
       " PROFILE=" + (this.coverage.certifiedProfile ?? "NONE"));
+    // Only operational mode + bounded counts: no raw user intent or model content.
+    console.warn("APPF2_F02_PLAN_MODE=" + (planMode ? "TYPED" : "RAW") +
+      " REQUIREMENT_COUNT=" + Math.min(this.scope.resolved.capability_requirements.length, 100));
     try {
       const composed = await callProviderWithBoundedRetry(
         { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence, blueprintBudget: this.blueprintBudget },
