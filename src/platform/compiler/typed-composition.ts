@@ -156,6 +156,18 @@ export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string
       integer(m.max_items, path + ".max_items", 1, 100);
     } else fail("PLAN_SCHEMA_INVALID", path + ".kind");
   }
+  // F02 V09 enforces action.button instances <=100 across the entire
+  // Blueprint, including worst-case repeated rows. Prevent a valid-looking
+  // multi-module plan from producing an unusable resource-terminal candidate.
+  const buttons = p.modules.reduce((sum, rawModule) => {
+    const mod = rawModule as CompositionModule;
+    if (mod.kind === "RECORD_LIST") return sum + 1 + 3 * mod.max_items;
+    if (mod.kind === "SHOPPING_LIST") return sum + 1 + 2 * mod.max_items;
+    if (mod.kind === "BUDGET" || mod.kind === "HABIT") return sum + 1;
+    if (mod.kind === "FORM" && mod.reset_label !== undefined) return sum + 1;
+    return sum;
+  }, 0);
+  if (buttons > 100) fail("PLAN_SCHEMA_INVALID", "$.modules.max_items");
   const covered = new Set<string>();
   for (const module of p.modules) for (const id of (module as CompositionModule).requirement_ids) covered.add(id);
   for (const id of required) if (!covered.has(id)) fail("PLAN_UNTRUSTED_REFERENCE", "$.modules.requirement_ids");

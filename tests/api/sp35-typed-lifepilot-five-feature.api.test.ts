@@ -23,7 +23,7 @@ const modules = [
     heading: "Smart Tasks", record_title_key: "title", record_done_key: "done",
     input_label: "Task name", add_label: "Add task", toggle_label: "Complete task",
     delete_label: "Delete task", total_label: "Tasks", completed_label: "Done today",
-    max_items: 20, track_day: true
+    max_items: 18, track_day: true
   },
   {
     kind: "TODAY_SUMMARY", key: "today", requirement_ids: [rid(2)],
@@ -33,7 +33,7 @@ const modules = [
     kind: "SHOPPING_LIST", key: "shopping", requirement_ids: [rid(3)],
     heading: "Shopping List", item_label: "Item", quantity_label: "Quantity",
     add_label: "Add item", bought_label: "Purchased", update_quantity_label: "Update quantity",
-    total_label: "Total", outstanding_label: "Still to buy", max_items: 20
+    total_label: "Total", outstanding_label: "Still to buy", max_items: 18
   },
   {
     kind: "BUDGET", key: "money", requirement_ids: [rid(4)],
@@ -101,6 +101,12 @@ describe("Sprint 3.5 five-feature linked LifePilot F02/F03 end-to-end (determini
     fire("node_m004_complete", "press");
     expect(metric("result_m004_completed")).toBe(1);
     expect(metric("result_m001_completed")).toBe(1);
+  });
+  it("fails closed when two repeated lists exceed the F02 action-button budget", () => {
+    const oversized = modules.map(module => module.kind === "SHOPPING_LIST" ||
+      module.kind === "RECORD_LIST" ? {...module, max_items: 20} : module);
+    expect(() => parseCompositionPlan({plan_version:"1.0.0",title:"oversized",
+      modules: oversized} as never, ids, ids)).toThrow("PLAN_SCHEMA_INVALID");
   });
   it("rejects forged cross-feature references before lowering", () => {
     const changed = modules.map(m => m.kind === "TODAY_SUMMARY"
