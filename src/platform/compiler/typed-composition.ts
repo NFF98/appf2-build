@@ -185,14 +185,18 @@ function formField(b: Builder, prefix: string, field: FormField, ordinal: number
   b.node(nodeId, cap, { props, bindings: { bind: state(dataKey) }, events: { change: actionId } });
   return { node: nodeId, state: dataKey };
 }
-function recordList(b: Builder, p: string, mod: RecordListModule): string {
+function recordList(b: Builder, p: string, mod: RecordListModule, daily = false): string {
+  if (daily && (mod.record_title_key === "completed_day" || mod.record_done_key === "completed_day"))
+    fail("PLAN_SCHEMA_INVALID", "$.record_title_key");
   const rows = "s_" + p + "_rows", draft = "s_" + p + "_draft", can = "s_" + p + "_can_add", template = "s_" + p + "_template";
   const recordType: JsonValue = { type: "RECORD", constraints: { fields: {
     [mod.record_title_key]: { type: "STRING", constraints: { max_length: 120 } },
-    [mod.record_done_key]: { type: "BOOLEAN" }
+    [mod.record_done_key]: { type: "BOOLEAN" },
+    ...(daily ? { completed_day: { type: "STRING", constraints: { max_length: 10 } } } : {})
   } } };
   b.stateKey(rows, typeState("LIST", [], { item: recordType, max_length: mod.max_items }));
-  const newRow = { [mod.record_title_key]: "", [mod.record_done_key]: false };
+  const newRow = { [mod.record_title_key]: "", [mod.record_done_key]: false,
+    ...(daily ? { completed_day: "" } : {}) };
   b.stateKey(template, typeState("RECORD", newRow, (recordType as { constraints: JsonValue }).constraints));
   b.stateKey(draft, typeState("STRING", "", { max_length: 120 }));
   b.stateKey(can, typeState("BOOLEAN", false));
@@ -206,12 +210,18 @@ function recordList(b: Builder, p: string, mod: RecordListModule): string {
     { type: "SET_STATE", target: draft, value: lit(""), when: state(can) },
     { type: "RESET_STATE", target: can }
   ]);
-  b.action(toggle, [{ type: "SET_STATE", target: rows, value: op("LIST_REPLACE_AT", state(rows), scope("index"), op("RECORD_SET", scope("item"), lit(mod.record_done_key), op("NOT", scope("item", mod.record_done_key)))) }]);
+  const toggledDone = op("RECORD_SET", scope("item"), lit(mod.record_done_key),
+    op("NOT", scope("item", mod.record_done_key)));
+  const toggledRow = daily ? op("RECORD_SET", toggledDone, lit("completed_day"),
+    op("IF", scope("item", mod.record_done_key), lit(""), op("LOCAL_DAY"))) : toggledDone;
+  b.action(toggle, [{ type: "SET_STATE", target: rows, value: op("LIST_REPLACE_AT", state(rows), scope("index"), toggledRow) }]);
   b.action(remove, [{ type: "SET_STATE", target: rows, value: op("LIST_REMOVE_AT", state(rows), scope("index")) }]);
   const total = op("COUNT", state(rows));
-  const completed = op("COUNT", op("LIST_FILTER_EQ", state(rows), lit(mod.record_done_key), lit(true)));
+  const completed = op("COUNT", op("LIST_FILTER_EQ", state(rows),
+    lit(daily ? "completed_day" : mod.record_done_key), daily ? op("LOCAL_DAY") : lit(true)));
+  const metricLabel = daily ? "今日完成" : mod.completed_label;
   b.output("result_" + p + "_total", mod.total_label, total);
-  b.output("result_" + p + "_completed", mod.completed_label, completed);
+  b.output("result_" + p + "_completed", metricLabel, completed);
   const rowId = "node_" + p + "_row";
   const rowChildren = [
     b.node("node_" + p + "_item_title", "content.text", { props: { role: lit("BODY") }, bindings: { text: scope("item", mod.record_title_key) } }),
@@ -224,7 +234,7 @@ function recordList(b: Builder, p: string, mod: RecordListModule): string {
     b.node("node_" + p + "_input", "input.text", { props: { label: lit(mod.input_label), max_length: lit(120) }, bindings: { bind: state(draft) }, events: { change: draftChange } }),
     b.node("node_" + p + "_add", "action.button", { props: { label: lit(mod.add_label) }, events: { press: add } }),
     b.node("node_" + p + "_total", "data.stat", { props: { label: lit(mod.total_label), format: lit("NUMBER") }, bindings: { value: total } }),
-    b.node("node_" + p + "_completed", "data.stat", { props: { label: lit(mod.completed_label), format: lit("NUMBER") }, bindings: { value: completed } }),
+    b.node("node_" + p + "_completed", "data.stat", { props: { label: lit(metricLabel), format: lit("NUMBER") }, bindings: { value: completed } }),
     b.node("node_" + p + "_list", "content.list", { repeat: { items: state(rows), item_alias: "item", index_alias: "index", max_items: mod.max_items }, children: [rowId] })
   ];
   return layout(b, "node_" + p + "_container", children);
@@ -262,7 +272,9 @@ export function lowerCompositionPlan(plan: CompositionPlan, context: AssemblerCo
   if (context.coverage.status !== "FULLY_SUPPORTED" && context.coverage.status !== "PARTIALLY_SUPPORTED")
     fail("COMPOSITION_UNSUPPORTED", "$.coverage");
   const b = new Builder(context.coverage.selected);
-  const childIds = plan.modules.map((mod, i) => moduleBlueprint(b, mod, i));
+  const childIds = plan.modules.map((mod, i) =>
+    mod.kind === "RECORD_LIST" ? recordList(b, "m" + String(i).padStart(3, "0"), mod,
+      context.coverage.certifiedProfile === "RECORD_LIST_TODAY") : moduleBlueprint(b, mod, i));
   layout(b, "node_root", childIds);
   // Sorted DFS means same canonical inputs produce identical serialized Blueprint, not model-defined node IDs.
   const index = new Map(b.nodes.map(n => [n.id, n]));

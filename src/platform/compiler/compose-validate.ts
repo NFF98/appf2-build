@@ -121,7 +121,7 @@ function compilerCatalog(coverage: CoverageResult): JsonValue {
 /** Only a complete, exact F04-selected role set can use the typed composer.
  * All other existing compositions continue along their original trusted F02 path. */
 export function isCertifiedPlanEligible(coverage: CoverageResult): boolean {
-  if (!isCoverageAllowed(coverage) || coverage.certifiedProfile !== "RECORD_LIST") return false;
+  if (!isCoverageAllowed(coverage) || (coverage.certifiedProfile !== "RECORD_LIST" && coverage.certifiedProfile !== "RECORD_LIST_TODAY")) return false;
   const selected = new Set(coverage.selected.map(ref => ref.id + "@" + ref.version));
   const required = ["layout.container", "content.text", "content.list", "input.text", "action.button", "data.stat"];
   return required.every(id => CAPABILITY_REGISTRY_SOURCE.capabilities.some(def =>
@@ -140,7 +140,7 @@ function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: r
     f02_blueprint_contract: { schema_version: BLUEPRINT_SCHEMA_VERSION, max_candidate_payload_bytes: MAX_CANDIDATE_PAYLOAD_BYTES },
     security_resource_policy: { executable_code: "FORBIDDEN", provider_runtime_config: "FORBIDDEN" },
     existing_blueprint: null,
-    prompt_version: coverage.certifiedProfile === "RECORD_LIST" ? PROMPT_B_PLAN_VERSION : PROMPT_B_VERSION,
+    prompt_version: (coverage.certifiedProfile === "RECORD_LIST" || coverage.certifiedProfile === "RECORD_LIST_TODAY") ? PROMPT_B_PLAN_VERSION : PROMPT_B_VERSION,
     schema_version: BLUEPRINT_SCHEMA_VERSION,
     registry_version: coverage.registryVersion,
     model_adapter: scope.dependencies.gateway.modelAdapter,

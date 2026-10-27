@@ -65,10 +65,9 @@ describe("Sprint3.5 F04 certified role closure from six real F01 atomic hints",(
   it("never silently reports today-only completion as an all-time counter",()=>{
     const time=features.map(x=>x.interaction_class==="metric"?{...x,semantic_need:"顯示今日完成任務數量"}:x);
     const coverage=certifyCompositeCoverage(resolveCapabilityCoverage({requirements:time}),time);
-    expect(coverage.status).toBe("UNSUPPORTED");
-    expect(coverage.certifiedProfile).toBeUndefined();
-    expect(coverage.gaps.map(x=>x.description).join(" ")).toContain("date/time");
-    expect(isCertifiedPlanEligible(coverage)).toBe(false);
+    expect(coverage.status).toBe("FULLY_SUPPORTED");
+    expect(coverage.certifiedProfile).toBe("RECORD_LIST_TODAY");
+    expect(isCertifiedPlanEligible(coverage)).toBe(true);
   });
   it("rejects arbitrary button+list hints and unknown extra feature",()=>{
     const base=resolveCapabilityCoverage({requirements:features});

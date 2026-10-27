@@ -74,7 +74,6 @@ export function certifyCompositeCoverage(
 ): CoverageResult {
   if (!hasTaskListSignature(requirements)) return coverage;
   const temporal = requiresUnsupportedCalendar(requirements);
-  if (temporal !== undefined) return unsupportedCalendar(coverage, temporal);
   if (coverage.requirements.some(r => r.status === "EXTERNAL_REQUIRED")) return coverage;
   if (coverage.registryVersion !== CAPABILITY_REGISTRY_SOURCE.registryVersion ||
       coverage.registryDigest !== computeRegistryDigest(CAPABILITY_REGISTRY_SOURCE)) return coverage;
@@ -125,7 +124,8 @@ export function certifyCompositeCoverage(
     };
   });
   return {
-    ...coverage, certifiedProfile: "RECORD_LIST", selected: [...refs.values()],
+    ...coverage, certifiedProfile: temporal === undefined ? "RECORD_LIST" : "RECORD_LIST_TODAY",
+    selected: [...refs.values()],
     status: "FULLY_SUPPORTED", requirements: covered,
     gaps: coverage.gaps.filter(gap => !requirements.some(r => r.requirement_id === gap.requirementId))
   };
