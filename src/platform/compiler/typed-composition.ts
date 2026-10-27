@@ -166,14 +166,20 @@ function formField(b: Builder, prefix: string, field: FormField, ordinal: number
   if (field.kind === "TOGGLE") b.stateKey(dataKey, typeState("BOOLEAN", field.initial));
   b.action(actionId, [{ type: "SET_STATE", target: dataKey, value: event("value") }]);
   const cap = field.kind === "TEXT" ? "input.text" : field.kind === "NUMBER" ? "input.number" : "input.toggle";
-  const props = field.kind === "TEXT" ? { label: lit(field.label), max_length: lit(field.max_length), ...(field.placeholder === undefined ? {} : { placeholder: lit(field.placeholder) }) } :
-    field.kind === "NUMBER" ? { label: lit(field.label), min: lit(field.min), max: lit(field.max) } : {};
+  const props: Record<string, ValueSource> = {};
+  if (field.kind === "TEXT") {
+    props.label = lit(field.label); props.max_length = lit(field.max_length);
+    if (field.placeholder !== undefined) props.placeholder = lit(field.placeholder);
+  }
+  if (field.kind === "NUMBER") {
+    props.label = lit(field.label); props.min = lit(field.min); props.max = lit(field.max);
+  }
   b.node(nodeId, cap, { props, bindings: { bind: state(dataKey) }, events: { change: actionId } });
   return { node: nodeId, state: dataKey };
 }
 function recordList(b: Builder, p: string, mod: RecordListModule): string {
   const rows = "s_" + p + "_rows", draft = "s_" + p + "_draft", can = "s_" + p + "_can_add";
-  const recordType = { type: "RECORD", constraints: { fields: {
+  const recordType: JsonValue = { type: "RECORD", constraints: { fields: {
     [mod.record_title_key]: { type: "STRING", constraints: { max_length: 120 } },
     [mod.record_done_key]: { type: "BOOLEAN" }
   } } };
