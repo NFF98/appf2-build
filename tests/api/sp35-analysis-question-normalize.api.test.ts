@@ -3,6 +3,29 @@ import { normalizeAnalysisDescriptorFlags } from "../../src/platform/compiler/no
 import type { JsonValue } from "../../src/platform/intent/json-value.js";
 
 describe("Sprint 3.5 F01 question-type metadata safety", () => {
+  test("drops only blank optional provenance fields and retains verified references", () => {
+    const payload = {
+      actors: [{ id: "owner", source_ref: { policy_id: "", policy_version: "", origin_item_id: "" } }],
+      entities: [{ id: "entry", source_ref: { policy_id: "P1", policy_version: "", origin_item_id: "task" } }],
+      known_inputs: [{ id: "budget", source_ref: { policy_id: "P2" } }],
+      requested_outputs: [{ id: "summary", source: "USER_EXPLICIT",
+        source_ref: { policy_id: "", origin_item_id: "money" } }],
+      capability_hints: [], constraints: [{
+        id: "no_sync", source_ref: { policy_id: "" }, resolution_state: "CONFIRMED",
+        resolved_value: true, materiality: "MATERIAL", policy_risk_flags: []
+      }]
+    };
+    const untouched = structuredClone(payload);
+    const normalized = normalizeAnalysisDescriptorFlags(payload as JsonValue) as typeof payload;
+    expect(normalized.actors[0]).toEqual({ id: "owner" });
+    expect(normalized.entities[0]?.source_ref).toEqual({ policy_id: "P1", origin_item_id: "task" });
+    expect(normalized.known_inputs[0]).toEqual(payload.known_inputs[0]);
+    expect(normalized.requested_outputs[0]?.source_ref).toEqual({ origin_item_id: "money" });
+    expect(normalized.constraints[0]?.resolved_value).toBe(true);
+    expect(normalized.constraints[0]?.source_ref).toBeUndefined();
+    expect(payload).toEqual(untouched);
+  });
+
   test("deduplicates only identical hint type tokens after safe canonicalization", () => {
     const source = { requested_outputs: [], capability_hints: [{
       hint_id: "task_entry", input_types: ["STRING", "STRING", "INTEGER", "NUMBER", "BOOLEAN"],

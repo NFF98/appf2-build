@@ -10,6 +10,22 @@ import { isPlainRecord, type JsonValue } from "../intent/json-value.js";
  * omitted descriptor required flags are treated as nonmandatory.
  */
 const COLLECTIONS = ["constraints", "candidate_rules", "missing_fields", "ambiguities", "assumptions"] as const;
+const DESCRIPTORS = ["actors", "entities", "known_inputs"] as const;
+const SOURCE_REF_FIELDS = new Set(["policy_id", "policy_version", "origin_item_id"]);
+
+/** A blank optional provenance field is not a source. Omit only exact empty
+ * strings, never fabricate provenance or delete nonempty/unknown fields. */
+function omitBlankOptionalSourceRef(entry: JsonValue): JsonValue {
+  if (!isPlainRecord(entry) || !isPlainRecord(entry.source_ref)) return entry;
+  const fields = Object.entries(entry.source_ref).filter(
+    ([key, value]) => !SOURCE_REF_FIELDS.has(key) || value !== ""
+  );
+  if (fields.length === Object.keys(entry.source_ref).length) return entry;
+  if (fields.length > 0) return { ...entry, source_ref: Object.fromEntries(fields) };
+  const { source_ref: _unused, ...withoutRef } = entry;
+  void _unused;
+  return withoutRef;
+}
 const QUESTIONS: Readonly<Record<string, string>> = {
   STRING: "FREE_TEXT", NUMBER: "NUMBER", BOOLEAN: "BOOLEAN",
   ENUM: "SINGLE_CHOICE", LIST: "MULTI_CHOICE", RECORD: "STRUCTURED_FIELDS"
@@ -111,7 +127,8 @@ export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
   const hints = value.capability_hints;
   if (!Array.isArray(output) || !Array.isArray(hints)) return value;
 
-  const outputs = output.map(entry => {
+  const outputs = output.map(rawEntry => {
+    const entry = omitBlankOptionalSourceRef(rawEntry);
     if (!isPlainRecord(entry) || entry.required !== undefined) return entry;
     if (entry.source !== "USER_EXPLICIT" && entry.source !== "DOMAIN_KNOWN" &&
       entry.source !== "LLM_PROPOSED" && entry.source !== "NFF_DEFAULT") return entry;
@@ -126,9 +143,13 @@ export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
     };
     return entry.required === undefined ? { ...normalized, required: false } : normalized;
   });
+  const descriptors = Object.fromEntries(DESCRIPTORS.flatMap(name => {
+    const entries = value[name];
+    return Array.isArray(entries) ? [[name, entries.map(omitBlankOptionalSourceRef)]] : [];
+  }));
   const policy = Object.fromEntries(COLLECTIONS.flatMap(name => {
     const items = value[name];
-    return Array.isArray(items) ? [[name, items.map(item => alignQuestionMetadata(fixScalarMetadata(promoteRequiredMateriality(item))))]] : [];
+    return Array.isArray(items) ? [[name, items.map(item => alignQuestionMetadata(fixScalarMetadata(promoteRequiredMateriality(omitBlankOptionalSourceRef(item)))))]] : [];
   }));
-  return { ...value, requested_outputs: outputs, capability_hints: capabilities, ...policy };
+  return { ...value, ...descriptors, requested_outputs: outputs, capability_hints: capabilities, ...policy };
 }
