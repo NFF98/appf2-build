@@ -56,8 +56,9 @@ describe("Sprint 3.5 five-feature linked LifePilot F02/F03 end-to-end (determini
       modules } as never, ids, ids);
     const blueprint = lowerCompositionPlan(plan, { coverage, validRequirementIds: ids });
     const admission = validateBlueprintCandidate(new TextEncoder().encode(JSON.stringify(blueprint)));
-    expect(admission.report.status).toBe("PASSED");
+    // Issue list first so CI prints exact F02 stage / node, never a blanket "REJECTED".
     expect(admission.report.issues).toEqual([]);
+    expect(admission.report.status).toBe("PASSED");
     const {runtime} = await hydratedHarness(blueprint as unknown as JsonRecord, {calendarDay: () => day});
     const fire = (node: string, name: string, payload: Record<string, string | number> = {}, index = 0) => {
       const key = runtime.nodeInstances().filter(x => x.key.node_id === node)[index]?.key;
