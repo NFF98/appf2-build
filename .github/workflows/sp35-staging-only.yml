@@ -243,8 +243,9 @@ jobs:
           CONFIGURED_FALLBACK: ${{ vars.APPF2_MODEL_FALLBACK_PROVIDER }}
           PRIMARY_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER || 'openai' }}
           TRIGGER: ${{ github.event_name }}
+          ONE_SHOT: ${{ contains(github.event.head_commit.message, '[SP35-LIVE-CREATE-ONCE]') }}
         run: |
-          if [[ "$TRIGGER" == 'workflow_dispatch' ]] || \
+          if [[ "$TRIGGER" == 'workflow_dispatch' || "$ONE_SHOT" == 'true' ]] || \
              [[ "$PRIMARY_PROVIDER" == 'openai' && "$HAS_XAI_KEY" == 'true' && "$HAS_XAI_MODEL" == 'true' && ( -z "$CONFIGURED_FALLBACK" || "$CONFIGURED_FALLBACK" == 'xai' ) ]] || \
              [[ "$HAS_DEEPSEEK_KEY" == 'true' && "$HAS_DEEPSEEK_MODEL" == 'true' && "$CONFIGURED_FALLBACK" == 'deepseek' && "$PRIMARY_PROVIDER" != 'deepseek' ]]; then
             echo "APPF2_SP35_LIVE_E2E_ALLOWED=1" >> "$GITHUB_ENV"

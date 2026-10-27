@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { OpenAiCompatibleModelGateway, safeUpstream429Code } from "../../src/platform/compiler/openai-compatible-gateway.js";
+import { OpenAiCompatibleModelGateway, safeUpstream429Code, type FetchLike } from "../../src/platform/compiler/openai-compatible-gateway.js";
 import type { ModelGatewayRequest } from "../../src/platform/compiler/model-gateway.js";
 
 const request: ModelGatewayRequest = {
@@ -11,7 +11,7 @@ const response = (status: number, body: unknown, retryAfter: string | null = nul
   status, headers: { get: (_name: string) => retryAfter }, text: async () => JSON.stringify(body)
 });
 const makeGateway = (fetcher: ReturnType<typeof vi.fn>) =>
-  new OpenAiCompatibleModelGateway({ baseUrl: "https://api.openai.com/v1", apiKey: "test-secret", model: "gpt-4.1" }, fetcher);
+  new OpenAiCompatibleModelGateway({ baseUrl: "https://api.openai.com/v1", apiKey: "test-secret", model: "gpt-4.1" }, fetcher as unknown as FetchLike);
 
 describe("Sprint 3.5 safe 429 diagnosis and bounded recovery", () => {
   it.each(["rate_limit_exceeded", "insufficient_quota", "credit_balance_exhausted",
