@@ -18,7 +18,7 @@ describe("Sprint 3.5 staging output token spending guard", () => {
       sent.push(body.max_completion_tokens ?? -1);
       return {
         status: 200, headers: { get: () => null },
-        text: async () => JSON.stringify({ choices: [{ message: { content: "{\\"ok\\":true}" } }] })
+        text: async () => JSON.stringify({ choices: [{ message: { content: JSON.stringify({ ok: true }) } }] })
       };
     };
     const model = new OpenAiCompatibleModelGateway(appf2ModelProviderConfig(env).config, fetcher);
