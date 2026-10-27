@@ -54,7 +54,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {
@@ -94,7 +94,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {
@@ -254,7 +254,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {
@@ -329,7 +329,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {
@@ -415,7 +415,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {
@@ -482,7 +482,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {
@@ -534,7 +534,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {
@@ -590,7 +590,7 @@
                 "uniqueItems": true,
                 "items": {
                   "type": "string",
-                  "pattern": "^sha256:[0-9a-f]{64}$"
+                  "pattern": "^(sha256:[0-9a-f]{64}|req_[1-9][0-9]{0,2})$"
                 }
               },
               "heading": {

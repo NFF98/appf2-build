@@ -15,6 +15,7 @@ import { COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS, type RequestDeadline } from "./m
 import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION, PROMPT_B_PLAN_VERSION } from "./prompts.js";
 import COMPOSITION_PLAN_SCHEMA from "./composition-plan-v1.schema.json";
 import { certifyTypedModuleRoles, lowerCompositionPlan, parseCompositionPlan, CompositionPlanError } from "./typed-composition.js";
+import { aliasResolvedRequirements, restorePlanRequirementIds } from "./typed-requirement-aliases.js";
 import { BlueprintAttemptBudget, StaleAttemptError, callProviderWithBoundedRetry } from "./provider-attempts.js";
 import { classifyRejection, isFixableClass, type ClassifiedRejection } from "./rejection-classification.js";
 
@@ -144,7 +145,9 @@ export function isMultiModulePlanEligible(coverage: CoverageResult, requirementC
 
 function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: readonly ValidationIssueFeedback[]): JsonRecord {
   return {
-    resolved_intent: scope.resolved as unknown as JsonValue,
+    resolved_intent: isMultiModulePlanEligible(coverage,scope.resolved.capability_requirements.length) &&
+      scope.resolved.capability_requirements.length >= 8
+      ? aliasResolvedRequirements(scope.resolved) : scope.resolved as unknown as JsonValue,
     ephemeral_resolved_context: scope.ephemeral as unknown as JsonValue,
     accepted_visible_assumptions: scope.resolved.accepted_assumptions as unknown as JsonValue,
     capability_coverage_result: { ...coverageSupport(coverage), selected: coverage.selected.map((ref) => ({ ...ref })),
@@ -276,8 +279,12 @@ class ComposeLoop {
           inputPayload: composeInput(this.scope, this.coverage, feedback),
           accept: (value: JsonValue): JsonValue | null => {
             if (!planMode) return this.acceptCandidate(value);
-            const output = this.acceptCandidate(value);
-            if (output === null) return null;
+            const original = this.acceptCandidate(value);
+            if (original === null) return null;
+            const output = isMultiModulePlanEligible(this.coverage,
+              this.scope.resolved.capability_requirements.length) &&
+                this.scope.resolved.capability_requirements.length >= 8
+              ? restorePlanRequirementIds(original,this.scope.resolved.capability_requirements) : original;
             try {
               parseCompositionPlan(output, new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)),
                 new Set(this.scope.resolved.capability_requirements.filter(r => r.required).map(r => r.requirement_id)));
