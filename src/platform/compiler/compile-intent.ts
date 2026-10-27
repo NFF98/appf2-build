@@ -190,7 +190,8 @@ async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
   observe(run, progress, record.lifecycle_status);
   const refreshCoverage = (): CoverageResult => certifyCompositeCoverage(
     dependencies.coverage({ requirements: projection.resolved_intent.capability_requirements }),
-    projection.resolved_intent.capability_requirements
+    projection.resolved_intent.capability_requirements,
+    record.raw_intent ?? undefined
   );
   const coverage = refreshCoverage();
   evidence.add("F01-EVT-008", { coverage_status: coverage.status, registry_version: coverage.registryVersion });

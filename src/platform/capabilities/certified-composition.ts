@@ -25,9 +25,21 @@ function matchesClass(
     (pattern === undefined || pattern.test(r.semantic_need)));
 }
 
-function hasTaskListSignature(requirements: readonly CapabilityRequirement[]): boolean {
-  // This certificate covers EXACTLY the six known interactions, not arbitrary extras.
-  if (requirements.length !== 6) return false;
+/** A missing ADD hint can be reconstructed only from bounded original user text,
+ * never from the model's goal, labels, or suggested capability refs. */
+function originalExplicitTaskAdd(rawIntent?: string): boolean {
+  if (rawIntent === undefined || rawIntent.length > 300) return false;
+  const text = rawIntent.normalize("NFKC");
+  return /(?:待辦|任务|任務|task|todo)/i.test(text) &&
+    /(?:新增|添加|加入|add|create).{0,8}(?:任務|任务|待辦|task)/i.test(text) &&
+    /(?:刪除|删除|移除|remove|delete)/i.test(text) &&
+    /(?:完成|勾選|勾选|check|complete)/i.test(text) &&
+    !/(?:提醒|跨裝置|跨设备|同步|登录|登入|付費|付款|share|calendar|email|通知|鬧鐘)/i.test(text);
+}
+
+function hasTaskListSignature(requirements: readonly CapabilityRequirement[], rawIntent?: string): boolean {
+  // Exactly six explicit hints, or five with a server-verified original ADD requirement.
+  if (requirements.length !== 6 && requirements.length !== 5) return false;
   // Real Prompt A emits the exact primitive class 'action' for delete
   // and 'button' for add. Both are F01-catalog user-gesture roles.
   const buttons = requirements.filter(r => r.interaction_class === "button" ||
@@ -40,10 +52,13 @@ function hasTaskListSignature(requirements: readonly CapabilityRequirement[]): b
   const text = matchesClass(requirements, "text_input");
   const metric = matchesClass(requirements, "metric");
   const list = matchesClass(requirements, "repeated_content");
-  return add.length === 1 && remove.length === 1 &&
-    add[0]!.requirement_id !== remove[0]!.requirement_id &&
+  const explicitAdd = add.length === 1 && requirements.length === 6;
+  const recoveredAdd = add.length === 0 && requirements.length === 5 && originalExplicitTaskAdd(rawIntent);
+  return (explicitAdd || recoveredAdd) && remove.length === 1 &&
+    (!explicitAdd || add[0]!.requirement_id !== remove[0]!.requirement_id) &&
     toggle.length === 1 && text.length === 1 && metric.length === 1 && list.length === 1 &&
-    [add[0], remove[0], toggle[0], text[0], metric[0]].every(x => x?.required === true) &&
+    [...(explicitAdd ? [add[0]] : []), remove[0], toggle[0], text[0], metric[0]]
+      .every(x => x?.required === true) &&
     text[0]!.input_types.length === 1 && text[0]!.input_types[0] === "STRING" &&
     metric[0]!.output_types.length === 1 && metric[0]!.output_types[0] === "NUMBER";
 }
@@ -62,9 +77,10 @@ function requiresUnsupportedCalendar(requirements: readonly CapabilityRequiremen
  */
 export function certifyCompositeCoverage(
   coverage: CoverageResult,
-  requirements: readonly CapabilityRequirement[]
+  requirements: readonly CapabilityRequirement[],
+  originalUserIntent?: string
 ): CoverageResult {
-  if (!hasTaskListSignature(requirements)) return coverage;
+  if (!hasTaskListSignature(requirements, originalUserIntent)) return coverage;
   const temporal = requiresUnsupportedCalendar(requirements);
   if (coverage.requirements.some(r => r.status === "EXTERNAL_REQUIRED")) return coverage;
   if (coverage.registryVersion !== CAPABILITY_REGISTRY_SOURCE.registryVersion ||

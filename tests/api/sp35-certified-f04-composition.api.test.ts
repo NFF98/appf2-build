@@ -72,6 +72,21 @@ describe("Sprint3.5 F04 certified role closure from six real F01 atomic hints",(
     expect(certified.selected.map(x=>x.id)).toContain("layout.container");
   });
 
+  it("restores omitted ADD only from the real original human prompt, never model labels",()=>{
+    const seen=features.filter(x=>x.semantic_need!=="新增任務的按鈕").map(x=>
+      x.semantic_need==="刪除任務的按鈕" ? {...x,interaction_class:"action",
+        semantic_need:"刪除指定任務"} : x);
+    expect(seen).toHaveLength(5);
+    const base=resolveCapabilityCoverage({requirements:seen});
+    expect(certifyCompositeCoverage(base,seen).certifiedProfile).toBeUndefined();
+    const raw="幫我做一個漂亮又好用的待辦清單，可以新增任務、勾選完成、刪除任務，還能看到今天完成多少。";
+    const proof=certifyCompositeCoverage(base,seen,raw);
+    expect(proof.certifiedProfile).toBe("RECORD_LIST_TODAY");
+    expect(isCertifiedPlanEligible(proof)).toBe(true);
+    expect(certifyCompositeCoverage(base,seen,"做一個待辦清單，可以刪除任務").certifiedProfile).toBeUndefined();
+    expect(certifyCompositeCoverage(base,seen,raw+" 並同步到雲端").certifiedProfile).toBeUndefined();
+  });
+
   it("never silently reports today-only completion as an all-time counter",()=>{
     const time=features.map(x=>x.interaction_class==="metric"?{...x,semantic_need:"顯示今日完成任務數量"}:x);
     const coverage=certifyCompositeCoverage(resolveCapabilityCoverage({requirements:time}),time);
