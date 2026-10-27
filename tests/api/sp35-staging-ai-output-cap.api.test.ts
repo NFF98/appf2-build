@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { openAiCompatibleConfigFromEnv, OpenAiCompatibleModelGateway, type FetchLike } from "../../src/platform/compiler/openai-compatible-gateway.js";
 import { appf2ModelProviderConfig } from "../../src/platform/compiler/appf2-model-provider.js";
 import type { ModelGatewayRequest } from "../../src/platform/compiler/model-gateway.js";
