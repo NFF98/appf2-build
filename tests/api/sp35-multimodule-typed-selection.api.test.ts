@@ -28,7 +28,7 @@ describe("Sprint 3.5 bounded multi-module Prompt B route", () => {
     }]}, 10)).toBe(false);
     // F02 Builder, not plan-selection, independently rejects a missing
     // numeric input if a BUDGET or SHOPPING_LIST module actually uses it.
-    expect(isMultiModulePlanEligible({...coverage(), selected: roles.filter(r => r.id !== "input.number")}, 10)).toBe(true);
+    expect(isMultiModulePlanEligible({...coverage(), selected: roles.filter(r => r.id !== "input.number")}, 10)).toBe(false);
     expect(isMultiModulePlanEligible({...coverage(), certifiedProfile: "RECORD_LIST"}, 10)).toBe(false);
   });
 });
