@@ -51,6 +51,22 @@ export class ModelGatewayConfigError extends Error {
   }
 }
 
+function outputCapsFromEnv(env: Readonly<Record<string, string | undefined>>): OpenAiCompatibleConfig["outputCaps"] {
+  const a = env[MODEL_GATEWAY_ENV.analysisOutputCap];
+  const b = env[MODEL_GATEWAY_ENV.blueprintOutputCap];
+  let outputCaps: OpenAiCompatibleConfig["outputCaps"];
+  if (a !== undefined || b !== undefined) {
+    const analysis = Number(a);
+    const blueprint = Number(b);
+    if (!Number.isInteger(analysis) || analysis < 1024 || analysis > 20000 ||
+        !Number.isInteger(blueprint) || blueprint < 1024 || blueprint > 20000) {
+      throw new ModelGatewayConfigError(["APPF2_MODEL_OUTPUT_CAP_ANALYSIS/BLUEPRINT (1024..20000)"]);
+    }
+    outputCaps = { INTENT_ANALYSIS: analysis, BLUEPRINT_COMPOSE: blueprint };
+  }
+  return outputCaps;
+}
+
 function pricingFrom(env: Readonly<Record<string, string | undefined>>): ModelPricing | undefined {
   const input = Number(env[MODEL_GATEWAY_ENV.inputCostPerMillion]);
   const output = Number(env[MODEL_GATEWAY_ENV.outputCostPerMillion]);
@@ -71,18 +87,7 @@ export function openAiCompatibleConfigFromEnv(env: Readonly<Record<string, strin
   ].filter(([, value]) => value === "").map(([name]) => name as string);
   if (missing.length > 0) throw new ModelGatewayConfigError(missing);
   const pricing = pricingFrom(env);
-  const a = env[MODEL_GATEWAY_ENV.analysisOutputCap];
-  const b = env[MODEL_GATEWAY_ENV.blueprintOutputCap];
-  let outputCaps: OpenAiCompatibleConfig["outputCaps"];
-  if (a !== undefined || b !== undefined) {
-    const analysis = Number(a);
-    const blueprint = Number(b);
-    if (!Number.isInteger(analysis) || analysis < 1024 || analysis > 20000 ||
-        !Number.isInteger(blueprint) || blueprint < 1024 || blueprint > 20000) {
-      throw new ModelGatewayConfigError(["APPF2_MODEL_OUTPUT_CAP_ANALYSIS/BLUEPRINT (1024..20000)"]);
-    }
-    outputCaps = { INTENT_ANALYSIS: analysis, BLUEPRINT_COMPOSE: blueprint };
-  }
+  const outputCaps = outputCapsFromEnv(env);
   return {
     baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model,
     ...(pricing === undefined ? {} : { pricing }),
