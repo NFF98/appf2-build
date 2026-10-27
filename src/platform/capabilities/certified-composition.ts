@@ -52,17 +52,6 @@ function requiresUnsupportedCalendar(requirements: readonly CapabilityRequiremen
     /(?:今天|今日|本日|當日|当日|当日|today|daily|current.day)/i.test(r.semantic_need));
 }
 
-function unsupportedCalendar(coverage: CoverageResult, requirement: CapabilityRequirement): CoverageResult {
-  return {
-    ...coverage,
-    status: "UNSUPPORTED",
-    requirements: coverage.requirements.map(r => r.requirementId === requirement.requirement_id ?
-      { ...r, status: "UNSUPPORTED" as const, capabilityRefs: [], reason: "F04-COMPOSITION-CALENDAR_NOT_SUPPORTED" } : r),
-    gaps: [...coverage.gaps.filter(g => g.requirementId !== requirement.requirement_id),
-      { requirementId: requirement.requirement_id, description: "Today-only completion requires a supported date/time contract.", evidenceCode: "F04-EVT-006" }]
-  };
-}
-
 /**
  * Runs on server-owned, admission-verified ResolvedIntent capabilities before Prompt B.
  * No provider can choose refs/versions, bypass runtime handler registration, or
