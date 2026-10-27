@@ -22,8 +22,12 @@ export type HabitModule = Base & { readonly kind: "HABIT"; readonly heading: str
   readonly habit_label: string; readonly complete_label: string; readonly completed_label: string };
 export type TodaySummaryModule = Base & { readonly kind: "TODAY_SUMMARY";
   readonly heading: string; readonly source_key: string; readonly total_label: string; readonly completed_label: string };
+export type ShoppingModule = Base & { readonly kind: "SHOPPING_LIST";
+  readonly heading: string; readonly item_label: string; readonly quantity_label: string;
+  readonly add_label: string; readonly bought_label: string; readonly update_quantity_label: string;
+  readonly total_label: string; readonly outstanding_label: string; readonly max_items: number };
 export type CompositionModule = DisplayModule | FormModule | ArithmeticModule | RecordListModule |
-  BudgetModule | HabitModule | TodaySummaryModule;
+  BudgetModule | HabitModule | TodaySummaryModule | ShoppingModule;
 export type CompositionPlan = { readonly plan_version: "1.0.0"; readonly title: string; readonly description?: string; readonly modules: readonly CompositionModule[] };
 export type AssemblerContext = { readonly coverage: CoverageResult; readonly validRequirementIds: ReadonlySet<string> };
 
@@ -118,6 +122,12 @@ export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string
       for (const keyName of ["heading", "left_label", "right_label", "result_label"]) label(m[keyName], path + "." + keyName);
       if (!["ADD", "SUB", "MUL"].includes(String(m.operation))) fail("PLAN_SCHEMA_INVALID", path + ".operation");
       numeric(m.initial_left, path + ".initial_left"); numeric(m.initial_right, path + ".initial_right");
+    } else if (kind === "SHOPPING_LIST") {
+      shape(m, [...common, "heading", "item_label", "quantity_label", "add_label", "bought_label",
+        "update_quantity_label", "total_label", "outstanding_label", "max_items"], [], path);
+      for (const keyName of ["heading", "item_label", "quantity_label", "add_label", "bought_label",
+        "update_quantity_label", "total_label", "outstanding_label"]) label(m[keyName], path + "." + keyName);
+      integer(m.max_items, path + ".max_items", 1, 100);
     } else if (kind === "HABIT") {
       shape(m, [...common, "heading", "habit_label", "complete_label", "completed_label"], [], path);
       for (const keyName of ["heading", "habit_label", "complete_label", "completed_label"])
@@ -364,11 +374,90 @@ function todaySummaryModule(b: Builder, p: string, mod: TodaySummaryModule,
   ]);
 }
 
+/** Per-row safe shopping CRUD, with a bounded quantity editor that updates
+ * ONLY the pressed row's original list index. No filtered-index writes. */
+function shoppingModule(b: Builder, p: string, mod: ShoppingModule): string {
+  const rows = "s_" + p + "_rows", title = "s_" + p + "_title",
+    quantity = "s_" + p + "_quantity", allowed = "s_" + p + "_allowed";
+  const itemType: JsonValue = { type: "RECORD", constraints: { fields: {
+    title: { type: "STRING", constraints: { max_length: 120 } },
+    quantity: { type: "NUMBER" },
+    purchased: { type: "BOOLEAN" }
+  } } };
+  b.stateKey(rows,typeState("LIST",[],{item:itemType,max_length:mod.max_items}));
+  b.stateKey(title,typeState("STRING","",{max_length:120}));
+  b.stateKey(quantity,typeState("NUMBER",1));
+  b.stateKey(allowed,typeState("BOOLEAN",false));
+  const template = "s_" + p + "_template";
+  b.stateKey(template,typeState("RECORD",{title:"",quantity:1,purchased:false},
+    (itemType as {constraints:JsonValue}).constraints));
+  const titleAction = "action_" + p + "_title", quantityAction = "action_" + p + "_quantity",
+    add = "action_" + p + "_add", toggle = "action_" + p + "_toggle",
+    update = "action_" + p + "_update_quantity";
+  b.action(titleAction,[{type:"SET_STATE",target:title,value:event("value")}]);
+  b.action(quantityAction,[{type:"SET_STATE",target:quantity,value:event("value"),
+    when:op("AND",op("GTE",event("value"),lit(1)),op("LTE",event("value"),lit(1000)))}]);
+  const canAdd = op("AND", op("NEQ",op("TRIM",state(title)),lit("")),
+    op("LT",op("COUNT",state(rows)),lit(mod.max_items)));
+  const newRow = op("RECORD_SET",op("RECORD_SET",state(template),lit("title"),state(title)),
+    lit("quantity"),state(quantity));
+  b.action(add,[
+    {type:"SET_STATE",target:allowed,value:canAdd},
+    {type:"SET_STATE",target:rows,value:op("LIST_APPEND",state(rows),newRow),when:state(allowed)},
+    {type:"SET_STATE",target:title,value:lit(""),when:state(allowed)},
+    {type:"RESET_STATE",target:allowed}
+  ]);
+  const toggleRow = op("RECORD_SET",scope("item"),lit("purchased"),op("NOT",scope("item","purchased")));
+  b.action(toggle,[{type:"SET_STATE",target:rows,value:op("LIST_REPLACE_AT",state(rows),scope("index"),toggleRow)}]);
+  const changed = op("RECORD_SET",scope("item"),lit("quantity"),state(quantity));
+  b.action(update,[{type:"SET_STATE",target:rows,value:op("LIST_REPLACE_AT",state(rows),scope("index"),changed)}]);
+  const total = op("COUNT",state(rows));
+  const outstanding = op("COUNT",op("LIST_FILTER_EQ",state(rows),lit("purchased"),lit(false)));
+  b.output("result_" + p + "_total",mod.total_label,total);
+  b.output("result_" + p + "_outstanding",mod.outstanding_label,outstanding);
+  const rowNode = "node_" + p + "_row";
+  layout(b,rowNode,[
+    b.node("node_" + p + "_item_title","content.text",{
+      props:{role:lit("BODY")},bindings:{text:scope("item","title")}
+    }),
+    b.node("node_" + p + "_item_quantity","data.stat",{
+      props:{label:lit(mod.quantity_label),format:lit("NUMBER")},bindings:{value:scope("item","quantity")}
+    }),
+    b.node("node_" + p + "_toggle","action.button",{
+      props:{label:lit(mod.bought_label)},events:{press:toggle}
+    }),
+    b.node("node_" + p + "_update_quantity","action.button",{
+      props:{label:lit(mod.update_quantity_label)},events:{press:update}
+    })
+  ],true);
+  return layout(b,"node_" + p + "_container",[
+    titleNode(b,"node_" + p + "_heading",mod.heading),
+    b.node("node_" + p + "_input","input.text",{
+      props:{label:lit(mod.item_label),max_length:lit(120)},
+      bindings:{bind:state(title)},events:{change:titleAction}
+    }),
+    b.node("node_" + p + "_quantity","input.number",{
+      props:{label:lit(mod.quantity_label),min:lit(1),max:lit(1000)},
+      bindings:{bind:state(quantity)},events:{change:quantityAction}
+    }),
+    b.node("node_" + p + "_add","action.button",{props:{label:lit(mod.add_label)},events:{press:add}}),
+    b.node("node_" + p + "_total","data.stat",{
+      props:{label:lit(mod.total_label),format:lit("NUMBER")},bindings:{value:total}
+    }),
+    b.node("node_" + p + "_outstanding","data.stat",{
+      props:{label:lit(mod.outstanding_label),format:lit("NUMBER")},bindings:{value:outstanding}
+    }),
+    b.node("node_" + p + "_list","content.list",{
+      repeat:{items:state(rows),item_alias:"item",index_alias:"index",max_items:mod.max_items},children:[rowNode]
+    })
+  ]);
+}
 function moduleBlueprint(b: Builder, mod: CompositionModule, i: number): string {
   const p = "m" + String(i).padStart(3, "0");
   if (mod.kind === "RECORD_LIST") return recordList(b, p, mod);
   if (mod.kind === "BUDGET") return budgetModule(b, p, mod);
   if (mod.kind === "HABIT") return habitModule(b, p, mod);
+  if (mod.kind === "SHOPPING_LIST") return shoppingModule(b, p, mod);
   if (mod.kind === "DISPLAY") {
     return layout(b, "node_" + p + "_container", [titleNode(b, "node_" + p + "_heading", mod.heading),
       b.node("node_" + p + "_body", "content.text", { props: { role: lit("BODY") }, bindings: { text: lit(mod.body) } })]);
