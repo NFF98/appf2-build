@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CAPABILITY_REGISTRY_SOURCE } from "../../src/platform/capabilities/registry.js";
 import { isMultiModulePlanEligible } from "../../src/platform/compiler/compose-validate.js";
+import { TYPED_PLAN_POLICY } from "../../src/platform/compiler/prompts.js";
 import type { CoverageResult } from "../../src/platform/capabilities/coverage.js";
 
 const ACTIVE = ["layout.container", "content.text", "content.list",
@@ -17,6 +18,12 @@ const coverage = (): CoverageResult => ({
 });
 
 describe("Sprint 3.5 bounded multi-module Prompt B route", () => {
+  it("teaches the provider all five real LifePilot modules, not obsolete four kinds", () => {
+    for (const kind of ["RECORD_LIST", "TODAY_SUMMARY", "SHOPPING_LIST", "BUDGET", "HABIT"]) {
+      expect(TYPED_PLAN_POLICY).toContain(kind);
+    }
+    expect(TYPED_PLAN_POLICY).not.toContain("ARITHMETIC, RECORD_LIST only.");
+  });
   it("selects concise typed composition only for fully-covered complex role sets", () => {
     expect(isMultiModulePlanEligible(coverage(), 8)).toBe(true);
     expect(isMultiModulePlanEligible(coverage(), 4)).toBe(true);
