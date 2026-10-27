@@ -45,6 +45,31 @@ function provenListChoices(value: JsonValue | undefined, alternatives: JsonValue
   return options.size >= 2 && value.every(entry => options.has(JSON.stringify(entry)));
 }
 
+/**
+ * Fix only an internally inconsistent question label. The expected value
+ * type is retained, and the authoritative F01 parser still validates choices,
+ * facts, provenance and policy. Never infer new alternatives or modify risk.
+ */
+function alignQuestionMetadata(item: JsonValue): JsonValue {
+  if (!safePolicyItem(item) || !isPlainRecord(item)) return item;
+  if (typeof item.expected_value_type !== "string" ||
+      typeof item.question_type !== "string") return item;
+  const expectedQuestion = QUESTIONS[item.expected_value_type];
+  if (expectedQuestion === undefined ||
+      !Object.values(QUESTIONS).includes(item.question_type) ||
+      expectedQuestion === item.question_type) return item;
+  const alternatives = item.alternatives;
+  if (expectedQuestion === "SINGLE_CHOICE" || expectedQuestion === "MULTI_CHOICE") {
+    if (!Array.isArray(alternatives) ||
+        new Set(alternatives.map(choice => JSON.stringify(choice))).size < 2) return item;
+  } else if (Array.isArray(alternatives) && alternatives.length > 0 &&
+             (item.question_type === "SINGLE_CHOICE" || item.question_type === "MULTI_CHOICE")) {
+    // Nonempty options may carry intentional choice semantics: do not overwrite.
+    return item;
+  }
+  return { ...item, question_type: expectedQuestion };
+}
+
 function fixScalarMetadata(item: JsonValue): JsonValue {
   if (!isPlainRecord(item) || !safePolicyItem(item)) return item;
   const value = item.resolution_state === "CONFIRMED" ? item.resolved_value :
@@ -99,7 +124,7 @@ export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
   });
   const policy = Object.fromEntries(COLLECTIONS.flatMap(name => {
     const items = value[name];
-    return Array.isArray(items) ? [[name, items.map(item => fixScalarMetadata(promoteRequiredMateriality(item)))]] : [];
+    return Array.isArray(items) ? [[name, items.map(item => alignQuestionMetadata(fixScalarMetadata(promoteRequiredMateriality(item))))]] : [];
   }));
   return { ...value, requested_outputs: outputs, capability_hints: capabilities, ...policy };
 }
