@@ -110,7 +110,8 @@ describe("AI-generated semantic needs map only through unambiguous registered cl
     const cases = [
       { interaction_class: "button", input_types: [], output_types: [], id: "action.button" },
       { interaction_class: "list", input_types: [], output_types: ["LIST"], id: "content.list" },
-      { interaction_class: "statistic", input_types: [], output_types: ["NUMBER"], id: "data.stat" }
+      { interaction_class: "statistic", input_types: [], output_types: ["NUMBER"], id: "data.stat" },
+      { interaction_class: "result", input_types: ["NUMBER"], output_types: ["NUMBER"], id: "data.stat" }
     ];
     for (const shape of cases) {
       const result = resolveCapabilityCoverage({ requirements: [{

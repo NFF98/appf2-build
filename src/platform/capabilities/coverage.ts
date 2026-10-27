@@ -233,8 +233,11 @@ function matchesPrimitiveShape(requirement: CapabilityRequirement, candidate: Ca
   if (candidate.id === "content.list") return (
     (inputs.length === 0 || (inputs.length === 1 && inputs[0] === "LIST")) &&
     outputs.length === 1 && outputs[0] === "LIST");
-  if (candidate.id === "data.stat") return inputs.length === 0 &&
-    outputs.length === 1 && ["NUMBER", "STRING", "BOOLEAN", "ENUM"].includes(outputs[0]!);
+  if (candidate.id === "data.stat") return outputs.length === 1 &&
+    ["NUMBER", "STRING", "BOOLEAN", "ENUM"].includes(outputs[0]!) &&
+    // Existing numeric result hints legitimately carry their displayed value
+    // as an input. This is still a pure display, never a LIST or RECORD edit.
+    (inputs.length === 0 || (inputs.length === 1 && inputs[0] === outputs[0]));
   return true;
 }
 
