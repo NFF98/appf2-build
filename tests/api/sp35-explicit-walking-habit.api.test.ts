@@ -23,6 +23,11 @@ describe("Sprint 3.5 named habit fidelity",()=>{
     expect(byRequirement.modules[0]?.habit_label).toBe("Walking");
     expect(alignExplicitWalkingHabit(plan as JsonValue,intent("Track reading habit"))).toEqual(plan);
   });
+  it("preserves explicit original user phrasing even if model semantic summary omits Walking",()=>{
+    const changed=alignExplicitWalkingHabit(plan as JsonValue,intent("Generic wellness app"), 
+      "LifePilot Healthy Habits: Walking habit; let me complete it every day") as typeof plan;
+    expect(changed.modules[0]?.habit_label).toBe("Walking");
+  });
   it("never converts multiple distinct habits into Walking",()=>{
     const multiple={...plan,modules:[module,{...module,key:"another",habit_label:"Yoga"}]};
     expect(alignExplicitWalkingHabit(multiple as JsonValue,intent("Walking and Yoga habits")))

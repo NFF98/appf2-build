@@ -214,6 +214,7 @@ async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
     deadline: new RequestDeadline(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.compile], () => dependencies.clock().getTime()),
     progress,
     resolved: projection.resolved_intent,
+    originalUserIntent: record.raw_intent ?? undefined,
     ephemeral,
     recomposeAvailable: await recomposeAvailable(dependencies, record, run.operation, run.reacquired),
     maxValidationRecomposes: 1,

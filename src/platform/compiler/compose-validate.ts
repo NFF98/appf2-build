@@ -30,6 +30,8 @@ export type ComposeScope = {
   readonly deadline: RequestDeadline;
   readonly progress: CreateProgressOperation | null;
   readonly resolved: ResolvedIntent;
+  /** The authoritative original F01 user text already loaded by compile; never logged or stored in the plan. */
+  readonly originalUserIntent?: string;
   readonly ephemeral: EphemeralResolvedContext;
   /** False when this logical compile operation already spent its single validation-driven recompose. */
   readonly recomposeAvailable: boolean;
@@ -286,7 +288,7 @@ class ComposeLoop {
                 this.scope.resolved.capability_requirements.length >= 8
               ? alignExplicitWalkingHabit(
                   restorePlanRequirementIds(original,this.scope.resolved.capability_requirements),
-                  this.scope.resolved
+                  this.scope.resolved, this.scope.originalUserIntent
                 ) : original;
             try {
               parseCompositionPlan(output, new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)),

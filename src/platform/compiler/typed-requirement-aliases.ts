@@ -34,11 +34,12 @@ export function restorePlanRequirementIds(
 /** Preserve a single explicitly named Walking habit from trusted resolved
  * semantics when a planner emits a generic activity label. Does not add a
  * module, invent a required feature, touch IDs or alter multi-habit requests. */
-export function alignExplicitWalkingHabit(raw:JsonValue,resolved:ResolvedIntent):JsonValue {
+export function alignExplicitWalkingHabit(raw:JsonValue,resolved:ResolvedIntent,
+  originalUserIntent?:string):JsonValue {
   if(!isPlainRecord(raw) || !Array.isArray(raw.modules)) return raw;
   const modules=raw.modules.filter(m=>isPlainRecord(m) && m.kind==="HABIT");
   if(modules.length!==1) return raw;
-  const explicit=[JSON.stringify(resolved.goal),
+  const explicit=[originalUserIntent??"",JSON.stringify(resolved.goal),
     ...resolved.capability_requirements.map(r=>r.semantic_need)]
     .some(text=>/\bwalking\b/i.test(text));
   if(!explicit) return raw;
