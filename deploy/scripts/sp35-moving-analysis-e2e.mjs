@@ -1,6 +1,7 @@
 // Bounded, explicit one-shot paid regression: original ordinary-language moving request.
 // Assertions remain fail-closed through F01, F02, F03 interactions and reload.
 import { chromium } from "@playwright/test";
+import path from "node:path";
 const origin = new URL(process.env.APPF2_STAGING_URL?.trim() || "");
 if (origin.protocol !== "https:" || !/^appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/i.test(origin.hostname) || origin.pathname!=="/" || origin.search || origin.hash) throw Error("isolated staging only");
 const input = [
@@ -11,8 +12,9 @@ const input = [
  "畫面不要太複雜，手機和電腦看起來都要清楚。重新整理網頁後，我記下的東西也不要消失。"
 ].join("\n\n");
 const browser=await chromium.launch();
+const page=await browser.newPage();
+const screenshotPath=path.join(process.env.RUNNER_TEMP||"/tmp","appf2-sp35-browser.png");
 try {
- const page=await browser.newPage();
  await page.goto(origin.origin,{waitUntil:"domcontentloaded"});
  await page.locator("#composer-input").fill(input);
  const pending=page.waitForResponse(r=>r.request().method()==="POST" && new URL(r.url()).pathname==="/api/v1/intents",{timeout:110000});
@@ -142,5 +144,9 @@ try {
  if(!allMoney.includes(37)||!allMoney.includes(163))
    throw Error("MOVING RELOAD: budget/expense lost");
  console.log("STAGING MOVING: REAL CHINESE TASKS + SHOPPING + BUDGET + RELOAD ACTIONS PASS");
-
-}finally{await browser.close()}
+ await page.screenshot({path:screenshotPath,fullPage:true});
+ console.log("STAGING MOVING: browser screenshot captured");
+} catch (error) {
+ await page.screenshot({path:screenshotPath,fullPage:true}).catch(()=>{});
+ throw error;
+} finally {await browser.close()}
