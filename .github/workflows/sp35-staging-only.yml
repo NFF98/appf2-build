@@ -243,8 +243,8 @@ jobs:
           PRIMARY_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER || 'openai' }}
           TRIGGER: ${{ github.event_name }}
         run: |
-          if [[ "$TRIGGER" == 'workflow_dispatch' ]] || \\
-             [[ "$PRIMARY_PROVIDER" == 'openai' && "$HAS_XAI_KEY" == 'true' && "$HAS_XAI_MODEL" == 'true' && ( -z "$CONFIGURED_FALLBACK" || "$CONFIGURED_FALLBACK" == 'xai' ) ]] || \\
+          if [[ "$TRIGGER" == 'workflow_dispatch' ]] || \
+             [[ "$PRIMARY_PROVIDER" == 'openai' && "$HAS_XAI_KEY" == 'true' && "$HAS_XAI_MODEL" == 'true' && ( -z "$CONFIGURED_FALLBACK" || "$CONFIGURED_FALLBACK" == 'xai' ) ]] || \
              [[ "$HAS_DEEPSEEK_KEY" == 'true' && "$HAS_DEEPSEEK_MODEL" == 'true' && "$CONFIGURED_FALLBACK" == 'deepseek' && "$PRIMARY_PROVIDER" != 'deepseek' ]]; then
             echo "APPF2_SP35_LIVE_E2E_ALLOWED=1" >> "$GITHUB_ENV"
             echo "STAGING LIVE E2E: one signed CREATE allowed; no separate probe completion"
