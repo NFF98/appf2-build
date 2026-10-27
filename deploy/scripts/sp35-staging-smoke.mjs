@@ -47,12 +47,12 @@ for(let i=0;i<3;i++){
     post=await fetch(new URL("/api/v1/intents",base),{
       method:"POST",headers:{"Content-Type":"application/json","Origin":base.origin},
       body:JSON.stringify({intent_kind:"CREATE",raw_intent:"smoke unauthorized"}),
-      signal:AbortSignal.timeout(10000)
+      signal:globalThis.AbortSignal.timeout(10000)
     });
     body=await post.text();
     break;
   }catch(error) {
-    if(i===2) throw new Error("STAGING SMOKE: unsigned POST transport unavailable after 3 bounded tries");
+    if(i===2) throw new Error("STAGING SMOKE: unsigned POST transport unavailable after 3 bounded tries", {cause:error});
     console.warn("STAGING SMOKE: unsigned POST temporary transport error attempt="+(i+1)+
       " kind="+(error instanceof Error ? error.name : "UNKNOWN"));
     await sleep(1200*(i+1));
