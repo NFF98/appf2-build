@@ -15,7 +15,7 @@ export interface PopKey {
 export interface StoredPopMaterial {
   /** Nonextractable CryptoKey. Structured-cloned by the browser, never exported to text. */
   readonly privateKey: CryptoKey;
-  readonly spki: Uint8Array;
+  readonly spki: Uint8Array<ArrayBuffer>;
   readonly thumbprint: string;
   readonly expiresAt: number;
 }
