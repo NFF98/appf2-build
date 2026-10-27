@@ -8,7 +8,7 @@ import type {
   ModelGatewayResponse,
   TokenUsage
 } from "./model-gateway.js";
-import { SYSTEM_POLICY } from "./prompts.js";
+import { PROMPT_B_PLAN_VERSION, SYSTEM_POLICY, TYPED_PLAN_POLICY } from "./prompts.js";
 
 export const OPENAI_COMPATIBLE_ADAPTER_ID = "openai-compatible";
 
@@ -193,7 +193,8 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
         max_completion_tokens: this.config.outputCaps[request.operation]
       }),
       messages: [
-        { role: "system", content: SYSTEM_POLICY[request.operation] },
+        { role: "system", content: request.operation === "BLUEPRINT_COMPOSE" && request.prompt_version === PROMPT_B_PLAN_VERSION
+          ? TYPED_PLAN_POLICY : SYSTEM_POLICY[request.operation] },
         { role: "user", content: JSON.stringify(request.input_payload) }
       ],
       response_format: this.config.outputFormat === "json_object"

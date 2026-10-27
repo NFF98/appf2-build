@@ -211,7 +211,7 @@ async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
     resolved: projection.resolved_intent,
     ephemeral,
     recomposeAvailable: await recomposeAvailable(dependencies, record, run.operation, run.reacquired),
-    maxValidationRecomposes: 2,
+    maxValidationRecomposes: 1,
     refreshCoverage
   }, composingVersion, coverage);
   observe(run, progress, "VALIDATED");

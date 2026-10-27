@@ -12,7 +12,9 @@ import { ephemeralValueDetector } from "./ephemeral-binding.js";
 import { IntentApiError, isF01ErrorCode } from "./f01-errors.js";
 import { guardNow, requireTransition, type ResolvedServiceDependencies } from "./intent-operation.js";
 import type { RequestDeadline } from "./model-gateway.js";
-import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION } from "./prompts.js";
+import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION, PROMPT_B_PLAN_VERSION } from "./prompts.js";
+import COMPOSITION_PLAN_SCHEMA from "./composition-plan-v1.schema.json";
+import { lowerCompositionPlan, parseCompositionPlan, CompositionPlanError } from "./typed-composition.js";
 import { BlueprintAttemptBudget, StaleAttemptError, callProviderWithBoundedRetry } from "./provider-attempts.js";
 import { classifyRejection, isFixableClass, type ClassifiedRejection } from "./rejection-classification.js";
 
@@ -30,7 +32,7 @@ export type ComposeScope = {
   readonly ephemeral: EphemeralResolvedContext;
   /** False when this logical compile operation already spent its single validation-driven recompose. */
   readonly recomposeAvailable: boolean;
-  /** Optional opt-in for a second validator-guided correction; existing callers default to one. */
+  /** SSOT: a logical compile is allowed at most one validation-driven recompose. */
   readonly maxValidationRecomposes?: number;
   readonly refreshCoverage: () => CoverageResult;
 };
@@ -113,6 +115,18 @@ function compilerCatalog(coverage: CoverageResult): JsonValue {
       contract: definition.contract
     }));
   return JSON.parse(JSON.stringify(entries)) as JsonValue;
+}
+
+
+/** Only a complete, exact F04-selected role set can use the typed composer.
+ * All other existing compositions continue along their original trusted F02 path. */
+export function isCertifiedPlanEligible(coverage: CoverageResult): boolean {
+  if (!isCoverageAllowed(coverage)) return false;
+  const selected = new Set(coverage.selected.map(ref => ref.id + "@" + ref.version));
+  const required = ["layout.container", "content.text", "content.list", "input.text", "action.button", "data.stat"];
+  return required.every(id => CAPABILITY_REGISTRY_SOURCE.capabilities.some(def =>
+    def.id === id && def.lifecycle.availability === "ENABLED" &&
+    def.lifecycle.executionStatus === "ACTIVE" && selected.has(def.id + "@" + def.version)));
 }
 
 function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: readonly ValidationIssueFeedback[]): JsonRecord {
@@ -213,17 +227,48 @@ class ComposeLoop {
 
   private async compose(feedback: readonly ValidationIssueFeedback[]): Promise<{ candidate: JsonValue; compilerRunId: string }> {
     const { dependencies, guard, deadline, intentId, traceId, evidence } = this.scope;
-    const versions = { prompt_version: PROMPT_B_VERSION, model_adapter: dependencies.gateway.modelAdapter, blueprint_schema_version: BLUEPRINT_SCHEMA_VERSION, registry_version: this.coverage.registryVersion };
+    const planMode = isCertifiedPlanEligible(this.coverage);
+    const version = planMode ? PROMPT_B_PLAN_VERSION : PROMPT_B_VERSION;
+    const versions = { prompt_version: version, model_adapter: dependencies.gateway.modelAdapter, blueprint_schema_version: BLUEPRINT_SCHEMA_VERSION, registry_version: this.coverage.registryVersion };
     evidence.add("F01-EVT-009", versions);
     console.warn("APPF2_F02_COVERAGE_SELECTED_COUNT=" + this.coverage.selected.length +
       " STATUS=" + this.coverage.status);
     try {
       const composed = await callProviderWithBoundedRetry(
         { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence, blueprintBudget: this.blueprintBudget },
-        { operation: "BLUEPRINT_COMPOSE", promptVersion: PROMPT_B_VERSION, schemaVersion: BLUEPRINT_SCHEMA_VERSION, responseSchema: composeResponseSchema(this.coverage.selected), inputPayload: composeInput(this.scope, this.coverage, feedback), accept: this.acceptCandidate, rejectedOutputCode: "F01-ERR-007" }
+        { operation: "BLUEPRINT_COMPOSE", promptVersion: version, schemaVersion: BLUEPRINT_SCHEMA_VERSION,
+          responseSchema: planMode ? COMPOSITION_PLAN_SCHEMA as unknown as JsonRecord : composeResponseSchema(this.coverage.selected),
+          inputPayload: composeInput(this.scope, this.coverage, feedback),
+          accept: (value: JsonValue): JsonValue | null => {
+            if (!planMode) return this.acceptCandidate(value);
+            const output = this.acceptCandidate(value);
+            if (output === null) return null;
+            try {
+              parseCompositionPlan(output, new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)));
+              return output;
+            } catch (error) {
+              if (error instanceof CompositionPlanError) return null;
+              throw error;
+            }
+          }, rejectedOutputCode: "F01-ERR-007" }
       );
       evidence.add("F01-EVT-010", { ...versions, attempt_no: composed.attemptNo, latency_ms: composed.latencyMs });
       this.scope.progress?.complete("F01-CREATE-CP-05");
+      if (planMode) {
+        try {
+          const plan = parseCompositionPlan(composed.value,
+            new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)));
+          const candidate = lowerCompositionPlan(plan, {
+            coverage: this.coverage,
+            validRequirementIds: new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id))
+          });
+          return { candidate: candidate as unknown as JsonValue, compilerRunId: composed.compilerRunId };
+        } catch (error) {
+          if (!(error instanceof CompositionPlanError)) throw error;
+          if (error.code === "COMPOSITION_UNSUPPORTED") return this.fail("INCOMPATIBLE", new IntentApiError("F01-ERR-008"), true);
+          return this.fail("COMPOSITION_FAILED", new IntentApiError(error.code === "LOWERING_GRAPH_INVALID" ? "F01-ERR-014" : "F01-ERR-007"), false);
+        }
+      }
       return { candidate: composed.value, compilerRunId: composed.compilerRunId };
     } catch (error: unknown) {
       if (!(error instanceof IntentApiError) || error instanceof StaleAttemptError) throw error;
