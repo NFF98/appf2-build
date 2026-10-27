@@ -279,7 +279,7 @@ function budgetModule(b: Builder, p: string, mod: BudgetModule): string {
   b.action(add, [
     { type: "SET_STATE", target: spent,
       value: op("ADD", state(spent), state(expense.state)), when: op("GT", state(expense.state), lit(0)) },
-    { type: "RESET_STATE", target: expense.state, when: op("GT", state(expense.state), lit(0)) }
+    { type: "SET_STATE", target: expense.state, value: lit(0), when: op("GT", state(expense.state), lit(0)) }
   ]);
   const remaining = op("SUB", state(budget.state), state(spent));
   b.output("result_" + p + "_spent", mod.spent_label, state(spent));
