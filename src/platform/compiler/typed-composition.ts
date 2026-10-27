@@ -324,7 +324,10 @@ function priorityListControls(b:Builder,p:string,rows:string,maxItems:number): {
   ];
   const none=op("LIST_FILTER_EQ",state(rows),lit("priority"),lit("All"));
   const all=op("EQ",state(filter),lit("All"));
-  const masterItems=op("IF",all,state(rows),none);
+  // A repeat index is permitted to mutate its original state only when
+  // repeat.items is the direct mutable LIST. Keep the editable source visible;
+  // the selected-priority subset is a separate read-only projection.
+  const masterItems=state(rows);
   const filteredItems=op("IF",all,none,op("LIST_FILTER_EQ",state(rows),lit("priority"),state(filter)));
   const filteredRow="node_"+p+"_filtered_row";
   layout(b,filteredRow,[

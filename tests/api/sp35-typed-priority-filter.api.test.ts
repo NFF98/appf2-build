@@ -46,5 +46,11 @@ describe("Sprint 3.5 priority filter preserves original list index safety",()=>{
     fire("node_m000_filter","change",{value:"High"});
     expect(runtime.readState("s_m000_filter_priority")).toBe("High");
     expect(runtime.readState("s_m000_rows")).toHaveLength(2);
+    // Filtering must never cause a computed list index to target the wrong
+    // mutable row: complete the SECOND original task after selecting High.
+    expect(fire("node_m000_toggle","press",{},1)).toMatchObject({accepted:true});
+    expect(runtime.readState("s_m000_rows")).toMatchObject([
+      {title:"A",done:false},{title:"B",done:true,priority:"High"}
+    ]);
   });
 });
