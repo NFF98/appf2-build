@@ -222,6 +222,9 @@ jobs:
           # Use it on OpenAI 429 only if BOTH server-side key and model are configured.
           # Production remains controlled by its separate deployment configuration.
           APPF2_MODEL_FALLBACK_PROVIDER: ${{ vars.APPF2_MODEL_FALLBACK_PROVIDER }}
+          # Source-controlled, staging-only opt-in authorized for xAI on OpenAI 429.
+          # Deploy script refuses to activate without BOTH key and model; production unaffected.
+          APPF2_STAGING_XAI_ON_429: '1'
           APPF2_XAI_MODEL_NAME: ${{ vars.APPF2_XAI_MODEL_NAME }}
           APPF2_XAI_API_KEY: ${{ secrets.APPF2_XAI_API_KEY }}
           APPF2_DEEPSEEK_MODEL_NAME: ${{ vars.APPF2_DEEPSEEK_MODEL_NAME }}
@@ -229,8 +232,28 @@ jobs:
         run: node deploy/scripts/sp35-staging-only.mjs
       - name: Real Worker first-hop smoke (not full Creation)
         run: node deploy/scripts/sp35-staging-smoke.mjs
+      - name: Allow one paid E2E only on manual dispatch or configured fallback
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
+        env:
+          HAS_XAI_KEY: ${{ secrets.APPF2_XAI_API_KEY != '' }}
+          HAS_XAI_MODEL: ${{ vars.APPF2_XAI_MODEL_NAME != '' }}
+          HAS_DEEPSEEK_KEY: ${{ secrets.APPF2_DEEPSEEK_API_KEY != '' }}
+          HAS_DEEPSEEK_MODEL: ${{ vars.APPF2_DEEPSEEK_MODEL_NAME != '' }}
+          CONFIGURED_FALLBACK: ${{ vars.APPF2_MODEL_FALLBACK_PROVIDER }}
+          PRIMARY_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER || 'openai' }}
+          TRIGGER: ${{ github.event_name }}
+        run: |
+          if [[ "$TRIGGER" == 'workflow_dispatch' ]] || \\
+             [[ "$PRIMARY_PROVIDER" == 'openai' && "$HAS_XAI_KEY" == 'true' && "$HAS_XAI_MODEL" == 'true' && ( -z "$CONFIGURED_FALLBACK" || "$CONFIGURED_FALLBACK" == 'xai' ) ]] || \\
+             [[ "$HAS_DEEPSEEK_KEY" == 'true' && "$HAS_DEEPSEEK_MODEL" == 'true' && "$CONFIGURED_FALLBACK" == 'deepseek' && "$PRIMARY_PROVIDER" != 'deepseek' ]]; then
+            echo "APPF2_SP35_LIVE_E2E_ALLOWED=1" >> "$GITHUB_ENV"
+            echo "STAGING LIVE E2E: one signed CREATE allowed; no separate probe completion"
+          else
+            echo "APPF2_SP35_LIVE_E2E_ALLOWED=0" >> "$GITHUB_ENV"
+            echo "STAGING LIVE E2E: SKIPPED; last OpenAI 429 and no configured fallback; use manual workflow dispatch to retry when ready"
+          fi
       - name: Live signed CREATE with sanitized Cloudflare upstream diagnostics
-        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1'
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1' && env.APPF2_SP35_LIVE_E2E_ALLOWED == '1'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -258,7 +281,7 @@ jobs:
           JS
           exit "$CREATE_RC"
       - name: Live Chromium real Create App + render + Home navigation
-        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1'
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1' && env.APPF2_MODEL_CHAT_READY == '1' && env.APPF2_SP35_LIVE_E2E_ALLOWED == '1'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
