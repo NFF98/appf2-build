@@ -57,11 +57,38 @@ try {
     if(await taskInput.count()===0)throw Error("STAGING TASKS: missing editable task input");
     const add=app.getByRole("button",{name:/新增|加入|add|create|\+/i}).first();
     if(await add.count()===0)throw Error("STAGING TASKS: missing labeled add action");
-    const marker="實際操作測試任務";
-    await taskInput.fill(marker);
-    await add.click();
-    await page.getByText(marker,{exact:true}).first().waitFor({state:"visible",timeout:12000});
-    console.log("STAGING TASKS: REAL INPUT + ADD + RENDER PASS; complete/delete still require User check");
+    const rows=app.locator(".rt-list-item");
+    const values=["E2E-A","E2E-B","E2E-C"];
+    for(const [index,value] of values.entries()){
+      await taskInput.fill(value);
+      await add.click();
+      await rows.nth(index).getByText(value,{exact:true}).waitFor({state:"visible",timeout:12000});
+    }
+    if(await rows.count()!==3)throw Error("STAGING TASKS: add must create exactly three rows");
+    const stats=app.locator(".rt-stat");
+    if(await stats.count()<2)throw Error("STAGING TASKS: missing total/completed metrics");
+    async function stat(index){
+      const raw=await stats.nth(index).locator(".rt-stat-value").innerText();
+      return Number(raw.trim());
+    }
+    if(await stat(0)!==3||await stat(1)!==0)
+      throw Error("STAGING TASKS: initial total/completed metrics incorrect");
+    const mark=rows.nth(1).getByRole("button",{name:/完成|勾選|切換|complete|done|check/i}).first();
+    if(await mark.count()===0)throw Error("STAGING TASKS: missing row-specific complete button");
+    await mark.click();
+    if(await stat(0)!==3||await stat(1)!==1)
+      throw Error("STAGING TASKS: completion count must increase for row B");
+    const remove=rows.nth(0).getByRole("button",{name:/刪除|移除|delete|remove/i}).first();
+    if(await remove.count()===0)throw Error("STAGING TASKS: missing row-specific delete button");
+    await remove.click();
+    if(await rows.count()!==2)throw Error("STAGING TASKS: delete must remove exactly one row");
+    if((await rows.allTextContents()).some(v=>v.includes("E2E-A")))
+      throw Error("STAGING TASKS: deleted row A remains");
+    if(!(await rows.nth(0).innerText()).includes("E2E-B")||!(await rows.nth(1).innerText()).includes("E2E-C"))
+      throw Error("STAGING TASKS: wrong row removed");
+    if(await stat(0)!==2||await stat(1)!==1)
+      throw Error("STAGING TASKS: final total/completed metrics wrong");
+    console.log("STAGING TASKS: REAL A/B/C ADD + B COMPLETE + A DELETE + TOTAL2 COMPLETED1 PASS");
   }
   await page.screenshot({path:screenshot,fullPage:true});
   await page.getByRole("button",{name:"更多選項"}).click();
@@ -71,7 +98,7 @@ try {
 
   if (process.env.APPF2_SP35_BROWSER_COMPLEX_ALLOWED !== "1") {
     console.log(taskMode
-    ? "STAGING BROWSER: NATURAL_TASK_LIST ADD PASS; avoided extra paid LifePilot model request"
+    ? "STAGING BROWSER: NATURAL_TASK_LIST FULL CRUD+METRICS PASS; avoided extra paid LifePilot model request"
     : "STAGING BROWSER: HELLO_WORLD_ONLY PASS; avoided extra paid LifePilot model request");
   } else {
   // A single complex 5-feature analysis verifies the reported real-world
