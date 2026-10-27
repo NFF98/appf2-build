@@ -37,6 +37,7 @@ function originalExplicitTaskAdd(rawIntent?: string): boolean {
     !/(?:提醒|跨裝置|跨设备|同步|登录|登入|付費|付款|share|calendar|email|通知|鬧鐘)/i.test(text);
 }
 
+// eslint-disable-next-line complexity -- F04 closed six-role certification is intentionally fail-closed on every semantic guard.
 function hasTaskListSignature(requirements: readonly CapabilityRequirement[], rawIntent?: string): boolean {
   // Exactly six explicit hints, or five with a server-verified original ADD requirement.
   if (requirements.length !== 6 && requirements.length !== 5) return false;
