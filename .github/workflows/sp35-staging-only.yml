@@ -307,7 +307,11 @@ jobs:
           TAIL_PID=$!
           sleep 8
           set +e
-          node deploy/scripts/sp35-staging-browser-e2e.mjs
+          if [[ "${APPF2_SP35_BROWSER_COMPLEX_ALLOWED:-0}" == "1" ]]; then
+            node deploy/scripts/sp35-lifepilot-browser-e2e.mjs
+          else
+            node deploy/scripts/sp35-staging-browser-e2e.mjs
+          fi
           BROWSER_RC=$?
           sleep 4
           kill "$TAIL_PID" 2>/dev/null || true
