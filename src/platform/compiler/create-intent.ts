@@ -116,10 +116,10 @@ function analysisShapeDiagnostic(normalized: JsonValue, paths: readonly string[]
 }
 
 /** The server stamps its own prompt_version; Prompt A cannot claim provenance metadata. */
-function acceptAnalysis(output: JsonValue): TrustedIntentState | null {
+function acceptAnalysis(output: JsonValue, originalUserIntent?: string): TrustedIntentState | null {
   if (!isPlainRecord(output)) return null;
   const metadata = isPlainRecord(output.analysis_metadata) ? output.analysis_metadata : {};
-  const normalized = normalizeAnalysisDescriptorFlags(output);
+  const normalized = normalizeAnalysisDescriptorFlags(output, originalUserIntent);
   try {
     return startIntentClarification({ ...(normalized as typeof output), analysis_metadata: { ...metadata, prompt_version: PROMPT_A_VERSION } });
   } catch (error: unknown) {
@@ -230,7 +230,7 @@ async function analyze(scope: AnalysisScope, record: IntentRecord): Promise<Inte
   try {
     analysis = await callProviderWithBoundedRetry(
       { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId: record.intent_id, traceId: scope.traceId, registryVersion: REGISTRY_VERSION, now: dependencies.clock, newId: dependencies.newId, evidence: scope.evidence },
-      { operation: "INTENT_ANALYSIS", promptVersion: PROMPT_A_VERSION, schemaVersion: ENVELOPE_VERSION, responseSchema: ANALYSIS_RESPONSE_SCHEMA, inputPayload: analysisInput(scope.body), accept: acceptAnalysis, rejectedOutputCode: "F01-ERR-002" }
+      { operation: "INTENT_ANALYSIS", promptVersion: PROMPT_A_VERSION, schemaVersion: ENVELOPE_VERSION, responseSchema: ANALYSIS_RESPONSE_SCHEMA, inputPayload: analysisInput(scope.body), accept: value => acceptAnalysis(value, scope.body.raw_intent), rejectedOutputCode: "F01-ERR-002" }
     );
   } catch (error: unknown) {
     if (error instanceof IntentApiError && !(error instanceof StaleAttemptError)) {

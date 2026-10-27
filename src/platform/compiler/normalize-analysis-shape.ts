@@ -146,7 +146,25 @@ function canonicalHintTypes(value: JsonValue): JsonValue {
   return [...new Set(canonical)];
 }
 
-export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
+/** Correct only an F01 primitive-stat type token provably incompatible with
+ * the user's original money request. A composed summary remains a REQUIRED
+ * capability and F02 must still implement spending and remaining separately.
+ * Never change amounts, facts, sources, requirement IDs or risk flags. */
+export function correctMoneyStatisticHint(raw: JsonValue, originalUserIntent?: string): JsonValue {
+  if (!isPlainRecord(raw) || raw.interaction_class !== "statistic" ||
+    raw.required !== true || !Array.isArray(raw.input_types) || raw.input_types.length !== 0 ||
+    !Array.isArray(raw.output_types) || raw.output_types.length !== 1 ||
+    raw.output_types[0] !== "RECORD" || typeof raw.semantic_need !== "string" ||
+    typeof originalUserIntent !== "string" || originalUserIntent.length > 6000 ||
+    !/(?:預算|预算|budget)/i.test(originalUserIntent) ||
+    !/(?:費用|花費|支出|expense|spent|spend)/i.test(originalUserIntent) ||
+    !/(?:剩餘|剩余|餘額|余额|remaining|left)/i.test(originalUserIntent) ||
+    !/(?:預算|预算|費用|花費|支出|金額|餘額|budget|spend|spent|expense|remaining)/i.test(raw.semantic_need))
+    return raw;
+  return { ...raw, output_types: ["NUMBER"] };
+}
+
+export function normalizeAnalysisDescriptorFlags(value: JsonValue, originalUserIntent?: string): JsonValue {
   if (!isPlainRecord(value)) return value;
   const output = value.requested_outputs;
   const hints = value.capability_hints;
@@ -166,7 +184,8 @@ export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
       ...(Array.isArray(entry.input_types) ? { input_types: canonicalHintTypes(entry.input_types) } : {}),
       ...(Array.isArray(entry.output_types) ? { output_types: canonicalHintTypes(entry.output_types) } : {})
     };
-    return entry.required === undefined ? { ...normalized, required: false } : normalized;
+    const corrected = correctMoneyStatisticHint(normalized, originalUserIntent);
+    return entry.required === undefined ? { ...corrected as typeof normalized, required: false } : corrected;
   });
   const descriptors = Object.fromEntries(DESCRIPTORS.flatMap(name => {
     const entries = value[name];
