@@ -345,7 +345,7 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
     [mod.record_title_key]: { type: "STRING", constraints: { max_length: 120 } },
     [mod.record_done_key]: { type: "BOOLEAN" },
     ...(daily ? { completed_day: { type: "STRING", constraints: { max_length: 10 } } } : {}),
-    ...(mod.priority_filter === true ? { priority: { type: "STRING", constraints: { max_length: 8 } } } : {})
+    ...(mod.priority_filter === true ? { priority: { type: "ENUM", constraints: { allowed: ["All", "High", "Medium", "Low"] } } } : {})
   } } };
   b.stateKey(rows, typeState("LIST", [], { item: recordType, max_length: mod.max_items }));
   const newRow = { [mod.record_title_key]: "", [mod.record_done_key]: false,
