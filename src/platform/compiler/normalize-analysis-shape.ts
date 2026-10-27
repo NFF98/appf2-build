@@ -45,6 +45,13 @@ function fixScalarMetadata(item: JsonValue): JsonValue {
     item.resolution_state === "PROPOSED" ? item.proposed_default : undefined;
   const scalarType = actualValueType(value);
   if (scalarType === null) return item;
+  // LIST maps to MULTI_CHOICE, which requires real distinct alternatives.
+  // Never invent options or change a plain array fact into a false choice contract.
+  if (scalarType === "LIST") {
+    const values = item.alternatives;
+    if (!Array.isArray(values) || values.length < 2 || new Set(values.map(v => JSON.stringify(v))).size < 2 ||
+        !Array.isArray(value) || value.some(entry => !values.some(option => JSON.stringify(option) === JSON.stringify(entry)))) return item;
+  }
   // Only presentation/type metadata changes: no user value, safety flag,
   // policy decision or dependency is created, discarded or modified.
   const enumMatches = item.expected_value_type === "ENUM" && Array.isArray(item.alternatives) &&

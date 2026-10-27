@@ -65,7 +65,7 @@ describe("untrusted Prompt A descriptor flag completion", () => {
     const original = { requested_outputs: [], capability_hints: [], constraints: [
       { id: "task_list", resolution_state: "CONFIRMED", resolved_value: ["A", "B"],
         expected_value_type: "STRING", question_type: "FREE_TEXT",
-        alternatives: [], policy_risk_flags: [] },
+        alternatives: ["A", "B", "C"], policy_risk_flags: [] },
       { id: "task_record", resolution_state: "CONFIRMED", resolved_value: { title: "A", done: false },
         expected_value_type: "STRING", question_type: "FREE_TEXT",
         alternatives: [], policy_risk_flags: [] },
