@@ -10,6 +10,7 @@ import type { CreationSession } from "../create/creation-session.js";
 import { DiscoverScreen, type ComposerDraft } from "../discover/DiscoverScreen.js";
 import type { PromptDraftStore } from "../discover/prompt-draft-store.js";
 import { isRetryableLaunchFailure, type AppLauncher, type LaunchState } from "../runtime/app-launcher.js";
+import { clearTabAppTarget, readTabAppTarget, saveTabAppTarget } from "./tab-app-recovery.js";
 
 type Surface = "DISCOVER" | "CREATE";
 
@@ -62,10 +63,12 @@ function workspaceLaunchProps(launch: LaunchState, contentHash: string | null, l
 export function App({ controller, drafts, launcher }: AppProps) {
   const session = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const launch = useSyncExternalStore(launcher.subscribe, launcher.getSnapshot);
-  const [surface, setSurface] = useState<Surface>("DISCOVER");
+  const [restoredTarget, setRestoredTarget] = useState<ValidatedTarget | null>(()=>readTabAppTarget());
+  const [surface, setSurface] = useState<Surface>(()=>readTabAppTarget()===null?"DISCOVER":"CREATE");
   const [draft, setDraft] = useState<ComposerDraft>(() => drafts.load() ?? EMPTY_DRAFT);
   const acceptedIntent = session !== null && session.decision !== null ? session.rawIntent : null;
-  const validated = validatedTarget(session);
+  const validatedFromCreation = validatedTarget(session);
+  const validated = validatedFromCreation ?? restoredTarget;
   const validatedHash = validated?.contentHash ?? null;
   const validatedIntentId = validated?.intentId ?? null;
   const appSession = useMemo(
@@ -79,10 +82,16 @@ export function App({ controller, drafts, launcher }: AppProps) {
   }, [acceptedIntent, drafts]);
 
   useEffect(() => {
+    if (validatedFromCreation !== null) saveTabAppTarget(validatedFromCreation);
+  }, [validatedFromCreation?.contentHash, validatedFromCreation?.intentId]);
+
+  useEffect(() => {
     if (surface === "CREATE" && validatedIntentId !== null && validatedHash !== null) launcher.launch(validatedIntentId, validatedHash);
   }, [launcher, surface, validatedHash, validatedIntentId]);
 
   const returnToDiscover = useCallback(() => {
+    clearTabAppTarget();
+    setRestoredTarget(null);
     launcher.reset();
     controller.leave();
     const current = controller.getSnapshot();
@@ -121,6 +130,14 @@ export function App({ controller, drafts, launcher }: AppProps) {
   };
 
   if (showingApp) return <AppStage key={launch.contentHash} session={appSession} onHome={back} />;
+  if (surface === "CREATE" && session === null && restoredTarget !== null) {
+    return (
+      <main className="app-recovery" role="status">
+        <p>{launch.kind === "FAILED" ? "先前的 App 無法安全恢復。" : "正在安全恢復先前的 App…"}</p>
+        {launch.kind === "FAILED" && <button type="button" onClick={returnToDiscover}>返回首頁</button>}
+      </main>
+    );
+  }
   if (surface === "CREATE" && session !== null) {
     return (
       <CreateWorkspace session={session} controller={controller} onBack={back} {...workspaceLaunchProps(launch, validatedHash, launcher)} />

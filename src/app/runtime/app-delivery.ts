@@ -71,7 +71,7 @@ function readAdmission(data: Record<string, unknown>, contentHash: string): Exec
  */
 export function createAppDeliveryClient(fetchImpl: FetchLike, keyring: PopKeyring): AppDeliveryClient {
   const deliver = async (intentId: string, contentHash: string): Promise<RuntimeAppDelivery> => {
-    const key = keyring.keyForIntent(intentId);
+    const key = keyring.keyForIntent(intentId) ?? await keyring.recoverForIntent(intentId);
     if (key === undefined) throw new DeliveryStop("KEY_UNAVAILABLE");
     const grantPath = `/api/v1/intents/${encodeURIComponent(intentId)}/blueprint-access-grant`;
     const proof = await key.proofHeaders((timestampMs) => readProofTranscript(grantPath, contentHash, timestampMs));
