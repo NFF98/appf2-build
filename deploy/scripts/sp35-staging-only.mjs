@@ -43,7 +43,20 @@ if (!["openai", "xai", "deepseek"].includes(provider)) {
 }
 const xaiKey = bootstrapOnly ? null : process.env.APPF2_XAI_API_KEY?.trim();
 const deepseekKey = bootstrapOnly ? null : process.env.APPF2_DEEPSEEK_API_KEY?.trim();
-const fallback = process.env.APPF2_MODEL_FALLBACK_PROVIDER?.trim().toLowerCase() || "";
+// The Sprint 3.5 owner explicitly consented to xAI as a staging-only 429 backup.
+// Auto-select only when BOTH the private key and model name actually exist;
+// no secret, no model, non-OpenAI primary, or bootstrap => no transfer.
+// A nonempty APPF2_MODEL_FALLBACK_PROVIDER remains the explicit override.
+const requestedFallback = process.env.APPF2_MODEL_FALLBACK_PROVIDER?.trim().toLowerCase() || "";
+const consentedStagingXai = process.env.APPF2_STAGING_XAI_ON_429 === "1";
+const canUseStagingXai = !bootstrapOnly && provider === "openai" &&
+  Boolean(xaiKey && process.env.APPF2_XAI_MODEL_NAME?.trim());
+const fallback = requestedFallback || (consentedStagingXai && canUseStagingXai ? "xai" : "");
+if (!bootstrapOnly) {
+  console.log("STAGING FALLBACK: " + (fallback
+    ? fallback.toUpperCase() + "_ON_429_CONFIGURED"
+    : consentedStagingXai ? "XAI_NOT_CONFIGURED_PRIMARY_ONLY" : "DISABLED"));
+}
 if (fallback && !["xai", "deepseek"].includes(fallback))
   throw new Error("STAGING PRECHECK: invalid APPF2_MODEL_FALLBACK_PROVIDER");
 if (fallback && fallback === provider)
