@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { blueprintWith, change, event, hydratedHarness, lit, node, op, press, scope, state } from "./runtime-fixtures.js";
+import { admittedBlueprint, blueprintWith, change, event, hydratedHarness, lit, node, op, press, scope, state } from "./runtime-fixtures.js";
 
 /** Actual F02-admitted Blueprint: actions use the repeated row's verified index, not a hard-coded slot. */
-const app = () => blueprintWith({
+const app = (filteredView = false) => blueprintWith({
   state: {
     tasks: { mode: "MUTABLE", type: "LIST",
       initial: [
@@ -35,7 +35,9 @@ const app = () => blueprintWith({
       bindings: { bind: state("draft_title") }, events: { change: "action_edit_draft" }
     }),
     node("node_tasks", "content.list", "1.0.0", {
-      repeat: { items: state("tasks"), item_alias: "item", index_alias: "index", max_items: 8 },
+      repeat: { items: filteredView
+        ? op("LIST_FILTER_EQ", state("tasks"), lit("done"), lit(false))
+        : state("tasks"), item_alias: "item", index_alias: "index", max_items: 8 },
       children: ["node_row"]
     }),
     node("node_row", "layout.container", "1.0.0", {
@@ -53,6 +55,12 @@ function rowKeys(harness: Awaited<ReturnType<typeof hydratedHarness>>, nodeId: s
 }
 
 describe("Sprint 3.5 row-specific interactive task list", () => {
+  it("F02 denies filtered-view row indices for destructive source-list actions", async () => {
+    // The second visible filtered row is NOT necessarily source-index 1.
+    // The F02 gate must reject this blueprint instead of deleting the wrong task.
+    await expect(admittedBlueprint(app(true))).rejects.toThrow("fixture admission denied");
+  });
+
   it("toggles the selected second task, not the first, and recalculates completion", async () => {
     const harness = await hydratedHarness(app());
     const rows = rowKeys(harness, "node_toggle");

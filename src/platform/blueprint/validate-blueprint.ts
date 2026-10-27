@@ -132,16 +132,25 @@ function typeNodes(
   const base: TypingContext = { errorCode: "F02-ERR-008", stage: "V07", ...types };
   const nodeIds = new Set(graph.indexById.keys());
   const childScopes = new Map<string, ReadonlyMap<string, TypeDescriptor>>();
+  const childIndexSources = new Map<string, ReadonlyMap<string, string | null>>();
   const repeatedSubtrees = new Set<string>();
   return graph.order.map((node) => {
     const path = `$.nodes[${graph.indexById.get(node.id) as number}]`;
     const parentId = graph.parentById.get(node.id);
     const scope = (parentId === undefined ? undefined : childScopes.get(parentId)) ?? new Map<string, TypeDescriptor>();
     const hasRepeatAncestor = parentId !== undefined && repeatedSubtrees.has(parentId);
+    const repeatIndexSources = (parentId === undefined ? undefined : childIndexSources.get(parentId)) ??
+      new Map<string, string | null>();
     const capability = capabilities.get(node.id) as GeneratedCapabilityValidator;
     const fields = typeNodeFields(node, capability, path, { ...base, scope }, nodeIds);
-    const typed: TypedNode = { fields, path, scope, hasRepeatAncestor };
+    const typed: TypedNode = { fields, path, scope, hasRepeatAncestor, repeatIndexSources };
     childScopes.set(node.id, repeatScope(typed, base));
+    const nextIndexSources = new Map(repeatIndexSources);
+    if (node.repeat?.index_alias !== undefined) {
+      nextIndexSources.set(node.repeat.index_alias,
+        node.repeat.items.kind === "STATE" ? node.repeat.items.key : null);
+    }
+    childIndexSources.set(node.id, nextIndexSources);
     if (hasRepeatAncestor || node.repeat !== undefined) {
       repeatedSubtrees.add(node.id);
     }
