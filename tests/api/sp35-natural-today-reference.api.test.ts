@@ -15,7 +15,7 @@ describe("Sprint3.5 natural language TODAY_SUMMARY source continuity",()=>{
     expect(a.modules[1]).toMatchObject({source_key:"moving_task_list"});
     expect(a.modules[0]?.requirement_ids).toEqual(["req_1"]);
     expect(a.modules[1]?.requirement_ids).toEqual(["req_2"]);
-    expect(raw.modules[0].track_day).toBe(false);
+    expect((raw.modules[0] as typeof tasks).track_day).toBe(false);
   });
   it("fails closed instead of guessing if no original daily request or multiple task lists",()=>{
     expect(alignExplicitTodaySummary(raw as JsonValue,"搬家待辦清單")).toEqual(raw);
