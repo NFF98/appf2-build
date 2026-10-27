@@ -124,7 +124,7 @@ const state = (key: string): ValueSource => ({ kind: "STATE", key });
 const scope = (name: string, path = ""): ValueSource => ({ kind: "SCOPE", name, path });
 const event = (path: string): ValueSource => ({ kind: "EVENT", path });
 const op = (operator: string, ...args: ValueSource[]): ValueSource => ({ kind: "OP", op: operator, args });
-const typeState = (type: "STRING" | "NUMBER" | "BOOLEAN" | "LIST", initial: JsonValue, constraints?: JsonValue): StateEntry =>
+const typeState = (type: "STRING" | "NUMBER" | "BOOLEAN" | "LIST" | "RECORD", initial: JsonValue, constraints?: JsonValue): StateEntry =>
   constraints === undefined ? { mode: "MUTABLE", type, initial } : { mode: "MUTABLE", type, initial, constraints };
 const pageProps = () => ({ direction: lit("COLUMN"), gap: lit("MD"), align: lit("STRETCH") });
 const rowProps = () => ({ direction: lit("ROW"), gap: lit("SM"), align: lit("CENTER") });
@@ -164,9 +164,12 @@ function formField(b: Builder, prefix: string, field: FormField, ordinal: number
   const idx = String(ordinal).padStart(2, "0"), prefixKey = prefix + "_f" + idx;
   const dataKey = "s_" + prefixKey, actionId = "action_" + prefixKey + "_change", nodeId = "node_" + prefixKey;
   if (field.kind === "TEXT") b.stateKey(dataKey, typeState("STRING", field.initial, { max_length: field.max_length }));
-  if (field.kind === "NUMBER") b.stateKey(dataKey, typeState("NUMBER", field.initial, { min: field.min, max: field.max }));
+  if (field.kind === "NUMBER") b.stateKey(dataKey, typeState("NUMBER", field.initial));
   if (field.kind === "TOGGLE") b.stateKey(dataKey, typeState("BOOLEAN", field.initial));
-  b.action(actionId, [{ type: "SET_STATE", target: dataKey, value: event("value") }]);
+  const within = field.kind === "NUMBER" ? op("AND",
+    op("GTE", event("value"), lit(field.min)), op("LTE", event("value"), lit(field.max))) : undefined;
+  b.action(actionId, [{ type: "SET_STATE", target: dataKey, value: event("value"),
+    ...(within === undefined ? {} : { when: within }) }]);
   const cap = field.kind === "TEXT" ? "input.text" : field.kind === "NUMBER" ? "input.number" : "input.toggle";
   const props: Record<string, ValueSource> = {};
   if (field.kind === "TEXT") {
@@ -180,22 +183,23 @@ function formField(b: Builder, prefix: string, field: FormField, ordinal: number
   return { node: nodeId, state: dataKey };
 }
 function recordList(b: Builder, p: string, mod: RecordListModule): string {
-  const rows = "s_" + p + "_rows", draft = "s_" + p + "_draft", can = "s_" + p + "_can_add";
+  const rows = "s_" + p + "_rows", draft = "s_" + p + "_draft", can = "s_" + p + "_can_add", template = "s_" + p + "_template";
   const recordType: JsonValue = { type: "RECORD", constraints: { fields: {
     [mod.record_title_key]: { type: "STRING", constraints: { max_length: 120 } },
     [mod.record_done_key]: { type: "BOOLEAN" }
   } } };
   b.stateKey(rows, typeState("LIST", [], { item: recordType, max_length: mod.max_items }));
+  const newRow = { [mod.record_title_key]: "", [mod.record_done_key]: false };
+  b.stateKey(template, typeState("RECORD", newRow, (recordType as { constraints: JsonValue }).constraints));
   b.stateKey(draft, typeState("STRING", "", { max_length: 120 }));
   b.stateKey(can, typeState("BOOLEAN", false));
   const draftChange = "action_" + p + "_draft_change", add = "action_" + p + "_add",
     toggle = "action_" + p + "_toggle", remove = "action_" + p + "_remove";
   b.action(draftChange, [{ type: "SET_STATE", target: draft, value: event("value") }]);
   const allow = op("AND", op("NEQ", op("TRIM", state(draft)), lit("")), op("LT", op("COUNT", state(rows)), lit(mod.max_items)));
-  const newRow = { [mod.record_title_key]: "", [mod.record_done_key]: false };
   b.action(add, [
     { type: "SET_STATE", target: can, value: allow },
-    { type: "SET_STATE", target: rows, value: op("LIST_APPEND", state(rows), op("RECORD_SET", lit(newRow), lit(mod.record_title_key), state(draft))), when: state(can) },
+    { type: "SET_STATE", target: rows, value: op("LIST_APPEND", state(rows), op("RECORD_SET", state(template), lit(mod.record_title_key), state(draft))), when: state(can) },
     { type: "SET_STATE", target: draft, value: lit(""), when: state(can) },
     { type: "RESET_STATE", target: can }
   ]);
