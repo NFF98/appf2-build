@@ -73,7 +73,9 @@ async function numberField(where, value) {
   await input.fill(String(value));
 }
 async function metrics(where) {
-  const values = await where.locator(".rt-stat-value").allTextContents();
+  const values = await where.locator(".rt-stat-value").evaluateAll(elements =>
+    elements.filter(element => !element.closest(".rt-list"))
+      .map(element => element.textContent || ""));
   return values.map(text => Number(text.replace(/[^0-9.-]/g, ""))).filter(Number.isFinite);
 }
 async function ensureMetricsChange(before, after, label) {
