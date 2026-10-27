@@ -26,9 +26,9 @@ describe("Sprint 3.5 honest rate-limit recovery UI", () => {
       .toMatchObject({ kind: "API", code: "F01-ERR-005", httpStatus: 429 });
   });
 
-  it("explains AI throttling without deleting the user's original App prompt", () => {
+  it("explains credit exhaustion or throttling without deleting the user's original App prompt", () => {
     const html = recoveryPage(429);
-    expect(html).toContain("AI 供應商目前限制請求次數");
+    expect(html).toContain("可能是 API 可用點數不足或請求頻率受限");
     expect(html).toContain("內容已保留");
     expect(html).toContain("稍後再試一次");
     expect(html).toContain("修改需求");
@@ -37,6 +37,6 @@ describe("Sprint 3.5 honest rate-limit recovery UI", () => {
   it("never mislabels a provider 503 as 429", () => {
     const html = recoveryPage(503);
     expect(html).toContain("連線或服務暫時沒有回應");
-    expect(html).not.toContain("AI 供應商目前限制請求次數");
+    expect(html).not.toContain("可能是 API 可用點數不足或請求頻率受限");
   });
 });
