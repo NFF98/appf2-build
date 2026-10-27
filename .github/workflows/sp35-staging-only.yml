@@ -204,6 +204,7 @@ jobs:
           npm run check:types
           npm run check:lint
           npm run test:api
+          npm run test:runtime
           npm run web:build
       - name: Deploy ONLY isolated staging Worker with bundled SPA
         env:
