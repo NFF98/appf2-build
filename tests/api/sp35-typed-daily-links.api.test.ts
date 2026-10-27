@@ -28,7 +28,7 @@ describe("Sprint 3.5 linked TODAY_SUMMARY and day-aware habit",()=>{
     const result=validateBlueprintCandidate(new TextEncoder().encode(JSON.stringify(app)));
     expect(result.report.issues).toEqual([]);
     expect(result.report.status).toBe("PASSED");
-    const h=await hydratedHarness(app as unknown as JsonRecord);
+    const h=await hydratedHarness(app as unknown as JsonRecord, {calendarDay: () => "2026-10-27"});
     const dispatch=(node:string,event_name:string,payload:Record<string,string>={})=>{
       const instance=h.runtime.nodeInstances().find(n=>n.key.node_id===node);
       expect(instance).toBeDefined();
