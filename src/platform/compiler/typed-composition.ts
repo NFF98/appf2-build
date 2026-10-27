@@ -243,6 +243,10 @@ const state = (key: string): ValueSource => ({ kind: "STATE", key });
 const scope = (name: string, path = ""): ValueSource => ({ kind: "SCOPE", name, path });
 const event = (path: string): ValueSource => ({ kind: "EVENT", path });
 const op = (operator: string, ...args: ValueSource[]): ValueSource => ({ kind: "OP", op: operator, args });
+/** Closed ENUM -> readable STRING projection: no unsafe implicit ENUM-to-STRING binding. */
+const priorityText = (value: ValueSource): ValueSource =>
+  op("IF", op("EQ", value, lit("High")), lit("High"),
+    op("IF", op("EQ", value, lit("Low")), lit("Low"), lit("Medium")));
 const typeState = (type: "STRING" | "NUMBER" | "BOOLEAN" | "ENUM" | "LIST" | "RECORD", initial: JsonValue, constraints?: JsonValue): StateEntry =>
   constraints === undefined ? { mode: "MUTABLE", type, initial } : { mode: "MUTABLE", type, initial, constraints };
 const pageProps = () => ({ direction: lit("COLUMN"), gap: lit("MD"), align: lit("STRETCH") });
@@ -327,7 +331,7 @@ function priorityListControls(b:Builder,p:string,rows:string,maxItems:number): {
     b.node("node_"+p+"_filtered_title","content.text",{props:{role:lit("BODY")},
       bindings:{text:scope("filtered_item","title")}}),
     b.node("node_"+p+"_filtered_priority","content.text",{props:{role:lit("CAPTION")},
-      bindings:{text:scope("filtered_item","priority")}})
+      bindings:{text:priorityText(scope("filtered_item","priority"))}})
   ],true);
   const filteredList=b.node("node_"+p+"_filtered_list","content.list",{
     repeat:{items:filteredItems,item_alias:"filtered_item",index_alias:"filtered_index",max_items:maxItems},
@@ -397,7 +401,7 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
   const rowChildren = [
     b.node("node_" + p + "_item_title", "content.text", { props: { role: lit("BODY") }, bindings: { text: scope("item", mod.record_title_key) } }),
     ...(mod.priority_filter === true ? [b.node("node_" + p + "_item_priority", "content.text", {
-      props: { role: lit("CAPTION") }, bindings: { text: scope("item", "priority") }
+      props: { role: lit("CAPTION") }, bindings: { text: priorityText(scope("item", "priority")) }
     })] : []),
     b.node("node_" + p + "_toggle", "action.button", { props: { label: lit(mod.toggle_label) }, events: { press: toggle } }),
     b.node("node_" + p + "_edit", "action.button", { props: { label: lit("Edit selected item") },
