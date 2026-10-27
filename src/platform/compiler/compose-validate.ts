@@ -248,6 +248,7 @@ class ComposeLoop {
     throw error;
   }
 
+  // eslint-disable-next-line complexity -- Closed F02 compose path validates both certified and multi-module candidate branches.
   private async compose(feedback: readonly ValidationIssueFeedback[]): Promise<{ candidate: JsonValue; compilerRunId: string }> {
     const { dependencies, guard, deadline, intentId, traceId, evidence } = this.scope;
     const certifiedListPlan = isCertifiedPlanEligible(this.coverage);
