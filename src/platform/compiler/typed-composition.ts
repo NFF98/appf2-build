@@ -13,12 +13,17 @@ export type FormField =
   | { readonly kind: "TOGGLE"; readonly key: string; readonly label: string; readonly initial: boolean };
 export type FormModule = Base & { readonly kind: "FORM"; readonly heading: string; readonly fields: readonly FormField[]; readonly reset_label?: string };
 export type ArithmeticModule = Base & { readonly kind: "ARITHMETIC"; readonly heading: string; readonly left_label: string; readonly right_label: string; readonly result_label: string; readonly operation: "ADD" | "SUB" | "MUL"; readonly initial_left: number; readonly initial_right: number };
-export type RecordListModule = Base & { readonly kind: "RECORD_LIST"; readonly heading: string; readonly record_title_key: string; readonly record_done_key: string; readonly input_label: string; readonly add_label: string; readonly toggle_label: string; readonly delete_label: string; readonly total_label: string; readonly completed_label: string; readonly max_items: number };
+export type RecordListModule = Base & { readonly kind: "RECORD_LIST"; readonly heading: string; readonly record_title_key: string; readonly record_done_key: string; readonly input_label: string; readonly add_label: string; readonly toggle_label: string; readonly delete_label: string; readonly total_label: string; readonly completed_label: string; readonly max_items: number; readonly track_day?: boolean };
 /** Interactive local budget: set budget, enter an expense, commit, recompute totals. */
 export type BudgetModule = Base & { readonly kind: "BUDGET"; readonly heading: string;
   readonly budget_label: string; readonly expense_label: string; readonly add_expense_label: string;
   readonly spent_label: string; readonly remaining_label: string; readonly initial_budget: number };
-export type CompositionModule = DisplayModule | FormModule | ArithmeticModule | RecordListModule | BudgetModule;
+export type HabitModule = Base & { readonly kind: "HABIT"; readonly heading: string;
+  readonly habit_label: string; readonly complete_label: string; readonly completed_label: string };
+export type TodaySummaryModule = Base & { readonly kind: "TODAY_SUMMARY";
+  readonly heading: string; readonly source_key: string; readonly total_label: string; readonly completed_label: string };
+export type CompositionModule = DisplayModule | FormModule | ArithmeticModule | RecordListModule |
+  BudgetModule | HabitModule | TodaySummaryModule;
 export type CompositionPlan = { readonly plan_version: "1.0.0"; readonly title: string; readonly description?: string; readonly modules: readonly CompositionModule[] };
 export type AssemblerContext = { readonly coverage: CoverageResult; readonly validRequirementIds: ReadonlySet<string> };
 
@@ -113,6 +118,18 @@ export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string
       for (const keyName of ["heading", "left_label", "right_label", "result_label"]) label(m[keyName], path + "." + keyName);
       if (!["ADD", "SUB", "MUL"].includes(String(m.operation))) fail("PLAN_SCHEMA_INVALID", path + ".operation");
       numeric(m.initial_left, path + ".initial_left"); numeric(m.initial_right, path + ".initial_right");
+    } else if (kind === "HABIT") {
+      shape(m, [...common, "heading", "habit_label", "complete_label", "completed_label"], [], path);
+      for (const keyName of ["heading", "habit_label", "complete_label", "completed_label"])
+        label(m[keyName], path + "." + keyName);
+    } else if (kind === "TODAY_SUMMARY") {
+      shape(m, [...common, "heading", "source_key", "total_label", "completed_label"], [], path);
+      for (const keyName of ["heading", "total_label", "completed_label"])
+        label(m[keyName], path + "." + keyName);
+      ident(m.source_key, path + ".source_key");
+      const source = p.modules.slice(0,i).find(x => obj(x,"$.modules").key === m.source_key);
+      if (!source || obj(source,"$.modules").kind !== "RECORD_LIST" ||
+          obj(source,"$.modules").track_day !== true) fail("PLAN_UNTRUSTED_REFERENCE",path+".source_key");
     } else if (kind === "BUDGET") {
       shape(m, [...common, "heading", "budget_label", "expense_label", "add_expense_label",
         "spent_label", "remaining_label", "initial_budget"], [], path);
@@ -121,7 +138,8 @@ export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string
       numeric(m.initial_budget, path + ".initial_budget");
       if ((m.initial_budget as number) < 0) fail("PLAN_SCHEMA_INVALID", path + ".initial_budget");
     } else if (kind === "RECORD_LIST") {
-      shape(m, [...common, "heading", "record_title_key", "record_done_key", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label", "max_items"], [], path);
+      shape(m, [...common, "heading", "record_title_key", "record_done_key", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label", "max_items"], ["track_day"], path);
+      if (m.track_day !== undefined && typeof m.track_day !== "boolean") fail("PLAN_SCHEMA_INVALID", path + ".track_day");
       for (const keyName of ["heading", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label"]) label(m[keyName], path + "." + keyName);
       const title = ident(m.record_title_key, path + ".record_title_key"), done = ident(m.record_done_key, path + ".record_done_key");
       if (title === done) fail("PLAN_SCHEMA_INVALID", path + ".record_done_key");
@@ -301,10 +319,56 @@ function budgetModule(b: Builder, p: string, mod: BudgetModule): string {
   ]);
 }
 
+/** A real device-local-day completion flag and derived counter, not static text. */
+function habitModule(b: Builder, p: string, mod: HabitModule): string {
+  const completedDay = "s_" + p + "_completed_day";
+  b.stateKey(completedDay, typeState("STRING", "", { max_length: 10 }));
+  const today = op("LOCAL_DAY");
+  const completed = op("IF", op("EQ", state(completedDay), today), lit(1), lit(0));
+  const action = "action_" + p + "_complete";
+  b.action(action, [{ type: "SET_STATE", target: completedDay,
+    value: op("IF", op("EQ", state(completedDay), today), lit(""), today) }]);
+  b.output("result_" + p + "_completed", mod.completed_label, completed);
+  return layout(b, "node_" + p + "_container", [
+    titleNode(b, "node_" + p + "_heading", mod.heading),
+    b.node("node_" + p + "_habit", "content.text", {
+      props: { role: lit("BODY") }, bindings: { text: lit(mod.habit_label) }
+    }),
+    b.node("node_" + p + "_complete", "action.button", {
+      props: { label: lit(mod.complete_label) }, events: { press: action }
+    }),
+    b.node("node_" + p + "_completed", "data.stat", {
+      props: { label: lit(mod.completed_label), format: lit("NUMBER") }, bindings: { value: completed }
+    })
+  ]);
+}
+/** A live total / daily progress view of an earlier explicitly linked task module. */
+function todaySummaryModule(b: Builder, p: string, mod: TodaySummaryModule,
+  modules: readonly CompositionModule[]): string {
+  const index = modules.findIndex(module => module.kind === "RECORD_LIST" && module.key === mod.source_key);
+  if (index < 0 || modules[index]?.kind !== "RECORD_LIST" || modules[index].track_day !== true)
+    fail("PLAN_UNTRUSTED_REFERENCE", "$.modules.source_key");
+  const linked = "s_m" + String(index).padStart(3,"0") + "_rows";
+  const total = op("COUNT", state(linked));
+  const completed = op("COUNT", op("LIST_FILTER_EQ", state(linked), lit("completed_day"), op("LOCAL_DAY")));
+  b.output("result_" + p + "_total", mod.total_label, total);
+  b.output("result_" + p + "_completed", mod.completed_label, completed);
+  return layout(b, "node_" + p + "_container", [
+    titleNode(b, "node_" + p + "_heading", mod.heading),
+    b.node("node_" + p + "_total", "data.stat", {
+      props: { label: lit(mod.total_label), format: lit("NUMBER") }, bindings: { value: total }
+    }),
+    b.node("node_" + p + "_completed", "data.stat", {
+      props: { label: lit(mod.completed_label), format: lit("NUMBER") }, bindings: { value: completed }
+    })
+  ]);
+}
+
 function moduleBlueprint(b: Builder, mod: CompositionModule, i: number): string {
   const p = "m" + String(i).padStart(3, "0");
   if (mod.kind === "RECORD_LIST") return recordList(b, p, mod);
   if (mod.kind === "BUDGET") return budgetModule(b, p, mod);
+  if (mod.kind === "HABIT") return habitModule(b, p, mod);
   if (mod.kind === "DISPLAY") {
     return layout(b, "node_" + p + "_container", [titleNode(b, "node_" + p + "_heading", mod.heading),
       b.node("node_" + p + "_body", "content.text", { props: { role: lit("BODY") }, bindings: { text: lit(mod.body) } })]);
@@ -335,9 +399,13 @@ export function lowerCompositionPlan(plan: CompositionPlan, context: AssemblerCo
   if (context.coverage.status !== "FULLY_SUPPORTED" && context.coverage.status !== "PARTIALLY_SUPPORTED")
     fail("COMPOSITION_UNSUPPORTED", "$.coverage");
   const b = new Builder(context.coverage.selected);
-  const childIds = plan.modules.map((mod, i) =>
-    mod.kind === "RECORD_LIST" ? recordList(b, "m" + String(i).padStart(3, "0"), mod,
-      context.coverage.certifiedProfile === "RECORD_LIST_TODAY") : moduleBlueprint(b, mod, i));
+  const childIds = plan.modules.map((mod, i) => {
+    const p = "m" + String(i).padStart(3,"0");
+    if (mod.kind === "TODAY_SUMMARY") return todaySummaryModule(b, p, mod, plan.modules);
+    if (mod.kind === "RECORD_LIST") return recordList(b, p, mod,
+      context.coverage.certifiedProfile === "RECORD_LIST_TODAY" || mod.track_day === true);
+    return moduleBlueprint(b, mod, i);
+  });
   layout(b, "node_root", childIds);
   // Sorted DFS means same canonical inputs produce identical serialized Blueprint, not model-defined node IDs.
   const index = new Map(b.nodes.map(n => [n.id, n]));
