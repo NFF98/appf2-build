@@ -5,6 +5,7 @@ import { IntentApiError, type F01ErrorCode } from "./f01-errors.js";
 import {
   BLUEPRINT_ATTEMPT_TIMEOUTS_MS,
   DEFAULT_PROVIDER_POLICY,
+  analysisTimeoutLimit,
   MAX_PROVIDER_ATTEMPTS,
   isRetryableFailure,
   type ModelFailure,
@@ -133,7 +134,9 @@ async function attempt<T>(context: ProviderCallContext, spec: ProviderCallSpec<T
   });
   if (started === "STALE_ATTEMPT") throw new StaleAttemptError();
   const timeoutMs = spec.operation === "BLUEPRINT_COMPOSE" && context.blueprintBudget !== undefined
-    ? context.blueprintBudget.take(context.deadline) : context.deadline.attemptTimeoutMs(spec.operation);
+    ? context.blueprintBudget.take(context.deadline)
+    : context.deadline.attemptTimeoutMs(spec.operation, spec.operation === "INTENT_ANALYSIS"
+      ? analysisTimeoutLimit(spec.inputPayload) : undefined);
   const response: ModelGatewayResponse = timeoutMs > 0
     ? await invoke(context, spec as ProviderCallSpec<unknown>, timeoutMs)
     : { status: "FAILED", provider_metadata: { model_adapter: context.gateway.modelAdapter, provider_model: null }, latency_ms: 0, failure: { kind: "TIMEOUT" } };
