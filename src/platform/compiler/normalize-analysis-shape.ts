@@ -150,6 +150,7 @@ function canonicalHintTypes(value: JsonValue): JsonValue {
  * the user's original money request. A composed summary remains a REQUIRED
  * capability and F02 must still implement spending and remaining separately.
  * Never change amounts, facts, sources, requirement IDs or risk flags. */
+// eslint-disable-next-line complexity -- All guards preserve mandatory finance functionality and avoid speculative type rewriting.
 export function correctMoneyStatisticHint(raw: JsonValue, originalUserIntent?: string): JsonValue {
   if (!isPlainRecord(raw) || raw.interaction_class !== "statistic" ||
     raw.required !== true || !Array.isArray(raw.input_types) || raw.input_types.length !== 0 ||
