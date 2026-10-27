@@ -383,6 +383,7 @@ function moduleBlueprint(b: Builder, mod: CompositionModule, i: number): string 
     }
     return layout(b, "node_" + p + "_container", children);
   }
+  if (mod.kind !== "ARITHMETIC") fail("PLAN_SCHEMA_INVALID", "$.modules.kind");
   const left = formField(b, p, { kind: "NUMBER", key: "left", label: mod.left_label, min: -1000000, max: 1000000, initial: mod.initial_left }, 0);
   const right = formField(b, p, { kind: "NUMBER", key: "right", label: mod.right_label, min: -1000000, max: 1000000, initial: mod.initial_right }, 1);
   const answer = op(mod.operation, state(left.state), state(right.state));
