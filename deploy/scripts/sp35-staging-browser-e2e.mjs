@@ -54,6 +54,9 @@ try {
   await input.waitFor({state:"visible",timeout:15_000});
   console.log("STAGING BROWSER: runtime app + home navigation PASS; screenshot saved");
 
+  if (process.env.APPF2_SP35_BROWSER_COMPLEX_ALLOWED !== "1") {
+    console.log("STAGING BROWSER: HELLO_WORLD_ONLY PASS; avoided extra paid LifePilot model request");
+  } else {
   // A single complex 5-feature analysis verifies the reported real-world
   // LifePilot incident (invalid schema followed by a short timeout budget).
   // Success here verifies analysis, NOT full complex-app implementation.
@@ -142,6 +145,7 @@ try {
   console.log("STAGING COMPLEX INTERACTION: ACTIVE_CONTROLS="+interactiveCount);
   if(interactiveCount===0)throw Error("STAGING COMPLEX: all requested features appear static; interactivity NOT VERIFIED");
   console.log("STAGING COMPLEX: Blueprint validated and five labels visible, but CRUD and persisted data still NOT VERIFIED.");
+  }
 } catch(error) {
   await page.screenshot({path:screenshot,fullPage:true}).catch(()=>{});
   throw Error("STAGING BROWSER: real user journey FAILED ("+String(error?.name||"unknown")+
