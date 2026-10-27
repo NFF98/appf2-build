@@ -1,4 +1,4 @@
-import { chromium } from "@playwright/test";
+// Bounded, explicit one-shot paid regression: original ordinary-language moving request.\n// Assertions remain fail-closed through F01, F02, F03 interactions and reload.\nimport { chromium } from "@playwright/test";
 const origin = new URL(process.env.APPF2_STAGING_URL?.trim() || "");
 if (origin.protocol !== "https:" || !/^appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/i.test(origin.hostname) || origin.pathname!=="/" || origin.search || origin.hash) throw Error("isolated staging only");
 const input = [
