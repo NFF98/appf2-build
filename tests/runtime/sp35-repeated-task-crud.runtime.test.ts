@@ -58,7 +58,7 @@ describe("Sprint 3.5 row-specific interactive task list", () => {
   it("F02 denies filtered-view row indices for destructive source-list actions", async () => {
     // The second visible filtered row is NOT necessarily source-index 1.
     // The F02 gate must reject this blueprint instead of deleting the wrong task.
-    await expect(admittedBlueprint(app(true))).rejects.toThrow("fixture admission denied");
+    await expect(admittedBlueprint(app(true))).rejects.toThrow("F02-ERR-010");
   });
 
   it("toggles the selected second task, not the first, and recalculates completion", async () => {
