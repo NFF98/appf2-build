@@ -82,7 +82,11 @@ export function certifyCompositeCoverage(
   originalUserIntent?: string
 ): CoverageResult {
   if (!hasTaskListSignature(requirements, originalUserIntent)) return coverage;
-  const temporal = requiresUnsupportedCalendar(requirements);
+  // Original confirmed user phrase outranks a lossy Prompt A metric label.
+  // This is a closed daily-task signature, not a general calendar capability grant.
+  const temporal = requiresUnsupportedCalendar(requirements) !== undefined ||
+    (originalExplicitTaskAdd(originalUserIntent) &&
+     /(?:今天|今日|本日|today).{0,8}(?:完成|complete)/i.test(originalUserIntent ?? ""));
   if (coverage.requirements.some(r => r.status === "EXTERNAL_REQUIRED")) return coverage;
   if (coverage.registryVersion !== CAPABILITY_REGISTRY_SOURCE.registryVersion ||
       coverage.registryDigest !== computeRegistryDigest(CAPABILITY_REGISTRY_SOURCE)) return coverage;
@@ -133,7 +137,7 @@ export function certifyCompositeCoverage(
     };
   });
   return {
-    ...coverage, certifiedProfile: temporal === undefined ? "RECORD_LIST" : "RECORD_LIST_TODAY",
+    ...coverage, certifiedProfile: temporal ? "RECORD_LIST_TODAY" : "RECORD_LIST",
     selected: [...refs.values()],
     status: "FULLY_SUPPORTED", requirements: covered,
     gaps: coverage.gaps.filter(gap => !requirements.some(r => r.requirement_id === gap.requirementId))
