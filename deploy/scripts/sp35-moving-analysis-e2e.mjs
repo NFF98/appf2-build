@@ -48,8 +48,97 @@ try {
  console.log("STAGING MOVING APP: INTERACTIVE_RENDERED="+(inputs>0&&buttons>0&&stats>0)+
    " INPUTS="+inputs+" BUTTONS="+buttons+" STATS="+stats);
  if(inputs===0 || buttons===0 || stats===0) throw Error("moving app has no executable controls");
+ // Independent, real user actions on the actual AI-generated F03 controls.
+ // Detect typed module surfaces by input/number structure rather than forcing
+ // the model to copy fixed English LifePilot section titles.
+ const sections=await page.locator(".s03-app .rt-text-HEADING").count();
+ const roots=[];
+ for(let i=0;i<sections;i++){
+   const root=page.locator(".s03-app .rt-text-HEADING").nth(i)
+     .locator("xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' rt-container ')][1]");
+   roots.push({root,text:await root.locator('input[type="text"]').count(),
+     num:await root.locator('input[type="number"]').count(),
+     buttons:await root.locator(".rt-button").count()});
+ }
+ console.log("STAGING MOVING MODULE SIGNATURES: "+
+   roots.map(x=>x.text+"T"+x.num+"N"+x.buttons+"B").join("|").slice(0,150));
+ const task=roots.find(x=>x.text>=2 && x.num===0 && x.buttons>=1)?.root;
+ const shopping=roots.find(x=>x.text===1 && x.num===1 && x.buttons>=1)?.root;
+ const budget=roots.find(x=>x.text===0 && x.num===2 && x.buttons>=1)?.root;
+ if(!task || !shopping || !budget) throw Error("MOVING REQUIRED MODULE MISSING: "+[
+   task?"":"TASKS",shopping?"":"SHOPPING",budget?"":"BUDGET"].filter(Boolean).join(","));
+ const numeric=async root=>(await root.locator(".rt-stat-value").allTextContents())
+   .map(s=>Number(s.replace(/[^0-9.-]/g,""))).filter(Number.isFinite);
+ const taskInput=task.locator('input[type="text"]').first();
+ const priority=task.getByRole("combobox",{name:"Task priority"});
+ if(await priority.count()===1) await priority.selectOption("Low");
+ await taskInput.fill("MOVE-TASK-A");
+ await task.locator(".rt-button").first().click();
+ const tasks=task.locator(".rt-list").first().locator(".rt-list-item");
+ if(await tasks.filter({hasText:"MOVE-TASK-A"}).count()!==1)
+   throw Error("MOVING TASKS: create A failed");
+ if(await priority.count()===1) await priority.selectOption("High");
+ await taskInput.fill("MOVE-TASK-B");
+ await task.locator(".rt-button").first().click();
+ if(await tasks.filter({hasText:"MOVE-TASK-B"}).count()!==1)
+   throw Error("MOVING TASKS: create B failed");
+ await task.locator('input[type="text"]').nth(1).fill("MOVE-TASK-B-EDITED");
+ await tasks.filter({hasText:"MOVE-TASK-B"}).locator(".rt-button").nth(1).click();
+ if(await tasks.filter({hasText:"MOVE-TASK-B-EDITED"}).count()!==1)
+   throw Error("MOVING TASKS: edit B failed");
+ const beforeTask=await numeric(task);
+ await tasks.filter({hasText:"MOVE-TASK-B-EDITED"}).locator(".rt-button").first().click();
+ const afterTask=await numeric(task);
+ if(!beforeTask.some((v,i)=>v!==afterTask[i]))
+   throw Error("MOVING TASKS: completion metric not updated");
+ await tasks.filter({hasText:"MOVE-TASK-A"}).locator(".rt-button").nth(2).click();
+ if(await tasks.filter({hasText:"MOVE-TASK-A"}).count()!==0 ||
+   await tasks.filter({hasText:"MOVE-TASK-B-EDITED"}).count()!==1)
+   throw Error("MOVING TASKS: wrong row deleted");
+ const filter=task.getByRole("combobox",{name:"Priority filter"});
+ if(await priority.count()===1 && await filter.count()!==1)
+   throw Error("MOVING TASKS: priority filter missing");
+ if(await filter.count()===1){
+   await filter.selectOption("High");
+   if(await task.locator(".rt-list").last().getByText("MOVE-TASK-B-EDITED",{exact:true}).count()!==1)
+     throw Error("MOVING TASKS: high-priority filter failed");
+ }
+ console.log("STAGING MOVING REAL TASKS: ADD_EDIT_DONE_DELETE_PRIORITY PASS");
+ await shopping.locator('input[type="text"]').first().fill("MOVE-BOX");
+ await shopping.locator('input[type="number"]').first().fill("3");
+ await shopping.locator(".rt-button").first().click();
+ const items=shopping.locator(".rt-list-item");
+ const box=items.filter({hasText:"MOVE-BOX"});
+ if(await box.count()!==1) throw Error("MOVING SHOPPING: create item failed");
+ await shopping.locator('input[type="number"]').first().fill("5");
+ await box.locator(".rt-button").nth(1).click();
+ if(!(await box.locator(".rt-stat-value").allTextContents()).some(s=>Number(s)===5))
+   throw Error("MOVING SHOPPING: quantity edit failed");
+ const beforeShopping=await numeric(shopping);
+ await box.locator(".rt-button").first().click();
+ const afterShopping=await numeric(shopping);
+ if(!beforeShopping.some((v,i)=>v!==afterShopping[i]))
+   throw Error("MOVING SHOPPING: purchased count not updated");
+ console.log("STAGING MOVING REAL SHOPPING: ADD_QUANTITY_PURCHASE PASS");
+ await budget.locator('input[type="number"]').nth(0).fill("200");
+ await budget.locator('input[type="number"]').nth(1).fill("37");
+ await budget.locator(".rt-button").first().click();
+ const money=await numeric(budget);
+ if(!money.includes(37)||!money.includes(163))
+   throw Error("MOVING BUDGET: spent/remaining arithmetic incorrect");
+ console.log("STAGING MOVING REAL MONEY: BUDGET_200_EXPENSE_37_REMAINING_163 PASS");
  await page.reload({waitUntil:"domcontentloaded"});
  await page.locator(".s03-app").waitFor({state:"visible",timeout:30000});
- console.log("STAGING MOVING: real natural Chinese F01 + F02 + F03 + secure reload PASS");
+ if(await page.locator(".s03-app").getByText("MOVE-TASK-B-EDITED",{exact:true}).count()===0)
+   throw Error("MOVING RELOAD: edited completed task lost");
+ const loadedBox=page.locator(".s03-app .rt-list-item").filter({hasText:"MOVE-BOX"});
+ if(await loadedBox.count()!==1 ||
+   !(await loadedBox.locator(".rt-stat-value").allTextContents()).some(s=>Number(s)===5))
+   throw Error("MOVING RELOAD: shopping item/edited quantity lost");
+ const allMoney=(await page.locator(".s03-app .rt-stat-value").allTextContents())
+   .map(s=>Number(s.replace(/[^0-9.-]/g,""))).filter(Number.isFinite);
+ if(!allMoney.includes(37)||!allMoney.includes(163))
+   throw Error("MOVING RELOAD: budget/expense lost");
+ console.log("STAGING MOVING: REAL CHINESE TASKS + SHOPPING + BUDGET + RELOAD ACTIONS PASS");
 
 }finally{await browser.close()}
