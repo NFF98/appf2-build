@@ -50,6 +50,7 @@ function provenListChoices(value: JsonValue | undefined, alternatives: JsonValue
  * type is retained, and the authoritative F01 parser still validates choices,
  * facts, provenance and policy. Never infer new alternatives or modify risk.
  */
+// eslint-disable-next-line complexity -- All type/choice guards are required to prevent changing user facts.
 function alignQuestionMetadata(item: JsonValue): JsonValue {
   if (!safePolicyItem(item) || !isPlainRecord(item)) return item;
   if (typeof item.expected_value_type !== "string" ||
