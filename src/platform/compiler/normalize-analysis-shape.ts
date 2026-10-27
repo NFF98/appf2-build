@@ -39,6 +39,12 @@ function actualValueType(value: JsonValue | undefined): string | null {
   return null;
 }
 
+function provenListChoices(value: JsonValue | undefined, alternatives: JsonValue): boolean {
+  if (!Array.isArray(value) || !Array.isArray(alternatives) || alternatives.length < 2) return false;
+  const options = new Set(alternatives.map(v => JSON.stringify(v)));
+  return options.size >= 2 && value.every(entry => options.has(JSON.stringify(entry)));
+}
+
 function fixScalarMetadata(item: JsonValue): JsonValue {
   if (!isPlainRecord(item) || !safePolicyItem(item)) return item;
   const value = item.resolution_state === "CONFIRMED" ? item.resolved_value :
@@ -47,11 +53,7 @@ function fixScalarMetadata(item: JsonValue): JsonValue {
   if (scalarType === null) return item;
   // LIST maps to MULTI_CHOICE, which requires real distinct alternatives.
   // Never invent options or change a plain array fact into a false choice contract.
-  if (scalarType === "LIST") {
-    const values = item.alternatives;
-    if (!Array.isArray(values) || values.length < 2 || new Set(values.map(v => JSON.stringify(v))).size < 2 ||
-        !Array.isArray(value) || value.some(entry => !values.some(option => JSON.stringify(option) === JSON.stringify(entry)))) return item;
-  }
+  if (scalarType === "LIST" && !provenListChoices(value, item.alternatives)) return item;
   // Only presentation/type metadata changes: no user value, safety flag,
   // policy decision or dependency is created, discarded or modified.
   const enumMatches = item.expected_value_type === "ENUM" && Array.isArray(item.alternatives) &&
