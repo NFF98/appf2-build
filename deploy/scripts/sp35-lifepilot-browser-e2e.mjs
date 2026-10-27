@@ -48,7 +48,7 @@ async function check(label, fn) {
 function feature(name) {
   // A card with the actual feature heading, not an arbitrary parent spanning all features.
   return page.locator(".s03-app .rt-card").filter({
-    has: page.locator(".rt-card-title").getByText(name, { exact: true })
+    has: page.locator(".rt-card-title").filter({ hasText: new RegExp("^" + name + "$") })
   }).first();
 }
 async function section(name) {
@@ -73,7 +73,7 @@ async function numberField(where, value) {
 }
 async function metrics(where) {
   const values = await where.locator(".rt-stat-value").allTextContents();
-  return values.map(text => Number(text.replace(/[^0-9.\-]/g, ""))).filter(Number.isFinite);
+  return values.map(text => Number(text.replace(/[^0-9.-]/g, ""))).filter(Number.isFinite);
 }
 async function ensureMetricsChange(before, after, label) {
   requireTrue(before.length > 0 && after.length === before.length &&
