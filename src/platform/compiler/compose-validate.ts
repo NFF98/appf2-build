@@ -266,6 +266,8 @@ class ComposeLoop {
     // Only operational mode + bounded counts: no raw user intent or model content.
     console.warn("APPF2_F02_PLAN_MODE=" + (planMode ? "TYPED" : "RAW") +
       " REQUIREMENT_COUNT=" + Math.min(this.scope.resolved.capability_requirements.length, 100));
+    if (planMode) console.warn("APPF2_F02_SELECTED_ROLES=" +
+      this.coverage.selected.map(ref => ref.id).filter(id => /^[a-z]+(?:\.[a-z]+)*$/.test(id)).join(","));
     try {
       const composed = await callProviderWithBoundedRetry(
         { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId, traceId, registryVersion: this.coverage.registryVersion, now: dependencies.clock, newId: dependencies.newId, evidence, blueprintBudget: this.blueprintBudget },
@@ -303,6 +305,10 @@ class ComposeLoop {
           return { candidate: candidate as unknown as JsonValue, compilerRunId: composed.compilerRunId };
         } catch (error) {
           if (!(error instanceof CompositionPlanError)) throw error;
+          // Strict code/path whitelist. Never log model body, prompt, or arbitrary strings.
+          console.warn("APPF2_F02_TYPED_FAILURE=" + error.code + " PATH=" +
+            (/^\$\.(?:capability\.[a-z.]+|coverage|modules(?:\[\d+\])?(?:\.[a-z_]+)?)$/.test(error.path)
+              ? error.path : "OMITTED"));
           if (error.code === "COMPOSITION_UNSUPPORTED") return this.fail("INCOMPATIBLE", new IntentApiError("F01-ERR-008"), true);
           return this.fail("COMPOSITION_FAILED", new IntentApiError(error.code === "LOWERING_GRAPH_INVALID" ? "F01-ERR-014" : "F01-ERR-007"), false);
         }
