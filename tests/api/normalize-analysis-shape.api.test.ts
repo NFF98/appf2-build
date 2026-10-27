@@ -61,6 +61,25 @@ describe("untrusted Prompt A descriptor flag completion", () => {
     expect(original.constraints[0]?.expected_value_type).toBe("ENUM");
   });
 
+  test("preserves complex list/record user facts while correcting nonrisk type metadata only", () => {
+    const original = { requested_outputs: [], capability_hints: [], constraints: [
+      { id: "task_list", resolution_state: "CONFIRMED", resolved_value: ["A", "B"],
+        expected_value_type: "STRING", question_type: "FREE_TEXT",
+        alternatives: [], policy_risk_flags: [] },
+      { id: "task_record", resolution_state: "CONFIRMED", resolved_value: { title: "A", done: false },
+        expected_value_type: "STRING", question_type: "FREE_TEXT",
+        alternatives: [], policy_risk_flags: [] },
+      { id: "sensitive_record", resolution_state: "CONFIRMED", resolved_value: { secret: "value" },
+        expected_value_type: "STRING", question_type: "FREE_TEXT",
+        alternatives: [], policy_risk_flags: ["MONEY"] }
+    ] };
+    const normalized = normalizeAnalysisDescriptorFlags(original as JsonValue) as typeof original;
+    expect(normalized.constraints[0]).toMatchObject({ expected_value_type: "LIST", question_type: "MULTI_CHOICE", resolved_value: ["A", "B"] });
+    expect(normalized.constraints[1]).toMatchObject({ expected_value_type: "RECORD", question_type: "STRUCTURED_FIELDS", resolved_value: { title: "A", done: false } });
+    expect(normalized.constraints[2]).toEqual(original.constraints[2]);
+    expect(original.constraints[0]?.expected_value_type).toBe("STRING");
+  });
+
   test("promotes user-required and risky cosmetics to MATERIAL without losing facts", () => {
     const value = {
       requested_outputs: [], capability_hints: [],

@@ -30,10 +30,12 @@ function safePolicyItem(item: JsonValue): boolean {
     item.policy_risk_flags.length === 0 && Array.isArray(item.alternatives);
 }
 
-function actualScalarType(value: JsonValue | undefined): string | null {
+function actualValueType(value: JsonValue | undefined): string | null {
   if (typeof value === "string") return "STRING";
-  if (typeof value === "number") return "NUMBER";
+  if (typeof value === "number" && Number.isFinite(value)) return "NUMBER";
   if (typeof value === "boolean") return "BOOLEAN";
+  if (Array.isArray(value)) return "LIST";
+  if (isPlainRecord(value)) return "RECORD";
   return null;
 }
 
@@ -41,7 +43,7 @@ function fixScalarMetadata(item: JsonValue): JsonValue {
   if (!isPlainRecord(item) || !safePolicyItem(item)) return item;
   const value = item.resolution_state === "CONFIRMED" ? item.resolved_value :
     item.resolution_state === "PROPOSED" ? item.proposed_default : undefined;
-  const scalarType = actualScalarType(value);
+  const scalarType = actualValueType(value);
   if (scalarType === null) return item;
   // Only presentation/type metadata changes: no user value, safety flag,
   // policy decision or dependency is created, discarded or modified.
