@@ -335,7 +335,7 @@ jobs:
             ([...coverage,...modes,...roles,...typedReasons,...rejectedRoles,...upstream,...transport].slice(-10).join("; ")||"NOT_OBSERVED"));
           JS
           exit "$BROWSER_RC"
-      - name: Upload browser screenshot (staging Hello World only)
+      - name: Upload real browser screenshot (staging five-feature LifePilot)
         if: always()
         uses: actions/upload-artifact@v4
         with:
