@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import COMPOSITION_PLAN_SCHEMA from "../../src/platform/compiler/composition-plan-v1.schema.json";
 import { CAPABILITY_REGISTRY_SOURCE } from "../../src/platform/capabilities/registry.js";
 import { computeRegistryDigest } from "../../src/platform/capabilities/generate-registry.js";
 import { certifyTypedModuleRoles, lowerCompositionPlan, parseCompositionPlan } from "../../src/platform/compiler/typed-composition.js";
@@ -27,6 +28,7 @@ describe("Sprint 3.5 priority filter preserves original list index safety",()=>{
     // The provider schema must advertise optional priority_filter, not merely
     // let an internal parser accept it.
     expect(module.priority_filter).toBe(true);
+    expect(JSON.stringify(COMPOSITION_PLAN_SCHEMA)).toContain('"priority_filter"');
     const plan=parseCompositionPlan({plan_version:"1.0.0",
       title:"Smart Tasks",modules:[module]} as never,new Set([rid]),new Set([rid]));
     const closed=certifyTypedModuleRoles(coverage,plan);
