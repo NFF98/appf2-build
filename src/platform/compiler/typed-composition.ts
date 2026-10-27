@@ -15,7 +15,7 @@ export type FormField =
   | { readonly kind: "TOGGLE"; readonly key: string; readonly label: string; readonly initial: boolean };
 export type FormModule = Base & { readonly kind: "FORM"; readonly heading: string; readonly fields: readonly FormField[]; readonly reset_label?: string };
 export type ArithmeticModule = Base & { readonly kind: "ARITHMETIC"; readonly heading: string; readonly left_label: string; readonly right_label: string; readonly result_label: string; readonly operation: "ADD" | "SUB" | "MUL"; readonly initial_left: number; readonly initial_right: number };
-export type RecordListModule = Base & { readonly kind: "RECORD_LIST"; readonly heading: string; readonly record_title_key: string; readonly record_done_key: string; readonly input_label: string; readonly add_label: string; readonly toggle_label: string; readonly delete_label: string; readonly total_label: string; readonly completed_label: string; readonly max_items: number; readonly track_day?: boolean };
+export type RecordListModule = Base & { readonly kind: "RECORD_LIST"; readonly heading: string; readonly record_title_key: string; readonly record_done_key: string; readonly input_label: string; readonly add_label: string; readonly toggle_label: string; readonly delete_label: string; readonly total_label: string; readonly completed_label: string; readonly max_items: number; readonly track_day?: boolean; readonly priority_filter?: boolean };
 /** Interactive local budget: set budget, enter an expense, commit, recompute totals. */
 export type BudgetModule = Base & { readonly kind: "BUDGET"; readonly heading: string;
   readonly budget_label: string; readonly expense_label: string; readonly add_expense_label: string;
@@ -53,6 +53,7 @@ export function certifyTypedModuleRoles(coverage: CoverageResult, plan: Composit
   for (const module of plan.modules) {
     if (module.kind === "RECORD_LIST") {
       for (const id of ["content.list", "input.text", "action.button", "data.stat"]) roleIds.add(id);
+      if (module.priority_filter === true) roleIds.add("input.select");
     } else if (module.kind === "SHOPPING_LIST") {
       for (const id of ["content.list", "input.text", "input.number", "action.button", "data.stat"]) roleIds.add(id);
     } else if (module.kind === "BUDGET") {
@@ -211,7 +212,8 @@ export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string
       numeric(m.initial_budget, path + ".initial_budget");
       if ((m.initial_budget as number) < 0) fail("PLAN_SCHEMA_INVALID", path + ".initial_budget");
     } else if (kind === "RECORD_LIST") {
-      shape(m, [...common, "heading", "record_title_key", "record_done_key", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label", "max_items"], ["track_day"], path);
+      shape(m, [...common, "heading", "record_title_key", "record_done_key", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label", "max_items"], ["track_day", "priority_filter"], path);
+      if (m.priority_filter !== undefined && typeof m.priority_filter !== "boolean") fail("PLAN_SCHEMA_INVALID", path + ".priority_filter");
       if (m.track_day !== undefined && typeof m.track_day !== "boolean") fail("PLAN_SCHEMA_INVALID", path + ".track_day");
       for (const keyName of ["heading", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label"]) label(m[keyName], path + "." + keyName);
       const title = ident(m.record_title_key, path + ".record_title_key"), done = ident(m.record_done_key, path + ".record_done_key");
@@ -241,7 +243,7 @@ const state = (key: string): ValueSource => ({ kind: "STATE", key });
 const scope = (name: string, path = ""): ValueSource => ({ kind: "SCOPE", name, path });
 const event = (path: string): ValueSource => ({ kind: "EVENT", path });
 const op = (operator: string, ...args: ValueSource[]): ValueSource => ({ kind: "OP", op: operator, args });
-const typeState = (type: "STRING" | "NUMBER" | "BOOLEAN" | "LIST" | "RECORD", initial: JsonValue, constraints?: JsonValue): StateEntry =>
+const typeState = (type: "STRING" | "NUMBER" | "BOOLEAN" | "ENUM" | "LIST" | "RECORD", initial: JsonValue, constraints?: JsonValue): StateEntry =>
   constraints === undefined ? { mode: "MUTABLE", type, initial } : { mode: "MUTABLE", type, initial, constraints };
 const pageProps = () => ({ direction: lit("COLUMN"), gap: lit("MD"), align: lit("STRETCH") });
 const rowProps = () => ({ direction: lit("ROW"), gap: lit("SM"), align: lit("CENTER") });
@@ -299,6 +301,41 @@ function formField(b: Builder, prefix: string, field: FormField, ordinal: number
   b.node(nodeId, cap, { props, bindings: { bind: state(dataKey) }, events: { change: actionId } });
   return { node: nodeId, state: dataKey };
 }
+/** Priority filtering is a read-only filtered projection. Mutable row actions stay
+ * on the original list, where repeat indices still match actual state indices. */
+function priorityListControls(b:Builder,p:string,rows:string,maxItems:number): {
+  readonly controls:string[]; readonly masterItems:ValueSource; readonly filteredList:string;
+} {
+  const options=(values:readonly string[])=>lit(values.map(value=>({label:value,value})));
+  const draft="s_"+p+"_draft_priority",filter="s_"+p+"_filter_priority";
+  const draftAction="action_"+p+"_priority",filterAction="action_"+p+"_filter";
+  b.action(draftAction,[{type:"SET_STATE",target:draft,value:event("value")}]);
+  b.action(filterAction,[{type:"SET_STATE",target:filter,value:event("value")}]);
+  const select=(id:string,label:string,key:string,choices:readonly string[],actionId:string)=>
+    b.node(id,"input.select",{props:{label:lit(label),options:options(choices)},
+      bindings:{bind:state(key)},events:{change:actionId}});
+  const controls=[
+    select("node_"+p+"_priority","Task priority",draft,["High","Medium","Low"],draftAction),
+    select("node_"+p+"_filter","Priority filter",filter,["All","High","Medium","Low"],filterAction)
+  ];
+  const none=op("LIST_FILTER_EQ",state(rows),lit("priority"),lit("All"));
+  const all=op("EQ",state(filter),lit("All"));
+  const masterItems=op("IF",all,state(rows),none);
+  const filteredItems=op("IF",all,none,op("LIST_FILTER_EQ",state(rows),lit("priority"),state(filter)));
+  const filteredRow="node_"+p+"_filtered_row";
+  layout(b,filteredRow,[
+    b.node("node_"+p+"_filtered_title","content.text",{props:{role:lit("BODY")},
+      bindings:{text:scope("filtered_item","title")}}),
+    b.node("node_"+p+"_filtered_priority","content.text",{props:{role:lit("CAPTION")},
+      bindings:{text:scope("filtered_item","priority")}})
+  ],true);
+  const filteredList=b.node("node_"+p+"_filtered_list","content.list",{
+    repeat:{items:filteredItems,item_alias:"filtered_item",index_alias:"filtered_index",max_items:maxItems},
+    children:[filteredRow]
+  });
+  return {controls,masterItems,filteredList};
+}
+
 function recordList(b: Builder, p: string, mod: RecordListModule, daily = false): string {
   if (daily && (mod.record_title_key === "completed_day" || mod.record_done_key === "completed_day"))
     fail("PLAN_SCHEMA_INVALID", "$.record_title_key");
@@ -306,25 +343,36 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
   const recordType: JsonValue = { type: "RECORD", constraints: { fields: {
     [mod.record_title_key]: { type: "STRING", constraints: { max_length: 120 } },
     [mod.record_done_key]: { type: "BOOLEAN" },
-    ...(daily ? { completed_day: { type: "STRING", constraints: { max_length: 10 } } } : {})
+    ...(daily ? { completed_day: { type: "STRING", constraints: { max_length: 10 } } } : {}),
+    ...(mod.priority_filter === true ? { priority: { type: "STRING", constraints: { max_length: 8 } } } : {})
   } } };
   b.stateKey(rows, typeState("LIST", [], { item: recordType, max_length: mod.max_items }));
   const newRow = { [mod.record_title_key]: "", [mod.record_done_key]: false,
-    ...(daily ? { completed_day: "" } : {}) };
+    ...(daily ? { completed_day: "" } : {}),
+    ...(mod.priority_filter === true ? { priority: "Medium" } : {}) };
   b.stateKey(template, typeState("RECORD", newRow, (recordType as { constraints: JsonValue }).constraints));
   b.stateKey(draft, typeState("STRING", "", { max_length: 120 }));
   const editDraft = "s_" + p + "_edit_draft";
   b.stateKey(editDraft, typeState("STRING", "", { max_length: 120 }));
   b.stateKey(can, typeState("BOOLEAN", false));
+  const priorities = ["High", "Medium", "Low"];
+  const draftPriority = "s_" + p + "_draft_priority";
+  const filterPriority = "s_" + p + "_filter_priority";
+  if (mod.priority_filter === true) {
+    b.stateKey(draftPriority,typeState("ENUM","Medium",{allowed:priorities}));
+    b.stateKey(filterPriority,typeState("ENUM","All",{allowed:["All",...priorities]}));
+  }
   const draftChange = "action_" + p + "_draft_change", add = "action_" + p + "_add",
     toggle = "action_" + p + "_toggle", remove = "action_" + p + "_remove",
     editChange = "action_" + p + "_edit_change", edit = "action_" + p + "_edit";
   b.action(draftChange, [{ type: "SET_STATE", target: draft, value: event("value") }]);
   b.action(editChange, [{ type: "SET_STATE", target: editDraft, value: event("value") }]);
   const allow = op("AND", op("NEQ", op("TRIM", state(draft)), lit("")), op("LT", op("COUNT", state(rows)), lit(mod.max_items)));
+  const newTitleRow = op("RECORD_SET", state(template), lit(mod.record_title_key), state(draft));
+  const newTaskRow = mod.priority_filter === true ? op("RECORD_SET",newTitleRow,lit("priority"),state(draftPriority)) : newTitleRow;
   b.action(add, [
     { type: "SET_STATE", target: can, value: allow },
-    { type: "SET_STATE", target: rows, value: op("LIST_APPEND", state(rows), op("RECORD_SET", state(template), lit(mod.record_title_key), state(draft))), when: state(can) },
+    { type: "SET_STATE", target: rows, value: op("LIST_APPEND", state(rows),newTaskRow), when: state(can) },
     { type: "SET_STATE", target: draft, value: lit(""), when: state(can) },
     { type: "RESET_STATE", target: can }
   ]);
@@ -347,12 +395,16 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
   const rowId = "node_" + p + "_row";
   const rowChildren = [
     b.node("node_" + p + "_item_title", "content.text", { props: { role: lit("BODY") }, bindings: { text: scope("item", mod.record_title_key) } }),
+    ...(mod.priority_filter === true ? [b.node("node_" + p + "_item_priority", "content.text", {
+      props: { role: lit("CAPTION") }, bindings: { text: scope("item", "priority") }
+    })] : []),
     b.node("node_" + p + "_toggle", "action.button", { props: { label: lit(mod.toggle_label) }, events: { press: toggle } }),
     b.node("node_" + p + "_edit", "action.button", { props: { label: lit("Edit selected item") },
       bindings: { disabled: op("NOT", hasEdit) }, events: { press: edit } }),
     b.node("node_" + p + "_remove", "action.button", { props: { label: lit(mod.delete_label) }, events: { press: remove } })
   ];
   layout(b, rowId, rowChildren, true);
+  const priorityControls = mod.priority_filter === true ? priorityListControls(b,p,rows,mod.max_items) : undefined;
   const children = [
     titleNode(b, "node_" + p + "_heading", mod.heading),
     b.node("node_" + p + "_input", "input.text", { props: { label: lit(mod.input_label), max_length: lit(120) }, bindings: { bind: state(draft) }, events: { change: draftChange } }),
@@ -361,7 +413,11 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
     b.node("node_" + p + "_add", "action.button", { props: { label: lit(mod.add_label) }, events: { press: add } }),
     b.node("node_" + p + "_total", "data.stat", { props: { label: lit(mod.total_label), format: lit("NUMBER") }, bindings: { value: total } }),
     b.node("node_" + p + "_completed", "data.stat", { props: { label: lit(metricLabel), format: lit("NUMBER") }, bindings: { value: completed } }),
-    b.node("node_" + p + "_list", "content.list", { repeat: { items: state(rows), item_alias: "item", index_alias: "index", max_items: mod.max_items }, children: [rowId] })
+    ...(priorityControls === undefined ? [] : priorityControls.controls),
+    b.node("node_" + p + "_list", "content.list", { repeat: {
+      items: priorityControls === undefined ? state(rows) : priorityControls.masterItems,
+      item_alias: "item", index_alias: "index", max_items: mod.max_items }, children: [rowId] }),
+    ...(priorityControls === undefined ? [] : [priorityControls.filteredList])
   ];
   return layout(b, "node_" + p + "_container", children);
 }
