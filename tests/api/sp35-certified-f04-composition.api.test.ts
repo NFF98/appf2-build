@@ -8,21 +8,20 @@ import { hydratedHarness } from "../runtime/runtime-fixtures.js";
 import type { JsonRecord } from "../contract/blueprint-validation-fixtures.js";
 
 const id = (n: number) => "sha256:" + n.toString(16).padStart(64,"0");
-// eslint-disable-next-line max-params -- Test fixture precisely mirrors the F01 semantic requirement tuple.
 const feature = (
-  n: number, cls: string, semantic: string, inputs: string[] = [], outputs: string[] = [],
-  required = true
+  n: number, cls: string, semantic: string,
+  shape: { inputs?: string[]; outputs?: string[]; required?: boolean } = {}
 ): CapabilityRequirement => ({
   requirement_id: id(n), interaction_class: cls, semantic_need: semantic,
-  required, input_types: inputs, output_types: outputs,
+  required: shape.required ?? true, input_types: shape.inputs ?? [], output_types: shape.outputs ?? [],
   impact_level: "HIGH", constraints: []
 });
 const features = [
   feature(1,"button","新增任務的按鈕"),feature(2,"button","刪除任務的按鈕"),
-  feature(3,"toggle","切換任務完成狀態的勾選框",["BOOLEAN"],["BOOLEAN"]),
-  feature(4,"text_input","用戶輸入新任務內容",["STRING"],["STRING"]),
-  feature(5,"metric","顯示已完成任務數量",[],["NUMBER"]),
-  feature(6,"repeated_content","顯示所有任務及其狀態",[],["LIST"],false)
+  feature(3,"toggle","切換任務完成狀態的勾選框",{inputs:["BOOLEAN"],outputs:["BOOLEAN"]}),
+  feature(4,"text_input","用戶輸入新任務內容",{inputs:["STRING"],outputs:["STRING"]}),
+  feature(5,"metric","顯示已完成任務數量",{outputs:["NUMBER"]}),
+  feature(6,"repeated_content","顯示所有任務及其狀態",{outputs:["LIST"],required:false})
 ];
 const plan = {
   plan_version: "1.0.0" as const, title: "Todo",
