@@ -15,7 +15,7 @@ import { COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS, type RequestDeadline } from "./m
 import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION, PROMPT_B_PLAN_VERSION } from "./prompts.js";
 import COMPOSITION_PLAN_SCHEMA from "./composition-plan-v1.schema.json";
 import { certifyTypedModuleRoles, lowerCompositionPlan, parseCompositionPlan, CompositionPlanError } from "./typed-composition.js";
-import { aliasResolvedRequirements, alignExplicitWalkingHabit, restorePlanRequirementIds } from "./typed-requirement-aliases.js";
+import { aliasResolvedRequirements, alignExplicitTodaySummary, alignExplicitWalkingHabit, restorePlanRequirementIds } from "./typed-requirement-aliases.js";
 import { BlueprintAttemptBudget, StaleAttemptError, callProviderWithBoundedRetry } from "./provider-attempts.js";
 import { classifyRejection, isFixableClass, type ClassifiedRejection } from "./rejection-classification.js";
 
@@ -286,10 +286,10 @@ class ComposeLoop {
             const output = isMultiModulePlanEligible(this.coverage,
               this.scope.resolved.capability_requirements.length) &&
                 this.scope.resolved.capability_requirements.length >= 8
-              ? alignExplicitWalkingHabit(
+              ? alignExplicitTodaySummary(alignExplicitWalkingHabit(
                   restorePlanRequirementIds(original,this.scope.resolved.capability_requirements),
                   this.scope.resolved, this.scope.originalUserIntent
-                ) : original;
+                ), this.scope.originalUserIntent) : original;
             try {
               parseCompositionPlan(output, new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)),
                 new Set(this.scope.resolved.capability_requirements.filter(r => r.required).map(r => r.requirement_id)));
