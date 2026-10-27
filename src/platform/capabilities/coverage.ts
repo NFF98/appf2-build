@@ -69,6 +69,8 @@ export interface CoverageGap {
 }
 
 export interface CoverageResult {
+  /** F04-certified semantic wiring profile; never inferred from the presence of arbitrary UI components. */
+  readonly certifiedProfile?: "RECORD_LIST";
   readonly registryVersion: string;
   readonly registryDigest: string;
   readonly status: CoverageStatus;

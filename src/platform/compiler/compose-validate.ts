@@ -121,7 +121,7 @@ function compilerCatalog(coverage: CoverageResult): JsonValue {
 /** Only a complete, exact F04-selected role set can use the typed composer.
  * All other existing compositions continue along their original trusted F02 path. */
 export function isCertifiedPlanEligible(coverage: CoverageResult): boolean {
-  if (!isCoverageAllowed(coverage)) return false;
+  if (!isCoverageAllowed(coverage) || coverage.certifiedProfile !== "RECORD_LIST") return false;
   const selected = new Set(coverage.selected.map(ref => ref.id + "@" + ref.version));
   const required = ["layout.container", "content.text", "content.list", "input.text", "action.button", "data.stat"];
   return required.every(id => CAPABILITY_REGISTRY_SOURCE.capabilities.some(def =>
@@ -134,12 +134,13 @@ function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: r
     resolved_intent: scope.resolved as unknown as JsonValue,
     ephemeral_resolved_context: scope.ephemeral as unknown as JsonValue,
     accepted_visible_assumptions: scope.resolved.accepted_assumptions as unknown as JsonValue,
-    capability_coverage_result: { ...coverageSupport(coverage), selected: coverage.selected.map((ref) => ({ ...ref })) },
+    capability_coverage_result: { ...coverageSupport(coverage), selected: coverage.selected.map((ref) => ({ ...ref })),
+      ...(coverage.certifiedProfile === undefined ? {} : { certified_profile: coverage.certifiedProfile }) },
     compiler_catalog: compilerCatalog(coverage),
     f02_blueprint_contract: { schema_version: BLUEPRINT_SCHEMA_VERSION, max_candidate_payload_bytes: MAX_CANDIDATE_PAYLOAD_BYTES },
     security_resource_policy: { executable_code: "FORBIDDEN", provider_runtime_config: "FORBIDDEN" },
     existing_blueprint: null,
-    prompt_version: PROMPT_B_VERSION,
+    prompt_version: coverage.certifiedProfile === "RECORD_LIST" ? PROMPT_B_PLAN_VERSION : PROMPT_B_VERSION,
     schema_version: BLUEPRINT_SCHEMA_VERSION,
     registry_version: coverage.registryVersion,
     model_adapter: scope.dependencies.gateway.modelAdapter,
@@ -244,7 +245,8 @@ class ComposeLoop {
             const output = this.acceptCandidate(value);
             if (output === null) return null;
             try {
-              parseCompositionPlan(output, new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)));
+              parseCompositionPlan(output, new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)),
+                new Set(this.scope.resolved.capability_requirements.filter(r => r.required).map(r => r.requirement_id)));
               return output;
             } catch (error) {
               if (error instanceof CompositionPlanError) return null;
@@ -257,7 +259,11 @@ class ComposeLoop {
       if (planMode) {
         try {
           const plan = parseCompositionPlan(composed.value,
-            new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)));
+            new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)),
+            new Set(this.scope.resolved.capability_requirements.filter(r => r.required).map(r => r.requirement_id)));
+          if (plan.modules.some(module => module.kind !== "RECORD_LIST")) {
+            return this.fail("INCOMPATIBLE", new IntentApiError("F01-ERR-008"), true);
+          }
           const candidate = lowerCompositionPlan(plan, {
             coverage: this.coverage,
             validRequirementIds: new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id))

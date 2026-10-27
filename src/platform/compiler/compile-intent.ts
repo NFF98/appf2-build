@@ -1,4 +1,5 @@
 import type { CoverageResult } from "../capabilities/coverage.js";
+import { certifyCompositeCoverage } from "../capabilities/certified-composition.js";
 import { internalInvariant } from "../intent/intent-contract.js";
 import { restoreTrustedIntentState } from "../intent/intent-state.js";
 import { canonicalJson, isPlainRecord, tryCanonicalJson, type JsonRecord, type JsonValue } from "../intent/json-value.js";
@@ -187,7 +188,10 @@ async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
   const ephemeral = bindEphemeralInputs(projection.ephemeral_requirements, run.ephemeralInputs).context;
   const progress = progressApplies(record.intent_kind) ? deriveCreateProgress({ lifecycle_status: "READY", has_structured_intent: true, has_resolved_intent: true }) : null;
   observe(run, progress, record.lifecycle_status);
-  const refreshCoverage = (): CoverageResult => dependencies.coverage({ requirements: projection.resolved_intent.capability_requirements });
+  const refreshCoverage = (): CoverageResult => certifyCompositeCoverage(
+    dependencies.coverage({ requirements: projection.resolved_intent.capability_requirements }),
+    projection.resolved_intent.capability_requirements
+  );
   const coverage = refreshCoverage();
   evidence.add("F01-EVT-008", { coverage_status: coverage.status, registry_version: coverage.registryVersion });
   if (!isCoverageAllowed(coverage)) {

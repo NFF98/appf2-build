@@ -69,7 +69,7 @@ function validateField(raw: unknown, path: string): FormField {
 }
 /** Parser is strict on every key/range; trusted requirement IDs never come from the provider. */
 // eslint-disable-next-line complexity -- Closed BD-026 plan schema validation explicitly checks all four discriminated module contracts.
-export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string>): CompositionPlan {
+export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string>, required: ReadonlySet<string> = new Set()): CompositionPlan {
   const p = obj(raw, "$");
   shape(p, ["plan_version", "title", "modules"], ["description"], "$");
   if (p.plan_version !== "1.0.0") fail("PLAN_SCHEMA_INVALID", "$.plan_version");
@@ -117,6 +117,9 @@ export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string
       integer(m.max_items, path + ".max_items", 1, 100);
     } else fail("PLAN_SCHEMA_INVALID", path + ".kind");
   }
+  const covered = new Set<string>();
+  for (const module of p.modules) for (const id of (module as CompositionModule).requirement_ids) covered.add(id);
+  for (const id of required) if (!covered.has(id)) fail("PLAN_UNTRUSTED_REFERENCE", "$.modules.requirement_ids");
   return p as CompositionPlan;
 }
 const lit = (value: JsonValue): ValueSource => ({ kind: "LITERAL", value });
