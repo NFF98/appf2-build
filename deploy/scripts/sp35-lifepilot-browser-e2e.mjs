@@ -216,12 +216,20 @@ try {
     requireTrue(await page.locator(".s03-app").getByText("LP-TASK-B-EDITED", { exact: true }).count() > 0,
       "saved task not restored after reload");
     const shopping = await section("Shopping List");
-    requireTrue(await shopping.getByText("LP-MILK", { exact: true }).count() > 0,
-      "shopping item missing after reload");
+    const savedItem = shopping.locator(".rt-list-item").filter({ hasText: "LP-MILK" });
+    requireTrue(await savedItem.count() === 1, "shopping item missing after reload");
+    requireTrue((await savedItem.locator(".rt-stat-value").allTextContents()).some(value =>
+      Number(value.trim()) === 5), "edited shopping quantity not restored after reload");
+    const shoppingValues = await metrics(shopping);
+    requireTrue(shoppingValues.some(value => value === 0),
+      "purchased item's outstanding count not restored after reload");
     const moneyValues = await metrics(await section("Money Snapshot"));
     requireTrue(moneyValues.includes(37) && moneyValues.includes(163),
       "spent and remaining budget did not persist across reload");
-    const habitValues = await metrics(await section("Healthy Habits"));
+    const savedHabits = await section("Healthy Habits");
+    requireTrue(await savedHabits.getByText("Walking", { exact: true }).count() > 0,
+      "explicitly requested Walking habit label not restored after reload");
+    const habitValues = await metrics(savedHabits);
     requireTrue(habitValues.some(value => value >= 1),
       "completed habit was not restored after reload");
     console.log("STAGING LIFEPILOT TAB RELOAD: original-holder relaunch + task/shopping/budget/habit restored");
