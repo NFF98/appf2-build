@@ -61,6 +61,23 @@ function provenListChoices(value: JsonValue | undefined, alternatives: JsonValue
   return options.size >= 2 && value.every(entry => options.has(JSON.stringify(entry)));
 }
 
+/** For an already CONFIRMED USER_EXPLICIT array of >=2 unique scalar facts
+ * the values themselves are the only proven possible selections. Never
+ * synthesize labels, delete values, change source/requiredness or repair
+ * unconfirmed/AI-proposed/risky items. This merely makes the existing list
+ * projectable through F01's mandatory MULTI_CHOICE contract. */
+function exactUserListChoices(item: Record<string, JsonValue>): readonly JsonValue[] | null {
+  if (item.source !== "USER_EXPLICIT" || item.resolution_state !== "CONFIRMED" ||
+      !Array.isArray(item.resolved_value) || !Array.isArray(item.alternatives) ||
+      item.alternatives.length !== 0 || !Array.isArray(item.policy_risk_flags) ||
+      item.policy_risk_flags.length !== 0) return null;
+  const values = item.resolved_value;
+  if (values.length < 2 || values.length > 24 || !values.every(v =>
+      typeof v === "string" || typeof v === "number" || typeof v === "boolean")) return null;
+  const uniq = new Set(values.map(v => JSON.stringify(v)));
+  return uniq.size === values.length ? values : null;
+}
+
 /**
  * Fix only an internally inconsistent question label. The expected value
  * type is retained, and the authoritative F01 parser still validates choices,
@@ -93,9 +110,17 @@ function fixScalarMetadata(item: JsonValue): JsonValue {
     item.resolution_state === "PROPOSED" ? item.proposed_default : undefined;
   const scalarType = actualValueType(value);
   if (scalarType === null) return item;
-  // LIST maps to MULTI_CHOICE, which requires real distinct alternatives.
-  // Never invent options or change a plain array fact into a false choice contract.
-  if (scalarType === "LIST" && !provenListChoices(value, item.alternatives)) return item;
+  // LIST maps to MULTI_CHOICE, which requires distinct selected options.
+  // For explicit, confirmed lists only, existing user values may supply
+  // their own exact option set; all other unproven choices still fail closed.
+  if (scalarType === "LIST" && !provenListChoices(value, item.alternatives)) {
+    const userOptions = exactUserListChoices(item);
+    if (userOptions === null) return item;
+    return {
+      ...item, expected_value_type: "LIST", question_type: "MULTI_CHOICE",
+      alternatives: [...userOptions]
+    };
+  }
   // Only presentation/type metadata changes: no user value, safety flag,
   // policy decision or dependency is created, discarded or modified.
   const enumMatches = item.expected_value_type === "ENUM" && Array.isArray(item.alternatives) &&

@@ -117,6 +117,45 @@ describe("untrusted Prompt A descriptor flag completion", () => {
     expect(hint.input_types[0]).toBe("ARRAY");
   });
 
+  test("natural human moving checklist: user-confirmed scalar list is projectable with exact existing values", () => {
+    const checklist = ["紙箱", "膠帶", "清潔用品"];
+    const item = {
+      id: "shopping_items", semantic_role: "moving_shopping", source: "USER_EXPLICIT",
+      resolution_state: "CONFIRMED", expected_value_type: "STRING",
+      question_type: "FREE_TEXT", resolved_value: checklist,
+      alternatives: [], policy_risk_flags: [], required_for_execution: true
+    };
+    const input = { requested_outputs: [], capability_hints: [], constraints: [item] };
+    const normalized = normalizeAnalysisDescriptorFlags(input as JsonValue) as typeof input;
+    expect(normalized.constraints[0]).toMatchObject({
+      expected_value_type: "LIST", question_type: "MULTI_CHOICE",
+      resolved_value: checklist, alternatives: checklist,
+      source: "USER_EXPLICIT", required_for_execution: true
+    });
+    expect(input.constraints[0]).toEqual(item);
+  });
+
+  test("does not invent list alternatives for unconfirmed, risky, repeated or model-proposed facts", () => {
+    const base = {
+      resolution_state: "CONFIRMED", source: "USER_EXPLICIT",
+      expected_value_type: "STRING", question_type: "FREE_TEXT",
+      resolved_value: ["高", "中", "低"], alternatives: [],
+      policy_risk_flags: []
+    };
+    const originals = [
+      {...base, source: "LLM_PROPOSED" },
+      {...base, resolution_state: "PROPOSED" },
+      {...base, policy_risk_flags: ["MONEY"] },
+      {...base, resolved_value: ["紙箱", "紙箱"] },
+      {...base, resolved_value: ["only_one"] },
+      {...base, resolved_value: [{ arbitrary: true }, "text"] }
+    ];
+    const envelope = { requested_outputs: [], capability_hints: [],
+      constraints: originals };
+    const repaired = normalizeAnalysisDescriptorFlags(envelope as JsonValue) as typeof envelope;
+    expect(repaired.constraints).toEqual(originals);
+  });
+
   test("never repairs malformed root, unknown source or non-boolean provided flag", () => {
     expect(normalizeAnalysisDescriptorFlags([])).toEqual([]);
     const value = {
