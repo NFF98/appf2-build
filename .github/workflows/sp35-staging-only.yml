@@ -202,8 +202,13 @@ jobs:
           }
           console.log("OPENAI PREFLIGHT: " + (accepted ? "ACCEPTED" :
             status >= 500 || status === 0 ? "UPSTREAM_UNAVAILABLE_HTTP_" + status :
-            "CREDENTIAL_REJECTED_HTTP_" + status));
-          if (!accepted) process.exitCode = 1;
+            status === 429 ? "RATE_LIMITED_HTTP_429" : "CREDENTIAL_REJECTED_HTTP_" + status));
+          // A GET /models outage is not a credential rejection and must not
+          // block the real signed Create E2E. Only a definitive 4xx denial
+          // (except 429) fails early. Actual POST/AI/DB/F02/F03 remain
+          // mandatory and fail closed if upstream is still unavailable.
+          if (!accepted && status >= 400 && status < 500 && status !== 429)
+            process.exitCode = 1;
           JS
       # Do not burn an extra model completion before the actual signed CREATE.
       # The real request, database receipt and Chromium render verify generation.
