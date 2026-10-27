@@ -19,6 +19,20 @@ describe("Sprint 3.5 real natural-language task app F02 incident", () => {
     expect(hint).toContain("action_update_input");
     expect(canonicalRepairHint("F02-ERR-002", "V03", "$.nodes[1].events.change")).toBeUndefined();
   });
+  it("gives concrete safe fixes for real observed V06 root and repeat paths", () => {
+    expect(canonicalRepairHint("F02-ERR-007", "V06", "$.root_node_id"))
+      .toContain("actual node");
+    expect(canonicalRepairHint("F02-ERR-007", "V06", "$.nodes[4].repeat"))
+      .toContain("OMIT repeat");
+    expect(canonicalRepairHint("F02-ERR-007", "V06", "$.nodes[4]"))
+      .toContain("Orphan node");
+    expect(canonicalRepairHint("F02-ERR-007", "V02", "$.nodes[4].repeat")).toBeUndefined();
+  });
+  it("prevents the natural task creator from sending invented roots or leaf repeats", () => {
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("root_node_id MUST be the id of ONE actual nodes[] entry");
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("input.text, input.toggle, action.button, content.text and data.stat MUST OMIT repeat");
+    expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("EVERY ONCE in the children array".replace("EVERY ONCE","EXACTLY ONCE"));
+  });
   it("preserves previous invalid event and orphan-node repair evidence together", () => {
     const first = {error_code:"F02-ERR-002",stage:"V02",json_path:"$.nodes[1].events.change"};
     const later = {error_code:"F02-ERR-007",stage:"V06",json_path:"$.nodes[4]"};

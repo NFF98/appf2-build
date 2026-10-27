@@ -54,6 +54,12 @@ export function canonicalRepairHint(code: string, stage: string, path: string): 
   if (code === "F02-ERR-002" && stage === "V02" && /^\$\.nodes\[\d+\]\.events\.[a-z_]+$/.test(path)) {
     return "Event binding must be a STRING that exactly matches a declared actions[].id using action_ plus lowercase snake_case, e.g. events.change:'action_update_input'. Never use an inline action object, ValueSource, camelCase ID or unprefixed name. Omit the event key if there is no declared handler.";
   }
+  if (code === "F02-ERR-007" && stage === "V06" && path === "$.root_node_id") {
+    return "root_node_id MUST equal the id of an actual node in nodes[]. Select the ONE existing root-capable structural node; never emit an invented or renamed ID. Every other node must have one reachable parent.";
+  }
+  if (code === "F02-ERR-007" && stage === "V06" && /^\$\.nodes\[\d+\]\.repeat$/.test(path)) {
+    return "Check the exact node capability composition.repeat. Only content.list can be repeated in the task catalog (and it requires repeat); leaf input.text/input.toggle/action.button/content.text/data.stat must OMIT repeat. Within an allowed repeat, item_alias/index_alias must differ and cannot shadow ancestor aliases.";
+  }
   if (code === "F02-ERR-007" && stage === "V06" && /^\$\.nodes\[\d+\]$/.test(path)) {
     return "Orphan node: connect this node to exactly one reachable parent.children from root_node_id. Every node must belong to ONE rooted tree.";
   }
