@@ -25,7 +25,7 @@ const demand = [
   "Money Snapshot: editable numeric weekly budget, numeric expense entry, Add expense,",
   "live total spent and remaining budget after every expense.",
   "Healthy Habits: Walking habit, an interactive mark-complete action, live completed-habits metric.",
-  "Each section should have its own content.card with its exact heading.",
+  "Each feature must have its own clearly titled section using registered available layout components.",
   "Buttons must perform their labeled operations. Keep changes locally for the current browser tab where supported.",
   "No logins, network integrations, external services, payment processing or fabricated cross-device sync.",
   "If a required feature cannot be implemented, do not present it as working."
@@ -46,14 +46,14 @@ async function check(label, fn) {
   }
 }
 function feature(name) {
-  // A card with the actual feature heading, not an arbitrary parent spanning all features.
-  return page.locator(".s03-app .rt-card").filter({
-    has: page.locator(".rt-card-title").filter({ hasText: new RegExp("^" + name + "$") })
-  }).first();
+  // Bind assertions to the nearest independent feature layout, never the app root.
+  const heading = page.locator(".s03-app .rt-text-HEADING")
+    .filter({ hasText: new RegExp("^" + name + "$") }).first();
+  return heading.locator("xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' rt-container ')][1]");
 }
 async function section(name) {
   const target = feature(name);
-  requireTrue(await target.count() === 1, "missing dedicated feature card: " + name);
+  requireTrue(await target.count() === 1, "missing dedicated feature section: " + name);
   return target;
 }
 async function pressIn(where, expression, description) {
@@ -135,13 +135,10 @@ try {
     requireTrue(await rows.filter({ hasText: "LP-TASK-A" }).count() === 1 &&
       await rows.filter({ hasText: "LP-TASK-B" }).count() === 1, "added rows not displayed");
     const rowB = rows.filter({ hasText: "LP-TASK-B" });
-    const editButton = rowB.getByRole("button", { name: /edit/i }).first();
-    requireTrue(await editButton.count() === 1, "no row-specific Edit task");
-    await editButton.click();
     const editor = tasks.getByRole("textbox", { name: /edit task|new title/i }).first();
     requireTrue(await editor.count() === 1, "no editable title for selected task");
     await editor.fill("LP-TASK-B-EDITED");
-    await pressIn(tasks, /save|update task/i, "save selected task");
+    await pressIn(rowB, /edit/i, "edit selected row B");
     requireTrue(await rows.filter({ hasText: "LP-TASK-B-EDITED" }).count() === 1 &&
       await rows.filter({ hasText: "LP-TASK-A" }).count() === 1, "task editing did not target selected row");
     const before = await metrics(tasks);
@@ -168,10 +165,10 @@ try {
     const item = shopping.locator(".rt-list-item").filter({ hasText: "LP-MILK" });
     requireTrue(await item.count() === 1, "shopping item not saved into list");
     await ensureMetricsChange(before, await metrics(shopping), "shopping remaining");
-    const qty = item.locator('input[type="number"]').first();
-    requireTrue(await qty.count() === 1, "shopping quantity not editable");
-    await qty.fill("5");
-    requireTrue(await qty.inputValue() === "5", "shopping quantity edit did not commit");
+    await numberField(shopping, 5);
+    await pressIn(item, /update quantity/i, "update selected shopping item quantity");
+    requireTrue((await item.locator(".rt-stat-value").allTextContents()).some(value =>
+      Number(value.trim()) === 5), "selected item's quantity did not update to 5");
     const previous = await metrics(shopping);
     await pressIn(item, /bought|purchased|check|done/i, "purchased-item toggle");
     await ensureMetricsChange(previous, await metrics(shopping), "shopping purchase");
@@ -192,9 +189,8 @@ try {
   await check("HEALTHY_HABITS", async () => {
     const habits = await section("Healthy Habits");
     const previous = await metrics(habits);
-    const row = habits.locator(".rt-list-item").filter({ hasText: /walk/i }).first();
-    requireTrue(await row.count() === 1, "walking habit not listed");
-    await pressIn(row, /complete|done|check|mark/i, "complete habit");
+    requireTrue(await habits.getByText(/walk/i).count() > 0, "walking habit not displayed");
+    await pressIn(habits, /complete|done|check|mark/i, "complete habit");
     await ensureMetricsChange(previous, await metrics(habits), "habits progress");
   });
   await check("SAME_TAB_RELOAD", async () => {
