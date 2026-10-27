@@ -381,6 +381,76 @@
                 "maximum": 100
               }
             }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "key",
+              "requirement_ids",
+              "heading",
+              "budget_label",
+              "expense_label",
+              "add_expense_label",
+              "spent_label",
+              "remaining_label",
+              "initial_budget"
+            ],
+            "properties": {
+              "kind": {
+                "const": "BUDGET"
+              },
+              "key": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,39}$"
+              },
+              "requirement_ids": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 12,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              },
+              "heading": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "budget_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "expense_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "add_expense_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "spent_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "remaining_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "initial_budget": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            }
           }
         ]
       }

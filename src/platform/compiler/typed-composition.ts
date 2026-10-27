@@ -14,7 +14,11 @@ export type FormField =
 export type FormModule = Base & { readonly kind: "FORM"; readonly heading: string; readonly fields: readonly FormField[]; readonly reset_label?: string };
 export type ArithmeticModule = Base & { readonly kind: "ARITHMETIC"; readonly heading: string; readonly left_label: string; readonly right_label: string; readonly result_label: string; readonly operation: "ADD" | "SUB" | "MUL"; readonly initial_left: number; readonly initial_right: number };
 export type RecordListModule = Base & { readonly kind: "RECORD_LIST"; readonly heading: string; readonly record_title_key: string; readonly record_done_key: string; readonly input_label: string; readonly add_label: string; readonly toggle_label: string; readonly delete_label: string; readonly total_label: string; readonly completed_label: string; readonly max_items: number };
-export type CompositionModule = DisplayModule | FormModule | ArithmeticModule | RecordListModule;
+/** Interactive local budget: set budget, enter an expense, commit, recompute totals. */
+export type BudgetModule = Base & { readonly kind: "BUDGET"; readonly heading: string;
+  readonly budget_label: string; readonly expense_label: string; readonly add_expense_label: string;
+  readonly spent_label: string; readonly remaining_label: string; readonly initial_budget: number };
+export type CompositionModule = DisplayModule | FormModule | ArithmeticModule | RecordListModule | BudgetModule;
 export type CompositionPlan = { readonly plan_version: "1.0.0"; readonly title: string; readonly description?: string; readonly modules: readonly CompositionModule[] };
 export type AssemblerContext = { readonly coverage: CoverageResult; readonly validRequirementIds: ReadonlySet<string> };
 
@@ -109,6 +113,13 @@ export function parseCompositionPlan(raw: JsonValue, trusted: ReadonlySet<string
       for (const keyName of ["heading", "left_label", "right_label", "result_label"]) label(m[keyName], path + "." + keyName);
       if (!["ADD", "SUB", "MUL"].includes(String(m.operation))) fail("PLAN_SCHEMA_INVALID", path + ".operation");
       numeric(m.initial_left, path + ".initial_left"); numeric(m.initial_right, path + ".initial_right");
+    } else if (kind === "BUDGET") {
+      shape(m, [...common, "heading", "budget_label", "expense_label", "add_expense_label",
+        "spent_label", "remaining_label", "initial_budget"], [], path);
+      for (const keyName of ["heading", "budget_label", "expense_label", "add_expense_label",
+        "spent_label", "remaining_label"]) label(m[keyName], path + "." + keyName);
+      numeric(m.initial_budget, path + ".initial_budget");
+      if ((m.initial_budget as number) < 0) fail("PLAN_SCHEMA_INVALID", path + ".initial_budget");
     } else if (kind === "RECORD_LIST") {
       shape(m, [...common, "heading", "record_title_key", "record_done_key", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label", "max_items"], [], path);
       for (const keyName of ["heading", "input_label", "add_label", "toggle_label", "delete_label", "total_label", "completed_label"]) label(m[keyName], path + "." + keyName);
@@ -251,9 +262,49 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
   ];
   return layout(b, "node_" + p + "_container", children);
 }
+/** Both number inputs are live; spending is committed only by pressing Add.
+ * The balance and total share actual mutable state, not duplicate card text. */
+function budgetModule(b: Builder, p: string, mod: BudgetModule): string {
+  const budget = formField(b, p + "_budget", {
+    kind: "NUMBER", key: "budget", label: mod.budget_label,
+    min: 0, max: 1000000, initial: mod.initial_budget
+  }, 0);
+  const expense = formField(b, p + "_expense", {
+    kind: "NUMBER", key: "expense", label: mod.expense_label,
+    min: 0, max: 1000000, initial: 0
+  }, 0);
+  const spent = "s_" + p + "_spent";
+  b.stateKey(spent, typeState("NUMBER", 0));
+  const add = "action_" + p + "_add_expense";
+  b.action(add, [
+    { type: "SET_STATE", target: spent,
+      value: op("ADD", state(spent), state(expense)), when: op("GT", state(expense), lit(0)) },
+    { type: "RESET_STATE", target: expense, when: op("GT", state(expense), lit(0)) }
+  ]);
+  const remaining = op("SUB", state(budget.state), state(spent));
+  b.output("result_" + p + "_spent", mod.spent_label, state(spent));
+  b.output("result_" + p + "_remaining", mod.remaining_label, remaining);
+  return layout(b, "node_" + p + "_container", [
+    titleNode(b, "node_" + p + "_heading", mod.heading),
+    budget.node, expense.node,
+    b.node("node_" + p + "_add_expense", "action.button", {
+      props: { label: lit(mod.add_expense_label) }, events: { press: add }
+    }),
+    b.node("node_" + p + "_spent", "data.stat", {
+      props: { label: lit(mod.spent_label), format: lit("NUMBER") },
+      bindings: { value: state(spent) }
+    }),
+    b.node("node_" + p + "_remaining", "data.stat", {
+      props: { label: lit(mod.remaining_label), format: lit("NUMBER") },
+      bindings: { value: remaining }
+    })
+  ]);
+}
+
 function moduleBlueprint(b: Builder, mod: CompositionModule, i: number): string {
   const p = "m" + String(i).padStart(3, "0");
   if (mod.kind === "RECORD_LIST") return recordList(b, p, mod);
+  if (mod.kind === "BUDGET") return budgetModule(b, p, mod);
   if (mod.kind === "DISPLAY") {
     return layout(b, "node_" + p + "_container", [titleNode(b, "node_" + p + "_heading", mod.heading),
       b.node("node_" + p + "_body", "content.text", { props: { role: lit("BODY") }, bindings: { text: lit(mod.body) } })]);
