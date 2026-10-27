@@ -58,8 +58,13 @@ describe("Sprint3.5 F04 certified role closure from six real F01 atomic hints",(
     };
     for(const task of ["A","B","C"]){fire("node_m000_input",{value:task},0,"change");fire("node_m000_add");}
     fire("node_m000_toggle",{},1);
+    fire("node_m000_edit_input",{value:"B revised"},0,"change");
+    fire("node_m000_edit",{},1);
+    expect(runtime.readState("s_m000_rows")).toEqual([
+      {title:"A",done:false},{title:"B revised",done:true},{title:"C",done:false}
+    ]);
     fire("node_m000_remove");
-    expect(runtime.readState("s_m000_rows")).toEqual([{title:"B",done:true},{title:"C",done:false}]);
+    expect(runtime.readState("s_m000_rows")).toEqual([{title:"B revised",done:true},{title:"C",done:false}]);
   });
 
   it("replays exact real Prompt A variant: add=button, remove=action",()=>{

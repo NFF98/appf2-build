@@ -199,10 +199,14 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
     ...(daily ? { completed_day: "" } : {}) };
   b.stateKey(template, typeState("RECORD", newRow, (recordType as { constraints: JsonValue }).constraints));
   b.stateKey(draft, typeState("STRING", "", { max_length: 120 }));
+  const editDraft = "s_" + p + "_edit_draft";
+  b.stateKey(editDraft, typeState("STRING", "", { max_length: 120 }));
   b.stateKey(can, typeState("BOOLEAN", false));
   const draftChange = "action_" + p + "_draft_change", add = "action_" + p + "_add",
-    toggle = "action_" + p + "_toggle", remove = "action_" + p + "_remove";
+    toggle = "action_" + p + "_toggle", remove = "action_" + p + "_remove",
+    editChange = "action_" + p + "_edit_change", edit = "action_" + p + "_edit";
   b.action(draftChange, [{ type: "SET_STATE", target: draft, value: event("value") }]);
+  b.action(editChange, [{ type: "SET_STATE", target: editDraft, value: event("value") }]);
   const allow = op("AND", op("NEQ", op("TRIM", state(draft)), lit("")), op("LT", op("COUNT", state(rows)), lit(mod.max_items)));
   b.action(add, [
     { type: "SET_STATE", target: can, value: allow },
@@ -216,6 +220,10 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
     op("IF", scope("item", mod.record_done_key), lit(""), op("LOCAL_DAY"))) : toggledDone;
   b.action(toggle, [{ type: "SET_STATE", target: rows, value: op("LIST_REPLACE_AT", state(rows), scope("index"), toggledRow) }]);
   b.action(remove, [{ type: "SET_STATE", target: rows, value: op("LIST_REMOVE_AT", state(rows), scope("index")) }]);
+  const hasEdit = op("NEQ", op("TRIM", state(editDraft)), lit(""));
+  b.action(edit, [{ type: "SET_STATE", target: rows,
+    value: op("LIST_REPLACE_AT", state(rows), scope("index"),
+      op("RECORD_SET", scope("item"), lit(mod.record_title_key), state(editDraft))), when: hasEdit }]);
   const total = op("COUNT", state(rows));
   const completed = op("COUNT", op("LIST_FILTER_EQ", state(rows),
     lit(daily ? "completed_day" : mod.record_done_key), daily ? op("LOCAL_DAY") : lit(true)));
@@ -226,12 +234,16 @@ function recordList(b: Builder, p: string, mod: RecordListModule, daily = false)
   const rowChildren = [
     b.node("node_" + p + "_item_title", "content.text", { props: { role: lit("BODY") }, bindings: { text: scope("item", mod.record_title_key) } }),
     b.node("node_" + p + "_toggle", "action.button", { props: { label: lit(mod.toggle_label) }, events: { press: toggle } }),
+    b.node("node_" + p + "_edit", "action.button", { props: { label: lit("Edit selected item") },
+      bindings: { disabled: op("NOT", hasEdit) }, events: { press: edit } }),
     b.node("node_" + p + "_remove", "action.button", { props: { label: lit(mod.delete_label) }, events: { press: remove } })
   ];
   layout(b, rowId, rowChildren, true);
   const children = [
     titleNode(b, "node_" + p + "_heading", mod.heading),
     b.node("node_" + p + "_input", "input.text", { props: { label: lit(mod.input_label), max_length: lit(120) }, bindings: { bind: state(draft) }, events: { change: draftChange } }),
+    b.node("node_" + p + "_edit_input", "input.text", { props: { label: lit("New title for selected item"), max_length: lit(120) },
+      bindings: { bind: state(editDraft) }, events: { change: editChange } }),
     b.node("node_" + p + "_add", "action.button", { props: { label: lit(mod.add_label) }, events: { press: add } }),
     b.node("node_" + p + "_total", "data.stat", { props: { label: lit(mod.total_label), format: lit("NUMBER") }, bindings: { value: total } }),
     b.node("node_" + p + "_completed", "data.stat", { props: { label: lit(metricLabel), format: lit("NUMBER") }, bindings: { value: completed } }),
