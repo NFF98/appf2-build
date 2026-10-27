@@ -31,7 +31,7 @@ function failed(kind: "RATE_LIMITED" | "PROVIDER_5XX" | "TIMEOUT", latency_ms = 
     provider_metadata: { model_adapter: "openai-compatible", provider_model: "main" } };
 }
 function gateway(result: ModelGatewayResponse) {
-  const composeBlueprint = vi.fn(async (_request: ModelGatewayRequest) => result);
+  const composeBlueprint = vi.fn(async (requestValue: ModelGatewayRequest) => { void requestValue; return result; });
   const analyzeIntent = vi.fn(async (_request: ModelGatewayRequest) => result);
   const model: ModelGateway = {
     modelAdapter: "openai-compatible", composeBlueprint, analyzeIntent,
