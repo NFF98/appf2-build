@@ -130,6 +130,9 @@ try {
     const tasks = await section("Smart Tasks");
     await firstText(tasks, "LP-TASK-A");
     await pressIn(tasks, /add task/i, "Add task");
+    const taskPriority = tasks.getByRole("combobox", { name: /^Task priority$/i }).first();
+    requireTrue(await taskPriority.count() === 1, "task priority selector missing");
+    await taskPriority.selectOption("High");
     await firstText(tasks, "LP-TASK-B");
     await pressIn(tasks, /add task/i, "Add task");
     const rows = tasks.locator(".rt-list-item");
@@ -151,7 +154,11 @@ try {
     const priority = tasks.getByRole("combobox", { name: /priority filter/i }).first();
     requireTrue(await priority.count() === 1, "priority filter not implemented");
     requireTrue((await priority.locator("option").count()) > 1, "priority filter has no options");
-    await priority.selectOption({ index: 1 });
+    await priority.selectOption("High");
+    requireTrue(await priority.inputValue() === "High", "priority filter selection did not persist");
+    const filtered = tasks.locator(".rt-list").last();
+    requireTrue(await filtered.getByText("LP-TASK-B-EDITED", { exact: true }).count() === 1,
+      "selected High-priority task missing from filtered results");
   });
   await check("MY_TODAY_LINKED", async () => {
     const today = await section("My Today");
