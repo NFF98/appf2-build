@@ -327,8 +327,9 @@ jobs:
           const p=process.env.RUNNER_TEMP+"/sp35-complex-tail.log";
           const raw=fs.existsSync(p)?fs.readFileSync(p,"utf8"):"";
           const reasons=[...new Set(raw.match(/APPF2_MODEL_ANALYSIS_INVALID=[^"\r\n]{1,700}/g)||[])];
+          const shape=[...new Set(raw.match(/APPF2_MODEL_ANALYSIS_SHAPE=[A-Za-z0-9._:|=/-]{1,650}/g)||[])];
           console.log("STAGING COMPLEX VALIDATION PATHS: "+
-            (reasons.length?reasons.slice(-5).join("; "):"NOT_OBSERVED"));
+            (reasons.length||shape.length?[...reasons,...shape].slice(-8).join("; "):"NOT_OBSERVED"));
           // Fixed labels/codes only: no AI response body, prompts, DB rows or API keys.
           const coverage=[...new Set(raw.match(/APPF2_F02_COVERAGE_SELECTED_COUNT=[0-9]+ STATUS=(FULLY_SUPPORTED|PARTIALLY_SUPPORTED|UNSUPPORTED) PROFILE=[A-Z_]+/g)||[])];
           const modes=[...new Set(raw.match(/APPF2_F02_PLAN_MODE=(TYPED|RAW) REQUIREMENT_COUNT=[0-9]+/g)||[])];
