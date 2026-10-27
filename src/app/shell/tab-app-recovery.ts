@@ -12,6 +12,7 @@ export interface TabAppTarget { readonly intentId:string; readonly contentHash:s
 function storage():Storage|undefined {
   try {return globalThis.sessionStorage;} catch {return undefined;}
 }
+// eslint-disable-next-line complexity -- Restore/auth state and strict tab-target guards must all fail closed.
 export function readTabAppTarget():TabAppTarget|null {
   try {
     const raw=storage()?.getItem(TARGET_SLOT);

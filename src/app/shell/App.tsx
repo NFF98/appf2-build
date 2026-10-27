@@ -60,6 +60,7 @@ function workspaceLaunchProps(launch: LaunchState, contentHash: string | null, l
  * Only User edits of the Composer are persisted locally; F01 accepting the Intent ends the local draft. The APP
  * surface only appears once the validated Blueprint has passed secure delivery, admission and F03 hydration.
  */
+// eslint-disable-next-line complexity -- Restore/auth state and strict tab-target guards must all fail closed.
 export function App({ controller, drafts, launcher }: AppProps) {
   const session = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const launch = useSyncExternalStore(launcher.subscribe, launcher.getSnapshot);
