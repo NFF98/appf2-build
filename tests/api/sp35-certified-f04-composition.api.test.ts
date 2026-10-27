@@ -8,6 +8,7 @@ import { hydratedHarness } from "../runtime/runtime-fixtures.js";
 import type { JsonRecord } from "../contract/blueprint-validation-fixtures.js";
 
 const id = (n: number) => "sha256:" + n.toString(16).padStart(64,"0");
+// eslint-disable-next-line max-params -- Test fixture precisely mirrors the F01 semantic requirement tuple.
 const feature = (
   n: number, cls: string, semantic: string, inputs: string[] = [], outputs: string[] = [],
   required = true

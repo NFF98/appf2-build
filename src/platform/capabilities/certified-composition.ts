@@ -26,6 +26,8 @@ function matchesClass(
 }
 
 function hasTaskListSignature(requirements: readonly CapabilityRequirement[]): boolean {
+  // This certificate covers EXACTLY the six known interactions, not arbitrary extras.
+  if (requirements.length !== 6) return false;
   const buttons = matchesClass(requirements, "button");
   // A closed multilingual token set, not a fuzzy semantic classifier. If a
   // mandatory feature is ambiguous, require clarification / certification.
@@ -73,7 +75,7 @@ export function certifyCompositeCoverage(
   if (!hasTaskListSignature(requirements)) return coverage;
   const temporal = requiresUnsupportedCalendar(requirements);
   if (temporal !== undefined) return unsupportedCalendar(coverage, temporal);
-  if (coverage.status !== "FULLY_SUPPORTED") return coverage;
+  if (coverage.requirements.some(r => r.status === "EXTERNAL_REQUIRED")) return coverage;
   if (coverage.registryVersion !== CAPABILITY_REGISTRY_SOURCE.registryVersion ||
       coverage.registryDigest !== computeRegistryDigest(CAPABILITY_REGISTRY_SOURCE)) return coverage;
 
@@ -103,5 +105,28 @@ export function certifyCompositeCoverage(
       throw error;
     }
   }
-  return { ...coverage, certifiedProfile: "RECORD_LIST", selected: [...refs.values()] };
+  // A certified composite fulfills these exact six semantic needs. Atomic F04
+  // matching alone can mark e.g. a row toggle as unsupported even though the
+  // typed F03 LIST_REPLACE_AT composition is independently proven.
+  const roleFor = (r: CapabilityRequirement): string =>
+    r.interaction_class === "text_input" ? "input.text" :
+      r.interaction_class === "metric" ? "data.stat" :
+        r.interaction_class === "repeated_content" ? "content.list" : "action.button";
+  const covered = coverage.requirements.map(item => {
+    const requirement = requirements.find(r => r.requirement_id === item.requirementId);
+    if (requirement === undefined) return item;
+    const role = roleFor(requirement);
+    const canonical = definitions.find(def => def.id === role);
+    if (canonical === undefined) return item;
+    return {
+      ...item, status: "COVERED" as const,
+      capabilityRefs: [{ id: canonical.id, version: canonical.version }],
+      reason: "F04_CERTIFIED_RECORD_LIST_COMPOSITION"
+    };
+  });
+  return {
+    ...coverage, certifiedProfile: "RECORD_LIST", selected: [...refs.values()],
+    status: "FULLY_SUPPORTED", requirements: covered,
+    gaps: coverage.gaps.filter(gap => !requirements.some(r => r.requirement_id === gap.requirementId))
+  };
 }
