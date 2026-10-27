@@ -137,7 +137,11 @@ try {
     await taskPriority.selectOption("High");
     await firstText(tasks, "LP-TASK-B");
     await pressIn(tasks, /add task/i, "Add task");
-    const rows = tasks.locator(".rt-list-item");
+    // RECORD_LIST with priority filtering renders two lists: an editable source
+    // and a read-only filtered projection. Assert CRUD only against the source.
+    const editableList = tasks.locator(".rt-list").first();
+    const rows = editableList.locator(".rt-list-item");
+    requireTrue(await tasks.locator(".rt-list").count() >= 2, "missing priority preview list");
     requireTrue(await rows.filter({ hasText: "LP-TASK-A" }).count() === 1 &&
       await rows.filter({ hasText: "LP-TASK-B" }).count() === 1, "added rows not displayed");
     const rowB = rows.filter({ hasText: "LP-TASK-B" });
