@@ -163,6 +163,26 @@ function observe(run: CompileRun, progress: CreateProgressOperation | null, life
   if (progress !== null) run.dependencies.progressObserver?.(progress.snapshot(lifecycle));
 }
 
+/** Closed F04 debugging shape. No model/user semantic strings, references,
+ * tokens, IDs, provider payload or private values can appear in this log. */
+export function safeUnsupportedSignatures(coverage: CoverageResult,
+  requirements: readonly CapabilityRequirement[]): readonly string[] {
+  const map=new Map(requirements.map(r=>[r.requirement_id,r]));
+  const out=new Set<string>();
+  const canon=(types:readonly string[]):string=>
+    types.map(t=>/^(STRING|NUMBER|BOOLEAN|ENUM|LIST|RECORD)$/.test(t)?t:"OTHER").join("+")||"NONE";
+  for(const result of coverage.requirements) {
+    if(result.status!=="UNSUPPORTED" && result.status!=="EXTERNAL_REQUIRED") continue;
+    const r=map.get(result.requirementId);
+    if(r?.required!==true)continue;
+    const category=/^[a-z][a-z_]{1,39}$/.test(r.interaction_class) ?
+      r.interaction_class : "OTHER";
+    out.add(category+"."+canon(r.input_types)+"."+canon(r.output_types));
+    if(out.size>=12)break;
+  }
+  return [...out];
+}
+
 /** Fail with bounded, user-readable missing feature names from trusted F01 projection.
  * The server never exposes model/provider errors, secrets, or unbounded raw prompts. */
 export function unsupportedCoverageDetails(
@@ -196,6 +216,8 @@ async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
   const coverage = refreshCoverage();
   evidence.add("F01-EVT-008", { coverage_status: coverage.status, registry_version: coverage.registryVersion });
   if (!isCoverageAllowed(coverage)) {
+    console.warn("APPF2_F04_UNSUPPORTED_SIGNATURES="+
+      safeUnsupportedSignatures(coverage,projection.resolved_intent.capability_requirements).join("|"));
     const expires = new Date(dependencies.clock().getTime() + RAW_INTENT_RETENTION_MS).toISOString();
     requireTransition(await dependencies.intents.transitionIntent(guardNow(guard, dependencies), { intent_id: record.intent_id, expected_version: record.intent_version, lifecycle_status: "INCOMPATIBLE", expires_at: expires }));
     throw new IntentApiError("F01-ERR-008", { details: unsupportedCoverageDetails(coverage, projection.resolved_intent.capability_requirements) });

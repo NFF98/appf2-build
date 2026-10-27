@@ -31,7 +31,16 @@ try {
  const validated=compile.status()===200 && output?.data?.status==="VALIDATED";
  console.log("STAGING MOVING F02: HTTP="+compile.status()+" VALIDATED="+validated+
    " CODE="+(output?.error?.code||"NONE"));
- if(!validated) throw Error("natural Chinese moving app F02 not validated");
+ if(!validated) {
+   const info=output?.error?.details||{};
+   const coverage=typeof info.coverage_status==="string" &&
+      /^(FULLY_SUPPORTED|PARTIALLY_SUPPORTED|UNSUPPORTED|EXTERNAL_OR_HEAVY_REQUIRED)$/.test(info.coverage_status)?
+      info.coverage_status:"UNKNOWN";
+   const missing=Number.isInteger(info.unsupported_count)&&info.unsupported_count>=0?
+     info.unsupported_count:-1;
+   console.log("STAGING MOVING F04: COVERAGE="+coverage+" UNSUPPORTED_COUNT="+missing);
+   throw Error("natural Chinese moving app F02 not validated");
+ }
  await page.locator(".s03-app").waitFor({state:"visible",timeout:60000});
  const inputs=await page.locator(".s03-app input").count();
  const buttons=await page.locator(".s03-app button").count();
