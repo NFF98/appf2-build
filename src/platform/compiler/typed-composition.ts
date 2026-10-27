@@ -37,6 +37,7 @@ export type AssemblerContext = { readonly coverage: CoverageResult; readonly val
  * Does not change a coverage status or user requirement. Every added primitive
  * must pass the canonical F04 admission resolver; independent F02 validation
  * still verifies the resulting exact refs and actual resource use. */
+// eslint-disable-next-line complexity -- F04 admission must keep every module-kind guard and fail-closed role check.
 export function certifyTypedModuleRoles(coverage: CoverageResult, plan: CompositionPlan): CoverageResult {
   if (coverage.status !== "FULLY_SUPPORTED" || coverage.gaps.length > 0 ||
       coverage.registryVersion !== CAPABILITY_REGISTRY_SOURCE.registryVersion ||
