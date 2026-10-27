@@ -25,12 +25,13 @@ export class StaleAttemptError extends IntentApiError {
 /** Shared across the full F02 validation/recompose loop; provider retries also spend one slot. */
 export class BlueprintAttemptBudget {
   private used = 0;
+  public constructor(private readonly limits: readonly number[] = BLUEPRINT_ATTEMPT_TIMEOUTS_MS) {}
 
-  public get remaining(): number { return BLUEPRINT_ATTEMPT_TIMEOUTS_MS.length - this.used; }
+  public get remaining(): number { return this.limits.length - this.used; }
 
   public take(deadline: RequestDeadline): number {
     if (this.remaining <= 0) return 0;
-    const limit = BLUEPRINT_ATTEMPT_TIMEOUTS_MS[this.used] ?? 0;
+    const limit = this.limits[this.used] ?? 0;
     this.used += 1;
     return deadline.attemptTimeoutMs("BLUEPRINT_COMPOSE", limit);
   }

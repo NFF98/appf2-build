@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { INTENT_ROUTE_KEYS, ROUTE_LEASE_MS } from "../../src/platform/compiler/idempotency.js";
 import { accumulateValidationIssues } from "../../src/platform/compiler/compose-validate.js";
-import { BLUEPRINT_ATTEMPT_TIMEOUTS_MS, MAX_PROVIDER_ATTEMPTS, MODEL_OPERATION_TIMEOUT_MS, RequestDeadline } from "../../src/platform/compiler/model-gateway.js";
+import { BLUEPRINT_ATTEMPT_TIMEOUTS_MS, COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS, MAX_PROVIDER_ATTEMPTS, MODEL_OPERATION_TIMEOUT_MS, RequestDeadline } from "../../src/platform/compiler/model-gateway.js";
 import { BlueprintAttemptBudget } from "../../src/platform/compiler/provider-attempts.js";
 import { COMPOSE_RESPONSE_SCHEMA, SYSTEM_POLICY } from "../../src/platform/compiler/prompts.js";
 
@@ -37,6 +37,20 @@ describe("Sprint 3.5 bounded complex-feature analysis budget", () => {
     expect(idPattern.test("rule_task_total")).toBe(true);
     expect(SYSTEM_POLICY.BLUEPRINT_COMPOSE).toContain("EVERY rules[] entry");
   });
+  it("gives large multi-feature apps a longer first try without widening the 110-second lease", () => {
+    const lease = ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.compile];
+    expect(COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS).toEqual([75_000, 15_000, 10_000]);
+    const budget = new BlueprintAttemptBudget(COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS);
+    let now = 1000;
+    const deadline = new RequestDeadline(lease, () => now);
+    for (const ms of COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS) {
+      expect(budget.take(deadline)).toBe(ms);
+      now += ms;
+    }
+    expect(budget.remaining).toBe(0);
+    expect(deadline.remainingMs()).toBe(10_000);
+  });
+
   it("requires exact V02 ValueSource keys and canonical path patterns in model schema", () => {
     const properties = COMPOSE_RESPONSE_SCHEMA.properties as Record<string, unknown>;
     const nodes = properties.nodes as { items: { properties: {

@@ -11,7 +11,7 @@ import type { CreateProgressOperation } from "./create-progress.js";
 import { ephemeralValueDetector } from "./ephemeral-binding.js";
 import { IntentApiError, isF01ErrorCode } from "./f01-errors.js";
 import { guardNow, requireTransition, type ResolvedServiceDependencies } from "./intent-operation.js";
-import type { RequestDeadline } from "./model-gateway.js";
+import { COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS, type RequestDeadline } from "./model-gateway.js";
 import { composeResponseSchema, EVALUATION_FIXTURE_VERSION, PROMPT_B_VERSION, PROMPT_B_PLAN_VERSION } from "./prompts.js";
 import COMPOSITION_PLAN_SCHEMA from "./composition-plan-v1.schema.json";
 import { lowerCompositionPlan, parseCompositionPlan, CompositionPlanError } from "./typed-composition.js";
@@ -197,12 +197,18 @@ class ComposeLoop {
   private version: number;
   private coverage: CoverageResult;
   private recomposesRemaining: number;
-  private readonly blueprintBudget = new BlueprintAttemptBudget();
+  private readonly blueprintBudget: BlueprintAttemptBudget;
   private readonly acceptCandidate: (output: JsonValue) => JsonValue | null;
 
   public constructor(private readonly scope: ComposeScope, startVersion: number, coverage: CoverageResult) {
     this.version = startVersion;
     this.coverage = coverage;
+    // A large, genuine resolved intent needs a longer uninterrupted first model
+    // generation. Still three calls maximum and <=110s total, with no F02 bypass.
+    this.blueprintBudget = new BlueprintAttemptBudget(
+      scope.resolved.capability_requirements.length >= 8 && !isCertifiedPlanEligible(coverage)
+        ? COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS : undefined
+    );
     this.recomposesRemaining = scope.recomposeAvailable ? (scope.maxValidationRecomposes ?? 1) : 0;
     this.acceptCandidate = candidateAcceptor(scope.ephemeral);
   }

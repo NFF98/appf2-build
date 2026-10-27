@@ -69,6 +69,10 @@ export const MODEL_OPERATION_TIMEOUT_MS: Readonly<Record<ModelOperation, number>
 });
 /** F02: one initial Blueprint and at most two validation-guided corrections. */
 export const BLUEPRINT_ATTEMPT_TIMEOUTS_MS: readonly number[] = Object.freeze([45_000, 25_000, 25_000]);
+/** Complex un-certified composition: allocate enough time for one coherent
+ * large Blueprint before bounded small corrections. Total 100s < 110s route lease.
+ * Ordinary and certified task-list compositions keep their original budget. */
+export const COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS: readonly number[] = Object.freeze([75_000, 15_000, 10_000]);
 export const MAX_PROVIDER_ATTEMPTS = 2;
 
 export const DEFAULT_PROVIDER_POLICY: ProviderPolicy = Object.freeze({
