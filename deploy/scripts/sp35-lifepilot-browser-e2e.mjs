@@ -148,7 +148,7 @@ try {
     await pressIn(rows.filter({ hasText: "LP-TASK-A" }), /delete task|delete|remove/i, "delete row A");
     requireTrue(await rows.filter({ hasText: "LP-TASK-A" }).count() === 0 &&
       await rows.filter({ hasText: "LP-TASK-B-EDITED" }).count() === 1, "wrong task removed");
-    const priority = tasks.getByRole("combobox", { name: /priority/i }).first();
+    const priority = tasks.getByRole("combobox", { name: /priority filter/i }).first();
     requireTrue(await priority.count() === 1, "priority filter not implemented");
     requireTrue((await priority.locator("option").count()) > 1, "priority filter has no options");
     await priority.selectOption({ index: 1 });

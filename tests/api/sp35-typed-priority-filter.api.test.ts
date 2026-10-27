@@ -24,6 +24,9 @@ const module = {kind:"RECORD_LIST",key:"tasks",requirement_ids:[rid],
   completed_label:"Today done",max_items:18,track_day:true,priority_filter:true};
 describe("Sprint 3.5 priority filter preserves original list index safety",()=>{
   it("independently passes F02 and edits the unfiltered original row",async()=>{
+    // The provider schema must advertise optional priority_filter, not merely
+    // let an internal parser accept it.
+    expect(module.priority_filter).toBe(true);
     const plan=parseCompositionPlan({plan_version:"1.0.0",
       title:"Smart Tasks",modules:[module]} as never,new Set([rid]),new Set([rid]));
     const closed=certifyTypedModuleRoles(coverage,plan);

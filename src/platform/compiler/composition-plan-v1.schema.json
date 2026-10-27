@@ -382,6 +382,9 @@
               },
               "track_day": {
                 "type": "boolean"
+              },
+              "priority_filter": {
+                "type": "boolean"
               }
             }
           },
