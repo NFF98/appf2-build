@@ -8,7 +8,7 @@ const request: ModelGatewayRequest = {
   provider_policy: { max_attempts: 2, structured_output: "JSON_SCHEMA" }
 };
 const response = (status: number, body: unknown, retryAfter: string | null = null) => ({
-  status, headers: { get: (_name: string) => retryAfter }, text: async () => JSON.stringify(body)
+  status, headers: { get: () => retryAfter }, text: async () => JSON.stringify(body)
 });
 const makeGateway = (fetcher: ReturnType<typeof vi.fn>) =>
   new OpenAiCompatibleModelGateway({ baseUrl: "https://api.openai.com/v1", apiKey: "test-secret", model: "gpt-4.1" }, fetcher as unknown as FetchLike);

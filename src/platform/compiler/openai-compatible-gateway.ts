@@ -184,66 +184,82 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
     return (usage.input_tokens * pricing.input_per_million + usage.output_tokens * pricing.output_per_million) / 1_000_000;
   }
 
-  private async complete(request: ModelGatewayRequest): Promise<ModelGatewayResponse> {
-    const started = this.clock();
-    const metadata = { model_adapter: this.modelAdapter, provider_model: this.config.model };
-    const failed = (kind: ModelFailureKind, retryAfter?: number): ModelGatewayResponse => ({
+  private failedResponse(kind: ModelFailureKind, started: number, retryAfter?: number): ModelGatewayResponse {
+    return {
       status: "FAILED",
-      provider_metadata: metadata,
+      provider_metadata: { model_adapter: this.modelAdapter, provider_model: this.config.model },
       latency_ms: Math.max(0, this.clock() - started),
       failure: retryAfter === undefined ? { kind } : { kind, retry_after_seconds: retryAfter }
-    });
-    if (request.timeout_ms <= 0) return failed("TIMEOUT");
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), request.timeout_ms);
+    };
+  }
+
+  private async sendOnce(
+    request: ModelGatewayRequest, controller: AbortController, started: number
+  ): Promise<{ readonly result: ModelGatewayResponse; readonly retryDelay: number | null }> {
     try {
-      // One bounded retry ONLY for an explicitly identified transient provider
-      // rate limit. Never retry exhausted billing/quota, unknown 429, or other
-      // failures. Keep the operation's original deadline and attempt policy.
-      const maxAttempts = Math.min(2, request.provider_policy.max_attempts);
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const response = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
-          method: "POST",
-          headers: this.headers(),
-          body: this.requestBody(request),
-          signal: controller.signal
-        });
-        if (response.status < 200 || response.status >= 300) {
-          // Safe diagnostics only: never log request payload, provider body or bearer key.
-          console.warn("APPF2_MODEL_UPSTREAM_STATUS=" + response.status);
-          const after = retryAfterSeconds(response.headers.get("retry-after"));
-          if (response.status === 429) {
-            const raw = await response.text().catch(() => "");
-            const code = raw.length <= 8192 ? safeUpstream429Code(parseJson(raw)) : "unknown";
-            console.warn("APPF2_MODEL_UPSTREAM_429_CODE=" + code);
-            const delay = (after ?? 1) * 1000;
-            const remaining = request.timeout_ms - (this.clock() - started);
-            if (code === "rate_limit_exceeded" && attempt + 1 < maxAttempts &&
-                delay <= 2000 && remaining >= delay + 2000 && !controller.signal.aborted) {
-              if (delay > 0) await new Promise<void>(resolve => setTimeout(resolve, delay));
-              if (controller.signal.aborted) return failed("TIMEOUT");
-              continue;
-            }
-          }
-          return failed(failureKindForStatus(response.status), after);
+      const response = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
+        method: "POST", headers: this.headers(), body: this.requestBody(request), signal: controller.signal
+      });
+      if (response.status < 200 || response.status >= 300) {
+        console.warn("APPF2_MODEL_UPSTREAM_STATUS=" + response.status);
+        const after = retryAfterSeconds(response.headers.get("retry-after"));
+        let retryDelay: number | null = null;
+        if (response.status === 429) {
+          const raw = await response.text().catch(() => "");
+          const code = raw.length <= 8192 ? safeUpstream429Code(parseJson(raw)) : "unknown";
+          console.warn("APPF2_MODEL_UPSTREAM_429_CODE=" + code);
+          if (code === "rate_limit_exceeded") retryDelay = (after ?? 1) * 1000;
         }
-        const parsed = parseCompletion(parseJson(await response.text()));
-        if (parsed.output === undefined) return { ...failed("INVALID_OUTPUT"), token_usage: parsed.usage };
         return {
-          status: "SUCCEEDED",
-          structured_output: parsed.output,
-          provider_metadata: { ...metadata, provider_model: parsed.providerModel ?? this.config.model },
+          result: this.failedResponse(failureKindForStatus(response.status), started, after), retryDelay
+        };
+      }
+      const parsed = parseCompletion(parseJson(await response.text()));
+      if (parsed.output === undefined) return {
+        result: { ...this.failedResponse("INVALID_OUTPUT", started), token_usage: parsed.usage },
+        retryDelay: null
+      };
+      return {
+        result: {
+          status: "SUCCEEDED", structured_output: parsed.output,
+          provider_metadata: {
+            model_adapter: this.modelAdapter,
+            provider_model: parsed.providerModel ?? this.config.model
+          },
           token_usage: parsed.usage,
           latency_ms: Math.max(0, this.clock() - started),
           estimated_cost: this.estimatedCost(parsed.usage)
-        };
-      }
-      return failed("RATE_LIMITED");
+        },
+        retryDelay: null
+      };
     } catch (error: unknown) {
       const kind = error instanceof Error ? error.name.replace(/[^A-Za-z]/gu, "").slice(0,32) : "UNKNOWN";
       console.warn("APPF2_MODEL_UPSTREAM_TRANSPORT=" + kind +
         " ABORTED=" + String(controller.signal.aborted));
-      return failed(controller.signal.aborted ? "TIMEOUT" : "NETWORK");
+      return {
+        result: this.failedResponse(controller.signal.aborted ? "TIMEOUT" : "NETWORK", started),
+        retryDelay: null
+      };
+    }
+  }
+
+  private async complete(request: ModelGatewayRequest): Promise<ModelGatewayResponse> {
+    const started = this.clock();
+    if (request.timeout_ms <= 0) return this.failedResponse("TIMEOUT", started);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), request.timeout_ms);
+    try {
+      const first = await this.sendOnce(request, controller, started);
+      const delay = first.retryDelay;
+      const remaining = request.timeout_ms - (this.clock() - started);
+      if (first.result.status !== "FAILED" ||
+          delay === null || request.provider_policy.max_attempts < 2 ||
+          delay > 2000 || remaining < delay + 2000 || controller.signal.aborted) {
+        return first.result;
+      }
+      if (delay > 0) await new Promise<void>(resolve => setTimeout(resolve, delay));
+      if (controller.signal.aborted) return this.failedResponse("TIMEOUT", started);
+      return (await this.sendOnce(request, controller, started)).result;
     } finally {
       clearTimeout(timer);
     }
