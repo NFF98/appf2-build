@@ -327,11 +327,12 @@ jobs:
           const coverage=[...new Set(raw.match(/APPF2_F02_COVERAGE_SELECTED_COUNT=[0-9]+ STATUS=(FULLY_SUPPORTED|PARTIALLY_SUPPORTED|UNSUPPORTED) PROFILE=[A-Z_]+/g)||[])];
           const modes=[...new Set(raw.match(/APPF2_F02_PLAN_MODE=(TYPED|RAW) REQUIREMENT_COUNT=[0-9]+/g)||[])];
           const roles=[...new Set(raw.match(/APPF2_F02_SELECTED_ROLES=[a-z.,]{1,250}/g)||[])];
-          const reasons=[...new Set(raw.match(/APPF2_F02_TYPED_FAILURE=(PLAN_SCHEMA_INVALID|PLAN_UNTRUSTED_REFERENCE|COMPOSITION_UNSUPPORTED|LOWERING_GRAPH_INVALID) PATH=\$?[a-z.\[\]0-9_]{1,110}/g)||[])];
+          const typedReasons=[...new Set(raw.match(/APPF2_F02_(?:TYPED_FAILURE|PLAN_REJECT)=(PLAN_SCHEMA_INVALID|PLAN_UNTRUSTED_REFERENCE|COMPOSITION_UNSUPPORTED|LOWERING_GRAPH_INVALID) PATH=\$?[a-z.\[\]0-9_]{1,110}/g)||[])];
+          const rejectedRoles=[...new Set(raw.match(/APPF2_F02_TYPED_ROLE_REJECT=(?:[a-z]+\.[a-z]+|UNKNOWN)/g)||[])];
           const upstream=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_STATUS=[0-9]{3}/g)||[])];
           const transport=[...new Set(raw.match(/APPF2_MODEL_UPSTREAM_TRANSPORT=[A-Za-z]{1,32} ABORTED=(true|false)/g)||[])];
           console.log("STAGING COMPLEX COMPOSE DIAGNOSTICS: "+
-            ([...coverage,...modes,...roles,...reasons,...upstream,...transport].slice(-10).join("; ")||"NOT_OBSERVED"));
+            ([...coverage,...modes,...roles,...typedReasons,...rejectedRoles,...upstream,...transport].slice(-10).join("; ")||"NOT_OBSERVED"));
           JS
           exit "$BROWSER_RC"
       - name: Upload browser screenshot (staging Hello World only)
