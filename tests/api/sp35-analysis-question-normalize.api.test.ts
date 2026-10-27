@@ -3,6 +3,21 @@ import { normalizeAnalysisDescriptorFlags } from "../../src/platform/compiler/no
 import type { JsonValue } from "../../src/platform/intent/json-value.js";
 
 describe("Sprint 3.5 F01 question-type metadata safety", () => {
+  test("deduplicates only identical hint type tokens after safe canonicalization", () => {
+    const source = { requested_outputs: [], capability_hints: [{
+      hint_id: "task_entry", input_types: ["STRING", "STRING", "INTEGER", "NUMBER", "BOOLEAN"],
+      output_types: ["LIST", "ARRAY", "RECORD", "OBJECT"],
+      required: true, semantic_need: "Create new task", source_item_ids: ["task"], impact_level: "HIGH"
+    }] };
+    const original = structuredClone(source);
+    const normalized = normalizeAnalysisDescriptorFlags(source as JsonValue) as typeof source;
+    expect(normalized.capability_hints[0]?.input_types).toEqual(["STRING", "NUMBER", "BOOLEAN"]);
+    expect(normalized.capability_hints[0]?.output_types).toEqual(["LIST", "RECORD"]);
+    expect(normalized.capability_hints[0]?.required).toBe(true);
+    expect(normalized.capability_hints[0]?.semantic_need).toBe("Create new task");
+    expect(source).toEqual(original);
+  });
+
   test("repairs unambiguous question metadata without modifying required facts or unsafe choice contracts", () => {
     const payload = { requested_outputs: [], capability_hints: [], constraints: [
       { id: "weekly_budget", expected_value_type: "NUMBER", question_type: "FREE_TEXT",

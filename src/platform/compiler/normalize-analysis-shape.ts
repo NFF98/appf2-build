@@ -98,8 +98,11 @@ const HINT_TYPE_ALIASES: Readonly<Record<string, string>> = Object.freeze({
 
 function canonicalHintTypes(value: JsonValue): JsonValue {
   if (!Array.isArray(value)) return value;
-  return value.map((token) => typeof token === "string" &&
+  const canonical = value.map((token) => typeof token === "string" &&
     Object.hasOwn(HINT_TYPE_ALIASES, token) ? HINT_TYPE_ALIASES[token]! : token);
+  // Type-token lists are sets. Deduplicate identical canonical entries without
+  // altering meaning, order of distinct types, requiredness or unknown tokens.
+  return [...new Set(canonical)];
 }
 
 export function normalizeAnalysisDescriptorFlags(value: JsonValue): JsonValue {
