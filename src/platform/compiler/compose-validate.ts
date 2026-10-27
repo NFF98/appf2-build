@@ -283,7 +283,13 @@ class ComposeLoop {
                 new Set(this.scope.resolved.capability_requirements.filter(r => r.required).map(r => r.requirement_id)));
               return output;
             } catch (error) {
-              if (error instanceof CompositionPlanError) return null;
+              if (error instanceof CompositionPlanError) {
+                // Never log provider content: only closed code and canonical schema path.
+                const safe = /^\$\.(?:modules(?:\[\d+\])?(?:\.[a-z_]+)?|plan_version|title|description)$/.test(error.path)
+                  ? error.path : "OMITTED";
+                console.warn("APPF2_F02_PLAN_REJECT=" + error.code + " PATH=" + safe);
+                return null;
+              }
               throw error;
             }
           }, rejectedOutputCode: "F01-ERR-007" }
