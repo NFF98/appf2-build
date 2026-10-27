@@ -73,7 +73,7 @@ describe("BD-026 deterministic four-family typed composition", () => {
   it("generates real F03 A/B/C per-row add, complete and delete operations", async () => {
     const bp = lowerCompositionPlan(plan([tasks]), context);
     const runtime = (await hydratedHarness(bp as unknown as JsonRecord)).runtime;
-    function press(nodeId: string, index = 0, eventName = "press", payload: Record<string, unknown> = {}) {
+    function press(nodeId: string, index = 0, eventName = "press", payload: Record<string, string> = {}) {
       const key = runtime.nodeInstances().filter(x => x.key.node_id === nodeId)[index]?.key;
       expect(key).toBeDefined();
       const receipt = runtime.dispatch({ source_node_instance_key: key!, event_name: eventName, payload, origin: "USER" });
