@@ -17,6 +17,7 @@ const demand = [
   "Build LifePilot, a working single-page personal organizer with FIVE labeled sections.",
   "Use these exact English section headings: My Today, Smart Tasks, Shopping List, Money Snapshot, Healthy Habits.",
   "All features must use executable registered controls and mutable typed state, not static mockups.",
+  "Keep each editable task and shopping list bounded to 18 items maximum for safe local operation.",
   "My Today: show today's task completion count or progress live-linked to Smart Tasks.",
   "Smart Tasks: Task name input, Add task button, edit a selected row's title, Complete task, Delete task,",
   "and filter tasks by priority; changes must target the clicked row rather than the first row.",
