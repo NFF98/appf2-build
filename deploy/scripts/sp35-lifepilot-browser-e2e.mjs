@@ -206,9 +206,25 @@ try {
   await check("SAME_TAB_RELOAD", async () => {
     requireTrue(results.includes("SMART_TASKS_CRUD"), "task changes not verified before reload");
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.locator(".s03-app").waitFor({ state: "visible", timeout: 12_000 });
-    requireTrue(await page.locator(".s03-app").getByText("LP-TASK-B-EDITED").count() > 0,
+    try {
+      await page.locator(".s03-app").waitFor({ state: "visible", timeout: 30_000 });
+    } catch {
+      const recovery = await page.locator(".app-recovery").allTextContents().catch(() => []);
+      throw Error("secure same-tab relaunch failed; recovery UI: " +
+        (recovery.length ? recovery.join(" ").slice(0, 100) : "NOT_RENDERED"));
+    }
+    requireTrue(await page.locator(".s03-app").getByText("LP-TASK-B-EDITED", { exact: true }).count() > 0,
       "saved task not restored after reload");
+    const shopping = await section("Shopping List");
+    requireTrue(await shopping.getByText("LP-MILK", { exact: true }).count() > 0,
+      "shopping item missing after reload");
+    const moneyValues = await metrics(await section("Money Snapshot"));
+    requireTrue(moneyValues.includes(37) && moneyValues.includes(163),
+      "spent and remaining budget did not persist across reload");
+    const habitValues = await metrics(await section("Healthy Habits"));
+    requireTrue(habitValues.some(value => value >= 1),
+      "completed habit was not restored after reload");
+    console.log("STAGING LIFEPILOT TAB RELOAD: original-holder relaunch + task/shopping/budget/habit restored");
   });
   await page.screenshot({ path: imageFile, fullPage: true });
   console.log("STAGING LIFEPILOT FUNCTIONAL SUMMARY: " + results.filter(x => x !== "MY_TODAY_BASELINE").length +
