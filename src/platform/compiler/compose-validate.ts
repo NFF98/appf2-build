@@ -129,6 +129,21 @@ export function isCertifiedPlanEligible(coverage: CoverageResult): boolean {
     def.lifecycle.executionStatus === "ACTIVE" && selected.has(def.id + "@" + def.version)));
 }
 
+/** Sprint 3.5: compact typed plans for multi-feature apps only when every required
+ * F04 role is already ACTIVE, admitted and fully covered. This changes no F02
+ * trust rule, capability grant or unsupported-feature disposition. */
+export function isMultiModulePlanEligible(coverage: CoverageResult, requirementCount: number): boolean {
+  if (coverage.certifiedProfile !== undefined || coverage.status !== "FULLY_SUPPORTED" ||
+      coverage.gaps.length !== 0 || requirementCount < 8) return false;
+  const required = ["layout.container", "content.text", "content.list",
+    "input.text", "action.button", "data.stat", "input.number"];
+  const selected = new Set(coverage.selected.map(ref => ref.id + "@" + ref.version));
+  return required.every(id => CAPABILITY_REGISTRY_SOURCE.capabilities.some(def =>
+    def.id === id && def.lifecycle.availability === "ENABLED" &&
+    def.lifecycle.executionStatus === "ACTIVE" &&
+    selected.has(def.id + "@" + def.version)));
+}
+
 function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: readonly ValidationIssueFeedback[]): JsonRecord {
   return {
     resolved_intent: scope.resolved as unknown as JsonValue,
@@ -140,7 +155,8 @@ function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: r
     f02_blueprint_contract: { schema_version: BLUEPRINT_SCHEMA_VERSION, max_candidate_payload_bytes: MAX_CANDIDATE_PAYLOAD_BYTES },
     security_resource_policy: { executable_code: "FORBIDDEN", provider_runtime_config: "FORBIDDEN" },
     existing_blueprint: null,
-    prompt_version: (coverage.certifiedProfile === "RECORD_LIST" || coverage.certifiedProfile === "RECORD_LIST_TODAY") ? PROMPT_B_PLAN_VERSION : PROMPT_B_VERSION,
+    prompt_version: (isCertifiedPlanEligible(coverage) ||
+      isMultiModulePlanEligible(coverage, scope.resolved.capability_requirements.length)) ? PROMPT_B_PLAN_VERSION : PROMPT_B_VERSION,
     schema_version: BLUEPRINT_SCHEMA_VERSION,
     registry_version: coverage.registryVersion,
     model_adapter: scope.dependencies.gateway.modelAdapter,
@@ -234,7 +250,9 @@ class ComposeLoop {
 
   private async compose(feedback: readonly ValidationIssueFeedback[]): Promise<{ candidate: JsonValue; compilerRunId: string }> {
     const { dependencies, guard, deadline, intentId, traceId, evidence } = this.scope;
-    const planMode = isCertifiedPlanEligible(this.coverage);
+    const certifiedListPlan = isCertifiedPlanEligible(this.coverage);
+    const planMode = certifiedListPlan ||
+      isMultiModulePlanEligible(this.coverage, this.scope.resolved.capability_requirements.length);
     const version = planMode ? PROMPT_B_PLAN_VERSION : PROMPT_B_VERSION;
     const versions = { prompt_version: version, model_adapter: dependencies.gateway.modelAdapter, blueprint_schema_version: BLUEPRINT_SCHEMA_VERSION, registry_version: this.coverage.registryVersion };
     evidence.add("F01-EVT-009", versions);
@@ -268,7 +286,7 @@ class ComposeLoop {
           const plan = parseCompositionPlan(composed.value,
             new Set(this.scope.resolved.capability_requirements.map(r => r.requirement_id)),
             new Set(this.scope.resolved.capability_requirements.filter(r => r.required).map(r => r.requirement_id)));
-          if (plan.modules.some(module => module.kind !== "RECORD_LIST")) {
+          if (certifiedListPlan && plan.modules.some(module => module.kind !== "RECORD_LIST")) {
             return this.fail("INCOMPATIBLE", new IntentApiError("F01-ERR-008"), true);
           }
           const candidate = lowerCompositionPlan(plan, {
