@@ -48,7 +48,12 @@ describe("Sprint 3.5 priority filter preserves original list index safety",()=>{
     fire("node_m000_input","change",{value:"B"});
     fire("node_m000_add","press");
     expect(runtime.readState("s_m000_rows")).toMatchObject([{title:"A"},{title:"B",priority:"High"}]);
+    const projected = blueprint.nodes.find(node=>node.id==="node_m000_filtered_list")?.repeat?.items;
+    expect(projected).toBeDefined();
+    // 'All' must display BOTH rows, not silently render an empty list.
+    expect(runtime.evaluateValue(projected!)).toMatchObject([{title:"A"},{title:"B"}]);
     fire("node_m000_filter","change",{value:"High"});
+    expect(runtime.evaluateValue(projected!)).toMatchObject([{title:"B",priority:"High"}]);
     expect(runtime.readState("s_m000_filter_priority")).toBe("High");
     expect(runtime.readState("s_m000_rows")).toHaveLength(2);
     // Filtering must never cause a computed list index to target the wrong
