@@ -12,6 +12,7 @@ export interface EvaluationEnv {
   readonly readRule: (ruleId: string) => RuntimeValue;
   readonly event?: RuntimeValue;
   readonly scope?: ReadonlyMap<string, RuntimeValue>;
+  readonly localDay?: string;
 }
 
 type Evaluate = (source: ValueSource) => EvaluatedValue;
@@ -354,6 +355,12 @@ export function evaluateValueSource(source: ValueSource, env: EvaluationEnv): Ev
     case "SCOPE":
       return evaluateScope(source.name, source.path, env);
     case "OP": {
+      if (source.op === "LOCAL_DAY") {
+        arity(source.args, 0, 0);
+        const day = env.localDay;
+        return day !== undefined && /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(day)
+          ? day : operandFailure("LOCAL_DAY requires a trusted local calendar snapshot.");
+      }
       const operator = Object.hasOwn(OPERATORS, source.op) ? OPERATORS[source.op] : undefined;
       return operator === undefined ? invariantBroken(`Operator ${source.op} is not allowlisted.`) : operator(source.args, evaluate);
     }

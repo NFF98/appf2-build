@@ -218,6 +218,13 @@ function keyed(input: NodeRenderInput<ReactNode>, node: ReactNode): ReactNode {
  * dispatch declared events with the Runtime-issued node instance key, so the Shell never writes App state.
  */
 export function RuntimeFrame({ runtime }: { readonly runtime: RuntimeInstance }) {
+  const [, refreshCalendar] = useState(0);
+  const hasCalendar = useMemo(() => JSON.stringify(runtime.blueprint ?? {}).includes('"LOCAL_DAY"'), [runtime]);
+  useEffect(() => {
+    if (!hasCalendar) return undefined;
+    const handle = globalThis.setInterval(() => refreshCalendar(value => value + 1), 60_000);
+    return () => globalThis.clearInterval(handle);
+  }, [hasCalendar]);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   // Only a committed F03 operation clears the error. Failed/rejected actions
   // never look like successful state changes in the generated App.

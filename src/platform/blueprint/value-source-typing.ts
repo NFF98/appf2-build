@@ -327,7 +327,12 @@ const OPERATORS: Readonly<Record<string, OperatorTyping>> = {
   LIST_REPLACE_AT: listEdit("REPLACE_AT"),
   RECORD_SET: recordSet,
   LIST_FILTER_EQ: filterListEq,
-  LIST_SUM_BY: listSumBy
+  LIST_SUM_BY: listSumBy,
+  /** F03 trusted device-local date, captured once per transaction. */
+  LOCAL_DAY: (args, path, context) => {
+    assertArity(args, path, context, { min: 0, max: 0 });
+    return { type: "STRING", constraints: { max_length: 10 } };
+  }
 };
 
 function inferLiteral(

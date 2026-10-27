@@ -72,6 +72,11 @@ export function createBrowserRuntime(admitted: AdmittedBlueprint, intentId?: str
     trust: BROWSER_HYDRATION_TRUST,
     services: {
       clock: { now: () => globalThis.performance.now() },
+      calendarDay: () => {
+        const now = new Date();
+        return [String(now.getFullYear()).padStart(4,"0"),String(now.getMonth()+1).padStart(2,"0"),
+          String(now.getDate()).padStart(2,"0")].join("-");
+      },
       scheduler: {
         schedule: (delayMs, wake) => {
           const handle = globalThis.setTimeout(wake, Math.max(0, delayMs));
