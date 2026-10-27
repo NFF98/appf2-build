@@ -62,6 +62,16 @@ describe("Sprint3.5 F04 certified role closure from six real F01 atomic hints",(
     expect(runtime.readState("s_m000_rows")).toEqual([{title:"B",done:true},{title:"C",done:false}]);
   });
 
+  it("replays exact real Prompt A variant: add=button, remove=action",()=>{
+    const recorded=features.map(x=>x.interaction_class==="button" &&
+      x.semantic_need.includes("刪除") ? {...x,interaction_class:"action",
+        semantic_need:"刪除任務的操作按鈕"} : x);
+    const certified=certifyCompositeCoverage(resolveCapabilityCoverage({requirements:recorded}),recorded);
+    expect(certified.certifiedProfile).toBe("RECORD_LIST");
+    expect(isCertifiedPlanEligible(certified)).toBe(true);
+    expect(certified.selected.map(x=>x.id)).toContain("layout.container");
+  });
+
   it("never silently reports today-only completion as an all-time counter",()=>{
     const time=features.map(x=>x.interaction_class==="metric"?{...x,semantic_need:"顯示今日完成任務數量"}:x);
     const coverage=certifyCompositeCoverage(resolveCapabilityCoverage({requirements:time}),time);

@@ -28,7 +28,10 @@ function matchesClass(
 function hasTaskListSignature(requirements: readonly CapabilityRequirement[]): boolean {
   // This certificate covers EXACTLY the six known interactions, not arbitrary extras.
   if (requirements.length !== 6) return false;
-  const buttons = matchesClass(requirements, "button");
+  // Real Prompt A emits the exact primitive class 'action' for delete
+  // and 'button' for add. Both are F01-catalog user-gesture roles.
+  const buttons = requirements.filter(r => r.interaction_class === "button" ||
+    r.interaction_class === "action");
   // A closed multilingual token set, not a fuzzy semantic classifier. If a
   // mandatory feature is ambiguous, require clarification / certification.
   const add = buttons.filter(r => /(?:新增|添加|加入|新建|add|create)/i.test(r.semantic_need));
