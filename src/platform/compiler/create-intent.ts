@@ -92,6 +92,7 @@ function analysisShapeDiagnostic(normalized: JsonValue, paths: readonly string[]
   if (!isPlainRecord(normalized)) return [];
   const types = new Set(["STRING","NUMBER","BOOLEAN","ENUM","LIST","RECORD"]);
   const states = new Set(["CONFIRMED","PROPOSED","UNRESOLVED"]);
+  // eslint-disable-next-line complexity -- Each check only classifies permitted non-sensitive shape metadata.
   return paths.slice(0, 8).flatMap(path => {
     const m = /^\$\.(constraints|candidate_rules|missing_fields|ambiguities|assumptions)\[([0-9]{1,3})\]\.(resolved_value|proposed_default)$/.exec(path);
     if (!m) return [];
