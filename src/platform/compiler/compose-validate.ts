@@ -135,13 +135,11 @@ export function isCertifiedPlanEligible(coverage: CoverageResult): boolean {
 export function isMultiModulePlanEligible(coverage: CoverageResult, requirementCount: number): boolean {
   if (coverage.certifiedProfile !== undefined || coverage.status !== "FULLY_SUPPORTED" ||
       coverage.gaps.length !== 0 || requirementCount < 8) return false;
-  const required = ["layout.container", "content.text", "content.list",
-    "input.text", "action.button", "data.stat", "input.number"];
-  const selected = new Set(coverage.selected.map(ref => ref.id + "@" + ref.version));
-  return required.every(id => CAPABILITY_REGISTRY_SOURCE.capabilities.some(def =>
-    def.id === id && def.lifecycle.availability === "ENABLED" &&
-    def.lifecycle.executionStatus === "ACTIVE" &&
-    selected.has(def.id + "@" + def.version)));
+  // The model chooses module KINDS, never Capability refs. The trusted
+  // lowering Builder checks every selected exact ACTIVE role it actually uses,
+  // and F02 rejects any missing role. Requiring unused primitives up front
+  // kept full-coverage multi-module requests on the giant raw-Blueprint path.
+  return true;
 }
 
 function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: readonly ValidationIssueFeedback[]): JsonRecord {
@@ -151,7 +149,12 @@ function composeInput(scope: ComposeScope, coverage: CoverageResult, feedback: r
     accepted_visible_assumptions: scope.resolved.accepted_assumptions as unknown as JsonValue,
     capability_coverage_result: { ...coverageSupport(coverage), selected: coverage.selected.map((ref) => ({ ...ref })),
       ...(coverage.certifiedProfile === undefined ? {} : { certified_profile: coverage.certifiedProfile }) },
-    compiler_catalog: compilerCatalog(coverage),
+    // Compact plans never select refs or author nodes/actions. Their trusted
+    // assembler reads the registry; passing full validator contracts only
+    // inflates model context and can cause long raw Blueprint-style responses.
+    compiler_catalog: (isCertifiedPlanEligible(coverage) ||
+      isMultiModulePlanEligible(coverage, scope.resolved.capability_requirements.length))
+      ? [] : compilerCatalog(coverage),
     f02_blueprint_contract: { schema_version: BLUEPRINT_SCHEMA_VERSION, max_candidate_payload_bytes: MAX_CANDIDATE_PAYLOAD_BYTES },
     security_resource_policy: { executable_code: "FORBIDDEN", provider_runtime_config: "FORBIDDEN" },
     existing_blueprint: null,

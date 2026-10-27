@@ -32,6 +32,23 @@ describe("Sprint 3.5 staging output token spending guard", () => {
     }
     expect(sent).toEqual([6000,16000]);
   });
+  it("caps compact plan generation separately from the much larger raw Blueprint", async () => {
+    const sent: number[] = [];
+    const fetcher: FetchLike = async (_url, init) => {
+      const body = JSON.parse(init.body ?? "{}") as {max_completion_tokens?:number};
+      sent.push(body.max_completion_tokens ?? -1);
+      return { status:200, headers:{get:()=>null},
+        text:async()=>JSON.stringify({choices:[{message:{content:'{"ok":true}'}}]}) };
+    };
+    const model = new OpenAiCompatibleModelGateway(appf2ModelProviderConfig(env).config,fetcher);
+    const request:ModelGatewayRequest={
+      operation:"BLUEPRINT_COMPOSE",prompt_version:"f01-prompt-b-typed-plan-v1",
+      response_schema:{},input_payload:{},timeout_ms:5000,trace_id:"safe-test",
+      provider_policy:{max_attempts:1,structured_output:"JSON_SCHEMA"}
+    };
+    expect((await model.composeBlueprint(request)).status).toBe("SUCCEEDED");
+    expect(sent).toEqual([6000]);
+  });
   it("rejects incomplete or invalid caps before an API call", () => {
     expect(() => openAiCompatibleConfigFromEnv({...env, APPF2_MODEL_OUTPUT_CAP_BLUEPRINT: undefined})).toThrow();
     expect(() => openAiCompatibleConfigFromEnv({...env, APPF2_MODEL_OUTPUT_CAP_ANALYSIS: "-1"})).toThrow();

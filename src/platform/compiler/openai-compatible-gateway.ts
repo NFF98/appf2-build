@@ -190,7 +190,10 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
       model: this.config.model,
       temperature: 0,
       ...(this.config.outputCaps === undefined ? {} : {
-        max_completion_tokens: this.config.outputCaps[request.operation]
+        max_completion_tokens: request.operation === "BLUEPRINT_COMPOSE" &&
+          request.prompt_version === PROMPT_B_PLAN_VERSION
+          ? Math.min(this.config.outputCaps.BLUEPRINT_COMPOSE, 6000)
+          : this.config.outputCaps[request.operation]
       }),
       messages: [
         { role: "system", content: request.operation === "BLUEPRINT_COMPOSE" && request.prompt_version === PROMPT_B_PLAN_VERSION
