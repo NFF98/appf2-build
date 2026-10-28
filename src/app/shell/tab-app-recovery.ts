@@ -36,6 +36,59 @@ export function clearTabAppTarget():void {
   try {storage()?.removeItem(TARGET_SLOT);} catch { /* Storage unavailable. */ }
 }
 
+/** Reusable Apps stay in this browser tab; never persist a prompt, Blueprint, token or key. 
+ * A card is not an access grant: every open must still pass fresh PoP + admission + F03. */
+const LIBRARY_SLOT="appf2.tab.saved-apps.v1";
+const MAX_SAVED_APPS=8;
+export interface SavedTabApp extends TabAppTarget { readonly title:string; readonly savedAt:number }
+
+function validSavedApp(value:unknown, now:number):value is SavedTabApp {
+  if(typeof value!=="object" || value===null || Array.isArray(value))return false;
+  const item=value as Record<string,unknown>;
+  return typeof item.intentId==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.intentId) &&
+    typeof item.contentHash==="string" && /^sha256:[0-9a-f]{64}$/.test(item.contentHash) &&
+    typeof item.title==="string" && item.title.length>0 && item.title.length<=80 &&
+    typeof item.savedAt==="number" && Number.isFinite(item.savedAt) &&
+    item.savedAt<=now+60000 && now-item.savedAt>=0 && now-item.savedAt<=MAX_AGE;
+}
+
+export function readSavedTabApps():readonly SavedTabApp[] {
+  try {
+    const raw=storage()?.getItem(LIBRARY_SLOT);
+    if(raw===null || raw===undefined || raw.length>12000)return [];
+    const parsed:unknown=JSON.parse(raw);
+    if(!Array.isArray(parsed))return [];
+    const now=Date.now(), seen=new Set<string>(), result:SavedTabApp[]=[];
+    for(const item of parsed) {
+      if(!validSavedApp(item,now))continue;
+      const id=item.intentId+":"+item.contentHash;
+      if(seen.has(id))continue;
+      seen.add(id);
+      result.push({intentId:item.intentId,contentHash:item.contentHash,title:item.title,savedAt:item.savedAt});
+      if(result.length===MAX_SAVED_APPS)break;
+    }
+    return result;
+  }catch{return [];}
+}
+
+/** Register only after actual authenticated F03 READY; no model calls on saved-App open. */
+export function rememberSavedTabApp(target:TabAppTarget,title:string):readonly SavedTabApp[] {
+  const cleanTitle=title.trim().slice(0,80) || "已建立的 App";
+  const item={...target,title:cleanTitle,savedAt:Date.now()};
+  if(!validSavedApp(item,Date.now()))return readSavedTabApps();
+  const next=[item,...readSavedTabApps().filter(saved=>
+    saved.intentId!==item.intentId || saved.contentHash!==item.contentHash)].slice(0,MAX_SAVED_APPS);
+  try {storage()?.setItem(LIBRARY_SLOT,JSON.stringify(next));}catch{/* Unavailable storage does not block running Apps. */}
+  return next;
+}
+
+export function forgetSavedTabApp(target:TabAppTarget):readonly SavedTabApp[] {
+  const next=readSavedTabApps().filter(saved=>
+    saved.intentId!==target.intentId || saved.contentHash!==target.contentHash);
+  try {storage()?.setItem(LIBRARY_SLOT,JSON.stringify(next));}catch{/* Safe memory-only fallback. */}
+  return next;
+}
+
 function openDb(factory:IDBFactory):Promise<IDBDatabase> {
   return new Promise((resolve,reject)=>{
     const request=factory.open(DB_NAME,1);
