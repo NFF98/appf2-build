@@ -1,5 +1,5 @@
 import type { RuntimeAppHandle, RuntimeAppHost } from "../../platform/runtime/runtime-operation.js";
-import type { AppDeliveryClient, DeliveryFailure } from "./app-delivery.js";
+import type { AppDeliveryClient, DeliveryFailure, PublishedShareDeliveryClient } from "./app-delivery.js";
 
 export type LaunchFailure = DeliveryFailure | "RUNTIME_REJECTED";
 
@@ -13,6 +13,7 @@ export type LaunchState =
 
 export interface AppLauncherDependencies {
   readonly delivery: AppDeliveryClient;
+  readonly published?:PublishedShareDeliveryClient;
   /** The page's F03 browser host; null when it is missing, which fails every launch closed. */
   readonly host: RuntimeAppHost | null;
 }
@@ -32,7 +33,8 @@ const IDLE: LaunchState = Object.freeze({ kind: "IDLE" });
 export class AppLauncher {
   private state: LaunchState = IDLE;
   private attempt = 0;
-  private target: { readonly intentId: string; readonly contentHash: string } | null = null;
+  private target: {readonly kind:"OWNER";readonly intentId:string;readonly contentHash:string} |
+    {readonly kind:"PUBLIC";readonly shareId:string}|null=null;
   private readonly listeners = new Set<() => void>();
 
   public constructor(private readonly dependencies: AppLauncherDependencies) {}
@@ -46,8 +48,15 @@ export class AppLauncher {
 
   /** Idempotent for the hash already launching or launched; a different hash starts a fresh launch. */
   public launch(intentId: string, contentHash: string): void {
-    if (this.target?.contentHash === contentHash && this.target.intentId === intentId && this.state.kind !== "IDLE") return;
-    this.target = { intentId, contentHash };
+    if (this.target?.kind==="OWNER"&&this.target.contentHash===contentHash&&this.target.intentId===intentId&&this.state.kind!=="IDLE")return;
+    this.target = {kind:"OWNER", intentId, contentHash };
+    void this.run();
+  }
+
+  /** Anonymous recipient. No original-owner state, key, POST, F01 or provider invocation. */
+  public launchShared(shareId:string):void{
+    if(this.target?.kind==="PUBLIC"&&this.target.shareId===shareId&&this.state.kind!=="IDLE")return;
+    this.target={kind:"PUBLIC",shareId};
     void this.run();
   }
 
@@ -68,20 +77,26 @@ export class AppLauncher {
     if (target === null) return;
     const attempt = ++this.attempt;
     this.releaseCurrent();
-    this.set({ kind: "DELIVERING", contentHash: target.contentHash });
-    const delivered = await this.dependencies.delivery.deliver(target.intentId, target.contentHash);
-    if (attempt !== this.attempt) return;
-    if (!delivered.ok) return this.set({ kind: "FAILED", contentHash: target.contentHash, failure: delivered.failure });
+    const identity=target.kind==="OWNER"?target.contentHash:"share:"+target.shareId;
+    this.set({kind:"DELIVERING",contentHash:identity});
+    const delivered=target.kind==="OWNER"
+      ?await this.dependencies.delivery.deliver(target.intentId,target.contentHash)
+      :await this.dependencies.published?.deliverShared(target.shareId);
+    if(attempt!==this.attempt)return;
+    if(delivered===undefined)return this.set({kind:"FAILED",contentHash:identity,failure:"NOT_FOUND"});
+    if(!delivered.ok)return this.set({kind:"FAILED",contentHash:identity,failure:delivered.failure});
+    const contentHash=target.kind==="OWNER"?target.contentHash:
+      ("contentHash" in delivered?delivered.contentHash:identity);
     const { host } = this.dependencies;
-    if (host === null) return this.set({ kind: "FAILED", contentHash: target.contentHash, failure: "RUNTIME_REJECTED" });
-    this.set({ kind: "HYDRATING", contentHash: target.contentHash });
-    const launched = await host.launch(delivered.admitted, target.intentId);
+    if (host === null) return this.set({kind:"FAILED",contentHash,failure:"RUNTIME_REJECTED"});
+    this.set({kind:"HYDRATING",contentHash});
+    const launched=await host.launch(delivered.admitted,target.kind==="OWNER"?target.intentId:undefined);
     if (attempt !== this.attempt) {
       if (launched.ok) launched.app.release();
       return;
     }
-    if (!launched.ok) return this.set({ kind: "FAILED", contentHash: target.contentHash, failure: "RUNTIME_REJECTED" });
-    this.set({ kind: "READY", contentHash: target.contentHash, app: launched.app });
+    if (!launched.ok) return this.set({kind:"FAILED",contentHash,failure:"RUNTIME_REJECTED"});
+    this.set({kind:"READY",contentHash,app:launched.app});
   }
 
   private releaseCurrent(): void {
