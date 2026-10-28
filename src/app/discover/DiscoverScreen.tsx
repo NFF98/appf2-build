@@ -5,6 +5,8 @@ import type { Capsule } from "./capsules.js";
 import { Composer } from "./Composer.js";
 import { DiscoverNav } from "./DiscoverNav.js";
 import { Inspiration } from "./Inspiration.js";
+import { SavedApps } from "./SavedApps.js";
+import type { SavedTabApp, TabAppTarget } from "../shell/tab-app-recovery.js";
 
 export type ComposerDraft = {
   readonly text: string;
@@ -16,12 +18,16 @@ type DiscoverScreenProps = {
   readonly draft: ComposerDraft;
   readonly onDraftChange: (draft: ComposerDraft) => void;
   readonly onCreate: () => void;
+  readonly savedApps: readonly SavedTabApp[];
+  readonly onOpenSaved: (target: TabAppTarget) => void;
+  readonly onForgetSaved: (target: TabAppTarget) => void;
 };
 
 /** S01 Discover / Start: prompt-first Creator Canvas with supporting Inspiration Capsules; no registration gate. */
-export function DiscoverScreen({ draft, onDraftChange, onCreate }: DiscoverScreenProps) {
+export function DiscoverScreen({ draft, onDraftChange, onCreate, savedApps, onOpenSaved, onForgetSaved }: DiscoverScreenProps) {
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const inspirationRef = useRef<HTMLHeadingElement>(null);
+  const savedAppsRef = useRef<HTMLHeadingElement>(null);
 
   const prefill = (capsule: Capsule): void => {
     onDraftChange({ text: capsule.prompt, capsuleId: capsule.id });
@@ -40,11 +46,16 @@ export function DiscoverScreen({ draft, onDraftChange, onCreate }: DiscoverScree
     inspirationRef.current?.focus({ preventScroll: true });
   };
 
+  const goSavedApps = (): void => {
+    savedAppsRef.current?.scrollIntoView({ block: "start" });
+    savedAppsRef.current?.focus({ preventScroll: true });
+  };
+
   return (
     <div className="s01">
       <header className="s01-header">
         <Brand />
-        <DiscoverNav variant="header" onHome={goHome} onExplore={goInspiration} />
+        <DiscoverNav variant="header" onHome={goHome} onExplore={goInspiration} onApps={goSavedApps} />
       </header>
       <main className="s01-main">
         <section className="s01-hero" aria-labelledby="s01-hero-title">
@@ -53,9 +64,10 @@ export function DiscoverScreen({ draft, onDraftChange, onCreate }: DiscoverScree
           </h1>
         </section>
         <Composer ref={composerRef} draft={draft} onDraftChange={onDraftChange} onCreate={onCreate} onSuggestion={prefill} />
+        <SavedApps headingRef={savedAppsRef} apps={savedApps} onOpen={onOpenSaved} onForget={onForgetSaved} />
         <Inspiration headingRef={inspirationRef} onTry={prefill} />
       </main>
-      <DiscoverNav variant="bottom" onHome={goHome} onExplore={goInspiration} />
+      <DiscoverNav variant="bottom" onHome={goHome} onExplore={goInspiration} onApps={goSavedApps} />
     </div>
   );
 }
