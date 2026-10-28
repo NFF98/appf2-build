@@ -1,0 +1,37 @@
+name: Sprint 3.5 multi-file foundation (free, no staging)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: appf2-sp35-agent-foundation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  trusted-foundation:
+    if: github.repository == 'NFF98/appf2-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck and lint
+        run: |
+          npm run check:types
+          npm run check:lint
+      - name: Compile platform
+        run: npm run build
+      - name: API tests (no paid AI)
+        run: npm run test:api
+      - name: Runtime tests
+        run: npm run test:runtime
+      - name: Trusted fixture browser install
+        run: npx playwright install --with-deps chromium
+      - name: Actual trusted multi-file Vite build and browser click
+        run: node deploy/scripts/sp35-trusted-multifile-build-e2e.mjs
