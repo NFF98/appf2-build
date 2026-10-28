@@ -13,7 +13,8 @@ import {sha256CodeBytes} from "../../src/platform/blueprint/code-artifact-v2.js"
 const JOB=/^[A-Za-z0-9_-]{8,80}$/u;
 const MAX_BODY=4*1024*1024+128*1024;
 const MAX_RUNTIME_MS=30000;
-type Env={APPF2_SANDBOX_TOKEN:string;APPF2_CONTAINER:DurableObjectNamespace<SandboxJob>};
+const MAX_JOB_CALLS=8;
+type Env={APPF2_SANDBOX_TOKEN:string;APPF2_SANDBOX_ALLOWED_JOB_ID:string;APPF2_CONTAINER:DurableObjectNamespace<SandboxJob>};
 type Task={job_id:string;project:ProjectSnapshot;call:AgentToolCall};
 type Receipt={call_id:string;project_hash:string;exit_code:number|null;
  timed_out:boolean;detail:string;output_digest:string;runner_attestation:string};
@@ -81,8 +82,10 @@ export class SandboxJob extends DurableObject<Env>{
    if(prior.status==="DONE"&&prior.receipt)return prior.receipt;
    throw Error("SANDBOX_RETRY_REQUIRES_RECONCILIATION");
   }
+  const count=await this.ctx.storage.get<number>("job_call_count")??0;
+  if(count>=MAX_JOB_CALLS)throw Error("SANDBOX_JOB_CALL_LIMIT");
   const command=safeCommand(task.project,task.call.name as "run_build"|"run_test");
-  await this.ctx.storage.put(key,{hash,status:"RUNNING"});
+  await this.ctx.storage.put({[key]:{hash,status:"RUNNING"},job_call_count:count+1});
   await this.ready();
   const dir="/workspace/appf2_"+task.job_id;
   await this.files.mkdir(dir,{recursive:true});
@@ -123,6 +126,8 @@ export default {
   let parsed:unknown;
   try{parsed=JSON.parse(raw);}catch{return new Response("Bad Request",{status:400});}
   if(!bodyValid(parsed))return new Response("Bad Request",{status:400});
+  if(!env.APPF2_SANDBOX_ALLOWED_JOB_ID||parsed.job_id!==env.APPF2_SANDBOX_ALLOWED_JOB_ID)
+   return new Response("Not Found",{status:404});
   try{
    const stub=env.APPF2_CONTAINER.getByName(parsed.job_id);
    const result=await stub.runTask(parsed);

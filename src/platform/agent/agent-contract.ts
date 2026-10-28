@@ -94,6 +94,7 @@ export function validateAgentCheckpoint(input:unknown):input is AgentCheckpoint{
   (typeof input.previous_checkpoint_id==="string"&&SHA.test(input.previous_checkpoint_id));
 }
 /** Transition policy only: persistence, transactional CAS and charging belong to durable job store. */
+// eslint-disable-next-line complexity -- Fail-closed lineage, budget and replay validation.
 export function advanceAgentCheckpoint(previous:AgentCheckpoint,next:AgentCheckpoint,
  projectChange?:{readonly parent_hash:string|null;readonly project_hash:string}):void{
  const verifiedLineage=previous.project_hash===next.project_hash?
