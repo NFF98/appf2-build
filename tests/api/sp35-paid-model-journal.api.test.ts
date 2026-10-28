@@ -119,11 +119,12 @@ describe("Sprint 3.5 private at-most-once paid Responses journal (NO provider ca
  it("fences concurrent callers before HTTP: only one dispatch",async()=>{
   const job=await fixture(),db=new Ledger(job);
   let release!:()=>void;
+  let started!:()=>void;
   const gate=new Promise<void>(r=>{release=r;});
-  const deps={db,send:async()=>{db.calls++;await gate;return response;}};
+  const dispatched=new Promise<void>(r=>{started=r;});
+  const deps={db,send:async()=>{db.calls++;started();await gate;return response;}};
   const first=runJournaledPaidModelTurn(input(job),deps);
-  // Allow reservation/claim microtasks to complete before duplicate request.
-  for(let i=0;i<20&&db.calls===0;i++)await Promise.resolve();
+  await dispatched;
   expect(db.calls).toBe(1);
   await expect(runJournaledPaidModelTurn(input(job),deps))
    .rejects.toThrow("PAID_AGENT_OUTCOME_UNCERTAIN_NO_RETRY");
