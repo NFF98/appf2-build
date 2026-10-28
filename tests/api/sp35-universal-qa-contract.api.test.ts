@@ -1,3 +1,4 @@
+import {QA_PLANNER_PROMPT} from "../../src/platform/qa/requirement-planner.js";
 import {normalizeModelQaPlan} from "../../src/platform/qa/requirement-planner.js";
 import {describe,it,expect} from "vitest";
 import {parseQaPlan,summarizeQa} from "../../src/platform/qa/requirement-contract.js";
@@ -13,6 +14,11 @@ const criteria=[
 ];
 const plan=parseQaPlan({version:"1",criteria},prompt)!;
 describe("universal independent acceptance (not dice-specific)",()=>{
+ it("requires actual task completion evidence, not an unchecked human label",()=>{
+  expect(QA_PLANNER_PROMPT).toContain("mark-task-complete");
+  expect(QA_PLANNER_PROMPT).toContain("the mere continued presence of the Complete button is not evidence");
+  expect(QA_PLANNER_PROMPT).toContain("automatable MUST be true");
+ });
  it("normalizes AI-only criterion IDs without weakening any user requirement",()=>{
   const raw={version:"1",criteria:[{...criteria[0],id:"需求-一"},
     {...criteria[1],id:"REQ-2"}]};

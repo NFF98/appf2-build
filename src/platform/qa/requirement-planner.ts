@@ -11,6 +11,10 @@ export const QA_PLANNER_PROMPT=[
  "For pure domain calculations that cannot be deterministically driven by clicking, use {kind:'pure_case',function_name:string,input:JSON array,expected:JSON value}, with independently derived expected results. Optional result_path selects a field such as score from the returned object.",
  "Apps needing pure_case checks must expose the corresponding pure function at window[function_name] and reuse the function for visible UI results; no test-only substitute.",
  "The generated App must expose stable data-testid for stateful controls and results when the user explicitly requests them.",
+ "When a requirement is objectively observable via supported UI primitives, automatable MUST be true. In particular: add-to-list, counter increment, reset, form submit, page switch and mark-task-complete are all automatable.",
+ "For a toggle or completion state, require a real change in accessible visible status or checked/selected state; the mere continued presence of the Complete button is not evidence. Prefer visible user-facing state such as 已完成, or a dedicated data-testid element with text_changes. Tell the generated App to implement that observable output.",
+ "If the request includes unnamed input fields, specify textbox with name='' only if the UI contains exactly one textbox. Likewise a single unnamed list can use visible role=list, name=''.",
+ "Use automatable=false ONLY for genuinely subjective preferences, unsupported external systems or ambiguous domain semantics that cannot be objectively inferred. Do not mark common CRUD interactions as manual review.",
  "When a requirement is ambiguous, subjective, needs domain variants, or cannot be verified by these primitives, automatable=false. Never mark it tested by making up expected data.",
  "Do not invent hidden requirements, omit mandatory requirements, derive tests from generated source or invent a passed result.",
  "At most 20 criteria. Return JSON only."
