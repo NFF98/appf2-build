@@ -6,7 +6,7 @@ import {chromium} from "@playwright/test";
 const origin=new URL(process.env.APPF2_STAGING_URL??"https://appf2-sp35-417-staging.juiyuang69.workers.dev").origin;
 if(!/^https:\/\/appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/u.test(origin))throw Error("QA_STAGING_ONLY");
 const samples=[
- {kind:"counter",prompt:"請建立一個完全可操作的星空計數器 App，有標題「星空計數器」、起始數字 0、「加一」按鈕和「歸零」按鈕。每按一次加一，數字真的增加一；歸零要回到 0。介面清楚適合手機。"},
+ {kind:"counter",prompt:"請建立一個完全可操作的星空計數器 App，有標題「星空計數器」、起始數字 0、「加一」按鈕和「歸零」按鈕。每按一次加一，數字真的增加一；歸零要回到 0。"},
  {kind:"notes",prompt:"請建立一個可操作的任務便條 App，有文字輸入框、「新增任務」按鈕和任務清單。輸入「買牛奶」後按新增，清單要出現「買牛奶」；每一個任務可以按「完成」切換完成狀態。"}
 ];
 const browser=await chromium.launch({headless:true});const outcomes=[];
