@@ -1,6 +1,7 @@
 /** Scoped Postgres journal for candidate Coding Agent jobs (not a publishing API). */
 import {canonicalArtifactJson,sha256CodeBytes} from "../blueprint/code-artifact-v2.js";
 import {advanceAgentCheckpoint,validateAgentCheckpoint,type AgentCheckpoint} from "./agent-contract.js";
+import {verifyProjectSnapshot,type ProjectSnapshot} from "./project-workspace.js";
 const HASH=/^sha256:[a-f0-9]{64}$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 const IDENT=/^[A-Za-z0-9_-]{8,128}$/u;
@@ -78,11 +79,14 @@ async function validatePersisted(row:AgentJobRow):Promise<boolean>{
 }
 /** CAS update. A failed race is an error, not a second paid operation. */
 export async function updateAgentJob(db:AgentJobExecutor,previous:AgentJobRow,
- owner:string,next:AgentCheckpoint):Promise<AgentJobRow>{
+ owner:string,next:AgentCheckpoint,newProject?:ProjectSnapshot):Promise<AgentJobRow>{
  if(previous.owner_anonymous_id!==owner||!(await validatePersisted(previous))||
    next.previous_checkpoint_id!==previous.checkpoint_hash)
   throw Error("AGENT_JOB_STALE_CHECKPOINT");
- advanceAgentCheckpoint(previous.checkpoint,next);
+ if(newProject!==undefined&&(!(await verifyProjectSnapshot(newProject))||
+   newProject.parent_hash!==previous.project_hash||
+   newProject.project_hash!==next.project_hash))throw Error("AGENT_PROJECT_PROOF_INVALID");
+ advanceAgentCheckpoint(previous.checkpoint,next,newProject);
  const hash=await checkpointHash(next);
  const result=await db.query<{job_id:string}>(ADVANCE,[previous.job_id,owner,
   previous.revision,hash,next.project_hash,next.state,JSON.stringify(next),

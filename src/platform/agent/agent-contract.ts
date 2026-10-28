@@ -94,9 +94,13 @@ export function validateAgentCheckpoint(input:unknown):input is AgentCheckpoint{
   (typeof input.previous_checkpoint_id==="string"&&SHA.test(input.previous_checkpoint_id));
 }
 /** Transition policy only: persistence, transactional CAS and charging belong to durable job store. */
-export function advanceAgentCheckpoint(previous:AgentCheckpoint,next:AgentCheckpoint):void{
+export function advanceAgentCheckpoint(previous:AgentCheckpoint,next:AgentCheckpoint,
+ projectChange?:{readonly parent_hash:string|null;readonly project_hash:string}):void{
+ const verifiedLineage=previous.project_hash===next.project_hash?
+  projectChange===undefined:projectChange?.parent_hash===previous.project_hash&&
+    projectChange.project_hash===next.project_hash;
  if(!validateAgentCheckpoint(previous)||!validateAgentCheckpoint(next)||
-   previous.job_id!==next.job_id||previous.project_hash!==next.project_hash||
+   previous.job_id!==next.job_id||!verifiedLineage||
    !stateTransitions[previous.state].includes(next.state)||
    next.step<previous.step||next.tokens_used<previous.tokens_used||
    next.cost_cents<previous.cost_cents||

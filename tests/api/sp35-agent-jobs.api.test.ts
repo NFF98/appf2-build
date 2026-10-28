@@ -2,6 +2,7 @@ import {describe,it,expect} from "vitest";
 import {checkpointHash,startAgentJob,readAgentJob,updateAgentJob,
  type AgentJobExecutor,type AgentJobRow} from "../../src/platform/agent/postgres-agent-jobs.js";
 import type {AgentCheckpoint} from "../../src/platform/agent/agent-contract.js";
+import {createProjectSnapshot,applyProjectEdits} from "../../src/platform/agent/project-workspace.js";
 const id="52edb124-974c-4e0b-82fc-48ed6c9a0242";
 const owner="a501ed0f-f0ab-46dc-b880-c0acb35291a0";
 const hash="sha256:"+"a".repeat(64);
@@ -66,6 +67,26 @@ describe("Sprint 3.5 candidate PostgreSQL durable journal (no AI calls)",()=>{
   expect(await readAgentJob(db,id,"f501ed0f-f0ab-46dc-b880-c0acb35291a0")).toBeNull();
   await expect(updateAgentJob(db,result,"f501ed0f-f0ab-46dc-b880-c0acb35291a0",
    {...next,step:2,previous_checkpoint_id:result.checkpoint_hash})).rejects.toThrow();
+ });
+ it("persists validated hash lineage when coding changes a real multi-file project",async()=>{
+  const db=new FakeDb();
+  const root=await createProjectSnapshot("NODE","index.mjs",[
+   {path:"index.mjs",content:"import {sum} from './math.mjs'; console.log(sum(1,2));"},
+   {path:"math.mjs",content:"export const sum=(a,b)=>a+b;"}
+  ]);
+  const cp={...initial(),project_hash:root.project_hash};
+  const old=await startAgentJob(db,create(cp));
+  const revised=await applyProjectEdits(root,root.project_hash,[{
+   operation:"replace",path:"math.mjs",previous_hash:root.files[1].hash,
+   content:"export const sum=(a,b)=>a-b;"
+  }]);
+  const next={...cp,state:"PLANNING" as const,project_hash:revised.project_hash,
+   step:1,previous_checkpoint_id:old.checkpoint_hash};
+  await expect(updateAgentJob(db,old,owner,next)).rejects.toThrow("AGENT_CHECKPOINT_INVALID_TRANSITION");
+  const saved=await updateAgentJob(db,old,owner,next,revised);
+  expect(saved.project_hash).toBe(revised.project_hash);
+  expect(saved.revision).toBe(1);
+  expect(saved.checkpoint.previous_checkpoint_id).toBe(old.checkpoint_hash);
  });
  it("rejects unsupported state, inflated spending and forged checkpoint bytes",async()=>{
   const db=new FakeDb();
