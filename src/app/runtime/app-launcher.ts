@@ -72,6 +72,7 @@ export class AppLauncher {
     this.set(IDLE);
   }
 
+  // eslint-disable-next-line complexity -- Original-owner and public-share targets are mutually exclusive security branches.
   private async run(): Promise<void> {
     const target = this.target;
     if (target === null) return;
