@@ -93,26 +93,32 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
  const created=await db(env,identity,deps,async executor=>(await executor.query<{share_id:string}>(START,
    [shareId,anonymousId,proof.keyThumbprint,key,prompt])).rows[0]);
  if(created===undefined)return answer(409,{error:"ALREADY_ATTEMPTED"});
+ let phase:"QA_PLAN"|"CODE_GENERATION"|"BROWSER_QA"|"ARTIFACT_ADMISSION"|"DATABASE_SAVE"="QA_PLAN";
  try{
   // Frozen user-intent contract is generated BEFORE source code.
   const plan=await (deps.plan??generateQaPlan)(env,prompt);
   if(plan===null)throw Error("QA_PLAN_INVALID");
+  phase="CODE_GENERATION";
   const code=await (deps.generate??generateCodeApp)(env,prompt+"\n\nIndependent acceptance contract:\n"+JSON.stringify(plan));
   if(code===null)throw Error("MODEL_INVALID");
   // Never promote a merely-hashed draft. This step uses independently planned
   // requirements and actual isolated-browser evidence before ACTIVE.
+  phase="BROWSER_QA";
   const checked=await (deps.quality??qualityGateCode)(env,prompt,code,raw.allow_auto_repair===true,plan);
   if(checked===null)throw Error("QA_NOT_VERIFIED");
+  phase="ARTIFACT_ADMISSION";
   const pkg=await makePrototypeCodeArtifact(checked.title,checked.javascript);
   const verified=await verifyPrototypeCodeArtifact(pkg);
   if(!verified.ok)throw Error("ARTIFACT_NOT_ADMITTED");
+  phase="DATABASE_SAVE";
   const saved=await db(env,identity,deps,async executor=>(await executor.query<{share_id:string}>(FINISH,
    [shareId,checked.title,verified.blueprint_hash,JSON.stringify(pkg)])).rows[0]);
   if(saved===undefined)throw Error("ARTIFACT_SAVE_FAILED");
   return answer(201,{data:{share_id:shareId,blueprint_hash:verified.blueprint_hash,url:"/code/"+shareId,status:"ACTIVE"}});
  }catch{
   await db(env,identity,deps,async executor=>{await executor.query(FAIL,[shareId]);}).catch(()=>undefined);
-  return answer(422,{error:"CODE_BUILD_FAILED_NO_PUBLISHED_APP"});
+  // No user prompt, code, keys, model response or internal stack traces in the receipt.
+  return answer(422,{error:"CODE_BUILD_FAILED_NO_PUBLISHED_APP",phase});
  }
 }
 async function read(ctx:{url:URL;env:Appf2WorkerEnv;deps:CodeBuilderDeps},id:string):Promise<Response>{
