@@ -262,6 +262,8 @@ jobs:
         run: node deploy/scripts/sp35-public-card-browser-no-model.mjs
       - name: Live Staging published LifePilot and moving cards (no AI)
         run: node deploy/scripts/sp35-live-public-cards-e2e.mjs
+      - name: Real Staging result adjustment with zero AI (F16 entry vs F03 input)
+        run: node deploy/scripts/sp35-result-adjustment-no-ai-e2e.mjs
       - name: Preserve free real-browser published-card screenshot
         if: always()
         uses: actions/upload-artifact@v4
