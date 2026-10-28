@@ -57,8 +57,8 @@ document.getElementById("add").addEventListener("click",()=>{
       const prototype=await contract.makePrototypeCodeArtifact(title,javascript);
       const checked=await contract.verifyPrototypeCodeArtifact(prototype);
       if(!checked.ok)throw Error("HYBRID_ARTIFACT_HASH_REJECTED");
-      const mounted=await host.createPrototypeCodeFrame(prototype,document);
-      document.body.append(mounted.iframe);
+      const mounted=await host.createPrototypeCodeFrame(prototype,globalThis.document);
+      globalThis.document.body.append(mounted.iframe);
       return {hash:mounted.blueprintHash,sandbox:mounted.iframe.getAttribute("sandbox"),
         srcdoc:mounted.iframe.srcdoc};
     },{title,javascript:code});
