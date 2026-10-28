@@ -3,6 +3,7 @@ import {makePrototypeCodeArtifact,verifyPrototypeCodeArtifact} from "../platform
 import {WorkerPostgresExecutor,NO_REQUEST_DB_CONTEXT} from "../platform/blueprint/worker-postgres-executor.js";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 import {appf2ModelProviderConfig} from "../platform/compiler/appf2-model-provider.js";
+import {codeBuilderModelRequest,readCodeBuilderCompletion} from "./code-builder-generation-contract.js";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const JSON_HEADERS={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"};
 const CREATE="/api/v1/code-apps",ITEM=/^\/api\/v1\/code-apps\/([^/]+)$/u;
@@ -33,14 +34,6 @@ async function db<T>(env:Appf2WorkerEnv,identity:Identity,deps:CodeBuilderDeps,r
  const client=dbFor(env,identity,deps);
  try{return await run(client);}finally{await client.close().catch(()=>undefined);}
 }
-function codeObject(value:unknown):{title:string;javascript:string}|null{
- if(typeof value!=="object"||value===null||Array.isArray(value))return null;
- const o=value as Record<string,unknown>;
- if(Object.keys(o).length!==2||typeof o.title!=="string"||typeof o.javascript!=="string")return null;
- const title=o.title.trim();
- return title.length>0&&title.length<=120&&o.javascript.length>0&&o.javascript.length<=128*1024
-   ?{title,javascript:o.javascript}:null;
-}
 /** One bounded paid call; no hidden retries, fallback, JS execution, or automatic publishing if validation fails. */
 export async function generateCodeApp(env:Appf2WorkerEnv,prompt:string):Promise<{title:string;javascript:string}|null>{
  const config=appf2ModelProviderConfig({
@@ -49,26 +42,14 @@ export async function generateCodeApp(env:Appf2WorkerEnv,prompt:string):Promise<
    APPF2_XAI_API_KEY:env.APPF2_XAI_API_KEY,APPF2_XAI_MODEL_NAME:env.APPF2_XAI_MODEL_NAME,
    APPF2_DEEPSEEK_API_KEY:env.APPF2_DEEPSEEK_API_KEY,APPF2_DEEPSEEK_MODEL_NAME:env.APPF2_DEEPSEEK_MODEL_NAME
  }).config;
- const request={
-   model:config.model,temperature:0,max_completion_tokens:3800,
-   response_format:{type:"json_object"},
-   messages:[
-     {role:"system",content:"Create a real interactive standalone web App from user description. Respond with ONLY a JSON object having exactly keys title and javascript. javascript must be plain self-contained browser JavaScript (no import, require, eval, dynamic import, network fetch, external dependencies, CDN, iframe, workers, document.cookie, localStorage or parent access). The runtime injects an empty <main id=app> and executes your code in an opaque-origin sandbox. Use document.getElementById('app') to create accessible styled DOM and controls, use local variables and click/input listeners for working interactions. All CSS may be created using DOM style properties or style elements. Build complete functional behavior, not a static mockup. Chinese UI for Chinese requests. Do not use backticks containing </script>. Keep below 14KB JS. No text outside JSON."},
-     {role:"user",content:prompt}
-   ]
- };
+ const request=codeBuilderModelRequest(config.model,prompt);
  const response=await fetch(config.baseUrl+"/chat/completions",{
    method:"POST",headers:{"Authorization":"Bearer "+config.apiKey,"Content-Type":"application/json"},
-   body:JSON.stringify(request),signal:AbortSignal.timeout(45000)
+   body:JSON.stringify(request),signal:AbortSignal.timeout(65000)
  });
  if(!response.ok)return null;
  const data:unknown=await response.json();
- if(typeof data!=="object"||data===null)return null;
- const choices=(data as {choices?:unknown}).choices;
- if(!Array.isArray(choices))return null;
- const message=(choices[0] as {message?:{content?:unknown}}|undefined)?.message?.content;
- if(typeof message!=="string"||message.length>130000)return null;
- try{return codeObject(JSON.parse(message) as unknown);}catch{return null;}
+ return readCodeBuilderCompletion(data);
 }
 // eslint-disable-next-line complexity -- Signed creation, single charge, fail-closed admission and idempotency each require an independent guard.
 async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:CodeBuilderDeps}):Promise<Response>{

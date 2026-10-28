@@ -33,7 +33,7 @@ export function CodeAppPage({shareId,onHome}:{shareId:string;onHome:()=>void}){
     <h1>{title}</h1></header>
   {status==="LOADING"?<p role="status">正在驗證 Blueprint v2 並開啟 App…</p>:null}
   {status==="FAILED"?<p role="alert">這個 App 無法安全開啟。原有 App 不受影響，也不會重新呼叫 AI。</p>:null}
-  {status==="READY"?<p className="saved-apps-note">已驗證的程式 App · 隔離執行 · 重新開啟不花 AI 生成費</p>:null}
+  {status==="READY"?<p className="saved-apps-note">程式封裝已驗證，功能尚待逐項驗收 · 隔離執行 · 重新開啟不花 AI 生成費</p>:null}
   <div ref={mount} className="code-app-frame"/>
  </main>;
 }

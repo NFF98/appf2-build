@@ -52,20 +52,20 @@ export function CodeBuilderPanel({onOpen,suggestedPrompt}:{onOpen:(id:string)=>v
  };
  return <section className="code-builder-panel" aria-labelledby="code-builder-title">
    <h2 id="code-builder-title">AI Code Builder · Blueprint v2</h2>
-   <p className="saved-apps-note">用一句話產生真正的互動網頁 App。此 Staging 初版僅支援不連網的單檔程式；結果封裝為可分享的 Blueprint 卡片。</p>
+   <p className="saved-apps-note">用一句話產生互動網頁 App 的候選版本。此 Staging 僅支援不連網的單檔程式；程式完整性檢查不等於功能驗收。請逐項試用後，再決定是否分享。</p>
    <label htmlFor="code-builder-prompt">描述你想做的 App</label>
    <textarea id="code-builder-prompt" className="composer-input" value={prompt} maxLength={800}
      onChange={e=>setPrompt(e.target.value)} placeholder="例如：做一個有骰子和計分功能的十八啦遊戲" />
    <label className="code-builder-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-     我同意產生一次付費 AI 請求，並把完成的 App 程式公開成可分享卡片（不包含我的操作資料）。
+     我同意產生一次付費 AI 請求，並把未經完整功能驗收的 App 候選版本公開分享（不包含我的操作資料）。
    </label>
    <button type="button" className="btn btn-primary" disabled={busy||!consent||prompt.trim().length<5}
-     onClick={()=>{void generate();}}>{busy?"AI 正在產生與驗證…":"生成 Blueprint v2 App"}</button>
+     onClick={()=>{void generate();}}>{busy?"AI 正在產生與檢查程式封裝…":"生成 Blueprint v2 App"}</button>
    {error?<p role="alert">{error}</p>:null}
-   <h3>已完成的 Code Builder App</h3>
-   {cards.length===0?<p className="saved-apps-note">尚無已驗證的 Code App。</p>:null}
+   <h3>已產生的 Code Builder 候選 App</h3>
+   {cards.length===0?<p className="saved-apps-note">尚無已產生的 Code App 候選版本。</p>:null}
    <ul className="saved-apps-grid">{cards.map(card=><li className="saved-app-card" key={card.share_id}>
-     <h4>{card.title}</h4><button type="button" className="btn btn-secondary" onClick={()=>onOpen(card.share_id)}>直接使用（不用 AI）</button>
+     <h4>{card.title}</h4><button type="button" className="btn btn-secondary" onClick={()=>onOpen(card.share_id)}>試用候選版（不用 AI）</button>
    </li>)}</ul>
   </section>;
 }
