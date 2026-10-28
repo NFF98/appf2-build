@@ -7,6 +7,7 @@ const expected=[
 ];
 const browser=await chromium.launch({headless:true});
 try{
+ // eslint-disable-next-line max-depth -- Real live-card F03 actions, no AI calls, and strict cross-user isolation.
  for(const item of expected){
   const context=await browser.newContext();
   const page=await context.newPage();const f01=[];
