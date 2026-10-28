@@ -1,0 +1,48 @@
+name: Sprint 3.5 Cloudflare sandbox read-only preflight
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cloudflare-capabilities:
+    if: github.repository == 'NFF98/appf2-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify Cloudflare plan without creating paid resources
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node --input-type=module <<'JS'
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID?.trim()||"";
+          const token=process.env.CLOUDFLARE_API_TOKEN?.trim()||"";
+          if(!/^[a-f0-9]{32}$/i.test(account)||token.length<20){
+            console.log("SANDBOX PLAN: UNKNOWN — Cloudflare credentials not available");
+            process.exit(0);
+          }
+          const endpoint="https://api.cloudflare.com/client/v4/accounts/"+account+"/subscriptions";
+          const res=await fetch(endpoint,{
+            method:"GET",headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+            signal:AbortSignal.timeout(10000)
+          }).catch(()=>null);
+          if(!res){
+            console.log("SANDBOX PLAN: UNKNOWN — read-only API unavailable");
+            process.exit(0);
+          }
+          if(!res.ok){
+            console.log("SANDBOX PLAN: UNKNOWN — subscriptions GET HTTP "+res.status);
+            process.exit(0);
+          }
+          const data=await res.json().catch(()=>({}));
+          const list=Array.isArray(data.result)?data.result:[];
+          const workers=list.filter(x=>/worker/i.test(String(x?.rate_plan?.id||"")+" "+String(x?.rate_plan?.name||"")));
+          const paid=workers.some(x=>/paid|standard|bundled|unbound/i.test(String(x.rate_plan?.id||"")+" "+String(x.rate_plan?.name||""))&&
+            /active|paid|provisioned/i.test(String(x.state||"")));
+          console.log("SANDBOX WORKERS PAID PLAN: "+(paid?"POSSIBLE — dashboard verification required":
+            "NOT CONFIRMED — do not deploy paid Containers"));
+          console.log("CLOUDFLARE READ-ONLY: SUCCESS; zero Worker deploys, containers or paid AI calls");
+          JS
