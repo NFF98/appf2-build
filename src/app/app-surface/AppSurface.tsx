@@ -165,6 +165,7 @@ function EntryNotice({ notice, onDismiss }: { readonly notice: UnavailableNotice
  * hands Share / Modify / Remix / Correction to their owners and never mutates the Runtime or its Blueprint; an entry
  * whose owner is unavailable is answered in place and leaves the App, its result and the focused control as they are.
  */
+// eslint-disable-next-line complexity, max-lines-per-function -- Actual F03 controls and explicit F05 consent must keep the same App owner/session boundary.
 export function AppSurface({ session, onHome, onEntry, onPublish, inspection }: AppSurfaceProps) {
   const { current } = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const { app, contentHash } = current;
