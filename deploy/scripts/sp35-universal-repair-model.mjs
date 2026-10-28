@@ -12,7 +12,8 @@ export function createPaidRepair({provider="openai",model,apiKey,prompt,consente
  if(!base||!model||!apiKey||!prompt)throw Error("QA_REPAIR_CONFIG_INVALID");
  const limit=consented?Math.min(2,Math.max(0,Math.floor(maxRepairs))):0;
  let used=0;
- // eslint-disable-next-line complexity -- Explicit budget, consent and response guards are independent safety conditions.\n return async(draft,plan,failures,attempt)=>{
+ // eslint-disable-next-line complexity -- Explicit budget, consent and response guards are independent safety conditions.
+ return async(draft,plan,failures,attempt)=>{
   if(attempt!==used+1||used>=limit)return null;
   used++; // Charge authorization consumed BEFORE network; failures cannot cause retry.
   const content=JSON.stringify({
