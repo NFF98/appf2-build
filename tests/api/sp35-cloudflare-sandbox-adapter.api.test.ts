@@ -4,11 +4,12 @@ import {CloudflareIsolatedSandboxAdapter,type IsolatedContainer,
  type IsolatedProcess,type IsolatedContainerFactory}
  from "../../src/platform/agent/cloudflare-sandbox-adapter.js";
 import type {SandboxLimits} from "../../src/platform/agent/sandbox-adapter.js";
+import type {AgentToolName,AgentToolCall} from "../../src/platform/agent/agent-contract.js";
 const job="job_12345678";
 const limits:SandboxLimits={wall_time_ms:2000,cpu_millis:1000,
  memory_mb:128,disk_mb:256,network_policy:"DENY_ALL",allowed_hosts:[]};
 class Stub implements IsolatedContainer{
- commands:readonly string[][]=[];
+ commands:readonly (readonly string[])[]=[];
  synced=false;
  removed:string[]=[];
  killed=false;
@@ -35,7 +36,7 @@ const project=()=>createProjectSnapshot("VITE_WEB","index.html",[
  {path:"index.html",content:"<main></main>"},
  {path:"package.json",content:'{"scripts":{"build":"vite build"}}'},
  {path:"src/main.ts",content:"console.log(1)"}]);
-const call=(name:string,hash:string,args:Record<string,string>)=>({
+const call=(name:AgentToolName,hash:string,args:Record<string,string>):AgentToolCall=>({
  call_id:"call_12345678",name,project_hash:hash,args
 });
 describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)",()=>{
@@ -66,7 +67,7 @@ describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)"
   await adapter.provision(job,limits);
   await expect(adapter.execute(job,app,call("run_build",app.project_hash,{target:";rm -rf /"})))
    .rejects.toThrow("SANDBOX_INVALID_PROJECT_OR_CALL");
-  await expect(adapter.execute(job,app,call("exec",app.project_hash,{command:"curl metadata"})))
+  await expect(adapter.execute(job,app,call("exec" as AgentToolName,app.project_hash,{command:"curl metadata"})))
    .rejects.toThrow("SANDBOX_INVALID_PROJECT_OR_CALL");
   await expect(adapter.execute(job,{...app,files:[...app.files,{
    path:"../secrets",content:"x",bytes:1,hash:app.project_hash}]},
