@@ -221,7 +221,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Install pinned Browser Run QA driver (staging only)
-        run: npm install --no-save --no-package-lock --ignore-scripts @cloudflare/puppeteer@1.1.0
+        run: npm install --save-dev --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
       - name: Product build (no fixture counted as LIVE PASS)
         run: |
           npm run check:types
