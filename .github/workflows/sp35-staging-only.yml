@@ -258,6 +258,8 @@ jobs:
         run: |
           npx playwright install chromium
           node deploy/scripts/sp35-saved-app-no-model-smoke.mjs
+      - name: Corrected original eighteen dice source full browser acceptance (NO AI)
+        run: node deploy/scripts/sp35-corrected-dice-qa.mjs
       - name: Generic requirement-driven browser QA and bounded repair engine (NO AI)
         run: node deploy/scripts/sp35-universal-qa-selftest.mjs
       - name: Hybrid Blueprint v2 Code Artifact real browser isolation proof (no AI)
