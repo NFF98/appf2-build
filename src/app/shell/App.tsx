@@ -10,6 +10,7 @@ import type { CreationSession } from "../create/creation-session.js";
 import { DiscoverScreen, type ComposerDraft } from "../discover/DiscoverScreen.js";
 import type { PromptDraftStore } from "../discover/prompt-draft-store.js";
 import { isRetryableLaunchFailure, type AppLauncher, type LaunchState } from "../runtime/app-launcher.js";
+import type { PublishedAppPublisher } from "../runtime/publish-client.js";
 import { clearTabAppTarget, forgetSavedTabApp, readSavedTabApps, readTabAppTarget, rememberSavedTabApp, saveTabAppTarget, type TabAppTarget } from "./tab-app-recovery.js";
 
 type Surface = "DISCOVER" | "CREATE";
@@ -25,6 +26,7 @@ type AppProps = {
   readonly controller: CreationController;
   readonly drafts: PromptDraftStore;
   readonly launcher: AppLauncher;
+  readonly publisher?:PublishedAppPublisher;
 };
 
 /**
@@ -32,13 +34,13 @@ type AppProps = {
  * change-session owner; O01 Share (F05) and O02 Correction (F16) have no owner in this build, so S03 reports them
  * unavailable in place. While the session inspects the original, S03 runs in Inspection Mode and returns to it.
  */
-function AppStage({ session, onHome }: { readonly session: AppSession; readonly onHome: () => void }) {
+function AppStage({ session, onHome,onPublish }: { readonly session: AppSession; readonly onHome: () => void; readonly onPublish?:()=>Promise<string|null> }) {
   const [changes] = useState(() => new ChangeSessionOwner());
   const change = useSyncExternalStore(changes.subscribe, changes.getSnapshot);
   const { current } = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const onEntry = useCallback((entry: AppSurfaceEntry): EntryHandoff => ("choice" in entry && changes.open(entry) ? "HANDED_OFF" : "UNAVAILABLE"), [changes]);
 
-  if (change === null) return <AppSurface session={session} onHome={onHome} onEntry={onEntry} />;
+  if (change === null) return <AppSurface session={session} onHome={onHome} onEntry={onEntry} onPublish={onPublish} />;
   if (change.view === "COMPOSER") return <ChangeWorkspace change={change} owner={changes} appTitle={current.app.title} />;
   return <AppSurface session={session} onHome={onHome} onEntry={onEntry} inspection={{ origin: "COMPOSER", onReturn: changes.returnFromOriginal }} />;
 }
@@ -65,7 +67,7 @@ function workspaceLaunchProps(launch: LaunchState, contentHash: string | null, l
  * surface only appears once the validated Blueprint has passed secure delivery, admission and F03 hydration.
  */
 // eslint-disable-next-line complexity -- Restore/auth state and strict tab-target guards must all fail closed.
-export function App({ controller, drafts, launcher }: AppProps) {
+export function App({ controller, drafts, launcher,publisher }: AppProps) {
   const session = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const launch = useSyncExternalStore(launcher.subscribe, launcher.getSnapshot);
   const [publicShareId,setPublicShareId]=useState<string|null>(shareFromPath);
@@ -167,6 +169,7 @@ export function App({ controller, drafts, launcher }: AppProps) {
     if (!readSavedTabApps().some(app => app.intentId===target.intentId && app.contentHash===target.contentHash)) return;
     controller.leave();
     launcher.reset();
+    setPublicShareId(null);
     setRestoredTarget(target);
     saveTabAppTarget(target);
     window.history.pushState(CREATE_HISTORY_STATE, "");
@@ -191,7 +194,9 @@ export function App({ controller, drafts, launcher }: AppProps) {
     else returnToDiscover();
   };
 
-  if (showingApp) return <AppStage key={launch.contentHash} session={appSession} onHome={back} />;
+  if (showingApp) return <AppStage key={launch.contentHash} session={appSession} onHome={back}
+    onPublish={publicShareId===null&&validatedIntentId!==null&&publisher!==undefined
+      ?()=>publisher.publish(validatedIntentId,launch.contentHash,launch.app.title):undefined} />;
   if (surface === "CREATE" && (restoredTarget !== null || publicShareId!==null)) {
     return (
       <main className="app-recovery" role="status">
