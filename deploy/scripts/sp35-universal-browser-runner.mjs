@@ -43,7 +43,8 @@ async function check(frame,assertion,before){
    if(typeof fn!=="function")return {error:"NO_PURE_FUNCTION"};
    return fn(...probe.input);
   },assertion);
-  return JSON.stringify(value)===JSON.stringify(assertion.expected);
+  const actual=assertion.result_path===undefined?value:value?.[assertion.result_path];
+  return JSON.stringify(actual)===JSON.stringify(assertion.expected);
  }
  if(assertion.kind==="text_changes")
   return before[assertion.selector]!==await frame.locator(assertion.selector).first().innerText();

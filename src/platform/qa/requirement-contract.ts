@@ -10,7 +10,7 @@ export type QaAssertion =
  | {readonly kind:"element_count";readonly selector:string;readonly count:number}
  | {readonly kind:"text_changes";readonly selector:string}
  | {readonly kind:"visible";readonly role:"button"|"tab"|"link"|"textbox"|"heading";readonly name:string}
- | {readonly kind:"pure_case";readonly function_name:string;readonly input:readonly unknown[];readonly expected:unknown};
+ | {readonly kind:"pure_case";readonly function_name:string;readonly input:readonly unknown[];readonly expected:unknown;readonly result_path?:string};
 export type QaCriterion={
  readonly id:string;readonly source_quote:string;readonly description:string;
  readonly steps:readonly QaStep[];readonly assertions:readonly QaAssertion[];
@@ -33,7 +33,10 @@ function assertion(x:unknown):x is QaAssertion{
  if(x.kind==="pure_case")return NAME(x.function_name)&&
    /^[A-Za-z_$][\\w$]{0,63}$/u.test(x.function_name)&&
    Array.isArray(x.input)&&x.input.length<=8&&
-   JSON.stringify(x.input).length<=300&&JSON.stringify(x.expected).length<=300;
+   typeof JSON.stringify(x.input)==="string"&&JSON.stringify(x.input).length<=300&&
+   typeof JSON.stringify(x.expected)==="string"&&JSON.stringify(x.expected).length<=300&&
+   (x.result_path===undefined||typeof x.result_path==="string"&&
+     /^[a-z][a-z0-9_]{0,63}$/u.test(x.result_path));
  if(!ALLOWED_SELECTOR.test(String(x.selector)))return false;
  if(x.kind==="element_count")return Number.isInteger(x.count)&&Number(x.count)>=0&&Number(x.count)<=200;
  return x.kind==="text_changes";

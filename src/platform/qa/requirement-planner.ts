@@ -7,7 +7,7 @@ export const QA_PLANNER_PROMPT=[
  "steps is an array of UI actions: {action:'click',role:'button'|'tab'|'link',name:string} or {action:'fill',role:'textbox'|'spinbutton',name:string,value:string}.",
  "assertions are {kind:'text_includes',text:string}, {kind:'visible',role:'button'|'tab'|'link'|'textbox'|'heading',name:string}, {kind:'element_count',selector:'#id'|'.class'|'[data-testid=\"id\"]',count:integer}, or {kind:'text_changes',selector:'#id'|'.class'}.",
  "Prefer deterministic, semantically correct expected outcomes after user actions; text_changed alone is weak evidence.",
- "For pure domain calculations that cannot be deterministically driven by clicking, use {kind:'pure_case',function_name:string,input:JSON array,expected:JSON value}, with independently derived expected results.",
+ "For pure domain calculations that cannot be deterministically driven by clicking, use {kind:'pure_case',function_name:string,input:JSON array,expected:JSON value}, with independently derived expected results. Optional result_path selects a field such as score from the returned object.",
  "Apps needing pure_case checks must expose the corresponding pure function at window[function_name] and reuse the function for visible UI results; no test-only substitute.",
  "The generated App must expose stable data-testid for stateful controls and results when the user explicitly requests them.",
  "When a requirement is ambiguous, subjective, needs domain variants, or cannot be verified by these primitives, automatable=false. Never mark it tested by making up expected data.",
