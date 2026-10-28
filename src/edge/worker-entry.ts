@@ -2,13 +2,15 @@ import { isUuid } from "../platform/evidence/evidence-validator.js";
 import { INTENT_API_ERRORS, IntentApiError } from "../platform/compiler/f01-errors.js";
 import { isValidIdempotencyKey } from "../platform/compiler/idempotency.js";
 import { NO_REQUEST_DB_CONTEXT, type WorkerRequestDbContext } from "../platform/blueprint/worker-postgres-executor.js";
-import { routeBlueprintDelivery, type BlueprintDeliveryFactory } from "./blueprint-delivery.js";
+import { routeBlueprintDelivery, type BlueprintDeliveryFactory, type BlueprintDeliveryComposition } from "./blueprint-delivery.js";
+import { routePublishedApps } from "./published-apps.js";
 import { claimsMutationProof, reservedCreateIdempotencyKey, verifyMutationProof } from "./create-proof.js";
 import { EVENTS_BATCH_ROUTE } from "./events-batch.js";
 import { INTENTS_ROUTE, type IntentApiHttpResponse } from "./intent-api.js";
 import { assertContinuitySecret, intentContinuityCookie, readIntentContinuity } from "./server-identity.js";
 import {
   createBlueprintDeliveryComposition,
+  createPublicShareDeliveryComposition,
   createWorkerRequestComposition,
   type Appf2WorkerEnv,
   type WorkerRequestComposition
@@ -19,6 +21,7 @@ const HEALTH_ROUTE = "/api/v1/health";
 const SCOPED_INTENT_ROUTE = /^\/api\/v1\/intents\/([^/]+)\/(?:answers|compile)$/u;
 
 export interface WorkerCompositionFactories {
+  readonly publicShare: (env:Appf2WorkerEnv,shareId:string)=>BlueprintDeliveryComposition;
   readonly intent: (env: Appf2WorkerEnv, context: WorkerRequestDbContext) => WorkerRequestComposition;
   readonly delivery: BlueprintDeliveryFactory;
 }
@@ -29,7 +32,8 @@ export interface WorkerFetchOptions {
 
 const PRODUCTION_FACTORIES: WorkerCompositionFactories = {
   intent: createWorkerRequestComposition,
-  delivery: createBlueprintDeliveryComposition
+  delivery: createBlueprintDeliveryComposition,
+  publicShare: createPublicShareDeliveryComposition
 };
 
 type IntentMutationContext =
@@ -191,12 +195,17 @@ async function intentResponse(
 }
 
 export function createWorkerFetch(factories: Partial<WorkerCompositionFactories> = {}, options: WorkerFetchOptions = {}) {
-  const { intent: intentFactory, delivery: deliveryFactory } = { ...PRODUCTION_FACTORIES, ...factories };
+  const { intent: intentFactory, delivery: deliveryFactory, publicShare: publicShareFactory } = { ...PRODUCTION_FACTORIES, ...factories };
   const now = options.now ?? Date.now;
   return async (request: Request, env: Appf2WorkerEnv): Promise<Response> => {
     const url = new URL(request.url);
-    const delivered = await routeBlueprintDelivery({ request, url, env, nowMs: now(), factory: deliveryFactory });
+    const nowMs=now();
+    const delivered = await routeBlueprintDelivery({
+      request, url, env, nowMs, factory: deliveryFactory,publicShareFactory
+    });
     if (delivered !== undefined) return delivered;
+    const published=await routePublishedApps({request,url,env,nowMs,delivery:deliveryFactory});
+    if(published!==undefined)return published;
     if (!url.pathname.startsWith(API_PREFIX)) return json({ error: { code: "API-NOT-FOUND" } }, 404);
     if (url.pathname === HEALTH_ROUTE) return json({ data: { status: "UP" } }, 200);
 
