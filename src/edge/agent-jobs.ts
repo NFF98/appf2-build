@@ -4,6 +4,8 @@
  * An anonymous_id alone is never an authentication credential.
  */
 import {verifyMutationProof} from "./create-proof.js";
+import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
+import type {PaidModelTurnDeps} from "../platform/agent/journaled-model-gateway.js";
 import {WorkerPostgresExecutor,type WorkerRequestDbContext}
  from "../platform/blueprint/worker-postgres-executor.js";
 import {startDurableAgentJob,recoverAgentJob}
@@ -15,6 +17,7 @@ import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 
 const CREATE="/api/v1/agent-jobs";
+const MODEL_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-plan$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const KEY=/^[A-Za-z0-9_-]{8,128}$/u;
@@ -24,6 +27,7 @@ type Db=AgentJobExecutor&{close:()=>Promise<void>};
 export type AgentJobRouteDeps={
  readonly db?:(env:Appf2WorkerEnv,context:WorkerRequestDbContext)=>Db;
  readonly newJobId?:()=>string;
+ readonly sendModel?:PaidModelTurnDeps["send"];
 };
 export type AgentJobRouteContext={
  readonly request:Request;readonly url:URL;readonly env:Appf2WorkerEnv;
@@ -35,13 +39,22 @@ const denied=()=>json(404,{error:"AGENT_JOB_NOT_FOUND"});
 function isObject(x:unknown):x is Record<string,unknown>{
  return typeof x==="object"&&x!==null&&!Array.isArray(x);
 }
-function verifiedBody(raw:unknown,create:boolean):{anonymous_id:string;prompt?:string}|null{
+type VerifiedJobBody={anonymous_id:string;prompt?:string;max_cost_cents?:number;explicit_ai_consent?:boolean};
+function verifiedBody(raw:unknown,create:boolean):VerifiedJobBody|null{
  if(!isObject(raw)||!UUID.test(String(raw.anonymous_id)))return null;
  const fields=Object.keys(raw).sort().join(",");
  if(create){
-  if(fields!=="anonymous_id,prompt"||typeof raw.prompt!=="string"||
+  const permitted=fields==="anonymous_id,prompt"||
+   fields==="anonymous_id,explicit_ai_consent,max_cost_cents,prompt";
+  if(!permitted||typeof raw.prompt!=="string"||
    raw.prompt.trim().length<5||raw.prompt.length>800)return null;
-  return {anonymous_id:String(raw.anonymous_id),prompt:raw.prompt.trim()};
+  if(fields!=="anonymous_id,prompt"&&(
+   raw.explicit_ai_consent!==true||typeof raw.max_cost_cents!=="number"||
+   !Number.isSafeInteger(raw.max_cost_cents)||raw.max_cost_cents<1||
+   raw.max_cost_cents>100))return null;
+  return {anonymous_id:String(raw.anonymous_id),prompt:raw.prompt.trim(),
+   ...(fields==="anonymous_id,prompt"?{}:
+    {max_cost_cents:raw.max_cost_cents as number,explicit_ai_consent:true})};
  }
  return fields==="anonymous_id"?{anonymous_id:String(raw.anonymous_id)}:null;
 }
@@ -69,14 +82,15 @@ export async function createInitialAgentProject(prompt:string){
  ]);
 }
 // eslint-disable-next-line max-params -- DB, PoP-bound owner and input are separate trust boundaries.
-async function create(db:Db,owner:string,thumb:string,key:string,prompt:string,
- newJobId:()=>string):Promise<Response>{
+async function create(db:Db,owner:string,thumb:string,key:string,
+ input:VerifiedJobBody,newJobId:()=>string):Promise<Response>{
+ const prompt=input.prompt??"";
  const project=await createInitialAgentProject(prompt);
  const jobId=newJobId();
  const checkpoint:AgentCheckpoint={
   version:"APPF2_AGENT_CHECKPOINT_V1",job_id:jobId,state:"CREATED",
   project_hash:project.project_hash,step:0,tokens_used:0,cost_cents:0,
-  budget:{max_steps:8,max_tokens:8192,max_cost_cents:0},
+  budget:{max_steps:8,max_tokens:8192,max_cost_cents:input.max_cost_cents??0},
   completed_call_ids:[],previous_checkpoint_id:null
  };
  const saved=await startDurableAgentJob(db,{job_id:jobId,owner,thumbprint:thumb,
@@ -85,7 +99,8 @@ async function create(db:Db,owner:string,thumb:string,key:string,prompt:string,
   status:saved.job.job_state,revision:saved.job.revision,
   project_hash:saved.project.project_hash,
   files:saved.project.files.map(f=>({path:f.path,bytes:f.bytes})),
-  ai_started:false,app_published:false}});
+  ai_started:false,app_published:false,
+  approved_max_cost_cents:checkpoint.budget.max_cost_cents}});
 }
 async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Response>{
  if(!UUID.test(jobId))return denied();
@@ -105,8 +120,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname);
- if(url.pathname!==CREATE&&!match)return undefined;
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match&&!modelMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -123,15 +138,27 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  let parsed:unknown;
  try{parsed=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));}
  catch{return json(400,{error:"AGENT_JOB_BODY_INVALID"});}
- const info=verifiedBody(parsed,url.pathname===CREATE);
- if(!info)return json(400,{error:"AGENT_JOB_BODY_INVALID"});
+ const isModel=Boolean(modelMatch);
+ if(isModel&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED!=="1")return denied();
+ const info=isModel?(validModelPlanBody(parsed)?parsed:null):
+  verifiedBody(parsed,url.pathname===CREATE);
+ if(!info||!UUID.test(info.anonymous_id))return json(400,{error:"AGENT_JOB_BODY_INVALID"});
  const ownerThumb=await keyDigest(proof.keyThumbprint);
  const db=ctx.deps?.db?.(env,{anonymousId:info.anonymous_id,intentId:null})??
   new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,
    {anonymousId:info.anonymous_id,intentId:null});
  try{
   if(url.pathname===CREATE)return await create(db,info.anonymous_id,ownerThumb,
-   key,info.prompt??"",ctx.deps?.newJobId??(()=>crypto.randomUUID()));
+   key,info,ctx.deps?.newJobId??(()=>crypto.randomUUID()));
+  if(isModel){
+   if(!validModelPlanBody(info)||!env.APPF2_OPENAI_AGENT_API_KEY)
+    return denied();
+   const result=await executeFirstAgentModelPlan(info,{db,
+    jobId:modelMatch?.[1]??"",owner:info.anonymous_id,
+    ownerThumb,apiKey:env.APPF2_OPENAI_AGENT_API_KEY,
+    send:ctx.deps?.sendModel});
+   return json(200,{data:result});
+  }
   return await read(db,info.anonymous_id,ownerThumb,match?.[1]??"");
  }catch{
   return json(503,{error:"AGENT_JOB_UNAVAILABLE"});

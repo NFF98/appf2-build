@@ -4,6 +4,7 @@ import type {Appf2WorkerEnv} from "../../src/edge/worker-composition.js";
 import type {AgentJobRouteDeps} from "../../src/edge/agent-jobs.js";
 import type {AgentJobRow} from "../../src/platform/agent/postgres-agent-jobs.js";
 import type {AgentCheckpoint} from "../../src/platform/agent/agent-contract.js";
+import type {ModelCallRow} from "../../src/platform/agent/postgres-model-calls.js";
 import type {WorkerRequestDbContext} from "../../src/platform/blueprint/worker-postgres-executor.js";
 const ORIGIN="https://app.example";
 const OWNER="c264c7c2-a967-4fbc-b201-ae9e942e03bc";
@@ -41,12 +42,61 @@ async function signed(person:Client,path:string,body:object,key:string,origin=OR
 class Database {
  readonly snapshots=new Map<string,SourceRow>();
  jobs=new Map<string,AgentJobRow>();
+ modelCalls=new Map<string,ModelCallRow>();
  identities=new Map<string,{thumb:string;key:string}>();
  context:WorkerRequestDbContext|null=null;
  readonly db={
   close:async()=>undefined,
   // eslint-disable-next-line complexity -- Simulated SQL is used to test owner binding and idempotent creates.
   query:async<T>(sql:string,args:readonly unknown[]):Promise<{rows:readonly T[]}>=>{
+   if(sql.startsWith("UPDATE public.appf2_agent_job")){
+    const row=this.jobs.get(String(args[0]));
+    if(!row||row.revision!==args[2]||row.checkpoint_hash!==args[7])
+     return {rows:[]};
+    const checkpoint=JSON.parse(String(args[6])) as AgentCheckpoint;
+    this.jobs.set(row.job_id,{...row,revision:row.revision+1,
+     project_hash:String(args[4]),checkpoint_hash:String(args[3]),
+     checkpoint,job_state:String(args[5])});
+    return {rows:[{job_id:row.job_id} as T]};
+   }
+   if(sql.startsWith("SELECT appf2_internal.reserve_agent_model_call")){
+    const current=this.jobs.get(String(args[0]));
+    if(!current||current.revision!==args[2]||current.checkpoint_hash!==args[3])
+     throw Error("INVALID_RESERVATION");
+    const old=this.modelCalls.get(String(args[1]));
+    if(old)return {rows:[{status:old.status} as T]};
+    const row:ModelCallRow={
+     job_id:String(args[0]),owner_anonymous_id:current.owner_anonymous_id,
+     call_key:String(args[1]),job_revision:Number(args[2]),
+     checkpoint_hash:String(args[3]),request_hash:String(args[4]),
+     model:String(args[5]),max_charge_cents:Number(args[6]),
+     status:"RESERVED",response_json:null,response_id:null,
+     input_tokens:null,output_tokens:null
+    };
+    this.modelCalls.set(row.call_key,row);
+    return {rows:[{status:"RESERVED"} as T]};
+   }
+   if(sql.startsWith("SELECT job_id::text,owner_anonymous_id::text,call_key")){
+    const row=this.modelCalls.get(String(args[2]));
+    return {rows:row&&row.owner_anonymous_id===args[1]?[row as T]:[]};
+   }
+   if(sql.startsWith("UPDATE public.appf2_agent_model_call")){
+    const row=this.modelCalls.get(String(args[2]));
+    if(!row)return {rows:[]};
+    if(sql.includes("SET status='IN_FLIGHT'")){
+     if(row.status!=="RESERVED")return {rows:[]};
+     this.modelCalls.set(row.call_key,{...row,status:"IN_FLIGHT"});
+    }else if(sql.includes("SET status='SUCCEEDED'")){
+     if(row.status!=="IN_FLIGHT")return {rows:[]};
+     this.modelCalls.set(row.call_key,{...row,status:"SUCCEEDED",
+      response_json:JSON.parse(String(args[3])) as unknown,response_id:String(args[4]),
+      input_tokens:Number(args[5]),output_tokens:Number(args[6])});
+    }else if(sql.includes("SET status='BLOCKED_UNCERTAIN'")){
+     if(row.status!=="IN_FLIGHT")return {rows:[]};
+     this.modelCalls.set(row.call_key,{...row,status:"BLOCKED_UNCERTAIN"});
+    }else throw Error("UNKNOWN_MODEL_TRANSITION");
+    return {rows:[{call_key:row.call_key} as T]};
+   }
    if(sql.startsWith("INSERT INTO public.appf2_agent_project_snapshot")){
     const key=String(args[0])+":"+String(args[1]);
     if(!this.snapshots.has(key))this.snapshots.set(key,{
@@ -142,6 +192,60 @@ describe("Sprint 3.5 live Worker candidate Agent Job API (cryptographic signed r
   expect(disabled.status).toBe(404);
   expect(database.jobs.size).toBe(0);
   expect(database.context).toBeNull();
+ });
+ it("signed consent permits one mocked model planning response and durable no-charge replay",async()=>{
+  const person=await client(),db=new Database();
+  let calls=0;
+  const deps={...db.makeDeps(),sendModel:async()=>{
+   calls++;
+   return {id:"resp_mock12345678",status:"completed",
+    usage:{input_tokens:100,output_tokens:50},output:[]};
+  }};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const prompt="建立一個可以分享的多人骰子遊戲";
+  const created=await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"candidate_budget_123456"),env);
+  expect(created.status).toBe(201);
+  expect(db.jobs.get(JOB_ID)?.checkpoint.budget.max_cost_cents).toBe(20);
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/model-plan";
+  const plan={anonymous_id:OWNER,prompt,model_call_key:"model_plan_123456",
+   max_charge_cents:5,max_output_tokens:512,explicit_ai_consent:true};
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const first=await fetch(await signed(person,path,plan,"model_request_123456"),enabled);
+  expect(first.status).toBe(200);
+  expect(await first.json()).toMatchObject({data:{status:"MODEL_RESPONSE_SAVED",
+   source:"PROVIDER",response_id:"resp_mock12345678"}});
+  expect(db.jobs.get(JOB_ID)?.checkpoint.state).toBe("PLANNING");
+  expect(db.jobs.get(JOB_ID)?.checkpoint.step).toBe(1);
+  expect(calls).toBe(1);
+  expect(db.modelCalls.get("model_plan_123456")?.status).toBe("SUCCEEDED");
+  const replay=await fetch(await signed(person,path,plan,"model_request_123456"),enabled);
+  expect(replay.status).toBe(200);
+  expect(await replay.json()).toMatchObject({data:{source:"DURABLE_REPLAY"}});
+  expect(calls).toBe(1);
+ });
+ it("rejects model execution without independent feature gate or signed positive consent",async()=>{
+  const person=await client(),db=new Database();
+  let calls=0;
+  const deps={...db.makeDeps(),sendModel:async()=>{calls++;throw Error("SHOULD_NOT_SEND");}};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const prompt="做一個有動畫的多人骰子遊戲";
+  const created=await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt
+  },"candidate_nobudget_123456"),env);
+  expect(created.status).toBe(201);
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/model-plan";
+  const body={anonymous_id:OWNER,prompt,model_call_key:"model_plan_123456",
+   max_charge_cents:5,max_output_tokens:512,explicit_ai_consent:true};
+  const disabled=await fetch(await signed(person,path,body,"model_request_123456"),env);
+  expect(disabled.status).toBe(404);
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const noBudget=await fetch(await signed(person,path,body,"model_request_123456"),enabled);
+  expect(noBudget.status).toBe(503);
+  expect(calls).toBe(0);
  });
  it("does not interpret untrusted user prompt as source code or run AI",async()=>{
   const person=await client(),database=new Database();
