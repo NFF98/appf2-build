@@ -1,4 +1,5 @@
 import {runBrowserQa,runRepairQa} from "./sp35-universal-browser-runner.mjs";
+import {createPaidRepair} from "./sp35-universal-repair-model.mjs";
 // Both programs are deliberately different. The engine must not know their category.
 const newIdea="我發明了一種收藏星球標本的新工具，按新增要累計，按瀏覽顯示清單";
 const plan={version:"1",criteria:[
@@ -34,5 +35,24 @@ if(blocked.status!=="FAILED")throw Error("QA_BROKEN_PUBLISHED");
 const review={...plan,criteria:[{...plan.criteria[0],automatable:false}]};
 const untested=await runRepairQa({draft:{title:"x",javascript:good},plan:review,maxRepairs:2});
 if(untested.status!=="NEEDS_HUMAN")throw Error("QA_UNTESTED_FALSE_PASS");
+
+let paid=0;
+const mock=async()=>{paid++;return {ok:true,json:async()=>({choices:[{
+ finish_reason:"stop",message:{content:JSON.stringify({title:"repaired",javascript:good})}
+}]})};};
+const opts={provider:"openai",model:"test",apiKey:"dummy",prompt:newIdea,
+ request:mock,maxRepairs:2};
+const noConsent=createPaidRepair({...opts,consented:false});
+if(await noConsent({title:"x",javascript:broken},plan,fail,1)!==null||paid!==0)
+ throw Error("QA_HIDDEN_PAID_REPAIR");
+const consented=createPaidRepair({...opts,consented:true});
+const paidResult=await runRepairQa({draft:{title:"x",javascript:broken},plan,
+ maxRepairs:2,repair:consented});
+if(paidResult.status!=="VERIFIED"||paid!==1)
+ throw Error("QA_CONSENTED_REPAIR_FAILURE");
+if(await consented({title:"x",javascript:broken},plan,fail,2)===null||paid!==2)
+ throw Error("QA_SECOND_REPAIR_NOT_BOUNDED");
+if(await consented({title:"x",javascript:broken},plan,fail,3)!==null||paid!==2)
+ throw Error("QA_THIRD_REPAIR_ATTEMPTED");
 console.log("UNIVERSAL QA PASS: 2 distinct requirements, broken view rejected, corrected code verified; "+
  "no-AI repair adapter bounded, human-only requirements blocked; model calls=0");
