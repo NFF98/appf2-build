@@ -11,7 +11,7 @@ const plan={version:"1",criteria:[
   assertions:[{kind:"text_includes",text:"標本清單"}]}
 ]};
 if(!plan.criteria.every(c=>newIdea.includes(c.source_quote)))throw Error("QA_FIXTURE_INVALID");
-plan.criteria.push({id:"score_math",source_quote:"增加",description:"deterministic math",automatable:true,
+plan.criteria.push({id:"score_math",source_quote:"新增",description:"deterministic math",automatable:true,
  steps:[],assertions:[{kind:"pure_case",function_name:"specimenScore",input:[[2,4,6]],expected:12}]});
 const good=`
 const root=document.getElementById("app");let n=0;
