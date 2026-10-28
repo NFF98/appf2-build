@@ -4,16 +4,16 @@ import { routePublishedApps } from "../../src/edge/published-apps.js";
 import type { BlueprintDeliveryComposition } from "../../src/edge/blueprint-delivery.js";
 import type { Appf2WorkerEnv } from "../../src/edge/worker-composition.js";
 import type { PostgresExecutor } from "../../src/platform/blueprint/postgres-blueprint-repository.js";
-import type { WorkerRequestDbContext } from "../../src/platform/blueprint/worker-postgres-executor.js";
+
 const ORIGIN="https://appf2.test";
 const HASH="sha256:"+"b".repeat(64),ID="0199f5d0-53e8-7505-adf6-bc4c744fe0c7";
-const ANON="0199f5d0-53e8-7505-adf6-bc4c744fe0c8",SHARE="0199f5d0-53e8-4505-8df6-bc4c744fe0c7";
+const ANON="0199f5d0-53e8-7505-adf6-bc4c744fe0c8";
 const SECRET="a".repeat(64);
 const env={APPF2_IDENTITY_COOKIE_SECRET:SECRET} as Appf2WorkerEnv;
 function setup(){
  const rows:{share_id:string;title:string;content_hash:string;owner:string;key:string}[]=[];
- let modelCalls=0;
- const dbFactory=(_context:WorkerRequestDbContext)=>{
+ const modelCalls=0;
+ const dbFactory=()=>{
   const db:PostgresExecutor&{close:()=>Promise<void>}={
    close:async()=>undefined,
    query:async <T>(sql:string,parameters:readonly unknown[])=>{
@@ -31,7 +31,7 @@ function setup(){
   };
   return db;
  };
- const delivery=(_env:Appf2WorkerEnv,_ctx:WorkerRequestDbContext):BlueprintDeliveryComposition=>({
+ const delivery=():BlueprintDeliveryComposition=>({
    executor:{close:async()=>undefined},
    lineage:{
     verifyLineage:async hash=>({verified:true,content_hash:hash,own_validation_run_id:"valid",registry_digest:"valid",trust_status:"VALIDATED"}),
