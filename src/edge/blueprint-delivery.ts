@@ -96,6 +96,7 @@ function exactContentHashQuery(url: URL): string | null {
 }
 
 interface DeliveryRequest {
+  readonly publicShareFactory?: (env:Appf2WorkerEnv,shareId:string)=>BlueprintDeliveryComposition;
   readonly request: Request;
   readonly url: URL;
   readonly env: Appf2WorkerEnv;
@@ -110,6 +111,18 @@ async function withComposition<T>(delivery: DeliveryRequest, context: WorkerRequ
   } finally {
     await composition.executor.close().catch(() => undefined);
   }
+}
+
+/** Public share is an explicit published reference, NOT a hash and NOT the original owner's credentials. */
+async function withShare<T>(d:DeliveryRequest,shareId:string,run:(c:BlueprintDeliveryComposition)=>Promise<T>):Promise<T>{
+  if(d.publicShareFactory===undefined)throw new Error("Public share delivery not configured");
+  const composition=d.publicShareFactory(d.env,shareId);
+  try{return await run(composition);}finally{await composition.executor.close().catch(()=>undefined);}
+}
+function shareFor(d:DeliveryRequest):string|null{
+  const id=d.request.headers.get("X-Appf2-Share-Id");
+  return id!==null && isUuid(id) && d.request.headers.get("Authorization")===null &&
+    d.request.method==="GET" && isFirstPartyRead(d.request,d.url) && d.url.search==="" ? id : null;
 }
 
 /** F01-API-ID-001B: scoped cookie + same-key fresh read proof + exact durable F01→F02 lineage, then a ≤60 s grant. */
@@ -157,6 +170,16 @@ async function authorizedGrant(delivery: DeliveryRequest, contentHash: string): 
 
 /** §8.1 item 5: the grant and lineage are revalidated on every read before any byte of the body is exposed. */
 async function deliverBody(delivery: DeliveryRequest, contentHash: string): Promise<Response> {
+  if(delivery.request.headers.has("X-Appf2-Share-Id")){
+    const id=shareFor(delivery);
+    if(id===null||!CONTENT_HASH_PATTERN.test(contentHash))return errorResponse(NOT_FOUND,PRIVATE_NO_STORE);
+    const read=await withShare(delivery,id,c=>c.lineage.readCanonicalBody(contentHash));
+    if(read.kind!=="FOUND")return errorResponse(NOT_FOUND,PRIVATE_NO_STORE);
+    return new Response(new Uint8Array(read.bytes),{status:200,headers:{
+      "Content-Type":"application/json; charset=utf-8","Cache-Control":PRIVATE_NO_STORE,
+      Vary:AUTHORIZATION_VARY,"Referrer-Policy":"no-referrer"
+    }});
+  }
   const grant = await authorizedGrant(delivery, contentHash);
   if (grant === null) return errorResponse(NOT_FOUND, PRIVATE_NO_STORE);
   const read = await withComposition(delivery, { anonymousId: grant.anonymousId, intentId: grant.intentId }, (c) =>
@@ -181,6 +204,13 @@ function lineageAuthorizes(lineage: OriginalIntentLineage): boolean {
 
 /** Fresh EXECUTION-ADMISSION decision, only after grant + lineage authorization; never cached as an allow. */
 async function admitExecution(delivery: DeliveryRequest, contentHash: string): Promise<Response> {
+  if(delivery.request.headers.has("X-Appf2-Share-Id")){
+    const id=shareFor(delivery);
+    if(id===null||!CONTENT_HASH_PATTERN.test(contentHash))return errorResponse(NOT_FOUND,PRIVATE_NO_STORE);
+    const decision=await withShare(delivery,id,c=>c.admission.admit(contentHash));
+    if(!decision.executable)return errorResponse(DENIAL_ERRORS[decision.step],ADMISSION_CACHE);
+    return envelope({data:decision.admission},200,{"Cache-Control":ADMISSION_CACHE,Vary:AUTHORIZATION_VARY});
+  }
   const grant = await authorizedGrant(delivery, contentHash);
   if (grant === null) return errorResponse(NOT_FOUND, PRIVATE_NO_STORE);
   const decision = await withComposition(delivery, { anonymousId: grant.anonymousId, intentId: grant.intentId }, async (c) =>
