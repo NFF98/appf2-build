@@ -86,7 +86,7 @@ export class AppLauncher {
     if(delivered===undefined)return this.set({kind:"FAILED",contentHash:identity,failure:"NOT_FOUND"});
     if(!delivered.ok)return this.set({kind:"FAILED",contentHash:identity,failure:delivered.failure});
     const contentHash=target.kind==="OWNER"?target.contentHash:
-      ("contentHash" in delivered?delivered.contentHash:identity);
+      ("contentHash" in delivered && typeof delivered.contentHash==="string"?delivered.contentHash:identity);
     const { host } = this.dependencies;
     if (host === null) return this.set({kind:"FAILED",contentHash,failure:"RUNTIME_REJECTED"});
     this.set({kind:"HYDRATING",contentHash});
