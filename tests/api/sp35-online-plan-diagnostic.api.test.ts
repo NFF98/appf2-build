@@ -1,6 +1,5 @@
 import {describe,it,expect} from "vitest";
-import {QA_PLANNER_PROMPT} from "../../src/platform/qa/requirement-planner.js";
-import {parseQaPlan} from "../../src/platform/qa/requirement-contract.js";
+import {QA_PLANNER_PROMPT,normalizeModelQaPlan} from "../../src/platform/qa/requirement-planner.js";
 // Exactly ONE one-time paid model call on explicit staging-only marker.
 // Logs SCHEMA PROPERTIES only; never logs source, keys or full model content.
 describe("one-shot real unknown-idea acceptance plan diagnostic",()=>{
@@ -32,15 +31,15 @@ describe("one-shot real unknown-idea acceptance plan diagnostic",()=>{
    quoteLength:typeof c.source_quote==="string"?c.source_quote.length:-1,
    descriptionLength:typeof c.description==="string"?c.description.length:-1,
    automatable:c.automatable,stepsCount:Array.isArray(c.steps)?c.steps.length:-1,
-   stepShapes:Array.isArray(c.steps)?c.steps.map(x=>({action:x?.action,role:x?.role,nameType:typeof x?.name})):[],
+   stepShapes:Array.isArray(c.steps)?c.steps.map(x=>({action:x?.action,role:x?.role,nameType:typeof x?.name,valueType:typeof x?.value})):[],
    assertionShapes:Array.isArray(c.assertions)?c.assertions.map(x=>({
     kind:x?.kind,role:x?.role,nameType:typeof x?.name,
     textType:typeof x?.text,selectorType:typeof x?.selector,
     keys:x&&typeof x==="object"?Object.keys(x):[]
    })):[],
-   individuallyAccepted:parseQaPlan({version:"1",criteria:[c]},prompt)!==null
+   individuallyAcceptedAfterIdFix:normalizeModelQaPlan({version:"1",criteria:[c]},prompt)!==null
   }));
-  const valid=parseQaPlan(parsed,prompt);
+  const valid=normalizeModelQaPlan(parsed,prompt);
   console.log("INDEPENDENT_QA_PLAN_DIAGNOSTIC:"+JSON.stringify({
    finish:answer?.finish_reason,
    parsed:parsed!==null,version:record?.version,

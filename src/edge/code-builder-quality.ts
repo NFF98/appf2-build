@@ -126,7 +126,8 @@ async function modelJson(env:Appf2WorkerEnv,messages:CompletionMessage[],tokens:
 export async function generateQaPlan(env:Appf2WorkerEnv,prompt:string):Promise<QaPlan|null>{
  const raw=await modelJson(env,[{role:"system",content:QA_PLANNER_PROMPT},{role:"user",content:prompt}],2500);
  const plan=normalizeModelQaPlan(raw,prompt);
- if(!plan||plan.criteria.length===0||plan.criteria.some(c=>!c.automatable))return null;
+ if(!plan||plan.criteria.length===0)throw Error("QA_PLAN_SCHEMA_REJECTED");
+ if(plan.criteria.some(c=>!c.automatable))throw Error("QA_PLAN_REQUIRES_HUMAN_REVIEW");
  return plan;
 }
 export async function repairQaCode(env:Appf2WorkerEnv,draft:QaDraft,plan:QaPlan,

@@ -115,10 +115,13 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
    [shareId,checked.title,verified.blueprint_hash,JSON.stringify(pkg)])).rows[0]);
   if(saved===undefined)throw Error("ARTIFACT_SAVE_FAILED");
   return answer(201,{data:{share_id:shareId,blueprint_hash:verified.blueprint_hash,url:"/code/"+shareId,status:"ACTIVE"}});
- }catch{
+ }catch(e){
   await db(env,identity,deps,async executor=>{await executor.query(FAIL,[shareId]);}).catch(()=>undefined);
-  // No user prompt, code, keys, model response or internal stack traces in the receipt.
-  return answer(422,{error:"CODE_BUILD_FAILED_NO_PUBLISHED_APP",phase});
+  // Only a small server-defined error vocabulary is exposed, never provider data or source code.
+  const message=e instanceof Error?e.message:"";
+  const reason=["QA_PLAN_SCHEMA_REJECTED","QA_PLAN_REQUIRES_HUMAN_REVIEW","QA_MODEL_UNAVAILABLE"].includes(message)?
+    message:"UNCLASSIFIED";
+  return answer(422,{error:"CODE_BUILD_FAILED_NO_PUBLISHED_APP",phase,reason});
  }
 }
 async function read(ctx:{url:URL;env:Appf2WorkerEnv;deps:CodeBuilderDeps},id:string):Promise<Response>{
