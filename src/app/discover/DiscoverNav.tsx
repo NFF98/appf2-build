@@ -2,6 +2,7 @@ type DiscoverNavProps = {
   readonly variant: "header" | "bottom";
   readonly onHome: () => void;
   readonly onExplore: () => void;
+  readonly onApps: () => void;
 };
 
 const HomeIcon = () => (
@@ -22,11 +23,8 @@ const AppsIcon = () => (
   </svg>
 );
 
-/**
- * S01 navigation: 首頁 | 探索靈感 | 我的 App. Desktop renders it in the header, Mobile as the fixed bottom
- * nav (no hamburger, no Create). 「我的 App」 is an approved unavailable placeholder, marked by text, not color.
- */
-export function DiscoverNav({ variant, onHome, onExplore }: DiscoverNavProps) {
+/** S01 navigation: 首頁 | 探索靈感 | 我的 App（same-tab local reusable apps）. */
+export function DiscoverNav({ variant, onHome, onExplore, onApps }: DiscoverNavProps) {
   const label = variant === "header" ? "主要導覽" : "主要導覽（底部）";
   return (
     <nav className={`discover-nav discover-nav-${variant}`} aria-label={label}>
@@ -44,11 +42,10 @@ export function DiscoverNav({ variant, onHome, onExplore }: DiscoverNavProps) {
           </button>
         </li>
         <li>
-          <span className="discover-nav-item is-unavailable" aria-disabled="true">
+          <button type="button" className="discover-nav-item" onClick={onApps}>
             {variant === "bottom" ? <AppsIcon /> : null}
             <span>我的 App</span>
-            <span className="soon-badge">Soon</span>
-          </span>
+          </button>
         </li>
       </ul>
     </nav>
