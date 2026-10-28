@@ -10,12 +10,15 @@ const plan={version:"1",criteria:[
   assertions:[{kind:"text_includes",text:"標本清單"}]}
 ]};
 if(!plan.criteria.every(c=>newIdea.includes(c.source_quote)))throw Error("QA_FIXTURE_INVALID");
+plan.criteria.push({id:"score_math",source_quote:"增加",description:"deterministic math",automatable:true,
+ steps:[],assertions:[{kind:"pure_case",function_name:"specimenScore",input:[[2,4,6]],expected:12}]});
 const good=`
 const root=document.getElementById("app");let n=0;
 root.innerHTML='<p id="score">收藏數：0</p><button>新增</button><button>瀏覽</button><div id="view"></div>';
 const buttons=root.querySelectorAll("button");
 buttons[0].onclick=()=>{n++;root.querySelector("#score").textContent="收藏數："+n;};
 buttons[1].onclick=()=>root.querySelector("#view").textContent="標本清單";
+window.specimenScore=(items)=>items.reduce((sum,x)=>sum+x,0);
 `;
 const broken=good.replace('root.querySelector("#view").textContent="標本清單"','root.querySelector("#view").textContent="歡迎"');
 const pass=await runBrowserQa({title:"novel",javascript:good},plan);

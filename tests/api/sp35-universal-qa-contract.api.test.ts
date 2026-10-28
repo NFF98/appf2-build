@@ -18,6 +18,11 @@ describe("universal independent acceptance (not dice-specific)",()=>{
   expect(parseQaPlan({version:"1",criteria:[criteria[0],criteria[0]]},prompt)).toBeNull();
   expect(summarizeQa(plan,[{id:"increase",verdict:"PASS",detail:"changed"}]).passed).toBe(false);
  });
+ it("rejects unsafe pure calculation test injection before execution",()=>{
+  const c={...criteria[0],assertions:[{kind:"pure_case",function_name:"__score",input:[[2,4,6]],expected:12}]};
+  expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,assertions:[{...c.assertions[0],function_name:"alert();"}]}]},prompt)).toBeNull();
+ });
  it("passes only with evidence for ALL requested interactions",async()=>{
   const value=await verifyAndRepair({title:"novel",javascript:"good"},plan,
     async()=>criteria.map(x=>({id:x.id,verdict:"PASS" as const,detail:"browser observed"})));

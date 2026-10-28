@@ -36,6 +36,15 @@ async function check(frame,assertion,before){
   return await frame.locator(assertion.selector).count()===assertion.count;
  if(assertion.kind==="visible")
   return await locator(frame,assertion.role,assertion.name).isVisible();
+ if(assertion.kind==="pure_case"){
+  const value=await frame.locator("#app").evaluate((node,probe)=>{
+   const win=node.ownerDocument.defaultView;
+   const fn=win?.[probe.function_name];
+   if(typeof fn!=="function")return {error:"NO_PURE_FUNCTION"};
+   return fn(...probe.input);
+  },assertion);
+  return JSON.stringify(value)===JSON.stringify(assertion.expected);
+ }
  if(assertion.kind==="text_changes")
   return before[assertion.selector]!==await frame.locator(assertion.selector).first().innerText();
  return false;
