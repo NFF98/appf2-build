@@ -16,6 +16,10 @@ type Surface = "DISCOVER" | "CREATE";
 
 const CREATE_HISTORY_STATE = "appf2-create";
 const EMPTY_DRAFT: ComposerDraft = { text: "", capsuleId: null };
+function shareFromPath():string|null{
+  const match=/^\/share\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/?$/iu.exec(window.location.pathname);
+  return match?.[1]??null;
+}
 
 type AppProps = {
   readonly controller: CreationController;
@@ -64,8 +68,9 @@ function workspaceLaunchProps(launch: LaunchState, contentHash: string | null, l
 export function App({ controller, drafts, launcher }: AppProps) {
   const session = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const launch = useSyncExternalStore(launcher.subscribe, launcher.getSnapshot);
-  const [restoredTarget, setRestoredTarget] = useState<ValidatedTarget | null>(()=>readTabAppTarget());
-  const [surface, setSurface] = useState<Surface>(()=>readTabAppTarget()===null?"DISCOVER":"CREATE");
+  const [publicShareId,setPublicShareId]=useState<string|null>(shareFromPath);
+  const [restoredTarget, setRestoredTarget] = useState<ValidatedTarget | null>(()=>shareFromPath()===null?readTabAppTarget():null);
+  const [surface, setSurface] = useState<Surface>(()=>shareFromPath()===null&&readTabAppTarget()===null?"DISCOVER":"CREATE");
   const [draft, setDraft] = useState<ComposerDraft>(() => drafts.load() ?? EMPTY_DRAFT);
   const [savedApps, setSavedApps] = useState(() => readSavedTabApps());
   // A second tab can save/forget Apps without making the open tab lose its card list.
@@ -87,7 +92,8 @@ export function App({ controller, drafts, launcher }: AppProps) {
     () => (launch.kind === "READY" ? new AppSession({ contentHash: launch.contentHash, app: launch.app }) : null),
     [launch]
   );
-  const showingApp = surface === "CREATE" && launch.kind === "READY" && launch.contentHash === validatedHash && appSession !== null;
+  const showingApp = surface==="CREATE"&&launch.kind==="READY"&&appSession!==null&&
+    (publicShareId!==null||launch.contentHash===validatedHash);
 
   useEffect(() => {
     if (acceptedIntent !== null) drafts.clearSubmitted(acceptedIntent);
@@ -104,11 +110,15 @@ export function App({ controller, drafts, launcher }: AppProps) {
   }, [surface, launch, validatedHash, validatedIntentId]);
 
   useEffect(() => {
-    if (surface === "CREATE" && validatedIntentId !== null && validatedHash !== null) launcher.launch(validatedIntentId, validatedHash);
-  }, [launcher, surface, validatedHash, validatedIntentId]);
+    if(surface!=="CREATE")return;
+    if(publicShareId!==null)launcher.launchShared(publicShareId);
+    else if(validatedIntentId!==null&&validatedHash!==null)launcher.launch(validatedIntentId,validatedHash);
+  },[launcher,surface,publicShareId,validatedHash,validatedIntentId]);
 
   const returnToDiscover = useCallback(() => {
     clearTabAppTarget();
+    setPublicShareId(null);
+    if(window.location.pathname.startsWith("/share/"))window.history.replaceState(null,"","/");
     setRestoredTarget(null);
     launcher.reset();
     controller.leave();
@@ -120,7 +130,9 @@ export function App({ controller, drafts, launcher }: AppProps) {
   useEffect(() => {
     const onPopState = (): void => {
       const current = controller.getSnapshot();
-      if (window.history.state !== CREATE_HISTORY_STATE) returnToDiscover();
+      const shared=shareFromPath();
+      if(shared!==null){setPublicShareId(shared);setRestoredTarget(null);setSurface("CREATE");}
+      else if (window.history.state !== CREATE_HISTORY_STATE) returnToDiscover();
       else {
         // History navigation to an existing compiled App must NEVER re-run F01.
         const target=readTabAppTarget();
@@ -143,6 +155,7 @@ export function App({ controller, drafts, launcher }: AppProps) {
 
   const create = (): void => {
     if (controller.start(draft.text, draft.capsuleId) === "IGNORED") return;
+    setPublicShareId(null);
     setRestoredTarget(null);
     launcher.reset();
     window.history.pushState(CREATE_HISTORY_STATE, "");
@@ -160,17 +173,26 @@ export function App({ controller, drafts, launcher }: AppProps) {
     setSurface("CREATE");
   };
 
+  const openPublic=(shareId:string):void=>{
+    controller.leave();launcher.reset();
+    clearTabAppTarget();setRestoredTarget(null);
+    setPublicShareId(shareId);
+    window.history.pushState(CREATE_HISTORY_STATE,"","/share/"+encodeURIComponent(shareId));
+    setSurface("CREATE");
+  };
+
   const forgetSaved = (target: TabAppTarget): void => {
     setSavedApps(forgetSavedTabApp(target));
   };
 
   const back = (): void => {
+    if (publicShareId!==null)return returnToDiscover();
     if (window.history.state === CREATE_HISTORY_STATE) window.history.back();
     else returnToDiscover();
   };
 
   if (showingApp) return <AppStage key={launch.contentHash} session={appSession} onHome={back} />;
-  if (surface === "CREATE" && restoredTarget !== null) {
+  if (surface === "CREATE" && (restoredTarget !== null || publicShareId!==null)) {
     return (
       <main className="app-recovery" role="status">
         <p>{launch.kind === "FAILED" ? "先前的 App 無法安全恢復。" : "正在安全恢復先前的 App…"}</p>
@@ -184,5 +206,5 @@ export function App({ controller, drafts, launcher }: AppProps) {
     );
   }
   return <DiscoverScreen draft={draft} onDraftChange={changeDraft} onCreate={create}
-    savedApps={savedApps} onOpenSaved={openSaved} onForgetSaved={forgetSaved} />;
+    savedApps={savedApps} onOpenSaved={openSaved} onForgetSaved={forgetSaved} onOpenPublic={openPublic} />;
 }
