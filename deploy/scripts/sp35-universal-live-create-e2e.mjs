@@ -11,14 +11,15 @@ const samples=[
 ];
 const browser=await chromium.launch({headless:true});const outcomes=[];
 try{
- for(const sample of samples){
+ for(const sample of samples.filter(x=>process.env.APPF2_QA_NOTES_ONLY!=="1"||x.kind==="notes")){
   const ctx=await browser.newContext(),page=await ctx.newPage();
   let calls=0;
   let receipt=null;
   page.on("response",response=>{
    if(response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/code-apps"){
     void response.json().then(data=>{receipt={
-     http:response.status(),error:data?.error??null,phase:data?.phase??null
+     http:response.status(),error:data?.error??null,phase:data?.phase??null,
+     reason:data?.reason??null
     };}).catch(()=>{receipt={http:response.status(),error:"RESPONSE_NOT_JSON"};});
    }
   });
@@ -81,7 +82,7 @@ try{
   outcomes.push({kind:sample.kind,status:"VERIFIED_AND_PUBLIC",id,hash:record.blueprint_hash});
   await ctx.close();
  }
- console.log("GENERIC_ONLINE_QA_2_CATEGORIES: "+JSON.stringify(outcomes));
+ console.log("GENERIC_ONLINE_QA_RESULTS: "+JSON.stringify(outcomes));
  if(outcomes.some(x=>x.status!=="VERIFIED_AND_PUBLIC"))
   throw Error("GENERIC_QUALITY_PIPELINE_NOT_READY");
 }finally{await browser.close();}

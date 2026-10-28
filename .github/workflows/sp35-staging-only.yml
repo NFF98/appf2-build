@@ -286,7 +286,9 @@ jobs:
       - name: Real corrected public Blueprint v2 from PostgreSQL browser acceptance (NO AI)
         run: node deploy/scripts/sp35-corrected-dice-live-card.mjs
       - name: Two new unrelated apps through live generic QA admission (paid ONLY on once marker)
-        if: contains(github.event.head_commit.message, '[SP35-QA-ONCE]')
+        if: contains(github.event.head_commit.message, '[SP35-QA-ONCE]') || contains(github.event.head_commit.message, '[SP35-QA-NOTES-ONCE]')
+        env:
+          APPF2_QA_NOTES_ONLY: ${{ contains(github.event.head_commit.message, '[SP35-QA-NOTES-ONCE]') && '1' || '0' }}
         run: node deploy/scripts/sp35-universal-live-create-e2e.mjs
       - name: Audit existing published eighteen dice App against real requirements (NO AI)
         run: node deploy/scripts/sp35-dice-published-audit-no-ai.mjs
