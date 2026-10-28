@@ -78,6 +78,13 @@ export class S03WorkerHost {
     return new S03WorkerHost(outDir, module.createS03Backend(), module.S03_BACKEND_PROVENANCE);
   }
 
+  /** Runtime fixture modules are loaded through Vite SSR so registry JSON imports are correct on Node 22. */
+  public static async loadFixture<T>(path:string):Promise<T>{
+    shared ??=buildOnce();
+    const {vite}=await shared;
+    return (await vite.ssrLoadModule(path)) as T;
+  }
+
   /** Releases the shared build; call once from `afterAll`. */
   public static async shutdown(): Promise<void> {
     const current = shared;
