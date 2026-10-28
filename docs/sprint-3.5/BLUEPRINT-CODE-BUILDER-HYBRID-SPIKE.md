@@ -1,7 +1,20 @@
 # APPf2 Sprint 3.5 — Hybrid Blueprint / Code Artifact implementation slice
 
-Source: [APPf2 Design PR #45](https://github.com/NFF98/appf2-design/pull/45), Working document at commit `c67cabca3b65cf65b1b5d4db26e3ad50ee5a8e74`.
+Source: [APPf2 Design PR #45](https://github.com/NFF98/appf2-design/pull/45), revised Working architecture at commit `f45517f97950d3e78aee20694adefbcefd1ed653` (final code-first single-generator decision).
 Status: **Design-first experimental Build slice on PR #419**. Not a production user-facing Code Builder, not a version promotion of F02 v1. Sprint 4 not started.
+
+## Final product direction (2026-10-28 user decision)
+
+**One natural-language request → one general AI Code Builder → Blueprint v2 → automatic compile/security/real browser tests → one shareable App card.**
+
+- New App creation is **code-first by default**, regardless of whether the user requests a game, list, form, financial tool or animation. Never route new requests to a fixed Blueprint component generator solely based on App category.
+- Blueprint v2 is **the packaging/identity/permissions/state-reference/version/share contract**, not a restricted menu of UI primitives that limits generated code. The exact built code artifact/manifest is pinned by hash. Mutable personal state is kept separately and is never placed in public shared bundles.
+- Frontend uses only execution profiles approved by sandbox policy; initially isolated static Web Apps. Code requiring a backend, payments, camera or network is not automatically enabled. Technical profile is NOT a second AI generation method.
+- A provisional Blueprint may be prepared before build, but **final immutable published Blueprint is sealed only after** independent build, test and artifact hash admission. Never publish an unbuilt draft or count a model's text as a working App.
+- Existing v1 Native Blueprint F02/F03 is retained **only for backward compatibility with prior App cards**. It is not a competing new-product engine.
+- Once a version is admitted and published, F05/My Apps can reopen that exact code/version without a new paid model generation. Approved platform hosting/network/runtime costs are separate.
+
+**Implementation truth:** current H1/H3a prototype demonstrates integrity/opaque-frame isolation and generic execution using deterministic prewritten scripts. The real AI-generated project → isolated compiler → immutable R2 object → F02 v2 admission → F05 shared v2 card → F03 state bridge pipeline is **not** implemented yet. No production enablement and no claimed full E2E.
 
 ## Technical decisions
 
@@ -9,7 +22,7 @@ Status: **Design-first experimental Build slice on PR #419**. Not a production u
 - `CodeArtifactEnvelopeV2` is a separate strict type; never feed it to the existing F02 v1 validator or silently rename `schema_version=1.0.0`.
 - A `WEB_STATIC_V1` prototype uses an immutable **JS asset plus exact manifest**, with independent SHA-256 bytes, manifest, and canonical envelope checks. Strict fixed-size resource ceilings and unknown-key rejection, no external URL or import, no raw bundle grants from only knowing a hash.
 - Frontend **cannot mount code into the APPf2 origin**. A sandboxed iframe (without `allow-same-origin`) receives *already hash-validated* JS and an integrity-bound CSP with `default-src 'none'`, no network/form/frame/object/worker. No host cookie, token, appf2 database access or parent DOM access.
-- First implementation is *only* standalone executable contract + isolated-frame demonstration and security tests (Design H1/H3), **not yet Code Builder full backend**. File metadata + JS bytes are supplied by explicit trusted test harness; there is no public artifact-write/read endpoint, no R2 upload, no share-card route for v2, no AI source generation, and no F02 production admission or F03 runtime integration.
+- First implementation is *only* standalone executable contract + isolated-frame demonstration and security tests (Design H1/H3a), **not yet Code Builder full backend**. File metadata + JS bytes are supplied by explicit trusted test harness; there is no public artifact-write/read endpoint, no R2 upload, no share-card route for v2, no AI source generation, and no F02 production admission or F03 runtime integration.
 - HTML/CSS framework bundles, React dependencies, image/game assets, server workloads and dedicated storage/bridge integration are **future format/permission profiles**, not “supported” by the prototype.
 - Host controls the frame lifecycle and can tear it down on navigation; any runtime state inside stays temporary unless a future *typed, authenticated bridge* is implemented. No localStorage or parent-to-child API at this stage.
 
@@ -24,7 +37,7 @@ Status: **Design-first experimental Build slice on PR #419**. Not a production u
 ## Next bounded increments
 
 - H4: controlled Cloudflare Sandbox build, compiled output + SBOM + verified immutable R2 persistence (consent/billing controls).
-- H5: actual v2 F02 admission + F05 F03 recipient delivery, isolated state bridge, real stranger browser.
+- H3b/H5: authenticated restricted F03 state bridge, actual v2 F02 admission + F05 recipient delivery, real stranger browser.
 - H6/H7: adversarial runtime containment plus two unrelated AI-generated styles from the **same generic code path**, no per-game case handling.
 
 No automatic paid AI test, no release merge, no blanket statement that “any game works”.
