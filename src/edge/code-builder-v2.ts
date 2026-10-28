@@ -4,6 +4,7 @@ import {WorkerPostgresExecutor,NO_REQUEST_DB_CONTEXT} from "../platform/blueprin
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 import {appf2ModelProviderConfig} from "../platform/compiler/appf2-model-provider.js";
 import {codeBuilderModelRequest,readCodeBuilderCompletion,CODE_BUILDER_GENERATION_TIMEOUT_MS} from "./code-builder-generation-contract.js";
+import {qualityGateCode} from "./code-builder-quality.js";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const JSON_HEADERS={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"};
 const CREATE="/api/v1/code-apps",ITEM=/^\/api\/v1\/code-apps\/([^/]+)$/u;
@@ -23,7 +24,7 @@ const LIST=`SELECT share_id::text,title,blueprint_hash FROM public.appf2_code_ap
  WHERE status='ACTIVE' ORDER BY created_at DESC LIMIT 12`;
 type Identity={anonymousId:string|null;intentId:string|null};
 export type CodeBuilderDb={query:<T>(sql:string,args:readonly unknown[])=>Promise<{rows:readonly T[]}>;close:()=>Promise<void>};
-export type CodeBuilderDeps={db?:(env:Appf2WorkerEnv,identity:Identity)=>CodeBuilderDb;generate?:(env:Appf2WorkerEnv,prompt:string)=>Promise<{title:string;javascript:string}|null>};
+export type CodeBuilderDeps={db?:(env:Appf2WorkerEnv,identity:Identity)=>CodeBuilderDb;generate?:(env:Appf2WorkerEnv,prompt:string)=>Promise<{title:string;javascript:string}|null>;quality?:(env:Appf2WorkerEnv,prompt:string,draft:{title:string;javascript:string},allowRepair:boolean)=>Promise<{title:string;javascript:string}|null>};
 const answer=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:JSON_HEADERS});
 const denied=()=>answer(404,{error:"CODE_APP_NOT_FOUND"});
 const unavailable=()=>answer(503,{error:"CODE_APP_UNAVAILABLE"});
@@ -63,13 +64,16 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
  let data:unknown;try{data=JSON.parse(new TextDecoder().decode(body));}catch{return answer(400,{error:"INVALID_INPUT"});}
  if(typeof data!=="object"||data===null||Array.isArray(data))return answer(400,{error:"INVALID_INPUT"});
  const raw=data as Record<string,unknown>;
- if(Object.keys(raw).length!==3||!UUID.test(String(raw.anonymous_id))||
- typeof raw.prompt!=="string"||raw.prompt.trim().length<5||raw.prompt.length>800||raw.public_opt_in!==true)
+ if((Object.keys(raw).length!==3&&Object.keys(raw).length!==4)||!UUID.test(String(raw.anonymous_id))||
+ typeof raw.prompt!=="string"||raw.prompt.trim().length<5||raw.prompt.length>800||raw.public_opt_in!==true||
+ (Object.keys(raw).length===4&&(raw.allow_auto_repair!==true||!Object.hasOwn(raw,"allow_auto_repair"))))
  return answer(400,{error:"INVALID_INPUT_OR_PUBLIC_CONSENT"});
  const proof=await verifyMutationProof({method:"POST",path:CREATE,body,
    idempotencyKey:key,headers:request.headers},Date.now());
  if(proof===null)return denied();
  const anonymousId=String(raw.anonymous_id),prompt=String(raw.prompt).trim(),identity={anonymousId,intentId:null};
+ // No paid model call and no public card when the independent browser cannot run.
+ if(!env.APPF2_QA_BROWSER&&!deps.quality)return answer(503,{error:"QA_BROWSER_UNAVAILABLE_NO_CHARGE"});
  const previous=await db(env,identity,deps,async executor=>
    (await executor.query<{share_id:string;status:string;blueprint_hash:string|null}>(PRIOR,[proof.keyThumbprint,key,anonymousId])).rows[0]);
  if(previous!==undefined){
@@ -90,11 +94,15 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
  try{
   const code=await (deps.generate??generateCodeApp)(env,prompt);
   if(code===null)throw Error("MODEL_INVALID");
-  const pkg=await makePrototypeCodeArtifact(code.title,code.javascript);
+  // Never promote a merely-hashed draft. This step uses independently planned
+  // requirements and actual isolated-browser evidence before ACTIVE.
+  const checked=await (deps.quality??qualityGateCode)(env,prompt,code,raw.allow_auto_repair===true);
+  if(checked===null)throw Error("QA_NOT_VERIFIED");
+  const pkg=await makePrototypeCodeArtifact(checked.title,checked.javascript);
   const verified=await verifyPrototypeCodeArtifact(pkg);
   if(!verified.ok)throw Error("ARTIFACT_NOT_ADMITTED");
   const saved=await db(env,identity,deps,async executor=>(await executor.query<{share_id:string}>(FINISH,
-   [shareId,code.title,verified.blueprint_hash,JSON.stringify(pkg)])).rows[0]);
+   [shareId,checked.title,verified.blueprint_hash,JSON.stringify(pkg)])).rows[0]);
   if(saved===undefined)throw Error("ARTIFACT_SAVE_FAILED");
   return answer(201,{data:{share_id:shareId,blueprint_hash:verified.blueprint_hash,url:"/code/"+shareId,status:"ACTIVE"}});
  }catch{
