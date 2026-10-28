@@ -7,6 +7,7 @@ import { DiscoverNav } from "./DiscoverNav.js";
 import { Inspiration } from "./Inspiration.js";
 import { SavedApps } from "./SavedApps.js";
 import { PublicApps } from "./PublicApps.js";
+import {CodeBuilderPanel} from "../code-builder/CodeBuilderPanel.js";
 import type { SavedTabApp, TabAppTarget } from "../shell/tab-app-recovery.js";
 
 export type ComposerDraft = {
@@ -65,6 +66,7 @@ export function DiscoverScreen({ draft, onDraftChange, onCreate, savedApps, onOp
             意圖就是 <span className="s01-hero-accent">App</span>
           </h1>
         </section>
+        <CodeBuilderPanel onOpen={id=>globalThis.location.assign("/code/"+encodeURIComponent(id))}/>
         <Composer ref={composerRef} draft={draft} onDraftChange={onDraftChange} onCreate={onCreate} onSuggestion={prefill} />
         <SavedApps headingRef={savedAppsRef} apps={savedApps} onOpen={onOpenSaved} onForget={onForgetSaved} />
         <PublicApps onOpen={onOpenPublic} />
