@@ -72,7 +72,7 @@ describe("Sprint 3.5 private per-tab refresh persistence", () => {
       getItem:(k:string)=>persistent.get(k)??null,
       setItem:(k:string,v:string)=>{persistent.set(k,v);}
     });
-    const sensitive={...fakeRuntime(),blueprint:{result:{outputs:[{sensitivity:"DO_NOT_PERSIST"}]}}} as RuntimeInstance;
+    const sensitive={...fakeRuntime(),blueprint:{result:{outputs:[{sensitivity:"DO_NOT_PERSIST"}]}}} as unknown as RuntimeInstance;
     persistBrowserTabState(sensitive,ID,HASH);
     expect(persistent.size).toBe(0);
   });
