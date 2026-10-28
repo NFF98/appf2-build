@@ -4,7 +4,7 @@ const origin=new URL(process.env.APPF2_STAGING_URL??"https://appf2-sp35-417-stag
 if(!/^https:\/\/appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/u.test(origin))
   throw Error("AUDIT_STAGING_ONLY");
 const shareId="c7bbf132-9538-404f-9153-4ee48ee25a1b";
-const response=await fetch(origin+"/api/v1/code-apps/"+shareId,{signal:AbortSignal.timeout(12000)});
+const response=await fetch(origin+"/api/v1/code-apps/"+shareId);
 if(!response.ok)throw Error("AUDIT_EXISTING_APP_UNAVAILABLE_HTTP_"+response.status);
 const json=await response.json();
 const source=json?.data?.artifact?.javascript;
