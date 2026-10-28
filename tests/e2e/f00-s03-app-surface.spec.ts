@@ -88,8 +88,7 @@ test("TEST-F00-007 VALIDATED Blueprint is delivered, admitted, F03-hydrated and 
 });
 
 const UNAVAILABLE = {
-  O01: "「分享」目前還不能使用，你的 App 和目前的結果都還在。",
-  O02: "「調整結果」目前還不能使用，你的 App 和目前的結果都還在。"
+  O01: "「分享」目前還不能使用，你的 App 和目前的結果都還在。"
 } as const;
 
 const noticeRegion = (page: Page): Locator => page.locator(".s03-notice-region");
@@ -169,14 +168,21 @@ test("TEST-F00-AC-009 S03 reaches the Share / Remix / Correction entries while t
     await attachScreenshot(page, testInfo, "s03-desktop-entry-feedback");
   }
 
-  // Correction (O02 / F16) is unavailable: the failure keeps the current App, its Blueprint and committed result. The
-  // notice raised above must not cover the result action (the click itself checks the hit target).
+  // S03 result button is now actionable: actual input edit uses F03; incorrect
+  // semantics stays an honest F16 request (no fake new Blueprint/AI billing).
   const correction = page.locator(".s03-result").getByRole("button", { name: "調整結果" });
   await correction.click();
-  await expectUnavailable(page, "O02");
-  await attachScreenshot(page, testInfo, "s03-correction-unavailable");
-  await noticeRegion(page).getByRole("button", { name: "知道了" }).click();
-  await expect(noticeRegion(page)).toBeEmpty();
+  const correctionDialog = page.getByRole("dialog", { name: "調整結果" });
+  await expect(correctionDialog).toBeVisible();
+  await expect(correctionDialog).toContainText("每人金額");
+  await correctionDialog.getByRole("button", { name: "計算規則不對，描述需要修正的地方" }).click();
+  await correctionDialog.getByLabel("結果或計算規則哪裡錯了？").fill("主管需要付兩倍，請更正原本分帳規則");
+  await expect(correctionDialog.getByText(/真正修正必須產生並驗證新的 App 版本/)).toBeVisible();
+  await correctionDialog.getByRole("button", { name: "返回選擇" }).click();
+  await correctionDialog.getByRole("button", { name: "修改輸入值，立即重新計算（不用 AI）" }).click();
+  await expect(correctionDialog).toHaveCount(0);
+  await expect(peopleInput(page)).toBeFocused();
+  await attachScreenshot(page, testInfo, "s03-correction-real-input");
 
   // Keep Previous safety: still the same App and committed state, and it still commits local actions with zero requests.
   await expect(s03(page)).toBeVisible();
