@@ -9,8 +9,10 @@ import { PromptDraftStore } from "../discover/prompt-draft-store.js";
 import { createAppDeliveryClient } from "../runtime/app-delivery.js";
 import { AppLauncher } from "../runtime/app-launcher.js";
 import { createPublishedShareDeliveryClient } from "../runtime/app-delivery.js";
+import { createPublishedAppPublisher, type PublishedAppPublisher } from "../runtime/publish-client.js";
 
 export interface BrowserComposition {
+  readonly publisher:PublishedAppPublisher;
   readonly controller: CreationController;
   readonly launcher: AppLauncher;
 }
@@ -41,7 +43,7 @@ export function createBrowserComposition(): BrowserComposition {
     newIdempotencyKey: () => globalThis.crypto.randomUUID()
   });
   const launcher = new AppLauncher({ delivery: createAppDeliveryClient(browserFetch,keyring),published:createPublishedShareDeliveryClient(browserFetch),host:registeredAppHost() });
-  return { controller, launcher };
+  return { controller, launcher,publisher:createPublishedAppPublisher(browserFetch,keyring) };
 }
 
 /** F00 §26 prompt draft in first-party `localStorage`; reading the property itself may throw when storage is blocked. */
