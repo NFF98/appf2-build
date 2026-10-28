@@ -4,7 +4,7 @@
 import {chromium} from "@playwright/test";
 import {readFile} from "node:fs/promises";
 import {runBrowserQa} from "./sp35-universal-browser-runner.mjs";
-const source=await readFile(new URL("../fixtures/sp35-dice-corrected.js",import.meta.url),"utf8");
+const source=await readFile(new URL("../fixtures/sp35-dice-corrected.source",import.meta.url),"utf8");
 const tests=[
  {id:"two_pairs",source_quote:"規則",description:"Two pairs",automatable:true,steps:[],
   assertions:[{kind:"pure_case",function_name:"eighteenlaRule",input:[[2,2,6,6]],result_path:"score",expected:12}]},
