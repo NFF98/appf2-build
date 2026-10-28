@@ -68,6 +68,15 @@ export function App({ controller, drafts, launcher }: AppProps) {
   const [surface, setSurface] = useState<Surface>(()=>readTabAppTarget()===null?"DISCOVER":"CREATE");
   const [draft, setDraft] = useState<ComposerDraft>(() => drafts.load() ?? EMPTY_DRAFT);
   const [savedApps, setSavedApps] = useState(() => readSavedTabApps());
+  // A second tab can save/forget Apps without making the open tab lose its card list.
+  useEffect(() => {
+    const refresh = (event: StorageEvent): void => {
+      if (event.storageArea === globalThis.localStorage && event.key === "appf2.tab.saved-apps.v1")
+        setSavedApps(readSavedTabApps());
+    };
+    window.addEventListener("storage",refresh);
+    return () => window.removeEventListener("storage",refresh);
+  }, []);
   const acceptedIntent = session !== null && session.decision !== null ? session.rawIntent : null;
   const validatedFromCreation = validatedTarget(session);
   // Explicit card selection overrides a prior creation session; a fresh Create clears it.
@@ -112,7 +121,12 @@ export function App({ controller, drafts, launcher }: AppProps) {
     const onPopState = (): void => {
       const current = controller.getSnapshot();
       if (window.history.state !== CREATE_HISTORY_STATE) returnToDiscover();
-      else if (current !== null && controller.start(current.rawIntent, current.capsuleId) === "RESUMED") setSurface("CREATE");
+      else {
+        // History navigation to an existing compiled App must NEVER re-run F01.
+        const target=readTabAppTarget();
+        if(target!==null){setRestoredTarget(target);setSurface("CREATE");}
+        else if(current!==null && controller.start(current.rawIntent,current.capsuleId)==="RESUMED")setSurface("CREATE");
+      }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
