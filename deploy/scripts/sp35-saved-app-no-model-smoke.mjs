@@ -18,7 +18,7 @@ try{
   });
   // Pretend metadata exists, NOT a credential or a real validated App.
   await page.addInitScript(()=>{
-    sessionStorage.setItem("appf2.tab.saved-apps.v1",JSON.stringify([{
+    globalThis.sessionStorage.setItem("appf2.tab.saved-apps.v1",JSON.stringify([{
       intentId:"0199f5d0-53e8-7505-adf6-bc4c744fe0c7",
       contentHash:"sha256:"+"b".repeat(64),
       title:"Saved smoke only",
