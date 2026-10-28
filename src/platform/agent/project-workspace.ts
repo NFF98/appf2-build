@@ -57,6 +57,7 @@ async function digest(s:string):Promise<string>{
  const d=new Uint8Array(await crypto.subtle.digest("SHA-256",buffer));
  return "sha256:"+Array.from(d,x=>x.toString(16).padStart(2,"0")).join("");
 }
+// eslint-disable-next-line complexity -- Project integrity constraints fail closed at every boundary.
 async function assemble(profile:ProjectProfile,entrypoint:string,revision:number,
  parent_hash:string|null,files:readonly {path:string;content:string}[]):Promise<ProjectSnapshot>{
  if(!["VITE_WEB","NODE","PYTHON"].includes(profile)||!Number.isSafeInteger(revision)||
@@ -91,6 +92,7 @@ export async function createProjectSnapshot(profile:ProjectProfile,entrypoint:st
  sources:readonly {path:string;content:string}[]):Promise<ProjectSnapshot>{
  return assemble(profile,entrypoint,1,null,sources);
 }
+// eslint-disable-next-line complexity -- Independent byte and shape revalidation.
 export async function verifyProjectSnapshot(input:unknown):Promise<boolean>{
  if(!exact(input,["schema_version","profile","entrypoint","revision","parent_hash","files","project_hash"])||
    input.schema_version!==PROJECT_SCHEMA||typeof input.profile!=="string"||
@@ -111,6 +113,7 @@ export async function verifyProjectSnapshot(input:unknown):Promise<boolean>{
   return canonical(recomputed)===canonical(input);
  }catch{return false;}
 }
+// eslint-disable-next-line complexity -- Atomic CAS edits reject tampering and conflicting mutations.
 export async function applyProjectEdits(previous:ProjectSnapshot,expected_hash:string,
  edits:readonly ProjectEdit[]):Promise<ProjectSnapshot>{
  if(!(await verifyProjectSnapshot(previous))||expected_hash!==previous.project_hash)

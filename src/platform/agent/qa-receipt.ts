@@ -38,6 +38,7 @@ export function summarizeCandidateQa(receipt:CandidateQaReceipt,
 }
 /** Never promote prototype receipts. Future F02 server must independently verify
  * signed runner provenance, complete requirements, artifacts, owner and consent. */
-export function admitsPublicationFromCandidateReceipt(_receipt:CandidateQaReceipt):false{
+export function admitsPublicationFromCandidateReceipt(receipt:CandidateQaReceipt):false{
+ void receipt;
  return false;
 }

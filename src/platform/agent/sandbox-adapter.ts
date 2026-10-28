@@ -26,6 +26,7 @@ export interface CloudSandboxAdapter{
  execute(sandbox_id:string,project:ProjectSnapshot,call:AgentToolCall):Promise<SandboxEvidence>;
  destroy(sandbox_id:string):Promise<void>;
 }
+// eslint-disable-next-line complexity -- Security bounds are explicit and fail closed.
 export function validateSandboxLimits(input:SandboxLimits):void{
  if(!Number.isInteger(input.wall_time_ms)||input.wall_time_ms<100||
    input.wall_time_ms>600000||!Number.isInteger(input.cpu_millis)||

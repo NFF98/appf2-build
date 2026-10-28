@@ -46,6 +46,7 @@ function argumentsFor(name:AgentToolName):readonly string[]{
    name==="run_build"||name==="run_test"?["target"]:[];
 }
 /** Reject JSON unknown properties and raw shell commands before any dispatch. */
+// eslint-disable-next-line complexity -- Strict tool argument admission rejects privilege escalation.
 export function parseAgentToolCall(input:unknown):AgentToolCall|null{
  if(!exact(input,["call_id","name","project_hash","args"])||
    typeof input.call_id!=="string"||!ID.test(input.call_id)||
@@ -69,6 +70,7 @@ export function parseAgentToolCall(input:unknown):AgentToolCall|null{
  return input as AgentToolCall;
 }
 import {assertWorkspacePath as assertPath} from "./project-workspace.js";
+// eslint-disable-next-line complexity -- Durable budget and replay boundaries are intentionally explicit.
 export function validateAgentCheckpoint(input:unknown):input is AgentCheckpoint{
  if(!exact(input,["version","job_id","state","project_hash","step","tokens_used",
    "cost_cents","budget","completed_call_ids","previous_checkpoint_id"])||
