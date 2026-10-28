@@ -14,7 +14,18 @@ try{
   const ctx=await browser.newContext(),page=await ctx.newPage();
   let calls=0;
   page.on("request",r=>{if(r.method()==="POST"&&new URL(r.url()).pathname==="/api/v1/code-apps")calls++;});
-  await page.goto(origin,{waitUntil:"domcontentloaded"});
+  // The staging hostname can intermittently hang during Chromium navigation;
+  // retry only the NO-AI homepage read, never the paid POST.
+  let ready=false;
+  for(let probe=0;probe<2&&!ready;probe++){
+   try{
+    await page.goto(origin,{waitUntil:"domcontentloaded",timeout:55000});
+    await page.getByRole("textbox",{name:"描述你想做的 App"}).waitFor({state:"visible",timeout:12000});
+    ready=true;
+   }catch(e){
+    if(probe===1)throw Error("STAGING_HOMEPAGE_UNREACHABLE_NO_AI_CHARGED:"+String(e).slice(0,100));
+   }
+  }
   const textarea=page.getByRole("textbox",{name:"描述你想做的 App"});
   await textarea.fill(sample.prompt);
   await page.getByLabel(/我同意 AI 先規劃驗收條件/).check();
