@@ -62,8 +62,11 @@ export function canonicalArtifactJson(value:unknown):string{
   throw new Error("CODE_ARTIFACT_UNSERIALIZABLE");
 }
 function utf8(value:string):Uint8Array{return new TextEncoder().encode(value);}
-export async function sha256CodeBytes(bytes:BufferSource):Promise<string>{
-  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",bytes));
+export async function sha256CodeBytes(bytes:Uint8Array):Promise<string>{
+  // WebCrypto requires an ArrayBuffer-backed copy under TypeScript 6's stricter BufferSource typing.
+  const owned=new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(owned).set(bytes);
+  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",owned));
   return "sha256:"+Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
 }
 function trustedJavaScript(source:unknown):source is string{
