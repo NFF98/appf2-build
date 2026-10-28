@@ -1,3 +1,4 @@
+/* eslint max-depth: off -- bounded no-cost connection retries are nested in two sample cases. */
 /* One explicitly bounded, user-authorized real E2E across TWO different new App categories.
  * Only runs on [SP35-QA-ONCE] commit; not a periodic paid model test.
  */
@@ -23,7 +24,7 @@ try{
     await page.getByRole("textbox",{name:"描述你想做的 App"}).waitFor({state:"visible",timeout:12000});
     ready=true;
    }catch(e){
-    if(probe===1)throw Error("STAGING_HOMEPAGE_UNREACHABLE_NO_AI_CHARGED:"+String(e).slice(0,100));
+    if(probe===1)throw Error("STAGING_HOMEPAGE_UNREACHABLE_NO_AI_CHARGED",{cause:e});
    }
   }
   const textarea=page.getByRole("textbox",{name:"描述你想做的 App"});
