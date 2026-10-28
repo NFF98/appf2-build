@@ -258,6 +258,8 @@ jobs:
         run: |
           npx playwright install chromium
           node deploy/scripts/sp35-saved-app-no-model-smoke.mjs
+      - name: Generic requirement-driven browser QA and bounded repair engine (NO AI)
+        run: node deploy/scripts/sp35-universal-qa-selftest.mjs
       - name: Hybrid Blueprint v2 Code Artifact real browser isolation proof (no AI)
         run: node deploy/scripts/sp35-hybrid-code-sandbox-e2e.mjs
       - name: Real browser F05 publish -> stranger -> F03 actions (free scripted model / fixture DB)
