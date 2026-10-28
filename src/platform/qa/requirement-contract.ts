@@ -33,6 +33,7 @@ function assertion(x:unknown):x is QaAssertion{
  if(x.kind==="element_count")return Number.isInteger(x.count)&&Number(x.count)>=0&&Number(x.count)<=200;
  return x.kind==="text_changes";
 }
+// eslint-disable-next-line complexity -- Mandatory schema and provenance checks are independent fail-closed conditions.
 function criterion(x:unknown,prompt:string):x is QaCriterion{
  if(!RECORD(x)||!NAME(x.id)||!/^[a-z][a-z0-9_]{0,39}$/u.test(x.id)||
   !NAME(x.description)||typeof x.source_quote!=="string"||
