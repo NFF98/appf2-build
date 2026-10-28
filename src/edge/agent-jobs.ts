@@ -5,6 +5,7 @@
  */
 import {verifyMutationProof} from "./create-proof.js";
 import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
+import {applyStoredModelEdit,validApplyModelEditBody} from "./agent-model-apply.js";
 import type {PaidModelTurnDeps} from "../platform/agent/journaled-model-gateway.js";
 import {WorkerPostgresExecutor,type WorkerRequestDbContext}
  from "../platform/blueprint/worker-postgres-executor.js";
@@ -18,6 +19,7 @@ import type {Appf2WorkerEnv} from "./worker-composition.js";
 
 const CREATE="/api/v1/agent-jobs";
 const MODEL_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-plan$/u;
+const APPLY_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/apply-plan$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const KEY=/^[A-Za-z0-9_-]{8,128}$/u;
@@ -121,8 +123,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname);
- if(url.pathname!==CREATE&&!match&&!modelMatch)return undefined;
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -142,6 +144,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const isModel=Boolean(modelMatch);
  if(isModel&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED!=="1")return denied();
  const info=isModel?(validModelPlanBody(parsed)?parsed:null):
+  applyMatch?(validApplyModelEditBody(parsed)?parsed:null):
   verifiedBody(parsed,url.pathname===CREATE);
  if(!info||!UUID.test(info.anonymous_id))return json(400,{error:"AGENT_JOB_BODY_INVALID"});
  const ownerThumb=await keyDigest(proof.keyThumbprint);
@@ -159,6 +162,12 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
     ownerThumb,apiKey:env.APPF2_OPENAI_AGENT_API_KEY,
     send:ctx.deps?.sendModel});
    return json(200,{data:result});
+  }
+  if(applyMatch){
+   if(!validApplyModelEditBody(info))return denied();
+   const applied=await applyStoredModelEdit(info,{db,
+    jobId:applyMatch[1]??"",owner:info.anonymous_id,ownerThumb});
+   return json(200,{data:applied});
   }
   return await read(db,info.anonymous_id,ownerThumb,match?.[1]??"");
  }catch{

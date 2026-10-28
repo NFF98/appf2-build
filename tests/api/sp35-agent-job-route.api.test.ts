@@ -267,3 +267,78 @@ describe("Sprint 3.5 trusted candidate prompt rendering",()=>{
   expect(database.jobs.get(JOB_ID)?.checkpoint.budget.max_cost_cents).toBe(0);
  });
 });
+
+describe("Sprint 3.5 model-authored source edit in real signed Worker API (offline)",()=>{
+ it("persists one model-authored edit, returns new source and replays without rewriting",async()=>{
+  const person=await client(),db=new Database(),prompt="製作完整的十八啦多人骰子遊戲";
+  let calls=0;
+  const source='import "./style.css";document.querySelector<HTMLDivElement>("#app")!.textContent="模型產生的骰子遊戲";';
+  const deps={...db.makeDeps(),sendModel:async()=>{
+   calls++;
+   const snap=Array.from(db.snapshots.values())[0]?.snapshot as {
+    files:{path:string;hash:string}[]};
+   const old=snap.files.find(f=>f.path==="src/main.ts")?.hash??"";
+   return {id:"resp_mockedit123456",status:"completed",
+    usage:{input_tokens:125,output_tokens:170},
+    output:[{type:"function_call",call_id:"call_edit_123456",name:"write_file",
+     arguments:JSON.stringify({path:"src/main.ts",content:source,previous_hash:old})}]};
+  }};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const creation=await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"model_edit_create_123456"),env);
+  expect(creation.status).toBe(201);
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  const plan={anonymous_id:OWNER,prompt,model_call_key:"model_edit_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true};
+  const planned=await fetch(await signed(person,root+"/model-plan",plan,
+   "model_edit_plan_123456"),enabled);
+  expect(planned.status).toBe(200);
+  const applyBody={anonymous_id:OWNER,model_call_key:"model_edit_123456",
+   expected_revision:1};
+  const first=await fetch(await signed(person,root+"/apply-plan",applyBody,
+   "apply_edit_123456"),env);
+  expect(first.status).toBe(200);
+  const status=await first.json() as {data:{status:string;revision:number}};
+  expect(status.data).toMatchObject({status:"FILE_EDIT_SAVED",revision:2});
+  const reopened=await fetch(await signed(person,root,{anonymous_id:OWNER},
+   "read_edit_12345678"),env);
+  const view=await reopened.json() as {data:{files:{path:string;content:string}[];checkpoint:{state:string}}};
+  expect(reopened.status).toBe(200);
+  expect(view.data.checkpoint.state).toBe("CODING");
+  expect(view.data.files.find(f=>f.path==="src/main.ts")?.content).toBe(source);
+  const again=await fetch(await signed(person,root+"/apply-plan",applyBody,
+   "apply_edit_123456"),env);
+  expect(again.status).toBe(200);
+  expect(await again.json()).toMatchObject({data:{status:"ALREADY_APPLIED",revision:2}});
+  expect(calls).toBe(1);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(2);
+ });
+ it("refuses to run model-chosen build commands in the Worker",async()=>{
+  const person=await client(),db=new Database(),prompt="建立有完整動畫的多人骰子遊戲";
+  const deps={...db.makeDeps(),sendModel:async()=>({
+   id:"resp_mockbuild123456",status:"completed",usage:{input_tokens:100,output_tokens:20},
+   output:[{type:"function_call",call_id:"call_build_123456",name:"run_build",
+    arguments:JSON.stringify({target:"project"})}]
+  })};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"build_create_12345678"),env);
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  const plan={anonymous_id:OWNER,prompt,model_call_key:"model_build_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true};
+  expect((await fetch(await signed(person,root+"/model-plan",plan,
+   "model_build_plan_123456"),enabled)).status).toBe(200);
+  const result=await fetch(await signed(person,root+"/apply-plan",{
+   anonymous_id:OWNER,model_call_key:"model_build_123456",expected_revision:1
+  },"apply_build_123456"),env);
+  expect(result.status).toBe(503);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(1);
+  expect(db.jobs.get(JOB_ID)?.checkpoint.completed_call_ids).toEqual([]);
+ });
+});
