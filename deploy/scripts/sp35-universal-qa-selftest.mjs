@@ -24,6 +24,17 @@ window.specimenScore=(items)=>items.reduce((sum,x)=>sum+x,0);
 const broken=good.replace('root.querySelector("#view").textContent="標本清單"','root.querySelector("#view").textContent="歡迎"');
 const pass=await runBrowserQa({title:"novel",javascript:good},plan);
 if(!pass.every(x=>x.verdict==="PASS"))throw Error("QA_VALID_APP_FALSE_REJECT:"+JSON.stringify(pass));
+const appearsPlan={version:"1",criteria:[{
+ id:"must_be_new",source_quote:"新增",description:"New score must appear only after the user acts",
+ automatable:true,steps:[{action:"click",role:"button",name:"新增"}],
+ assertions:[{kind:"text_appears",text:"收藏數：1"}]
+}]};
+const fake='document.getElementById("app").innerHTML='+
+ JSON.stringify('<p>收藏數：1</p><button>新增</button>');
+const fakeResult=await runBrowserQa({title:"decorative app",javascript:fake},appearsPlan);
+if(fakeResult[0]?.verdict!=="FAIL")throw Error("STATIC_PROMISE_FALSE_PASS");
+const realResult=await runBrowserQa({title:"real app",javascript:good},appearsPlan);
+if(realResult[0]?.verdict!=="PASS")throw Error("REAL_STATE_CHANGE_FALSE_REJECT");
 const fail=await runBrowserQa({title:"broken",javascript:broken},plan);
 if(!fail.some(x=>x.id==="browse"&&x.verdict==="FAIL"))throw Error("QA_MISSING_VIEW_FALSE_PASS:"+JSON.stringify(fail));
 let repairs=0;

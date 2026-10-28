@@ -44,6 +44,12 @@ describe("universal independent acceptance (not dice-specific)",()=>{
   expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
   expect(parseQaPlan({version:"1",criteria:[{...c,assertions:[{...c.assertions[0],function_name:"alert();"}]}]},prompt)).toBeNull();
  });
+ it("only allows new-visible-text evidence following a real action",()=>{
+  const c={...criteria[0],assertions:[{kind:"text_appears",text:"收藏數：1"}]};
+  expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,steps:[]}]},prompt)).toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,assertions:[{kind:"text_appears",text:""}]}]},prompt)).toBeNull();
+ });
  it("passes only with evidence for ALL requested interactions",async()=>{
   const value=await verifyAndRepair({title:"novel",javascript:"good"},plan,
     async()=>criteria.map(x=>({id:x.id,verdict:"PASS" as const,detail:"browser observed"})));

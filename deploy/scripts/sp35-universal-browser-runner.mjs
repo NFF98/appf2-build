@@ -34,6 +34,9 @@ async function perform(frame,step){
 async function check(frame,assertion,before){
  if(assertion.kind==="text_includes")
   return (await frame.locator("#app").innerText()).includes(assertion.text);
+ if(assertion.kind==="text_appears")
+  return !before.__visibleText.includes(assertion.text)&&
+   (await frame.locator("#app").innerText()).includes(assertion.text);
  if(assertion.kind==="element_count")
   return await frame.locator(assertion.selector).count()===assertion.count;
  if(assertion.kind==="visible")
@@ -63,7 +66,7 @@ async function verifyCase(browser,javascript,criterion){
   await page.setContent(frameHtml(javascript),{waitUntil:"domcontentloaded",timeout:5000});
   const frame=page.frameLocator('iframe[sandbox="allow-scripts"]');
   await frame.locator("#app").waitFor({state:"visible",timeout:3500});
-  const before={};
+  const before={__visibleText:await frame.locator("#app").innerText()};
   for(const a of criterion.assertions)
    if(a.kind==="text_changes")
     before[a.selector]=await frame.locator(a.selector).first().innerText();

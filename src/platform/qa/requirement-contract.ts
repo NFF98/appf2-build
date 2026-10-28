@@ -7,6 +7,7 @@ export type QaStep =
  | {readonly action:"fill";readonly role:"textbox"|"spinbutton";readonly name:string;readonly value:string};
 export type QaAssertion =
  | {readonly kind:"text_includes";readonly text:string}
+ | {readonly kind:"text_appears";readonly text:string}
  | {readonly kind:"element_count";readonly selector:string;readonly count:number}
  | {readonly kind:"text_changes";readonly selector:string}
  | {readonly kind:"visible";readonly role:"button"|"tab"|"link"|"textbox"|"heading"|"list";readonly name:string}
@@ -29,7 +30,7 @@ function step(x:unknown):x is QaStep{
 // eslint-disable-next-line complexity -- Every independent assertion variant must fail closed on malformed input.
 function assertion(x:unknown):x is QaAssertion{
  if(!RECORD(x))return false;
- if(x.kind==="text_includes")return typeof x.text==="string"&&x.text.length>=1&&x.text.length<=160;
+ if(x.kind==="text_includes"||x.kind==="text_appears")return typeof x.text==="string"&&x.text.length>=1&&x.text.length<=160;
  if(x.kind==="visible")return typeof x.name==="string"&&x.name.length<=120&&
    ["button","tab","link","textbox","heading","list"].includes(String(x.role))&&
    (NAME(x.name)||["textbox","list"].includes(String(x.role)));
@@ -52,6 +53,7 @@ function criterion(x:unknown,prompt:string):x is QaCriterion{
   typeof x.automatable!=="boolean"||!Array.isArray(x.steps)||!Array.isArray(x.assertions)||
   x.steps.length>8||x.assertions.length>6)return false;
  return x.steps.every(step)&&x.assertions.every(assertion)&&
+  (!x.assertions.some(a=>RECORD(a)&&a.kind==="text_appears")||x.steps.length>0)&&
   (!x.automatable||x.assertions.length>0);
 }
 export function parseQaPlan(value:unknown,prompt:string):QaPlan|null{

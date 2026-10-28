@@ -73,6 +73,7 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
     // Blank role labels are valid only when exactly one matching control exists.
     return candidates.length===1?candidates[0]:null;
    };
+   const beforeVisible=(root as HTMLElement).innerText;
    const before=new Map<string,string>();
    for(const a of test.assertions)if(a.kind==="text_changes")
     before.set(a.selector,document.querySelector(a.selector)?.textContent??"");
@@ -90,7 +91,9 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
    for(const a of test.assertions){
     let pass=false;
     if(a.kind==="visible"){const el=find(a.role,a.name);pass=!!el&&(el as HTMLElement).getClientRects().length>0;}
-    if(a.kind==="text_includes")pass=(root.textContent??"").includes(a.text);
+    if(a.kind==="text_includes")pass=(root as HTMLElement).innerText.includes(a.text);
+    if(a.kind==="text_appears")pass=!beforeVisible.includes(a.text)&&
+      (root as HTMLElement).innerText.includes(a.text);
     if(a.kind==="element_count")pass=root.querySelectorAll(a.selector).length===a.count;
     if(a.kind==="text_changes")pass=(root.querySelector(a.selector)?.textContent??"")!==before.get(a.selector);
     if(a.kind==="pure_case"){
