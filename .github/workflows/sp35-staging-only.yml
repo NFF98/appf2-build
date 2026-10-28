@@ -285,6 +285,8 @@ jobs:
         run: node deploy/scripts/sp35-universal-real-acceptance.mjs
       - name: Real corrected public Blueprint v2 from PostgreSQL browser acceptance (NO AI)
         run: node deploy/scripts/sp35-corrected-dice-live-card.mjs
+      - name: Full-height Code App viewer and fullscreen desktop/mobile E2E (NO AI)
+        run: node deploy/scripts/sp35-code-app-viewport-e2e.mjs
       - name: Two new unrelated apps through live generic QA admission (paid ONLY on once marker)
         if: contains(github.event.head_commit.message, '[SP35-QA-ONCE]') || contains(github.event.head_commit.message, '[SP35-QA-NOTES-ONCE]')
         env:

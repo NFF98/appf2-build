@@ -54,11 +54,12 @@ export async function createPrototypeCodeFrame(
   iframe.setAttribute("sandbox","allow-scripts");
   iframe.setAttribute("referrerpolicy","no-referrer");
   iframe.setAttribute("allow","");
+  iframe.style.display="block";
   iframe.style.width="100%";
-  iframe.style.minHeight="260px";
+  iframe.style.height="100%";
   iframe.style.border="0";
   // Strict CSP is the FIRST head content; all generated JS stays inside an
   // opaque-origin document where it cannot access parent cookies/DOM.
-  iframe.srcdoc=`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${htmlEscape(csp)}"><meta name="referrer" content="no-referrer"><title>${htmlEscape(envelope.meta.title)}</title></head><body><main id="app"></main><script>${javascript}</script></body></html>`;
+  iframe.srcdoc=`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${htmlEscape(csp)}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${htmlEscape(envelope.meta.title)}</title><style>html,body{margin:0;min-height:100%;}html{overflow-y:auto;}body{box-sizing:border-box;}#app{width:100%;min-height:100vh;box-sizing:border-box;}</style></head><body><main id="app"></main><script>${javascript}</script></body></html>`;
   return {blueprintHash:checked.blueprint_hash,iframe,destroy:()=>iframe.remove()};
 }

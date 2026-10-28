@@ -2006,3 +2006,100 @@ ol {
     opacity: 0.35;
   }
 }
+
+
+/* CodeArtifact viewer: a bounded cross-origin iframe MUST get a real viewport.
+ * The original 260px minimum height clipped game controls. We cannot read the
+ * opaque-origin frame's content height without weakening isolation, so supply
+ * viewport-height scrolling and an explicit, reversible full-screen mode. */
+.code-app-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 18px clamp(12px, 3vw, 40px) 32px;
+  box-sizing: border-box;
+  background: var(--surface-0, #fff);
+}
+.code-app-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  min-width: 0;
+}
+.code-app-header h1 {
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(21px, 2.2vw, 32px);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.code-app-page .saved-apps-note { margin: 0; }
+.code-app-viewer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border-200, #d5dbe0);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+.code-app-viewer-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--surface-50, #f7f8f9);
+  border-bottom: 1px solid var(--border-200, #d5dbe0);
+  font-size: 13px;
+  color: var(--text-600, #596168);
+}
+.code-app-viewer-toolbar .btn { flex-shrink: 0; }
+.code-app-frame {
+  width: 100%;
+  height: max(660px, calc(100dvh - 235px));
+  min-height: 0;
+  background: #fff;
+}
+.code-app-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+.code-app-viewer-expanded,
+.code-app-viewer:fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  width: 100vw;
+  height: 100dvh;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+}
+.code-app-viewer-expanded .code-app-frame,
+.code-app-viewer:fullscreen .code-app-frame {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.code-app-display-note {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+@media(max-width: 639px) {
+  .code-app-page { padding: 12px 8px 20px; }
+  .code-app-header h1 { font-size: 22px; }
+  .code-app-viewer-toolbar { padding: 8px; }
+  .code-app-frame { height: max(620px, calc(100dvh - 220px)); }
+}
