@@ -10,6 +10,11 @@
   "scheduling_policy": "durable_object",
   "images": {"workspace": {"dockerfile": "./Dockerfile"}}
  }],
+ "workflows": [{
+  "name": "appf2-sp35-private-candidate",
+  "binding": "APPF2_WORKFLOW",
+  "class_name": "CandidateAgentWorkflow"
+ }],
  "durable_objects": {
   "bindings": [{"name": "APPF2_CONTAINER", "class_name": "SandboxJob"}]
  },
