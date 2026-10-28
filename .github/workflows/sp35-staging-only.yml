@@ -229,6 +229,12 @@ jobs:
           npm run test:api
           npm run test:runtime
           npm run web:build
+      - name: Real independent QA plan schema diagnostic (one model call only on marker)
+        if: contains(github.event.head_commit.message, '[SP35-PLAN-ONCE]')
+        env:
+          APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
+          APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
+        run: npx vitest run tests/api/sp35-online-plan-diagnostic.api.test.ts
       - name: Deploy ONLY isolated staging Worker with bundled SPA
         env:
           APPF2_STAGING_BOOTSTRAP_ONLY: ${{ env.APPF2_STAGING_BOOTSTRAP_ONLY }}
