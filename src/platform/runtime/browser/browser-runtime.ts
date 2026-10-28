@@ -47,7 +47,9 @@ export function savedTabState(intentId: string | undefined, hash: string): unkno
   const key = tabStorageKey(intentId, hash);
   if (key === null) return undefined;
   try {
-    const raw = (globalThis.localStorage?.getItem(key) ?? globalThis.sessionStorage?.getItem(key)) ?? null;
+    let raw: string | null = null;
+    try { raw = globalThis.localStorage.getItem(key); } catch { /* Use tab fallback. */ }
+    if (raw === null) raw = globalThis.sessionStorage.getItem(key);
     return raw !== null && raw.length <= MAX_TAB_STATE_BYTES ? JSON.parse(raw) as unknown : undefined;
   } catch {
     return undefined; // Private browsing and denied storage are safe non-persistent modes.
