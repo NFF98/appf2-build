@@ -4,6 +4,7 @@ import type { PopKeyPersistence, StoredPopMaterial } from "../create/pop-keyring
  * PoP signatures, credentials, model responses or raw Blueprint bodies. */
 const TARGET_SLOT="appf2.tab.app.v1";
 const NONCE_SLOT="appf2.tab.pop.nonce.v1";
+const BROWSER_NONCE_SLOT="appf2.browser.pop.nonce.v1";
 const DB_NAME="appf2.tab.pop.v1";
 const DB_STORE="keys";
 const MAX_AGE=24*60*60*1000;
@@ -11,6 +12,10 @@ export interface TabAppTarget { readonly intentId:string; readonly contentHash:s
 
 function storage():Storage|undefined {
   try {return globalThis.sessionStorage;} catch {return undefined;}
+}
+/** Origin-scoped user-profile storage for My Apps, never a substitute for PoP or server authorization. */
+function browserStorage():Storage|undefined {
+  try {return globalThis.localStorage;} catch {return undefined;}
 }
 // eslint-disable-next-line complexity -- Restore/auth state and strict tab-target guards must all fail closed.
 export function readTabAppTarget():TabAppTarget|null {
@@ -54,7 +59,15 @@ function validSavedApp(value:unknown, now:number):value is SavedTabApp {
 
 export function readSavedTabApps():readonly SavedTabApp[] {
   try {
-    const raw=storage()?.getItem(LIBRARY_SLOT);
+    const persistent=browserStorage();
+    // Migrate previous same-tab catalog once, without losing old already-open apps.
+    const legacy=storage()?.getItem(LIBRARY_SLOT);
+    let raw=persistent?.getItem(LIBRARY_SLOT)??legacy;
+    if(persistent!==undefined && persistent.getItem(LIBRARY_SLOT)===null && legacy!==null && legacy!==undefined){
+      persistent.setItem(LIBRARY_SLOT,legacy);
+      storage()?.removeItem(LIBRARY_SLOT);
+      raw=legacy;
+    }
     if(raw===null || raw===undefined || raw.length>12000)return [];
     const parsed:unknown=JSON.parse(raw);
     if(!Array.isArray(parsed))return [];
@@ -74,18 +87,20 @@ export function readSavedTabApps():readonly SavedTabApp[] {
 /** Register only after actual authenticated F03 READY; no model calls on saved-App open. */
 export function rememberSavedTabApp(target:TabAppTarget,title:string):readonly SavedTabApp[] {
   const cleanTitle=title.trim().slice(0,80) || "已建立的 App";
-  const item={...target,title:cleanTitle,savedAt:Date.now()};
-  if(!validSavedApp(item,Date.now()))return readSavedTabApps();
-  const next=[item,...readSavedTabApps().filter(saved=>
+  const existing=readSavedTabApps();
+  const previouslySaved=existing.find(saved=>saved.intentId===target.intentId && saved.contentHash===target.contentHash);
+  const item={...target,title:cleanTitle,savedAt:previouslySaved?.savedAt??Date.now()};
+  if(!validSavedApp(item,Date.now()))return existing;
+  const next=[item,...existing.filter(saved=>
     saved.intentId!==item.intentId || saved.contentHash!==item.contentHash)].slice(0,MAX_SAVED_APPS);
-  try {storage()?.setItem(LIBRARY_SLOT,JSON.stringify(next));}catch{/* Unavailable storage does not block running Apps. */}
+  try {(browserStorage()??storage())?.setItem(LIBRARY_SLOT,JSON.stringify(next));}catch{/* Unavailable storage does not block running Apps. */}
   return next;
 }
 
 export function forgetSavedTabApp(target:TabAppTarget):readonly SavedTabApp[] {
   const next=readSavedTabApps().filter(saved=>
     saved.intentId!==target.intentId || saved.contentHash!==target.contentHash);
-  try {storage()?.setItem(LIBRARY_SLOT,JSON.stringify(next));}catch{/* Safe memory-only fallback. */}
+  try {(browserStorage()??storage())?.setItem(LIBRARY_SLOT,JSON.stringify(next)); storage()?.removeItem(LIBRARY_SLOT);}catch{/* Safe memory-only fallback. */}
   return next;
 }
 
@@ -121,23 +136,34 @@ async function loadKey(factory:IDBFactory,key:string):Promise<StoredPopMaterial|
     transaction.onerror=()=>{db.close();reject(new Error("Browser key store read failed"));};
   });
 }
-/** IndexedDB structured clones nonextractable browser CryptoKeys; the same
- * random sessionStorage nonce gates this tab's access after reload. The
- * backend still verifies fresh signatures and grants on every launch. */
+/** IndexedDB retains the original nonextractable CryptoKey in this browser profile.
+ * No public key/hash/nonce is ever authorization; server PoP, scoped cookie and fresh
+ * F02 execution admission still verify each open. Old tab keys remain readable. */
 export function createBrowserPopKeyPersistence():PopKeyPersistence|undefined {
   try {
-    const tab=storage(), db=globalThis.indexedDB;
-    if(tab===undefined || db===undefined) return undefined;
-    let nonce=tab.getItem(NONCE_SLOT);
-    if(nonce===null){
+    const tab=storage(), persistent=browserStorage(), db=globalThis.indexedDB;
+    if(db===undefined || (tab===undefined && persistent===undefined)) return undefined;
+    let nonce=persistent?.getItem(BROWSER_NONCE_SLOT)??null;
+    if(persistent!==undefined && nonce===null){
       nonce=globalThis.crypto.randomUUID();
-      tab.setItem(NONCE_SLOT,nonce);
+      persistent.setItem(BROWSER_NONCE_SLOT,nonce);
+    }
+    // No localStorage: retain safe legacy same-tab behavior only.
+    if(nonce===null){
+      nonce=tab?.getItem(NONCE_SLOT)??null;
+      if(nonce===null){ nonce=globalThis.crypto.randomUUID(); tab?.setItem(NONCE_SLOT,nonce); }
     }
     const keyPrefix=nonce+":";
+    const previousNonce=tab?.getItem(NONCE_SLOT);
+    const previousPrefix=previousNonce===null || previousNonce===undefined ? null : previousNonce+":";
     return {
       save:(intentId,material)=>saveKey(db,keyPrefix+intentId,material),
       load:async intentId=>{
-        const material=await loadKey(db,keyPrefix+intentId);
+        let material=await loadKey(db,keyPrefix+intentId);
+        if(material===undefined && previousPrefix!==null){
+          material=await loadKey(db,previousPrefix+intentId);
+          if(material!==undefined) await saveKey(db,keyPrefix+intentId,material);
+        }
         if(material===undefined || !Number.isFinite(material.expiresAt) ||
           material.expiresAt<Date.now() || material.expiresAt>Date.now()+MAX_AGE+60000)
           return undefined;
