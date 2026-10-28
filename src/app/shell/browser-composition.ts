@@ -8,6 +8,7 @@ import { findCapsule } from "../discover/capsules.js";
 import { PromptDraftStore } from "../discover/prompt-draft-store.js";
 import { createAppDeliveryClient } from "../runtime/app-delivery.js";
 import { AppLauncher } from "../runtime/app-launcher.js";
+import { createPublishedShareDeliveryClient } from "../runtime/app-delivery.js";
 
 export interface BrowserComposition {
   readonly controller: CreationController;
@@ -39,7 +40,7 @@ export function createBrowserComposition(): BrowserComposition {
     anonymousId: () => ensureAnonymousId(createBrowserIdentityDependencies()),
     newIdempotencyKey: () => globalThis.crypto.randomUUID()
   });
-  const launcher = new AppLauncher({ delivery: createAppDeliveryClient(browserFetch, keyring), host: registeredAppHost() });
+  const launcher = new AppLauncher({ delivery: createAppDeliveryClient(browserFetch,keyring),published:createPublishedShareDeliveryClient(browserFetch),host:registeredAppHost() });
   return { controller, launcher };
 }
 
