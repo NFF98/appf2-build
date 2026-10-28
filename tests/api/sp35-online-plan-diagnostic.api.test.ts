@@ -4,6 +4,7 @@ import {parseQaPlan} from "../../src/platform/qa/requirement-contract.js";
 // Exactly ONE one-time paid model call on explicit staging-only marker.
 // Logs SCHEMA PROPERTIES only; never logs source, keys or full model content.
 describe("one-shot real unknown-idea acceptance plan diagnostic",()=>{
+ // eslint-disable-next-line complexity -- Independent model shape diagnostics record each fail-closed field.
  it("produces parseable criteria traceable to prompt",async()=>{
   if(process.env.APPF2_QA_PLAN_DIAGNOSTIC!=="1")return; // no AI in normal CI
   const key=process.env.APPF2_MODEL_API_KEY;
