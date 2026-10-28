@@ -46,3 +46,22 @@ Click **Open** must fetch the **original canonical Blueprint** using existing or
 | B2 | Real LifePilot and moving demo references independently approved, recipient operations tested | Pending publishing |
 
 **Status accounting**: A and B reported independently; the word “REAL PASS” requires matching real evidence. No assertion that any arbitrary language or generated App is universally validated.
+
+
+## B — Executable F05 public gallery contract (approved Sprint 3.5 delta, 2026-10-28)
+
+**Publishing is an explicit original-holder action, NEVER implicit because a test passed.** The S03 creator presses `公開分享` and confirms that the reusable App **definition/initial data**, but **not their private runtime state**, will be visible to anonymous visitors. The creator must hold the exact scoped cookie + original nonextractable PoP + fresh `share:create` grant, from the *same* immutable compiled hash. The server independently verifies exact original lineage + **fresh executable F02 admission before insertion**. No third party may publish a known hash, even if they know an intent or anonymous UUID.
+
+**Persistence**: the staging PostgreSQL `appf2_published_app` table has UUID v4 random share ID, exact source intent/anonymous/hash, sanitized title, ACTIVE/REVOKED/EXPIRED, creation timestamp and idempotency key; no prompt or runtime data. Worker login gets explicit minimal GRANT + RLS, with no Data API privileges for `anon`/`authenticated`. A narrowly scoped `SECURITY DEFINER` function (empty search_path, explicit argument validation, EXECUTE only `appf2_worker`) returns the canonical body/admission metadata **only for one currently ACTIVE, nonexpired share of that exact hash**; no hash-only / guessed ID access. Never cache authorization. Other users get a newly hydrated F03 instance, initial state only.
+
+**Wire**:
+- `POST /api/v1/shares`: same-origin, `Idempotency-Key`, JSON `{source_intent_id,blueprint_hash,title}`, `Authorization: Bearer <fresh original-holder share:create grant>`; 201 `{data:{share_id,share_url,status}}`, or fail closed; no public access without user action.
+- `GET /api/v1/published-apps`: privacy-sanitized list of currently ACTIVE explicitly listed shares; **not** all compiled apps and **not** scripted inspiration cards.
+- `GET /api/v1/shares/{share_id}`: live reference with hash; no owner/user detail.
+- `GET /b/{hash}` and `GET /api/v1/blueprints/{hash}/execution-admission` with `X-Appf2-Share-Id`: verify live ACTIVE reference + exact hash **on every request**, then current trust/registry/capability checks. Never use original-holder grant for a recipient.
+- All share/published calls are **0 F01** and **0 model-provider** calls.
+- `/share/{share_id}` direct URL is handled client-side; it fetches live share metadata then authorized delivery/hydration, not user re-creation.
+- No fake curated LifePilot/moving cards until an authorized share of those exact Blueprints actually exists; CI private intent proof cannot be exported.
+- Homepage cards only appear for LIVE published shares, show `直接使用（不用 AI）`, and their click hydrates F03. 404/410/503 show clear unavailable message, **never** fallback to paid model.
+
+**B acceptance gate**: (B1) stranger browser retrieves one legitimately published share by card and by URL, runs registered mutable controls, 0 F01/AI; (B2) unknown/revoked/foreign hash/unsigned creator requests deny; (B3) original owner state not copied; (B4) real PostgreSQL RLS/grants and typed/contract/browser tests PASS; (B5) LifePilot and moving-specific cards require separate lawful published references and independent E2E. Report each independently.
