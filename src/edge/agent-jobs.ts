@@ -68,6 +68,7 @@ async function initialProject(prompt:string){
   {path:"package.json",content:JSON.stringify({name:"appf2-candidate",private:true,type:"module",scripts:{build:"vite build"},devDependencies:{vite:"^6.0.0",typescript:"^5.0.0"}})}
  ]);
 }
+// eslint-disable-next-line max-params -- DB, PoP-bound owner and input are separate trust boundaries.
 async function create(db:Db,owner:string,thumb:string,key:string,prompt:string,
  newJobId:()=>string):Promise<Response>{
  const project=await initialProject(prompt);
@@ -102,6 +103,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
   ai_started:recovered.job.checkpoint.step>0,app_published:false}});
 }
 /** Return undefined only if this is not one of our routes. */
+// eslint-disable-next-line complexity -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
  const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname);
  if(url.pathname!==CREATE&&!match)return undefined;

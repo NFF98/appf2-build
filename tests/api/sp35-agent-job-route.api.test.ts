@@ -75,8 +75,8 @@ class Database {
      const id=String(args[0]),r=this.jobs.get(id),ident=this.identities.get(id);
      return {rows:r?.owner_anonymous_id===args[1]&&ident?.thumb===args[2]?[{job_id:id} as T]:[]};
     }
-    const id=Array.from(this.identities.entries()).find(([_,ident])=>
-     ident.thumb===args[1]&&ident.key===args[2])?.[0];
+    const id=Array.from(this.identities.entries()).find(entry=>
+     entry[1].thumb===args[1]&&entry[1].key===args[2])?.[0];
     return {rows:id?[{job_id:id} as T]:[]};
    }
    if(sql.startsWith("SELECT job_id::text,owner_anonymous_id::text,request_hash")){
