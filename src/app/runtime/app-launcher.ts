@@ -90,7 +90,9 @@ export class AppLauncher {
     const { host } = this.dependencies;
     if (host === null) return this.set({kind:"FAILED",contentHash,failure:"RUNTIME_REJECTED"});
     this.set({kind:"HYDRATING",contentHash});
-    const launched=await host.launch(delivered.admitted,target.kind==="OWNER"?target.intentId:undefined);
+    // Public recipients persist only their OWN browser state scoped to the share UUID + exact hash.
+    // Never pass the creator original-Intent ID or credentials to the Runtime.
+    const launched=await host.launch(delivered.admitted,target.kind==="OWNER"?target.intentId:target.shareId);
     if (attempt !== this.attempt) {
       if (launched.ok) launched.app.release();
       return;
