@@ -260,6 +260,8 @@ jobs:
           node deploy/scripts/sp35-saved-app-no-model-smoke.mjs
       - name: Real browser F05 publish -> stranger -> F03 actions (free scripted model / fixture DB)
         run: node deploy/scripts/sp35-public-card-browser-no-model.mjs
+      - name: Live Staging published LifePilot and moving cards (no AI)
+        run: node deploy/scripts/sp35-live-public-cards-e2e.mjs
       - name: Preserve free real-browser published-card screenshot
         if: always()
         uses: actions/upload-artifact@v4
