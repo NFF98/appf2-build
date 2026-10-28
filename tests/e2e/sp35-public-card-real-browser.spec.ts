@@ -1,13 +1,20 @@
 import {expect,test,type Page} from "@playwright/test";
 import {composer,createButton} from "./support/f00-flow.js";
 import {APP_ORIGIN,S03WorkerHost} from "./support/s03-worker-host.js";
-import {PublishedBrowserBackend} from "./support/sp35-published-backend.js";
+import type {PublishedBrowserBackend} from "./support/sp35-published-backend.js";
 
 let backend:PublishedBrowserBackend;
-test.beforeAll(async()=>{await S03WorkerHost.prepare();});
+let host:S03WorkerHost;
+let module:typeof import("./support/sp35-published-backend.js");
+test.beforeAll(async()=>{
+  await S03WorkerHost.prepare();
+  module=await S03WorkerHost.loadFixture("/tests/e2e/support/sp35-published-backend.ts");
+});
 test.beforeEach(async({page},info)=>{
-  backend=await PublishedBrowserBackend.create();
-  await backend.host.attach(page);
+  host=await S03WorkerHost.start();
+  backend=new module.PublishedBrowserBackend(host.backend);
+  host.setApiOverride(request=>backend.handle(request));
+  await host.attach(page);
   info.annotations.push({type:"provenance",description:
     "Real browser/F01/F02/F03/F05 server code, scripted 0-cost model + in-memory DB fixture (NOT real staging DB or live provider)"});
 });
@@ -43,7 +50,7 @@ test("F05 stranger chooses genuinely published card, operates and reloads; owner
   // Stranger has a different cookie jar, keys, localStorage and sessionStorage.
   const stranger=await browser.newContext();
   const recipient=await stranger.newPage();
-  await backend.host.attach(recipient);
+  await host.attach(recipient);
   await recipient.goto(APP_ORIGIN);
   await expect(recipient.getByRole("heading",{name:"公開現成 App"})).toBeVisible();
   // App title is the canonical scripted F03 title, not the user prompt or a placeholder.
@@ -60,12 +67,12 @@ test("F05 stranger chooses genuinely published card, operates and reloads; owner
   await expect(people(recipient)).toHaveValue("5");
   await expect(result(recipient)).toHaveText("24");
   expect(backend.modelCalls()).toBe(generatedCalls);
-  expect(backend.apiCalls().filter(c=>c.startsWith("POST /api/v1/intents"))).toHaveLength(2);
+  expect(host.apiCalls().filter(c=>c.startsWith("POST /api/v1/intents"))).toHaveLength(2);
 
   // A second recipient cannot see or modify the first recipient's private state.
   const stranger2=await browser.newContext();
   const fresh=await stranger2.newPage();
-  await backend.host.attach(fresh);
+  await host.attach(fresh);
   await fresh.goto(url!);
   await expect(fresh.locator(".s03")).toBeVisible({timeout:20000});
   await expect(people(fresh)).toHaveValue("4");
