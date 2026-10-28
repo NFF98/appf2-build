@@ -232,6 +232,7 @@ jobs:
       - name: Real independent QA plan schema diagnostic (one model call only on marker)
         if: contains(github.event.head_commit.message, '[SP35-PLAN-ONCE]')
         env:
+          APPF2_QA_PLAN_DIAGNOSTIC: '1'
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
         run: npx vitest run tests/api/sp35-online-plan-diagnostic.api.test.ts

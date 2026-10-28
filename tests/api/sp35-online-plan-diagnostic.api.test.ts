@@ -5,6 +5,7 @@ import {parseQaPlan} from "../../src/platform/qa/requirement-contract.js";
 // Logs SCHEMA PROPERTIES only; never logs source, keys or full model content.
 describe("one-shot real unknown-idea acceptance plan diagnostic",()=>{
  it("produces parseable criteria traceable to prompt",async()=>{
+  if(process.env.APPF2_QA_PLAN_DIAGNOSTIC!=="1")return; // no AI in normal CI
   const key=process.env.APPF2_MODEL_API_KEY;
   if(!key)throw Error("NO_KEY");
   const prompt="請建立一個可操作的任務便條 App，有文字輸入框、「新增任務」按鈕和任務清單。輸入「買牛奶」後按新增，清單要出現「買牛奶」；每一個任務可以按「完成」切換完成狀態。";
