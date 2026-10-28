@@ -10,15 +10,16 @@ if(origin.protocol!=="https:" ||
 
 const browser=await chromium.launch({headless:true});
 try{
-  const page=await browser.newPage();
+  const context=await browser.newContext();
+  const page=await context.newPage();
   const paid=[];
-  page.on("request",r=>{
+  context.on("request",r=>{
     if(r.method()==="POST" && /^\/api\/v1\/intents(?:\/|$)/.test(new URL(r.url()).pathname))
       paid.push(r.url());
   });
   // Pretend metadata exists, NOT a credential or a real validated App.
   await page.addInitScript(()=>{
-    globalThis.sessionStorage.setItem("appf2.tab.saved-apps.v1",JSON.stringify([{
+    globalThis.localStorage.setItem("appf2.tab.saved-apps.v1",JSON.stringify([{
       intentId:"0199f5d0-53e8-7505-adf6-bc4c744fe0c7",
       contentHash:"sha256:"+"b".repeat(64),
       title:"Saved smoke only",
@@ -35,5 +36,12 @@ try{
   await page.getByRole("button",{name:"返回首頁"}).click();
   await open.waitFor({state:"visible",timeout:15000});
   if(paid.length)throw Error("SAVED APP FREE SMOKE: Home unexpectedly triggered CREATE");
-  console.log("STAGING SAVED APPS: card visible + opens only authenticated delivery path + missing key FAIL_CLOSED; F01 POST=0; MODEL CALL=0 PASS");
+  const second=await context.newPage();
+  await second.goto(origin.origin,{waitUntil:"domcontentloaded"});
+  const secondOpen=second.getByRole("button",{name:"免費重開：Saved smoke only"});
+  await secondOpen.waitFor({state:"visible",timeout:15000});
+  await secondOpen.click();
+  await second.getByText("先前的 App 無法安全恢復。",{exact:true}).waitFor({state:"visible",timeout:15000});
+  if(paid.length)throw Error("SAVED APP FREE SMOKE: second tab triggered paid CREATE");
+  console.log("STAGING SAVED APPS: card visible across two tabs + opens only authenticated delivery path + missing key FAIL_CLOSED; F01 POST=0; MODEL CALL=0 PASS");
 }finally{await browser.close();}
