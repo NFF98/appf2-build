@@ -57,6 +57,7 @@ function validSavedApp(value:unknown, now:number):value is SavedTabApp {
     item.savedAt<=now+60000 && now-item.savedAt>=0 && now-item.savedAt<=MAX_AGE;
 }
 
+// eslint-disable-next-line complexity -- Storage migration, corrupt data and authorization boundaries fail closed independently.
 export function readSavedTabApps():readonly SavedTabApp[] {
   try {
     const persistent=browserStorage();
@@ -139,6 +140,7 @@ async function loadKey(factory:IDBFactory,key:string):Promise<StoredPopMaterial|
 /** IndexedDB retains the original nonextractable CryptoKey in this browser profile.
  * No public key/hash/nonce is ever authorization; server PoP, scoped cookie and fresh
  * F02 execution admission still verify each open. Old tab keys remain readable. */
+// eslint-disable-next-line complexity -- Nonextractable key migration and browser storage fallbacks cannot share unsafe paths.
 export function createBrowserPopKeyPersistence():PopKeyPersistence|undefined {
   try {
     const tab=storage(), persistent=browserStorage(), db=globalThis.indexedDB;
