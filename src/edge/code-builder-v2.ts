@@ -87,7 +87,7 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
  const proof=await verifyMutationProof({method:"POST",path:CREATE,body,
    idempotencyKey:key,headers:request.headers},Date.now());
  if(proof===null)return denied();
- const anonymousId=String(raw.anonymous_id),identity={anonymousId,intentId:null};
+ const anonymousId=String(raw.anonymous_id),prompt=String(raw.prompt).trim(),identity={anonymousId,intentId:null};
  const previous=await db(env,identity,deps,async executor=>
    (await executor.query<{share_id:string;status:string;blueprint_hash:string|null}>(PRIOR,[proof.keyThumbprint,key,anonymousId])).rows[0]);
  if(previous!==undefined){
@@ -103,10 +103,10 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
  if(!allowed)return answer(429,{error:"DAILY_CODE_BUILD_LIMIT_2"});
  const shareId=crypto.randomUUID();
  const created=await db(env,identity,deps,async executor=>(await executor.query<{share_id:string}>(START,
-   [shareId,anonymousId,proof.keyThumbprint,key,raw.prompt.trim()])).rows[0]);
+   [shareId,anonymousId,proof.keyThumbprint,key,prompt])).rows[0]);
  if(created===undefined)return answer(409,{error:"ALREADY_ATTEMPTED"});
  try{
-  const code=await (deps.generate??generateCodeApp)(env,raw.prompt.trim());
+  const code=await (deps.generate??generateCodeApp)(env,prompt);
   if(code===null)throw Error("MODEL_INVALID");
   const pkg=await makePrototypeCodeArtifact(code.title,code.javascript);
   const verified=await verifyPrototypeCodeArtifact(pkg);
