@@ -31,6 +31,7 @@ type AppSurfaceProps = {
   readonly session: AppSession;
   readonly onHome: () => void;
   readonly onEntry: (entry: AppSurfaceEntry) => EntryHandoff;
+  readonly onPublish?:()=>Promise<string|null>;
   readonly inspection?: InspectionContext;
 };
 
@@ -164,11 +165,15 @@ function EntryNotice({ notice, onDismiss }: { readonly notice: UnavailableNotice
  * hands Share / Modify / Remix / Correction to their owners and never mutates the Runtime or its Blueprint; an entry
  * whose owner is unavailable is answered in place and leaves the App, its result and the focused control as they are.
  */
-export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceProps) {
+export function AppSurface({ session, onHome, onEntry, onPublish, inspection }: AppSurfaceProps) {
   const { current } = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const { app, contentHash } = current;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [notice, setNotice] = useState<UnavailableNotice | null>(null);
+  const [publishOpen,setPublishOpen]=useState(false);
+  const [publishing,setPublishing]=useState(false);
+  const [publishedUrl,setPublishedUrl]=useState<string|null>(null);
+  const [publishFailed,setPublishFailed]=useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const modifyRef = useRef<HTMLButtonElement>(null);
   const [presenter, setPresenter] = useState<RuntimeProcessingPresenter | null>(null);
@@ -190,10 +195,19 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
   }, [sheetOpen]);
 
   const enter = (entry: AppSurfaceEntry): void => {
+    if(entry.destination==="O01"&&onPublish!==undefined){setPublishOpen(true);setPublishFailed(false);return;}
     const handoff = onEntry(entry);
     setNotice((previous) =>
       handoff === "UNAVAILABLE" ? { destination: entry.destination, sequence: (previous?.sequence ?? 0) + 1, contentHash } : null
     );
+  };
+  const confirmPublish=async():Promise<void>=>{
+    if(onPublish===undefined||publishing)return;
+    setPublishing(true);
+    const url=await onPublish();
+    setPublishing(false);
+    if(url===null){setPublishFailed(true);return;}
+    setPublishedUrl(url);setPublishOpen(false);
   };
   const visibleNotice = notice?.contentHash === contentHash ? notice : null;
   const choose = (choice: ChangeChoice): void => {
@@ -269,6 +283,22 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
       <div className="s03-notice-host" inert={sheetOpen}>
         <EntryNotice notice={visibleNotice} onDismiss={() => setNotice(null)} />
       </div>
+      {publishedUrl!==null?<section className="s03-notice" role="status" aria-label="公開分享連結">
+        <p>已公開！其他人可直接使用，不需再次產生 AI。</p>
+        <a href={publishedUrl}>{publishedUrl}</a>
+        <button type="button" className="btn btn-secondary" onClick={()=>setPublishedUrl(null)}>關閉</button>
+      </section>:null}
+      {publishOpen?<div className="s03-sheet-backdrop">
+        <div className="s03-sheet" role="dialog" aria-modal="true" aria-labelledby="publish-title">
+          <h2 id="publish-title">公開分享這個 App？</h2>
+          <p>公開的是 App 設計與初始資料，任何人都能從首頁直接使用。你的個人操作紀錄不會分享。請確認設計裡沒有私人資料。</p>
+          {publishFailed?<p role="alert">發布失敗或沒有原作者權限；未公開，也沒有再次呼叫 AI。</p>:null}
+          <button type="button" className="btn btn-primary" disabled={publishing} onClick={()=>{void confirmPublish();}}>
+            {publishing?"正在核對原作者授權…":"確認公開（不使用 AI）"}
+          </button>
+          <button type="button" className="btn btn-secondary" disabled={publishing} onClick={()=>setPublishOpen(false)}>取消</button>
+        </div>
+      </div>:null}
       {sheetOpen ? <ChangeSheet onChoose={choose} onClose={closeSheet} /> : null}
     </div>
   );
