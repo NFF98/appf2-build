@@ -15,8 +15,9 @@ const fetchCards=async():Promise<Card[]>=>{
  return apps.filter((x:unknown)=>typeof x==="object"&&x!==null&&
    typeof (x as Card).share_id==="string"&&typeof (x as Card).title==="string") as Card[];
 };
-export function CodeBuilderPanel({onOpen}:{onOpen:(id:string)=>void}){
- const [prompt,setPrompt]=useState("");
+export function CodeBuilderPanel({onOpen,suggestedPrompt}:{onOpen:(id:string)=>void;suggestedPrompt?:{text:string;revision:number}|null}){
+ const [prompt,setPrompt]=useState(suggestedPrompt?.text??"");
+ useEffect(()=>{if(suggestedPrompt!==null&&suggestedPrompt!==undefined)setPrompt(suggestedPrompt.text);},[suggestedPrompt]);
  const [consent,setConsent]=useState(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
