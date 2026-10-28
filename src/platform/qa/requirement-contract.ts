@@ -26,6 +26,7 @@ function step(x:unknown):x is QaStep{
   x.action==="fill"&&["textbox","spinbutton"].includes(String(x.role))&&
   typeof x.value==="string"&&x.value.length<=120;
 }
+// eslint-disable-next-line complexity -- Every independent assertion variant must fail closed on malformed input.
 function assertion(x:unknown):x is QaAssertion{
  if(!RECORD(x))return false;
  if(x.kind==="text_includes")return typeof x.text==="string"&&x.text.length>=1&&x.text.length<=160;
