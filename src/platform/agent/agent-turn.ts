@@ -68,6 +68,7 @@ async function outputAndProject(project:ProjectSnapshot,call:AgentToolCall,
  * One serial tool call. Model prose cannot mark a job READY; QA and publish need
  * independent evidence and separate owner-scoped admission, always fail closed.
  */
+// eslint-disable-next-line complexity -- Model output, budget, broker, and CAS admission are fail-closed.
 export async function executeAgentTurn(current:RecoveredAgentJob,
  rawResponse:unknown,deps:AgentTurnDeps):Promise<AgentTurnResult>{
  const cp=current.job.checkpoint;
