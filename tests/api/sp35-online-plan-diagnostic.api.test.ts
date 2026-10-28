@@ -27,9 +27,17 @@ describe("one-shot real unknown-idea acceptance plan diagnostic",()=>{
   const record=typeof parsed==="object"&&parsed!==null?parsed as {version?:unknown;criteria?:unknown}:null;
   const criteria=Array.isArray(record?.criteria)?record.criteria as Record<string,unknown>[]:[];
   const findings=criteria.slice(0,20).map(c=>({
-   idType:typeof c.id,quoteMatches:typeof c.source_quote==="string"&&prompt.includes(c.source_quote),
+   idType:typeof c.id,idSafe:typeof c.id==="string"&&/^[a-z][a-z0-9_]{0,39}$/u.test(c.id),
+   quoteMatches:typeof c.source_quote==="string"&&prompt.includes(c.source_quote),
+   quoteLength:typeof c.source_quote==="string"?c.source_quote.length:-1,
+   descriptionLength:typeof c.description==="string"?c.description.length:-1,
    automatable:c.automatable,stepsCount:Array.isArray(c.steps)?c.steps.length:-1,
-   assertionKinds:Array.isArray(c.assertions)?c.assertions.map(x=>x?.kind):[],
+   stepShapes:Array.isArray(c.steps)?c.steps.map(x=>({action:x?.action,role:x?.role,nameType:typeof x?.name})):[],
+   assertionShapes:Array.isArray(c.assertions)?c.assertions.map(x=>({
+    kind:x?.kind,role:x?.role,nameType:typeof x?.name,
+    textType:typeof x?.text,selectorType:typeof x?.selector,
+    keys:x&&typeof x==="object"?Object.keys(x):[]
+   })):[],
    individuallyAccepted:parseQaPlan({version:"1",criteria:[c]},prompt)!==null
   }));
   const valid=parseQaPlan(parsed,prompt);
