@@ -84,6 +84,7 @@ async function ensureMetricsChange(before, after, label) {
 }
 try {
   await page.goto(origin.origin, { waitUntil: "domcontentloaded", timeout: 40_000 });
+  await page.locator("details.legacy-composer summary").click();
   const composer = page.locator("#composer-input");
   await composer.waitFor({ state: "visible", timeout: 15_000 });
   await composer.fill(demand);

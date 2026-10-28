@@ -16,6 +16,7 @@ const page=await context.newPage();
 const screenshot=path.join(process.env.RUNNER_TEMP||"/tmp","appf2-sp35-browser.png");
 try {
   await page.goto(origin.origin,{waitUntil:"domcontentloaded",timeout:40_000});
+  await page.locator("details.legacy-composer summary").click();
   const input=page.locator("#composer-input");
   await input.waitFor({state:"visible",timeout:15_000});
   console.log("STAGING BROWSER: REAL Discover React UI rendered");

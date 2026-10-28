@@ -16,6 +16,7 @@ const page=await browser.newPage();
 const screenshotPath=path.join(process.env.RUNNER_TEMP||"/tmp","appf2-sp35-browser.png");
 try {
  await page.goto(origin.origin,{waitUntil:"domcontentloaded"});
+ await page.locator("details.legacy-composer summary").click();
  await page.locator("#composer-input").fill(input);
  const pending=page.waitForResponse(r=>r.request().method()==="POST" && new URL(r.url()).pathname==="/api/v1/intents",{timeout:110000});
  const compiling=page.waitForResponse(r=>r.request().method()==="POST" &&

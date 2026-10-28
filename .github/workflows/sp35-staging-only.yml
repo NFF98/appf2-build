@@ -268,6 +268,9 @@ jobs:
         run: node deploy/scripts/sp35-result-adjustment-no-ai-e2e.mjs
       - name: Real AI Code Builder -> Blueprint v2 -> public card (one paid call only if no existing example)
         run: node deploy/scripts/sp35-real-code-builder-staging-e2e.mjs
+      - name: Real one-shot eighteen dice Code Builder browser check (bounded AI cost)
+        if: contains(github.event.head_commit.message, '[SP35-DICE-ONCE]')
+        run: node deploy/scripts/sp35-real-dice-staging-e2e.mjs
       - name: Preserve free real-browser published-card screenshot
         if: always()
         uses: actions/upload-artifact@v4
