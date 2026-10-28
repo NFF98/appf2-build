@@ -1441,6 +1441,18 @@ ol {
   background: var(--teal-50);
 }
 
+/* Result correction requires visible before-values and a keyboard-accessible choice without hiding the App. */
+.s03-correction-dialog {
+  max-height: min(88dvh, 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.s03-correction-dialog .s03-result-list {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
 /* S05A / S05B Change Composer: a focused workspace without the S03 bottom navigation. */
 .s05 {
   min-height: 100vh;
