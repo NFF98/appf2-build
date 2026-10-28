@@ -143,6 +143,7 @@ export class CandidateAgentWorkflow extends WorkflowEntrypoint<Env,Task>{
  }
 }
 export default {
+ // eslint-disable-next-line complexity -- All private paid-execution and replay gates remain fail-closed.
  async fetch(request:Request,env:Env):Promise<Response>{
   const url=new URL(request.url);
   if(request.method!=="POST"||
