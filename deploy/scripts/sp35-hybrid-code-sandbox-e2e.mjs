@@ -63,7 +63,7 @@ document.getElementById("add").addEventListener("click",()=>{
         srcdoc:mounted.iframe.srcdoc};
     },{title,javascript:code});
     if(!/^sha256:[a-f0-9]{64}$/u.test(result.hash))throw Error("HYBRID_INVALID_BLUEPRINT_HASH");
-    if(result.sandbox!=="allow-scripts"||!result.srcdoc.includes("connect-src 'none'"))
+    if(result.sandbox!=="allow-scripts"||!result.srcdoc.includes("connect-src &#39;none&#39;"))
       throw Error("HYBRID_SANDBOX_WEAKENED");
   }
   const diceFrame=page.frameLocator('iframe[title="Dice"]');
