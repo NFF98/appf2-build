@@ -6,8 +6,8 @@
 import puppeteer from "@cloudflare/puppeteer";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 import {appf2ModelProviderConfig} from "../platform/compiler/appf2-model-provider.js";
-import {QA_PLANNER_PROMPT} from "../platform/qa/requirement-planner.js";
-import {parseQaPlan,type QaPlan,type QaEvidence,type QaCriterion} from "../platform/qa/requirement-contract.js";
+import {QA_PLANNER_PROMPT,normalizeModelQaPlan} from "../platform/qa/requirement-planner.js";
+import {type QaPlan,type QaEvidence,type QaCriterion} from "../platform/qa/requirement-contract.js";
 import {verifyAndRepair,type QaDraft} from "../platform/qa/repair-loop.js";
 import {codeBuilderModelRequest} from "./code-builder-generation-contract.js";
 
@@ -118,7 +118,7 @@ async function modelJson(env:Appf2WorkerEnv,messages:CompletionMessage[],tokens:
 }
 export async function generateQaPlan(env:Appf2WorkerEnv,prompt:string):Promise<QaPlan|null>{
  const raw=await modelJson(env,[{role:"system",content:QA_PLANNER_PROMPT},{role:"user",content:prompt}],2500);
- const plan=parseQaPlan(raw,prompt);
+ const plan=normalizeModelQaPlan(raw,prompt);
  if(!plan||plan.criteria.length===0||plan.criteria.some(c=>!c.automatable))return null;
  return plan;
 }

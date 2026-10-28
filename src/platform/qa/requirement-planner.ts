@@ -14,9 +14,24 @@ export const QA_PLANNER_PROMPT=[
  "Do not invent hidden requirements, omit mandatory requirements, derive tests from generated source or invent a passed result.",
  "At most 20 criteria. Return JSON only."
 ].join(" ");
+/**
+ * Model-generated criterion IDs are merely labels, not user requirements.
+ * Replace them deterministically; do NOT change quotes, actions or expected outcomes.
+ * All other schema rules remain fail-closed and independently validated.
+ */
+export function normalizeModelQaPlan(value:unknown,prompt:string):QaPlan|null{
+ if(typeof value!=="object"||value===null||Array.isArray(value))return null;
+ const record=value as Record<string,unknown>;
+ if(record.version!=="1"||!Array.isArray(record.criteria))return null;
+ const criteria=record.criteria.map((c:unknown,index:number)=>{
+  if(typeof c!=="object"||c===null||Array.isArray(c))return c;
+  return {...c,id:"req_"+(index+1)};
+ });
+ return parseQaPlan({version:"1",criteria},prompt);
+}
 type PlanModel=(messages:readonly {role:string;content:string}[])=>Promise<unknown>;
 export async function planUserAcceptance(prompt:string,model:PlanModel):Promise<QaPlan|null>{
  if(prompt.trim().length<5||prompt.length>800)return null;
  const value=await model([{role:"system",content:QA_PLANNER_PROMPT},{role:"user",content:prompt}]);
- return parseQaPlan(value,prompt);
+ return normalizeModelQaPlan(value,prompt);
 }

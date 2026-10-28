@@ -1,3 +1,4 @@
+import {normalizeModelQaPlan} from "../../src/platform/qa/requirement-planner.js";
 import {describe,it,expect} from "vitest";
 import {parseQaPlan,summarizeQa} from "../../src/platform/qa/requirement-contract.js";
 import {verifyAndRepair} from "../../src/platform/qa/repair-loop.js";
@@ -12,6 +13,14 @@ const criteria=[
 ];
 const plan=parseQaPlan({version:"1",criteria},prompt)!;
 describe("universal independent acceptance (not dice-specific)",()=>{
+ it("normalizes AI-only criterion IDs without weakening any user requirement",()=>{
+  const raw={version:"1",criteria:[{...criteria[0],id:"需求-一"},
+    {...criteria[1],id:"REQ-2"}]};
+  const parsed=normalizeModelQaPlan(raw,prompt);
+  expect(parsed?.criteria.map(x=>x.id)).toEqual(["req_1","req_2"]);
+  expect(parsed?.criteria.map(x=>x.source_quote)).toEqual(criteria.map(x=>x.source_quote));
+  expect(normalizeModelQaPlan({version:"1",criteria:[{...raw.criteria[0],source_quote:"not in prompt"}]},prompt)).toBeNull();
+ });
  it("binds every claim to original prompt, rejects no-evidence and duplicate claims",()=>{
   expect(plan).not.toBeNull();
   expect(parseQaPlan({version:"1",criteria:[{...criteria[0],source_quote:"not in user prompt"}]},prompt)).toBeNull();
