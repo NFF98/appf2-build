@@ -1,4 +1,4 @@
-import {mutationProofTranscript,verifyMutationProof} from "./create-proof.js";
+import {verifyMutationProof} from "./create-proof.js";
 import {makePrototypeCodeArtifact,verifyPrototypeCodeArtifact} from "../platform/blueprint/code-artifact-v2.js";
 import {WorkerPostgresExecutor,NO_REQUEST_DB_CONTEXT} from "../platform/blueprint/worker-postgres-executor.js";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
@@ -70,6 +70,7 @@ export async function generateCodeApp(env:Appf2WorkerEnv,prompt:string):Promise<
  if(typeof message!=="string"||message.length>130000)return null;
  try{return codeObject(JSON.parse(message) as unknown);}catch{return null;}
 }
+// eslint-disable-next-line complexity -- Signed creation, single charge, fail-closed admission and idempotency each require an independent guard.
 async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:CodeBuilderDeps}):Promise<Response>{
  const {request,url,env,deps}=ctx,origin=request.headers.get("Origin"),site=request.headers.get("Sec-Fetch-Site");
  if(request.method!=="POST"||url.search||origin!==url.origin||(site!==null&&site!=="same-origin")||
