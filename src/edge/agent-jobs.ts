@@ -1,0 +1,137 @@
+/**
+ * Sprint 3.5 private candidate API — durable project create/reopen, NO AI spend.
+ * Each mutation requires a fresh PoP signature and exact first-party Origin.
+ * An anonymous_id alone is never an authentication credential.
+ */
+import {verifyMutationProof} from "./create-proof.js";
+import {WorkerPostgresExecutor,type WorkerRequestDbContext}
+ from "../platform/blueprint/worker-postgres-executor.js";
+import {startDurableAgentJob,recoverAgentJob}
+ from "../platform/agent/durable-agent-service.js";
+import {createProjectSnapshot} from "../platform/agent/project-workspace.js";
+import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
+import type {AgentCheckpoint} from "../platform/agent/agent-contract.js";
+import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
+import type {Appf2WorkerEnv} from "./worker-composition.js";
+
+const CREATE="/api/v1/agent-jobs";
+const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const KEY=/^[A-Za-z0-9_-]{8,128}$/u;
+const HEADERS={"Content-Type":"application/json; charset=utf-8",
+ "Cache-Control":"private, no-store"};
+type Db=AgentJobExecutor&{close:()=>Promise<void>};
+export type AgentJobRouteDeps={
+ readonly db?:(env:Appf2WorkerEnv,context:WorkerRequestDbContext)=>Db;
+ readonly newJobId?:()=>string;
+};
+export type AgentJobRouteContext={
+ readonly request:Request;readonly url:URL;readonly env:Appf2WorkerEnv;
+ readonly nowMs:number;readonly deps?:AgentJobRouteDeps;
+};
+const json=(status:number,body:unknown)=>new Response(JSON.stringify(body),
+ {status,headers:HEADERS});
+const denied=()=>json(404,{error:"AGENT_JOB_NOT_FOUND"});
+function isObject(x:unknown):x is Record<string,unknown>{
+ return typeof x==="object"&&x!==null&&!Array.isArray(x);
+}
+function verifiedBody(raw:unknown,create:boolean):{anonymous_id:string;prompt?:string}|null{
+ if(!isObject(raw)||!UUID.test(String(raw.anonymous_id)))return null;
+ const fields=Object.keys(raw).sort().join(",");
+ if(create){
+  if(fields!=="anonymous_id,prompt"||typeof raw.prompt!=="string"||
+   raw.prompt.trim().length<5||raw.prompt.length>800)return null;
+  return {anonymous_id:String(raw.anonymous_id),prompt:raw.prompt.trim()};
+ }
+ return fields==="anonymous_id"?{anonymous_id:String(raw.anonymous_id)}:null;
+}
+function sameOrigin(request:Request,url:URL):boolean{
+ const site=request.headers.get("Sec-Fetch-Site");
+ return request.headers.get("Origin")===url.origin&&
+  (site===null||site==="same-origin");
+}
+async function keyDigest(thumbprint:string):Promise<string>{
+ const hash=await sha256CodeBytes(new TextEncoder().encode(
+  "APPF2_AGENT_OWNER_P256_V1\u0000"+thumbprint));
+ return hash.slice("sha256:".length);
+}
+async function requestHash(prompt:string):Promise<string>{
+ return sha256CodeBytes(new TextEncoder().encode("APPF2_AGENT_REQUEST_V1\u0000"+prompt));
+}
+/** Safe initial source: no untrusted script interpolation, dependency downloads or execution. */
+async function initialProject(prompt:string){
+ const title=prompt.trim().slice(0,90);
+ return createProjectSnapshot("VITE_WEB","index.html",[
+  {path:"index.html",content:`<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="app"></div><script type="module" src="/src/main.ts"></script></body></html>`},
+  {path:"src/main.ts",content:`import "./style.css";const app=document.querySelector<HTMLDivElement>("#app");if(!app)throw Error("root missing");const h=document.createElement("h1");h.textContent="APPf2 候選專案";const p=document.createElement("p");p.textContent=${JSON.stringify(title)};const status=document.createElement("p");status.textContent="已保存初始專案；AI 生成尚未開始";app.replaceChildren(h,p,status);`},
+  {path:"src/style.css",content:"body{font-family:system-ui,sans-serif;margin:0;padding:32px;background:#f8fafc;color:#172033}#app{max-width:720px;margin:auto;background:white;padding:32px;border-radius:18px;box-shadow:0 8px 30px #0001}"},
+  {path:"package.json",content:JSON.stringify({name:"appf2-candidate",private:true,type:"module",scripts:{build:"vite build"},devDependencies:{vite:"^6.0.0",typescript:"^5.0.0"}})}
+ ]);
+}
+async function create(db:Db,owner:string,thumb:string,key:string,prompt:string,
+ newJobId:()=>string):Promise<Response>{
+ const project=await initialProject(prompt);
+ const jobId=newJobId();
+ const checkpoint:AgentCheckpoint={
+  version:"APPF2_AGENT_CHECKPOINT_V1",job_id:jobId,state:"CREATED",
+  project_hash:project.project_hash,step:0,tokens_used:0,cost_cents:0,
+  budget:{max_steps:8,max_tokens:8192,max_cost_cents:0},
+  completed_call_ids:[],previous_checkpoint_id:null
+ };
+ const saved=await startDurableAgentJob(db,{job_id:jobId,owner,thumbprint:thumb,
+  idempotency:key,request_hash:await requestHash(prompt),checkpoint,project});
+ return json(201,{data:{job_id:saved.job.job_id,
+  status:saved.job.job_state,revision:saved.job.revision,
+  project_hash:saved.project.project_hash,
+  files:saved.project.files.map(f=>({path:f.path,bytes:f.bytes})),
+  ai_started:false,app_published:false}});
+}
+async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Response>{
+ if(!UUID.test(jobId))return denied();
+ // Independent identity assertion: anonymous UUID alone NEVER grants source access.
+ const matches=await db.query<{job_id:string}>(`SELECT job_id::text
+  FROM public.appf2_agent_job WHERE job_id=$1::uuid
+  AND owner_anonymous_id=$2::uuid AND owner_key_thumbprint=$3::text LIMIT 1`,
+  [jobId,owner,thumb]);
+ if(matches.rows[0]?.job_id!==jobId)return denied();
+ const recovered=await recoverAgentJob(db,jobId,owner);
+ if(!recovered)return denied();
+ return json(200,{data:{job_id:recovered.job.job_id,status:recovered.job.job_state,
+  revision:recovered.job.revision,project_hash:recovered.project.project_hash,
+  files:recovered.project.files,checkpoint:recovered.job.checkpoint,
+  ai_started:recovered.job.checkpoint.step>0,app_published:false}});
+}
+/** Return undefined only if this is not one of our routes. */
+export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match)return undefined;
+ if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
+ if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
+  request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
+  return denied();
+ const key=request.headers.get("Idempotency-Key");
+ if(!key||!KEY.test(key))return json(400,{error:"AGENT_JOB_KEY_INVALID"});
+ // Bound request size before any database side effect.
+ if(Number(request.headers.get("Content-Length")??0)>1400)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
+ const bytes=new Uint8Array(await request.arrayBuffer());
+ if(bytes.byteLength>1400)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
+ const proof=await verifyMutationProof({method:"POST",path:url.pathname,
+  body:bytes,idempotencyKey:key,headers:request.headers},nowMs);
+ if(!proof)return denied();
+ let parsed:unknown;
+ try{parsed=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));}
+ catch{return json(400,{error:"AGENT_JOB_BODY_INVALID"});}
+ const info=verifiedBody(parsed,url.pathname===CREATE);
+ if(!info)return json(400,{error:"AGENT_JOB_BODY_INVALID"});
+ const ownerThumb=await keyDigest(proof.keyThumbprint);
+ const db=ctx.deps?.db?.(env,{anonymousId:info.anonymous_id,intentId:null})??
+  new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,
+   {anonymousId:info.anonymous_id,intentId:null});
+ try{
+  if(url.pathname===CREATE)return await create(db,info.anonymous_id,ownerThumb,
+   key,info.prompt??"",ctx.deps?.newJobId??(()=>crypto.randomUUID()));
+  return await read(db,info.anonymous_id,ownerThumb,match?.[1]??"");
+ }catch{
+  return json(503,{error:"AGENT_JOB_UNAVAILABLE"});
+ }finally{await db.close().catch(()=>undefined);}
+}

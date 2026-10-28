@@ -5,6 +5,7 @@ import { NO_REQUEST_DB_CONTEXT, type WorkerRequestDbContext } from "../platform/
 import { routeBlueprintDelivery, type BlueprintDeliveryFactory, type BlueprintDeliveryComposition } from "./blueprint-delivery.js";
 import { routePublishedApps } from "./published-apps.js";
 import {routeCodeBuilder} from "./code-builder-v2.js";
+import {routeAgentJobs,type AgentJobRouteDeps} from "./agent-jobs.js";
 import { claimsMutationProof, reservedCreateIdempotencyKey, verifyMutationProof } from "./create-proof.js";
 import { EVENTS_BATCH_ROUTE } from "./events-batch.js";
 import { INTENTS_ROUTE, type IntentApiHttpResponse } from "./intent-api.js";
@@ -29,6 +30,8 @@ export interface WorkerCompositionFactories {
 
 export interface WorkerFetchOptions {
   readonly now?: () => number;
+  /** Candidate-only DB injection for isolated API E2E; never permits bypassing PoP. */
+  readonly agent?: AgentJobRouteDeps;
 }
 
 const PRODUCTION_FACTORIES: WorkerCompositionFactories = {
@@ -207,6 +210,8 @@ export function createWorkerFetch(factories: Partial<WorkerCompositionFactories>
     if (delivered !== undefined) return delivered;
     const published=await routePublishedApps({request,url,env,nowMs,delivery:deliveryFactory});
     if(published!==undefined)return published;
+    const agentJob=await routeAgentJobs({request,url,env,nowMs,deps:options.agent});
+    if(agentJob!==undefined)return agentJob;
     const codeApp=await routeCodeBuilder({request,url,env});
     if(codeApp!==undefined)return codeApp;
     if (!url.pathname.startsWith(API_PREFIX)) return json({ error: { code: "API-NOT-FOUND" } }, 404);

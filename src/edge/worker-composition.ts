@@ -44,6 +44,8 @@ export interface Appf2WorkerEnv {
   readonly APPF2_MODEL_API_KEY: string;
   readonly APPF2_MODEL_NAME: string;
   readonly APPF2_QA_BROWSER?: unknown;
+  /** Candidate multi-file Job API: disabled unless explicitly enabled in a protected staging Worker. */
+  readonly APPF2_AGENT_CANDIDATE_ENABLED?: string;
   readonly APPF2_MODEL_PROVIDER?: "openai" | "xai" | "deepseek";
   /** Set only with explicit authorization to send a 429 retry to this provider. */
   readonly APPF2_MODEL_FALLBACK_PROVIDER?: "xai" | "deepseek";
