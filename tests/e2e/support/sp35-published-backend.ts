@@ -1,4 +1,3 @@
-import type { Request as PlaywrightRequest } from "@playwright/test";
 import { routeBlueprintDelivery, type BlueprintDeliveryComposition } from "../../../src/edge/blueprint-delivery.js";
 import { routePublishedApps } from "../../../src/edge/published-apps.js";
 import { createExecutionAdmissionService } from "../../../src/platform/blueprint/execution-admission.js";
