@@ -1,5 +1,4 @@
 import {expect,test,type Page} from "@playwright/test";
-import {composer,createButton} from "./support/f00-flow.js";
 import {APP_ORIGIN,S03WorkerHost} from "./support/s03-worker-host.js";
 import type {PublishedBrowserBackend} from "./support/sp35-published-backend.js";
 
@@ -26,8 +25,8 @@ const result=(p:Page)=>p.locator(".s03-result-item",{hasText:"每人金額"}).lo
 /** This is *not* the CI LifePilot/moving private owner context. New fixture owner consents in UI. */
 test("F05 stranger chooses genuinely published card, operates and reloads; owner state isolated; zero new AI",async({page,browser},info)=>{
   await page.goto(APP_ORIGIN);
-  await composer(page).fill("請做一個可以計算家庭聚餐分帳金額的工具");
-  await createButton(page).click();
+  await page.getByRole("textbox",{name:"說出你想做的 App"}).fill("請做一個可以計算家庭聚餐分帳金額的工具");
+  await page.getByRole("button",{name:"建立 App",exact:true}).click();
   await expect(page.locator(".s03")).toBeVisible({timeout:25000});
   await expect(result(page)).toHaveText("30");
   await people(page).fill("6");
