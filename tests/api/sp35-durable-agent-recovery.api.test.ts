@@ -36,10 +36,11 @@ class InMemoryDb implements AgentJobExecutor{
    return {rows:[{job_id:jobId} as T]};
   }
   if(sql.startsWith("UPDATE public.appf2_agent_job")){
-   if(this.job?.revision!==args[2]||this.job?.checkpoint_hash!==args[7])
+   const current=this.job;
+   if(!current||current.revision!==args[2]||current.checkpoint_hash!==args[7])
     return {rows:[]};
    const checkpoint=JSON.parse(String(args[6])) as AgentCheckpoint;
-   this.job={...this.job,revision:this.job.revision+1,
+   this.job={...current,revision:current.revision+1,
     checkpoint_hash:String(args[3]),project_hash:String(args[4]),
     job_state:String(args[5]),checkpoint};
    return {rows:[{job_id:jobId} as T]};
