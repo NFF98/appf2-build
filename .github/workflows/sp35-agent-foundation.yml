@@ -37,3 +37,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Actual trusted multi-file Vite build and browser click
         run: node deploy/scripts/sp35-trusted-multifile-build-e2e.mjs
+      - name: Bundle isolated Cloudflare Sandbox Worker (dry run, NO deploy, NO containers)
+        run: |
+          npm install --prefix deploy/sandbox --ignore-scripts --no-audit --no-fund
+          npm run check --prefix deploy/sandbox
