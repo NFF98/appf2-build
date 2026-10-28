@@ -32,7 +32,7 @@ test("F05 stranger chooses genuinely published card, operates and reloads; owner
   const modal=page.getByRole("dialog",{name:"公開分享這個 App？"});
   await expect(modal).toContainText("個人操作紀錄不會分享");
   await modal.getByRole("button",{name:"確認公開（不使用 AI）"}).click();
-  const link=page.getByRole("region",{name:"公開分享連結"}).getByRole("link");
+  const link=page.locator('[aria-label="公開分享連結"]').getByRole("link");
   await expect(link).toBeVisible();
   const url=await link.getAttribute("href");
   expect(url).toMatch(/^https:\/\/appf2\.test\/share\/[0-9a-f-]{36}$/u);
