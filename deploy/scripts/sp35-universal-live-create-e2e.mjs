@@ -60,6 +60,24 @@ try{
   const frame=page.frameLocator('iframe[sandbox="allow-scripts"]');
   await frame.locator("#app").waitFor({state:"visible",timeout:10000});
   if(await frame.locator("button").count()===0)throw Error("NO_INTERACTIVE_APP_"+sample.kind);
+  const app=frame.locator("#app");
+  if(sample.kind==="counter"){
+   const add=frame.getByRole("button",{name:"加一",exact:true});
+   const reset=frame.getByRole("button",{name:"歸零",exact:true});
+   const initial=await app.innerText();
+   await add.click();const one=await app.innerText();
+   await add.click();const two=await app.innerText();
+   await reset.click();const cleared=await app.innerText();
+   if(initial===one||one===two||cleared===two)
+    throw Error("PUBLISHED_COUNTER_INTERACTION_FAILED");
+  }else{
+   await frame.getByRole("textbox").first().fill("買牛奶");
+   await frame.getByRole("button",{name:"新增任務",exact:true}).click();
+   if(!(await app.innerText()).includes("買牛奶"))throw Error("PUBLISHED_NOTES_ADD_FAILED");
+   const beforeDone=await app.innerHTML();
+   await frame.getByRole("button",{name:"完成",exact:true}).first().click();
+   if((await app.innerHTML())===beforeDone)throw Error("PUBLISHED_NOTES_COMPLETE_FAILED");
+  }
   outcomes.push({kind:sample.kind,status:"VERIFIED_AND_PUBLIC",id,hash:record.blueprint_hash});
   await ctx.close();
  }
