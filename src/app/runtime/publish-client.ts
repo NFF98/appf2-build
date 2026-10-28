@@ -9,7 +9,9 @@ export interface PublishedAppPublisher {
  * makes ONLY an authenticated original-holder GET grant and F05 POST.
  * Neither request can enter the F01 create/analyze/compile/model route. */
 export function createPublishedAppPublisher(fetchImpl:FetchLike,keyring:PopKeyring):PublishedAppPublisher{
-  return {publish:async(intentId,contentHash,title)=>{
+  return {
+    // eslint-disable-next-line complexity -- All parsing / origin / original-holder conditions must fail closed.
+    publish:async(intentId,contentHash,title)=>{
     try{
       const key=keyring.keyForIntent(intentId)??await keyring.recoverForIntent(intentId);
       if(key===undefined)return null;
