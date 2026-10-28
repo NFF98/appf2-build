@@ -33,8 +33,8 @@ export const BROWSER_HYDRATION_TRUST: HydrationTrust = {
   trustedNow: () => Date.now()
 };
 
-/** Limited to this browser tab, this exact authorized intent and the immutable Blueprint hash.
- * No localStorage, cookies, network, or cross-tab data sharing. */
+/** State is local to this browser profile, exact original intent and immutable Blueprint hash.
+ * This is never permission to launch: F03 still requires fresh server admission and original-holder proof. */
 const MAX_TAB_STATE_BYTES = 128 * 1024;
 function tabStorageKey(intentId: string | undefined, hash: string): string | null {
   return typeof intentId === "string" &&
@@ -47,7 +47,7 @@ export function savedTabState(intentId: string | undefined, hash: string): unkno
   const key = tabStorageKey(intentId, hash);
   if (key === null) return undefined;
   try {
-    const raw = globalThis.sessionStorage.getItem(key);
+    const raw = (globalThis.localStorage?.getItem(key) ?? globalThis.sessionStorage?.getItem(key)) ?? null;
     return raw !== null && raw.length <= MAX_TAB_STATE_BYTES ? JSON.parse(raw) as unknown : undefined;
   } catch {
     return undefined; // Private browsing and denied storage are safe non-persistent modes.
@@ -60,7 +60,10 @@ export function persistBrowserTabState(runtime: RuntimeInstance, intentId: strin
       runtime.blueprint?.result.outputs.some((output) => output.sensitivity === "DO_NOT_PERSIST")) return;
   try {
     const json = JSON.stringify(runtime.snapshotMutableState());
-    if (json.length <= MAX_TAB_STATE_BYTES) globalThis.sessionStorage.setItem(key, json);
+    if (json.length <= MAX_TAB_STATE_BYTES) {
+      try { globalThis.localStorage.setItem(key, json); }
+      catch { globalThis.sessionStorage.setItem(key, json); }
+    }
   } catch {
     // Quota/security exceptions must never stop an already-committed Action.
   }
