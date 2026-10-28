@@ -47,6 +47,35 @@ describe("Sprint 3.5 private per-tab refresh persistence", () => {
     expect(savedTabState(ID, HASH)).toBeUndefined();
   });
 
+  it("persists exact instance state into the same browser profile, not another tab's sessionStorage",()=>{
+    fakeStorage();
+    const persistent=new Map<string,string>();
+    vi.stubGlobal("localStorage",{
+      getItem:(k:string)=>persistent.get(k)??null,
+      setItem:(k:string,v:string)=>{persistent.set(k,v);},
+      removeItem:(k:string)=>{persistent.delete(k);}
+    });
+    persistBrowserTabState(fakeRuntime(),ID,HASH);
+    expect(persistent.size).toBe(1);
+    vi.stubGlobal("sessionStorage",{
+      getItem:()=>null,
+      setItem:()=>{throw new Error("second tab has no state");}
+    });
+    expect(savedTabState(ID,HASH)).toEqual({tasks:["Buy milk","Call dentist"],budget:15});
+    expect(savedTabState(OTHER,HASH)).toBeUndefined();
+    expect(savedTabState(ID,OTHER_HASH)).toBeUndefined();
+  });
+  it("never browser-persists a do-not-persist output",()=>{
+    fakeStorage();
+    const persistent=new Map<string,string>();
+    vi.stubGlobal("localStorage",{
+      getItem:(k:string)=>persistent.get(k)??null,
+      setItem:(k:string,v:string)=>{persistent.set(k,v);}
+    });
+    const sensitive={...fakeRuntime(),blueprint:{result:{outputs:[{sensitivity:"DO_NOT_PERSIST"}]}}} as RuntimeInstance;
+    persistBrowserTabState(sensitive,ID,HASH);
+    expect(persistent.size).toBe(0);
+  });
   it("gracefully handles browser sessionStorage being unavailable", () => {
     vi.stubGlobal("sessionStorage", {
       getItem: () => { throw new Error("blocked"); },
