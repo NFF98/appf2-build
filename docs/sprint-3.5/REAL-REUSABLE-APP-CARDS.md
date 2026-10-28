@@ -78,3 +78,18 @@ Click **Open** must fetch the **original canonical Blueprint** using existing or
 **Real proof:** from a *new browser context on deployed Staging*, click BOTH live DB-backed cards, operate real controls (LifePilot five functions and Moving tasks/shopping/budget), verify reload and no F01/AI network requests; independently load each `/share/{uuid}`; on revoked/foreign/unknown share, fail closed. If any fails, report precise failure; never call this completed solely because DB returned 200 or a fixture browser passed.
 
 **Boundary:** first-party operator-curated CI demos and private original-holder F05 publishing have different consent proofs; product code must never treat the curated entry as permission for a third-party to publish another Blueprint.
+
+
+## S03 result button truth — F16 entry vs F03 input editing (2026-10-28)
+
+**Bug report:** live published LifePilot/Moving apps currently show `「調整結果」目前還不能使用`. This is real product incompleteness; previously reported public-card E2E intentionally did not prove F16.
+
+**Phase 3.5 immediate, no-model correction entry UX (strictly scoped):**
+1. `調整結果` must be interactive and open an accessible correction-choice dialog, showing the **actual current canonical F03 output** without altering it. No generic `UNAVAILABLE` banner for opening the entry.
+2. Explain two distinct intents, not interchangeable: **modify existing input/data** versus **semantic rule/logic is wrong** (the full F16).
+3. For existing input/data: click **調整輸入（不用 AI）** and move focus to a genuine editable control belonging to the currently hydrated App; user edits with the *existing F03 capabilities*, triggers canonical output recalculation and normal persistence. No result DOM override, no mutation of immutable Blueprint, no AI/F01 POST. If no editable control exists, do not claim an edit occurred. Preserve original App and committed data on cancel.
+4. For semantic rule/logic: offer a bounded, in-memory correction draft and the real before-value context; **do not fabricate a new F02-validated child, fake comparison, or mark result corrected**. The full F16 correction (POST /corrections, F01 CORRECT, F02 full validation, new immutable child + CORRECT lineage, trusted input replay, compare/accept/keep/revert) remains NOT IMPLEMENTED. Clearly state that it requires a new validated version and may incur AI fees only after user consent; never send automatically.
+5. Accessibility: native dialog keyboard focus, Cancel/Escape, no hidden paid action, privacy-safe state, visible before output. The dialog cannot block or corrupt normal App operations.
+6. Verification: genuine no-cost browser E2E against the already-published Staging App, click Result → adjust existing input → change displayed output via F03 action, reload and see changed value, F01 requests=0; separate unit/UX test that semantic correction is not falsely passed.
+
+**Truthful signoff:** local-input edit PASS is **not** F16 CORRECT PASS. Report these independently; do not claim that `調整結果` fully repairs wrong formulas until F16 full contract and real E2E exist.
