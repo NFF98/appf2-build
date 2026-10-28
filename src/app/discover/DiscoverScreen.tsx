@@ -6,6 +6,7 @@ import { Composer } from "./Composer.js";
 import { DiscoverNav } from "./DiscoverNav.js";
 import { Inspiration } from "./Inspiration.js";
 import { SavedApps } from "./SavedApps.js";
+import { PublicApps } from "./PublicApps.js";
 import type { SavedTabApp, TabAppTarget } from "../shell/tab-app-recovery.js";
 
 export type ComposerDraft = {
@@ -21,10 +22,11 @@ type DiscoverScreenProps = {
   readonly savedApps: readonly SavedTabApp[];
   readonly onOpenSaved: (target: TabAppTarget) => void;
   readonly onForgetSaved: (target: TabAppTarget) => void;
+  readonly onOpenPublic:(shareId:string)=>void;
 };
 
 /** S01 Discover / Start: prompt-first Creator Canvas with supporting Inspiration Capsules; no registration gate. */
-export function DiscoverScreen({ draft, onDraftChange, onCreate, savedApps, onOpenSaved, onForgetSaved }: DiscoverScreenProps) {
+export function DiscoverScreen({ draft, onDraftChange, onCreate, savedApps, onOpenSaved, onForgetSaved,onOpenPublic }: DiscoverScreenProps) {
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const inspirationRef = useRef<HTMLHeadingElement>(null);
   const savedAppsRef = useRef<HTMLHeadingElement>(null);
@@ -65,6 +67,7 @@ export function DiscoverScreen({ draft, onDraftChange, onCreate, savedApps, onOp
         </section>
         <Composer ref={composerRef} draft={draft} onDraftChange={onDraftChange} onCreate={onCreate} onSuggestion={prefill} />
         <SavedApps headingRef={savedAppsRef} apps={savedApps} onOpen={onOpenSaved} onForget={onForgetSaved} />
+        <PublicApps onOpen={onOpenPublic} />
         <Inspiration headingRef={inspirationRef} onTry={prefill} />
       </main>
       <DiscoverNav variant="bottom" onHome={goHome} onExplore={goInspiration} onApps={goSavedApps} />
