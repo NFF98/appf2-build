@@ -9,6 +9,7 @@ import { BLUEPRINT_SCHEMA_RANGE, RUNTIME_VERSION } from "../platform/capabilitie
 import { CORE_CAPABILITY_HANDLERS } from "../platform/runtime/core-handlers.js";
 import {
   WorkerPostgresExecutor,
+  NO_REQUEST_DB_CONTEXT,
   type HyperdrivePostgresBinding,
   type WorkerRequestDbContext
 } from "../platform/blueprint/worker-postgres-executor.js";
