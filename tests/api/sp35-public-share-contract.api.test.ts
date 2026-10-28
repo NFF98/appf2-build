@@ -6,8 +6,8 @@ import type { Appf2WorkerEnv } from "../../src/edge/worker-composition.js";
 import type { PostgresExecutor } from "../../src/platform/blueprint/postgres-blueprint-repository.js";
 
 const ORIGIN="https://appf2.test";
-const HASH="sha256:"+"b".repeat(64),ID="0199f5d0-53e8-7505-adf6-bc4c744fe0c7";
-const ANON="0199f5d0-53e8-7505-adf6-bc4c744fe0c8";
+const HASH="sha256:"+"b".repeat(64),ID="12345678-1234-4234-8234-123456789abc";
+const ANON="12345678-1234-4234-8234-123456789abd";
 const SECRET="a".repeat(64);
 const env={APPF2_IDENTITY_COOKIE_SECRET:SECRET} as Appf2WorkerEnv;
 function setup(){
