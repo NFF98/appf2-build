@@ -258,6 +258,8 @@ jobs:
         run: |
           npx playwright install chromium
           node deploy/scripts/sp35-saved-app-no-model-smoke.mjs
+      - name: Hybrid Blueprint v2 Code Artifact real browser isolation proof (no AI)
+        run: node deploy/scripts/sp35-hybrid-code-sandbox-e2e.mjs
       - name: Real browser F05 publish -> stranger -> F03 actions (free scripted model / fixture DB)
         run: node deploy/scripts/sp35-public-card-browser-no-model.mjs
       - name: Live Staging published LifePilot and moving cards (no AI)
