@@ -46,8 +46,15 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
      role==="tab"?['[role="tab"]',"button"]:
      role==="link"?["a"]:role==="textbox"?["input","textarea"]:
      role==="heading"?["h1","h2","h3","h4"]:["input"];
-    return Array.from(document.querySelectorAll(allowed.join(","))).find(el=>
-     (el.getAttribute("aria-label")||el.textContent||"").trim()===name)??null;
+    return Array.from(document.querySelectorAll(allowed.join(","))).find(el=>{
+     const explicit=el.getAttribute("aria-label");
+     const describedBy=el.getAttribute("aria-labelledby");
+     const referenced=describedBy?describedBy.split(/\\s+/u).map(id=>document.getElementById(id)?.textContent??"").join(" "):"";
+     const labels=el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement?
+       Array.from(el.labels??[]).map(x=>x.textContent??"").join(" "):"";
+     const candidate=(explicit||referenced||labels||el.getAttribute("placeholder")||el.textContent||"").trim();
+     return candidate===name;
+    })??null;
    };
    const before=new Map<string,string>();
    for(const a of test.assertions)if(a.kind==="text_changes")

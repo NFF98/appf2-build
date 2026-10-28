@@ -12,10 +12,20 @@ const before=await fetch(origin+"/api/v1/code-apps/"+old);
 if(!before.ok||((await before.json()).data.blueprint_hash===record.blueprint_hash))
  throw Error("ORIGINAL_BLUEPRINT_NOT_PRESERVED");
 const browser=await chromium.launch({headless:true});
+async function openPublished(url){
+ let lastError=null;
+ for(let attempt=0;attempt<2;attempt++){
+  const page=await browser.newPage();
+  try{
+   await page.goto(url,{waitUntil:"commit",timeout:45000});
+   return page;
+  }catch(e){lastError=e;await page.close().catch(()=>undefined);}
+ }
+ throw Error("PUBLISHED_CARD_NAVIGATION_UNAVAILABLE",{cause:lastError});
+}
 try{
- const page=await browser.newPage();
+ const page=await openPublished(origin+"/code/"+id);
  const errors=[];page.on("pageerror",e=>errors.push(e.message));
- await page.goto(origin+"/code/"+id,{waitUntil:"domcontentloaded"});
  const frame=page.frameLocator('iframe[sandbox="allow-scripts"]');
  await frame.locator("#app").waitFor({state:"visible",timeout:15000});
  for(const label of ["遊戲","結果","排行","規則"])
@@ -40,8 +50,7 @@ try{
  if(!(await frame.locator("#game-turn").innerText()).includes("第 1 回合"))
   throw Error("LIVE_RESET_FAILED");
  if(errors.length)throw Error("LIVE_BROWSER_EXCEPTION:"+JSON.stringify(errors));
- const visitor=await browser.newPage();
- await visitor.goto(origin+"/code/"+id,{waitUntil:"domcontentloaded"});
+ const visitor=await openPublished(origin+"/code/"+id);
  await visitor.frameLocator('iframe[sandbox="allow-scripts"]').getByRole("button",{name:"遊戲",exact:true}).waitFor({state:"visible",timeout:12000});
  console.log("CORRECTED_DICE_LIVE_PUBLISHED_PASS: real PostgreSQL+signed hash+two fresh browsers+actual dice+rules+navigation+reset");
 }finally{await browser.close();}

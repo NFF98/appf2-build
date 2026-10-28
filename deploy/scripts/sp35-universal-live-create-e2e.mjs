@@ -14,6 +14,14 @@ try{
  for(const sample of samples){
   const ctx=await browser.newContext(),page=await ctx.newPage();
   let calls=0;
+  let receipt=null;
+  page.on("response",response=>{
+   if(response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/code-apps"){
+    void response.json().then(data=>{receipt={
+     http:response.status(),error:data?.error??null,phase:data?.phase??null
+    };}).catch(()=>{receipt={http:response.status(),error:"RESPONSE_NOT_JSON"};});
+   }
+  });
   page.on("request",r=>{if(r.method()==="POST"&&new URL(r.url()).pathname==="/api/v1/code-apps")calls++;});
   // The staging hostname can intermittently hang during Chromium navigation;
   // retry only the NO-AI homepage read, never the paid POST.
@@ -41,7 +49,7 @@ try{
    ]);
   }catch(e){reason="TIMEOUT_OR_BROWSER_FAIL:"+String(e).slice(0,80);}
   if(calls!==1)throw Error("UNEXPECTED_CODE_CREATE_COUNT:"+calls);
-  if(!generated){outcomes.push({kind:sample.kind,status:"FAIL_CLOSED",detail:reason});await ctx.close();continue;}
+  if(!generated){outcomes.push({kind:sample.kind,status:"FAIL_CLOSED",detail:reason,receipt});await ctx.close();continue;}
   const id=page.url().split("/").at(-1);
   const response=await page.request.get(origin+"/api/v1/code-apps/"+id);
   if(!response.ok)throw Error("NEW_QUALITY_APP_NOT_SERVED_"+sample.kind);
