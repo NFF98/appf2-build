@@ -32,7 +32,7 @@ function assertion(x:unknown):x is QaAssertion{
  if(x.kind==="text_includes")return typeof x.text==="string"&&x.text.length>=1&&x.text.length<=160;
  if(x.kind==="visible")return NAME(x.name)&&["button","tab","link","textbox","heading"].includes(String(x.role));
  if(x.kind==="pure_case")return NAME(x.function_name)&&
-   /^[A-Za-z_$][\\w$]{0,63}$/u.test(x.function_name)&&
+   /^[A-Za-z_$][\w$]{0,63}$/u.test(x.function_name)&&
    Array.isArray(x.input)&&x.input.length<=8&&
    typeof JSON.stringify(x.input)==="string"&&JSON.stringify(x.input).length<=300&&
    typeof JSON.stringify(x.expected)==="string"&&JSON.stringify(x.expected).length<=300&&
