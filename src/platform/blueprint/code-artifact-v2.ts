@@ -105,6 +105,7 @@ export type PrototypeAdmissionResult =
   | {readonly ok:false;readonly reason:"INVALID_SHAPE"|"HASH_MISMATCH"|"UNSUPPORTED_PROFILE"};
 /** Test and shell prototype admission: strict shapes, allowlisted permission and verified every byte.
  * This does NOT replace DB-backed F02 v2 build provenance or original-holder share authorization. */
+// eslint-disable-next-line complexity -- Security admission requires explicit strict, independent fail-closed checks.
 export async function verifyPrototypeCodeArtifact(input:unknown):Promise<PrototypeAdmissionResult>{
   const bad=(reason:Extract<PrototypeAdmissionResult,{ok:false}>["reason"]):PrototypeAdmissionResult=>({ok:false,reason});
   if(!keys(input,["envelope","manifest","javascript"])||!trustedJavaScript(input.javascript))
