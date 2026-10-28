@@ -3,7 +3,7 @@ import {makePrototypeCodeArtifact,verifyPrototypeCodeArtifact} from "../platform
 import {WorkerPostgresExecutor,NO_REQUEST_DB_CONTEXT} from "../platform/blueprint/worker-postgres-executor.js";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 import {appf2ModelProviderConfig} from "../platform/compiler/appf2-model-provider.js";
-import {codeBuilderModelRequest,readCodeBuilderCompletion} from "./code-builder-generation-contract.js";
+import {codeBuilderModelRequest,readCodeBuilderCompletion,CODE_BUILDER_GENERATION_TIMEOUT_MS} from "./code-builder-generation-contract.js";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const JSON_HEADERS={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"};
 const CREATE="/api/v1/code-apps",ITEM=/^\/api\/v1\/code-apps\/([^/]+)$/u;
@@ -45,7 +45,7 @@ export async function generateCodeApp(env:Appf2WorkerEnv,prompt:string):Promise<
  const request=codeBuilderModelRequest(config.model,prompt);
  const response=await fetch(config.baseUrl+"/chat/completions",{
    method:"POST",headers:{"Authorization":"Bearer "+config.apiKey,"Content-Type":"application/json"},
-   body:JSON.stringify(request),signal:AbortSignal.timeout(65000)
+   body:JSON.stringify(request),signal:AbortSignal.timeout(CODE_BUILDER_GENERATION_TIMEOUT_MS)
  });
  if(!response.ok)return null;
  const data:unknown=await response.json();

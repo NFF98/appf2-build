@@ -32,17 +32,20 @@ export type CodeBuilderGeneratedCode={title:string;javascript:string};
 function record(x:unknown):x is Record<string,unknown>{
  return typeof x==="object"&&x!==null&&!Array.isArray(x);
 }
-export function readCodeBuilderCompletion(data:unknown):CodeBuilderGeneratedCode|null{
- if(!record(data)||!Array.isArray(data.choices)||data.choices.length===0)return null;
- const choice:unknown=data.choices[0];
- if(!record(choice)||choice.finish_reason!=="stop"||!record(choice.message)||
-   typeof choice.message.content!=="string"||choice.message.content.length>130000)return null;
+function parseCodeObject(content:string):CodeBuilderGeneratedCode|null{
  let parsed:unknown;
- try{parsed=JSON.parse(choice.message.content);}catch{return null;}
+ try{parsed=JSON.parse(content);}catch{return null;}
  if(!record(parsed)||Object.keys(parsed).length!==2||
    typeof parsed.title!=="string"||typeof parsed.javascript!=="string")return null;
  const title=parsed.title.trim();
  if(title.length===0||title.length>120||parsed.javascript.length===0||
    new TextEncoder().encode(parsed.javascript).byteLength>128*1024)return null;
  return {title,javascript:parsed.javascript};
+}
+export function readCodeBuilderCompletion(data:unknown):CodeBuilderGeneratedCode|null{
+ if(!record(data)||!Array.isArray(data.choices)||data.choices.length===0)return null;
+ const choice:unknown=data.choices[0];
+ if(!record(choice)||choice.finish_reason!=="stop"||!record(choice.message)||
+   typeof choice.message.content!=="string"||choice.message.content.length>130000)return null;
+ return parseCodeObject(choice.message.content);
 }
