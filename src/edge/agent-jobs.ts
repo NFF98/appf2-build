@@ -40,6 +40,7 @@ function isObject(x:unknown):x is Record<string,unknown>{
  return typeof x==="object"&&x!==null&&!Array.isArray(x);
 }
 type VerifiedJobBody={anonymous_id:string;prompt?:string;max_cost_cents?:number;explicit_ai_consent?:boolean};
+// eslint-disable-next-line complexity -- Explicit AI consent and zero-cost default must remain fail-closed.
 function verifiedBody(raw:unknown,create:boolean):VerifiedJobBody|null{
  if(!isObject(raw)||!UUID.test(String(raw.anonymous_id)))return null;
  const fields=Object.keys(raw).sort().join(",");

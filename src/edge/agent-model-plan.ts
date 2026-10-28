@@ -21,6 +21,7 @@ export type ModelPlanDeps={
 };
 const HASH=/^sha256:[a-f0-9]{64}$/u;
 const CALL=/^[A-Za-z0-9_-]{8,80}$/u;
+// eslint-disable-next-line complexity -- Strict consent, model-call and spend input validation.
 export function validModelPlanBody(input:unknown):input is ModelPlanInput{
  if(typeof input!=="object"||input===null||Array.isArray(input))return false;
  const x=input as Record<string,unknown>;
