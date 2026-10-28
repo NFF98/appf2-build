@@ -12,6 +12,21 @@ import {verifyAndRepair,type QaDraft} from "../platform/qa/repair-loop.js";
 import {codeBuilderModelRequest} from "./code-builder-generation-contract.js";
 
 const FAILCLOSED_ERROR="QA_UNAVAILABLE_OR_UNVERIFIED";
+export type SafeQaFailure={id:string;verdict:"FAIL"|"UNTESTED";kind:string};
+export class CodeQaFailure extends Error{
+ readonly failures:readonly SafeQaFailure[];
+ constructor(status:"FAILED"|"NEEDS_HUMAN",evidence:readonly QaEvidence[]){
+  super(status==="FAILED"?"QA_BROWSER_ASSERTIONS_FAILED":"QA_BROWSER_INCOMPLETE");
+  this.name="CodeQaFailure";
+  this.failures=evidence.filter(x=>x.verdict!=="PASS").map(x=>{
+   const label=x.detail.split(":")[0];
+   const safe=["BROWSER_ERROR","BROWSER_TEST_CRASH","BROWSER_EXCEPTION","ASSERTION_FAILED",
+     "MISSING_CONTROL","NO_INDEPENDENT_EVIDENCE","HUMAN_REVIEW_REQUIRED","MISSING_APP_ROOT",
+     "QA_SANDBOX_FRAME_MISSING"].includes(label)?label:"OTHER";
+   return {id:x.id,verdict:x.verdict as "FAIL"|"UNTESTED",kind:safe};
+  });
+ }
+}
 function safeInput(s:string):string{return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll('"',"&quot;");}
 const template=async(javascript:string)=>{
  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(javascript)));
@@ -152,5 +167,7 @@ export async function qualityGateCode(env:Appf2WorkerEnv,prompt:string,initial:Q
    maxRepairs:allowRepair?2:0,
    repair:allowRepair?(draft,acceptance,failed,attempt)=>repairQaCode(env,draft,acceptance,failed,attempt):undefined
   });
- return outcome.status==="VERIFIED"?outcome.draft:null;
+ if(outcome.status==="VERIFIED")return outcome.draft;
+ throw new CodeQaFailure(outcome.status,outcome.attempts.at(-1)?.evidence??[]);
+
 }

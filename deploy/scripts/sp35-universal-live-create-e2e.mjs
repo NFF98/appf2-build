@@ -19,7 +19,8 @@ try{
    if(response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/code-apps"){
     void response.json().then(data=>{receipt={
      http:response.status(),error:data?.error??null,phase:data?.phase??null,
-     reason:data?.reason??null
+     reason:data?.reason??null,qa_failures:Array.isArray(data?.qa_failures)?
+      data.qa_failures.slice(0,20):[]
     };}).catch(()=>{receipt={http:response.status(),error:"RESPONSE_NOT_JSON"};});
    }
   });
@@ -39,6 +40,9 @@ try{
   const textarea=page.getByRole("textbox",{name:"描述你想做的 App"});
   await textarea.fill(sample.prompt);
   await page.getByLabel(/我同意 AI 先規劃驗收條件/).check();
+  // This isolated opt-in test explicitly authorizes up to two paid repairs.
+  if(process.env.APPF2_QA_NOTES_ONLY==="1")
+   await page.getByLabel(/若首次驗收失敗/).check();
   // No auto repair: exactly one requirements plan and one generation completion.
   await page.getByRole("button",{name:"生成 Blueprint v2 App"}).click();
   let generated=false,reason="";

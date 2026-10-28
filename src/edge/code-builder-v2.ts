@@ -4,7 +4,7 @@ import {WorkerPostgresExecutor,NO_REQUEST_DB_CONTEXT} from "../platform/blueprin
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 import {appf2ModelProviderConfig} from "../platform/compiler/appf2-model-provider.js";
 import {codeBuilderModelRequest,readCodeBuilderCompletion,CODE_BUILDER_GENERATION_TIMEOUT_MS} from "./code-builder-generation-contract.js";
-import {qualityGateCode,generateQaPlan} from "./code-builder-quality.js";
+import {qualityGateCode,generateQaPlan,CodeQaFailure} from "./code-builder-quality.js";
 import type {QaPlan} from "../platform/qa/requirement-contract.js";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const JSON_HEADERS={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"};
@@ -119,9 +119,12 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
   await db(env,identity,deps,async executor=>{await executor.query(FAIL,[shareId]);}).catch(()=>undefined);
   // Only a small server-defined error vocabulary is exposed, never provider data or source code.
   const message=e instanceof Error?e.message:"";
-  const reason=["QA_PLAN_SCHEMA_REJECTED","QA_PLAN_REQUIRES_HUMAN_REVIEW","QA_MODEL_UNAVAILABLE"].includes(message)?
+  const reason=["QA_PLAN_SCHEMA_REJECTED","QA_PLAN_REQUIRES_HUMAN_REVIEW","QA_MODEL_UNAVAILABLE",
+    "QA_BROWSER_ASSERTIONS_FAILED","QA_BROWSER_INCOMPLETE"].includes(message)?
     message:"UNCLASSIFIED";
-  return answer(422,{error:"CODE_BUILD_FAILED_NO_PUBLISHED_APP",phase,reason});
+  const failures=e instanceof CodeQaFailure?e.failures:undefined;
+  return answer(422,{error:"CODE_BUILD_FAILED_NO_PUBLISHED_APP",phase,reason,
+    ...(failures?{qa_failures:failures}:{} )});
  }
 }
 async function read(ctx:{url:URL;env:Appf2WorkerEnv;deps:CodeBuilderDeps},id:string):Promise<Response>{
