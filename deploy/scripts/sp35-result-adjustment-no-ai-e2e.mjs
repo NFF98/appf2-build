@@ -25,7 +25,7 @@ try{
  await dialog.getByRole("button",{name:"返回選擇"}).click();
  await dialog.getByRole("button",{name:"修改輸入值，立即重新計算（不用 AI）"}).click();
  await dialog.waitFor({state:"hidden"});
- const focus=await page.evaluate(()=>document.activeElement?.matches(".s03-app input, .s03-app textarea, .s03-app select")??false);
+ const focus=await page.evaluate(()=>globalThis.document.activeElement?.matches(".s03-app input, .s03-app textarea, .s03-app select")??false);
  if(!focus)throw Error("S03 result input action did not focus real F03 control");
  const headings=page.locator(".s03-app .rt-text-HEADING");
  const roots=[];
