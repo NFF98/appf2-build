@@ -97,3 +97,32 @@ export function createAppDeliveryClient(fetchImpl: FetchLike, keyring: PopKeyrin
     }
   };
 }
+
+/** F05 public recipient: a signed creator-published ACTIVE Share, NOT a known content hash,
+ * grants read of the exact immutable App definition only. Zero F01 and zero model calls. */
+export type PublishedDeliveryResult =
+  | { readonly ok:true;readonly contentHash:string;readonly admitted:RuntimeAppDelivery }
+  | { readonly ok:false;readonly failure:DeliveryFailure };
+export interface PublishedShareDeliveryClient {
+  deliverShared(shareId:string):Promise<PublishedDeliveryResult>;
+}
+const SHARE_ID_PATTERN=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+export function createPublishedShareDeliveryClient(fetchImpl:FetchLike):PublishedShareDeliveryClient{
+  const fetchOne=async(shareId:string):Promise<PublishedDeliveryResult>=>{
+    if(!SHARE_ID_PATTERN.test(shareId))throw new DeliveryStop("NOT_FOUND");
+    const data=await dataOf(await getOk(fetchImpl,`/api/v1/shares/${shareId}`,{}));
+    const hash=data.blueprint_hash;
+    if(data.share_id!==shareId||data.status!=="ACTIVE"||typeof hash!=="string"||
+      !/^sha256:[a-f0-9]{64}$/u.test(hash))throw new DeliveryStop("MALFORMED");
+    const headers={"X-Appf2-Share-Id":shareId};
+    const response=await getOk(fetchImpl,`/b/${hash}`,headers);
+    const body=await response.text();
+    const admission=readAdmission(await dataOf(await getOk(fetchImpl,
+      `/api/v1/blueprints/${hash}/execution-admission`,headers)),hash);
+    return {ok:true,contentHash:hash,admitted:{body,admission}};
+  };
+  return {deliverShared:async shareId=>{
+    try{return await fetchOne(shareId);}
+    catch(e:unknown){return {ok:false,failure:e instanceof DeliveryStop?e.failure:"NETWORK"};}
+  }};
+}
