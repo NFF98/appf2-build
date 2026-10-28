@@ -11,6 +11,9 @@ try{
  ctx.on("request",req=>{if(req.method()==="POST"&&new URL(req.url()).pathname==="/api/v1/code-apps")charged++;});
  const page=await ctx.newPage();
  await page.goto(origin,{waitUntil:"domcontentloaded"});
+ // The user-facing entry must be Code Builder; the legacy F01/F02 composer is opt-in only.
+ await page.getByRole("textbox",{name:"描述你想做的 App"}).waitFor({state:"visible"});
+ if(await page.locator("#composer-input").isVisible())throw Error("LEGACY_F01_COMPOSER_STILL_DEFAULT");
  const api=await page.request.get(origin+"/api/v1/code-apps-public");
  if(api.status()!==200)throw Error("CODE_APP_CATALOG_HTTP_"+api.status());
  const list=await api.json();
