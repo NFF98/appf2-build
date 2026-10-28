@@ -9,7 +9,7 @@ import {appf2ModelProviderConfig} from "../platform/compiler/appf2-model-provide
 import {QA_PLANNER_PROMPT} from "../platform/qa/requirement-planner.js";
 import {parseQaPlan,type QaPlan,type QaEvidence,type QaCriterion} from "../platform/qa/requirement-contract.js";
 import {verifyAndRepair,type QaDraft} from "../platform/qa/repair-loop.js";
-import {codeBuilderModelRequest,readCodeBuilderCompletion} from "./code-builder-generation-contract.js";
+import {codeBuilderModelRequest} from "./code-builder-generation-contract.js";
 
 const FAILCLOSED_ERROR="QA_UNAVAILABLE_OR_UNVERIFIED";
 function safeInput(s:string):string{return s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll('"',"&quot;");}
@@ -37,6 +37,7 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
   let frame=page.frames().find(f=>f.name()==="candidate");
   for(let n=0;!frame&&n<12;n++){await new Promise(r=>setTimeout(r,100));frame=page.frames().find(f=>f.name()==="candidate");}
   if(!frame)throw Error("QA_SANDBOX_FRAME_MISSING");
+  // eslint-disable-next-line complexity -- Independent UI assertion variants are all fail-closed.
   const result=await frame.evaluate(async test=>{
    const root=document.getElementById("app");
    if(!root)return {ok:false,detail:"MISSING_APP_ROOT"};

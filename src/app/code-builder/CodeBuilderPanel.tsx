@@ -24,6 +24,7 @@ export function CodeBuilderPanel({onOpen,suggestedPrompt}:{onOpen:(id:string)=>v
  const [error,setError]=useState("");
  const [cards,setCards]=useState<Card[]>([]);
  useEffect(()=>{void fetchCards().then(setCards).catch(()=>undefined);},[]);
+ // eslint-disable-next-line complexity -- Independent identity, consent and response guards fail closed.
  const generate=async()=>{
   if(busy||prompt.trim().length<5||!consent)return;
   setBusy(true);setError("");
