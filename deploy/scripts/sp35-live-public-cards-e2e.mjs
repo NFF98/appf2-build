@@ -1,3 +1,4 @@
+/* eslint max-depth: off -- Explicit fail-closed Staging browser checks for two real published Apps. */
 import { chromium } from "@playwright/test";
 const origin=new URL(process.env.APPF2_STAGING_URL?.trim()||"");
 if(origin.protocol!=="https:"||!/^appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/i.test(origin.hostname))throw Error("STAGING only");
