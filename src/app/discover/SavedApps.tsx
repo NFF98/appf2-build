@@ -12,8 +12,8 @@ type SavedAppsProps = {
 export function SavedApps({ headingRef, apps, onOpen, onForget }: SavedAppsProps) {
   return (
     <section id="saved-apps" className="saved-apps" aria-labelledby="saved-apps-title">
-      <h2 id="saved-apps-title" className="inspiration-title" tabIndex={-1} ref={headingRef}>我的 App（本分頁）</h2>
-      <p className="saved-apps-note">已成功建立的 App 可直接重開，無需再次使用 AI。只保留在此瀏覽器分頁，最長 24 小時；過期或權限失效時不能重開。</p>
+      <h2 id="saved-apps-title" className="inspiration-title" tabIndex={-1} ref={headingRef}>我的 App（本瀏覽器）</h2>
+      <p className="saved-apps-note">已成功建立的 App 可直接重開，無需再次使用 AI。只保留在這台裝置的同一瀏覽器中，最長 24 小時（包含其他分頁）；過期或權限失效時不能重開。</p>
       {apps.length===0 ? (
         <p className="saved-apps-empty">目前沒有可重開的 App。先建立一次，成功後就會出現在這裡。</p>
       ) : (
