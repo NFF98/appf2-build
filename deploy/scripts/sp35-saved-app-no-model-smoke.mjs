@@ -27,6 +27,16 @@ try{
     }]));
   });
   await page.goto(origin.origin,{waitUntil:"domcontentloaded"});
+  // A real published catalog must be backed by the database, never a hardcoded
+  // "LifePilot" card or fallback to the paid F01 composer.
+  const catalog=await page.request.get(origin.origin+"/api/v1/published-apps");
+  if(catalog.status()!==200)throw Error("PUBLIC GALLERY: live DB catalog unavailable "+catalog.status());
+  const parsed=await catalog.json();
+  if(!Array.isArray(parsed?.data?.apps))throw Error("PUBLIC GALLERY: non-array live response");
+  if(paid.length)throw Error("PUBLIC GALLERY: catalog triggered paid F01");
+  const unknown=await page.request.get(origin.origin+"/api/v1/shares/00000000-0000-4000-8000-000000000000");
+  if(unknown.status()!==404)throw Error("PUBLIC GALLERY: unknown share not denied");
+  console.log("STAGING PUBLIC GALLERY: DB list reachable + unknown share 404 + F01 POST=0 PASS");
   await page.getByRole("button",{name:"我的 App"}).first().click();
   const open=page.getByRole("button",{name:"免費重開：Saved smoke only"});
   await open.waitFor({state:"visible",timeout:15000});
