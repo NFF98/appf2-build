@@ -252,6 +252,16 @@ ol {
   color: var(--text-600);
 }
 
+/* Saved App cards are authenticated reopens, not sample/prompt prefill cards. */
+.saved-apps { margin: 36px 0 48px; scroll-margin-top: 16px; }
+.saved-apps .inspiration-title { margin-bottom: 12px; }
+.saved-apps-note { color: var(--text-600); font-size: 14px; line-height: 1.6; }
+.saved-apps-empty { padding: 20px; border: 1px dashed var(--border-300); border-radius: var(--radius-12); color: var(--text-600); }
+.saved-apps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px; margin-top: 16px; }
+.saved-app-card { display: flex; flex-direction: column; gap: 12px; padding: 20px; border: 1px solid var(--border-200); border-radius: var(--radius-16); background: var(--surface-0); box-shadow: var(--elevation-1); overflow-wrap: anywhere; }
+.saved-app-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: auto; }
+.saved-app-actions .btn { font-size: 14px; }
+
 /* S01 Discover / Start */
 .s01-header {
   display: flex;
