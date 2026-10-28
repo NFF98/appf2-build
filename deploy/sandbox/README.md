@@ -28,3 +28,8 @@ Neither setting is present in source control or dry-run CI. Workflow payloads
 are capped at 64 KiB; larger projects must eventually pass content-addressed
 references, not raw files, through durable steps. These settings are **not** a
 substitute for verified plan and spend controls. Nothing here is deployed.
+
+Authenticated `GET /internal/workflow/status/<job_id>-<call_id>` reads only the
+Workflow lifecycle state (no source code, model output, or command logs). The
+route does **not** start or charge a container and remains private when the
+spend-enabled execution path is disabled.

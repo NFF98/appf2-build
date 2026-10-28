@@ -142,10 +142,29 @@ export class CandidateAgentWorkflow extends WorkflowEntrypoint<Env,Task>{
   return receipt;
  }
 }
+/** Owner-scoped read-only status: never starts a Workflow or container. */
+async function workflowStatus(request:Request,env:Env,url:URL):Promise<Response>{
+ if(!(await authorized(request,env.APPF2_SANDBOX_TOKEN))||
+   !env.APPF2_SANDBOX_ALLOWED_JOB_ID||url.search)
+  return new Response("Not Found",{status:404});
+ const id=url.pathname.slice("/internal/workflow/status/".length);
+ const prefix=env.APPF2_SANDBOX_ALLOWED_JOB_ID+"-";
+ if(!id.startsWith(prefix)||!/^call_[A-Za-z0-9_-]{4,128}$/u.test(id.slice(prefix.length)))
+  return new Response("Not Found",{status:404});
+ try{
+  const instance=await env.APPF2_WORKFLOW.get(id);
+  const state=await instance.status();
+  // Never expose raw Workflow output, user source or sandbox diagnostics here.
+  return Response.json({id,status:String(state.status).slice(0,40)},
+   {headers:{"Cache-Control":"no-store"}});
+ }catch{return new Response("Not Found",{status:404});}
+}
 export default {
  // eslint-disable-next-line complexity -- All private paid-execution and replay gates remain fail-closed.
  async fetch(request:Request,env:Env):Promise<Response>{
   const url=new URL(request.url);
+  if(request.method==="GET"&&url.pathname.startsWith("/internal/workflow/status/"))
+   return workflowStatus(request,env,url);
   if(request.method!=="POST"||
    !["/internal/execute","/internal/workflow/start"].includes(url.pathname)||url.search)
    return new Response("Not Found",{status:404});
