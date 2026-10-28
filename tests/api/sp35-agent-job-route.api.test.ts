@@ -47,8 +47,7 @@ class Database {
  context:WorkerRequestDbContext|null=null;
  readonly db={
   close:async()=>undefined,
-  // eslint-disable-next-line complexity -- Simulated SQL is used to test owner binding and idempotent creates.
-  // eslint-disable-next-line max-lines-per-function -- Test-only in-memory SQL dispatcher.
+  // eslint-disable-next-line complexity, max-lines-per-function -- Test-only scoped SQL fake.
   query:async<T>(sql:string,args:readonly unknown[]):Promise<{rows:readonly T[]}>=>{
    if(sql.startsWith("UPDATE public.appf2_agent_job")){
     const row=this.jobs.get(String(args[0]));
