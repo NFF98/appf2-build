@@ -2,6 +2,7 @@ import { VALIDATOR_REGISTRY } from "../../generated/capabilities/validator-regis
 import { createExecutionAdmissionService } from "../platform/blueprint/execution-admission.js";
 import { SplitBlueprintAdmissionRepository } from "../platform/blueprint/f02-admission-port.js";
 import { PostgresOriginalIntentReadRepository } from "../platform/blueprint/original-intent-lineage.js";
+import { PostgresPublishedShareRepository } from "../platform/blueprint/published-share-repository.js";
 import type { PostgresExecutor } from "../platform/blueprint/postgres-blueprint-repository.js";
 import { createBundledReleaseSource } from "../platform/capabilities/bundled-release.js";
 import { BLUEPRINT_SCHEMA_RANGE, RUNTIME_VERSION } from "../platform/capabilities/registry.js";
@@ -166,6 +167,29 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
 /** Original-Intent body read + fresh execution admission against the deployment's actual bundled handler catalog. */
 export function createBlueprintDeliveryComposition(env: Appf2WorkerEnv, context: WorkerRequestDbContext): BlueprintDeliveryComposition {
   return composeBlueprintDelivery(new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH, context));
+}
+
+/** Public F05 recipient: exact ACTIVE share is checked by a narrow DB function on every request.
+ * No original Intent cookie, grant or model invocation is used for a recipient. */
+export function createPublicShareDeliveryComposition(env:Appf2WorkerEnv,shareId:string):BlueprintDeliveryComposition{
+  const executor=new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,NO_REQUEST_DB_CONTEXT);
+  const content=new PostgresPublishedShareRepository(executor,shareId);
+  return {
+    executor,
+    lineage:{
+      verifyLineage:async hash=>{
+        const row=await content.readContent(hash);
+        return row!==undefined && row.content_hash===hash && row.trust_status==="VALIDATED"
+          ? {verified:true as const,content_hash:hash,own_validation_run_id:shareId,registry_digest:row.admitted_registry_digest,trust_status:row.trust_status}
+          : {verified:false as const,content_hash:hash,failure:"CONTENT_UNKNOWN" as const};
+      },
+      readCanonicalBody:(hash)=>content.readCanonicalBody(hash)
+    },
+    admission:createExecutionAdmissionService({
+      content,releases:createBundledReleaseSource({bundledHandlers:CORE_CAPABILITY_HANDLERS}),
+      runtimeVersion:RUNTIME_VERSION,supportedBlueprintSchemaRange:BLUEPRINT_SCHEMA_RANGE
+    })
+  };
 }
 
 /** The executor must already be bound to the verified request RLS context. */
