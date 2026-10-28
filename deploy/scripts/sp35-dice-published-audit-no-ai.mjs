@@ -29,8 +29,39 @@ try{
   console.log("AUDIT AFTER ONE ROLL TEXT: "+JSON.stringify((await app.innerText()).slice(0,5000)));
   console.log("AUDIT AFTER ONE ROLL HTML: "+JSON.stringify((await app.innerHTML()).slice(0,9000)));
  }
- for(const term of ["結果","排行","規則","下一頁"]){
-  const options=frame.getByRole("button",{name:new RegExp(term,"u")});
-  console.log("AUDIT NAV OPTION "+term+": "+await options.count());
+ const violations=[];
+ const diceCount=await frame.locator(".dice").count();
+ if(diceCount!==4)violations.push("FOUR_DICE_COUNT_"+diceCount);
+ const examples=[
+  {dice:[2,2,6,6],expected:12,rule:"TWO_PAIRS_TWELVE"},
+  {dice:[2,2,4,5],expected:9,rule:"ONE_PAIR_NINE"},
+  {dice:[2,2,2,4],expected:null,rule:"TRIPLE_MUST_REROLL"},
+  {dice:[1,2,3,4],expected:null,rule:"NO_PAIR_MUST_REROLL"}
+ ];
+ const actual=await frame.locator("#app").evaluate((node,cases)=>{
+  // Compare the shipped program's own pure evaluator, never invent replacement results.
+  const owner=node.ownerDocument.defaultView;
+  const rule=owner?.eighteenlaRule;
+  if(typeof rule!=="function")return [];
+  return cases.map(c=>rule(c.dice));
+ },examples);
+ for(let i=0;i<examples.length;i++){
+  const item=examples[i],observed=actual[i];
+  const ok=observed!==undefined&&(item.expected===null?
+    observed.score===0&&/無點|重擲/u.test(observed.text):observed.score===item.expected);
+  console.log("AUDIT RULE "+item.rule+": "+(ok?"PASS":"FAIL")+
+    " actual="+JSON.stringify(observed??null)+" expected="+JSON.stringify(item.expected));
+  if(!ok)violations.push(item.rule);
  }
+ for(const term of ["結果","排行","規則"]){
+  const options=frame.getByRole("button",{name:new RegExp(term,"u")});
+  const count=await options.count();
+  console.log("AUDIT NAV OPTION "+term+": "+count);
+  if(count===0)violations.push("MISSING_PAGE_"+term);
+ }
+ if(violations.length){
+  console.error("APPF2 REAL DICE ACCEPTANCE FAIL: "+violations.join(", "));
+  throw Error("PUBLISHED_DICE_MISREPRESENTED_AS_PASS");
+ }
+ console.log("APPF2 REAL DICE ACCEPTANCE PASS");
 }finally{await browser.close();}
