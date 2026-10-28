@@ -8,7 +8,7 @@ import { CORE_CAPABILITY_HANDLERS } from "../../../src/platform/runtime/core-han
 import type { PostgresExecutor } from "../../../src/platform/blueprint/postgres-blueprint-repository.js";
 import { composeBlueprintDelivery } from "../../../src/edge/worker-composition.js";
 import { FakeLineageExecutor } from "../../api/s03-worker-backend.js";
-import { S03WorkerHost } from "./s03-worker-host.js";
+import type { S03Backend } from "../../api/s03-worker-backend.js";
 
 type Share={share_id:string;title:string;content_hash:string;source_intent_id:string;idempotency_key:string;status:"ACTIVE"|"REVOKED"};
 type PublicView={share_id:string;title:string;content_hash:string};
@@ -16,21 +16,13 @@ function visible(s:Share):PublicView{return {share_id:s.share_id,title:s.title,c
 
 export class PublishedBrowserBackend {
   private readonly shares:Share[]=[];
-  public readonly host:S03WorkerHost;
-  private constructor(host:S03WorkerHost){this.host=host;}
-  public static async create():Promise<PublishedBrowserBackend>{
-    const host=await S03WorkerHost.start();
-    const item=new PublishedBrowserBackend(host);
-    host.setApiOverride(request=>item.route(request));
-    return item;
-  }
+  public constructor(private readonly backend:S03Backend){}
   public revoke(id:string):void{
     const row=this.shares.find(s=>s.share_id===id);
     if(row)row.status="REVOKED";
   }
   public activeShares():readonly PublicView[]{return this.shares.filter(s=>s.status==="ACTIVE").map(visible);}
-  public readonly modelCalls=():number=>this.host.backend.modelCalls();
-  public readonly apiCalls=():string[]=>this.host.apiCalls();
+  public readonly modelCalls=():number=>this.backend.modelCalls();
 
   /** Same production SQL query texts, fixture-only DB. No Supabase/LLM use in this browser E2E. */
   private executor(shareId?:string):PostgresExecutor&{close():Promise<void>}{
@@ -51,9 +43,9 @@ export class PublishedBrowserBackend {
         const hash=String(values[1]);
         if(!this.shares.some(s=>s.status==="ACTIVE"&&s.share_id===shareId&&s.content_hash===hash))
           return {rows:[] as T[]};
-        const body=this.host.backend.harness.db.blueprint.contents.get(hash);
+        const body=this.backend.harness.db.blueprint.contents.get(hash);
         if(body===undefined)return {rows:[] as T[]};
-        const report=this.host.backend.harness.db.blueprint.runs.get(body.admitted_by_validation_run_id)?.report;
+        const report=this.backend.harness.db.blueprint.runs.get(body.admitted_by_validation_run_id)?.report;
         const digest=typeof report==="object"&&report!==null&&"registry_digest" in report
           ?(report as {registry_digest:unknown}).registry_digest:null;
         return {rows:[{content_hash:hash,canonical_blueprint:body.canonical_blueprint,
@@ -85,10 +77,10 @@ export class PublishedBrowserBackend {
       })
     };
   }
-  private async route(request:Request):Promise<Response|undefined>{
-    const url=new URL(request.url),env=this.host.backend.env,nowMs=Date.now();
+  public async handle(request:Request):Promise<Response|undefined>{
+    const url=new URL(request.url),env=this.backend.env,nowMs=Date.now();
     const delivery=(_env:typeof env,context:{anonymousId:string|null;intentId:string|null})=>
-      composeBlueprintDelivery(new FakeLineageExecutor(this.host.backend.harness.db,context));
+      composeBlueprintDelivery(new FakeLineageExecutor(this.backend.harness.db,context));
     if(url.pathname.startsWith("/api/v1/shares")||url.pathname==="/api/v1/published-apps")
       return routePublishedApps({request,url,env,nowMs,delivery,dbFactory:()=>this.executor()});
     if(request.headers.has("X-Appf2-Share-Id"))
