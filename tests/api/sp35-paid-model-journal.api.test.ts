@@ -56,19 +56,19 @@ class Ledger implements AgentJobExecutor{
   if(sql.startsWith("UPDATE public.appf2_agent_model_call")){
    const row=this.rows.get(String(args[2]));
    if(!row)return {rows:[]};
-   if(sql.includes("status='IN_FLIGHT'")){
-    if(row.status!=="RESERVED"||row.request_hash!==args[3]||
-      row.checkpoint_hash!==args[4]||row.job_revision!==args[5])
-      return {rows:[]};
-    this.rows.set(row.call_key,{...row,status:"IN_FLIGHT"});
-   }else if(sql.includes("status='SUCCEEDED'")){
+   if(sql.includes("SET status='SUCCEEDED'")){
     if(row.status!=="IN_FLIGHT")return {rows:[]};
     this.rows.set(row.call_key,{...row,status:"SUCCEEDED",
      response_json:JSON.parse(String(args[3])) as unknown,response_id:String(args[4]),
      input_tokens:Number(args[5]),output_tokens:Number(args[6])});
-   }else if(sql.includes("status='BLOCKED_UNCERTAIN'")){
+   }else if(sql.includes("SET status='BLOCKED_UNCERTAIN'")){
     if(row.status!=="IN_FLIGHT")return {rows:[]};
     this.rows.set(row.call_key,{...row,status:"BLOCKED_UNCERTAIN"});
+   }else if(sql.includes("SET status='IN_FLIGHT'")){
+    if(row.status!=="RESERVED"||row.request_hash!==args[3]||
+      row.checkpoint_hash!==args[4]||row.job_revision!==args[5])
+      return {rows:[]};
+    this.rows.set(row.call_key,{...row,status:"IN_FLIGHT"});
    }else throw Error("UNEXPECTED_TRANSITION");
    return {rows:[{call_key:row.call_key} as T]};
   }
