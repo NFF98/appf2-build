@@ -44,17 +44,19 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
    const find=(role:string,name:string):Element|null=>{
     const allowed=role==="button"?["button",'[role="button"]']:
      role==="tab"?['[role="tab"]',"button"]:
-     role==="link"?["a"]:role==="textbox"?["input","textarea"]:
-     role==="heading"?["h1","h2","h3","h4"]:["input"];
-    return Array.from(document.querySelectorAll(allowed.join(","))).find(el=>{
+     role==="link"?["a"]:role==="textbox"?['input:not([type="hidden"])',"textarea"]:
+     role==="heading"?["h1","h2","h3","h4"]:role==="list"?["ul","ol",'[role="list"]']:["input"];
+    const candidates=Array.from(document.querySelectorAll(allowed.join(","))).filter(el=>{
      const explicit=el.getAttribute("aria-label");
      const describedBy=el.getAttribute("aria-labelledby");
-     const referenced=describedBy?describedBy.split(/\\s+/u).map(id=>document.getElementById(id)?.textContent??"").join(" "):"";
+     const referenced=describedBy?describedBy.split(/\s+/u).map(id=>document.getElementById(id)?.textContent??"").join(" "):"";
      const labels=el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement?
        Array.from(el.labels??[]).map(x=>x.textContent??"").join(" "):"";
      const candidate=(explicit||referenced||labels||el.getAttribute("placeholder")||el.textContent||"").trim();
-     return candidate===name;
-    })??null;
+     return name===""||candidate===name;
+    });
+    // Blank role labels are valid only when exactly one matching control exists.
+    return candidates.length===1?candidates[0]:null;
    };
    const before=new Map<string,string>();
    for(const a of test.assertions)if(a.kind==="text_changes")

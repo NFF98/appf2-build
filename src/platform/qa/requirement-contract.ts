@@ -9,7 +9,7 @@ export type QaAssertion =
  | {readonly kind:"text_includes";readonly text:string}
  | {readonly kind:"element_count";readonly selector:string;readonly count:number}
  | {readonly kind:"text_changes";readonly selector:string}
- | {readonly kind:"visible";readonly role:"button"|"tab"|"link"|"textbox"|"heading";readonly name:string}
+ | {readonly kind:"visible";readonly role:"button"|"tab"|"link"|"textbox"|"heading"|"list";readonly name:string}
  | {readonly kind:"pure_case";readonly function_name:string;readonly input:readonly unknown[];readonly expected:unknown;readonly result_path?:string};
 export type QaCriterion={
  readonly id:string;readonly source_quote:string;readonly description:string;
@@ -21,16 +21,18 @@ const RECORD=(x:unknown):x is Record<string,unknown>=>typeof x==="object"&&x!==n
 const NAME=(x:unknown):x is string=>typeof x==="string"&&x.length>0&&x.length<=120;
 const ALLOWED_SELECTOR=/^(#[a-z][\w-]{0,63}|\.[a-z][\w-]{0,63}|\[data-testid="[a-z][\w-]{0,63}"\])$/iu;
 function step(x:unknown):x is QaStep{
- if(!RECORD(x)||!NAME(x.name))return false;
- return x.action==="click"?["button","tab","link"].includes(String(x.role)):
-  x.action==="fill"&&["textbox","spinbutton"].includes(String(x.role))&&
+ if(!RECORD(x)||typeof x.name!=="string"||x.name.length>120)return false;
+ if(x.action==="click")return NAME(x.name)&&["button","tab","link"].includes(String(x.role));
+ return x.action==="fill"&&["textbox","spinbutton"].includes(String(x.role))&&
   typeof x.value==="string"&&x.value.length<=120;
 }
 // eslint-disable-next-line complexity -- Every independent assertion variant must fail closed on malformed input.
 function assertion(x:unknown):x is QaAssertion{
  if(!RECORD(x))return false;
  if(x.kind==="text_includes")return typeof x.text==="string"&&x.text.length>=1&&x.text.length<=160;
- if(x.kind==="visible")return NAME(x.name)&&["button","tab","link","textbox","heading"].includes(String(x.role));
+ if(x.kind==="visible")return typeof x.name==="string"&&x.name.length<=120&&
+   ["button","tab","link","textbox","heading","list"].includes(String(x.role))&&
+   (NAME(x.name)||["textbox","list"].includes(String(x.role)));
  if(x.kind==="pure_case")return NAME(x.function_name)&&
    /^[A-Za-z_$][\w$]{0,63}$/u.test(x.function_name)&&
    Array.isArray(x.input)&&x.input.length<=8&&

@@ -20,11 +20,13 @@ function frameHtml(script){
  return '<!doctype html><html><body><iframe title="isolated-code-candidate" '+
   'referrerpolicy="no-referrer" sandbox="allow-scripts" srcdoc="'+escapeAttr(doc)+'"></iframe></body></html>';
 }
-function locator(frame,role,name){
- return frame.getByRole(role,{name,exact:true}).first();
+async function locator(frame,role,name){
+ const found=name===""?frame.getByRole(role):frame.getByRole(role,{name,exact:true});
+ if(await found.count()!==1)throw Error("QA_ROLE_AMBIGUOUS_OR_MISSING");
+ return found.first();
 }
 async function perform(frame,step){
- const target=locator(frame,step.role,step.name);
+ const target=await locator(frame,step.role,step.name);
  if(step.action==="click")await target.click({timeout:2500});
  else if(step.action==="fill")await target.fill(step.value,{timeout:2500});
  else throw Error("QA_UNSUPPORTED_ACTION");
@@ -35,7 +37,7 @@ async function check(frame,assertion,before){
  if(assertion.kind==="element_count")
   return await frame.locator(assertion.selector).count()===assertion.count;
  if(assertion.kind==="visible")
-  return await locator(frame,assertion.role,assertion.name).isVisible();
+  return await (await locator(frame,assertion.role,assertion.name)).isVisible();
  if(assertion.kind==="pure_case"){
   const value=await frame.locator("#app").evaluate((node,probe)=>{
    const win=node.ownerDocument.defaultView;

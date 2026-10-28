@@ -27,6 +27,12 @@ describe("universal independent acceptance (not dice-specific)",()=>{
   expect(parseQaPlan({version:"1",criteria:[criteria[0],criteria[0]]},prompt)).toBeNull();
   expect(summarizeQa(plan,[{id:"increase",verdict:"PASS",detail:"changed"}]).passed).toBe(false);
  });
+ it("accepts unique unnamed textbox and list controls, never unnamed click actions",()=>{
+  const c={...criteria[0],steps:[{action:"fill",role:"textbox",name:"",value:"買牛奶"}],
+    assertions:[{kind:"visible",role:"list",name:""}]};
+  expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,steps:[{action:"click",role:"button",name:""}]}]},prompt)).toBeNull();
+ });
  it("rejects unsafe pure calculation test injection before execution",()=>{
   const c={...criteria[0],assertions:[{kind:"pure_case",function_name:"__score",input:[[2,4,6]],expected:12}]};
   expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
