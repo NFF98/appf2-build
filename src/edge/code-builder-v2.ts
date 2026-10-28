@@ -4,7 +4,8 @@ import {WorkerPostgresExecutor,NO_REQUEST_DB_CONTEXT} from "../platform/blueprin
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 import {appf2ModelProviderConfig} from "../platform/compiler/appf2-model-provider.js";
 import {codeBuilderModelRequest,readCodeBuilderCompletion,CODE_BUILDER_GENERATION_TIMEOUT_MS} from "./code-builder-generation-contract.js";
-import {qualityGateCode} from "./code-builder-quality.js";
+import {qualityGateCode,generateQaPlan} from "./code-builder-quality.js";
+import type {QaPlan} from "../platform/qa/requirement-contract.js";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const JSON_HEADERS={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"};
 const CREATE="/api/v1/code-apps",ITEM=/^\/api\/v1\/code-apps\/([^/]+)$/u;
@@ -24,7 +25,8 @@ const LIST=`SELECT share_id::text,title,blueprint_hash FROM public.appf2_code_ap
  WHERE status='ACTIVE' ORDER BY created_at DESC LIMIT 12`;
 type Identity={anonymousId:string|null;intentId:string|null};
 export type CodeBuilderDb={query:<T>(sql:string,args:readonly unknown[])=>Promise<{rows:readonly T[]}>;close:()=>Promise<void>};
-export type CodeBuilderDeps={db?:(env:Appf2WorkerEnv,identity:Identity)=>CodeBuilderDb;generate?:(env:Appf2WorkerEnv,prompt:string)=>Promise<{title:string;javascript:string}|null>;quality?:(env:Appf2WorkerEnv,prompt:string,draft:{title:string;javascript:string},allowRepair:boolean)=>Promise<{title:string;javascript:string}|null>};
+export type CodeBuilderDeps={db?:(env:Appf2WorkerEnv,identity:Identity)=>CodeBuilderDb;generate?:(env:Appf2WorkerEnv,prompt:string)=>Promise<{title:string;javascript:string}|null>;quality?:(env:Appf2WorkerEnv,prompt:string,draft:{title:string;javascript:string},allowRepair:boolean,plan:QaPlan)=>Promise<{title:string;javascript:string}|null>;
+ plan?:(env:Appf2WorkerEnv,prompt:string)=>Promise<QaPlan|null>};
 const answer=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:JSON_HEADERS});
 const denied=()=>answer(404,{error:"CODE_APP_NOT_FOUND"});
 const unavailable=()=>answer(503,{error:"CODE_APP_UNAVAILABLE"});
@@ -92,11 +94,14 @@ async function generate(ctx:{request:Request;url:URL;env:Appf2WorkerEnv;deps:Cod
    [shareId,anonymousId,proof.keyThumbprint,key,prompt])).rows[0]);
  if(created===undefined)return answer(409,{error:"ALREADY_ATTEMPTED"});
  try{
-  const code=await (deps.generate??generateCodeApp)(env,prompt);
+  // Frozen user-intent contract is generated BEFORE source code.
+  const plan=await (deps.plan??generateQaPlan)(env,prompt);
+  if(plan===null)throw Error("QA_PLAN_INVALID");
+  const code=await (deps.generate??generateCodeApp)(env,prompt+"\n\nIndependent acceptance contract:\n"+JSON.stringify(plan));
   if(code===null)throw Error("MODEL_INVALID");
   // Never promote a merely-hashed draft. This step uses independently planned
   // requirements and actual isolated-browser evidence before ACTIVE.
-  const checked=await (deps.quality??qualityGateCode)(env,prompt,code,raw.allow_auto_repair===true);
+  const checked=await (deps.quality??qualityGateCode)(env,prompt,code,raw.allow_auto_repair===true,plan);
   if(checked===null)throw Error("QA_NOT_VERIFIED");
   const pkg=await makePrototypeCodeArtifact(checked.title,checked.javascript);
   const verified=await verifyPrototypeCodeArtifact(pkg);

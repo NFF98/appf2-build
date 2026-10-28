@@ -43,6 +43,7 @@ export interface Appf2WorkerEnv {
   readonly APPF2_MODEL_BASE_URL: string;
   readonly APPF2_MODEL_API_KEY: string;
   readonly APPF2_MODEL_NAME: string;
+  readonly APPF2_QA_BROWSER?: unknown;
   readonly APPF2_MODEL_PROVIDER?: "openai" | "xai" | "deepseek";
   /** Set only with explicit authorization to send a 429 retry to this provider. */
   readonly APPF2_MODEL_FALLBACK_PROVIDER?: "xai" | "deepseek";

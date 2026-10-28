@@ -25,7 +25,6 @@ const template=async(javascript:string)=>{
  return '<!doctype html><html><body><iframe name="candidate" sandbox="allow-scripts" '+
    'referrerpolicy="no-referrer" srcdoc="'+safeInput(doc)+'"></iframe></body></html>';
 };
-type Frame=Awaited<ReturnType<Awaited<ReturnType<typeof puppeteer.launch>>["newPage"]>>["mainFrame"]>;
 /** Return primitive evidence from real DOM, never a model-authored assertion. */
 async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch>>,
  source:string,criterion:QaCriterion):Promise<QaEvidence>{
@@ -87,7 +86,7 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
 }
 export async function browserVerifyCode(env:Appf2WorkerEnv,draft:QaDraft,plan:QaPlan):Promise<readonly QaEvidence[]>{
  if(!env.APPF2_QA_BROWSER)throw Error(FAILCLOSED_ERROR);
- const browser=await puppeteer.launch(env.APPF2_QA_BROWSER);
+ const browser=await puppeteer.launch(env.APPF2_QA_BROWSER as Parameters<typeof puppeteer.launch>[0]);
  try{
   const out:QaEvidence[]=[];
   for(const criterion of plan.criteria)out.push(await checkCriterion(browser,draft.javascript,criterion));
@@ -136,9 +135,7 @@ export async function repairQaCode(env:Appf2WorkerEnv,draft:QaDraft,plan:QaPlan,
  return {title:item.title,javascript:item.javascript};
 }
 export async function qualityGateCode(env:Appf2WorkerEnv,prompt:string,initial:QaDraft,
- allowRepair:boolean):Promise<QaDraft|null>{
- const plan=await generateQaPlan(env,prompt);
- if(!plan)return null;
+ allowRepair:boolean,plan:QaPlan):Promise<QaDraft|null>{
  const outcome=await verifyAndRepair(initial,plan,
   (draft,acceptance)=>browserVerifyCode(env,draft,acceptance),{
    maxRepairs:allowRepair?2:0,

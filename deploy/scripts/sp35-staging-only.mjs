@@ -89,7 +89,7 @@ const config = {
     not_found_handling: "single-page-application",
     run_worker_first: ["/api/v1/*", "/b/*"]
   },
-  ...(bootstrapOnly ? {} : {hyperdrive}),
+  ...(bootstrapOnly ? {} : {hyperdrive,browser:{binding:"APPF2_QA_BROWSER"}}),
   ...(bootstrapOnly ? {} : {vars: {
     APPF2_MODEL_BASE_URL: modelBase.toString(),
     APPF2_MODEL_NAME: model,

@@ -19,6 +19,7 @@ export function CodeBuilderPanel({onOpen,suggestedPrompt}:{onOpen:(id:string)=>v
  const [prompt,setPrompt]=useState(suggestedPrompt?.text??"");
  useEffect(()=>{if(suggestedPrompt!==null&&suggestedPrompt!==undefined)setPrompt(suggestedPrompt.text);},[suggestedPrompt]);
  const [consent,setConsent]=useState(false);
+ const [autoRepair,setAutoRepair]=useState(false);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [cards,setCards]=useState<Card[]>([]);
@@ -32,7 +33,7 @@ export function CodeBuilderPanel({onOpen,suggestedPrompt}:{onOpen:(id:string)=>v
    const keyId=crypto.randomUUID(),key=await keyring.keyForCreate(keyId);
    const idempotencyKey="code-"+crypto.randomUUID();
    const path="/api/v1/code-apps";
-   const body=JSON.stringify({anonymous_id:anonymousId,prompt:prompt.trim(),public_opt_in:true});
+   const body=JSON.stringify({anonymous_id:anonymousId,prompt:prompt.trim(),public_opt_in:true,...(autoRepair?{allow_auto_repair:true}:{})});
    const headers=await key.proofHeaders(timestamp=>mutationProofTranscript({
     method:"POST",path,body:new TextEncoder().encode(body),idempotencyKey
    },timestamp));
@@ -52,15 +53,18 @@ export function CodeBuilderPanel({onOpen,suggestedPrompt}:{onOpen:(id:string)=>v
  };
  return <section className="code-builder-panel" aria-labelledby="code-builder-title">
    <h2 id="code-builder-title">AI Code Builder · Blueprint v2</h2>
-   <p className="saved-apps-note">用一句話產生互動網頁 App 的候選版本。此 Staging 僅支援不連網的單檔程式；程式完整性檢查不等於功能驗收。請逐項試用後，再決定是否分享。</p>
+   <p className="saved-apps-note">用一句話生成互動 App。每個新作品都必須先通過需求導向的獨立瀏覽器驗收才會公開；無法自動確認的條件會暫停發布。本 Staging 限於不連網單檔程式。</p>
    <label htmlFor="code-builder-prompt">描述你想做的 App</label>
    <textarea id="code-builder-prompt" className="composer-input" value={prompt} maxLength={800}
      onChange={e=>setPrompt(e.target.value)} placeholder="例如：做一個有骰子和計分功能的十八啦遊戲" />
    <label className="code-builder-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
-     我同意產生一次付費 AI 請求，並把未經完整功能驗收的 App 候選版本公開分享（不包含我的操作資料）。
+     我同意 AI 先規劃驗收條件，再生成 App（至少兩次模型請求），並在自動功能驗收通過後公開分享。不通過不發布，Cloudflare 瀏覽器驗收可能產生費用。
+   </label>
+   <label className="code-builder-consent"><input type="checkbox" checked={autoRepair} onChange={e=>setAutoRepair(e.target.checked)}/>
+     若首次驗收失敗，我另外同意最多兩次付費 AI 自動修復，每次修復後重新做完整功能驗收；不會默默增加費用。
    </label>
    <button type="button" className="btn btn-primary" disabled={busy||!consent||prompt.trim().length<5}
-     onClick={()=>{void generate();}}>{busy?"AI 正在產生與檢查程式封裝…":"生成 Blueprint v2 App"}</button>
+     onClick={()=>{void generate();}}>{busy?"AI 正在規劃、生成與真實瀏覽器驗收…":"生成 Blueprint v2 App"}</button>
    {error?<p role="alert">{error}</p>:null}
    <h3>已產生的 Code Builder 候選 App</h3>
    {cards.length===0?<p className="saved-apps-note">尚無已產生的 Code App 候選版本。</p>:null}
