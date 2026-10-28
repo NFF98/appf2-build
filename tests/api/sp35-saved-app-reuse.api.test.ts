@@ -79,6 +79,36 @@ describe("Sprint 3.5 no-AI same-tab authenticated App reuse",()=>{
     data.set("appf2.tab.saved-apps.v1","broken json");
     expect(readSavedTabApps()).toEqual([]);
   });
+  it("real browser-wide catalog survives another tab with a different sessionStorage",()=>{
+    const firstTab=tab();
+    const shared=new Map<string,string>();
+    vi.stubGlobal("localStorage",{
+      getItem:(key:string)=>shared.get(key)??null,
+      setItem:(key:string,value:string)=>{shared.set(key,value);},
+      removeItem:(key:string)=>{shared.delete(key);}
+    });
+    rememberSavedTabApp(target,"LifePilot");
+    expect(shared.has("appf2.tab.saved-apps.v1")).toBe(true);
+    expect(firstTab.has("appf2.tab.saved-apps.v1")).toBe(false);
+    vi.stubGlobal("sessionStorage",{
+      getItem:()=>null, setItem:()=>{}, removeItem:()=>{}
+    });
+    expect(readSavedTabApps()).toMatchObject([{...target,title:"LifePilot"}]);
+    forgetSavedTabApp(target);
+    expect(readSavedTabApps()).toEqual([]);
+  });
+  it("a successful reopen never extends the original 24h authority expiry",()=>{
+    tab();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-28T00:00:00Z"));
+    rememberSavedTabApp(target,"LifePilot");
+    const first=readSavedTabApps()[0]!.savedAt;
+    vi.advanceTimersByTime(23*60*60*1000);
+    rememberSavedTabApp(target,"LifePilot");
+    expect(readSavedTabApps()[0]!.savedAt).toBe(first);
+    vi.advanceTimersByTime(60*60*1000+1);
+    expect(readSavedTabApps()).toEqual([]);
+  });
   it("fails safely when sessionStorage is denied",()=>{
     vi.stubGlobal("sessionStorage",{
       getItem:()=>{throw new Error("denied");},
