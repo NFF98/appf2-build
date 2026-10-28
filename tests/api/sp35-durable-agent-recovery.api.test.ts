@@ -14,6 +14,7 @@ type StoredSnapshot={
 class InMemoryDb implements AgentJobExecutor{
  job:AgentJobRow|null=null;
  readonly snapshots=new Map<string,StoredSnapshot>();
+ // eslint-disable-next-line complexity -- In-memory fake dispatches isolated SQL branches only.
  async query<T>(sql:string,args:readonly unknown[]):Promise<{rows:readonly T[]}>{
   if(sql.startsWith("INSERT INTO public.appf2_agent_project_snapshot")){
    const key=String(args[0])+":"+String(args[1]);
