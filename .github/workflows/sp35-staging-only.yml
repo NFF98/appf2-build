@@ -258,6 +258,8 @@ jobs:
         run: |
           npx playwright install chromium
           node deploy/scripts/sp35-saved-app-no-model-smoke.mjs
+      - name: Real browser F05 publish -> stranger -> F03 actions (free scripted model / fixture DB)
+        run: npx playwright test tests/e2e/sp35-public-card-real-browser.spec.ts --project=chromium --retries=0
       - name: Allow one paid E2E only on manual dispatch or configured fallback
         if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
         env:
