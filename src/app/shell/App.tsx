@@ -10,7 +10,7 @@ import type { CreationSession } from "../create/creation-session.js";
 import { DiscoverScreen, type ComposerDraft } from "../discover/DiscoverScreen.js";
 import type { PromptDraftStore } from "../discover/prompt-draft-store.js";
 import { isRetryableLaunchFailure, type AppLauncher, type LaunchState } from "../runtime/app-launcher.js";
-import { clearTabAppTarget, readTabAppTarget, saveTabAppTarget } from "./tab-app-recovery.js";
+import { clearTabAppTarget, forgetSavedTabApp, readSavedTabApps, readTabAppTarget, rememberSavedTabApp, saveTabAppTarget, type TabAppTarget } from "./tab-app-recovery.js";
 
 type Surface = "DISCOVER" | "CREATE";
 
@@ -67,9 +67,11 @@ export function App({ controller, drafts, launcher }: AppProps) {
   const [restoredTarget, setRestoredTarget] = useState<ValidatedTarget | null>(()=>readTabAppTarget());
   const [surface, setSurface] = useState<Surface>(()=>readTabAppTarget()===null?"DISCOVER":"CREATE");
   const [draft, setDraft] = useState<ComposerDraft>(() => drafts.load() ?? EMPTY_DRAFT);
+  const [savedApps, setSavedApps] = useState(() => readSavedTabApps());
   const acceptedIntent = session !== null && session.decision !== null ? session.rawIntent : null;
   const validatedFromCreation = validatedTarget(session);
-  const validated = validatedFromCreation ?? restoredTarget;
+  // Explicit card selection overrides a prior creation session; a fresh Create clears it.
+  const validated = restoredTarget ?? validatedFromCreation;
   const validatedHash = validated?.contentHash ?? null;
   const validatedIntentId = validated?.intentId ?? null;
   const appSession = useMemo(
@@ -83,8 +85,14 @@ export function App({ controller, drafts, launcher }: AppProps) {
   }, [acceptedIntent, drafts]);
 
   useEffect(() => {
-    if (validatedFromCreation !== null) saveTabAppTarget(validatedFromCreation);
-  }, [validatedFromCreation?.contentHash, validatedFromCreation?.intentId]);
+    if (validatedFromCreation !== null && restoredTarget === null) saveTabAppTarget(validatedFromCreation);
+  }, [validatedFromCreation?.contentHash, validatedFromCreation?.intentId, restoredTarget]);
+
+  // Only a successfully hydrated F03 handle earns a reusable card (not merely F01/F02).
+  useEffect(() => {
+    if (surface !== "CREATE" || launch.kind !== "READY" || launch.contentHash !== validatedHash || validatedIntentId === null) return;
+    setSavedApps(rememberSavedTabApp({intentId:validatedIntentId,contentHash:launch.contentHash},launch.app.title));
+  }, [surface, launch, validatedHash, validatedIntentId]);
 
   useEffect(() => {
     if (surface === "CREATE" && validatedIntentId !== null && validatedHash !== null) launcher.launch(validatedIntentId, validatedHash);
@@ -121,8 +129,25 @@ export function App({ controller, drafts, launcher }: AppProps) {
 
   const create = (): void => {
     if (controller.start(draft.text, draft.capsuleId) === "IGNORED") return;
+    setRestoredTarget(null);
+    launcher.reset();
     window.history.pushState(CREATE_HISTORY_STATE, "");
     setSurface("CREATE");
+  };
+
+  /** Read-only authenticated delivery + F03 hydration; intentionally NO F01 or model call. */
+  const openSaved = (target: TabAppTarget): void => {
+    if (!readSavedTabApps().some(app => app.intentId===target.intentId && app.contentHash===target.contentHash)) return;
+    controller.leave();
+    launcher.reset();
+    setRestoredTarget(target);
+    saveTabAppTarget(target);
+    window.history.pushState(CREATE_HISTORY_STATE, "");
+    setSurface("CREATE");
+  };
+
+  const forgetSaved = (target: TabAppTarget): void => {
+    setSavedApps(forgetSavedTabApp(target));
   };
 
   const back = (): void => {
@@ -131,7 +156,7 @@ export function App({ controller, drafts, launcher }: AppProps) {
   };
 
   if (showingApp) return <AppStage key={launch.contentHash} session={appSession} onHome={back} />;
-  if (surface === "CREATE" && session === null && restoredTarget !== null) {
+  if (surface === "CREATE" && restoredTarget !== null) {
     return (
       <main className="app-recovery" role="status">
         <p>{launch.kind === "FAILED" ? "先前的 App 無法安全恢復。" : "正在安全恢復先前的 App…"}</p>
@@ -144,5 +169,6 @@ export function App({ controller, drafts, launcher }: AppProps) {
       <CreateWorkspace session={session} controller={controller} onBack={back} {...workspaceLaunchProps(launch, validatedHash, launcher)} />
     );
   }
-  return <DiscoverScreen draft={draft} onDraftChange={changeDraft} onCreate={create} />;
+  return <DiscoverScreen draft={draft} onDraftChange={changeDraft} onCreate={create}
+    savedApps={savedApps} onOpenSaved={openSaved} onForgetSaved={forgetSaved} />;
 }
