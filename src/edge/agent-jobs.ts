@@ -59,7 +59,7 @@ async function requestHash(prompt:string):Promise<string>{
  return sha256CodeBytes(new TextEncoder().encode("APPF2_AGENT_REQUEST_V1\u0000"+prompt));
 }
 /** Safe initial source: no untrusted script interpolation, dependency downloads or execution. */
-async function initialProject(prompt:string){
+export async function createInitialAgentProject(prompt:string){
  const title=prompt.trim().slice(0,90);
  return createProjectSnapshot("VITE_WEB","index.html",[
   {path:"index.html",content:`<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="app"></div><script type="module" src="/src/main.ts"></script></body></html>`},
@@ -71,7 +71,7 @@ async function initialProject(prompt:string){
 // eslint-disable-next-line max-params -- DB, PoP-bound owner and input are separate trust boundaries.
 async function create(db:Db,owner:string,thumb:string,key:string,prompt:string,
  newJobId:()=>string):Promise<Response>{
- const project=await initialProject(prompt);
+ const project=await createInitialAgentProject(prompt);
  const jobId=newJobId();
  const checkpoint:AgentCheckpoint={
   version:"APPF2_AGENT_CHECKPOINT_V1",job_id:jobId,state:"CREATED",
