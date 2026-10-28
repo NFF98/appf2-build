@@ -194,6 +194,8 @@ describe("Sprint 3.5 live Worker candidate Agent Job API (cryptographic signed r
   expect(database.jobs.size).toBe(0);
   expect(database.context).toBeNull();
  });
+});
+describe("Sprint 3.5 explicit-consent model planning (offline)",()=>{
  it("signed consent permits one mocked model planning response and durable no-charge replay",async()=>{
   const person=await client(),db=new Database();
   let calls=0;
@@ -248,6 +250,8 @@ describe("Sprint 3.5 live Worker candidate Agent Job API (cryptographic signed r
   expect(noBudget.status).toBe(503);
   expect(calls).toBe(0);
  });
+});
+describe("Sprint 3.5 trusted candidate prompt rendering",()=>{
  it("does not interpret untrusted user prompt as source code or run AI",async()=>{
   const person=await client(),database=new Database();
   const fetch=createWorkerFetch({}, {now:()=>TIME,agent:database.makeDeps()});
