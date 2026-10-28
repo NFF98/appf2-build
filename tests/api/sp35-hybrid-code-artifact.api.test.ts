@@ -20,7 +20,7 @@ describe("H1 strict Blueprint v2 CodeArtifact integrity (no AI, no R2, not v1 F0
  });
  it("rejects tampering with code bytes or manifest content even when metadata hash stays same",async()=>{
   const pkg=await makePrototypeCodeArtifact("code",example);
-  const tampered={...pkg,javascript:pkg.javascript+"\nalert('bad');"};
+  const tampered={...pkg,javascript:pkg.javascript.replace("hello","jello")};
   expect(await verifyPrototypeCodeArtifact(tampered)).toMatchObject({ok:false,reason:"HASH_MISMATCH"});
   const wrongManifest={...pkg,manifest:{...pkg.manifest,files:[{...pkg.manifest.files[0],hash:"sha256:"+"0".repeat(64)}]}};
   expect(await verifyPrototypeCodeArtifact(wrongManifest)).toMatchObject({ok:false,reason:"HASH_MISMATCH"});
