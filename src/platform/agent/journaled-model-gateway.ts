@@ -42,6 +42,7 @@ function validResponse(input:unknown):input is ValidResponse{
   Number.isSafeInteger(usage.output_tokens)&&Number(usage.output_tokens)>=0;
 }
 /** No implicit provider retries, fallback, sampling upgrade or plan change. */
+// eslint-disable-next-line complexity -- Cost, consent, recovery, and dispatch gates are explicit.
 export async function runJournaledPaidModelTurn(input:PaidModelTurn,
  deps:PaidModelTurnDeps):Promise<PaidModelResult>{
  if(!input.paid_consent||input.max_charge_cents<1||

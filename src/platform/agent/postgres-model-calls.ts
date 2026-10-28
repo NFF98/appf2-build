@@ -87,6 +87,7 @@ export async function claimModelCall(db:AgentJobExecutor,row:ModelCallRow):Promi
   row.call_key,row.request_hash,row.checkpoint_hash,row.job_revision]);
  if(r.rows.length!==1)throw Error("MODEL_CALL_CLAIM_CONFLICT");
 }
+// eslint-disable-next-line max-params -- DB call completion uses prevalidated immutable evidence.
 export async function completeModelCall(db:AgentJobExecutor,row:ModelCallRow,
  response:unknown,id:string,inputTokens:number,outputTokens:number):Promise<void>{
  if(row.status!=="RESERVED"||!/^resp_[A-Za-z0-9_-]{6,160}$/u.test(id)||
