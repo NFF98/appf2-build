@@ -4,6 +4,7 @@ import { isValidIdempotencyKey } from "../platform/compiler/idempotency.js";
 import { NO_REQUEST_DB_CONTEXT, type WorkerRequestDbContext } from "../platform/blueprint/worker-postgres-executor.js";
 import { routeBlueprintDelivery, type BlueprintDeliveryFactory, type BlueprintDeliveryComposition } from "./blueprint-delivery.js";
 import { routePublishedApps } from "./published-apps.js";
+import {routeCodeBuilder} from "./code-builder-v2.js";
 import { claimsMutationProof, reservedCreateIdempotencyKey, verifyMutationProof } from "./create-proof.js";
 import { EVENTS_BATCH_ROUTE } from "./events-batch.js";
 import { INTENTS_ROUTE, type IntentApiHttpResponse } from "./intent-api.js";
@@ -206,6 +207,8 @@ export function createWorkerFetch(factories: Partial<WorkerCompositionFactories>
     if (delivered !== undefined) return delivered;
     const published=await routePublishedApps({request,url,env,nowMs,delivery:deliveryFactory});
     if(published!==undefined)return published;
+    const codeApp=await routeCodeBuilder({request,url,env});
+    if(codeApp!==undefined)return codeApp;
     if (!url.pathname.startsWith(API_PREFIX)) return json({ error: { code: "API-NOT-FOUND" } }, 404);
     if (url.pathname === HEALTH_ROUTE) return json({ data: { status: "UP" } }, 200);
 
