@@ -1,0 +1,30 @@
+# APPf2 Sprint 3.5 — Hybrid Blueprint / Code Artifact implementation slice
+
+Source: [APPf2 Design PR #45](https://github.com/NFF98/appf2-design/pull/45), Working document at commit `c67cabca3b65cf65b1b5d4db26e3ad50ee5a8e74`.
+Status: **Design-first experimental Build slice on PR #419**. Not a production user-facing Code Builder, not a version promotion of F02 v1. Sprint 4 not started.
+
+## Technical decisions
+
+- **v1 remains immutable**: the existing F01–F02–F03 original Blueprint and current LifePilot/Moving public cards are untouched.
+- `CodeArtifactEnvelopeV2` is a separate strict type; never feed it to the existing F02 v1 validator or silently rename `schema_version=1.0.0`.
+- A `WEB_STATIC_V1` prototype uses an immutable **JS asset plus exact manifest**, with independent SHA-256 bytes, manifest, and canonical envelope checks. Strict fixed-size resource ceilings and unknown-key rejection, no external URL or import, no raw bundle grants from only knowing a hash.
+- Frontend **cannot mount code into the APPf2 origin**. A sandboxed iframe (without `allow-same-origin`) receives *already hash-validated* JS and an integrity-bound CSP with `default-src 'none'`, no network/form/frame/object/worker. No host cookie, token, appf2 database access or parent DOM access.
+- First implementation is *only* standalone executable contract + isolated-frame demonstration and security tests (Design H1/H3), **not yet Code Builder full backend**. File metadata + JS bytes are supplied by explicit trusted test harness; there is no public artifact-write/read endpoint, no R2 upload, no share-card route for v2, no AI source generation, and no F02 production admission or F03 runtime integration.
+- HTML/CSS framework bundles, React dependencies, image/game assets, server workloads and dedicated storage/bridge integration are **future format/permission profiles**, not “supported” by the prototype.
+- Host controls the frame lifecycle and can tear it down on navigation; any runtime state inside stays temporary unless a future *typed, authenticated bridge* is implemented. No localStorage or parent-to-child API at this stage.
+
+## Acceptance (must be verified, not simply claimed)
+
+1. Valid bytes + strict manifest + v2 envelope round-trip; mutated script/manifest, unknown fields, bad path or execution profile fail.
+2. Browser executes arbitrary simple JS inside isolated iframe with **zero Code Builder AI calls**.
+3. Browser cannot read parent document/session/local storage/cookies and cannot make outgoing `fetch` through restricted CSP.
+4. Existing v1 tests, published cards and Staging Worker remain intact.
+5. **NOT yet passed:** real AI source→Sandbox build→R2 artifact→F02 v2 admission→F05 new published card→F03 isolated runtime→F16 new version. That end-to-end is separately required and must not be marked complete by (1)–(4).
+
+## Next bounded increments
+
+- H4: controlled Cloudflare Sandbox build, compiled output + SBOM + verified immutable R2 persistence (consent/billing controls).
+- H5: actual v2 F02 admission + F05 F03 recipient delivery, isolated state bridge, real stranger browser.
+- H6/H7: adversarial runtime containment plus two unrelated AI-generated styles from the **same generic code path**, no per-game case handling.
+
+No automatic paid AI test, no release merge, no blanket statement that “any game works”.
