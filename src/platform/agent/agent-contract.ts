@@ -57,14 +57,15 @@ export function parseAgentToolCall(input:unknown):AgentToolCall|null{
  if(name==="run_build"||name==="run_test"){
   if(input.args.target!=="project")return null;
  }
- if(name==="write_file"&&input.args.content.length>256*1024)return null;
+ if(name==="write_file"&&typeof input.args.content==="string"&&input.args.content.length>256*1024)return null;
  if("path" in input.args){
   const path=input.args.path;
   if(typeof path!=="string"||path.length>180)return null;
   // Safe path validation is enforced again by the workspace implementation.
   try{assertPath(path);}catch{return null;}
  }
- if(name==="write_file"&&input.args.previous_hash!==""&&!SHA.test(input.args.previous_hash))return null;
+ if(name==="write_file"&&input.args.previous_hash!==""&&
+   (typeof input.args.previous_hash!=="string"||!SHA.test(input.args.previous_hash)))return null;
  return input as AgentToolCall;
 }
 import {assertWorkspacePath as assertPath} from "./project-workspace.js";

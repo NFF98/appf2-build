@@ -21,6 +21,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Install existing staging browser-QA types (no paid model calls)
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
       - name: Typecheck and lint
         run: |
           npm run check:types
