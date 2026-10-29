@@ -29,6 +29,7 @@ const MAC=/^hmac-sha256:[a-f0-9]{64}$/u;
 const ID=/^[A-Za-z0-9_-]{8,100}$/u;
 const CRITERION=/^[a-z][a-z0-9_]{0,79}$/u;
 const CATEGORIES=new Set(["BUILD","UNIT","INTEGRATION","BROWSER","API","DATABASE","HUMAN"]);
+// eslint-disable-next-line complexity -- Independent QA admission rejects each unproven claim.
 function shape(receipt:CandidateQaReceipt,required:readonly string[]):string[]{
  const failures:string[]=[];
  if(!SHA.test(receipt.source_project_hash)||!SHA.test(receipt.built_artifact_hash)||
