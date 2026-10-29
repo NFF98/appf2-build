@@ -890,3 +890,74 @@ describe("Sprint 3.5 existing project read -> AI edit (signed real Worker routes
   expect(db.jobs.get(JOB_ID)?.revision).toBe(3);
  });
 });
+
+describe("Sprint 3.5 signed Worker multi-file creation in one AI call (offline)",()=>{
+ it("atomically saves 3 model-authored files, reopens and continues without replay charge",async()=>{
+  const person=await client(),db=new Database();
+  const prompt="建立可操作的多人骰子遊戲，包含規則、計分與動畫";
+  const observed:{input:unknown;previous_response_id?:string}[]=[];
+  let dispatch=0;
+  const deps={...db.makeDeps(),sendModel:async({request}:{request:{
+   input:unknown;previous_response_id?:string
+  }})=>{
+   observed.push(request);dispatch++;
+   if(dispatch===1){
+    const snap=Array.from(db.snapshots.values())[0]!.snapshot as {
+     files:{path:string;hash:string}[]};
+    const changes=[
+     {path:"src/main.ts",previous_hash:snap.files.find(f=>f.path==="src/main.ts")!.hash,
+      content:"import {score} from './game'; document.querySelector('#app')!.textContent=String(score(6,6));"},
+     {path:"src/game.ts",previous_hash:"",content:"export const score=(a:number,b:number)=>a+b;"},
+     {path:"src/players.ts",previous_hash:"",content:"export const players=['甲','乙'];"}
+    ];
+    return {id:"resp_batch_first123456",status:"completed",
+     usage:{input_tokens:240,output_tokens:320},output:[
+      {type:"function_call",call_id:"call_batch_first123456",name:"write_files",
+       arguments:JSON.stringify({edits_json:JSON.stringify(changes)})}]};
+   }
+   return {id:"resp_batch_second123456",status:"completed",
+    usage:{input_tokens:170,output_tokens:50},output:[]};
+  }};
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  expect((await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"batch_create_12345678"),env)).status).toBe(201);
+  const initialHash=db.jobs.get(JOB_ID)!.project_hash;
+  expect((await worker(await signed(person,root+"/model-plan",{
+   anonymous_id:OWNER,prompt,model_call_key:"batch_first_model_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true
+  },"batch_plan_12345678"),enabled)).status).toBe(200);
+  const first=await worker(await signed(person,root+"/apply-plan",{
+   anonymous_id:OWNER,model_call_key:"batch_first_model_123456",
+   expected_revision:1
+  },"batch_apply_12345678"),env);
+  expect(first.status).toBe(200);
+  expect(await first.json()).toMatchObject({data:{status:"FILE_EDIT_SAVED",revision:2}});
+  expect(db.jobs.get(JOB_ID)?.project_hash).not.toBe(initialHash);
+  const read=await worker(await signed(person,root,{anonymous_id:OWNER},
+   "batch_read_12345678"),env);
+  const view=await read.json() as {data:{files:{path:string;content:string}[]}};
+  expect(read.status).toBe(200);
+  expect(view.data.files.some(f=>f.path==="src/game.ts")).toBe(true);
+  expect(view.data.files.some(f=>f.path==="src/players.ts")).toBe(true);
+  expect(db.snapshots.size).toBe(2);
+  const next={anonymous_id:OWNER,previous_model_call_key:"batch_first_model_123456",
+   model_call_key:"batch_second_model_123456",expected_revision:2,
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true};
+  expect((await worker(await signed(person,root+"/model-continue",next,
+   "batch_continue_123456"),enabled)).status).toBe(200);
+  expect(observed[1]?.previous_response_id).toBe("resp_batch_first123456");
+  const toolOutput=observed[1]?.input as {output:string}[];
+  expect(toolOutput[0]?.output).toContain(db.jobs.get(JOB_ID)?.project_hash??"MISSING");
+  expect(dispatch).toBe(2);
+  const replay=await worker(await signed(person,root+"/apply-plan",{
+   anonymous_id:OWNER,model_call_key:"batch_first_model_123456",
+   expected_revision:1
+  },"batch_apply_12345678"),env);
+  expect(await replay.json()).toMatchObject({data:{status:"ALREADY_APPLIED"}});
+  expect(db.snapshots.size).toBe(2);
+ });
+});

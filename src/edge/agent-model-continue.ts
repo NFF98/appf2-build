@@ -70,7 +70,7 @@ export async function verifiedContinuation(current:RecoveredAgentJob,
  const edit=project.parent_hash?
   parseAgentResponsesBatch(previous.response_json,project.parent_hash):null;
  if(edit?.response_id===previous.response_id&&edit.calls.length===1&&
-  ["write_file","delete_file"].includes(edit.calls[0].name)&&
+  ["write_file","write_files","delete_file"].includes(edit.calls[0].name)&&
   cp.state==="CODING"&&cp.completed_call_ids.at(-1)===edit.calls[0].call_id)
   return editContinuation(project.project_hash,previous.response_id,edit.calls[0]);
  const parsed=parseAgentResponsesBatch(previous.response_json,project.project_hash);

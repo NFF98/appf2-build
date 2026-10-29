@@ -61,7 +61,7 @@ export async function applyStoredModelEdit(input:ApplyModelEditInput,
    record.checkpoint_hash!==current.job.checkpoint_hash)
   return failEdit();
  const call=currentParsed.calls[0];
- if(call.name!=="write_file"&&call.name!=="delete_file"&&call.name!=="read_file")
+ if(!["write_file","write_files","delete_file","read_file"].includes(call.name))
   return failEdit();
  const edit=await executeAgentTurn(current,record.response_json,{
   broker:async(_project,requested)=>{

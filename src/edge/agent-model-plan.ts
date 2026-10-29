@@ -45,7 +45,8 @@ export function agentProjectPlanningPrompt(prompt:string,project:ProjectSnapshot
  const guidance=[
   "You are APPf2's coding agent. Implement the user's original request as a working interactive app, not a static placeholder.",
   "Project profile: "+project.profile+". Entry: "+project.entrypoint+".",
-  "The following immutable files are the current project; previous_hash on write_file must exactly match the supplied hash (empty for new files).",
+  "The following immutable files are the current project; previous_hash on write_file or write_files must exactly match the supplied hash (empty for new files).",
+  "Prefer write_files with edits_json containing 2-16 {path,content,previous_hash} objects for related files: one atomic snapshot, fewer AI turns. Invalid entries reject the entire batch.",
   "Use exactly ONE function call per turn; after its durable tool result, continue editing. For a needed file use read_file; use run_build then run_test after implementing features.",
   "Never request shell commands, external deployments, secrets, or publication. On build failure read the real diagnostics and repair the source before building again.",
   "Do not hardcode one example app: implement the actual user request and required interactions.",
