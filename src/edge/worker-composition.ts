@@ -46,6 +46,8 @@ export interface Appf2WorkerEnv {
   readonly APPF2_QA_BROWSER?: unknown;
   /** Candidate multi-file Job API: disabled unless explicitly enabled in a protected staging Worker. */
   readonly APPF2_AGENT_CANDIDATE_ENABLED?: string;
+  /** Signed single-step orchestration; OFF by default, independent of paid-model/container flags. */
+  readonly APPF2_AGENT_AUTOSTEP_ENABLED?: string;
   /** Second independent opt-in for paid model dispatch: OFF unless "1". */
   readonly APPF2_AGENT_MODEL_EXECUTION_ENABLED?: string;
   /** Dedicated OpenAI key; never reuse the F01 provider's key or expose to browser. */

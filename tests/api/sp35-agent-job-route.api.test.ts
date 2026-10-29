@@ -961,3 +961,109 @@ describe("Sprint 3.5 signed Worker multi-file creation in one AI call (offline)"
   expect(db.snapshots.size).toBe(2);
  });
 });
+
+describe("Sprint 3.5 signed resumable auto-step (offline provider/container)",()=>{
+ it("saves a multi-file edit, optionally continues model, and pauses for container consent",async()=>{
+  const creator=await client(),db=new Database();
+  const prompt="建立多人骰子遊戲，包含動畫、規則、計分與排行榜";
+  let ai=0,containers=0;
+  const seen:{previous_response_id?:string;input:unknown}[]=[];
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendModel:async({request}:{request:{previous_response_id?:string;input:unknown}})=>{
+    ai++;seen.push(request);
+    if(ai===1){
+     const file=(Array.from(db.snapshots.values())[0]!.snapshot as
+      {files:{path:string;hash:string}[]}).files.find(f=>f.path==="src/main.ts")!;
+     const changes=[{path:"src/main.ts",previous_hash:file.hash,
+       content:"import {total} from './score';document.querySelector('#app')!.textContent=String(total(6,6));"},
+      {path:"src/score.ts",previous_hash:"",
+       content:"export const total=(a:number,b:number)=>a+b;"}];
+     return {id:"resp_step_first123456",status:"completed",
+      usage:{input_tokens:100,output_tokens:100},output:[{
+       type:"function_call",call_id:"call_step_edit123456",name:"write_files",
+       arguments:JSON.stringify({edits_json:JSON.stringify(changes)})}]};
+    }
+    return {id:"resp_step_build123456",status:"completed",
+     usage:{input_tokens:90,output_tokens:30},output:[{
+      type:"function_call",call_id:"call_step_build123456",name:"run_build",
+      arguments:JSON.stringify({target:"project"})}]};
+   },
+   sendSandbox:async(task:{call:{call_id:string;project_hash:string}})=>{
+    containers++;
+    const detail="VITE_BUILD_ERROR: invalid import";
+    return {call_id:task.call.call_id,project_hash:task.call.project_hash,
+     exit_code:1,timed_out:false,detail,
+     output_digest:await sha256CodeBytes(new TextEncoder().encode(detail)),
+     runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"};
+   }
+  }});
+  const agentEnv={...env,APPF2_AGENT_AUTOSTEP_ENABLED:"1",
+   APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  expect((await worker(await signed(creator,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:35,explicit_ai_consent:true
+  },"step_create_12345678"),env)).status).toBe(201);
+  expect((await worker(await signed(creator,root+"/model-plan",{
+   anonymous_id:OWNER,prompt,model_call_key:"step_first_model_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true
+  },"step_plan_12345678"),agentEnv)).status).toBe(200);
+  const path=root+"/auto-step";
+  const first={anonymous_id:OWNER,model_call_key:"step_first_model_123456",
+   expected_revision:1,explicit_ai_consent:true,
+   next_model_call_key:"step_second_model_123456",max_ai_charge_cents:5,
+   max_output_tokens:1024};
+  expect((await worker(await signed(creator,path,first,
+   "step_edit_12345678"),agentEnv)).status).toBe(200);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(2);
+  expect(db.snapshots.size).toBe(2);
+  expect(ai).toBe(2);
+  const action={anonymous_id:OWNER,model_call_key:"step_second_model_123456",
+   expected_revision:2};
+  const paused=await worker(await signed(creator,path,action,
+   "step_pause_12345678"),agentEnv);
+  expect(paused.status).toBe(200);
+  expect(await paused.json()).toMatchObject({data:{
+   status:"AWAITING_CONTAINER_CONSENT",revision:2,app_published:false}});
+  expect(containers).toBe(0);
+  const paid={...agentEnv,...sandboxEnabled};
+  const approved={...action,explicit_container_consent:true,
+   max_container_charge_cents:4};
+  const built=await worker(await signed(creator,path,approved,
+   "step_build_12345678"),paid);
+  expect(built.status).toBe(200);
+  expect(await built.json()).toMatchObject({data:{
+   status:"STEP_APPLIED",revision:3,job_state:"REPAIRING",
+   action:"NEXT_MODEL_NEEDS_SIGNED_CONSENT"}});
+  expect(containers).toBe(1);
+  const repeated=await worker(await signed(creator,path,approved,
+   "step_build_12345678"),paid);
+  expect(repeated.status).toBe(503);
+  expect(containers).toBe(1);
+  const reopened=await worker(await signed(creator,root,{anonymous_id:OWNER},
+   "step_reopen_12345678"),env);
+  expect(await reopened.json()).toMatchObject({data:{revision:3,
+   checkpoint:{state:"REPAIRING"},app_published:false}});
+  expect(seen[1]?.previous_response_id).toBe("resp_step_first123456");
+ });
+ it("fails closed without independent gate and rejects forged paid consent",async()=>{
+  const person=await client(),db=new Database();
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  const prompt="做一個可玩的多人骰子遊戲";
+  await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt
+  },"step_guard_create123456"),env);
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/auto-step";
+  const req={anonymous_id:OWNER,model_call_key:"step_model_fake_123456",
+   expected_revision:1};
+  expect((await worker(await signed(person,path,req,
+   "step_gate_12345678"),env)).status).toBe(404);
+  expect((await worker(await signed(person,path,{...req,
+   next_model_call_key:"other_call_123456",explicit_ai_consent:false,
+   max_ai_charge_cents:5,max_output_tokens:1024
+  },"step_bad_12345678"),{...env,APPF2_AGENT_AUTOSTEP_ENABLED:"1"})).status)
+   .toBe(400);
+  expect(db.modelCalls.size).toBe(0);
+  expect(db.sandboxCalls.size).toBe(0);
+ });
+});
