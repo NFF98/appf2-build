@@ -1070,6 +1070,7 @@ describe("Sprint 3.5 signed resumable auto-step (offline provider/container)",()
 });
 
 describe("Sprint 3.5 owner-signed bounded Agent Sequence (offline only)",()=>{
+ // eslint-disable-next-line max-lines-per-function -- End-to-end signed job through multiple durable turns.
  it("completes edit -> failed build -> AI repair as three CAS steps, preserving recovery",async()=>{
   const person=await client(),db=new Database();
   const prompt="建立漂亮的多人骰子遊戲含動畫、計分與排行榜";
