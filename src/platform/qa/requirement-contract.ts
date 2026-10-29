@@ -68,12 +68,28 @@ export function parseQaPlan(value:unknown,prompt:string):QaPlan|null{
 }
 export type QaVerdict="PASS"|"FAIL"|"UNTESTED";
 export type QaEvidence={readonly id:string;readonly verdict:QaVerdict;readonly detail:string};
+/** Unknown, duplicate, conflicting or non-independent verdicts can NEVER PASS. */
 export function summarizeQa(plan:QaPlan,evidence:readonly QaEvidence[]){
- const byId=new Map(evidence.map(e=>[e.id,e]));
+ const required=new Set(plan.criteria.map(c=>c.id));
+ const byId=new Map<string,QaEvidence>();
+ const duplicates=new Set<string>();
+ let extras=false;
+ for(const item of evidence){
+  if(!required.has(item.id)||item.verdict!=="PASS"&&
+   item.verdict!=="FAIL"&&item.verdict!=="UNTESTED"||
+   typeof item.detail!=="string"||item.detail.length>4096){
+   extras=true;continue;
+  }
+  if(byId.has(item.id))duplicates.add(item.id);
+  else byId.set(item.id,item);
+ }
  const results=plan.criteria.map(c=>({
-  id:c.id,verdict:!c.automatable?"UNTESTED" as const:
+  id:c.id,
+  verdict:!c.automatable||duplicates.has(c.id)?"UNTESTED" as const:
    (byId.get(c.id)?.verdict??"UNTESTED"),
-  detail:byId.get(c.id)?.detail??"NO_INDEPENDENT_EVIDENCE"
+  detail:duplicates.has(c.id)?"CONFLICTING_QA_EVIDENCE":
+   (byId.get(c.id)?.detail??"NO_INDEPENDENT_EVIDENCE")
  }));
- return {passed:results.every(r=>r.verdict==="PASS"),results};
+ return {passed:!extras&&duplicates.size===0&&
+  results.every(r=>r.verdict==="PASS"),results};
 }

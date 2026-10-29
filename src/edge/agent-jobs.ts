@@ -8,6 +8,7 @@ import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.
 import {applyStoredModelEdit,validApplyModelEditBody} from "./agent-model-apply.js";
 import {executeAgentModelContinuation,validModelContinueBody} from "./agent-model-continue.js";
 import {readAgentModelCallStatus,validModelStatusBody} from "./agent-model-status.js";
+import {extendSignedAgentBudget,validExtendBudgetBody} from "./agent-budget-extend.js";
 import {executeSignedSandboxTool,validSandboxRunBody,
  type SandboxRunDeps} from "./agent-sandbox-run.js";
 import type {PaidModelTurnDeps} from "../platform/agent/journaled-model-gateway.js";
@@ -27,6 +28,7 @@ const APPLY_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/apply-plan$/u;
 const CONTINUE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-continue$/u;
 const STATUS_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-status$/u;
 const SANDBOX_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/sandbox-run$/u;
+const BUDGET_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/extend-budget$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const KEY=/^[A-Za-z0-9_-]{8,128}$/u;
@@ -131,8 +133,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname);
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch)return undefined;
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -152,7 +154,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const isModel=Boolean(modelMatch||continueMatch);
  if(isModel&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED!=="1")return denied();
  if(sandboxMatch&&env.APPF2_AGENT_SANDBOX_EXECUTION_ENABLED!=="1")return denied();
- const info=sandboxMatch?(validSandboxRunBody(parsed)?parsed:null):
+ const info=budgetMatch?(validExtendBudgetBody(parsed)?parsed:null):
+  sandboxMatch?(validSandboxRunBody(parsed)?parsed:null):
   statusMatch?(validModelStatusBody(parsed)?parsed:null):
   continueMatch?(validModelContinueBody(parsed)?parsed:null):
   modelMatch?(validModelPlanBody(parsed)?parsed:null):
@@ -166,6 +169,12 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  try{
   if(url.pathname===CREATE)return await create(db,info.anonymous_id,ownerThumb,
    key,info,ctx.deps?.newJobId??(()=>crypto.randomUUID()));
+  if(budgetMatch){
+   if(!validExtendBudgetBody(info))return denied();
+   const result=await extendSignedAgentBudget(info,{db,
+    jobId:budgetMatch[1]??"",owner:info.anonymous_id,ownerThumb});
+   return json(200,{data:result});
+  }
   if(sandboxMatch){
    if(!validSandboxRunBody(info))return denied();
    const result=await executeSignedSandboxTool(info,{

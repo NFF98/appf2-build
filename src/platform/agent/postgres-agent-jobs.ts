@@ -96,3 +96,36 @@ export async function updateAgentJob(db:AgentJobExecutor,previous:AgentJobRow,
  if(!saved||saved.checkpoint_hash!==hash)throw Error("AGENT_JOB_WRITE_NOT_VERIFIED");
  return saved;
 }
+
+/**
+ * Owner-approved incremental budget change; never resets source, completed
+ * work, tokens, cost or the state. The regular checkpoint path forbids this.
+ */
+export async function extendApprovedAgentBudget(db:AgentJobExecutor,
+ previous:AgentJobRow,owner:string,newSteps:number,newCostCents:number):
+ Promise<AgentJobRow>{
+ const cp=previous.checkpoint;
+ if(previous.owner_anonymous_id!==owner||!(await validatePersisted(previous))||
+  !Number.isSafeInteger(newSteps)||newSteps<=cp.budget.max_steps||
+  newSteps>cp.budget.max_steps+16||newSteps>512||
+  !Number.isSafeInteger(newCostCents)||
+  newCostCents<cp.budget.max_cost_cents||newCostCents>100||
+  cp.state==="READY"||cp.state==="FAILED")
+  throw Error("AGENT_BUDGET_EXTENSION_DENIED");
+ const next:AgentCheckpoint={...cp,
+  budget:{...cp.budget,max_steps:newSteps,max_cost_cents:newCostCents},
+  previous_checkpoint_id:previous.checkpoint_hash};
+ if(!validateAgentCheckpoint(next)||next.project_hash!==previous.project_hash||
+  next.step!==cp.step||next.cost_cents!==cp.cost_cents||
+  next.tokens_used!==cp.tokens_used||next.state!==cp.state||
+  JSON.stringify(next.completed_call_ids)!==JSON.stringify(cp.completed_call_ids))
+  throw Error("AGENT_BUDGET_EXTENSION_INTEGRITY");
+ const hash=await checkpointHash(next);
+ const result=await db.query<{job_id:string}>(ADVANCE,[previous.job_id,owner,
+  previous.revision,hash,next.project_hash,next.state,
+  JSON.stringify(next),previous.checkpoint_hash]);
+ if(result.rows.length!==1)throw Error("AGENT_BUDGET_EXTENSION_STALE");
+ const saved=await readAgentJob(db,previous.job_id,owner);
+ if(!saved||saved.checkpoint_hash!==hash)throw Error("AGENT_BUDGET_NOT_DURABLE");
+ return saved;
+}

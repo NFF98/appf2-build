@@ -16,7 +16,9 @@ import {sandboxCommand,sandboxNeedsPinnedDeps,PINNED_MODULES}
 const JOB=/^[A-Za-z0-9_-]{8,80}$/u;
 const MAX_BODY=4*1024*1024+128*1024;
 const MAX_RUNTIME_MS=30000;
-const MAX_JOB_CALLS=8;
+// Absolute emergency abuse fuse, NOT an 8-attempt product completion limit.
+// Paid dispatch remains separately owner-approved and budget-fenced in Postgres.
+const MAX_JOB_CALLS=512;
 const MAX_WORKFLOW_BODY=64*1024;
 const PAID_APPROVAL="OWNER_APPROVED_ONE_SHOT";
 type Env={APPF2_SANDBOX_TOKEN:string;APPF2_SANDBOX_ALLOWED_JOB_ID:string;

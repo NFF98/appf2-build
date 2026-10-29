@@ -70,3 +70,68 @@ describe("universal independent acceptance (not dice-specific)",()=>{
   expect((await verifyAndRepair({title:"x",javascript:"x"},plan,async()=>{throw Error("browser crashed");})).status).toBe("NEEDS_HUMAN");
  });
 });
+
+describe("QA repair policy: evidence-driven progress, no endless re-tries",()=>{
+ it("three ineffective revisions force re-interpretation, not an imaginary PASS",async()=>{
+  const attempts:string[]=[];
+  const original=JSON.stringify(plan);
+  const result=await verifyAndRepair({title:"game",javascript:"v0"},plan,
+   async()=>criteria.map(x=>({id:x.id,verdict:"FAIL" as const,detail:"same failure"})),
+   {maxRepairs:12,repair:async(draft,_plan,_fail,n,reason)=>{
+    attempts.push(reason??"");
+    return {...draft,javascript:"v"+n};
+   }});
+  expect(result.status).toBe("NEEDS_REPLAN");
+  expect(result.next_action).toBe("REINTERPRET_OR_CHANGE_APPROACH");
+  expect(result.attempts).toHaveLength(4);
+  expect(attempts).toEqual(["REPAIR","REPAIR","RETHINK"]);
+  expect(JSON.stringify(plan)).toBe(original);
+  expect(result.attempts.every(x=>!x.passed)).toBe(true);
+ });
+ it("independent observable progress prevents premature strategy switch",async()=>{
+  let tried=0;
+  const result=await verifyAndRepair({title:"x",javascript:"v0"},plan,
+   async()=>{const n=tried++;return criteria.map((c,i)=>({
+    id:c.id,verdict:n>=2||n===1&&i===0?"PASS" as const:"FAIL" as const,
+    detail:"browser observation"
+   }));},
+   {maxRepairs:3,repair:async(draft,_p,_f,n)=>({...draft,javascript:"v"+n})});
+  expect(result.status).toBe("VERIFIED");
+  expect(result.attempts).toHaveLength(3);
+ });
+ it("budget refusal preserves draft and cannot secretly run another repair",async()=>{
+  let repaired=0;
+  const result=await verifyAndRepair({title:"x",javascript:"original"},plan,
+   async()=>criteria.map(c=>({id:c.id,verdict:"FAIL" as const,detail:"broken"})),
+   {maxRepairs:3,budgetAllowsRepair:()=>false,repair:async(draft)=>{
+    repaired++;return draft;
+   }});
+  expect(result.status).toBe("PAUSED_BUDGET");
+  expect(result.next_action).toBe("REQUEST_BUDGET");
+  expect(result.draft.javascript).toBe("original");
+  expect(result.attempts).toHaveLength(1);
+  expect(repaired).toBe(0);
+ });
+ it("missing tests or an ambiguous original requirement can never be promoted",async()=>{
+  const original={...plan,criteria:[{...plan.criteria[0],automatable:false}]};
+  const result=await verifyAndRepair({title:"x",javascript:"x"},original,
+   async()=>criteria.map(c=>({id:c.id,verdict:"PASS" as const,detail:"fake"})),
+   {maxRepairs:3,repair:async()=>({title:"x",javascript:"y"})});
+  expect(result.status).toBe("NEEDS_HUMAN");
+  expect(result.next_action).toBe("HUMAN_REVIEW");
+  expect(result.attempts).toHaveLength(1);
+ });
+});
+
+describe("Independent QA evidence conflicts fail closed",()=>{
+ it("cannot pass with duplicated PASS, unknown IDs or invalid verdicts",()=>{
+  const correct=criteria.map(c=>({id:c.id,verdict:"PASS" as const,detail:"observed"}));
+  expect(summarizeQa(plan,correct).passed).toBe(true);
+  expect(summarizeQa(plan,[...correct,correct[0]]).passed).toBe(false);
+  expect(summarizeQa(plan,[...correct,{
+   id:"unrequested_feature",verdict:"PASS" as const,detail:"invented"
+  }]).passed).toBe(false);
+  expect(summarizeQa(plan,correct.map((x,i)=>i===0?
+   {...x,verdict:"UNKNOWN" as "PASS"}:x)).passed).toBe(false);
+ });
+});

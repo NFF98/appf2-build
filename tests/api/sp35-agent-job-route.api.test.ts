@@ -650,3 +650,64 @@ describe("Sprint 3.5 private sandbox build/test Worker bridge (mock isolated bro
   expect(sent).toBe(1);
  });
 });
+
+describe("Sprint 3.5 signed incremental budget renewal beyond eight steps",()=>{
+ it("preserves source and completed work at step eight; owner can authorize more",async()=>{
+  const creator=await client(),db=new Database();
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  const prompt="做一個有帳號、計分與多人排行榜的遊戲";
+  expect((await fetch(await signed(creator,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt
+  },"extension_create_123456"),env)).status).toBe(201);
+  const before=db.jobs.get(JOB_ID)!;
+  const completed=Array.from({length:8},(_,i)=>"call_budget_"+i+"abcdef");
+  const cp={...before.checkpoint,state:"CODING" as const,step:8,
+   completed_call_ids:completed};
+  const {checkpointHash}=await import("../../src/platform/agent/postgres-agent-jobs.js");
+  db.jobs.set(JOB_ID,{...before,checkpoint:cp,checkpoint_hash:await checkpointHash(cp),
+   job_state:"CODING"});
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/extend-budget";
+  const body={anonymous_id:OWNER,expected_revision:0,explicit_budget_consent:true,
+   new_max_steps:20,new_max_cost_cents:15};
+  const approved=await fetch(await signed(creator,path,body,
+   "budget_renew_123456"),env);
+  expect(approved.status).toBe(200);
+  expect(await approved.json()).toMatchObject({data:{
+   status:"BUDGET_EXTENDED",revision:1,budget:{max_steps:20,
+    max_tokens:8192,max_cost_cents:15},step:8,app_published:false
+  }});
+  const saved=db.jobs.get(JOB_ID)!;
+  expect(saved.checkpoint.completed_call_ids).toEqual(completed);
+  expect(saved.project_hash).toBe(before.project_hash);
+  expect(saved.checkpoint.state).toBe("CODING");
+  expect(saved.checkpoint.step).toBe(8);
+  expect(saved.revision).toBe(1);
+  expect(db.modelCalls.size).toBe(0);
+  expect(db.sandboxCalls.size).toBe(0);
+  expect((await fetch(await signed(creator,path,body,
+   "budget_repeat_123456"),env)).status).toBe(503);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(1);
+ });
+ it("denies unapproved, cross-creator, excess step or cost extensions",async()=>{
+  const owner=await client(),attacker=await client(),db=new Database();
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  await fetch(await signed(owner,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt:"建立一個可操作的多人排行榜"
+  },"budget_create_123456"),env);
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/extend-budget";
+  const base={anonymous_id:OWNER,expected_revision:0,explicit_budget_consent:true,
+   new_max_steps:20,new_max_cost_cents:10};
+  expect((await fetch(await signed(attacker,path,base,
+   "wrong_owner_123456"),env)).status).toBe(503);
+  expect((await fetch(await signed(owner,path,{
+   ...base,explicit_budget_consent:false
+  },"no_consent_123456"),env)).status).toBe(400);
+  expect((await fetch(await signed(owner,path,{
+   ...base,new_max_steps:32
+  },"excess_steps_123456"),env)).status).toBe(503);
+  expect((await fetch(await signed(owner,path,{
+   ...base,new_max_cost_cents:101
+  },"excess_cost_123456"),env)).status).toBe(400);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(0);
+ });
+});
