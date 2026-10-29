@@ -816,3 +816,77 @@ describe("Sprint 3.5 durable Sandbox diagnostics -> next AI repair turn (NO paid
   expect(db.modelCalls.has("continue_model_123456")).toBe(false);
  });
 });
+
+
+describe("Sprint 3.5 existing project read -> AI edit (signed real Worker routes, mock AI)",()=>{
+ it("reads exact saved source, sends it into next model turn, then persists an edit without sandbox",async()=>{
+  const person=await client(),db=new Database();
+  const prompt="建立一個可互動的骰子計分器與排行榜";
+  let calls=0;
+  const observed:{previous_response_id?:string;input:unknown}[]=[];
+  const deps={...db.makeDeps(),sendModel:async({request}:{request:{
+   previous_response_id?:string;input:unknown
+  }})=>{
+   calls++;observed.push(request);
+   if(calls===1)return {id:"resp_read_first123456",status:"completed",
+    usage:{input_tokens:100,output_tokens:50},
+    output:[{type:"function_call",call_id:"call_read_first123456",name:"read_file",
+     arguments:JSON.stringify({path:"src/main.ts"})}]};
+   const source=db.snapshots.get(OWNER+":"+db.jobs.get(JOB_ID)!.project_hash)!
+    .snapshot as {files:{path:string;hash:string}[]};
+   return {id:"resp_read_second123456",status:"completed",
+    usage:{input_tokens:130,output_tokens:65},
+    output:[{type:"function_call",call_id:"call_read_second123456",
+     name:"write_file",arguments:JSON.stringify({path:"src/main.ts",
+      previous_hash:source.files.find(f=>f.path==="src/main.ts")!.hash,
+      content:"document.querySelector('#app')!.textContent='互動計分器';"})}]};
+  }};
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  expect((await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"read_create_12345678"),env)).status).toBe(201);
+  const original=db.jobs.get(JOB_ID)!.project_hash;
+  const first={anonymous_id:OWNER,prompt,model_call_key:"read_first_model_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true};
+  expect((await worker(await signed(person,root+"/model-plan",first,
+   "read_plan_12345678"),enabled)).status).toBe(200);
+  expect(String(observed[0]?.input)).toContain("CURRENT_PROJECT_FILES_JSON");
+  expect(String(observed[0]?.input)).toContain("src/main.ts");
+  const apply={anonymous_id:OWNER,model_call_key:"read_first_model_123456",
+   expected_revision:1};
+  const a=await worker(await signed(person,root+"/apply-plan",apply,
+   "read_apply_12345678"),env);
+  expect(a.status).toBe(200);
+  expect(await a.json()).toMatchObject({data:{status:"FILE_READ_SAVED",revision:2,
+   project_hash:original}});
+  expect(db.jobs.get(JOB_ID)?.project_hash).toBe(original);
+  expect(db.snapshots.size).toBe(1);
+  const replay=await worker(await signed(person,root+"/apply-plan",apply,
+   "read_apply_12345678"),env);
+  expect(await replay.json()).toMatchObject({data:{status:"ALREADY_APPLIED"}});
+  const next={anonymous_id:OWNER,previous_model_call_key:"read_first_model_123456",
+   model_call_key:"read_second_model_123456",expected_revision:2,
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true};
+  const continued=await worker(await signed(person,root+"/model-continue",next,
+   "read_continue_123456"),enabled);
+  expect(continued.status).toBe(200);
+  expect(calls).toBe(2);
+  expect(observed[1]?.previous_response_id).toBe("resp_read_first123456");
+  const readOutput=observed[1]?.input as {call_id:string;output:string}[];
+  expect(readOutput[0]?.call_id).toBe("call_read_first123456");
+  expect(readOutput[0]?.output).toContain("root missing");
+  expect(readOutput[0]?.output).toContain("src/main.ts");
+  expect((await worker(await signed(person,root+"/apply-plan",{
+   anonymous_id:OWNER,model_call_key:"read_second_model_123456",expected_revision:2
+  },"read_edit_apply_123456"),env)).status).toBe(200);
+  const reopened=await worker(await signed(person,root,{anonymous_id:OWNER},
+   "read_reopen_12345678"),env);
+  const project=await reopened.json() as {data:{files:{path:string;content:string}[]}};
+  expect(project.data.files.find(x=>x.path==="src/main.ts")?.content)
+   .toContain("互動計分器");
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(3);
+ });
+});

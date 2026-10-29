@@ -10,6 +10,7 @@ import {runJournaledPaidModelTurn,type PaidModelTurnDeps}
 import {parseAgentResponsesBatch,makeAgentToolOutputs}
  from "../platform/agent/responses-api.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
+import {provenProjectRead} from "../platform/agent/verified-project-read.js";
 import {readProvenSandboxToolResult} from "./agent-sandbox-run.js";
 import type {RecoveredAgentJob} from "../platform/agent/durable-agent-service.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
@@ -74,10 +75,16 @@ export async function verifiedContinuation(current:RecoveredAgentJob,
   return editContinuation(project.project_hash,previous.response_id,edit.calls[0]);
  const parsed=parseAgentResponsesBatch(previous.response_json,project.project_hash);
  if(!parsed||parsed.response_id!==previous.response_id||parsed.calls.length!==1||
-  !["run_build","run_test"].includes(parsed.calls[0].name)||
-  cp.completed_call_ids.at(-1)!==parsed.calls[0].call_id||!db||!modelCallKey)
+  cp.completed_call_ids.at(-1)!==parsed.calls[0].call_id)
   throw Error("AGENT_CONTINUATION_TOOL_NOT_PROVEN");
  const call=parsed.calls[0];
+ if(call.name==="read_file"&&cp.state==="CODING"){
+  const receipt=await provenProjectRead(project,call);
+  return {outputs:makeAgentToolOutputs([call],[receipt]),
+   previous_response_id:previous.response_id};
+ }
+ if(!["run_build","run_test"].includes(call.name)||!db||!modelCallKey)
+  throw Error("AGENT_CONTINUATION_TOOL_NOT_PROVEN");
  const receipt=await readProvenSandboxToolResult(db,{
   jobId:current.job.job_id,owner:current.job.owner_anonymous_id,
   modelCallKey,jobRevision:previous.job_revision,

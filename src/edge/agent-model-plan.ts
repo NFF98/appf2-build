@@ -8,6 +8,7 @@ import {recoverAgentJob,advanceDurableAgentJob}
 import {runJournaledPaidModelTurn,type PaidModelTurnDeps}
  from "../platform/agent/journaled-model-gateway.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
+import type {ProjectSnapshot} from "../platform/agent/project-workspace.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 export type ModelPlanInput={
  readonly anonymous_id:string;readonly prompt:string;
@@ -34,6 +35,24 @@ export function validModelPlanBody(input:unknown):input is ModelPlanInput{
    Number(x.max_charge_cents)>=1&&Number(x.max_charge_cents)<=100&&
    Number.isSafeInteger(x.max_output_tokens)&&
    Number(x.max_output_tokens)>=512&&Number(x.max_output_tokens)<=4096;
+}
+/** Supply the model with the REAL saved starter tree, not just an isolated
+ * user sentence. Prevents imaginary file paths and enables incremental edits.
+ * No generated code is executed by assembling this prompt.
+ */
+export function agentProjectPlanningPrompt(prompt:string,project:ProjectSnapshot):string{
+ const manifest=project.files.map(f=>({path:f.path,hash:f.hash,content:f.content}));
+ const guidance=[
+  "You are APPf2's coding agent. Implement the user's original request as a working interactive app, not a static placeholder.",
+  "Project profile: "+project.profile+". Entry: "+project.entrypoint+".",
+  "The following immutable files are the current project; previous_hash on write_file must exactly match the supplied hash (empty for new files).",
+  "Use exactly ONE function call per turn; after its durable tool result, continue editing. For a needed file use read_file; use run_build then run_test after implementing features.",
+  "Never request shell commands, external deployments, secrets, or publication. On build failure read the real diagnostics and repair the source before building again.",
+  "Do not hardcode one example app: implement the actual user request and required interactions.",
+  "CURRENT_PROJECT_FILES_JSON: "+JSON.stringify(manifest),
+  "ORIGINAL_USER_REQUEST_JSON: "+JSON.stringify(prompt.trim())
+ ];
+ return guidance.join("\n");
 }
 async function promptDigest(prompt:string):Promise<string>{
  return sha256CodeBytes(new TextEncoder().encode("APPF2_AGENT_REQUEST_V1\u0000"+prompt.trim()));
@@ -69,7 +88,7 @@ export async function executeFirstAgentModelPlan(input:ModelPlanInput,
   throw Error("AGENT_MODEL_NOT_IN_PLANNING");
  const result=await runJournaledPaidModelTurn({
   owner:deps.owner,job:current.job,call_key:input.model_call_key,
-  input:input.prompt.trim(),previous_response_id:null,
+  input:agentProjectPlanningPrompt(input.prompt,current.project),previous_response_id:null,
   max_output_tokens:input.max_output_tokens,
   max_charge_cents:input.max_charge_cents,paid_consent:true,
   api_key:deps.apiKey
