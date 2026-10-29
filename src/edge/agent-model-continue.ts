@@ -53,6 +53,7 @@ async function creatorMatches(db:AgentJobExecutor,jobId:string,owner:string,
  return row?.job_id===jobId;
 }
 /** A model may continue only from the immediately previous saved tool result. */
+// eslint-disable-next-line complexity -- Check every saved model, sandbox, checkpoint and source identity.
 export async function verifiedContinuation(current:RecoveredAgentJob,
  previous:ModelCallRow,db?:AgentJobExecutor,modelCallKey?:string){
  const cp=current.job.checkpoint,project=current.project;
