@@ -2,7 +2,7 @@
  * Data-only coding-agent protocol. A model message is never an OS command.
  * The runtime may only dispatch these calls to an authenticated sandbox broker.
  */
-export const AGENT_TOOLS=["read_file","write_file","delete_file","run_build","run_test","read_diagnostics"] as const;
+export const AGENT_TOOLS=["read_file","write_file","write_files","delete_file","run_build","run_test","read_diagnostics"] as const;
 export type AgentToolName=typeof AGENT_TOOLS[number];
 export type AgentToolCall={
  readonly call_id:string;
@@ -43,7 +43,34 @@ function exact(v:unknown,keys:readonly string[]):v is Record<string,unknown>{
 function argumentsFor(name:AgentToolName):readonly string[]{
  return name==="read_file"||name==="delete_file"?["path"]:
   name==="write_file"?["path","content","previous_hash"]:
+   name==="write_files"?["edits_json"]:
    name==="run_build"||name==="run_test"?["target"]:[];
+}
+/** Bounded atomic multi-file edit: one Responses call is one project revision. */
+export type AgentBatchWrite=Readonly<{path:string;content:string;previous_hash:string}>;
+export function parseAgentBatchWrites(raw:string):readonly AgentBatchWrite[]|null{
+ if(typeof raw!=="string"||raw.length<2||raw.length>200000)return null;
+ let parsed:unknown;
+ try{parsed=JSON.parse(raw);}catch{return null;}
+ if(!Array.isArray(parsed)||parsed.length<2||parsed.length>16)return null;
+ const edits:AgentBatchWrite[]=[];
+ const used=new Set<string>();
+ let totalBytes=0;
+ for(const item of parsed){
+  if(!exact(item,["path","content","previous_hash"])||
+   typeof item.path!=="string"||typeof item.content!=="string"||
+   typeof item.previous_hash!=="string"||
+   (item.previous_hash!==""&&!SHA.test(item.previous_hash)))return null;
+  try{assertPath(item.path);}catch{return null;}
+  const key=item.path.toLowerCase();
+  if(used.has(key)||item.content.includes("\u0000"))return null;
+  used.add(key);
+  const length=new TextEncoder().encode(item.content).byteLength;
+  totalBytes+=length;
+  if(length>64*1024||totalBytes>192*1024)return null;
+  edits.push({path:item.path,content:item.content,previous_hash:item.previous_hash});
+ }
+ return edits;
 }
 /** Reject JSON unknown properties and raw shell commands before any dispatch. */
 // eslint-disable-next-line complexity -- Strict tool argument admission rejects privilege escalation.
@@ -59,6 +86,8 @@ export function parseAgentToolCall(input:unknown):AgentToolCall|null{
   if(input.args.target!=="project")return null;
  }
  if(name==="write_file"&&typeof input.args.content==="string"&&input.args.content.length>256*1024)return null;
+ if(name==="write_files"&&
+  (typeof input.args.edits_json!=="string"||parseAgentBatchWrites(input.args.edits_json)===null))return null;
  if("path" in input.args){
   const path=input.args.path;
   if(typeof path!=="string"||path.length>180)return null;

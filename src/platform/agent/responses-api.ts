@@ -14,6 +14,7 @@ function obj(v:unknown):v is Record<string,unknown>{
 function argumentKeys(name:AgentToolName):readonly string[]{
  if(name==="read_file"||name==="delete_file")return ["path"];
  if(name==="write_file")return ["path","content","previous_hash"];
+ if(name==="write_files")return ["edits_json"];
  if(name==="run_build"||name==="run_test")return ["target"];
  return [];
 }
@@ -21,7 +22,8 @@ function toolSchema(name:AgentToolName){
  const fields=argumentKeys(name);
  const properties=Object.fromEntries(fields.map(k=>[k,{
   type:"string",...(k==="target"?{enum:["project"]}:{}),
-  description:k==="previous_hash"?"Expected file hash, or empty for new file.":k
+  description:k==="previous_hash"?"Expected file hash, or empty for new file.":
+   k==="edits_json"?"JSON array of 2 to 16 {path,content,previous_hash} objects. Existing paths require exact file hash and new paths empty previous_hash. Atomic commit.":k
  }]));
  return {type:"function" as const,name,description:
   "Operate only through the APPf2 isolated project broker, never through host shell.",

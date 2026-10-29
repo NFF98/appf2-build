@@ -13,7 +13,7 @@ describe("GPT-6.1 Sol Responses API protocol (offline; no provider calls)",()=>{
   const request=makeAgentResponsesRequest({model:"gpt-6.1-sol",input:"Create a useful app",
    previous_response_id:null,max_output_tokens:8192,consent:true});
   expect(request.model).toBe("gpt-6.1-sol");
-  expect(request.tools).toHaveLength(6);
+  expect(request.tools).toHaveLength(7);
   expect(request.parallel_tool_calls).toBe(false);
   expect(RESPONSES_AGENT_TOOLS.every(x=>x.strict&&x.parameters.additionalProperties===false)).toBe(true);
   expect(request).not.toHaveProperty("messages");
@@ -64,5 +64,29 @@ describe("GPT-6.1 Sol Responses API protocol (offline; no provider calls)",()=>{
    output:[{type:"message",content:[{type:"output_text",text:"Finished!"}]}]},h);
   expect(batch).toEqual({response_id:rid,calls:[]});
   expect(()=>makeAgentToolOutputs(batch!.calls,[])).toThrow("AGENT_TOOL_EVIDENCE_MISSING");
+ });
+});
+
+describe("Multi-file Responses tool schema (no provider calls)",()=>{
+ it("validates bounded atomic model edits and rejects unsafe batch members",()=>{
+  const write=RESPONSES_AGENT_TOOLS.find(x=>x.name==="write_files");
+  expect(write?.parameters.required).toEqual(["edits_json"]);
+  const edits=[{path:"src/main.ts",content:"console.log('ok')",previous_hash:""},
+   {path:"src/game.ts",content:"export const score=18;",previous_hash:""}];
+  const response={id:"resp_atomic_12345678",status:"completed",output:[
+   {type:"function_call",call_id:"call_atomic_123456",name:"write_files",
+    arguments:JSON.stringify({edits_json:JSON.stringify(edits)})}]};
+  expect(parseAgentResponsesBatch(response,h)?.calls[0].name).toBe("write_files");
+  for(const bad of [
+   [{...edits[0],path:"../.env"},edits[1]],
+   [{...edits[0]},{...edits[1],path:"SRC/MAIN.ts"}],
+   [{...edits[0],previous_hash:"forged"},edits[1]],
+   [{...edits[0],content:"x".repeat(70*1024)},edits[1]],
+   [edits[0]]
+  ]){
+   const forged={...response,output:[{...response.output[0],
+    arguments:JSON.stringify({edits_json:JSON.stringify(bad)})}]};
+   expect(parseAgentResponsesBatch(forged,h)).toBeNull();
+  }
  });
 });

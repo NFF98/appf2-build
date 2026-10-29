@@ -139,3 +139,35 @@ describe("Sprint 3.5 real Agent tool-turn coordinator (offline isolated broker)"
   expect(h.invocations).toHaveLength(0);
  });
 });
+
+describe("Sprint 3.5 atomic multi-file Agent turn",()=>{
+ it("commits three files in one immutable version and one checkpoint",async()=>{
+  const project=await makeProject(),h=harness();
+  const entries=[
+   {path:"main.mjs",content:"import './math.mjs';",previous_hash:project.files.find(f=>f.path==="main.mjs")!.hash},
+   {path:"math.mjs",content:"export const add=(a,b)=>a*b;",previous_hash:project.files.find(f=>f.path==="math.mjs")!.hash},
+   {path:"ui.mjs",content:"export const label='interactive';",previous_hash:""}
+  ];
+  const turn=await executeAgentTurn(await initial(project),resp("call_batch_123456",
+   "write_files",{edits_json:JSON.stringify(entries)}),h.deps);
+  expect(turn.saved.project.revision).toBe(2);
+  expect(turn.saved.project.parent_hash).toBe(project.project_hash);
+  expect(turn.saved.project.files.map(f=>f.path)).toEqual(["main.mjs","math.mjs","ui.mjs"]);
+  expect(turn.saved.job.checkpoint.step).toBe(1);
+  expect(turn.saved.job.checkpoint.completed_call_ids).toEqual(["call_batch_123456"]);
+  expect(h.invocations).toHaveLength(1);
+  expect(h.persisted).toHaveLength(1);
+ });
+ it("rejects a stale second file atomically without saving the first",async()=>{
+  const project=await makeProject(),h=harness();
+  const edits=[
+   {path:"new-page.mjs",content:"export const page=1;",previous_hash:""},
+   {path:"math.mjs",content:"export const add=()=>0;",previous_hash:"sha256:"+"0".repeat(64)}
+  ];
+  await expect(executeAgentTurn(await initial(project),resp("call_conflict_123456",
+   "write_files",{edits_json:JSON.stringify(edits)}),h.deps))
+   .rejects.toThrow("PROJECT_EDIT_CONFLICT");
+  expect(project.files.some(f=>f.path==="new-page.mjs")).toBe(false);
+  expect(h.persisted).toHaveLength(0);
+ });
+});

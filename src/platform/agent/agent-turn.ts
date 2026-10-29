@@ -5,7 +5,7 @@
  * At most one tool per Responses turn (parallel_tool_calls=false).
  */
 import {type AgentCheckpoint,type AgentState,type AgentToolCall,
- advanceAgentCheckpoint} from "./agent-contract.js";
+ advanceAgentCheckpoint,parseAgentBatchWrites} from "./agent-contract.js";
 import {parseAgentResponsesBatch,makeAgentToolOutputs,type FunctionOutput}
  from "./responses-api.js";
 import {applyProjectEdits,type ProjectEdit,type ProjectSnapshot}
@@ -43,25 +43,35 @@ function toolAllowed(state:AgentState,call:AgentToolCall):boolean{
  if(call.name==="read_diagnostics")return state==="BUILDING";
  return state==="PLANNING"||state==="CODING"||state==="REPAIRING";
 }
-function toolEdit(project:ProjectSnapshot,call:AgentToolCall):ProjectEdit|null{
+function toolEdits(project:ProjectSnapshot,call:AgentToolCall):readonly ProjectEdit[]{
+ if(call.name==="write_files"){
+  const batch=parseAgentBatchWrites(call.args.edits_json);
+  if(!batch)throw Error("AGENT_BATCH_EDIT_INVALID");
+  return batch.map(({path,content,previous_hash})=>{
+   const found=project.files.some(f=>f.path===path);
+   if(!found&&previous_hash!=="")throw Error("AGENT_BATCH_NEW_FILE_HASH_CONFLICT");
+   return found?{operation:"replace" as const,path,content,previous_hash}:
+    {operation:"add" as const,path,content};
+  });
+ }
  const prior=project.files.find(f=>f.path===call.args.path);
  if(call.name==="write_file"){
-  if(prior)return {operation:"replace",path:call.args.path,
-   previous_hash:call.args.previous_hash,content:call.args.content};
-  return {operation:"add",path:call.args.path,content:call.args.content};
+  if(prior)return [{operation:"replace",path:call.args.path,
+   previous_hash:call.args.previous_hash,content:call.args.content}];
+  return [{operation:"add",path:call.args.path,content:call.args.content}];
  }
- if(call.name==="delete_file")return {operation:"delete",path:call.args.path,
-  previous_hash:prior?.hash??""};
- return null;
+ if(call.name==="delete_file")return [{operation:"delete",path:call.args.path,
+  previous_hash:prior?.hash??""}];
+ return [];
 }
 async function outputAndProject(project:ProjectSnapshot,call:AgentToolCall,
  broker:AgentTurnDeps["broker"]){
  const receipt=await broker(project,call);
  const outputs=makeAgentToolOutputs([call],[receipt]);
  const success=receipt.exit_code===0&&!receipt.timed_out;
- const edit=success?toolEdit(project,call):null;
- const nextProject=edit?
-  await applyProjectEdits(project,project.project_hash,[edit]):undefined;
+ const edits=success?toolEdits(project,call):[];
+ const nextProject=edits.length>0?
+  await applyProjectEdits(project,project.project_hash,edits):undefined;
  return {receipt,outputs,nextProject,success};
 }
 /**
