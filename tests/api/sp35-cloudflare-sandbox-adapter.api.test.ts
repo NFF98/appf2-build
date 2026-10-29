@@ -24,8 +24,9 @@ class Stub implements IsolatedContainer{
  async exec(argv:readonly string[],options:{cwd:string;timeout:number}):Promise<IsolatedProcess>{
   expect(options).toEqual({cwd:"/workspace/appf2_"+job,timeout:2000});
   this.commands=[...this.commands,argv];
+  const isTrustedImageSetup=argv[0]==="ln";
   return {output:async()=>{
-   if(this.timedOut)throw Error("timeout");
+   if(this.timedOut&&!isTrustedImageSetup)throw Error("timeout");
    return {stdout:"BUILD PASSED",stderr:"",exitCode:0};
   },kill:async()=>{this.killed=true;}};
  }
