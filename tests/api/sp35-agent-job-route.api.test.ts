@@ -342,3 +342,99 @@ describe("Sprint 3.5 model-authored source edit in real signed Worker API (offli
   expect(db.jobs.get(JOB_ID)?.checkpoint.completed_call_ids).toEqual([]);
  });
 });
+
+describe("Sprint 3.5 authenticated multi-turn Responses continuation (offline provider)",()=>{
+ it("preserves response_id and proven edit result into next model turn, replays without charging twice",async()=>{
+  const person=await client(),db=new Database();
+  const prompt="請做漂亮的多人十八啦骰子遊戲，包含動畫及計分";
+  let modelCalls=0;
+  const observed:{previous_response_id?:string;input:unknown}[]=[];
+  const deps={...db.makeDeps(),sendModel:async({request}:{
+   request:{previous_response_id?:string;input:unknown}
+  })=>{
+   modelCalls++;
+   observed.push({previous_response_id:request.previous_response_id,input:request.input});
+   const snap=Array.from(db.snapshots.values()).find(x=>x.project_revision===modelCalls)
+    ?.snapshot as {files:{path:string;hash:string}[]}|undefined;
+   const path=modelCalls===1?"src/main.ts":"src/style.css";
+   const previous_hash=snap?.files.find(f=>f.path===path)?.hash??"";
+   return {id:modelCalls===1?"resp_first123456":"resp_second123456",
+    status:"completed",usage:{input_tokens:85,output_tokens:65},output:[
+     {type:"function_call",call_id:modelCalls===1?"call_first123456":"call_second123456",
+      name:"write_file",arguments:JSON.stringify({path,previous_hash,
+       content:modelCalls===1?"document.querySelector('#app')!.textContent='第一版';":
+        "body{background:#e0f2fe}"})}
+    ]};
+  }};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  const created=await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"multi_turn_create_123456"),env);
+  expect(created.status).toBe(201);
+  const first={anonymous_id:OWNER,prompt,model_call_key:"first_call_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true};
+  expect((await fetch(await signed(person,root+"/model-plan",first,
+   "first_plan_123456"),enabled)).status).toBe(200);
+  const apply1={anonymous_id:OWNER,model_call_key:"first_call_123456",expected_revision:1};
+  expect((await fetch(await signed(person,root+"/apply-plan",apply1,
+   "apply_one_123456"),env)).status).toBe(200);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(2);
+  const next={anonymous_id:OWNER,expected_revision:2,
+   previous_model_call_key:"first_call_123456",
+   model_call_key:"second_call_123456",max_charge_cents:5,
+   max_output_tokens:1024,explicit_ai_consent:true};
+  const continued=await fetch(await signed(person,root+"/model-continue",next,
+   "continue_one_123456"),enabled);
+  expect(continued.status).toBe(200);
+  expect(await continued.json()).toMatchObject({data:{
+   status:"MODEL_RESPONSE_SAVED",source:"PROVIDER",response_id:"resp_second123456",
+   revision:2}});
+  expect(modelCalls).toBe(2);
+  expect(observed[1]?.previous_response_id).toBe("resp_first123456");
+  const modelInput=observed[1]?.input as {
+   type:string;call_id:string;output:string}[];
+  expect(modelInput).toHaveLength(1);
+  expect(modelInput[0].type).toBe("function_call_output");
+  expect(modelInput[0].call_id).toBe("call_first123456");
+  expect(modelInput[0].output).toContain(db.jobs.get(JOB_ID)?.project_hash??"MISSING");
+  const duplicate=await fetch(await signed(person,root+"/model-continue",next,
+   "continue_one_123456"),enabled);
+  expect(duplicate.status).toBe(200);
+  expect(await duplicate.json()).toMatchObject({data:{source:"DURABLE_REPLAY"}});
+  expect(modelCalls).toBe(2);
+  const apply2=await fetch(await signed(person,root+"/apply-plan",{
+   anonymous_id:OWNER,model_call_key:"second_call_123456",expected_revision:2
+  },"apply_two_123456"),env);
+  expect(apply2.status).toBe(200);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(3);
+  const recovered=await fetch(await signed(person,root,{anonymous_id:OWNER},
+   "reopen_two_123456"),env);
+  const source=await recovered.json() as {data:{files:{path:string;content:string}[]}};
+  expect(source.data.files.find(x=>x.path==="src/style.css")?.content)
+   .toBe("body{background:#e0f2fe}");
+ });
+ it("refuses continuation before a saved edit or if independent spend flag is off",async()=>{
+  const person=await client(),db=new Database();let calls=0;
+  const deps={...db.makeDeps(),sendModel:async()=>{calls++;throw Error("NO_DISPATCH");}};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  const prompt="做一個可以互動的多人骰子排行榜";
+  await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"continuation_create_123456"),env);
+  const payload={anonymous_id:OWNER,expected_revision:2,
+   previous_model_call_key:"first_call_123456",model_call_key:"second_call_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true};
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/model-continue";
+  expect((await fetch(await signed(person,path,payload,
+   "preedit_12345678"),env)).status).toBe(404);
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  expect((await fetch(await signed(person,path,payload,
+   "preedit_12345678"),enabled)).status).toBe(503);
+  expect(calls).toBe(0);
+  expect(db.modelCalls.size).toBe(0);
+ });
+});
