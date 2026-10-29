@@ -1,5 +1,5 @@
 import {describe,it,expect} from "vitest";
-import {sealCandidateQaReceipt,verifySignedCandidateQa,
+import {sealCandidateQaReceipt,verifySignedCandidateQa,verifySignedQaAgainstUserPrompt,
  summarizeCandidateQa,admitsPublicationFromCandidateReceipt,
  type CandidateQaReceipt}
  from "../../src/platform/agent/qa-receipt.js";
@@ -52,6 +52,33 @@ describe("Independent QA HMAC verification; never grants publication (offline)",
   const failed={...receipt,checks:[{...receipt.checks[0],verdict:"FAIL" as const}]};
   await expect(sealCandidateQaReceipt(failed,secret))
    .rejects.toThrow("QA_CANNOT_SEAL_UNPROVEN_CHECKS");
+ });
+ it("binds sealed checks to original user acceptance plan, not an arbitrary subset",async()=>{
+  const signed=await sealCandidateQaReceipt(receipt,secret);
+  const prompt="能按按鈕完成加分，並切換排行榜";
+  const criteria=[
+   {id:"build",source_quote:"完成加分",description:"操作後真的增加分數",
+    steps:[{action:"click",role:"button",name:"加分"}],
+    assertions:[{kind:"text_includes",text:"得分：1"}],automatable:true},
+   {id:"click",source_quote:"切換排行榜",description:"打開排行榜",
+    steps:[{action:"click",role:"tab",name:"排行"}],
+    assertions:[{kind:"visible",role:"heading",name:"排行榜"}],automatable:true}
+  ];
+  const plan={version:"1",criteria};
+  expect((await verifySignedQaAgainstUserPrompt(signed,plan,prompt,identity,secret))
+   .ready_for_review).toBe(true);
+  const withheld={...plan,criteria:[...criteria,
+   {id:"database",source_quote:"完成加分",description:"永久儲存得分",
+    steps:[],assertions:[{kind:"text_includes",text:"已保存"}],automatable:true}]};
+  expect((await verifySignedQaAgainstUserPrompt(signed,withheld,prompt,identity,secret))
+   .ready_for_review).toBe(false);
+  const untrusted={...plan,criteria:[{...criteria[0],source_quote:"not in prompt"},
+   criteria[1]]};
+  expect((await verifySignedQaAgainstUserPrompt(signed,untrusted,prompt,identity,secret))
+   .failures).toContain("QA_ORIGINAL_PLAN_INVALID");
+  const manual={...plan,criteria:[{...criteria[0],automatable:false},criteria[1]]};
+  expect((await verifySignedQaAgainstUserPrompt(signed,manual,prompt,identity,secret))
+   .failures).toContain("QA_HAS_UNVERIFIED_REQUIREMENTS");
  });
  it("rejects zero requirements, duplicate requirements and blank/untrusted secret",async()=>{
   const signed=await sealCandidateQaReceipt(receipt,secret);

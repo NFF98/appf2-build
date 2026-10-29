@@ -4,6 +4,7 @@
  * model output, sandbox logs and CI fixtures cannot grant publication.
  */
 import {canonicalArtifactJson} from "../blueprint/code-artifact-v2.js";
+import {parseQaPlan} from "../qa/requirement-contract.js";
 export type QaCheck={
  readonly criterion_id:string;
  readonly category:"BUILD"|"UNIT"|"INTEGRATION"|"BROWSER"|"API"|"DATABASE"|"HUMAN";
@@ -107,6 +108,21 @@ export async function verifySignedCandidateQa(receipt:CandidateQaReceipt,
   failures.push("QA_SOURCE_ARTIFACT_OR_RUN_MISMATCH");
  if(!(await validSeal(receipt,secret)))failures.push("QA_INDEPENDENT_SEAL_INVALID");
  return {ready_for_review:failures.length===0,failures};
+}
+/**
+ * A verifier must bind the independently signed check IDs to the ORIGINAL
+ * source-quoted user acceptance plan, rather than a caller-chosen subset.
+ * Unknown/nonautomatable requirements fail closed until separately resolved.
+ */
+export async function verifySignedQaAgainstUserPrompt(receipt:CandidateQaReceipt,
+ originalPlan:unknown,prompt:string,identity:CandidateQaIdentity,
+ verifierSecret:string):Promise<QaSummary>{
+ const plan=parseQaPlan(originalPlan,prompt);
+ if(!plan)return {ready_for_review:false,failures:["QA_ORIGINAL_PLAN_INVALID"]};
+ if(plan.criteria.some(c=>!c.automatable))
+  return {ready_for_review:false,failures:["QA_HAS_UNVERIFIED_REQUIREMENTS"]};
+ return verifySignedCandidateQa(receipt,plan.criteria.map(c=>c.id),
+  identity,verifierSecret);
 }
 /** F02 requires a distinct audited release admission, never candidate QA alone. */
 export function admitsPublicationFromCandidateReceipt(receipt:CandidateQaReceipt):false{
