@@ -15,9 +15,16 @@ const FAILCLOSED_ERROR="QA_UNAVAILABLE_OR_UNVERIFIED";
 export type SafeQaFailure={id:string;verdict:"FAIL"|"UNTESTED";kind:string};
 export class CodeQaFailure extends Error{
  readonly failures:readonly SafeQaFailure[];
- constructor(status:"FAILED"|"NEEDS_HUMAN",evidence:readonly QaEvidence[]){
-  super(status==="FAILED"?"QA_BROWSER_ASSERTIONS_FAILED":"QA_BROWSER_INCOMPLETE");
+ readonly recovery_action:"NONE"|"HUMAN_REVIEW"|"REINTERPRET_OR_CHANGE_APPROACH"|"REQUEST_BUDGET";
+ constructor(status:"FAILED"|"NEEDS_HUMAN"|"NEEDS_REPLAN"|"PAUSED_BUDGET",
+  evidence:readonly QaEvidence[]){
+  super(status==="NEEDS_REPLAN"?"QA_REINTERPRET_REQUIREMENTS":
+   status==="PAUSED_BUDGET"?"QA_BUDGET_APPROVAL_REQUIRED":
+   status==="FAILED"?"QA_BROWSER_ASSERTIONS_FAILED":"QA_BROWSER_INCOMPLETE");
   this.name="CodeQaFailure";
+  this.recovery_action=status==="NEEDS_REPLAN"?
+   "REINTERPRET_OR_CHANGE_APPROACH":status==="PAUSED_BUDGET"?
+   "REQUEST_BUDGET":status==="NEEDS_HUMAN"?"HUMAN_REVIEW":"NONE";
   this.failures=evidence.filter(x=>x.verdict!=="PASS").map(x=>{
    const label=x.detail.split(":")[0];
    const safe=["BROWSER_ERROR","BROWSER_TEST_CRASH","BROWSER_EXCEPTION","ASSERTION_FAILED",
