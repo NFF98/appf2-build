@@ -5,6 +5,7 @@ import type {AgentJobRouteDeps} from "../../src/edge/agent-jobs.js";
 import type {AgentJobRow} from "../../src/platform/agent/postgres-agent-jobs.js";
 import type {AgentCheckpoint} from "../../src/platform/agent/agent-contract.js";
 import type {ModelCallRow} from "../../src/platform/agent/postgres-model-calls.js";
+import {sha256CodeBytes} from "../../src/platform/blueprint/code-artifact-v2.js";
 import type {WorkerRequestDbContext} from "../../src/platform/blueprint/worker-postgres-executor.js";
 const ORIGIN="https://app.example";
 const OWNER="c264c7c2-a967-4fbc-b201-ae9e942e03bc";
@@ -43,6 +44,7 @@ class Database {
  readonly snapshots=new Map<string,SourceRow>();
  jobs=new Map<string,AgentJobRow>();
  modelCalls=new Map<string,ModelCallRow>();
+ sandboxCalls=new Map<string,{status:string;receipt_json:unknown|null;job_id:string;owner_anonymous_id:string;call_id:string;model_call_key:string;job_revision:number;checkpoint_hash:string;project_hash:string;call_hash:string;max_charge_cents:number}>();
  identities=new Map<string,{thumb:string;key:string}>();
  context:WorkerRequestDbContext|null=null;
  readonly db={
@@ -58,6 +60,52 @@ class Database {
      project_hash:String(args[4]),checkpoint_hash:String(args[3]),
      checkpoint,job_state:String(args[5])});
     return {rows:[{job_id:row.job_id} as T]};
+   }
+   if(sql.startsWith("SELECT job_id::text,owner_anonymous_id::text,call_id")){
+    const row=this.sandboxCalls.get(String(args[2]));
+    return {rows:row&&row.owner_anonymous_id===args[1]?[row as T]:[]};
+   }
+   if(sql.startsWith("SELECT appf2_internal.reserve_agent_sandbox_call")){
+    const [jobId,modelKey,id,revision,cpHash,projectHash,hash,charge]=args;
+    const job=this.jobs.get(String(jobId)),model=this.modelCalls.get(String(modelKey));
+    if(!job||!model||model.status!=="SUCCEEDED"||
+     job.revision!==revision||job.checkpoint_hash!==cpHash||
+     job.project_hash!==projectHash||
+     model.job_revision!==revision||model.checkpoint_hash!==cpHash)
+     throw Error("SANDBOX_FAKE_ADMISSION_FAILED");
+    const prior=this.sandboxCalls.get(String(id));
+    if(prior)return {rows:[{status:prior.status} as T]};
+    if([...this.sandboxCalls.values()].some(row=>
+     ["RESERVED","IN_FLIGHT","BLOCKED_UNCERTAIN"].includes(row.status)))
+     throw Error("SANDBOX_FAKE_ACTIVE");
+    const paid=[...this.modelCalls.values()].reduce((sum,r)=>sum+r.max_charge_cents,0);
+    const container=[...this.sandboxCalls.values()].reduce((sum,r)=>sum+r.max_charge_cents,0);
+    if(paid+container+Number(charge)>job.checkpoint.budget.max_cost_cents)
+     throw Error("SANDBOX_FAKE_BUDGET");
+    const row={job_id:String(jobId),owner_anonymous_id:job.owner_anonymous_id,
+     call_id:String(id),model_call_key:String(modelKey),job_revision:Number(revision),
+     checkpoint_hash:String(cpHash),project_hash:String(projectHash),
+     call_hash:String(hash),max_charge_cents:Number(charge),
+     status:"RESERVED",receipt_json:null};
+    this.sandboxCalls.set(row.call_id,row);
+    return {rows:[{status:"RESERVED"} as T]};
+   }
+   if(sql.startsWith("UPDATE public.appf2_agent_sandbox_call")){
+    const row=this.sandboxCalls.get(String(args[2]));
+    if(!row)return {rows:[]};
+    if(sql.includes("SET status='IN_FLIGHT'")){
+     if(row.status!=="RESERVED"||row.call_hash!==args[3]||
+      row.checkpoint_hash!==args[4])return {rows:[]};
+     this.sandboxCalls.set(row.call_id,{...row,status:"IN_FLIGHT"});
+    }else if(sql.includes("SET status='SUCCEEDED'")){
+     if(row.status!=="IN_FLIGHT")return {rows:[]};
+     this.sandboxCalls.set(row.call_id,{...row,status:"SUCCEEDED",
+      receipt_json:JSON.parse(String(args[3])) as unknown});
+    }else if(sql.includes("SET status='BLOCKED_UNCERTAIN'")){
+     if(row.status!=="IN_FLIGHT")return {rows:[]};
+     this.sandboxCalls.set(row.call_id,{...row,status:"BLOCKED_UNCERTAIN"});
+    }else throw Error("SANDBOX_FAKE_SQL_UNKNOWN");
+    return {rows:[{call_id:row.call_id} as T]};
    }
    if(sql.startsWith("SELECT appf2_internal.reserve_agent_model_call")){
     const current=this.jobs.get(String(args[0]));
@@ -464,5 +512,141 @@ describe("Sprint 3.5 signed read-only model journal status (zero provider calls)
   const denied=await fetch(await signed(intruder,path,body,"status_spoof_123456"),env);
   expect(denied.status).toBe(503);
   expect(await denied.text()).not.toContain("BLOCKED_UNCERTAIN");
+ });
+});
+
+const sandboxEnabled={...env,APPF2_AGENT_SANDBOX_EXECUTION_ENABLED:"1",
+ APPF2_SANDBOX_BROKER_URL:"https://appf2-private.example.workers.dev/",
+ APPF2_SANDBOX_BROKER_TOKEN:"unit-test-private-bearer-token-abcde123456",
+ APPF2_SANDBOX_ALLOWED_JOB_ID:JOB_ID};
+function savedModelTool(db:Database,key:string,callId:string,
+ name:"run_build"|"run_test"):void{
+ const job=db.jobs.get(JOB_ID)!;
+ const response={id:"resp_"+callId.slice(5)+"123456",status:"completed",
+  output:[{type:"function_call",call_id:callId,name,
+   arguments:JSON.stringify({target:"project"})}]};
+ db.modelCalls.set(key,{job_id:JOB_ID,owner_anonymous_id:OWNER,call_key:key,
+  job_revision:job.revision,checkpoint_hash:job.checkpoint_hash,
+  request_hash:job.request_hash,model:"gpt-6.1-sol",
+  max_charge_cents:2,status:"SUCCEEDED",
+  response_json:response,response_id:response.id,input_tokens:85,output_tokens:30});
+}
+async function codingJob(person:Client,db:Database,fetch:ReturnType<typeof createWorkerFetch>){
+ const prompt="請生成漂亮且完整的多人十八啦骰子遊戲";
+ const created=await fetch(await signed(person,"/api/v1/agent-jobs",{
+  anonymous_id:OWNER,prompt,max_cost_cents:35,explicit_ai_consent:true
+ },"sandbox_create_123456"),env);
+ expect(created.status).toBe(201);
+ // Transition to CODING with a committed model-origin file change.
+ const job=db.jobs.get(JOB_ID)!;
+ const cp={...job.checkpoint,state:"PLANNING" as const,step:1,
+  previous_checkpoint_id:job.checkpoint_hash};
+ const {checkpointHash}=await import("../../src/platform/agent/postgres-agent-jobs.js");
+ db.jobs.set(JOB_ID,{...job,checkpoint:cp,checkpoint_hash:await checkpointHash(cp),
+  job_state:"PLANNING",revision:1});
+ savedModelTool(db,"model_edit_123456","call_edit_123456","run_build");
+ // Replace the synthetic build record with a genuine first edit.
+ const model=db.modelCalls.get("model_edit_123456")!;
+ const snap=Array.from(db.snapshots.values())[0]?.snapshot as {
+  files:{path:string;hash:string}[]};
+ const prior=snap.files.find(f=>f.path==="src/main.ts")!.hash;
+ db.modelCalls.set("model_edit_123456",{...model,response_json:{
+  id:model.response_id,status:"completed",output:[{type:"function_call",
+   call_id:"call_edit_123456",name:"write_file",arguments:JSON.stringify({
+    path:"src/main.ts",content:"document.querySelector('#app')!.textContent='APPf2';",
+    previous_hash:prior
+   })}]
+ }});
+ const applied=await fetch(await signed(person,
+  "/api/v1/agent-jobs/"+JOB_ID+"/apply-plan",{
+   anonymous_id:OWNER,model_call_key:"model_edit_123456",expected_revision:1
+  },"sandbox_apply_123456"),env);
+ expect(applied.status).toBe(200);
+ expect(db.jobs.get(JOB_ID)?.job_state).toBe("CODING");
+ expect(db.jobs.get(JOB_ID)?.revision).toBe(2);
+}
+describe("Sprint 3.5 private sandbox build/test Worker bridge (mock isolated broker, no paid container)",()=>{
+ it("persists build/test receipts and CAS checkpoints; identical signed build is never re-executed",async()=>{
+  const person=await client(),db=new Database();
+  let remoteCount=0;
+  const deps={...db.makeDeps(),sendSandbox:async(task:{
+   job_id:string;project:{project_hash:string};call:{call_id:string;project_hash:string}
+  })=>{
+   remoteCount++;
+   const detail="MOCK_ISOLATED_CONTAINER_COMPILE_PASS";
+   return {call_id:task.call.call_id,project_hash:task.project.project_hash,
+    exit_code:0,timed_out:false,detail,
+    output_digest:await sha256CodeBytes(new TextEncoder().encode(detail)),
+    runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"};
+  }};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  await codingJob(person,db,fetch);
+  savedModelTool(db,"build_model_123456","call_build_123456","run_build");
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/sandbox-run";
+  const body={anonymous_id:OWNER,model_call_key:"build_model_123456",
+   expected_revision:2,explicit_container_consent:true,max_charge_cents:4};
+  const first=await fetch(await signed(person,path,body,"sandbox_exec_123456"),sandboxEnabled);
+  expect(first.status).toBe(200);
+  expect(await first.json()).toMatchObject({data:{status:"SANDBOX_RESULT_SAVED",
+   job_state:"BUILDING",revision:3,exit_code:0}});
+  expect(db.sandboxCalls.get("call_build_123456")?.status).toBe("SUCCEEDED");
+  const repeat=await fetch(await signed(person,path,body,"sandbox_exec_123456"),sandboxEnabled);
+  expect(repeat.status).toBe(200);
+  expect(await repeat.json()).toMatchObject({data:{status:"ALREADY_APPLIED"}});
+  expect(remoteCount).toBe(1);
+  savedModelTool(db,"test_model_123456","call_test_123456","run_test");
+  const testing=await fetch(await signed(person,path,{
+   anonymous_id:OWNER,model_call_key:"test_model_123456",expected_revision:3,
+   explicit_container_consent:true,max_charge_cents:4
+  },"sandbox_test_123456"),sandboxEnabled);
+  expect(testing.status).toBe(200);
+  expect(await testing.json()).toMatchObject({data:{job_state:"TESTING",revision:4}});
+  expect(remoteCount).toBe(2);
+ });
+ it("rejects missing approval, forged evidence and uncertain network results without paid retries",async()=>{
+  const person=await client(),db=new Database();let sent=0;
+  const deps={...db.makeDeps(),sendSandbox:async()=>{
+   sent++;throw Error("network timeout");
+  }};
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:deps});
+  await codingJob(person,db,fetch);
+  savedModelTool(db,"build_model_123456","call_build_123456","run_build");
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/sandbox-run";
+  const body={anonymous_id:OWNER,model_call_key:"build_model_123456",
+   expected_revision:2,explicit_container_consent:true,max_charge_cents:4};
+  expect((await fetch(await signed(person,path,body,"disabled_123456"),env)).status).toBe(404);
+  const fail=await fetch(await signed(person,path,body,"isolated_123456"),sandboxEnabled);
+  expect(fail.status).toBe(503);
+  expect(db.sandboxCalls.get("call_build_123456")?.status).toBe("BLOCKED_UNCERTAIN");
+  expect((await fetch(await signed(person,path,body,"isolated_123456"),sandboxEnabled)).status)
+   .toBe(503);
+  expect(sent).toBe(1);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(2);
+  const wrong=await client();
+  const spoof=await fetch(await signed(wrong,path,body,"spoof_12345678"),sandboxEnabled);
+  expect(spoof.status).toBe(503);
+  expect(sent).toBe(1);
+ });
+ it("rejects sandbox proof tampering and never advances the job checkpoint",async()=>{
+  const person=await client(),db=new Database();let sent=0;
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendSandbox:async(task:{call:{call_id:string;project_hash:string}})=>{
+    sent++;
+    return {call_id:task.call.call_id,project_hash:task.call.project_hash,
+     exit_code:0,timed_out:false,detail:"FAKE",
+     output_digest:"sha256:"+"f".repeat(64),
+     runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"};
+   }}});
+  await codingJob(person,db,fetch);
+  savedModelTool(db,"build_model_123456","call_build_123456","run_build");
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/sandbox-run";
+  const outcome=await fetch(await signed(person,path,{
+   anonymous_id:OWNER,model_call_key:"build_model_123456",expected_revision:2,
+   explicit_container_consent:true,max_charge_cents:4
+  },"tamper_12345678"),sandboxEnabled);
+  expect(outcome.status).toBe(503);
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(2);
+  expect(db.sandboxCalls.get("call_build_123456")?.status).toBe("BLOCKED_UNCERTAIN");
+  expect(sent).toBe(1);
  });
 });

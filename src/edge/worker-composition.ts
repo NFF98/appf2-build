@@ -50,6 +50,11 @@ export interface Appf2WorkerEnv {
   readonly APPF2_AGENT_MODEL_EXECUTION_ENABLED?: string;
   /** Dedicated OpenAI key; never reuse the F01 provider's key or expose to browser. */
   readonly APPF2_OPENAI_AGENT_API_KEY?: string;
+  /** Private Sandbox bridge: all three must match one owner-approved test Job. */
+  readonly APPF2_AGENT_SANDBOX_EXECUTION_ENABLED?: string;
+  readonly APPF2_SANDBOX_BROKER_URL?: string;
+  readonly APPF2_SANDBOX_BROKER_TOKEN?: string;
+  readonly APPF2_SANDBOX_ALLOWED_JOB_ID?: string;
   readonly APPF2_MODEL_PROVIDER?: "openai" | "xai" | "deepseek";
   /** Set only with explicit authorization to send a 429 retry to this provider. */
   readonly APPF2_MODEL_FALLBACK_PROVIDER?: "xai" | "deepseek";
