@@ -716,7 +716,7 @@ describe("Sprint 3.5 durable Sandbox diagnostics -> next AI repair turn (NO paid
  it("delivers saved compile failure to the next AI turn and persists its repair",async()=>{
   const person=await client(),db=new Database();
   let modelDispatches=0,sandboxDispatches=0;
-  let lastRequest:{previous_response_id?:string;input:unknown}|null=null;
+  const observedRequests:{previous_response_id?:string;input:unknown}[]=[];
   const fetch=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
    sendSandbox:async(task:{call:{call_id:string;project_hash:string}})=>{
     sandboxDispatches++;
@@ -729,7 +729,7 @@ describe("Sprint 3.5 durable Sandbox diagnostics -> next AI repair turn (NO paid
    sendModel:async({request}:{request:{
     previous_response_id?:string;input:unknown
    }})=>{
-    modelDispatches++;lastRequest=request;
+    modelDispatches++;observedRequests.push(request);
     const current=db.jobs.get(JOB_ID)!;
     const snap=db.snapshots.get(OWNER+":"+current.project_hash)?.snapshot as {
      files:{path:string;hash:string}[]};
@@ -765,8 +765,8 @@ describe("Sprint 3.5 durable Sandbox diagnostics -> next AI repair turn (NO paid
   expect(next.status).toBe(200);
   expect(modelDispatches).toBe(1);
   expect(sandboxDispatches).toBe(1);
-  expect(lastRequest?.previous_response_id).toBe("resp_build_123456123456");
-  const toolInput=lastRequest?.input as {call_id:string;output:string}[];
+  expect(observedRequests[0]?.previous_response_id).toBe("resp_build_123456123456");
+  const toolInput=observedRequests[0]?.input as {call_id:string;output:string}[];
   expect(toolInput[0]?.call_id).toBe("call_build_123456");
   expect(toolInput[0]?.output).toContain("VITE_COMPILE_FAILED");
   expect(toolInput[0]?.output).toContain('"exit_code":1');
