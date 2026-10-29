@@ -157,13 +157,24 @@ export async function generateQaPlan(env:Appf2WorkerEnv,prompt:string):Promise<Q
  if(plan.criteria.some(c=>!c.automatable))throw Error("QA_PLAN_REQUIRES_HUMAN_REVIEW");
  return plan;
 }
+// eslint-disable-next-line max-params -- Model input and immutable user requirements are separately validated.
 export async function repairQaCode(env:Appf2WorkerEnv,draft:QaDraft,plan:QaPlan,
- evidence:readonly QaEvidence[],attempt:number):Promise<QaDraft|null>{
+ evidence:readonly QaEvidence[],attempt:number,
+ context:{readonly originalPrompt:string;readonly strategy:"REPAIR"|"RETHINK"}=
+  {originalPrompt:"",strategy:"REPAIR"}):Promise<QaDraft|null>{
  const messages=codeBuilderModelRequest("model","repair").messages;
  const policy=messages[0]?.content??"";
- const payload=JSON.stringify({attempt,plan,evidence,source:draft.javascript});
+ const payload=JSON.stringify({attempt,
+  original_user_request:context.originalPrompt,
+  strategy:context.strategy,immutable_user_acceptance_plan:plan,
+  failed_independent_evidence:evidence,source:draft.javascript});
  if(payload.length>40000)return null;
- const result=await modelJson(env,[{role:"system",content:policy+" Fix failed independent QA. Respond only with {title,javascript}."},
+ const result=await modelJson(env,[{role:"system",content:policy+
+  " Re-read the ORIGINAL USER REQUEST. The existing code may solve the WRONG problem."+
+  " Treat the user's original requirements and independent acceptance plan as immutable."+
+  " If strategy is RETHINK, revisit mistaken requirements, UI/architecture assumptions and approach."+
+  " Do not fake completion, omit required behavior or alter test expectations."+
+  " Fix failing independent QA. Respond only with {title,javascript}."},
   {role:"user",content:payload}],8000);
  if(!result||typeof result!=="object"||Array.isArray(result))return null;
  const item=result as Record<string,unknown>;
@@ -175,7 +186,9 @@ export async function qualityGateCode(env:Appf2WorkerEnv,prompt:string,initial:Q
  const outcome=await verifyAndRepair(initial,plan,
   (draft,acceptance)=>browserVerifyCode(env,draft,acceptance),{
    maxRepairs:allowRepair?2:0,
-   repair:allowRepair?(draft,acceptance,failed,attempt)=>repairQaCode(env,draft,acceptance,failed,attempt):undefined
+   repair:allowRepair?(draft,acceptance,failed,attempt,strategy)=>repairQaCode(
+    env,draft,acceptance,failed,attempt,
+    {originalPrompt:prompt,strategy:strategy??"REPAIR"}):undefined
   });
  if(outcome.status==="VERIFIED")return outcome.draft;
  throw new CodeQaFailure(outcome.status,outcome.attempts.at(-1)?.evidence??[]);

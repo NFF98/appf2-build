@@ -50,7 +50,7 @@ export async function verifyAndRepair(
   let next:QaDraft|null=null;
   try{
    next=await options.repair(draft,plan,summary.results,n+1,
-    stalled>=2?"RETHINK":"REPAIR");
+    stalled>=1?"RETHINK":"REPAIR");
   }catch{return {status:"FAILED",draft,attempts,
    next_action:"REINTERPRET_OR_CHANGE_APPROACH"};}
   if(next===null||next.javascript===draft.javascript)

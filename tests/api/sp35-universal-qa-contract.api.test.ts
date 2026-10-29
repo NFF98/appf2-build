@@ -84,7 +84,7 @@ describe("QA repair policy: evidence-driven progress, no endless re-tries",()=>{
   expect(result.status).toBe("NEEDS_REPLAN");
   expect(result.next_action).toBe("REINTERPRET_OR_CHANGE_APPROACH");
   expect(result.attempts).toHaveLength(4);
-  expect(attempts).toEqual(["REPAIR","REPAIR","RETHINK"]);
+  expect(attempts).toEqual(["REPAIR","RETHINK","RETHINK"]);
   expect(JSON.stringify(plan)).toBe(original);
   expect(result.attempts.every(x=>!x.passed)).toBe(true);
  });
