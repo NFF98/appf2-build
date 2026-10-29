@@ -80,7 +80,7 @@ describe("Sprint 3.5 agent foundation is candidate-only, no cloud or AI claims",
    }]};
   expect(summarizeCandidateQa(receipt,["browser_click","db_write"]).ready_for_review).toBe(false);
   expect(admitsPublicationFromCandidateReceipt(receipt)).toBe(false);
-  expect(summarizeCandidateQa({...receipt,runner_attestation:"unverified"},["browser_click"]).ready_for_review).toBe(true);
+  expect(summarizeCandidateQa({...receipt,runner_attestation:"unverified"},["browser_click"]).ready_for_review).toBe(false);
   expect(admitsPublicationFromCandidateReceipt({...receipt,runner_attestation:"unverified"})).toBe(false);
   expect(()=>validateSandboxLimits({wall_time_ms:1000,cpu_millis:1000,memory_mb:128,
     disk_mb:256,network_policy:"DENY_ALL",allowed_hosts:["metadata.google.internal"]})).toThrow();
