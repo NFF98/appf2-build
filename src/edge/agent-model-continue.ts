@@ -28,6 +28,7 @@ export type ModelContinueDeps={
  readonly send?:PaidModelTurnDeps["send"];
 };
 const CALL=/^[A-Za-z0-9_-]{8,80}$/u;
+// eslint-disable-next-line complexity -- Signed consent, bounds and call lineage are fail-closed.
 export function validModelContinueBody(raw:unknown):raw is ModelContinueInput{
  if(typeof raw!=="object"||raw===null||Array.isArray(raw))return false;
  const x=raw as Record<string,unknown>;
@@ -51,6 +52,7 @@ async function creatorMatches(db:AgentJobExecutor,jobId:string,owner:string,
  return row?.job_id===jobId;
 }
 /** Model gets an ACK only for the exact preceding saved write/delete. */
+// eslint-disable-next-line complexity -- Every previous model/step/source identity must match.
 export async function verifiedContinuation(current:RecoveredAgentJob,
  previous:ModelCallRow){
  const cp=current.job.checkpoint,project=current.project;
