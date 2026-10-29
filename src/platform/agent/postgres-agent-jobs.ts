@@ -101,6 +101,7 @@ export async function updateAgentJob(db:AgentJobExecutor,previous:AgentJobRow,
  * Owner-approved incremental budget change; never resets source, completed
  * work, tokens, cost or the state. The regular checkpoint path forbids this.
  */
+// eslint-disable-next-line complexity -- Owner-signed step, spend and immutable source checks remain fail-closed.
 export async function extendApprovedAgentBudget(db:AgentJobExecutor,
  previous:AgentJobRow,owner:string,newSteps:number,newCostCents:number):
  Promise<AgentJobRow>{

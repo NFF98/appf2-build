@@ -17,6 +17,7 @@ export type QaPipelineOutcome={
  * the authoring model, decides whether there is observable progress.
  * No model call happens unless the caller supplies a consented repair function.
  */
+// eslint-disable-next-line complexity -- Progress, consent, crash and QA gates stay explicit.
 export async function verifyAndRepair(
  draft:QaDraft,plan:QaPlan,test:QaRunner,
  options:{readonly repair?:QaRepair;readonly maxRepairs?:number;
