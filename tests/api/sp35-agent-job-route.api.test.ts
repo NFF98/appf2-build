@@ -438,3 +438,31 @@ describe("Sprint 3.5 authenticated multi-turn Responses continuation (offline pr
   expect(db.modelCalls.size).toBe(0);
  });
 });
+
+describe("Sprint 3.5 signed read-only model journal status (zero provider calls)",()=>{
+ it("shows uncertain cost state safely and refuses another creator key",async()=>{
+  const owner=await client(),intruder=await client(),db=new Database();
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  const created=await fetch(await signed(owner,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt:"建立多檔案每日任務追蹤 App"
+  },"status_create_123456"),env);
+  expect(created.status).toBe(201);
+  const job=db.jobs.get(JOB_ID)!;
+  const modelCall="model_status_123456";
+  db.modelCalls.set(modelCall,{job_id:JOB_ID,owner_anonymous_id:OWNER,
+   call_key:modelCall,job_revision:0,checkpoint_hash:job.checkpoint_hash,
+   request_hash:job.request_hash,model:"gpt-6.1-sol",max_charge_cents:5,
+   status:"BLOCKED_UNCERTAIN",response_json:null,response_id:null,
+   input_tokens:null,output_tokens:null});
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/model-status";
+  const body={anonymous_id:OWNER,model_call_key:modelCall};
+  const actual=await fetch(await signed(owner,path,body,"status_read_123456"),env);
+  expect(actual.status).toBe(200);
+  expect(await actual.json()).toMatchObject({data:{
+   status:"BLOCKED_UNCERTAIN",needs_reconciliation:true,response_id:null
+  }});
+  const denied=await fetch(await signed(intruder,path,body,"status_spoof_123456"),env);
+  expect(denied.status).toBe(503);
+  expect(await denied.text()).not.toContain("BLOCKED_UNCERTAIN");
+ });
+});

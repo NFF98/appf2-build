@@ -7,6 +7,7 @@ import {verifyMutationProof} from "./create-proof.js";
 import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
 import {applyStoredModelEdit,validApplyModelEditBody} from "./agent-model-apply.js";
 import {executeAgentModelContinuation,validModelContinueBody} from "./agent-model-continue.js";
+import {readAgentModelCallStatus,validModelStatusBody} from "./agent-model-status.js";
 import type {PaidModelTurnDeps} from "../platform/agent/journaled-model-gateway.js";
 import {WorkerPostgresExecutor,type WorkerRequestDbContext}
  from "../platform/blueprint/worker-postgres-executor.js";
@@ -22,6 +23,7 @@ const CREATE="/api/v1/agent-jobs";
 const MODEL_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-plan$/u;
 const APPLY_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/apply-plan$/u;
 const CONTINUE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-continue$/u;
+const STATUS_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-status$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const KEY=/^[A-Za-z0-9_-]{8,128}$/u;
@@ -125,8 +127,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname);
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch)return undefined;
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -145,7 +147,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  catch{return json(400,{error:"AGENT_JOB_BODY_INVALID"});}
  const isModel=Boolean(modelMatch||continueMatch);
  if(isModel&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED!=="1")return denied();
- const info=continueMatch?(validModelContinueBody(parsed)?parsed:null):
+ const info=statusMatch?(validModelStatusBody(parsed)?parsed:null):
+  continueMatch?(validModelContinueBody(parsed)?parsed:null):
   modelMatch?(validModelPlanBody(parsed)?parsed:null):
   applyMatch?(validApplyModelEditBody(parsed)?parsed:null):
   verifiedBody(parsed,url.pathname===CREATE);
@@ -157,6 +160,12 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  try{
   if(url.pathname===CREATE)return await create(db,info.anonymous_id,ownerThumb,
    key,info,ctx.deps?.newJobId??(()=>crypto.randomUUID()));
+  if(statusMatch){
+   if(!validModelStatusBody(info))return denied();
+   const result=await readAgentModelCallStatus(info,{db,
+    jobId:statusMatch[1]??"",owner:info.anonymous_id,ownerThumb});
+   return json(200,{data:result});
+  }
   if(continueMatch){
    if(!validModelContinueBody(info)||!env.APPF2_OPENAI_AGENT_API_KEY)return denied();
    const result=await executeAgentModelContinuation(info,{db,
