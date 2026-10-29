@@ -11,6 +11,9 @@ import http from "node:http";
 import {chromium} from "@playwright/test";
 import {createInitialAgentProject} from "../../dist/src/edge/agent-jobs.js";
 import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-workspace.js";
+import {sealCandidateQaReceipt,verifySignedCandidateQa,
+ admitsPublicationFromCandidateReceipt} from "../../dist/src/platform/agent/qa-receipt.js";
+import {createHash,randomBytes} from "node:crypto";
 
 const image="appf2-sp35-sandbox:ci";
 const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"appf2-sp35-container-"));
@@ -105,6 +108,46 @@ try{
    await candidatePage.getByText("已保存初始專案；AI 生成尚未開始").count()!==1)
   throw Error("ISOLATED_CANDIDATE_BROWSER_QA_FAILED");
  console.log("SP35 REAL API CANDIDATE → ISOLATED DOCKER VITE → CHROMIUM: PASS (no model)");
+ // Independent verifier runs OUTSIDE the untrusted sandbox. Produce a bounded
+ // evidence hash only after observing the real compile and browser behavior.
+ const builtFiles=["index.html",...(await fs.readdir(path.join(candidateRoot,"dist","assets")))
+  .map(name=>"assets/"+name)].sort();
+ const digest=createHash("sha256");
+ for(const name of builtFiles){
+  const bytes=await fs.readFile(path.join(candidateRoot,"dist",name));
+  digest.update(name+"\u0000"+bytes.length+"\u0000");digest.update(bytes);
+ }
+ const artifact_hash="sha256:"+digest.digest("hex");
+ const evidence=s=> "sha256:"+createHash("sha256").update(s).digest("hex");
+ const rendered=await candidatePage.getByText(prompt,{exact:true}).textContent();
+ const receipt={
+  version:"APPF2_CANDIDATE_QA_V1",
+  source_project_hash:candidate.project_hash,
+  built_artifact_hash:artifact_hash,
+  sandbox_execution_id:"ci_isolated_docker_qa_"+process.pid,
+  runner_attestation:null,
+  checks:[
+   {criterion_id:"build",category:"BUILD",verdict:"PASS",
+    evidence_hash:artifact_hash},
+   {criterion_id:"browser_render",category:"BROWSER",verdict:"PASS",
+    evidence_hash:evidence("TEXT:"+rendered)},
+   {criterion_id:"no_html_injection",category:"BROWSER",verdict:"PASS",
+    evidence_hash:evidence("IMG_COUNT:0;PROMPT_RENDERED_AS_TEXT")}
+  ]
+ };
+ const verifierSecret=randomBytes(40).toString("base64url");
+ const sealed=await sealCandidateQaReceipt(receipt,verifierSecret);
+ const identity={project_hash:candidate.project_hash,artifact_hash,
+  sandbox_execution_id:receipt.sandbox_execution_id};
+ const accepted=await verifySignedCandidateQa(sealed,
+  ["build","browser_render","no_html_injection"],identity,verifierSecret);
+ if(!accepted.ready_for_review)throw Error("QA_INDEPENDENT_EVIDENCE_NOT_VERIFIED");
+ const forged={...sealed,built_artifact_hash:evidence("forged artifact")};
+ const rejected=await verifySignedCandidateQa(forged,
+  ["build","browser_render","no_html_injection"],identity,verifierSecret);
+ if(rejected.ready_for_review||admitsPublicationFromCandidateReceipt(sealed))
+  throw Error("QA_FALSE_PUBLICATION_OR_FORGED_PROOF");
+ console.log("SP35 INDEPENDENT DOCKER + CHROMIUM QA HMAC VERIFIED: PASS (trusted fixture, NOT PUBLISHED)");
 
 }finally{
  if(browser)await browser.close();
