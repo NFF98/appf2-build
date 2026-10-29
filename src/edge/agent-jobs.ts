@@ -42,6 +42,8 @@ export type AgentJobRouteDeps={
  readonly newJobId?:()=>string;
  readonly sendModel?:PaidModelTurnDeps["send"];
  readonly sendSandbox?:SandboxRunDeps["send"];
+ /** Only injected in offline tests; the production Worker never supplies this. */
+ readonly testError?:(error:unknown)=>void;
 };
 export type AgentJobRouteContext={
  readonly request:Request;readonly url:URL;readonly env:Appf2WorkerEnv;
@@ -234,7 +236,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    return json(200,{data:applied});
   }
   return await read(db,info.anonymous_id,ownerThumb,match?.[1]??"");
- }catch{
+ }catch(error){
+  ctx.deps?.testError?.(error);
   return json(503,{error:"AGENT_JOB_UNAVAILABLE"});
  }finally{await db.close().catch(()=>undefined);}
 }
