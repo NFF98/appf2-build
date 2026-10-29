@@ -217,3 +217,31 @@ export async function executeSignedSandboxTool(input:SandboxRunInput,
   revision:result.saved.job.revision,project_hash:result.saved.project.project_hash,
   exit_code:evidence.exit_code,timed_out:evidence.timed_out};
 }
+
+/**
+ * Read only an independently recorded result for the exact preceding model
+ * build/test call. The AI never gets to invent its own success or diagnostics.
+ */
+export async function readProvenSandboxToolResult(db:AgentJobExecutor,identity:{
+ readonly jobId:string;readonly owner:string;readonly modelCallKey:string;
+ readonly checkpointHash:string;readonly projectHash:string;
+ readonly jobRevision:number;readonly call:AgentToolCall;
+}):Promise<SandboxEvidence>{
+ const {jobId,owner,modelCallKey,checkpointHash,projectHash,jobRevision,call}=identity;
+ if(call.project_hash!==projectHash||
+  (call.name!=="run_build"&&call.name!=="run_test"))
+  throw Error("SANDBOX_CONTINUATION_TOOL_INVALID");
+ const row=await getCall(db,jobId,owner,call.call_id);
+ if(!row||row.status!=="SUCCEEDED"||row.receipt_json===null||
+  row.job_id!==jobId||row.owner_anonymous_id!==owner||
+  row.model_call_key!==modelCallKey||row.job_revision!==jobRevision||
+  row.checkpoint_hash!==checkpointHash||row.project_hash!==projectHash)
+  throw Error("SANDBOX_CONTINUATION_NOT_PROVEN");
+ const callHash=await sha256CodeBytes(new TextEncoder().encode(
+  "APPF2_PRIVATE_SANDBOX_CALL_V1\u0000"+JSON.stringify({
+   job_id:jobId,model_call_key:modelCallKey,
+   checkpoint_hash:checkpointHash,project_hash:projectHash,call
+  })));
+ if(row.call_hash!==callHash)throw Error("SANDBOX_CONTINUATION_CALL_CHANGED");
+ return verifiedEvidence(row.receipt_json,call);
+}

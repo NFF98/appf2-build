@@ -10,6 +10,7 @@ import {runJournaledPaidModelTurn,type PaidModelTurnDeps}
 import {parseAgentResponsesBatch,makeAgentToolOutputs}
  from "../platform/agent/responses-api.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
+import {readProvenSandboxToolResult} from "./agent-sandbox-run.js";
 import type {RecoveredAgentJob} from "../platform/agent/durable-agent-service.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 
@@ -51,35 +52,56 @@ async function creatorMatches(db:AgentJobExecutor,jobId:string,owner:string,
   [jobId,owner,thumb])).rows[0];
  return row?.job_id===jobId;
 }
-/** Model gets an ACK only for the exact preceding saved write/delete. */
-// eslint-disable-next-line complexity -- Every previous model/step/source identity must match.
+/** A model may continue only from the immediately previous saved tool result. */
 export async function verifiedContinuation(current:RecoveredAgentJob,
- previous:ModelCallRow){
+ previous:ModelCallRow,db?:AgentJobExecutor,modelCallKey?:string){
  const cp=current.job.checkpoint,project=current.project;
- if(current.job.job_state!=="CODING"||cp.state!=="CODING"||
-  cp.step>=cp.budget.max_steps||!project.parent_hash||
+ if(cp.step>=cp.budget.max_steps||
   previous.status!=="SUCCEEDED"||previous.response_json===null||
   previous.job_id!==current.job.job_id||
   previous.owner_anonymous_id!==current.job.owner_anonymous_id||
   previous.job_revision!==current.job.revision-1||
   previous.checkpoint_hash!==cp.previous_checkpoint_id||
-  previous.response_id===null)throw Error("AGENT_CONTINUATION_NOT_READY");
- const parsed=parseAgentResponsesBatch(previous.response_json,project.parent_hash);
- if(!parsed||parsed.response_id!==previous.response_id||parsed.calls.length!==1)
-  throw Error("AGENT_CONTINUATION_PREVIOUS_RESPONSE_INVALID");
+  previous.response_id===null||cp.completed_call_ids.length===0)
+  throw Error("AGENT_CONTINUATION_NOT_READY");
+ // Edits create a new snapshot; successful or failed builds do not.
+ const edit=project.parent_hash?
+  parseAgentResponsesBatch(previous.response_json,project.parent_hash):null;
+ if(edit?.response_id===previous.response_id&&edit.calls.length===1&&
+  ["write_file","delete_file"].includes(edit.calls[0].name)&&
+  cp.state==="CODING"&&cp.completed_call_ids.at(-1)===edit.calls[0].call_id)
+  return editContinuation(project.project_hash,previous.response_id,edit.calls[0]);
+ const parsed=parseAgentResponsesBatch(previous.response_json,project.project_hash);
+ if(!parsed||parsed.response_id!==previous.response_id||parsed.calls.length!==1||
+  !["run_build","run_test"].includes(parsed.calls[0].name)||
+  cp.completed_call_ids.at(-1)!==parsed.calls[0].call_id||!db||!modelCallKey)
+  throw Error("AGENT_CONTINUATION_TOOL_NOT_PROVEN");
  const call=parsed.calls[0];
- if(call.name!=="write_file"&&call.name!=="delete_file"||
-  cp.completed_call_ids.at(-1)!==call.call_id)
-  throw Error("AGENT_CONTINUATION_EDIT_NOT_PROVEN");
- const detail="DATA_ONLY_FILE_EDIT_SAVED_TO:"+project.project_hash;
+ const receipt=await readProvenSandboxToolResult(db,{
+  jobId:current.job.job_id,owner:current.job.owner_anonymous_id,
+  modelCallKey,jobRevision:previous.job_revision,
+  checkpointHash:previous.checkpoint_hash,
+  projectHash:project.project_hash,call
+ });
+ const passed=receipt.exit_code===0&&!receipt.timed_out;
+ if(passed?(call.name==="run_build"?cp.state!=="BUILDING":
+   cp.state!=="TESTING"):cp.state!=="REPAIRING")
+  throw Error("AGENT_CONTINUATION_STATE_MISMATCH");
+ return {outputs:makeAgentToolOutputs([call],[receipt]),
+  previous_response_id:previous.response_id};
+}
+/** Ack a saved immutable edit without relying on model-authored success text. */
+async function editContinuation(projectHash:string,responseId:string,
+ call:import("../platform/agent/agent-contract.js").AgentToolCall){
+ const detail="DATA_ONLY_FILE_EDIT_SAVED_TO:"+projectHash;
  const output_digest=await sha256CodeBytes(new TextEncoder().encode(
-  "APPF2_AGENT_FILE_EDIT_ACK_V1\u0000"+previous.response_id+"\u0000"+project.project_hash));
+  "APPF2_AGENT_FILE_EDIT_ACK_V1\u0000"+responseId+"\u0000"+projectHash));
  const outputs=makeAgentToolOutputs([call],[{
   call_id:call.call_id,project_hash:call.project_hash,exit_code:0,
   timed_out:false,detail,output_digest,
   runner_attestation:"APPF2_DATA_ONLY_EDIT_CONFIRMED_V1"
  }]);
- return {outputs,previous_response_id:previous.response_id};
+ return {outputs,previous_response_id:responseId};
 }
 /**
  * An owner must explicitly sign EACH bounded paid turn. If any checkpoint
@@ -100,7 +122,8 @@ export async function executeAgentModelContinuation(input:ModelContinueInput,
  const previous=await getModelCall(deps.db,deps.jobId,deps.owner,
   input.previous_model_call_key);
  if(!previous)throw Error("AGENT_CONTINUATION_PREVIOUS_CALL_MISSING");
- const continuation=await verifiedContinuation(current,previous);
+ const continuation=await verifiedContinuation(current,previous,deps.db,
+  input.previous_model_call_key);
  const result=await runJournaledPaidModelTurn({
   owner:deps.owner,job:current.job,call_key:input.model_call_key,
   input:continuation.outputs,

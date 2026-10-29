@@ -711,3 +711,108 @@ describe("Sprint 3.5 signed incremental budget renewal beyond eight steps",()=>{
   expect(db.jobs.get(JOB_ID)?.revision).toBe(0);
  });
 });
+
+describe("Sprint 3.5 durable Sandbox diagnostics -> next AI repair turn (NO paid services)",()=>{
+ it("delivers saved compile failure to the next AI turn and persists its repair",async()=>{
+  const person=await client(),db=new Database();
+  let modelDispatches=0,sandboxDispatches=0;
+  let lastRequest:{previous_response_id?:string;input:unknown}|null=null;
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendSandbox:async(task:{call:{call_id:string;project_hash:string}})=>{
+    sandboxDispatches++;
+    const detail="VITE_COMPILE_FAILED:src/main.ts: unexpected token";
+    return {call_id:task.call.call_id,project_hash:task.call.project_hash,
+     exit_code:1,timed_out:false,detail,
+     output_digest:await sha256CodeBytes(new TextEncoder().encode(detail)),
+     runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"};
+   },
+   sendModel:async({request}:{request:{
+    previous_response_id?:string;input:unknown
+   }})=>{
+    modelDispatches++;lastRequest=request;
+    const current=db.jobs.get(JOB_ID)!;
+    const snap=db.snapshots.get(OWNER+":"+current.project_hash)?.snapshot as {
+     files:{path:string;hash:string}[]};
+    return {id:"resp_repair123456",status:"completed",
+     usage:{input_tokens:150,output_tokens:75},
+     output:[{type:"function_call",call_id:"call_repair123456",
+      name:"write_file",arguments:JSON.stringify({
+       path:"src/main.ts",previous_hash:snap.files.find(f=>
+        f.path==="src/main.ts")!.hash,
+       content:"document.querySelector('#app')!.textContent='repaired';"
+      })}]
+    };
+   }
+  }});
+  await codingJob(person,db,fetch);
+  savedModelTool(db,"build_model_123456","call_build_123456","run_build");
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  const build=await fetch(await signed(person,root+"/sandbox-run",{
+   anonymous_id:OWNER,model_call_key:"build_model_123456",
+   expected_revision:2,explicit_container_consent:true,max_charge_cents:4
+  },"repair_build_123456"),sandboxEnabled);
+  expect(build.status).toBe(200);
+  expect(await build.json()).toMatchObject({data:{
+   job_state:"REPAIRING",revision:3,exit_code:1
+  }});
+  const enabled={...sandboxEnabled,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const payload={anonymous_id:OWNER,previous_model_call_key:"build_model_123456",
+   model_call_key:"repair_model_123456",expected_revision:3,
+   explicit_ai_consent:true,max_charge_cents:5,max_output_tokens:1024};
+  const next=await fetch(await signed(person,root+"/model-continue",payload,
+   "repair_continue_123456"),enabled);
+  expect(next.status).toBe(200);
+  expect(modelDispatches).toBe(1);
+  expect(sandboxDispatches).toBe(1);
+  expect(lastRequest?.previous_response_id).toBe("resp_build_123456123456");
+  const toolInput=lastRequest?.input as {call_id:string;output:string}[];
+  expect(toolInput[0]?.call_id).toBe("call_build_123456");
+  expect(toolInput[0]?.output).toContain("VITE_COMPILE_FAILED");
+  expect(toolInput[0]?.output).toContain('"exit_code":1');
+  const replay=await fetch(await signed(person,root+"/model-continue",payload,
+   "repair_continue_123456"),enabled);
+  expect(replay.status).toBe(200);
+  expect(await replay.json()).toMatchObject({data:{source:"DURABLE_REPLAY"}});
+  expect(modelDispatches).toBe(1);
+  const applied=await fetch(await signed(person,root+"/apply-plan",{
+   anonymous_id:OWNER,model_call_key:"repair_model_123456",expected_revision:3
+  },"repair_apply_123456"),env);
+  expect(applied.status).toBe(200);
+  expect(db.jobs.get(JOB_ID)?.job_state).toBe("CODING");
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(4);
+ });
+ it("never sends an AI call when sandbox evidence is missing or falsified",async()=>{
+  const person=await client(),db=new Database();let modelDispatches=0;
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendSandbox:async(task:{call:{call_id:string;project_hash:string}})=>{
+    const detail="successful build";
+    return {call_id:task.call.call_id,project_hash:task.call.project_hash,
+     exit_code:0,timed_out:false,detail,
+     output_digest:await sha256CodeBytes(new TextEncoder().encode(detail)),
+     runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"};
+   },
+   sendModel:async()=>{modelDispatches++;throw Error("NEVER_SEND");}
+  }});
+  await codingJob(person,db,fetch);
+  savedModelTool(db,"build_model_123456","call_build_123456","run_build");
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  const build=await fetch(await signed(person,root+"/sandbox-run",{
+   anonymous_id:OWNER,model_call_key:"build_model_123456",
+   expected_revision:2,explicit_container_consent:true,max_charge_cents:4
+  },"gate_build_123456"),sandboxEnabled);
+  expect(build.status).toBe(200);
+  const row=db.sandboxCalls.get("call_build_123456")!;
+  db.sandboxCalls.set(row.call_id,{...row,call_hash:"sha256:"+"1".repeat(64)});
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const next=await fetch(await signed(person,root+"/model-continue",{
+   anonymous_id:OWNER,previous_model_call_key:"build_model_123456",
+   model_call_key:"continue_model_123456",expected_revision:3,
+   explicit_ai_consent:true,max_charge_cents:5,max_output_tokens:1024
+  },"gate_continue_123456"),enabled);
+  expect(next.status).toBe(503);
+  expect(modelDispatches).toBe(0);
+  expect(db.modelCalls.has("continue_model_123456")).toBe(false);
+ });
+});
