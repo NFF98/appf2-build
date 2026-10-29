@@ -33,3 +33,21 @@ Authenticated `GET /internal/workflow/status/<job_id>-<call_id>` reads only the
 Workflow lifecycle state (no source code, model output, or command logs). The
 route does **not** start or charge a container and remains private when the
 spend-enabled execution path is disabled.
+
+## Vite web-app isolation (2026-10-29 candidate)
+
+The private container image preinstalls a fixed set of Vite, TypeScript, React,
+and React DOM packages at image-build time. Runtime has Internet **disabled**;
+it never runs `npm install`, `npm run <model script>`, or a model-selected
+shell command. A fixed `node /opt/appf2/node_modules/vite/bin/vite.js build .
+--outDir dist --emptyOutDir` compiles a verified VITE_WEB snapshot into its
+private workspace. A fixed local `web-smoke.mjs` checks the compiled index and
+its referenced static JS/CSS files. `run_test` requires a matching successful
+`run_build` project hash, stored in the Durable Object. Browser interaction QA
+is **separate**, NOT provided by web-smoke. Unsupported Python builds fail closed.
+
+The free CI additionally builds this exact Dockerfile, copies ONLY the
+repository's known trusted multi-file fixture into a network-denied local
+container, and checks that both the real Vite build and static asset smoke
+succeed. This proves a locally built container image, NOT Cloudflare
+deployment, model-authored code execution, or universal app QA.

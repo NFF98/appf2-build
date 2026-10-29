@@ -11,6 +11,8 @@ import {verifyProjectSnapshot,type ProjectSnapshot}
 import {parseAgentToolCall,type AgentToolCall}
  from "../../src/platform/agent/agent-contract.js";
 import {sha256CodeBytes} from "../../src/platform/blueprint/code-artifact-v2.js";
+import {sandboxCommand,sandboxNeedsPinnedDeps,PINNED_MODULES}
+ from "../../src/platform/agent/sandbox-commands.js";
 const JOB=/^[A-Za-z0-9_-]{8,80}$/u;
 const MAX_BODY=4*1024*1024+128*1024;
 const MAX_RUNTIME_MS=30000;
@@ -32,13 +34,6 @@ function bodyValid(x:unknown):x is Task{
   typeof x.job_id!=="string"||!JOB.test(x.job_id)||!record(x.call)||
   !record(x.project))return false;
  return x.call.name==="run_build"||x.call.name==="run_test";
-}
-function safeCommand(project:ProjectSnapshot,tool:"run_build"|"run_test"):string[]{
- // First cloud profile: Node ESM only, no npm install, shell or package scripts.
- if(project.profile!=="NODE"||!project.entrypoint.endsWith(".mjs"))
-  throw Error("SANDBOX_PROFILE_NOT_READY");
- return tool==="run_build"?["node","--check",project.entrypoint]:
-  ["node",project.entrypoint];
 }
 async function receipt(task:Task,code:number|null,timed_out:boolean,detail:string):Promise<Receipt>{
  const bounded=detail.slice(0,4096);
@@ -90,8 +85,14 @@ export class SandboxJob extends DurableObject<Env>{
   }
   const count=await this.ctx.storage.get<number>("job_call_count")??0;
   if(count>=MAX_JOB_CALLS)throw Error("SANDBOX_JOB_CALL_LIMIT");
-  const command=safeCommand(task.project,task.call.name as "run_build"|"run_test");
+  const command=sandboxCommand(task.project,task.call.name as "run_build"|"run_test");
+  if(task.call.name==="run_test"){
+   const priorBuild=await this.ctx.storage.get<string>("verified_build_project_hash");
+   if(priorBuild!==task.project.project_hash)
+    throw Error("SANDBOX_TEST_REQUIRES_MATCHING_SUCCESSFUL_BUILD");
+  }
   await this.ctx.storage.put({[key]:{hash,status:"RUNNING"},job_call_count:count+1});
+  if(task.call.name==="run_build")await this.ctx.storage.delete("verified_build_project_hash");
   await this.ready();
   const dir="/workspace/appf2_"+task.job_id;
   await this.files.mkdir(dir,{recursive:true});
@@ -103,6 +104,15 @@ export class SandboxJob extends DurableObject<Env>{
   }
   const container=this.ctx.container;
   if(!container)throw Error("SANDBOX_CONTAINER_LOST");
+  if(sandboxNeedsPinnedDeps(task.project)){
+   // The only dependency link is to the immutable image layer. No npm install,
+   // user-supplied package scripts or external network are invoked.
+   const linked=await container.exec(["ln","-sfn",PINNED_MODULES,dir+"/node_modules"],
+    {cwd:dir,timeout:5000});
+   const linking=await linked.output({encoding:"utf8",maxBytes:512,timeout:5000});
+   if(linking.exitCode!==0||linking.timedOut)
+    throw Error("SANDBOX_PINNED_DEPENDENCIES_MISSING");
+  }
   const proc=await container.exec(command,{cwd:dir,timeout:MAX_RUNTIME_MS});
   let result:Receipt;
   try{
@@ -115,6 +125,8 @@ export class SandboxJob extends DurableObject<Env>{
    result=await receipt(task,null,true,"SANDBOX_TIMEOUT_OR_CRASH");
   }
   await this.ctx.storage.put(key,{hash,status:"DONE",receipt:result});
+  if(task.call.name==="run_build"&&result.exit_code===0&&!result.timed_out)
+   await this.ctx.storage.put("verified_build_project_hash",task.project.project_hash);
   return result;
  }
 }

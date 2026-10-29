@@ -43,3 +43,5 @@ jobs:
         run: |
           npm install --prefix deploy/sandbox --ignore-scripts --no-audit --no-fund
           npm run check --prefix deploy/sandbox
+      - name: Real network-denied Docker sandbox Vite build (trusted fixture only)
+        run: node deploy/scripts/sp35-container-fixture-e2e.mjs

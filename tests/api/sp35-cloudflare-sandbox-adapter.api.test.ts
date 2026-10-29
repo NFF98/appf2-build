@@ -5,6 +5,8 @@ import {CloudflareIsolatedSandboxAdapter,type IsolatedContainer,
  from "../../src/platform/agent/cloudflare-sandbox-adapter.js";
 import type {SandboxLimits} from "../../src/platform/agent/sandbox-adapter.js";
 import type {AgentToolName,AgentToolCall} from "../../src/platform/agent/agent-contract.js";
+import {PINNED_VITE_BIN,PINNED_MODULES,PINNED_WEB_SMOKE,sandboxCommand}
+ from "../../src/platform/agent/sandbox-commands.js";
 const job="job_12345678";
 const limits:SandboxLimits={wall_time_ms:2000,cpu_millis:1000,
  memory_mb:128,disk_mb:256,network_policy:"DENY_ALL",allowed_hosts:[]};
@@ -55,7 +57,11 @@ describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)"
   expect(receipt.exit_code).toBe(0);
   expect(receipt.detail).toContain("BUILD PASSED");
   expect(receipt.output_digest).toMatch(/^sha256:/u);
-  expect(fake.commands).toEqual([["npm","run","build"]]);
+  expect(fake.commands).toEqual([
+   ["ln","-sfn",PINNED_MODULES,"/workspace/appf2_"+job+"/node_modules"],
+   ["node",PINNED_VITE_BIN,"build",".","--outDir","dist","--emptyOutDir"]
+  ]);
+  expect(sandboxCommand(app,"run_test")).toEqual(["node",PINNED_WEB_SMOKE]);
   await adapter.destroy(job);
   await expect(adapter.execute(job,app,call("run_build",app.project_hash,{target:"project"})))
    .rejects.toThrow("SANDBOX_NOT_OWNED");
@@ -91,6 +97,13 @@ describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)"
    path:"src/main.ts"}));
   expect(del.detail).toContain("STAGED_NOT_PUBLISHED");
   expect(fake.removed).toHaveLength(1);
+ });
+ it("rejects unsupported Python profile rather than pretending to run tests",async()=>{
+  const app=await createProjectSnapshot("PYTHON","main.py",[
+   {path:"main.py",content:"print('hi')"}
+  ]);
+  expect(()=>sandboxCommand(app,"run_build")).toThrow("SANDBOX_PROFILE_NOT_READY");
+  expect(()=>sandboxCommand(app,"run_test")).toThrow("SANDBOX_PROFILE_NOT_READY");
  });
  it("kills timed-out processes, returns failure evidence not PASS",async()=>{
   const fake=new Stub();fake.timedOut=true;

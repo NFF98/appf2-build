@@ -9,6 +9,7 @@ import {validateSandboxLimits,type CloudSandboxAdapter,type SandboxLimits,
  type SandboxEvidence} from "./sandbox-adapter.js";
 import {verifyProjectSnapshot,type ProjectSnapshot} from "./project-workspace.js";
 import {sha256CodeBytes} from "../blueprint/code-artifact-v2.js";
+import {sandboxCommand,sandboxNeedsPinnedDeps,PINNED_MODULES} from "./sandbox-commands.js";
 export interface IsolatedProcess{
  output(options:{encoding:"utf8";maxBytes:number;timeout:number}):Promise<{
   stdout:string;stderr:string;exitCode:number|null;timedOut?:boolean;truncated?:boolean
@@ -30,17 +31,6 @@ export interface IsolatedContainerFactory{
 }
 const JOB=/^[A-Za-z0-9_-]{8,80}$/u;
 const RUNNER_ATTESTATION="APPF2_CLOUDFLARE_SANDBOX_V1";
-function commandFor(project:ProjectSnapshot,kind:"run_build"|"run_test"):readonly string[]{
- if(project.profile==="PYTHON"){
-  return kind==="run_build"?["python3","-m","py_compile",project.entrypoint]:
-   ["python3","-m","unittest","discover"];
- }
- if(project.profile==="NODE"){
-  return kind==="run_build"?["node","--check",project.entrypoint]:
-   ["npm","test","--","--run"];
- }
- return kind==="run_build"?["npm","run","build"]:["npm","test","--","--run"];
-}
 async function evidence(call:AgentToolCall,code:number|null,timedOut:boolean,
  detail:string):Promise<SandboxEvidence>{
  const clipped=detail.slice(0,4096);
@@ -95,7 +85,15 @@ export class CloudflareIsolatedSandboxAdapter implements CloudSandboxAdapter{
   if(call.name==="read_diagnostics")return evidence(call,0,false,"NO_DIAGNOSTICS");
   if(call.name!=="run_build"&&call.name!=="run_test")throw Error("SANDBOX_TOOL_UNSUPPORTED");
   await runtime.syncFiles(root,project.files);
-  const proc=await runtime.exec(commandFor(project,call.name),{
+  if(sandboxNeedsPinnedDeps(project)){
+   // Link preinstalled read-only image dependencies; no npm install or user scripts.
+   const link=await runtime.exec(["ln","-sfn",PINNED_MODULES,root+"/node_modules"],
+    {cwd:root,timeout:Math.min(5000,limits.wall_time_ms)});
+   const result=await link.output({encoding:"utf8",maxBytes:512,timeout:Math.min(5000,limits.wall_time_ms)});
+   if(result.exitCode!==0||result.timedOut)
+    throw Error("SANDBOX_PINNED_DEPENDENCIES_MISSING");
+  }
+  const proc=await runtime.exec(sandboxCommand(project,call.name),{
    cwd:root,timeout:limits.wall_time_ms
   });
   try{
