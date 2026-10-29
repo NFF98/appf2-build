@@ -51,3 +51,14 @@ repository's known trusted multi-file fixture into a network-denied local
 container, and checks that both the real Vite build and static asset smoke
 succeed. This proves a locally built container image, NOT Cloudflare
 deployment, model-authored code execution, or universal app QA.
+
+## Independent browser verification of isolated build output
+
+The same non-deploying Docker CI also starts a separate Chromium browser,
+serves the trusted fixture's Docker-produced static site, clicks the Add
+button and checks the real result. It separately creates an actual candidate
+project from `createInitialAgentProject`, compiles its four source files inside
+the network-denied container, and checks real browser rendering including
+a prompt with HTML-like content. These checks are independent from Vite exit
+status but **only validate trusted source**. They never count as an
+unknown model-authored app QA pass or authorize publication.
