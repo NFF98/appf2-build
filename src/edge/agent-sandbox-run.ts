@@ -114,12 +114,14 @@ async function getCall(db:AgentJobExecutor,jobId:string,owner:string,
  callId:string):Promise<StoredCall|null>{
  return (await db.query<StoredCall>(GET,[jobId,owner,callId])).rows[0]??null;
 }
+// eslint-disable-next-line max-params -- Immutable identity checks.
 function matchesStored(row:StoredCall,callHash:string,revision:number,
  checkpoint:string,charge:number,modelKey:string):void{
  if(row.call_hash!==callHash||row.job_revision!==revision||
   row.checkpoint_hash!==checkpoint||row.max_charge_cents!==charge||
   row.model_call_key!==modelKey)throw Error("SANDBOX_REPLAY_CONFLICT");
 }
+// eslint-disable-next-line max-params -- Durable reservation context.
 async function reserve(db:AgentJobExecutor,input:SandboxRunInput,jobId:string,
  owner:string,call:AgentToolCall,checkpoint:string,hash:string):Promise<StoredCall>{
  const prior=await getCall(db,jobId,owner,call.call_id);
@@ -162,6 +164,7 @@ async function executeOnce(db:AgentJobExecutor,row:StoredCall,task:{
  return result;
 }
 /** Disallows model-owned shell, fake attestations and replayed container charging. */
+// eslint-disable-next-line complexity -- Private execution admission gates.
 export async function executeSignedSandboxTool(input:SandboxRunInput,
  deps:SandboxRunDeps):Promise<SandboxRunResult>{
  if(!validSandboxRunBody(input)||input.anonymous_id!==deps.owner||
