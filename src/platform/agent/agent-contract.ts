@@ -48,6 +48,7 @@ function argumentsFor(name:AgentToolName):readonly string[]{
 }
 /** Bounded atomic multi-file edit: one Responses call is one project revision. */
 export type AgentBatchWrite=Readonly<{path:string;content:string;previous_hash:string}>;
+// eslint-disable-next-line complexity -- Fail-closed validation of every batch path, hash and byte budget.
 export function parseAgentBatchWrites(raw:string):readonly AgentBatchWrite[]|null{
  if(typeof raw!=="string"||raw.length<2||raw.length>200000)return null;
  let parsed:unknown;
