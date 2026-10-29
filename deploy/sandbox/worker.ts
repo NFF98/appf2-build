@@ -11,7 +11,7 @@ import {verifyProjectSnapshot,type ProjectSnapshot}
 import {parseAgentToolCall,type AgentToolCall}
  from "../../src/platform/agent/agent-contract.js";
 import {sha256CodeBytes} from "../../src/platform/blueprint/code-artifact-v2.js";
-import {sandboxCommand,sandboxNeedsPinnedDeps,PINNED_MODULES}
+import {sandboxCommand,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,PINNED_MODULES}
  from "../../src/platform/agent/sandbox-commands.js";
 const JOB=/^[A-Za-z0-9_-]{8,80}$/u;
 const MAX_BODY=4*1024*1024+128*1024;
@@ -96,7 +96,7 @@ export class SandboxJob extends DurableObject<Env>{
   await this.ctx.storage.put({[key]:{hash,status:"RUNNING"},job_call_count:count+1});
   if(task.call.name==="run_build")await this.ctx.storage.delete("verified_build_project_hash");
   await this.ready();
-  const dir="/workspace/appf2_"+task.job_id;
+  const dir=sandboxWorkspaceRoot(task.job_id,task.project);
   await this.files.mkdir(dir,{recursive:true});
   for(const f of task.project.files){
    const parts=f.path.split("/");

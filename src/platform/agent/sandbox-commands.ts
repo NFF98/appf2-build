@@ -7,6 +7,16 @@ import type {ProjectSnapshot} from "./project-workspace.js";
 export const PINNED_VITE_BIN="/opt/appf2/node_modules/vite/bin/vite.js";
 export const PINNED_WEB_SMOKE="/opt/appf2/web-smoke.mjs";
 export const PINNED_MODULES="/opt/appf2/node_modules";
+/**
+ * A deleted file must never survive into a newer immutable project revision.
+ * The same hash intentionally reuses its build output for run_build -> run_test.
+ */
+export function sandboxWorkspaceRoot(jobId:string,project:ProjectSnapshot):string{
+ if(!/^[A-Za-z0-9_-]{8,80}$/u.test(jobId)||
+  !/^sha256:[a-f0-9]{64}$/u.test(project.project_hash))
+  throw Error("SANDBOX_WORKSPACE_UNSAFE");
+ return "/workspace/appf2_"+jobId+"/"+project.project_hash.slice(7);
+}
 export function sandboxCommand(project:ProjectSnapshot,
  tool:"run_build"|"run_test"):readonly string[]{
  if(project.profile==="VITE_WEB"){

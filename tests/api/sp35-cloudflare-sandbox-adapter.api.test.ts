@@ -1,28 +1,30 @@
 import {describe,it,expect} from "vitest";
-import {createProjectSnapshot} from "../../src/platform/agent/project-workspace.js";
+import {createProjectSnapshot,applyProjectEdits} from "../../src/platform/agent/project-workspace.js";
 import {CloudflareIsolatedSandboxAdapter,type IsolatedContainer,
  type IsolatedProcess,type IsolatedContainerFactory}
  from "../../src/platform/agent/cloudflare-sandbox-adapter.js";
 import type {SandboxLimits} from "../../src/platform/agent/sandbox-adapter.js";
 import type {AgentToolName,AgentToolCall} from "../../src/platform/agent/agent-contract.js";
-import {PINNED_VITE_BIN,PINNED_MODULES,PINNED_WEB_SMOKE,sandboxCommand}
+import {PINNED_VITE_BIN,PINNED_MODULES,PINNED_WEB_SMOKE,sandboxCommand,sandboxWorkspaceRoot}
  from "../../src/platform/agent/sandbox-commands.js";
 const job="job_12345678";
 const limits:SandboxLimits={wall_time_ms:2000,cpu_millis:1000,
  memory_mb:128,disk_mb:256,network_policy:"DENY_ALL",allowed_hosts:[]};
 class Stub implements IsolatedContainer{
  commands:readonly (readonly string[])[]=[];
+ roots:string[]=[];
  synced=false;
  removed:string[]=[];
  killed=false;
  timedOut=false;
  async syncFiles(root:string,files:readonly {path:string;content:string}[]){
-  expect(root).toBe("/workspace/appf2_"+job);
-  expect(files.length).toBe(3);
+  expect(root).toMatch(/^\/workspace\/appf2_job_12345678\/[0-9a-f]{64}$/u);
+  expect(files.length).toBeGreaterThan(0);
+  this.roots.push(root);
   this.synced=true;
  }
  async exec(argv:readonly string[],options:{cwd:string;timeout:number}):Promise<IsolatedProcess>{
-  expect(options).toEqual({cwd:"/workspace/appf2_"+job,timeout:2000});
+  expect(options).toEqual({cwd:this.roots.at(-1),timeout:2000});
   this.commands=[...this.commands,argv];
   const isTrustedImageSetup=argv[0]==="ln";
   return {output:async()=>{
@@ -59,13 +61,37 @@ describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)"
   expect(receipt.detail).toContain("BUILD PASSED");
   expect(receipt.output_digest).toMatch(/^sha256:/u);
   expect(fake.commands).toEqual([
-   ["ln","-sfn",PINNED_MODULES,"/workspace/appf2_"+job+"/node_modules"],
+   ["ln","-sfn",PINNED_MODULES,sandboxWorkspaceRoot(job,app)+"/node_modules"],
    ["node",PINNED_VITE_BIN,"build",".","--outDir","dist","--emptyOutDir"]
   ]);
   expect(sandboxCommand(app,"run_test")).toEqual(["node",PINNED_WEB_SMOKE]);
   await adapter.destroy(job);
   await expect(adapter.execute(job,app,call("run_build",app.project_hash,{target:"project"})))
    .rejects.toThrow("SANDBOX_NOT_OWNED");
+ });
+ it("isolates subsequent source revisions so deleted files cannot contaminate builds",async()=>{
+  const fake=new Stub();
+  const adapter=new CloudflareIsolatedSandboxAdapter({create:async()=>fake});
+  const first=await project();
+  const added=await applyProjectEdits(first,first.project_hash,[{
+   operation:"add",path:"src/stale.ts",content:"export const stale=true;"
+  }]);
+  const stale=added.files.find(f=>f.path==="src/stale.ts")!;
+  const cleaned=await applyProjectEdits(added,added.project_hash,[{
+   operation:"delete",path:"src/stale.ts",previous_hash:stale.hash
+  }]);
+  await adapter.provision(job,limits);
+  for(const snapshot of [added,cleaned]){
+   const proof=await adapter.execute(job,snapshot,
+    call("run_build",snapshot.project_hash,{target:"project"}));
+   expect(proof.exit_code).toBe(0);
+  }
+  expect(fake.roots).toEqual([
+   sandboxWorkspaceRoot(job,added),sandboxWorkspaceRoot(job,cleaned)
+  ]);
+  expect(fake.roots[0]).not.toBe(fake.roots[1]);
+  expect(sandboxWorkspaceRoot(job,cleaned)).toBe(sandboxWorkspaceRoot(job,cleaned));
+  expect(()=>sandboxWorkspaceRoot("../bad",cleaned)).toThrow("SANDBOX_WORKSPACE_UNSAFE");
  });
  it("refuses forged commands, stale project bytes and unsafe paths",async()=>{
   const fake=new Stub();

@@ -9,7 +9,7 @@ import {validateSandboxLimits,type CloudSandboxAdapter,type SandboxLimits,
  type SandboxEvidence} from "./sandbox-adapter.js";
 import {verifyProjectSnapshot,type ProjectSnapshot} from "./project-workspace.js";
 import {sha256CodeBytes} from "../blueprint/code-artifact-v2.js";
-import {sandboxCommand,sandboxNeedsPinnedDeps,PINNED_MODULES} from "./sandbox-commands.js";
+import {sandboxCommand,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,PINNED_MODULES} from "./sandbox-commands.js";
 export interface IsolatedProcess{
  output(options:{encoding:"utf8";maxBytes:number;timeout:number}):Promise<{
   stdout:string;stderr:string;exitCode:number|null;timedOut?:boolean;truncated?:boolean
@@ -62,7 +62,7 @@ export class CloudflareIsolatedSandboxAdapter implements CloudSandboxAdapter{
   if(!runtime||!limits)throw Error("SANDBOX_NOT_OWNED");
   if(!(await verifyProjectSnapshot(project))||call.project_hash!==project.project_hash||
     !parseAgentToolCall(call))throw Error("SANDBOX_INVALID_PROJECT_OR_CALL");
-  const root="/workspace/appf2_"+sandbox_id;
+  const root=sandboxWorkspaceRoot(sandbox_id,project);
   const fileName=call.args.path;
   const file=project.files.find(f=>f.path===fileName);
   if(call.name==="read_file"){
