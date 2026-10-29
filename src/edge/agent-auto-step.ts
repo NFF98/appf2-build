@@ -68,7 +68,7 @@ export async function runSignedAgentStep(input:AutoStepInput,deps:AutoStepDeps):
  if(!validAutoStepBody(input)||input.anonymous_id!==deps.owner)
   throw Error("AGENT_STEP_NOT_AUTHORIZED");
  const verified=await deps.db.query<{job_id:string}>(
-  "SELECT job_id::text FROM public.appf2_agent_job WHERE job_id=$1::uuid "+
+  "SELECT job_id::text\n  FROM public.appf2_agent_job WHERE job_id=$1::uuid "+
   "AND owner_anonymous_id=$2::uuid AND owner_key_thumbprint=$3::text LIMIT 1",
   [deps.jobId,deps.owner,deps.ownerThumb]);
  if(verified.rows[0]?.job_id!==deps.jobId)
