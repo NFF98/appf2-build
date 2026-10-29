@@ -41,7 +41,7 @@ try{
  // Independent Chromium QA consumes only the image-built trusted fixture.
  server=http.createServer(async(req,res)=>{
   const target=decodeURIComponent(new URL(req.url??"/","http://127.0.0.1").pathname);
-  if(!/^\\/(?:index\\.html|assets\\/[A-Za-z0-9_.-]+)?$/u.test(target)){
+  if(!/^\/(?:index\.html|assets\/[A-Za-z0-9_.-]+)?$/u.test(target)){
    res.writeHead(404);res.end();return;
   }
   const file=path.join(tmp,"dist",target==="/"
@@ -82,7 +82,7 @@ try{
  run("docker",[...candidateIsolation,"node","/opt/appf2/web-smoke.mjs"],2);
  candidateServer=http.createServer(async(req,res)=>{
   const target=decodeURIComponent(new URL(req.url??"/","http://127.0.0.1").pathname);
-  if(!/^\\/(?:index\\.html|assets\\/[A-Za-z0-9_.-]+)?$/u.test(target)){
+  if(!/^\/(?:index\.html|assets\/[A-Za-z0-9_.-]+)?$/u.test(target)){
    res.writeHead(404);res.end();return;
   }
   const file=path.join(candidateRoot,"dist",target==="/"
