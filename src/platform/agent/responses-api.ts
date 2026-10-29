@@ -29,7 +29,8 @@ function toolSchema(name:AgentToolName){
   "Operate only through the APPf2 isolated project broker, never through host shell.",
   strict:true,parameters:{type:"object",properties,required:fields,additionalProperties:false}};
 }
-export const RESPONSES_AGENT_TOOLS=AGENT_TOOLS.map(toolSchema);
+/** Only advertise tools with real signed Worker admission and durable replay. */
+export const RESPONSES_AGENT_TOOLS=AGENT_TOOLS.filter(x=>x!=="read_diagnostics").map(toolSchema);
 export type FunctionOutput={readonly type:"function_call_output";readonly call_id:string;readonly output:string};
 export type ResponsesToolBatch={readonly response_id:string;readonly calls:readonly AgentToolCall[]};
 // eslint-disable-next-line complexity -- Consent, model, budget and continuation contract must fail closed.

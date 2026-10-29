@@ -48,7 +48,7 @@ export function agentProjectPlanningPrompt(prompt:string,project:ProjectSnapshot
   "The following immutable files are the current project; previous_hash on write_file or write_files must exactly match the supplied hash (empty for new files).",
   "Prefer write_files with edits_json containing 2-16 {path,content,previous_hash} objects for related files: one atomic snapshot, fewer AI turns. Invalid entries reject the entire batch.",
   "Use exactly ONE function call per turn; after its durable tool result, continue editing. For a needed file use read_file; use run_build then run_test after implementing features.",
-  "Never request shell commands, external deployments, secrets, or publication. On build failure read the real diagnostics and repair the source before building again.",
+  "Never request shell commands, external deployments, secrets, or publication. On build failure inspect the actual saved run_build result and repair the source before building again; do not invoke an unsupported read_diagnostics tool.",
   "Do not hardcode one example app: implement the actual user request and required interactions.",
   "CURRENT_PROJECT_FILES_JSON: "+JSON.stringify(manifest),
   "ORIGINAL_USER_REQUEST_JSON: "+JSON.stringify(prompt.trim())

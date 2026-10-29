@@ -1068,3 +1068,128 @@ describe("Sprint 3.5 signed resumable auto-step (offline provider/container)",()
   expect(db.sandboxCalls.size).toBe(0);
  });
 });
+
+describe("Sprint 3.5 owner-signed bounded Agent Sequence (offline only)",()=>{
+ it("completes edit -> failed build -> AI repair as three CAS steps, preserving recovery",async()=>{
+  const person=await client(),db=new Database();
+  const prompt="建立漂亮的多人骰子遊戲含動畫、計分與排行榜";
+  let modelCalls=0,containerCalls=0;
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendModel:async({request}:{request:{input:unknown;previous_response_id?:string}})=>{
+    modelCalls++;
+    if(modelCalls===1){
+     const project=Array.from(db.snapshots.values())[0]!.snapshot as {
+      files:{path:string;hash:string}[]};
+     const edits=[
+      {path:"src/main.ts",previous_hash:project.files.find(f=>f.path==="src/main.ts")!.hash,
+       content:"import {roll} from './dice'; document.querySelector('#app')!.textContent=String(roll(4));"},
+      {path:"src/dice.ts",previous_hash:"",content:"export const roll=(n:number)=>n*4;"}
+     ];
+     return {id:"resp_sequence_first123456",status:"completed",
+      usage:{input_tokens:120,output_tokens:140},output:[
+       {type:"function_call",call_id:"call_sequence_edit123456",
+        name:"write_files",arguments:JSON.stringify({edits_json:JSON.stringify(edits)})}]};
+    }
+    if(modelCalls===2){
+     expect(request.previous_response_id).toBe("resp_sequence_first123456");
+     return {id:"resp_sequence_build123456",status:"completed",
+      usage:{input_tokens:100,output_tokens:40},output:[
+       {type:"function_call",call_id:"call_sequence_build123456",
+        name:"run_build",arguments:JSON.stringify({target:"project"})}]};
+    }
+    expect(request.previous_response_id).toBe("resp_sequence_build123456");
+    return {id:"resp_sequence_fix123456",status:"completed",
+     usage:{input_tokens:80,output_tokens:80},output:[
+      {type:"function_call",call_id:"call_sequence_fix123456",
+       name:"write_file",arguments:JSON.stringify({
+        path:"src/dice.ts",
+        previous_hash:(db.snapshots.get(OWNER+":"+db.jobs.get(JOB_ID)!.project_hash)!.snapshot as {
+         files:{path:string;hash:string}[]}).files.find(f=>f.path==="src/dice.ts")!.hash,
+        content:"export const roll=(n:number)=>n*6;"
+       })}]};
+   },
+   sendSandbox:async(task:{call:{call_id:string;project_hash:string}})=>{
+    containerCalls++;
+    const detail="TRUSTED_DIAGNOSTIC: Vite unresolved import, repair needed";
+    return {call_id:task.call.call_id,project_hash:task.call.project_hash,
+     exit_code:1,timed_out:false,detail,
+     output_digest:await sha256CodeBytes(new TextEncoder().encode(detail)),
+     runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"};
+   }
+  }});
+  const modelEnv={...env,APPF2_AGENT_AUTOSTEP_ENABLED:"1",
+   APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  const allEnabled={...modelEnv,...sandboxEnabled};
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  expect((await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:60,explicit_ai_consent:true
+  },"seq_create_12345678"),env)).status).toBe(201);
+  expect((await fetch(await signed(person,root+"/model-plan",{
+   anonymous_id:OWNER,prompt,model_call_key:"seq_model_one_123456",
+   max_charge_cents:5,max_output_tokens:1024,explicit_ai_consent:true
+  },"seq_plan_12345678"),modelEnv)).status).toBe(200);
+  const steps=[
+   {anonymous_id:OWNER,model_call_key:"seq_model_one_123456",
+    expected_revision:1,explicit_ai_consent:true,
+    next_model_call_key:"seq_model_two_123456",max_ai_charge_cents:5,
+    max_output_tokens:1024},
+   {anonymous_id:OWNER,model_call_key:"seq_model_two_123456",
+    expected_revision:2,explicit_ai_consent:true,
+    next_model_call_key:"seq_model_three_123456",max_ai_charge_cents:5,
+    max_output_tokens:1024,explicit_container_consent:true,
+    max_container_charge_cents:4},
+   {anonymous_id:OWNER,model_call_key:"seq_model_three_123456",expected_revision:3}
+  ];
+  const started=await fetch(await signed(person,root+"/agent-sequence",{
+   anonymous_id:OWNER,steps
+  },"seq_execute_12345678"),allEnabled);
+  expect(started.status).toBe(200);
+  expect(await started.json()).toMatchObject({data:{
+   status:"SEQUENCE_LIMIT_REACHED",completed_steps:3,revision:4,
+   job_state:"CODING",app_published:false}});
+  expect(modelCalls).toBe(3);
+  expect(containerCalls).toBe(1);
+  expect(db.snapshots.size).toBe(3);
+  const head=db.jobs.get(JOB_ID)!;
+  expect(head.checkpoint.completed_call_ids).toHaveLength(3);
+  const reopened=await fetch(await signed(person,root,{anonymous_id:OWNER},
+   "seq_reopen_12345678"),env);
+  const source=await reopened.json() as {data:{files:{path:string;content:string}[]}};
+  expect(source.data.files.find(x=>x.path==="src/dice.ts")?.content)
+   .toBe("export const roll=(n:number)=>n*6;");
+  const replay=await fetch(await signed(person,root+"/agent-sequence",{
+   anonymous_id:OWNER,steps
+  },"seq_execute_12345678"),allEnabled);
+  expect(replay.status).toBe(503);
+  expect(modelCalls).toBe(3);
+  expect(containerCalls).toBe(1);
+ });
+ it("rejects nonchain, unsigned step permission, 4 steps and excessive cost before dispatch",async()=>{
+  const person=await client(),db=new Database();
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/agent-sequence";
+  const a={anonymous_id:OWNER,model_call_key:"chain_one_123456",
+   expected_revision:1,explicit_ai_consent:true,
+   next_model_call_key:"chain_two_123456",max_ai_charge_cents:5,
+   max_output_tokens:1024};
+  const b={anonymous_id:OWNER,model_call_key:"chain_two_123456",expected_revision:2};
+  const flags={...env,APPF2_AGENT_AUTOSTEP_ENABLED:"1"};
+  for(const steps of [
+   [a,{...b,model_call_key:"other_chain_123456"}],
+   [a,{...b,expected_revision:3}],
+   [a,b,b,b],
+   [{...a,max_ai_charge_cents:100},{...b,explicit_container_consent:true,
+    max_container_charge_cents:5}],
+   [{...a,explicit_ai_consent:false},b]
+  ]){
+   const resp=await fetch(await signed(person,path,{anonymous_id:OWNER,steps},
+    "seq_invalid_"+String(steps.length)+"_"+String(steps[0]?.expected_revision)),flags);
+   expect(resp.status).toBe(400);
+  }
+  expect((await fetch(await signed(person,path,{anonymous_id:OWNER,steps:[a,b]},
+   "seq_disabled_12345678"),env)).status).toBe(404);
+  expect(db.modelCalls.size).toBe(0);
+  expect(db.sandboxCalls.size).toBe(0);
+ });
+});
