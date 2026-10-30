@@ -103,7 +103,7 @@ async function api(req,res,url){
   qaRunCount++;job.status="REPAIRING";job.revision++;
   json(res,200,{status:"BROWSER_QA_FAILED_REPAIR_READY",
    ready_for_review:false,app_published:false,
-   checks:[{criterion_id:"score_ui",category:"BROWSER",verdict:"FAIL",evidence_hash:null}]});
+   checks:[{criterion_id:"req_1",category:"BROWSER",verdict:"FAIL",evidence_hash:null}]});
   return;
  }
  if(url.pathname===base+"/qa-repair"){
