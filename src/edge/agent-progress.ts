@@ -30,7 +30,7 @@ export type AgentProgress={
  readonly next_action:"SIGN_NEXT_SEQUENCE"|"AWAIT_MODEL_RECONCILIATION"|
   "VERIFY_INDEPENDENT_QA"|"BUDGET_RENEWAL_REQUIRED"|"CONTINUE_SAVED_TOOL_RESULT"|
   "NO_PROVEN_PENDING_MODEL"|
-  "RECONCILE_AMBIGUOUS_HEAD";
+  "RECONCILE_AMBIGUOUS_HEAD"|"OWNER_APPROVED_QA_REPAIR_REQUIRED";
  readonly scope:"SUBMITTED_KEYS_ONLY"|"RECENT_EIGHT_STORED_CALLS";
  readonly app_published:false;
 };
@@ -112,6 +112,31 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
    .map(row=>examine(current,row,row.call_key)):
   await Promise.all(input.model_call_keys.map(async key=>
    examine(current,await getModelCall(deps.db,deps.jobId,deps.owner,key),key)));
+ // A successful test followed by failed INDEPENDENT Browser QA must not
+ // be resumed as an ordinary tool result. The owner must explicitly approve
+ // the separate, journaled QA-repair model call. Query only the immutable
+ // owner-scoped QA receipt; no user-supplied verdict is trusted.
+ let failedIndependentQa=false;
+ if(current.job.job_state==="REPAIRING"){
+  const receipts=(await deps.db.query<{status:string;receipt_json:unknown}>(
+   "SELECT status,receipt_json FROM public.appf2_agent_browser_qa_attempt "+
+   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
+   "AND project_hash=$3::text LIMIT 1",
+   [deps.jobId,deps.owner,current.project.project_hash])).rows;
+  if(receipts.length>1)throw Error("AGENT_QA_PROGRESS_AMBIGUOUS");
+  const qaReceipt=receipts[0];
+  if(qaReceipt?.status==="BLOCKED_UNCERTAIN"||
+   qaReceipt?.status==="IN_FLIGHT")
+   throw Error("AGENT_QA_PROGRESS_UNCERTAIN");
+  if(qaReceipt?.status==="SUCCEEDED"){
+   const data=qaReceipt.receipt_json;
+   if(typeof data!=="object"||data===null||Array.isArray(data)||
+    (data as Record<string,unknown>).ready_for_review!==false||
+    (data as Record<string,unknown>).packet!==null)
+    throw Error("AGENT_QA_PROGRESS_RECEIPT_INVALID");
+   failedIndependentQa=true;
+  }
+ }
  const active=rows.filter(x=>x.state==="CURRENT_MODEL_READY");
  const uncertain=rows.some(x=>x.state==="MODEL_UNCERTAIN");
  const pending=rows.some(x=>x.state==="MODEL_PENDING");
@@ -121,14 +146,16 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
    x.last_completed_tool&&x.tool==="run_test"));
  const last=rows.filter(x=>x.state==="ALREADY_APPLIED"&&x.last_completed_tool);
  const remaining=current.job.checkpoint.budget.max_steps-current.job.checkpoint.step;
- const eligible=!uncertain&&!pending&&!qa&&active.length===0&&last.length===1&&
+ const eligible=!failedIndependentQa&&!uncertain&&!pending&&!qa&&
+  active.length===0&&last.length===1&&
   remaining>0&&["CODING","REPAIRING","BUILDING"].includes(current.job.job_state);
 
  const can_resume=!uncertain&&!qa&&active.length===1&&remaining>0&&
   !["READY","FAILED","AWAITING_CONSENT"].includes(current.job.job_state);
  const next_action:AgentProgress["next_action"]=uncertain||pending?
   "AWAIT_MODEL_RECONCILIATION":active.length>1||last.length>1?
-   "RECONCILE_AMBIGUOUS_HEAD":qa?
+   "RECONCILE_AMBIGUOUS_HEAD":failedIndependentQa&&active.length===0?
+   "OWNER_APPROVED_QA_REPAIR_REQUIRED":qa?
     "VERIFY_INDEPENDENT_QA":remaining===0&&(active.length===1||last.length===1)?
      "BUDGET_RENEWAL_REQUIRED":can_resume?
       "SIGN_NEXT_SEQUENCE":eligible?
