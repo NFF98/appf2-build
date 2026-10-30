@@ -38,6 +38,7 @@ export async function sealAgentQaPacket(input:Omit<AgentQaPacket,"packet_seal">,
 function record(x:unknown):x is Record<string,unknown>{
  return typeof x==="object"&&x!==null&&!Array.isArray(x);
 }
+// eslint-disable-next-line complexity -- Every independent prompt, plan, signed receipt and packet field fails closed.
 export function validAgentQaPacket(x:unknown):x is AgentQaPacket{
  if(!record(x)||Object.keys(x).sort().join(",")!==
   "job_id,original_plan,original_prompt,packet_seal,receipt,version"||
