@@ -93,15 +93,25 @@ async function named(page:Page,role:string,name:string){
  const handles=await page.$$(roles[role]??"::-p-not-found");
  const matches=[];
  for(const handle of handles){
-  const value=await handle.evaluate(node=>{
+  const observation=await handle.evaluate(node=>{
    const el=node as HTMLElement;
    const label=(el.getAttribute("aria-label")??"").trim();
    const associated="labels" in el?
     Array.from((el as HTMLInputElement).labels??[]).map(l=>l.textContent??"").join(" "):"";
-   return (label||associated||el.textContent||
+   const text=(label||associated||el.innerText||
     el.getAttribute("placeholder")||"").replace(/\s+/gu," ").trim();
+   let visible=el.getClientRects().length>0;
+   for(let ancestor:Element|null=el;ancestor&&visible;ancestor=ancestor.parentElement){
+    const css=getComputedStyle(ancestor);
+    if(css.display==="none"||css.visibility==="hidden"||
+      css.visibility==="collapse"||Number(css.opacity)===0||
+      ancestor.getAttribute("aria-hidden")==="true"||
+      ancestor.hasAttribute("hidden"))visible=false;
+   }
+   return {text,visible};
   });
-  if(value===name)matches.push(handle);
+  // A hidden decoy must never be selected as a clickable QA control.
+  if(observation.visible&&observation.text===name)matches.push(handle);
  }
  if(matches.length!==1)throw Error("QA_CONTROL_NOT_UNIQUE:"+role);
  return matches[0]!;
