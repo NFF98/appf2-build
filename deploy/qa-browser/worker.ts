@@ -103,10 +103,12 @@ async function named(page:Page,role:string,name:string){
    let visible=el.getClientRects().length>0;
    for(let ancestor:Element|null=el;ancestor&&visible;ancestor=ancestor.parentElement){
     const css=getComputedStyle(ancestor);
-    if(css.display==="none"||css.visibility==="hidden"||
-      css.visibility==="collapse"||Number(css.opacity)===0||
-      ancestor.getAttribute("aria-hidden")==="true"||
-      ancestor.hasAttribute("hidden"))visible=false;
+    const blocked=[
+     css.display==="none",["hidden","collapse"].includes(css.visibility),
+     Number(css.opacity)===0,
+     ancestor.getAttribute("aria-hidden")==="true",ancestor.hasAttribute("hidden")
+    ];
+    if(blocked.includes(true))visible=false;
    }
    return {text,visible};
   });
