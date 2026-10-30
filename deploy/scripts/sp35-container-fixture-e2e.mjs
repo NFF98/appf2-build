@@ -14,6 +14,11 @@ import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-works
 import {sealCandidateQaReceipt,verifySignedCandidateQa,
  admitsPublicationFromCandidateReceipt} from "../../dist/src/platform/agent/qa-receipt.js";
 import {createHash,randomBytes} from "node:crypto";
+import {runBuiltAppQa} from "./sp35-built-app-independent-qa.mjs";
+import {sealAgentQaPacket,verifyAgentQaPacket}
+ from "../../dist/src/platform/agent/qa-packet.js";
+import {sha256CodeBytes} from "../../dist/src/platform/blueprint/code-artifact-v2.js";
+
 
 const image="appf2-sp35-sandbox:ci";
 const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"appf2-sp35-container-"));
@@ -67,6 +72,62 @@ try{
  if(observed!=="APPF2_MULTIFILE_COMPILED_42")
   throw Error("APPF2_CONTAINER_BROWSER_QA_FAILED:"+observed);
  console.log("SP35 REAL ISOLATED DOCKER VITE → CHROMIUM CLICK: PASS (trusted fixture, NO AI/Cloudflare)");
+
+ // The separately trusted verifier consumes the ORIGINAL requirements and the
+ // actual image-produced multi-file build, not success text from run_test.
+ const originalPrompt="按 Add 按鈕後，顯示 APPF2_MULTIFILE_COMPILED_42";
+ const originalPlan={version:"1",criteria:[{
+  id:"add_button",source_quote:"Add 按鈕",description:"新增操作可按",
+  steps:[],assertions:[{kind:"visible",role:"button",name:"Add"}],
+  automatable:true
+ },{
+  id:"changed_result",source_quote:"顯示 APPF2_MULTIFILE_COMPILED_42",
+  description:"實際點擊後結果更新",
+  steps:[{action:"click",role:"button",name:"Add"}],
+  assertions:[{kind:"text_appears",text:"APPF2_MULTIFILE_COMPILED_42"}],
+  automatable:true
+ }]};
+ const independent=await runBuiltAppQa({browser,origin:"http://127.0.0.1:"+port,
+  plan:originalPlan,prompt:originalPrompt});
+ if(independent.length!==2||independent.some(x=>x.verdict!=="PASS"))
+  throw Error("QA_REAL_BUILT_APP_REQUIREMENT_FAILED:"+JSON.stringify(independent));
+ const qaKey=randomBytes(48).toString("base64url");
+ const promptHash=await sha256CodeBytes(new TextEncoder().encode(
+  "APPF2_AGENT_REQUEST_V1\u0000"+originalPrompt));
+ const artifactHash="sha256:"+createHash("sha256")
+  .update(compiled).digest("hex");
+ const qaJobId="f7a04bc2-e260-4e1c-b17c-fc43101a46dd";
+ const qaRunId="call_docker_multifile_123456";
+ const qaInput={version:"APPF2_AGENT_QA_PACKET_V1",
+  job_id:qaJobId,original_prompt:originalPrompt,original_plan:originalPlan,
+  receipt:{version:"APPF2_CANDIDATE_QA_V1",
+   source_project_hash:"sha256:"+"c".repeat(64),
+   built_artifact_hash:artifactHash,sandbox_execution_id:qaRunId,
+   checks:independent,runner_attestation:null
+  }};
+ const packet=await sealAgentQaPacket(qaInput,qaKey);
+ const identity={job_id:qaJobId,original_prompt_hash:promptHash,
+  project_hash:qaInput.receipt.source_project_hash,
+  sandbox_execution_id:qaRunId};
+ const reviewed=await verifyAgentQaPacket(packet,identity,qaKey);
+ if(!reviewed.ready_for_review)throw Error("QA_BUILT_ARTIFACT_PACKET_REJECTED");
+ const oldRequirement={...packet,original_plan:{...originalPlan,
+  criteria:originalPlan.criteria.slice(0,1)}};
+ if((await verifyAgentQaPacket(oldRequirement,identity,qaKey)).ready_for_review)
+  throw Error("QA_MISSING_ORIGINAL_REQUIREMENT_WAS_ACCEPTED");
+ const malformed={...packet,receipt:{...packet.receipt,
+  checks:[{...packet.receipt.checks[1],verdict:"FAIL"}]}};
+ if((await verifyAgentQaPacket(malformed,identity,qaKey)).ready_for_review)
+  throw Error("QA_BAD_BROWSER_EVIDENCE_WAS_ACCEPTED");
+ const impossible={...originalPlan,criteria:[{...originalPlan.criteria[1],
+  assertions:[{kind:"text_appears",text:"IMPOSSIBLE_RESULT_999999"}]}]};
+ const negative=await runBuiltAppQa({browser,origin:"http://127.0.0.1:"+port,
+  plan:impossible,prompt:originalPrompt});
+ if(negative.length!==1||negative[0].verdict!=="FAIL"||
+  negative[0].evidence_hash!==null)
+  throw Error("QA_INDEPENDENT_BROWSER_DID_NOT_REJECT_WRONG_BEHAVIOR");
+ console.log("SP35 DOCKER MULTI-FILE BUILD → INDEPENDENT BROWSER ORIGINAL REQUIREMENTS → DUAL HMAC PACKET: PASS (TRUSTED FIXTURE, NO CLOUD, NO PUBLICATION)");
+
  // Compile the actual Worker API starter project through the same isolated image.
  const prompt='繁體中文骰子遊戲 <img src=x onerror=alert(1)> 安全測試';
  const candidate=await createInitialAgentProject(prompt);
