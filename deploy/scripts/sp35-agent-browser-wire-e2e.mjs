@@ -8,6 +8,7 @@ import {build} from "vite";
 import {chromium} from "@playwright/test";
 import {verifyMutationProof} from "../../dist/src/edge/create-proof.js";
 import {validFreezeQaPlanBody} from "../../dist/src/edge/agent-qa-plan.js";
+import {validGenerateQaBody} from "../../dist/src/edge/agent-qa-generate.js";
 import {qaRepairCallKey} from "../../dist/src/platform/agent/qa-repair-key.js";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -17,6 +18,11 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../..");
 const out=path.join(root,"dist/web");
 const jobId="da4d1bd2-2cce-4c96-a197-637b5e71a3bd";
 const code=JSON.stringify({name:"mock-candidate",private:true,type:"module"});
+const qaPlan={version:"1",criteria:[{
+ id:"req_1",source_quote:"計分",description:"使用者操作後計分改變",
+ steps:[{action:"click",role:"button",name:"加分"}],
+ assertions:[{kind:"text_appears",text:"1"}],automatable:true
+}]};
 const job={job_id:jobId,revision:0,status:"CREATED",project_hash:"sha256:"+"a".repeat(64),
  checkpoint:{step:0,completed_call_ids:[],budget:{max_steps:8,max_tokens:8192,max_cost_cents:60}},
  files:[{path:"index.html",content:"<div id='app'></div>"},
@@ -25,7 +31,7 @@ const job={job_id:jobId,revision:0,status:"CREATED",project_hash:"sha256:"+"a".r
   {path:"package.json",content:code}],app_published:false};
 let owner=null,thumb=null,firstKey=null;
 let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCount=0;
-let qaFreezeCount=0,frozenPlan=null,createdPrompt=null;
+let qaFreezeCount=0,autoPlanCount=0,frozenPlan=null,createdPrompt=null;
 let qaRunCount=0,qaRepairCount=0,lastRepairKey=null;
 let server=null,browser=null;
 function json(res,status,data){
@@ -64,6 +70,16 @@ async function api(req,res,url){
  const base="/api/v1/agent-jobs/"+jobId;
  if(url.pathname===base){
   json(res,200,job);return;
+ }
+ if(url.pathname===base+"/qa-generate"){
+  if(!validGenerateQaBody(body)||body.original_prompt!==createdPrompt||
+   frozenPlan!==null||job.revision!==0){
+   json(res,503,"QA_GENERATION_NOT_APPROVED");return;
+  }
+  autoPlanCount++;frozenPlan=qaPlan;qaFreezeCount++;
+  json(res,200,{status:"QA_ORIGINAL_PLAN_FROZEN",
+   original_plan:qaPlan,source:"PROVIDER",criteria_count:1,app_published:false});
+  return;
  }
  if(url.pathname===base+"/qa-plan"){
   if(!validFreezeQaPlanBody(body)||body.original_prompt!==createdPrompt||
@@ -187,13 +203,7 @@ try{
  if(await primary.isEnabled())throw Error("AI_SPEND_NO_CONSENT");
  const prompt="建立四人十八啦骰子遊戲，有計分和排行榜";
  await page.getByRole("textbox",{name:"用一句話描述要做的 App"}).fill(prompt);
- const qaPlan={version:"1",criteria:[{
-  id:"score_ui",source_quote:"計分",description:"使用者操作後計分改變",
-  steps:[{action:"click",role:"button",name:"加分"}],
-  assertions:[{kind:"text_appears",text:"1"}],automatable:true
- }]};
- await page.getByText("進階：開發前鎖定獨立 QA 驗收計畫（選填）").click();
- await page.getByRole("textbox",{name:"原始驗收計畫 JSON"}).fill(JSON.stringify(qaPlan));
+ // No QA JSON authored or pasted: the product must auto-plan from one sentence.
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  if(!(await primary.isEnabled()))throw Error("AGENT_CONSENT_UI_BROKEN");
  await primary.click();
@@ -204,7 +214,7 @@ try{
  await page.getByText("src/game.ts",{exact:true}).click();
  if(await page.getByText("export function roll()", {exact:false}).count()!==1)
   throw Error("AGENT_GENERATED_MULTIFILE_NOT_SHOWN");
- if(qaFreezeCount!==1||!frozenPlan||
+ if(qaFreezeCount!==1||autoPlanCount!==1||!frozenPlan||
   JSON.stringify(frozenPlan)!==JSON.stringify(qaPlan)||
   planCount!==1||stepCount!==1||proofCount<6)
   throw Error("AGENT_WIRE_PROOF_OR_PAYLOAD_MISSING");
@@ -216,7 +226,7 @@ try{
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
- if(qaFreezeCount!==1||planCount!==1||stepCount!==1||proofCount<9)
+ if(qaFreezeCount!==1||autoPlanCount!==1||planCount!==1||stepCount!==1||proofCount<9)
   throw Error("AGENT_RELOAD_REPLAYED_PAID_CALL");
  const renewal=page.getByRole("button",{name:"延長 16 步（費用上限不變）"});
  await renewal.click();
@@ -228,7 +238,7 @@ try{
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
- if(renewCount!==1||qaFreezeCount!==1||planCount!==1||stepCount!==1)
+ if(renewCount!==1||qaFreezeCount!==1||autoPlanCount!==1||planCount!==1||stepCount!==1)
   throw Error("AGENT_BUDGET_RELOAD_SPENT_EXTRA");
  // Simulate a separately saved successful build+test checkpoint; no model
  // or container is actually run by this first-party browser wiring fixture.
@@ -261,9 +271,9 @@ try{
  await page.getByRole("button",{
   name:"根據 QA 失敗結果要求 AI 修復（需另行授權）"}).click();
  await page.getByText("修復模型回應已保存",{exact:false}).waitFor({timeout:15000});
- if(qaRunCount!==1||qaRepairCount!==1||planCount!==1)
+ if(qaRunCount!==1||qaRepairCount!==1||autoPlanCount!==1||planCount!==1)
   throw Error("BROWSER_QA_RELOAD_REPLAYED_PAID_REPAIR");
- console.log("SP35 REAL FIRST-PARTY CHROMIUM → FROZEN QA PLAN → SIGNED QA FAILURE → REPAIRING → ONE-SHOT AI REPAIR UI: PASS (MOCK QA/MODEL, NO CLOUD)");
+ console.log("SP35 REAL FIRST-PARTY CHROMIUM → ONE SENTENCE → AUTOMATIC PRE-CODE QA PLAN → SIGNED QA FAILURE → ONE-SHOT REPAIR: PASS (MOCK QA/MODEL, NO CLOUD)");
 }finally{
  if(browser)await browser.close();
  if(server)await new Promise(resolve=>server.close(resolve));
