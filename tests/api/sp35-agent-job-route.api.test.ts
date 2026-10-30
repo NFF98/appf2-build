@@ -1766,6 +1766,7 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
    }};
   const envQa={...env,APPF2_AGENT_QA_BROWSER_ENABLED:"1",
    APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_AGENT_AUTOSTEP_ENABLED:"1",
    APPF2_OPENAI_AGENT_API_KEY:"mock-openai-agent-key-123456",
    APPF2_QA_PRIVATE_TOKEN:bearer,APPF2_AGENT_QA_VERIFIER_SECRET:verifierSecret,
    APPF2_QA_BROWSER_SERVICE:{fetch:async()=>{
