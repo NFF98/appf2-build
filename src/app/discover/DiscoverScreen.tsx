@@ -8,6 +8,7 @@ import { Inspiration } from "./Inspiration.js";
 import { SavedApps } from "./SavedApps.js";
 import { PublicApps } from "./PublicApps.js";
 import {CodeBuilderPanel} from "../code-builder/CodeBuilderPanel.js";
+import {AgentBuilderPanel} from "../code-builder/AgentBuilderPanel.js";
 import type { SavedTabApp, TabAppTarget } from "../shell/tab-app-recovery.js";
 
 export type ComposerDraft = {
@@ -73,7 +74,12 @@ export function DiscoverScreen({ draft, onDraftChange, onCreate, savedApps, onOp
             意圖就是 <span className="s01-hero-accent">App</span>
           </h1>
         </section>
-        <CodeBuilderPanel suggestedPrompt={suggestedPrompt} onOpen={id=>globalThis.location.assign("/code/"+encodeURIComponent(id))}/>
+        <AgentBuilderPanel suggestedPrompt={suggestedPrompt}/>
+        <details className="legacy-composer">
+          <summary>舊版單檔 Code Builder（只供相容）</summary>
+          <CodeBuilderPanel suggestedPrompt={suggestedPrompt}
+            onOpen={id=>globalThis.location.assign("/code/"+encodeURIComponent(id))}/>
+        </details>
         <details className="legacy-composer">
           <summary>舊版 Blueprint Composer（相容模式，不適用於自由程式 App）</summary>
           <p className="saved-apps-note">這是舊版元件組合流程；十八啦等需要 AI 自由寫程式的需求，請使用上方 AI Code Builder。</p>

@@ -55,8 +55,8 @@ export function CodeBuilderPanel({onOpen,suggestedPrompt}:{onOpen:(id:string)=>v
  return <section className="code-builder-panel" aria-labelledby="code-builder-title">
    <h2 id="code-builder-title">AI Code Builder · Blueprint v2</h2>
    <p className="saved-apps-note">用一句話生成互動 App。每個新作品都必須先通過需求導向的獨立瀏覽器驗收才會公開；無法自動確認的條件會暫停發布。本 Staging 限於不連網單檔程式。</p>
-   <label htmlFor="code-builder-prompt">描述你想做的 App</label>
-   <textarea id="code-builder-prompt" className="composer-input" value={prompt} maxLength={800}
+   <label htmlFor="legacy-code-builder-prompt">描述你想做的 App</label>
+   <textarea id="legacy-code-builder-prompt" className="composer-input" value={prompt} maxLength={800}
      onChange={e=>setPrompt(e.target.value)} placeholder="例如：做一個有骰子和計分功能的十八啦遊戲" />
    <label className="code-builder-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>
      我同意 AI 先規劃驗收條件，再生成 App（至少兩次模型請求），並在自動功能驗收通過後公開分享。不通過不發布，Cloudflare 瀏覽器驗收可能產生費用。
