@@ -1,10 +1,7 @@
 name: Sprint 3.5 staging only (never production)
 on:
-  # Explicitly scoped to this staging repair branch; pull requests cannot receive secrets.
-  push:
-    branches:
-      - product/sprint-3.5-real-worker-routing-20261026
-      - product/sprint-3.5-complex-intent-recovery-20261026
+  # Deployment is an explicit operator action, never a side-effect of code pushes.
+  # This does not authorize paid staging, production release or any merge.
   workflow_dispatch:
 
 permissions:
@@ -16,7 +13,7 @@ concurrency:
 
 jobs:
   staging:
-    if: github.repository == 'NFF98/appf2-build' && (github.ref == 'refs/heads/product/sprint-3.5-real-worker-routing-20261026' || github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' || github.event_name == 'workflow_dispatch') && !contains(github.event.head_commit.message, '[SP35-FOUNDATION-NO-STAGING]')
+    if: github.repository == 'NFF98/appf2-build' && github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/product/sprint-3.5-real-worker-routing-20261026' || github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
