@@ -17,6 +17,13 @@ export function sandboxWorkspaceRoot(jobId:string,project:ProjectSnapshot):strin
   throw Error("SANDBOX_WORKSPACE_UNSAFE");
  return "/workspace/appf2_"+jobId+"/"+project.project_hash.slice(7);
 }
+/** A new run_build MUST remove prior generated files even for the same hash.
+ * run_test deliberately retains the matching successful build's dist/ output.
+ * Fixed argv only: no model-supplied command, path, shell or glob expansion.
+ */
+export function sandboxBuildResetArgv(jobId:string,project:ProjectSnapshot):readonly string[]{
+ return ["rm","-rf","--",sandboxWorkspaceRoot(jobId,project)];
+}
 export function sandboxCommand(project:ProjectSnapshot,
  tool:"run_build"|"run_test"):readonly string[]{
  if(project.profile==="VITE_WEB"){
