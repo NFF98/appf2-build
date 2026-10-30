@@ -33,6 +33,7 @@ let owner=null,thumb=null,firstKey=null;
 let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCount=0;
 let qaFreezeCount=0,autoPlanCount=0,frozenPlan=null,createdPrompt=null;
 let qaRunCount=0,qaRepairCount=0,lastRepairKey=null,autoQaPending=false;
+let privatePreviewFetches=0;
 let server=null,browser=null;
 function json(res,status,data){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
@@ -89,6 +90,27 @@ async function api(req,res,url){
   frozenPlan=body.original_plan;qaFreezeCount++;
   json(res,200,{status:"QA_ORIGINAL_PLAN_FROZEN",criteria_count:1,
    project_hash:job.project_hash,revision:0,app_published:false});return;
+ }
+ if(url.pathname===base+"/preview-asset"){
+  const last=job.checkpoint.completed_call_ids;
+  if(!["TESTING","REPAIRING"].includes(job.status)||
+   body.explicit_container_preview_consent!==true||
+   body.expected_revision!==job.revision||body.project_hash!==job.project_hash||
+   body.build_call_id!==last.at(-2)||body.test_call_id!==last.at(-1)){
+   json(res,503,"PRIVATE_PREVIEW_NOT_PROVEN");return;
+  }
+  const built={
+   "index.html":'<!doctype html><html><head><script type="module" crossorigin src="/assets/index-DEMO1234.js"></script></head><body><div id="app"></div></body></html>',
+   "assets/index-DEMO1234.js":"const app=document.querySelector('#app');const button=document.createElement('button');button.textContent='Demo Add';button.onclick=()=>{document.querySelector('#result').textContent='PREVIEW_CLICKED_42';};const result=document.createElement('p');result.id='result';app.append(button,result);"
+  };
+  if(!Object.hasOwn(built,body.path)){
+   json(res,404,"PREVIEW_PATH_REJECTED");return;
+  }
+  privatePreviewFetches++;
+  json(res,200,{path:body.path,text:built[body.path],
+   project_hash:job.project_hash,
+   content_type:body.path==="index.html"?"text/html":"text/javascript"});
+  return;
  }
  if(url.pathname===base+"/qa-run"){
   const completed=job.checkpoint.completed_call_ids;
@@ -274,6 +296,16 @@ try{
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · TESTING").waitFor({timeout:15000});
+ const preview=page.getByRole("button",{
+  name:"開啟已建置 App 互動預覽（需雲端存取授權）"});
+ if(await preview.isEnabled())throw Error("PRIVATE_PREVIEW_NO_SEPARATE_CONSENT");
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await preview.click();
+ const frame=page.frameLocator('iframe[title="私人候選 App 互動預覽（尚未通過發布驗收）"]');
+ await frame.getByRole("button",{name:"Demo Add"}).click();
+ await frame.getByText("PREVIEW_CLICKED_42").waitFor({timeout:15000});
+ if(privatePreviewFetches!==2||qaRunCount!==0||qaRepairCount!==0)
+  throw Error("PRIVATE_BUILD_PREVIEW_CAUSED_PAID_OR_UNSAFE_EFFECTS");
  const qaButton=page.getByRole("button",{
   name:"開始獨立瀏覽器 QA（需另行授權）"});
  if(await qaButton.isEnabled())throw Error("BROWSER_QA_SPENT_WITHOUT_SEPARATE_CONSENT");
