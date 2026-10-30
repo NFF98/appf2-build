@@ -88,7 +88,8 @@ export function parseAgentToolCall(input:unknown):AgentToolCall|null{
   if(input.args.target!=="project")return null;
  }
  if(name==="inspect_project"&&
-  !inspectProjectArgs(input.args.path,input.args.offset))return null;
+  (typeof input.args.path!=="string"||typeof input.args.offset!=="string"||
+   !inspectProjectArgs(input.args.path,input.args.offset)))return null;
  if(name==="write_file"&&typeof input.args.content==="string"&&input.args.content.length>256*1024)return null;
  if(name==="write_files"&&
   (typeof input.args.edits_json!=="string"||parseAgentBatchWrites(input.args.edits_json)===null))return null;
