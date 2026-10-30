@@ -75,7 +75,7 @@ if(!current.implementation_enabled){
       "harness/scripts/run-task-human-grant-preflight.sh",
       "harness/scripts/validate-constitutional-change.mjs",
       "harness/scripts/gpt-preflight.mjs",
-      ".github/workflows/governance-gate.yml"]);
+      ".github/workflows/ci.yml",".github/workflows/governance-gate.yml"]);
     return new Set(changed).size===changed.length&&changed.every(path=>
       exact.has(path)||prefixes.some(prefix=>path.startsWith(prefix))||
       (path.startsWith("supabase/migrations/202610")&&
