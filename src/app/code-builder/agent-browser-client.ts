@@ -10,6 +10,8 @@ import {PopKeyring,type PopKey} from "../create/pop-keyring.js";
 import {createBrowserPopKeyPersistence} from "../shell/tab-app-recovery.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {qaRepairCallKey} from "../../platform/agent/qa-repair-key.js";
+import {previewAssetPaths,type PrivatePreviewAsset,type PreviewSource}
+ from "./agent-private-preview.js";
 
 const SLOT="appf2.agent.candidate.job.v1";
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -249,6 +251,37 @@ export class BrowserCodingAgent {
   this.target={...target,qaPlan:plan};
   saveTarget(this.target);
   return plan;
+ }
+ /** Read already built assets using the original creator PoP. This may wake
+  * the private container, so it requires a fresh explicit click consent.
+  * No AI, build, test, or publication occurs here.
+  */
+ async privatePreview(explicitConsent:boolean):Promise<PreviewSource>{
+  if(!explicitConsent)throw Error("必須另外授權存取雲端已建置 App 才能預覽。");
+  const job=await this.read(),ids=job.checkpoint.completed_call_ids;
+  if(!["TESTING","REPAIRING"].includes(job.status)||ids.length<2)
+   throw Error("目前沒有通過隔離建置與測試的 App 可預覽。");
+  const build=ids.at(-2),test=ids.at(-1);
+  if(!build||!test)throw Error("找不到已證明的建置與測試結果。");
+  const get=async(path:string)=>{
+   const result=await this.post<PrivatePreviewAsset>("/preview-asset",{
+    anonymous_id:this.owner,expected_revision:job.revision,
+    project_hash:job.project_hash,build_call_id:build,test_call_id:test,
+    path,explicit_container_preview_consent:true
+   });
+   if(result.path!==path||result.project_hash!==job.project_hash||
+    typeof result.text!=="string")
+    throw Error("私人 App 建置資產不符，停止預覽。");
+   return result.text;
+  };
+  const index=await get("index.html");
+  const paths=previewAssetPaths(index);
+  // Only standard Vite single-module output is previewed; unsupported
+  // chunks fail visibly rather than loading arbitrary remote code.
+  const javascript=await get(paths.script);
+  const styles=await Promise.all(paths.styles.map(get));
+  return {project_hash:job.project_hash,index_html:index,
+   javascript,css:styles.join("\n")};
  }
  /** Independently execute browser acceptance only after a proven build/test.
   * Caller consent is per click, and repeated requests never retry a paid run.
