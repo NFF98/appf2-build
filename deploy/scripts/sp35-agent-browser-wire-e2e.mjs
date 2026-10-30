@@ -123,7 +123,11 @@ try{
  const page=await browser.newPage();
  const pageErrors=[];
  page.on("pageerror",e=>pageErrors.push(e.message));
- await page.goto("http://127.0.0.1:"+port+"/",{waitUntil:"networkidle"});
+ const origin="http://127.0.0.1:"+port;
+ const homepage=await fetch(origin+"/");
+ if(!homepage.ok||(await homepage.text()).indexOf("root")===-1)
+  throw Error("AGENT_HOMEPAGE_HTTP_BOOT_FAILURE");
+ await page.goto(origin+"/",{waitUntil:"domcontentloaded",timeout:15000});
  const primary=page.getByRole("button",{name:"建立新多檔案 App 專案"});
  if(await primary.count()!==1)throw Error("AGENT_HOMEPAGE_WIRING_MISSING");
  if(await primary.isEnabled())throw Error("AI_SPEND_NO_CONSENT");
@@ -145,7 +149,7 @@ try{
  // Reload must recover the persisted nonextractable P-256 key, not mint a
  // new key that would steal or fail the existing Job.
  await page.waitForTimeout(400);
- await page.reload({waitUntil:"networkidle"});
+ await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
