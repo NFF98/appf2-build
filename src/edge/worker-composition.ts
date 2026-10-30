@@ -51,6 +51,10 @@ export interface Appf2WorkerEnv {
   /** Independent verifier secret, never sent to the browser; OFF by default. */
   readonly APPF2_AGENT_QA_REVIEW_ENABLED?: string;
   readonly APPF2_AGENT_QA_VERIFIER_SECRET?: string;
+  /** Separate paid Browser Run opt-in, service binding and private token. OFF by default. */
+  readonly APPF2_AGENT_QA_BROWSER_ENABLED?: string;
+  readonly APPF2_QA_BROWSER_SERVICE?: import("./agent-sandbox-run.js").SandboxServiceBinding;
+  readonly APPF2_QA_PRIVATE_TOKEN?: string;
   /** Second independent opt-in for paid model dispatch: OFF unless "1". */
   readonly APPF2_AGENT_MODEL_EXECUTION_ENABLED?: string;
   /** Dedicated OpenAI key; never reuse the F01 provider's key or expose to browser. */
