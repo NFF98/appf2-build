@@ -88,6 +88,16 @@ class Database {
      JSON.parse(String(args[3])) as unknown:null,job_revision:row.job_revision});
     return {rows:[{job_id:args[0]} as T]};
    }
+   if(sql.startsWith("SELECT project_hash,status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
+    const prefix=String(args[0])+":";
+    const rows=[...this.qaAttempts.entries()]
+     .filter(([key,row])=>key.startsWith(prefix)&&row.status==="SUCCEEDED")
+     .slice(-8).reverse().map(([key,row])=>({
+      project_hash:key.slice(prefix.length),
+      status:row.status,receipt_json:row.receipt_json
+     } as T));
+    return {rows};
+   }
    if(sql.startsWith("SELECT job_revision,status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
     const id=String(args[0])+":"+String(args[2]),row=this.qaAttempts.get(id);
     return {rows:row?[row as T]:[]};
@@ -1738,7 +1748,7 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
    sendModel:async({request}:{request:{input:unknown}})=>{
     modelDispatches++;
     const summary=String(request.input);
-    expect(summary).toContain("APPF2_QA_REPAIR_V1");
+    expect(summary).toContain("APPF2_QA_REPAIR_V2");
     expect(summary).toContain("FAIL");
     expect(summary).toContain("project_hash");
     return {id:"resp_qarepaired123456",status:"completed",
