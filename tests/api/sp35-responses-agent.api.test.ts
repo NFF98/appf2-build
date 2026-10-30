@@ -13,7 +13,7 @@ describe("GPT-6.1 Sol Responses API protocol (offline; no provider calls)",()=>{
   const request=makeAgentResponsesRequest({model:"gpt-6.1-sol",input:"Create a useful app",
    previous_response_id:null,max_output_tokens:8192,consent:true});
   expect(request.model).toBe("gpt-6.1-sol");
-  expect(request.tools).toHaveLength(6);
+  expect(request.tools).toHaveLength(7);
   expect(request.tools.some(t=>t.name==="read_diagnostics")).toBe(false);
   expect(request.parallel_tool_calls).toBe(false);
   expect(RESPONSES_AGENT_TOOLS.every(x=>x.strict&&x.parameters.additionalProperties===false)).toBe(true);
