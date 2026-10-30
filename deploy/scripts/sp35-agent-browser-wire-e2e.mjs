@@ -32,7 +32,7 @@ const job={job_id:jobId,revision:0,status:"CREATED",project_hash:"sha256:"+"a".r
 let owner=null,thumb=null,firstKey=null;
 let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCount=0;
 let qaFreezeCount=0,autoPlanCount=0,frozenPlan=null,createdPrompt=null;
-let qaRunCount=0,qaRepairCount=0,lastRepairKey=null;
+let qaRunCount=0,qaRepairCount=0,lastRepairKey=null,autoQaPending=false;
 let server=null,browser=null;
 function json(res,status,data){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
@@ -114,7 +114,9 @@ async function api(req,res,url){
    body.model_call_key!==qaRepairCallKey(job.project_hash)){
    json(res,503,"QA_REPAIR_NOT_APPROVED");return;
   }
-  if(lastRepairKey===null){lastRepairKey=body.model_call_key;qaRepairCount++;}
+  if(lastRepairKey!==body.model_call_key){
+   lastRepairKey=body.model_call_key;qaRepairCount++;
+  }
   json(res,200,{status:"QA_REPAIR_MODEL_SAVED",response_id:"resp_repair_mock123456",
    source:lastRepairKey===body.model_call_key?"DURABLE_REPLAY":"PROVIDER",
    ready_for_review:false,app_published:false});return;
@@ -140,6 +142,15 @@ async function api(req,res,url){
  }
  if(url.pathname===base+"/agent-progress"){
   if(Object.keys(body).length!==1){json(res,400,"PROGRESS_NOT_READ_ONLY");return;}
+  if(autoQaPending){
+   json(res,200,{revision:job.revision,
+    remaining_steps:job.checkpoint.budget.max_steps-job.checkpoint.step,
+    can_resume:true,resume_model_call_key:"agent_autotest_12345678",
+    next_action:"SIGN_NEXT_SEQUENCE",
+    calls:[{model_call_key:"agent_autotest_12345678",
+     state:"CURRENT_MODEL_READY",tool:"run_test",requires_container_consent:true}]});
+   return;
+  }
   json(res,200,{revision:job.revision,remaining_steps:job.checkpoint.budget.max_steps-job.checkpoint.step,
    can_resume:planDone&&!toolDone,
    resume_model_call_key:planDone&&!toolDone?firstKey:null,
@@ -148,6 +159,20 @@ async function api(req,res,url){
     tool:"write_files",requires_container_consent:false}]:[]});return;
  }
  if(url.pathname===base+"/auto-step"){
+  if(autoQaPending&&body.model_call_key==="agent_autotest_12345678"){
+   if(body.expected_revision!==job.revision||
+    body.explicit_container_consent!==true||body.max_container_charge_cents!==5||
+    body.explicit_ai_consent!==true||body.max_ai_charge_cents!==8){
+    json(res,400,"AUTO_QA_NOT_CONSENTED");return;
+   }
+   stepCount++;autoQaPending=false;
+   job.status="TESTING";job.revision++;job.checkpoint.step++;
+   job.checkpoint.completed_call_ids=[
+    "call_auto_build_12345678","call_auto_test_12345678"];
+   json(res,200,{status:"INDEPENDENT_QA_REQUIRED",
+    action:"VERIFY_ORIGINAL_REQUIREMENTS",revision:job.revision});
+   return;
+  }
   if(!planDone||toolDone||body.model_call_key!==firstKey||
    body.expected_revision!==1||body.explicit_ai_consent!==true||
    body.max_ai_charge_cents!==8||!body.next_model_call_key||
@@ -273,6 +298,21 @@ try{
  await page.getByText("修復模型回應已保存",{exact:false}).waitFor({timeout:15000});
  if(qaRunCount!==1||qaRepairCount!==1||autoPlanCount!==1||planCount!==1)
   throw Error("BROWSER_QA_RELOAD_REPLAYED_PAID_REPAIR");
+ // A fresh saved project revision now has a model-selected run_test already
+ // awaiting signed container admission. One click with three separate
+ // approvals must finish that tool, run QA, and start ONE repair.
+ job.project_hash="sha256:"+"c".repeat(64);
+ job.status="REPAIRING";job.revision++;autoQaPending=true;
+ await page.reload({waitUntil:"domcontentloaded",timeout:15000});
+ await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
+ await page.getByText("獨立 QA 失敗，已依本次授權修復一次",{
+  exact:false}).waitFor({timeout:15000});
+ if(autoQaPending||qaRunCount!==2||qaRepairCount!==2||
+  lastRepairKey!==qaRepairCallKey(job.project_hash)||stepCount!==2)
+  throw Error("AGENT_AUTOMATED_QA_REPAIR_NOT_PROVEN_IN_CHROMIUM");
  console.log("SP35 REAL FIRST-PARTY CHROMIUM → ONE SENTENCE → AUTOMATIC PRE-CODE QA PLAN → SIGNED QA FAILURE → ONE-SHOT REPAIR: PASS (MOCK QA/MODEL, NO CLOUD)");
 }finally{
  if(browser)await browser.close();
