@@ -106,18 +106,18 @@ try{
    checks:independent,runner_attestation:null
   }};
  const packet=await sealAgentQaPacket(qaInput,qaKey);
- const identity={job_id:qaJobId,original_prompt_hash:promptHash,
+ const qaIdentity={job_id:qaJobId,original_prompt_hash:promptHash,
   project_hash:qaInput.receipt.source_project_hash,
   sandbox_execution_id:qaRunId};
- const reviewed=await verifyAgentQaPacket(packet,identity,qaKey);
+ const reviewed=await verifyAgentQaPacket(packet,qaIdentity,qaKey);
  if(!reviewed.ready_for_review)throw Error("QA_BUILT_ARTIFACT_PACKET_REJECTED");
  const oldRequirement={...packet,original_plan:{...originalPlan,
   criteria:originalPlan.criteria.slice(0,1)}};
- if((await verifyAgentQaPacket(oldRequirement,identity,qaKey)).ready_for_review)
+ if((await verifyAgentQaPacket(oldRequirement,qaIdentity,qaKey)).ready_for_review)
   throw Error("QA_MISSING_ORIGINAL_REQUIREMENT_WAS_ACCEPTED");
  const malformed={...packet,receipt:{...packet.receipt,
   checks:[{...packet.receipt.checks[1],verdict:"FAIL"}]}};
- if((await verifyAgentQaPacket(malformed,identity,qaKey)).ready_for_review)
+ if((await verifyAgentQaPacket(malformed,qaIdentity,qaKey)).ready_for_review)
   throw Error("QA_BAD_BROWSER_EVIDENCE_WAS_ACCEPTED");
  const impossible={...originalPlan,criteria:[{...originalPlan.criteria[1],
   assertions:[{kind:"text_appears",text:"IMPOSSIBLE_RESULT_999999"}]}]};

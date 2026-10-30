@@ -37,7 +37,7 @@ async function assertExpected(page,check,before){
    await page.locator(check.selector).first().innerText();
  if(check.kind==="pure_case"){
   const value=await page.evaluate(probe=>{
-   const fn=window[probe.function_name];
+   const fn=globalThis[probe.function_name];
    return typeof fn==="function"?fn(...probe.input):null;
   },check);
   return JSON.stringify(check.result_path?value?.[check.result_path]:value)===
@@ -54,7 +54,7 @@ async function observe(browser,origin,criterion){
  page.on("popup",p=>{void p.close();});
  await page.route("**/*",route=>{
   const request=route.request();
-  let allowed=false;
+  let allowed;
   try{
    const url=new URL(request.url());
    allowed=url.origin===origin&&request.method()==="GET"&&
