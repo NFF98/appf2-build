@@ -7,6 +7,7 @@
 import {build} from "vite";
 import {chromium} from "@playwright/test";
 import {verifyMutationProof} from "../../dist/src/edge/create-proof.js";
+import {validFreezeQaPlanBody} from "../../dist/src/edge/agent-qa-plan.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
@@ -23,6 +24,7 @@ const job={job_id:jobId,revision:0,status:"CREATED",project_hash:"sha256:"+"a".r
   {path:"package.json",content:code}],app_published:false};
 let owner=null,thumb=null,firstKey=null;
 let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCount=0;
+let qaFreezeCount=0,frozenPlan=null,createdPrompt=null;
 let server=null,browser=null;
 function json(res,status,data){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
@@ -51,6 +53,7 @@ async function api(req,res,url){
    json(res,400,"NO_CONSENT");return;
   }
   owner=body.anonymous_id;thumb=verified.keyThumbprint;
+  createdPrompt=body.prompt;
   json(res,201,{job_id:jobId,app_published:false});return;
  }
  if(body.anonymous_id!==owner||verified.keyThumbprint!==thumb){
@@ -60,8 +63,18 @@ async function api(req,res,url){
  if(url.pathname===base){
   json(res,200,job);return;
  }
+ if(url.pathname===base+"/qa-plan"){
+  if(!validFreezeQaPlanBody(body)||body.original_prompt!==createdPrompt||
+   job.revision!==0||frozenPlan!==null){
+   json(res,503,"QA_PLAN_NOT_PRE_CODE");return;
+  }
+  frozenPlan=body.original_plan;qaFreezeCount++;
+  json(res,200,{status:"QA_ORIGINAL_PLAN_FROZEN",criteria_count:1,
+   project_hash:job.project_hash,revision:0,app_published:false});return;
+ }
  if(url.pathname===base+"/model-plan"){
-  if(planDone||body.explicit_ai_consent!==true||
+  if(planDone||qaFreezeCount!==1||!frozenPlan||
+   body.explicit_ai_consent!==true||
    body.max_charge_cents!==8||body.max_output_tokens!==4096||
    !/^agent_first_[0-9a-f-]{36}$/u.test(body.model_call_key)){
    json(res,400,"NO_MODEL_APPROVAL");return;
@@ -143,6 +156,13 @@ try{
  if(await primary.isEnabled())throw Error("AI_SPEND_NO_CONSENT");
  const prompt="建立四人十八啦骰子遊戲，有計分和排行榜";
  await page.getByRole("textbox",{name:"用一句話描述要做的 App"}).fill(prompt);
+ const qaPlan={version:"1",criteria:[{
+  id:"score_ui",source_quote:"計分",description:"使用者操作後計分改變",
+  steps:[{action:"click",role:"button",name:"加分"}],
+  assertions:[{kind:"text_appears",text:"1"}],automatable:true
+ }]};
+ await page.getByText("進階：開發前鎖定獨立 QA 驗收計畫（選填）").click();
+ await page.getByRole("textbox",{name:"原始驗收計畫 JSON"}).fill(JSON.stringify(qaPlan));
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  if(!(await primary.isEnabled()))throw Error("AGENT_CONSENT_UI_BROKEN");
  await primary.click();
@@ -153,7 +173,9 @@ try{
  await page.getByText("src/game.ts",{exact:true}).click();
  if(await page.getByText("export function roll()", {exact:false}).count()!==1)
   throw Error("AGENT_GENERATED_MULTIFILE_NOT_SHOWN");
- if(planCount!==1||stepCount!==1||proofCount<5)
+ if(qaFreezeCount!==1||!frozenPlan||
+  JSON.stringify(frozenPlan)!==JSON.stringify(qaPlan)||
+  planCount!==1||stepCount!==1||proofCount<6)
   throw Error("AGENT_WIRE_PROOF_OR_PAYLOAD_MISSING");
  if(pageErrors.length)throw Error("AGENT_BROWSER_EXCEPTION:"+pageErrors.join("|"));
  // Reload must recover the persisted nonextractable P-256 key, not mint a
@@ -163,7 +185,7 @@ try{
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
- if(planCount!==1||stepCount!==1||proofCount<8)
+ if(qaFreezeCount!==1||planCount!==1||stepCount!==1||proofCount<9)
   throw Error("AGENT_RELOAD_REPLAYED_PAID_CALL");
  const renewal=page.getByRole("button",{name:"延長 16 步（費用上限不變）"});
  await renewal.click();
@@ -175,9 +197,9 @@ try{
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
- if(renewCount!==1||planCount!==1||stepCount!==1)
+ if(renewCount!==1||qaFreezeCount!==1||planCount!==1||stepCount!==1)
   throw Error("AGENT_BUDGET_RELOAD_SPENT_EXTRA");
- console.log("SP35 REAL FIRST-PARTY CHROMIUM → SIGNED AGENT CREATE/PLAN/EDIT/RECOVERY/BUDGET EXTENSION: PASS (MOCK MODEL, NO CLOUD)");
+ console.log("SP35 REAL FIRST-PARTY CHROMIUM → PRE-CODE FROZEN ORIGINAL QA PLAN → SIGNED AGENT CREATE/PLAN/EDIT/RECOVERY: PASS (MOCK MODEL, NO CLOUD)");
 }finally{
  if(browser)await browser.close();
  if(server)await new Promise(resolve=>server.close(resolve));
