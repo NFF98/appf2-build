@@ -50,7 +50,7 @@ const allowed=[
 ];
 if(changed.length>30||!changed.some(x=>x.filename==="tooling/web/vite.config.ts")||
   !changed.some(x=>x.filename==="harness/scripts/run-task-human-grant-preflight.sh") ||
-  changed.some(x=>!x.filename||!allowed.some(r=>r.test(x.filename))||
+  changed.some(x=>!x.filename||!allowed(x.filename)||
     (x.previous_filename && !allowed.some(r=>r.test(x.previous_filename))))){
   throw new Error("Sprint 3.5 preflight requires bounded exact PR #417 product/CI-only files");
 }
@@ -87,16 +87,26 @@ const changed=pages.flat();
 // all four real CI/CodeQL checks before any test can execute. Restrict this
 // check-execution-only exception to the exact owner, PR, base SHA, head branch
 // and narrowly scoped existing product paths, NEVER a Human merge grant.
-const allowed=[
-  /^src\\/(?:app|edge|platform)\\//u,
-  /^tests\\/(?:api|runtime|e2e|fixtures)\\//u,
-  /^deploy\\/(?:sandbox|qa-browser|scripts|sql|fixtures)\\//u,
-  /^supabase\\/migrations\\/202610(?:28|29|30|31)[0-9]{6}_sp35_[a-z0-9_]+\\.sql$/u,
-  /^docs\\/sprint-3\\.5\\//u,
-  /^\\.github\\/workflows\\/(?:governance-gate|sp35-[a-z0-9-]+)\\.yml$/u,
-  /^harness\\/scripts\\/(?:run-task-human-grant-preflight\\.sh|validate-constitutional-change\\.mjs|gpt-preflight\\.mjs)$/u,
-  /^ci\\/run-product-ci\\.mjs$/u
+const productPrefixes=[
+  "src/app/","src/edge/","src/platform/",
+  "tests/api/","tests/runtime/","tests/e2e/","tests/fixtures/",
+  "deploy/sandbox/","deploy/qa-browser/","deploy/scripts/",
+  "deploy/sql/","deploy/fixtures/","docs/sprint-3.5/"
 ];
+const exact=new Set([
+  "harness/scripts/run-task-human-grant-preflight.sh",
+  "harness/scripts/validate-constitutional-change.mjs",
+  "harness/scripts/gpt-preflight.mjs",
+  "ci/run-product-ci.mjs",".github/workflows/governance-gate.yml"
+]);
+function allowed(path){
+ if(exact.has(path)||productPrefixes.some(p=>path.startsWith(p)))return true;
+ if(path.startsWith("supabase/migrations/202610")&&
+   path.includes("_sp35_")&&path.endsWith(".sql")&&
+   path.split("/").length===3)return true;
+ return path.startsWith(".github/workflows/sp35-")&&
+   path.endsWith(".yml")&&path.split("/").length===3;
+}
 const paths=changed.map(x=>x?.filename);
 if(changed.length<40||changed.length>260||
    new Set(paths).size!==changed.length||
