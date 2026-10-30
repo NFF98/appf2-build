@@ -75,7 +75,7 @@ function examine(current:RecoveredAgentJob,row:ModelCallRow|null,
  return state(key,"STALE_MODEL",row.job_revision);
 }
 /** Independent PoP creator verification, even when the caller knows a job UUID. */
-// eslint-disable-next-line complexity -- Distinguish charged-uncertain, QA, stale and fresh states.
+
 export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  readonly db:AgentJobExecutor;readonly jobId:string;
  readonly owner:string;readonly ownerThumb:string;
