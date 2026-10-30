@@ -11,7 +11,7 @@ const task={job_id:"ba45436c-c3f1-44f1-adc6-bdd0fb1592e7",
  project_hash:"sha256:"+"d".repeat(64),build_call_id:"call_build_123456",
  test_call_id:"call_test_123456",original_prompt:prompt,
  original_plan:{version:"1" as const,criteria:[criterion]},
- explicit_browser_qa_consent:true};
+ explicit_browser_qa_consent:true as const};
 describe("Private Browser QA isolated Cloudflare plan and consent",()=>{
  it("accepts only bounded original-prompt-matched owner-approved task",()=>{
   expect(validPrivateBrowserQaTask(task)).toBe(true);
