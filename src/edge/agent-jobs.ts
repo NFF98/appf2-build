@@ -14,6 +14,7 @@ import {executeSignedSandboxTool,validSandboxRunBody,
 import {runSignedAgentStep,validAutoStepBody} from "./agent-auto-step.js";
 import {runSignedAgentSequence,validAgentSequenceBody} from "./agent-sequence.js";
 import {inspectAgentProgress,validAgentProgressBody} from "./agent-progress.js";
+import {reviewAgentQa,validQaReviewBody} from "./agent-qa-review.js";
 import type {PaidModelTurnDeps} from "../platform/agent/journaled-model-gateway.js";
 import {WorkerPostgresExecutor,type WorkerRequestDbContext}
  from "../platform/blueprint/worker-postgres-executor.js";
@@ -35,6 +36,7 @@ const AUTOSTEP_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/auto-step$/u;
 const SEQUENCE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/agent-sequence$/u;
 const PROGRESS_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/agent-progress$/u;
 const BUDGET_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/extend-budget$/u;
+const QA_REVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-review$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const KEY=/^[A-Za-z0-9_-]{8,128}$/u;
@@ -139,8 +141,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname);
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch)return undefined;
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -148,9 +150,10 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const key=request.headers.get("Idempotency-Key");
  if(!key||!KEY.test(key))return json(400,{error:"AGENT_JOB_KEY_INVALID"});
  // Bound request size before any database side effect.
- if(Number(request.headers.get("Content-Length")??0)>1400)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
+ const maxBytes=qaMatch?24000:1400;
+ if(Number(request.headers.get("Content-Length")??0)>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
  const bytes=new Uint8Array(await request.arrayBuffer());
- if(bytes.byteLength>1400)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
+ if(bytes.byteLength>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
  const proof=await verifyMutationProof({method:"POST",path:url.pathname,
   body:bytes,idempotencyKey:key,headers:request.headers},nowMs);
  if(!proof)return denied();
@@ -160,8 +163,11 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const isModel=Boolean(modelMatch||continueMatch);
  if(isModel&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED!=="1")return denied();
  if(sandboxMatch&&env.APPF2_AGENT_SANDBOX_EXECUTION_ENABLED!=="1")return denied();
+ if(qaMatch&&(env.APPF2_AGENT_QA_REVIEW_ENABLED!=="1"||
+  !env.APPF2_AGENT_QA_VERIFIER_SECRET))return denied();
  if((autoMatch||seqMatch)&&env.APPF2_AGENT_AUTOSTEP_ENABLED!=="1")return denied();
- const info=progressMatch?(validAgentProgressBody(parsed)?parsed:null):
+ const info=qaMatch?(validQaReviewBody(parsed)?parsed:null):
+  progressMatch?(validAgentProgressBody(parsed)?parsed:null):
   seqMatch?(validAgentSequenceBody(parsed)?parsed:null):
   autoMatch?(validAutoStepBody(parsed)?parsed:null):
   budgetMatch?(validExtendBudgetBody(parsed)?parsed:null):
@@ -183,6 +189,13 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    if(!validExtendBudgetBody(info))return denied();
    const result=await extendSignedAgentBudget(info,{db,
     jobId:budgetMatch[1]??"",owner:info.anonymous_id,ownerThumb});
+   return json(200,{data:result});
+  }
+  if(qaMatch){
+   if(!validQaReviewBody(info))return denied();
+   const result=await reviewAgentQa(info,{db,
+    jobId:qaMatch[1]??"",owner:info.anonymous_id,ownerThumb,
+    verifierSecret:env.APPF2_AGENT_QA_VERIFIER_SECRET??""});
    return json(200,{data:result});
   }
   if(progressMatch){
