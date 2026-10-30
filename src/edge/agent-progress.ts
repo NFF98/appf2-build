@@ -25,7 +25,7 @@ export type AgentProgress={
  readonly remaining_steps:number;readonly calls:readonly CallProgress[];
  readonly can_resume:boolean;readonly resume_model_call_key:string|null;
  readonly next_action:"SIGN_NEXT_SEQUENCE"|"AWAIT_MODEL_RECONCILIATION"|
-  "VERIFY_INDEPENDENT_QA"|"NO_PROVEN_PENDING_MODEL"|
+  "VERIFY_INDEPENDENT_QA"|"BUDGET_RENEWAL_REQUIRED"|"NO_PROVEN_PENDING_MODEL"|
   "RECONCILE_AMBIGUOUS_HEAD";
  readonly scope:"SUBMITTED_KEYS_ONLY"|"RECENT_EIGHT_STORED_CALLS";
  readonly app_published:false;
@@ -108,8 +108,9 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  const next_action:AgentProgress["next_action"]=uncertain?
   "AWAIT_MODEL_RECONCILIATION":active.length>1?
    "RECONCILE_AMBIGUOUS_HEAD":qa?
-    "VERIFY_INDEPENDENT_QA":can_resume?
-     "SIGN_NEXT_SEQUENCE":"NO_PROVEN_PENDING_MODEL";
+    "VERIFY_INDEPENDENT_QA":remaining===0&&active.length===1?
+     "BUDGET_RENEWAL_REQUIRED":can_resume?
+      "SIGN_NEXT_SEQUENCE":"NO_PROVEN_PENDING_MODEL";
  return {status:"RECOVERY_INSPECTED",revision:current.job.revision,
   checkpoint_hash:current.job.checkpoint_hash,
   project_hash:current.project.project_hash,job_state:current.job.job_state,

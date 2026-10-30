@@ -26,6 +26,20 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  },[suggestedPrompt]);
  const options=():AgentBrowserOptions=>({
   allowAi:aiConsent,allowContainer:containerConsent,approvedCents});
+ const extend=async()=>{
+  if(busy||!saved)return;
+  setBusy(true);setError("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("找不到原始專案的簽章金鑰。");
+   const job=await worker.extendStepsSameCost();
+   setSnapshot({job,progress:await worker.progress(),
+    message:"已簽章延長 16 步；沿用原核准的費用上限，沒有呼叫 AI 或容器。",
+    completed_steps:0});
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const execute=async(resume:boolean)=>{
   if(busy||!aiConsent)return;
   setBusy(true);setError("");stop.current=false;
@@ -34,8 +48,10 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    agent.current=worker;
    if(resume){
     if(!await worker.restore())throw Error("找不到已保存的 Agent 工作。");
-    const progress=await worker.progress();
-    if(progress.calls.length===0)await worker.plan();
+    const [job,progress]=await Promise.all([worker.read(),worker.progress()]);
+    // Never resend first paid model call after PLANNING was journaled or
+    // may be in an unknown state (e.g. browser closed mid-call).
+    if(job.revision===0&&progress.calls.length===0)await worker.plan();
    }else{
     await worker.create(prompt,options());
     setSaved(true);
@@ -87,6 +103,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   </button>
   {saved?<button type="button" className="btn btn-secondary"
     disabled={busy||!aiConsent} onClick={()=>{void execute(true);}}>繼續上次保存的 Agent 工作</button>:null}
+  {snapshot&&snapshot.job.checkpoint?.budget.max_steps<512?
+   <button type="button" className="btn btn-secondary"
+    disabled={busy} onClick={()=>{void extend();}}>延長 16 步（費用上限不變）</button>:null}
   {busy?<button type="button" className="btn btn-secondary"
     onClick={()=>{stop.current=true;}}>完成目前步驟後停止</button>:null}
   {error?<p role="alert">{error}</p>:null}
@@ -95,6 +114,10 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    <p>{snapshot.message}</p>
    <p>版本 {snapshot.job.revision} · 本次處理 {snapshot.completed_steps} 步
     · {snapshot.job.files.length} 個檔案 · 尚未發布</p>
+   {snapshot.job.checkpoint?
+    <p>累計步數 {snapshot.job.checkpoint.step}/
+     {snapshot.job.checkpoint.budget.max_steps}
+     · 原核准總費用上限 {snapshot.job.checkpoint.budget.max_cost_cents} 美分</p>:null}
    <p className="saved-apps-note">接續狀態：{snapshot.progress?.next_action??"待查詢"}
     · 獨立 QA 尚未授予發布權限。</p>
    <details><summary>查看已保存原始碼（{snapshot.job.files.length} 個檔案）</summary>

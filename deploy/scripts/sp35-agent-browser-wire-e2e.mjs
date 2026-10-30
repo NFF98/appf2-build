@@ -16,12 +16,13 @@ const out=path.join(root,"dist/web");
 const jobId="da4d1bd2-2cce-4c96-a197-637b5e71a3bd";
 const code=JSON.stringify({name:"mock-candidate",private:true,type:"module"});
 const job={job_id:jobId,revision:0,status:"CREATED",project_hash:"sha256:"+"a".repeat(64),
+ checkpoint:{step:0,budget:{max_steps:8,max_tokens:8192,max_cost_cents:60}},
  files:[{path:"index.html",content:"<div id='app'></div>"},
   {path:"src/main.ts",content:"document.getElementById('app')?.replaceChildren();"},
   {path:"src/style.css",content:"body{color:#222}"},
   {path:"package.json",content:code}],app_published:false};
 let owner=null,thumb=null,firstKey=null;
-let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0;
+let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCount=0;
 let server=null,browser=null;
 function json(res,status,data){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
@@ -66,12 +67,20 @@ async function api(req,res,url){
    json(res,400,"NO_MODEL_APPROVAL");return;
   }
   firstKey=body.model_call_key;planCount++;planDone=true;
-  job.revision=1;job.status="PLANNING";
+  job.revision=1;job.status="PLANNING";job.checkpoint.step=1;
   json(res,200,{status:"MODEL_RESPONSE_SAVED"});return;
+ }
+ if(url.pathname===base+"/extend-budget"){
+  if(body.explicit_budget_consent!==true||body.expected_revision!==job.revision||
+   body.new_max_steps!==job.checkpoint.budget.max_steps+16||
+   body.new_max_cost_cents!==60){json(res,400,"UNAUTHORIZED_RENEWAL");return;}
+  renewCount++;job.checkpoint.budget.max_steps=body.new_max_steps;job.revision++;
+  json(res,200,{status:"BUDGET_EXTENDED",revision:job.revision,
+   budget:job.checkpoint.budget,app_published:false});return;
  }
  if(url.pathname===base+"/agent-progress"){
   if(Object.keys(body).length!==1){json(res,400,"PROGRESS_NOT_READ_ONLY");return;}
-  json(res,200,{revision:job.revision,
+  json(res,200,{revision:job.revision,remaining_steps:job.checkpoint.budget.max_steps-job.checkpoint.step,
    can_resume:planDone&&!toolDone,
    resume_model_call_key:planDone&&!toolDone?firstKey:null,
    next_action:toolDone?"NO_PROVEN_PENDING_MODEL":"SIGN_NEXT_SEQUENCE",
@@ -88,7 +97,8 @@ async function api(req,res,url){
   stepCount++;toolDone=true;
   job.files.push({path:"src/game.ts",
    content:"export function roll(){return [1,2,3,4];}"});
-  job.revision=2;job.status="CODING";job.project_hash="sha256:"+"b".repeat(64);
+  job.revision=2;job.status="CODING";job.checkpoint.step=2;
+  job.project_hash="sha256:"+"b".repeat(64);
   json(res,200,{status:"STEP_APPLIED",
    action:"NEXT_MODEL_NEEDS_SIGNED_CONSENT",revision:2});return;
  }
@@ -155,7 +165,19 @@ try{
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
  if(planCount!==1||stepCount!==1||proofCount<8)
   throw Error("AGENT_RELOAD_REPLAYED_PAID_CALL");
- console.log("SP35 REAL FIRST-PARTY CHROMIUM → P-256 SIGNED AGENT CREATE/PLAN/EDIT/RECOVERY: PASS (MOCK MODEL, NO CLOUD)");
+ const renewal=page.getByRole("button",{name:"延長 16 步（費用上限不變）"});
+ await renewal.click();
+ await page.getByText("累計步數 2/24",{exact:false}).waitFor({timeout:15000});
+ if(renewCount!==1||job.revision!==3||job.checkpoint.budget.max_steps!==24||
+  job.checkpoint.budget.max_cost_cents!==60||stepCount!==1||planCount!==1)
+  throw Error("AGENT_BUDGET_RENEWAL_VIOLATED_CAS_OR_REPLAY");
+ await page.reload({waitUntil:"domcontentloaded",timeout:15000});
+ await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
+ await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
+ if(renewCount!==1||planCount!==1||stepCount!==1)
+  throw Error("AGENT_BUDGET_RELOAD_SPENT_EXTRA");
+ console.log("SP35 REAL FIRST-PARTY CHROMIUM → SIGNED AGENT CREATE/PLAN/EDIT/RECOVERY/BUDGET EXTENSION: PASS (MOCK MODEL, NO CLOUD)");
 }finally{
  if(browser)await browser.close();
  if(server)await new Promise(resolve=>server.close(resolve));

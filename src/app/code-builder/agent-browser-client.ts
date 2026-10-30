@@ -15,7 +15,11 @@ const MAX_TURNS_PER_CLICK=6;
 export type CandidateFile={readonly path:string;readonly content:string};
 export type CandidateJob={readonly job_id:string;readonly revision:number;
  readonly project_hash:string;readonly status:string;
- readonly files:readonly CandidateFile[];readonly app_published:false};
+ readonly files:readonly CandidateFile[];
+ readonly checkpoint:{readonly step:number;readonly budget:{
+  readonly max_steps:number;readonly max_cost_cents:number;
+  readonly max_tokens:number}};
+ readonly app_published:false};
 type Progress={readonly revision:number;readonly can_resume:boolean;
  readonly resume_model_call_key:string|null;readonly next_action:string;
  readonly calls:readonly {model_call_key:string;state:string;
@@ -127,6 +131,28 @@ export class BrowserCodingAgent {
  async progress():Promise<Progress>{
   return this.post("/agent-progress",{anonymous_id:this.owner});
  }
+ /** A fresh explicit owner-signed step-only renewal. No additional money is
+  * authorized, no saved tool is replayed, and this never dispatches AI/containers.
+  */
+ async extendStepsSameCost():Promise<CandidateJob>{
+  const current=await this.read(),cp=current.checkpoint;
+  if(!cp||!Number.isSafeInteger(cp.budget.max_steps)||
+   !Number.isSafeInteger(cp.budget.max_cost_cents)||
+   cp.budget.max_steps>=512||cp.budget.max_steps<8)
+   throw Error("專案步數上限不允許延長。");
+  const next=Math.min(512,cp.budget.max_steps+16);
+  await this.post("/extend-budget",{
+   anonymous_id:this.owner,expected_revision:current.revision,
+   explicit_budget_consent:true,new_max_steps:next,
+   new_max_cost_cents:cp.budget.max_cost_cents
+  });
+  const saved=await this.read();
+  if(saved.checkpoint.budget.max_steps!==next||
+   saved.checkpoint.budget.max_cost_cents!==cp.budget.max_cost_cents||
+   saved.project_hash!==current.project_hash)
+   throw Error("新的步數授權尚未驗證保存，已停止。");
+  return saved;
+ }
  /** Initial AI call is explicit; never automatically repeats if its outcome is uncertain. */
  async plan():Promise<void>{
   if(!this.target)throw Error("NO_AGENT_JOB");
@@ -146,7 +172,9 @@ export class BrowserCodingAgent {
   for(let i=0;i<MAX_TURNS_PER_CLICK&&!shouldStop();i++){
    const progress=await this.progress();
    if(!progress.can_resume||!progress.resume_model_call_key){
-    message=progress.next_action==="VERIFY_INDEPENDENT_QA"?
+    message=progress.next_action==="BUDGET_RENEWAL_REQUIRED"?
+     "已達本次工作步數上限；可簽章延長步數，不會增加已核准費用。":
+     progress.next_action==="VERIFY_INDEPENDENT_QA"?
      "AI 已停止產生工具指令，等待依原需求獨立 QA，尚未發布。":
      progress.next_action==="AWAIT_MODEL_RECONCILIATION"?
       "AI 費用結果不確定，已安全暫停；不會再次付費。":
