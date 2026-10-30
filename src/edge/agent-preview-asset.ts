@@ -41,6 +41,7 @@ function passed(row:SavedSandbox|undefined,call:string,hash:string):boolean{
   e.exit_code===0&&e.timed_out===false&&
   e.runner_attestation==="APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1";
 }
+// eslint-disable-next-line complexity -- Owner PoP, saved build/test proof and private broker must all fail closed.
 export async function readSignedPreviewAsset(input:PreviewAssetInput,deps:{
  readonly db:AgentJobExecutor;readonly jobId:string;
  readonly owner:string;readonly ownerThumb:string;
