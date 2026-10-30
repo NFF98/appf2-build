@@ -19,6 +19,7 @@ export type QaRepairStrategy={
  readonly latest_failed_criteria:readonly string[];
 };
 /** Input MUST be newest first and bound to the current owner + job by SQL. */
+// eslint-disable-next-line complexity -- Strict signed-QA provenance guards cannot be skipped.
 export function determineQaRepairStrategy(plan:QaPlan,
  history:readonly SavedQaHistory[]):QaRepairStrategy{
  const seen=new Set<string>();
