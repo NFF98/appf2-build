@@ -46,7 +46,7 @@ class Database {
  modelCalls=new Map<string,ModelCallRow>();
  sandboxCalls=new Map<string,{status:string;receipt_json:unknown|null;job_id:string;owner_anonymous_id:string;call_id:string;model_call_key:string;job_revision:number;checkpoint_hash:string;project_hash:string;call_hash:string;max_charge_cents:number}>();
  identities=new Map<string,{thumb:string;key:string}>();
- qaAttempts=new Map<string,{status:string;receipt_json:unknown|null}>();
+ qaAttempts=new Map<string,{status:string;receipt_json:unknown|null;job_revision:number}>();
  context:WorkerRequestDbContext|null=null;
  readonly db={
   close:async()=>undefined,
@@ -65,7 +65,8 @@ class Database {
    if(sql.startsWith("INSERT INTO public.appf2_agent_browser_qa_attempt(")){
     const id=String(args[0])+":"+String(args[2]);
     if(this.qaAttempts.has(id))return {rows:[]};
-    this.qaAttempts.set(id,{status:"IN_FLIGHT",receipt_json:null});
+    this.qaAttempts.set(id,{status:"IN_FLIGHT",receipt_json:null,
+    job_revision:Number(args[3])});
     return {rows:[{job_id:args[0]} as T]};
    }
    if(sql.startsWith("UPDATE public.appf2_agent_browser_qa_attempt")){
@@ -73,8 +74,12 @@ class Database {
     if(!row||row.status!=="IN_FLIGHT")return {rows:[]};
     const status=sql.includes("status='SUCCEEDED'")?"SUCCEEDED":"BLOCKED_UNCERTAIN";
     this.qaAttempts.set(id,{status,receipt_json:status==="SUCCEEDED"?
-     JSON.parse(String(args[3])) as unknown:null});
+     JSON.parse(String(args[3])) as unknown:null,job_revision:row.job_revision});
     return {rows:[{job_id:args[0]} as T]};
+   }
+   if(sql.startsWith("SELECT job_revision,status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
+    const id=String(args[0])+":"+String(args[2]),row=this.qaAttempts.get(id);
+    return {rows:row?[row as T]:[]};
    }
    if(sql.startsWith("SELECT job_id::text,owner_anonymous_id::text,call_id")){
     const row=this.sandboxCalls.get(String(args[2]));
