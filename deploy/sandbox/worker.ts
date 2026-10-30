@@ -4,6 +4,7 @@
  * Never passes APPf2 DB/model/Cloudflare secrets to the container.
  */
 import {DurableObject,WorkflowEntrypoint} from "cloudflare:workers";
+import {sandboxJobAllowed} from "../../src/platform/agent/private-sandbox-authorization.js";
 import type {WorkflowStep,WorkflowEvent} from "cloudflare:workers";
 import {Files} from "@cloudflare/sandbox";
 import {verifyProjectSnapshot,type ProjectSnapshot}
@@ -142,7 +143,8 @@ export class CandidateAgentWorkflow extends WorkflowEntrypoint<Env,Task>{
   const task=event.payload;
   const accepted=await step.do("verify-private-candidate",async()=>{
    if(this.env.APPF2_PAID_CONTAINER_CONSENT!==PAID_APPROVAL||
-    !bodyValid(task)||task.job_id!==this.env.APPF2_SANDBOX_ALLOWED_JOB_ID||
+    !bodyValid(task)||
+    !sandboxJobAllowed(this.env.APPF2_SANDBOX_ALLOWED_JOB_ID,task.job_id)||
     !parseAgentToolCall(task.call)||!(await verifyProjectSnapshot(task.project))||
     task.call.project_hash!==task.project.project_hash)
     throw Error("WORKFLOW_CANDIDATE_REJECTED");
@@ -162,8 +164,8 @@ async function workflowStatus(request:Request,env:Env,url:URL):Promise<Response>
    !env.APPF2_SANDBOX_ALLOWED_JOB_ID||url.search)
   return new Response("Not Found",{status:404});
  const id=url.pathname.slice("/internal/workflow/status/".length);
- const prefix=env.APPF2_SANDBOX_ALLOWED_JOB_ID+"-";
- if(!id.startsWith(prefix)||!/^call_[A-Za-z0-9_-]{4,128}$/u.test(id.slice(prefix.length)))
+ const match=/^([0-9a-f-]{36})-(call_[A-Za-z0-9_-]{4,128})$/iu.exec(id);
+ if(!match||!sandboxJobAllowed(env.APPF2_SANDBOX_ALLOWED_JOB_ID,match[1]))
   return new Response("Not Found",{status:404});
  try{
   const instance=await env.APPF2_WORKFLOW.get(id);
@@ -193,7 +195,7 @@ export default {
   let parsed:unknown;
   try{parsed=JSON.parse(raw);}catch{return new Response("Bad Request",{status:400});}
   if(!bodyValid(parsed))return new Response("Bad Request",{status:400});
-  if(!env.APPF2_SANDBOX_ALLOWED_JOB_ID||parsed.job_id!==env.APPF2_SANDBOX_ALLOWED_JOB_ID)
+  if(!sandboxJobAllowed(env.APPF2_SANDBOX_ALLOWED_JOB_ID,parsed.job_id))
    return new Response("Not Found",{status:404});
   if(url.pathname==="/internal/workflow/start"){
    if(env.APPF2_SP35_WORKFLOW_ENABLED!=="OWNER_APPROVED_WORKFLOW")

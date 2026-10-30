@@ -52,7 +52,8 @@ export interface Appf2WorkerEnv {
   readonly APPF2_AGENT_MODEL_EXECUTION_ENABLED?: string;
   /** Dedicated OpenAI key; never reuse the F01 provider's key or expose to browser. */
   readonly APPF2_OPENAI_AGENT_API_KEY?: string;
-  /** Private Sandbox bridge: all three must match one owner-approved test Job. */
+  /** Private Sandbox bridge: pinned UUID, or explicit OWNER_SCOPED_JOBS mode.
+   * Both require creator PoP, model journal and DB budget; OFF by default. */
   readonly APPF2_AGENT_SANDBOX_EXECUTION_ENABLED?: string;
   readonly APPF2_SANDBOX_BROKER_URL?: string;
   readonly APPF2_SANDBOX_BROKER_TOKEN?: string;

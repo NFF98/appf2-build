@@ -4,6 +4,7 @@
  * A network timeout is ambiguous and NEVER automatically triggers another run.
  */
 import {parseAgentResponsesBatch} from "../platform/agent/responses-api.js";
+import {sandboxJobAllowed} from "../platform/agent/private-sandbox-authorization.js";
 import {executeAgentTurn} from "../platform/agent/agent-turn.js";
 import {recoverAgentJob,advanceDurableAgentJob}
  from "../platform/agent/durable-agent-service.js";
@@ -78,7 +79,7 @@ export function validPrivateBrokerConfig(url:string,token:string,
    parsed.hostname!=="workers.dev"&&parsed.port===""&&
    parsed.username===""&&parsed.password===""&&parsed.pathname==="/"&&
    parsed.search===""&&parsed.hash===""&&token.length>=32&&token.length<=512&&
-   allowedJobId===jobId;
+   sandboxJobAllowed(allowedJobId,jobId);
  }catch{return false;}
 }
 export async function sendPrivateSandboxTask(task:{
