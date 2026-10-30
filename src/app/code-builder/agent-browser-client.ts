@@ -14,6 +14,24 @@ import {qaRepairCallKey} from "../../platform/agent/qa-repair-key.js";
 const SLOT="appf2.agent.candidate.job.v1";
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const MAX_TURNS_PER_CLICK=6;
+const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
+/** Same job, saved tool and CAS head always use the same paid model-call key.
+ * If the browser loses an HTTP response, a later resume cannot accidentally
+ * invent a distinct billable continuation for the same durable tool result.
+ * The Worker still fences unknown outcomes and requires fresh signed consent.
+ */
+export async function stableAgentContinuationKey(kind:"agent_recover"|"agent_next",
+ jobId:string,priorModelKey:string,revision:number):Promise<string>{
+ if(!ID.test(jobId)||!KEY.test(priorModelKey)||
+  !Number.isSafeInteger(revision)||revision<0)
+  throw Error("AGENT_CONTINUATION_KEY_INVALID");
+ const bytes=new TextEncoder().encode("APPF2_AGENT_CONTINUATION_KEY_V1\\u0000"+
+  JSON.stringify([kind,jobId,priorModelKey,revision]));
+ const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",bytes));
+ return kind+"_"+Array.from(digest.slice(0,20),
+  b=>b.toString(16).padStart(2,"0")).join("");
+}
+
 /** One tool CAS step plus its separately charged model continuation are a
  * two-part transaction. Stop before consuming the last permitted job step so
  * the signed renewal can occur first and both parts remain recoverable.
@@ -268,7 +286,8 @@ export class BrowserCodingAgent {
     await this.post("/model-continue",{
      anonymous_id:this.owner,
      previous_model_call_key:progress.resume_previous_model_call_key,
-     model_call_key:"agent_recover_"+crypto.randomUUID(),
+     model_call_key:await stableAgentContinuationKey("agent_recover",
+      this.target!.jobId,progress.resume_previous_model_call_key,progress.revision),
      expected_revision:progress.revision,
      max_charge_cents:8,max_output_tokens:4096,explicit_ai_consent:true
     });
@@ -301,7 +320,9 @@ export class BrowserCodingAgent {
     anonymous_id:this.owner,model_call_key:progress.resume_model_call_key,
     expected_revision:progress.revision,
     ...(opts.allowContainer?{explicit_container_consent:true,max_container_charge_cents:5}:{}),
-    explicit_ai_consent:true,next_model_call_key:"agent_next_"+crypto.randomUUID(),
+    explicit_ai_consent:true,next_model_call_key:await stableAgentContinuationKey(
+     "agent_next",this.target!.jobId,progress.resume_model_call_key,
+     progress.revision),
     max_ai_charge_cents:8,max_output_tokens:4096
    };
    const applied=await this.post<Step>("/auto-step",body);
