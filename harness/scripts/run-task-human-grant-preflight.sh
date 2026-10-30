@@ -50,7 +50,7 @@ const allowed=[
 ];
 if(changed.length>30||!changed.some(x=>x.filename==="tooling/web/vite.config.ts")||
   !changed.some(x=>x.filename==="harness/scripts/run-task-human-grant-preflight.sh") ||
-  changed.some(x=>!x.filename||!allowed(x.filename)||
+  changed.some(x=>!x.filename||!allowed.some(r=>r.test(x.filename))||
     (x.previous_filename && !allowed.some(r=>r.test(x.previous_filename))))){
   throw new Error("Sprint 3.5 preflight requires bounded exact PR #417 product/CI-only files");
 }
@@ -114,7 +114,7 @@ if(changed.length<40||changed.length>260||
    !paths.includes("src/platform/agent/project-workspace.ts")||
    !paths.includes("tests/api/sp35-agent-foundation.api.test.ts")||
    changed.some(x=>typeof x?.filename!=="string"||
-     x.previous_filename||!allowed.some(r=>r.test(x.filename))))
+     x.previous_filename||!allowed(x.filename)))
   throw Error("PR419 changed-path check failed: only 5-core product files can run checks");
 console.log("SP35 PR419: execute REAL CI/CodeQL/attack/governance checks for "+
   changed.length+" product paths; NO Human grant, NO PASS, NO merge.");
