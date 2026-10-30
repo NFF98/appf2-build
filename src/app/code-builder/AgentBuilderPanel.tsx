@@ -4,6 +4,7 @@ import {BrowserCodingAgent,savedCandidateTarget,type AgentBrowserOptions,
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
 import {savedAgentProjectZip} from "./agent-project-zip.js";
+import {createPrivatePreviewFrame} from "./agent-private-preview.js";
 
 type Props={readonly suggestedPrompt?:{text:string;revision:number}|null};
 function failureMessage(e:unknown):string{
@@ -28,6 +29,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [saved,setSaved]=useState(()=>savedCandidateTarget()!==null);
  const agent=useRef<BrowserCodingAgent|null>(null);
  const stop=useRef(false);
+ const previewHost=useRef<HTMLDivElement>(null);
+ const [previewReady,setPreviewReady]=useState(false);
  useEffect(()=>{
   if(suggestedPrompt!==null&&suggestedPrompt!==undefined)setPrompt(suggestedPrompt.text);
  },[suggestedPrompt]);
@@ -116,6 +119,20 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     }catch{ /* Creator proof or service may be unavailable. */ }
    }
   }finally{setBusy(false);}
+ };
+ const openPrivatePreview=async()=>{
+  if(busy||!containerConsent)return;
+  setBusy(true);setError("");setPreviewReady(false);
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("找不到原專案的簽章金鑰。");
+   const source=await worker.privatePreview(true);
+   const frame=await createPrivatePreviewFrame(source,document);
+   previewHost.current?.replaceChildren(frame);
+   setPreviewReady(true);
+  }catch(e){previewHost.current?.replaceChildren();setError(failureMessage(e));}
+  finally{setBusy(false);}
  };
  const downloadSource=async()=>{
   if(busy||!saved)return;
@@ -226,6 +243,20 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     ：{c.verdict}
    </li>)}</ul>
   </section>:null}
+  {snapshot&&["TESTING","REPAIRING"].includes(snapshot.job.status)?
+   <section aria-label="私人多檔案 App 互動預覽">
+    <button type="button" className="btn btn-secondary"
+     disabled={busy||!containerConsent}
+     onClick={()=>{void openPrivatePreview();}}>
+     開啟已建置 App 互動預覽（需雲端存取授權）
+    </button>
+    <p className="saved-apps-note">只顯示已通過隔離建置與測試的私人候選 App；
+     預覽可能喚醒 Cloudflare 容器，但不會重新呼叫 AI、編譯或發布。
+     瀏覽器以隔離、禁止網路的 iframe 執行，不能讀取 APPf2 帳戶。
+     此預覽不代表獨立 QA PASS。</p>
+    {previewReady?<p role="status">正在顯示已保存建置成果；尚未正式發布。</p>:null}
+    <div ref={previewHost} className="code-app-frame" />
+   </section>:null}
   {snapshot&&snapshot.job.files.length>0?
    <button type="button" className="btn btn-secondary"
     disabled={busy} onClick={()=>{void downloadSource();}}>
