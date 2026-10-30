@@ -12,6 +12,13 @@ import {createBrowserPopKeyPersistence} from "../shell/tab-app-recovery.js";
 const SLOT="appf2.agent.candidate.job.v1";
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const MAX_TURNS_PER_CLICK=6;
+/** One tool CAS step plus its separately charged model continuation are a
+ * two-part transaction. Stop before consuming the last permitted job step so
+ * the signed renewal can occur first and both parts remain recoverable.
+ */
+export function enoughAgentStepsForContinuation(remaining:number):boolean{
+ return Number.isSafeInteger(remaining)&&remaining>=2;
+}
 export type CandidateFile={readonly path:string;readonly content:string};
 export type CandidateJob={readonly job_id:string;readonly revision:number;
  readonly project_hash:string;readonly status:string;
@@ -20,7 +27,8 @@ export type CandidateJob={readonly job_id:string;readonly revision:number;
   readonly max_steps:number;readonly max_cost_cents:number;
   readonly max_tokens:number}};
  readonly app_published:false};
-type Progress={readonly revision:number;readonly can_resume:boolean;
+type Progress={readonly revision:number;readonly remaining_steps:number;
+ readonly can_resume:boolean;
  readonly resume_model_call_key:string|null;readonly next_action:string;
  readonly calls:readonly {model_call_key:string;state:string;
   tool:string|null;requires_container_consent:boolean}[]};
@@ -179,6 +187,10 @@ export class BrowserCodingAgent {
      progress.next_action==="AWAIT_MODEL_RECONCILIATION"?
       "AI 費用結果不確定，已安全暫停；不會再次付費。":
       "目前沒有可安全接續的模型步驟。";
+    break;
+   }
+   if(!enoughAgentStepsForContinuation(progress.remaining_steps)){
+    message="工作步數只剩最後一格；為避免先執行再中斷，請先簽章延長 16 步（費用上限不變）。";
     break;
    }
    const next=progress.calls.find(x=>x.model_call_key===progress.resume_model_call_key);
