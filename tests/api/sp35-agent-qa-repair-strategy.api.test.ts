@@ -12,7 +12,7 @@ const plan:QaPlan={version:"1",criteria:[{
  assertions:[{kind:"text_appears",text:"Ready"}]
 }]};
 const hash=(c:string)=>"sha256:"+c.repeat(64);
-function row(c:string,failed:readonly string[],valid=true):SavedQaHistory{
+function row(c:string,failed:readonly string[]):SavedQaHistory{
  return {project_hash:hash(c),status:"SUCCEEDED",
   receipt_json:{ready_for_review:false,packet:null,
    checks:plan.criteria.map(criterion=>({
