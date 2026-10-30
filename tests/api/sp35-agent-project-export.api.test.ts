@@ -52,7 +52,7 @@ describe("Sprint 3.5 durable multi-file Agent download is a real offline ZIP",()
    i===0?{...f,content:"CHANGED"}:f)}))
    .rejects.toThrow("AGENT_ZIP_SIZE_INVALID");
   await expect(savedAgentProjectZip({...job,files:job.files.map((f,i)=>
-   i===0?{...f,content:"<main>other App</main>"}:f)}))
+   i===0?{...f,content:"<main>other! App</main>"}:f)}))
    .rejects.toThrow("AGENT_ZIP_SOURCE_HASH_MISMATCH");
   await expect(savedAgentProjectZip({...job,files:job.files.map((f,i)=>
    i===0?{path:f.path,content:f.content}:f)}))
