@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from "react";
 import {BrowserCodingAgent,savedCandidateTarget,type AgentBrowserOptions,
  type CandidateSnapshot} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
+import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
 
 type Props={readonly suggestedPrompt?:{text:string;revision:number}|null};
 function failureMessage(e:unknown):string{
@@ -88,8 +89,20 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      message:"原始 QA 計畫已凍結；現在才開始 AI 編碼。",completed_steps:0});
     await worker.plan();
    }
-   const done=await worker.advance(options(),setSnapshot,()=>stop.current);
-   setSnapshot(done);
+   // One approved click now continues into private Browser QA and, on a
+   // proven failure, at most one bounded AI repair. Never publishes an App.
+   const done=await advanceWithApprovedQaRepair(worker,options(),
+    browserQaConsent&&savedCandidateTarget()?.qaPlan!==undefined,
+    setSnapshot,()=>stop.current);
+   setSnapshot(done.snapshot);
+   if(done.qa){
+    setQaChecks(done.qa.checks);
+    setQaOutcome(done.qa.ready_for_review?
+     "獨立 QA 已通過；App 尚未獲發布授權。":
+     done.repairStarted?
+      "獨立 QA 失敗，已依本次授權修復一次並保存結果；下次 QA 需重新核准。":
+      "獨立 QA 失敗，已保存證據；可於下一次授權後接續修復。");
+   }
   }catch(e){
    setError(failureMessage(e));
    // A failed call can have charged; do not retry automatically.
@@ -153,13 +166,13 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   </label>
   <label className="code-builder-consent"><input type="checkbox" checked={browserQaConsent}
    disabled={busy} onChange={e=>setBrowserQaConsent(e.target.checked)}/>
-   我另外核准本次獨立雲端瀏覽器 QA；可能產生 Cloudflare 費用，不自動重試。
+   我另行核准本次獨立雲端瀏覽器 QA；建置測試完成後自動驗收，若失敗且仍有步數，依本次 AI 授權修復一次。不重試、不自動發布。
   </label>
   <label htmlFor="agent-max-cost">整個專案核准的 AI 費用上限（美分，自動 QA 最低 16；最多 100）</label>
   <input id="agent-max-cost" type="number" min={8} max={100} step={1}
    value={approvedCents} disabled={busy}
    onChange={e=>setApprovedCents(Number(e.target.value))}/>
-  <p className="saved-apps-note">每按一次最多自動處理六步；費用還受伺服器總預算限制。
+  <p className="saved-apps-note">每按一次開發加修復總計最多六個 Agent 步驟，另可依授權做一次獨立 QA；費用仍受伺服器總預算限制。
    不會自動部署、不會把模擬測試標成真實 QA PASS。</p>
   <button type="button" className="btn btn-primary"
    disabled={busy||!aiConsent||prompt.trim().length<5||
