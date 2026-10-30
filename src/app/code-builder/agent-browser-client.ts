@@ -9,6 +9,7 @@ import {mutationProofTranscript} from "../../edge/create-proof.js";
 import {PopKeyring,type PopKey} from "../create/pop-keyring.js";
 import {createBrowserPopKeyPersistence} from "../shell/tab-app-recovery.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
+import {qaRepairCallKey} from "../../platform/agent/qa-repair-key.js";
 
 const SLOT="appf2.agent.candidate.job.v1";
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -213,7 +214,7 @@ export class BrowserCodingAgent {
   if(job.status!=="REPAIRING")throw Error("尚無已驗證失敗的 QA 可修復。");
   return this.post<{status:string;response_id:string;app_published:false}>(
    "/qa-repair",{anonymous_id:this.owner,expected_revision:job.revision,
-    model_call_key:"agent_qa_repair_"+crypto.randomUUID(),
+    model_call_key:qaRepairCallKey(job.project_hash),
     original_prompt:target.prompt,original_plan:target.qaPlan,
     max_charge_cents:8,max_output_tokens:4096,explicit_ai_consent:true
    });

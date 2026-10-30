@@ -1781,7 +1781,8 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   const path="/api/v1/agent-jobs/"+JOB_ID+"/qa-run";
   const repairPath="/api/v1/agent-jobs/"+JOB_ID+"/qa-repair";
   const repair={anonymous_id:OWNER,expected_revision:2,
-   model_call_key:"qa_repair_model123456",original_prompt:prompt,original_plan:plan,
+   model_call_key:"qa_repair_"+initial.project_hash.slice(7),
+   original_prompt:prompt,original_plan:plan,
    max_charge_cents:5,max_output_tokens:512,explicit_ai_consent:true};
   expect((await worker(await signed(creator,repairPath,repair,
    "qa_repair_before_run123456"),envQa)).status).toBe(503);
@@ -1800,6 +1801,10 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   expect((await worker(await signed(creator,repairPath,{
    ...repair,original_prompt:prompt+"篡改"
   },"qa_repair_forged123456"),envQa)).status).toBe(503);
+  expect(modelDispatches).toBe(0);
+  expect((await worker(await signed(creator,repairPath,{
+   ...repair,model_call_key:"qa_repair_otherproject123456"
+  },"qa_repair_wrongkey123456"),envQa)).status).toBe(503);
   expect(modelDispatches).toBe(0);
   expect((await worker(await signed(creator,repairPath,{
    ...repair,explicit_ai_consent:false

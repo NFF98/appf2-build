@@ -8,6 +8,7 @@ import {runJournaledPaidModelTurn,type PaidModelTurnDeps}
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {parseQaPlan} from "../platform/qa/requirement-contract.js";
 import {validQaObservedChecks} from "../platform/agent/qa-browser-contract.js";
+import {qaRepairCallKey} from "../platform/agent/qa-repair-key.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
 export type QaRepairInput={readonly anonymous_id:string;readonly expected_revision:number;
@@ -59,6 +60,8 @@ export async function executeSignedQaRepair(input:QaRepairInput,deps:QaRepairDep
  const current=await recoverAgentJob(deps.db,deps.jobId,deps.owner);
  if(!current||current.job.revision!==input.expected_revision||
   current.job.job_state!=="REPAIRING")throw Error("QA_REPAIR_NOT_READY");
+ if(input.model_call_key!==qaRepairCallKey(current.project.project_hash))
+  throw Error("QA_REPAIR_KEY_MUST_BE_PROJECT_STABLE");
  const hash=await sha256CodeBytes(new TextEncoder().encode(
   "APPF2_AGENT_REQUEST_V1\u0000"+input.original_prompt.trim()));
  if(current.job.request_hash!==hash)throw Error("QA_REPAIR_CHANGED_ORIGINAL_PROMPT");

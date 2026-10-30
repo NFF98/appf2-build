@@ -18,6 +18,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [browserQaConsent,setBrowserQaConsent]=useState(false);
  const [qaJson,setQaJson]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
+ const [qaChecks,setQaChecks]=useState<readonly {criterion_id:string;verdict:string}[]>([]);
  const [approvedCents,setApprovedCents]=useState(60);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
@@ -104,6 +105,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    }else{
     if(!browserQaConsent)throw Error("必須另外授權本次獨立瀏覽器 QA。");
     const result=await worker.independentQa(true);
+    setQaChecks(result.checks);
     setQaOutcome(result.ready_for_review?
      "原始需求的獨立 QA 已通過，可供後續人工審核；App 尚未發布。":
      "獨立 QA 未通過。檢查已保存的失敗條件後，可另行授權 AI 修復。");
@@ -167,6 +169,13 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   {snapshot?.job.status==="TESTING"&&!frozenPlan?
    <p className="saved-apps-note">此專案未在開發前鎖定 QA 驗收計畫；不能事後補測試並宣稱已通過獨立 QA。</p>:null}
   {qaOutcome?<p role="status">{qaOutcome}</p>:null}
+  {qaChecks.length>0?<section aria-label="QA 逐項結果">
+   <h3>QA 逐項結果</h3>
+   <ul>{qaChecks.map(c=><li key={c.criterion_id}>
+    {frozenPlan?.criteria.find(x=>x.id===c.criterion_id)?.description??c.criterion_id}
+    ：{c.verdict}
+   </li>)}</ul>
+  </section>:null}
   {snapshot&&snapshot.job.checkpoint?.budget.max_steps<512?
    <button type="button" className="btn btn-secondary"
     disabled={busy} onClick={()=>{void extend();}}>延長 16 步（費用上限不變）</button>:null}
