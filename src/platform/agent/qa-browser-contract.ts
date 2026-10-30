@@ -2,6 +2,7 @@
  * are assigned by the trusted Worker, never by generated App source.
  */
 import {parseQaPlan,type QaPlan} from "../qa/requirement-contract.js";
+import {sha256CodeBytes} from "../blueprint/code-artifact-v2.js";
 export type PrivateBrowserQaTask={
  readonly job_id:string;
  readonly project_hash:string;
@@ -55,4 +56,31 @@ export function strictQaChecks(plan:QaPlan,observed:readonly PrivateQaCheck[]):b
    observed[i]?.criterion_id===criterion.id&&
    observed[i]?.verdict==="PASS"&&
    /^sha256:[0-9a-f]{64}$/u.test(observed[i].evidence_hash??""));
+}
+
+/** Independent QA PASS digest binds the actual DOM observed before/after
+ * the browser actions, not merely static expected assertion text. The raw
+ * page body never leaves the private verifier; only its SHA-256 is persisted.
+ */
+export async function observedBrowserEvidenceHash(task:PrivateBrowserQaTask,
+ criterionId:string,before:string,after:string,assetPaths:readonly string[]
+):Promise<string>{
+ if(!validPrivateBrowserQaTask(task)||
+  !task.original_plan.criteria.some(c=>c.id===criterionId&&c.automatable)||
+  typeof before!=="string"||typeof after!=="string"||
+  before.length>100000||after.length>100000||
+  !Array.isArray(assetPaths)||assetPaths.length<1||assetPaths.length>256||
+  assetPaths.some(p=>typeof p!=="string"||p.length<1||p.length>180)||
+  !assetPaths.includes("index.html"))
+  throw Error("QA_OBSERVED_EVIDENCE_INVALID");
+ const digest=async (value:string):Promise<string>=>sha256CodeBytes(new TextEncoder().encode(value));
+ const evidence={
+  version:"APPF2_ACTUAL_BROWSER_OBSERVATION_V1",
+  job_id:task.job_id,project_hash:task.project_hash,
+  build_call_id:task.build_call_id,test_call_id:task.test_call_id,
+  criterion_id:criterionId,
+  before_dom_hash:await digest(before),after_dom_hash:await digest(after),
+  loaded_paths:assetPaths.slice().sort()
+ };
+ return digest(JSON.stringify(evidence));
 }
