@@ -60,6 +60,6 @@ export async function advanceWithApprovedQaRepair(agent:LifecycleAgent,
  await agent.repairFailedQa(true);
  const next=await agent.advance(options,onProgress,shouldStop,remaining);
  return {snapshot:{...next,message:
-   "已保存一次 AI 修復及接續建置結果；再次獨立 QA 必須另行核准。"},
+   "已保存一次 AI 修復嘗試及目前工作；再次獨立 QA 必須另行核准。"},
   qa,repairStarted:true};
 }
