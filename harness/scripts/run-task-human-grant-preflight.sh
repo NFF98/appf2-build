@@ -97,7 +97,8 @@ const exact=new Set([
   "harness/scripts/run-task-human-grant-preflight.sh",
   "harness/scripts/validate-constitutional-change.mjs",
   "harness/scripts/gpt-preflight.mjs",
-  "ci/run-product-ci.mjs",".github/workflows/governance-gate.yml"
+  "ci/run-product-ci.mjs",".github/workflows/ci.yml",
+  ".github/workflows/governance-gate.yml"
 ]);
 function allowed(path){
  if(exact.has(path)||productPrefixes.some(p=>path.startsWith(p)))return true;
