@@ -37,6 +37,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Actual trusted multi-file Vite build and browser click
         run: node deploy/scripts/sp35-trusted-multifile-build-e2e.mjs
+      - name: Real APPf2 homepage to P-256 signed multi-file Agent API browser flow (mock provider only)
+        run: node deploy/scripts/sp35-agent-browser-wire-e2e.mjs
       - name: Compile real Agent API candidate scaffold and inspect in Chromium (no model)
         run: node deploy/scripts/sp35-agent-scaffold-browser-e2e.mjs
       - name: Bundle isolated Cloudflare Sandbox Worker (dry run, NO deploy, NO containers)
