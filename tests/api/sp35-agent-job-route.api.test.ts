@@ -124,6 +124,13 @@ class Database {
     this.modelCalls.set(row.call_key,row);
     return {rows:[{status:"RESERVED"} as T]};
    }
+   if(sql.startsWith("SELECT job_id::text,owner_anonymous_id::text,call_key")&&
+    sql.includes("ORDER BY job_revision DESC")){
+    const rows=[...this.modelCalls.values()].filter(row=>
+     row.job_id===args[0]&&row.owner_anonymous_id===args[1]);
+    rows.sort((a,b)=>b.job_revision-a.job_revision||b.call_key.localeCompare(a.call_key));
+    return {rows:rows.slice(0,8) as T[]};
+   }
    if(sql.startsWith("SELECT job_id::text,owner_anonymous_id::text,call_key")){
     const row=this.modelCalls.get(String(args[2]));
     return {rows:row&&row.owner_anonymous_id===args[1]?[row as T]:[]};
@@ -1233,6 +1240,14 @@ describe("Sprint 3.5 signed journal recovery after interrupted Agent sequences",
    scope:"SUBMITTED_KEYS_ONLY",app_published:false,
    calls:[{state:"CURRENT_MODEL_READY",tool:"write_file",requires_container_consent:false},
     {state:"MODEL_MISSING"}]}});
+  const rediscovered=await worker(await signed(person,path,{
+   anonymous_id:OWNER
+  },"progress_discover_123456"),env);
+  expect(rediscovered.status).toBe(200);
+  expect(await rediscovered.json()).toMatchObject({data:{
+   scope:"RECENT_EIGHT_STORED_CALLS",can_resume:true,revision:1,
+   resume_model_call_key:"progress_model_123456",
+   calls:[{model_call_key:"progress_model_123456",state:"CURRENT_MODEL_READY"}]}});
   const denied=await worker(await signed(intruder,path,body,"progress_spoof_123456"),env);
   expect(denied.status).toBe(503);
   const applied=await worker(await signed(person,root+"/auto-step",{
@@ -1244,6 +1259,12 @@ describe("Sprint 3.5 signed journal recovery after interrupted Agent sequences",
   expect(await after.json()).toMatchObject({data:{
    revision:2,can_resume:false,resume_model_call_key:null,
    calls:[{state:"ALREADY_APPLIED"},{state:"MODEL_MISSING"}]}});
+  const autoAfter=await worker(await signed(person,path,{
+   anonymous_id:OWNER
+  },"progress_discover_again_123456"),env);
+  expect(await autoAfter.json()).toMatchObject({data:{
+   can_resume:false,scope:"RECENT_EIGHT_STORED_CALLS",
+   calls:[{state:"ALREADY_APPLIED"}]}});
   expect(dispatch).toBe(1);
  });
  it("flags uncertain costs and refuses malformed or repeated keys",async()=>{

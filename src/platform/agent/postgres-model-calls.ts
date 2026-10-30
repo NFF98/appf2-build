@@ -26,6 +26,12 @@ const GET=`SELECT job_id::text,owner_anonymous_id::text,call_key,job_revision,
  response_id,input_tokens,output_tokens
  FROM public.appf2_agent_model_call
  WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid AND call_key=$3::text LIMIT 1`;
+/** A recovery read only: never returns source or unbounded call history. */
+const LIST_RECENT=`SELECT job_id::text,owner_anonymous_id::text,call_key,job_revision,
+ checkpoint_hash,request_hash,model,max_charge_cents,status,response_json,
+ response_id,input_tokens,output_tokens FROM public.appf2_agent_model_call
+ WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid
+ ORDER BY job_revision DESC,call_key DESC LIMIT 8`;
 const RESERVE=`SELECT appf2_internal.reserve_agent_model_call(
  $1::uuid,$2::text,$3::integer,$4::text,$5::text,$6::text,$7::integer) AS status`;
 const CLAIM=`UPDATE public.appf2_agent_model_call SET status='IN_FLIGHT'
@@ -56,6 +62,17 @@ export async function getModelCall(db:AgentJobExecutor,jobId:string,owner:string
  if(r.job_id!==jobId||r.owner_anonymous_id!==owner||
   r.call_key!==callKey)throw Error("MODEL_CALL_OWNER_MISMATCH");
  return r;
+}
+/** Fetch latest saved calls after creator PoP authentication. The caller never
+ * needs to cache private model journal keys in browser local storage.
+ */
+export async function listRecentAgentModelCalls(db:AgentJobExecutor,
+ jobId:string,owner:string):Promise<readonly ModelCallRow[]>{
+ const rows=(await db.query<ModelCallRow>(LIST_RECENT,[jobId,owner])).rows;
+ if(rows.length>8||rows.some(row=>row.job_id!==jobId||
+  row.owner_anonymous_id!==owner||!KEY.test(row.call_key)))
+  throw Error("MODEL_CALL_RECOVERY_IDENTITY_MISMATCH");
+ return rows;
 }
 function matchRequest(row:ModelCallRow,job:AgentJobRow,input:ModelReservation):void{
  if(row.request_hash!==input.request_hash||row.model!==input.model||

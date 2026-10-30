@@ -5,12 +5,13 @@
  */
 import {recoverAgentJob,type RecoveredAgentJob}
  from "../platform/agent/durable-agent-service.js";
-import {getModelCall,type ModelCallRow} from "../platform/agent/postgres-model-calls.js";
+import {getModelCall,listRecentAgentModelCalls,type ModelCallRow}
+ from "../platform/agent/postgres-model-calls.js";
 import {parseAgentResponsesBatch} from "../platform/agent/responses-api.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 
 export type AgentProgressInput={readonly anonymous_id:string;
- readonly model_call_keys:readonly string[]};
+ readonly model_call_keys?:readonly string[]};
 type ProgressState="CURRENT_MODEL_READY"|"INDEPENDENT_QA_REQUIRED"|
  "ALREADY_APPLIED"|"MODEL_UNCERTAIN"|"MODEL_PENDING"|"STALE_MODEL"|
  "MODEL_MISSING"|"INVALID_MODEL_RESPONSE";
@@ -26,14 +27,17 @@ export type AgentProgress={
  readonly next_action:"SIGN_NEXT_SEQUENCE"|"AWAIT_MODEL_RECONCILIATION"|
   "VERIFY_INDEPENDENT_QA"|"NO_PROVEN_PENDING_MODEL"|
   "RECONCILE_AMBIGUOUS_HEAD";
- readonly scope:"SUBMITTED_KEYS_ONLY";readonly app_published:false;
+ readonly scope:"SUBMITTED_KEYS_ONLY"|"RECENT_EIGHT_STORED_CALLS";
+ readonly app_published:false;
 };
 const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
 export function validAgentProgressBody(raw:unknown):raw is AgentProgressInput{
  if(typeof raw!=="object"||raw===null||Array.isArray(raw))return false;
  const x=raw as Record<string,unknown>;
- return Object.keys(x).sort().join(",")==="anonymous_id,model_call_keys"&&
-  typeof x.anonymous_id==="string"&&Array.isArray(x.model_call_keys)&&
+ const fields=Object.keys(x).sort().join(",");
+ if(typeof x.anonymous_id!=="string")return false;
+ if(fields==="anonymous_id")return true;
+ return fields==="anonymous_id,model_call_keys"&&Array.isArray(x.model_call_keys)&&
   x.model_call_keys.length>=1&&x.model_call_keys.length<=8&&
   x.model_call_keys.every(v=>typeof v==="string"&&KEY.test(v))&&
   new Set(x.model_call_keys).size===x.model_call_keys.length;
@@ -89,8 +93,11 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  if(creator?.job_id!==deps.jobId)throw Error("AGENT_PROGRESS_CREATOR_MISMATCH");
  const current=await recoverAgentJob(deps.db,deps.jobId,deps.owner);
  if(!current)throw Error("AGENT_PROGRESS_JOB_NOT_FOUND");
- const rows=await Promise.all(input.model_call_keys.map(async key=>
-  examine(current,await getModelCall(deps.db,deps.jobId,deps.owner,key),key)));
+ const rows=input.model_call_keys===undefined?
+  (await listRecentAgentModelCalls(deps.db,deps.jobId,deps.owner))
+   .map(row=>examine(current,row,row.call_key)):
+  await Promise.all(input.model_call_keys.map(async key=>
+   examine(current,await getModelCall(deps.db,deps.jobId,deps.owner,key),key)));
  const active=rows.filter(x=>x.state==="CURRENT_MODEL_READY");
  const uncertain=rows.some(x=>x.state==="MODEL_UNCERTAIN");
  const qa=rows.some(x=>x.state==="INDEPENDENT_QA_REQUIRED");
@@ -107,5 +114,6 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
   project_hash:current.project.project_hash,job_state:current.job.job_state,
   completed_steps:current.job.checkpoint.step,remaining_steps:remaining,
   calls:rows,can_resume,resume_model_call_key:can_resume?active[0].model_call_key:null,
-  next_action,scope:"SUBMITTED_KEYS_ONLY",app_published:false};
+  next_action,scope:input.model_call_keys===undefined?
+   "RECENT_EIGHT_STORED_CALLS":"SUBMITTED_KEYS_ONLY",app_published:false};
 }
