@@ -46,6 +46,7 @@ class Database {
  modelCalls=new Map<string,ModelCallRow>();
  sandboxCalls=new Map<string,{status:string;receipt_json:unknown|null;job_id:string;owner_anonymous_id:string;call_id:string;model_call_key:string;job_revision:number;checkpoint_hash:string;project_hash:string;call_hash:string;max_charge_cents:number}>();
  identities=new Map<string,{thumb:string;key:string}>();
+ qaAttempts=new Map<string,{status:string;receipt_json:unknown|null}>();
  context:WorkerRequestDbContext|null=null;
  readonly db={
   close:async()=>undefined,
@@ -60,6 +61,20 @@ class Database {
      project_hash:String(args[4]),checkpoint_hash:String(args[3]),
      checkpoint,job_state:String(args[5])});
     return {rows:[{job_id:row.job_id} as T]};
+   }
+   if(sql.startsWith("INSERT INTO public.appf2_agent_browser_qa_attempt(")){
+    const id=String(args[0])+":"+String(args[2]);
+    if(this.qaAttempts.has(id))return {rows:[]};
+    this.qaAttempts.set(id,{status:"IN_FLIGHT",receipt_json:null});
+    return {rows:[{job_id:args[0]} as T]};
+   }
+   if(sql.startsWith("UPDATE public.appf2_agent_browser_qa_attempt")){
+    const id=String(args[0])+":"+String(args[2]),row=this.qaAttempts.get(id);
+    if(!row||row.status!=="IN_FLIGHT")return {rows:[]};
+    const status=sql.includes("status='SUCCEEDED'")?"SUCCEEDED":"BLOCKED_UNCERTAIN";
+    this.qaAttempts.set(id,{status,receipt_json:status==="SUCCEEDED"?
+     JSON.parse(String(args[3])) as unknown:null});
+    return {rows:[{job_id:args[0]} as T]};
    }
    if(sql.startsWith("SELECT job_id::text,owner_anonymous_id::text,call_id")){
     const row=this.sandboxCalls.get(String(args[2]));
@@ -1577,5 +1592,92 @@ describe("Sprint 3.5 owner-signed independent QA packet: no publication or paid 
    ready_for_review:false,
    failures:expect.arrayContaining(["QA_NO_PASSED_SANDBOX_RUN"])
   }});
+ });
+});
+
+describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
+ it("admits the latest saved Sandbox test only, seals original plan, and never replays paid browser",async()=>{
+  const {sealAgentQaPacket}=await import("../../src/platform/agent/qa-packet.js");
+  const {checkpointHash}=await import("../../src/platform/agent/postgres-agent-jobs.js");
+  const creator=await client(),intruder=await client(),db=new Database();
+  const prompt="按 Add 按鈕顯示 42 的多人計分遊戲";
+  const plan={version:"1" as const,criteria:[{
+   id:"show_score",source_quote:"顯示 42",
+   description:"點擊後顯示分數",automatable:true,
+   steps:[{action:"click" as const,role:"button" as const,name:"Add"}],
+   assertions:[{kind:"text_appears" as const,text:"42"}]
+  }]};
+  const secret="separate-trusted-browser-qa-verifier-secret-abcdef",
+   bearer="private-qa-service-bearer-fenced-1234567890";
+  let dispatches=0;
+  const service={fetch:async(request:Request)=>{
+   dispatches++;
+   expect(request.headers.get("Authorization")).toBe("Bearer "+bearer);
+   const body=await request.json() as {job_id:string;original_plan:unknown};
+   expect(body.job_id).toBe(JOB_ID);
+   expect(body.original_plan).toEqual(plan);
+   return Response.json({data:{ready_for_review:true,
+    checks:packet.receipt.checks,packet}});
+  }};
+  const qaEnv={...env,APPF2_AGENT_QA_BROWSER_ENABLED:"1",
+   APPF2_QA_PRIVATE_TOKEN:bearer,APPF2_AGENT_QA_VERIFIER_SECRET:secret,
+   APPF2_QA_BROWSER_SERVICE:service};
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  expect((await worker(await signed(creator,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt
+  },"qa_run_create_123456"),env)).status).toBe(201);
+  const original=db.jobs.get(JOB_ID)!;
+  const testId="call_qa_run_test123456",buildId="call_qa_run_build123456";
+  const cp={...original.checkpoint,state:"TESTING" as const,
+   step:1,completed_call_ids:[testId]};
+  db.jobs.set(JOB_ID,{...original,revision:1,
+   checkpoint:cp,job_state:"TESTING",checkpoint_hash:await checkpointHash(cp)});
+  db.sandboxCalls.set(testId,{job_id:JOB_ID,owner_anonymous_id:OWNER,
+   call_id:testId,model_call_key:"qa_run_model123456",job_revision:0,
+   checkpoint_hash:original.checkpoint_hash,
+   project_hash:original.project_hash,
+   call_hash:"sha256:"+"f".repeat(64),max_charge_cents:1,
+   status:"SUCCEEDED",receipt_json:{
+    call_id:testId,project_hash:original.project_hash,exit_code:0,
+    timed_out:false,runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"
+   }});
+  const artifact="sha256:"+"b".repeat(64);
+  const packet=await sealAgentQaPacket({
+   version:"APPF2_AGENT_QA_PACKET_V1",job_id:JOB_ID,
+   original_prompt:prompt,original_plan:plan,
+   receipt:{version:"APPF2_CANDIDATE_QA_V1",
+    source_project_hash:original.project_hash,
+    built_artifact_hash:artifact,sandbox_execution_id:testId,
+    checks:[{criterion_id:"show_score",category:"BROWSER",
+     verdict:"PASS",evidence_hash:artifact}],runner_attestation:null}
+  },secret);
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/qa-run";
+  const body={anonymous_id:OWNER,job_id:JOB_ID,expected_revision:1,
+   project_hash:original.project_hash,
+   build_call_id:buildId,test_call_id:testId,
+   original_prompt:prompt,original_plan:plan,
+   explicit_browser_qa_consent:true};
+  expect((await worker(await signed(creator,path,body,
+   "qa_run_disabled123456"),env)).status).toBe(404);
+  expect((await worker(await signed(intruder,path,body,
+   "qa_run_wrong_user123456"),qaEnv)).status).toBe(503);
+  expect(dispatches).toBe(0);
+  expect((await worker(await signed(creator,path,{
+   ...body,original_prompt:prompt+"被改寫"
+  },"qa_run_changed_prompt123456"),qaEnv)).status).toBe(503);
+  expect(dispatches).toBe(0);
+  const success=await worker(await signed(creator,path,body,
+   "qa_run_authorized123456"),qaEnv);
+  expect(success.status).toBe(200);
+  expect(await success.json()).toMatchObject({data:{
+   ready_for_review:true,publication_authorized:false,app_published:false,
+   failures:[]}
+  });
+  expect(dispatches).toBe(1);
+  expect(db.qaAttempts.get(JOB_ID+":"+original.project_hash)?.status).toBe("SUCCEEDED");
+  expect((await worker(await signed(creator,path,body,
+   "qa_run_repeat123456"),qaEnv)).status).toBe(503);
+  expect(dispatches).toBe(1);
+  expect(db.jobs.get(JOB_ID)?.job_state).toBe("TESTING");
  });
 });

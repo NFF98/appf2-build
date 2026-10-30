@@ -68,6 +68,7 @@ type Dependencies={
  readonly privateToken:string;readonly verifierSecret:string;
 };
 /** CAS reserve before Browser Run, and never dispatch on rerun/uncertainty. */
+// eslint-disable-next-line complexity -- Signed creator, saved run, immutable project and one-shot paid QA gates.
 export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
  deps:Dependencies){
  if(!validBrowserQaRunBody(input)||input.anonymous_id!==deps.owner||
