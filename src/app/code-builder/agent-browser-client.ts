@@ -8,6 +8,7 @@ import {createBrowserIdentityDependencies,ensureAnonymousId}
 import {mutationProofTranscript} from "../../edge/create-proof.js";
 import {PopKeyring,type PopKey} from "../create/pop-keyring.js";
 import {createBrowserPopKeyPersistence} from "../shell/tab-app-recovery.js";
+import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 
 const SLOT="appf2.agent.candidate.job.v1";
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -23,7 +24,8 @@ export type CandidateFile={readonly path:string;readonly content:string};
 export type CandidateJob={readonly job_id:string;readonly revision:number;
  readonly project_hash:string;readonly status:string;
  readonly files:readonly CandidateFile[];
- readonly checkpoint:{readonly step:number;readonly budget:{
+ readonly checkpoint:{readonly step:number;
+ readonly completed_call_ids:readonly string[];readonly budget:{
   readonly max_steps:number;readonly max_cost_cents:number;
   readonly max_tokens:number}};
  readonly app_published:false};
@@ -38,7 +40,7 @@ type Step={readonly status:string;readonly action:string;readonly revision:numbe
 export type CandidateSnapshot={readonly job:CandidateJob;readonly progress:Progress|null;
  readonly message:string;readonly completed_steps:number};
 export type AgentStoredTarget={readonly jobId:string;readonly prompt:string;
- readonly firstModelKey:string};
+ readonly firstModelKey:string;readonly qaPlan?:QaPlan};
 export type AgentBrowserOptions={readonly allowAi:boolean;
  readonly allowContainer:boolean;readonly approvedCents:number};
 const encoder=new TextEncoder();
@@ -48,7 +50,10 @@ function validatedTarget(v:unknown):AgentStoredTarget|null{
  if(!ID.test(String(x.jobId))||typeof x.prompt!=="string"||
   x.prompt.length<5||x.prompt.length>800||typeof x.firstModelKey!=="string"||
   !/^[A-Za-z0-9_-]{8,80}$/u.test(x.firstModelKey))return null;
- return {jobId:String(x.jobId),prompt:x.prompt,firstModelKey:x.firstModelKey};
+ const qaPlan=x.qaPlan===undefined?undefined:parseQaPlan(x.qaPlan,x.prompt);
+ if(x.qaPlan!==undefined&&!qaPlan)return null;
+ return {jobId:String(x.jobId),prompt:x.prompt,firstModelKey:x.firstModelKey,
+  ...(qaPlan?{qaPlan}:{})};
 }
 export function savedCandidateTarget():AgentStoredTarget|null{
  try {return validatedTarget(JSON.parse(sessionStorage.getItem(SLOT)??"null"));}
@@ -110,7 +115,10 @@ export class BrowserCodingAgent {
  private async post<T>(suffix:string,body:object):Promise<T>{
   return signedPost<T>(this.path()+suffix,body,await this.signer());
  }
- async create(prompt:string,opts:AgentBrowserOptions):Promise<AgentStoredTarget>{
+ async create(prompt:string,opts:AgentBrowserOptions,
+  qaPlan?:QaPlan):Promise<AgentStoredTarget>{
+  if(qaPlan&&!parseQaPlan(qaPlan,prompt.trim()))
+   throw Error("原始驗收計畫與需求不一致，已停止。");
   if(!opts.allowAi||prompt.trim().length<5||prompt.length>800||
    !Number.isSafeInteger(opts.approvedCents)||opts.approvedCents<8||
    opts.approvedCents>100)throw Error("請先核准 AI 費用上限與需求。");
@@ -124,8 +132,10 @@ export class BrowserCodingAgent {
   this.keys.bindIntent(logical,data.job_id,key);
   this.key=key;
   this.target={jobId:data.job_id,prompt:prompt.trim(),
-   firstModelKey:"agent_first_"+crypto.randomUUID()};
+   firstModelKey:"agent_first_"+crypto.randomUUID(),
+   ...(qaPlan?{qaPlan}:{})};
   saveTarget(this.target);
+  if(qaPlan)await this.freezeOriginalQaPlan();
   return this.target;
  }
  async restore():Promise<AgentStoredTarget|null>{
@@ -162,6 +172,51 @@ export class BrowserCodingAgent {
    saved.project_hash!==current.project_hash)
    throw Error("新的步數授權尚未驗證保存，已停止。");
   return saved;
+ }
+ /** This is allowed only at CREATED/revision 0 before any AI coding.
+  * The server enforces the freeze and rejects any later plan changes.
+  */
+ async freezeOriginalQaPlan():Promise<void>{
+  const target=this.target;
+  if(!target?.qaPlan)throw Error("沒有可凍結的原始 QA 計畫。");
+  await this.post("/qa-plan",{anonymous_id:this.owner,expected_revision:0,
+   original_prompt:target.prompt,original_plan:target.qaPlan});
+ }
+ /** Independently execute browser acceptance only after a proven build/test.
+  * Caller consent is per click, and repeated requests never retry a paid run.
+  */
+ async independentQa(explicitConsent:boolean){
+  const target=this.target;
+  if(!explicitConsent||!target?.qaPlan)
+   throw Error("需要開發前凍結的 QA 計畫與獨立瀏覽器費用授權。");
+  const job=await this.read();
+  const completed=job.checkpoint.completed_call_ids;
+  if(job.status!=="TESTING"||!Array.isArray(completed)||completed.length<2)
+   throw Error("必須先有已保存的隔離建置與測試，才能啟動獨立 QA。");
+  return this.post<{status:string;ready_for_review:boolean;checks:readonly {
+   criterion_id:string;verdict:string}[];app_published:false}>("/qa-run",{
+   anonymous_id:this.owner,job_id:target.jobId,
+   expected_revision:job.revision,project_hash:job.project_hash,
+   build_call_id:completed.at(-2),test_call_id:completed.at(-1),
+   original_prompt:target.prompt,original_plan:target.qaPlan,
+   explicit_browser_qa_consent:true
+  });
+ }
+ /** AI repair is a separate P-256 signed, explicitly paid action.
+  * Never initiated automatically by the Browser QA response.
+  */
+ async repairFailedQa(explicitConsent:boolean){
+  const target=this.target;
+  if(!explicitConsent||!target?.qaPlan)
+   throw Error("修復 AI 費用尚未核准，或缺少原始 QA 計畫。");
+  const job=await this.read();
+  if(job.status!=="REPAIRING")throw Error("尚無已驗證失敗的 QA 可修復。");
+  return this.post<{status:string;response_id:string;app_published:false}>(
+   "/qa-repair",{anonymous_id:this.owner,expected_revision:job.revision,
+    model_call_key:"agent_qa_repair_"+crypto.randomUUID(),
+    original_prompt:target.prompt,original_plan:target.qaPlan,
+    max_charge_cents:8,max_output_tokens:4096,explicit_ai_consent:true
+   });
  }
  /** Initial AI call is explicit; never automatically repeats if its outcome is uncertain. */
  async plan():Promise<void>{

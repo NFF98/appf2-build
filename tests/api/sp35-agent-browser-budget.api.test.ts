@@ -9,3 +9,17 @@ describe("Sprint 3.5 no orphan paid model after a final Agent step",()=>{
    expect(enoughAgentStepsForContinuation(remaining)).toBe(true);
  });
 });
+
+import {parseQaPlan} from "../../src/platform/qa/requirement-contract.js";
+describe("Browser pre-code QA plan and independently approved cloud browser",()=>{
+ it("does not accept missing requirements, forged source quotes or plan after coding",()=>{
+  const prompt="按 Add 按鈕之後顯示 42";
+  const plan={version:"1",criteria:[{id:"score",source_quote:"顯示 42",
+   description:"操作後顯示 42",automatable:true,
+   steps:[{action:"click",role:"button",name:"Add"}],
+   assertions:[{kind:"text_appears",text:"42"}]}]};
+  expect(parseQaPlan(plan,prompt)).not.toBeNull();
+  expect(parseQaPlan(plan,"另一個不同的需求")).toBeNull();
+  expect(parseQaPlan({...plan,criteria:[]},prompt)).toBeNull();
+ });
+});
