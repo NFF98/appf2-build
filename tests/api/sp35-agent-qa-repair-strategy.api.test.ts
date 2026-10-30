@@ -53,7 +53,7 @@ describe("Durable multi-file Agent changes strategy after three stalled independ
   expect(r.mode).toBe("FIX_FAILED_CHECKS");
  });
  it("is bounded to the latest eight private journal rows",()=>{
-  const rows="abcdefghij".split("").map(c=>row(c,["restart"]));
+  const rows="0123456789".split("").map(c=>row(c,["restart"]));
   const r=determineQaRepairStrategy(plan,rows);
   expect(r.verified_failure_count).toBe(8);
   expect(r.stalled_failure_count).toBe(8);
