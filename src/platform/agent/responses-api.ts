@@ -13,6 +13,7 @@ function obj(v:unknown):v is Record<string,unknown>{
 }
 function argumentKeys(name:AgentToolName):readonly string[]{
  if(name==="read_file"||name==="delete_file")return ["path"];
+ if(name==="inspect_project")return ["path","offset"];
  if(name==="write_file")return ["path","content","previous_hash"];
  if(name==="write_files")return ["edits_json"];
  if(name==="run_build"||name==="run_test")return ["target"];
@@ -23,7 +24,9 @@ function toolSchema(name:AgentToolName){
  const properties=Object.fromEntries(fields.map(k=>[k,{
   type:"string",...(k==="target"?{enum:["project"]}:{}),
   description:k==="previous_hash"?"Expected file hash, or empty for new file.":
-   k==="edits_json"?"JSON array of 2 to 16 {path,content,previous_hash} objects. Existing paths require exact file hash and new paths empty previous_hash. Atomic commit.":k
+   k==="edits_json"?"JSON array of 2 to 16 {path,content,previous_hash} objects. Existing paths require exact file hash and new paths empty previous_hash. Atomic commit.":
+   k==="offset"?"Zero-based Unicode character offset for file content, or file index for path dot (.) directory listing. Begin at 0; use next_offset to page.":
+   k==="path"&&name==="inspect_project"?"Dot (.) to list up to ten project files, or an exact saved file path to read a source chunk.":k
  }]));
  return {type:"function" as const,name,description:
   "Operate only through the APPf2 isolated project broker, never through host shell.",
