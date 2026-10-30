@@ -57,8 +57,15 @@ export async function applyStoredModelEdit(input:ApplyModelEditInput,
    revision:current.job.revision};
  if(current.job.revision!==input.expected_revision||!currentParsed||
    currentParsed.calls.length!==1)return failEdit();
- if(record.job_revision!==current.job.revision||
-   record.checkpoint_hash!==current.job.checkpoint_hash)
+ const exactHead=record.job_revision===current.job.revision&&
+  record.checkpoint_hash===current.job.checkpoint_hash;
+ // A signed budget-only amendment increments CAS revision without executing a
+ // model tool or changing source. Permit the *same* saved response exactly one
+ // revision later, never a fresh paid dispatch or arbitrary historical replay.
+ const renewedHead=record.job_revision===current.job.revision-1&&
+  record.checkpoint_hash===current.job.checkpoint.previous_checkpoint_id&&
+  !current.job.checkpoint.completed_call_ids.includes(callId);
+ if(!exactHead&&!renewedHead)
   return failEdit();
  const call=currentParsed.calls[0];
  if(!["write_file","write_files","delete_file","read_file"].includes(call.name))
