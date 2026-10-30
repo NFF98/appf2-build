@@ -6,9 +6,11 @@
 import {verifyFrozenQaPlan} from "./agent-qa-plan.js";
 import {recoverAgentJob,advanceDurableAgentJob} from "../platform/agent/durable-agent-service.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
-import {validPrivateBrowserQaTask,validQaObservedChecks,type PrivateBrowserQaTask}
+import {validPrivateBrowserQaTask,validQaObservedChecks,strictQaChecks,
+ type PrivateBrowserQaTask}
  from "../platform/agent/qa-browser-contract.js";
 import {reviewAgentQa} from "./agent-qa-review.js";
+import type {QaPlan} from "../platform/qa/requirement-contract.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 import type {SandboxServiceBinding} from "./agent-sandbox-run.js";
 export type BrowserQaRunInput={readonly anonymous_id:string;
@@ -30,6 +32,22 @@ type SandboxRow={readonly job_id:string;readonly owner_anonymous_id:string;
  readonly receipt_json:unknown};
 type QaResponse={readonly ready_for_review:boolean;readonly packet:unknown;
  readonly checks:unknown};
+/** A contradictory private-verifier response must not become durable QA evidence.
+ * A claimed PASS needs every original automatable criterion and a packet;
+ * a failed run has NO signed approval packet and at least one failed check.
+ */
+export function consistentBrowserQaResult(plan:QaPlan,value:unknown):boolean{
+ if(typeof value!=="object"||value===null||Array.isArray(value))return false;
+ const data=value as Record<string,unknown>;
+ if(typeof data.ready_for_review!=="boolean"||
+  !validQaObservedChecks(plan,data.checks))return false;
+ const allPassed=strictQaChecks(plan,data.checks);
+ if(data.ready_for_review!==allPassed)return false;
+ if(allPassed)return typeof data.packet==="object"&&data.packet!==null&&
+  !Array.isArray(data.packet);
+ return data.packet===null&&data.checks.some(c=>c.verdict!=="PASS");
+}
+
 function passedSavedTest(row:SandboxRow|undefined,identity:{
  readonly jobId:string;readonly owner:string;
  readonly projectHash:string;readonly testCallId:string}):boolean{
@@ -131,10 +149,7 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
  let response:QaResponse;
  try{
   response=await dispatchQa(deps.service,deps.privateToken,task);
-  if(!validQaObservedChecks(task.original_plan,response.checks)||
-   (!response.ready_for_review&&
-    (response.checks as import("../platform/agent/qa-browser-contract.js").PrivateQaCheck[])
-     .every(x=>x.verdict==="PASS")))
+  if(!consistentBrowserQaResult(task.original_plan,response))
    throw Error("QA_INDEPENDENT_CHECKS_INVALID");
   const saved=await deps.db.query<{job_id:string}>(
    "UPDATE public.appf2_agent_browser_qa_attempt SET status='SUCCEEDED',"+
