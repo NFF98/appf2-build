@@ -92,7 +92,7 @@ try{
  if(independent.length!==2||independent.some(x=>x.verdict!=="PASS"))
   throw Error("QA_REAL_BUILT_APP_REQUIREMENT_FAILED:"+JSON.stringify(independent));
  const qaKey=randomBytes(48).toString("base64url");
- const promptHash=await sha256CodeBytes(new TextEncoder().encode(
+ const promptHash=await sha256CodeBytes(new globalThis.TextEncoder().encode(
   "APPF2_AGENT_REQUEST_V1\u0000"+originalPrompt));
  const artifactHash="sha256:"+createHash("sha256")
   .update(compiled).digest("hex");
