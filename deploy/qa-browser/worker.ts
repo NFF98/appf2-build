@@ -4,7 +4,7 @@
  * The browser receives only compiled files over a private Service Binding.
  */
 import puppeteer from "@cloudflare/puppeteer";
-import {validPrivateBrowserQaTask,strictQaChecks,
+import {validPrivateBrowserQaTask,strictQaChecks,observedBrowserEvidenceHash,
  type PrivateBrowserQaTask,type PrivateQaCheck}
  from "../../src/platform/agent/qa-browser-contract.js";
 import {validBuiltAssetRequest,builtAssetContentType,MAX_BUILT_ASSET_BYTES}
@@ -151,10 +151,11 @@ async function criterion(browser:Awaited<ReturnType<typeof puppeteer.launch>>,
   if(crashes>0)throw Error("QA_PAGE_EXCEPTION");
   for(const a of c.assertions)
    if(!(await assertion(page,a,before,old)))throw Error("QA_ASSERTION_FAILED");
+  const after=await bodyText(page);
+  if(crashes>0)throw Error("QA_PAGE_EXCEPTION");
   return {criterion_id:c.id,category:"BROWSER",verdict:"PASS",
-   evidence_hash:await sha256CodeBytes(new TextEncoder().encode(JSON.stringify({
-    version:1,criterion:c.id,checks:c.assertions,project_hash:task.project_hash
-   })))};
+   evidence_hash:await observedBrowserEvidenceHash(task,c.id,before,after,
+    [...used.keys()])};
  }catch{
   return {criterion_id:c.id,category:"BROWSER",verdict:"FAIL",evidence_hash:null};
  }finally{await page.close().catch(()=>undefined);}
