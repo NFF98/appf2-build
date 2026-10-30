@@ -1,5 +1,5 @@
 import {describe,it,expect} from "vitest";
-import {enoughAgentStepsForContinuation}
+import {enoughAgentStepsForContinuation,stableAgentContinuationKey}
  from "../../src/app/code-builder/agent-browser-client.js";
 describe("Sprint 3.5 no orphan paid model after a final Agent step",()=>{
  it("holds last slot for signed renewal rather than applying a tool without its next model turn",()=>{
@@ -7,6 +7,32 @@ describe("Sprint 3.5 no orphan paid model after a final Agent step",()=>{
    expect(enoughAgentStepsForContinuation(remaining)).toBe(false);
   for(const remaining of [2,3,16])
    expect(enoughAgentStepsForContinuation(remaining)).toBe(true);
+ });
+});
+
+describe("Sprint 3.5 paid model continuation is idempotent across browser reloads",()=>{
+ const job="ba45436c-c3f1-44f1-adc6-bdd0fb1592e7";
+ const another="a6e2c5f0-a8d2-4aa6-ac2a-62f740e3bd0a";
+ const key="agent_first_12345678";
+ it("reuses a single journal key for the same signed CAS head",async()=>{
+  const a=await stableAgentContinuationKey("agent_recover",job,key,4);
+  const b=await stableAgentContinuationKey("agent_recover",job,key,4);
+  expect(a).toBe(b);
+  expect(a).toMatch(/^agent_recover_[0-9a-f]{40}$/u);
+  expect(a.length).toBeLessThanOrEqual(80);
+  expect(await stableAgentContinuationKey("agent_recover",job,key,5)).not.toBe(a);
+  expect(await stableAgentContinuationKey("agent_recover",another,key,4)).not.toBe(a);
+  expect(await stableAgentContinuationKey("agent_next",job,key,4)).not.toBe(a);
+  expect(await stableAgentContinuationKey("agent_recover",job,"other_first_123456",4))
+   .not.toBe(a);
+ });
+ it("rejects invalid job, provider key and CAS version before any paid request",async()=>{
+  await expect(stableAgentContinuationKey("agent_next","../wrong",key,4))
+   .rejects.toThrow("AGENT_CONTINUATION_KEY_INVALID");
+  await expect(stableAgentContinuationKey("agent_next",job,"bad key",4))
+   .rejects.toThrow("AGENT_CONTINUATION_KEY_INVALID");
+  await expect(stableAgentContinuationKey("agent_next",job,key,-1))
+   .rejects.toThrow("AGENT_CONTINUATION_KEY_INVALID");
  });
 });
 
