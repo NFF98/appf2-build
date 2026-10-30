@@ -21,7 +21,7 @@ function crc32(bytes:Uint8Array):number{
 function validPath(path:string):boolean{
  return path.length>0&&path.length<=180&&PATH.test(path)&&
   path.split("/").every(p=>p!=="."&&p!==".."&&!p.startsWith(".")&&
-   !["node_modules","dist","build","secrets"].includes(p.toLowerCase()));
+   !["node_modules","dist","build","secrets",".git",".env",".github",".wrangler"].includes(p.toLowerCase()));
 }
 type Entry={name:Uint8Array<ArrayBuffer>;data:Uint8Array<ArrayBuffer>;crc:number};
 function entry(path:string,content:string):Entry{
@@ -83,7 +83,9 @@ export async function savedAgentProjectZip(job:CandidateJob):Promise<Uint8Array<
  const entries:Entry[]=[];
  for(const file of job.files){
   if(!validPath(file.path)||file.path==="APPF2-PROJECT.json"||
-   taken.has(file.path.toLowerCase())||!SHA.test(file.hash))
+   taken.has(file.path.toLowerCase())||
+   typeof file.hash!=="string"||!SHA.test(file.hash)||
+   typeof file.content!=="string"||!Number.isSafeInteger(file.bytes))
    throw Error("AGENT_ZIP_PATH_INVALID");
   taken.add(file.path.toLowerCase());
   const data=enc.encode(file.content);
