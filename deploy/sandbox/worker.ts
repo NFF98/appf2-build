@@ -73,7 +73,6 @@ export class SandboxJob extends DurableObject<Env>{
    await c.setInactivityTimeout(120000);
   }
  }
- // eslint-disable-next-line complexity -- Strict checkpoint + immutable file checks before execution.
  /** Read-only: never starts or retries a container, never runs source.
   * Exactly the most recently proved successful build in this job. */
  async readBuiltAsset(query:BuiltAssetRequest):Promise<Response>{
@@ -97,6 +96,7 @@ export class SandboxJob extends DurableObject<Env>{
     "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}
   });
  }
+ // eslint-disable-next-line complexity -- Strict checkpoint + immutable file checks before execution.
  async runTask(task:Task):Promise<Receipt>{
   if(!(await verifyProjectSnapshot(task.project))||
    !parseAgentToolCall(task.call)||
