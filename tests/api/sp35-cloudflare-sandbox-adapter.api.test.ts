@@ -105,7 +105,8 @@ describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)"
   expect(first).toEqual(["rm","-rf","--",sandboxWorkspaceRoot(job,original)]);
   expect(second).toEqual(["rm","-rf","--",sandboxWorkspaceRoot(job,revised)]);
   expect(first[3]).not.toBe(second[3]);
-  expect(first[3]).toMatch(/^\\/workspace\\/appf2_job_12345678\\/[a-f0-9]{64}$/u);
+  expect(first[3]?.startsWith("/workspace/appf2_job_12345678/")).toBe(true);
+  expect(first[3]?.split("/").at(-1)).toMatch(/^[a-f0-9]{64}$/u);
   expect(()=>sandboxBuildResetArgv("../escape",original))
    .toThrow("SANDBOX_WORKSPACE_UNSAFE");
   expect(()=>sandboxBuildResetArgv(job,{...original,project_hash:"../escape"}))
