@@ -85,7 +85,9 @@ export function savedCandidateTarget():AgentStoredTarget|null{
   const raw=localStorage.getItem(SLOT);
   if(raw!==null){
    if(raw.length>25000){localStorage.removeItem(SLOT);return null;}
-   const data:unknown=JSON.parse(raw);
+   let data:unknown;
+   try{data=JSON.parse(raw);}
+   catch{localStorage.removeItem(SLOT);return null;}
    if(typeof data!=="object"||data===null||Array.isArray(data)){
     localStorage.removeItem(SLOT);return null;
    }
