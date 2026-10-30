@@ -52,7 +52,7 @@ describe("private Worker service binding (no public URL, no fallback, no paid re
   const data=await sendPrivateSandboxTask(task as never,"",TOKEN,service);
   expect(data).toMatchObject({call_id:"call_signed_123456",ok:true});
   expect(calls).toHaveLength(1);
-  expect(new URL(calls[0]!.url).hostname).toBe("appf2-private-sandbox.invalid");
+  expect(new globalThis.URL(calls[0]!.url).hostname).toBe("appf2-private-sandbox.invalid");
   expect(calls[0]!.headers.get("Authorization")).toBe("Bearer "+TOKEN);
   expect(await calls[0]!.json()).toEqual(task);
  });

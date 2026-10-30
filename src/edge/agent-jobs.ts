@@ -244,7 +244,6 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
      env.APPF2_SANDBOX_BROKER_URL??"",
     brokerService:env.APPF2_SANDBOX_BROKER_SERVICE,
     brokerToken:env.APPF2_SANDBOX_BROKER_TOKEN??"",
-    brokerService:env.APPF2_SANDBOX_BROKER_SERVICE,
     allowedJobId:env.APPF2_SANDBOX_ALLOWED_JOB_ID??"",
     send:ctx.deps?.sendSandbox
    });
