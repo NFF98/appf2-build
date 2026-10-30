@@ -65,16 +65,27 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     const [job,progress]=await Promise.all([worker.read(),worker.progress()]);
     // Never resend first paid model call after PLANNING was journaled or
     // may be in an unknown state (e.g. browser closed mid-call).
-    if(job.revision===0&&progress.calls.length===0){
-     const target=savedCandidateTarget();
-     if(target?.qaPlan)await worker.freezeOriginalQaPlan();
+    if(job.revision===0){
+     // A planner response may already be journaled at revision zero.
+     // Same job-scoped key safely reuses it without a second model charge.
+     await worker.generateOriginalQaPlan();
+     // Do not silently replan coding when a previous model call is uncertain.
+     const renewed=await worker.progress();
+     if(renewed.calls.some(c=>c.state==="BLOCKED_UNCERTAIN"))
+      throw Error("已有模型結果不確定，已停止，不會重新付費。");
      await worker.plan();
     }
    }else{
     await worker.create(prompt,options(),acceptancePlan());
     setSaved(true);
     const initial=await worker.read();
-    setSnapshot({job:initial,progress:null,message:"專案已永久保存，正在呼叫 AI…",completed_steps:0});
+    setSnapshot({job:initial,progress:null,
+     message:"專案已保存；正在驗證並凍結開發前的原始 QA 計畫…",completed_steps:0});
+    // If no JSON is supplied, generate the plan automatically from the
+    // original natural-language request, never from produced source code.
+    await worker.generateOriginalQaPlan();
+    setSnapshot({job:await worker.read(),progress:null,
+     message:"原始 QA 計畫已凍結；現在才開始 AI 編碼。",completed_steps:0});
     await worker.plan();
    }
    const done=await worker.advance(options(),setSnapshot,()=>stop.current);
@@ -126,7 +137,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    placeholder="例如：製作能四人同時玩的十八啦骰子遊戲，有計分、動畫、規則與排行榜。" />
   <details>
    <summary>進階：開發前鎖定獨立 QA 驗收計畫（選填）</summary>
-   <p className="saved-apps-note">此計畫需在 AI 開始寫程式前保存。每項 source_quote 必須取自原始需求，且需列出實際操作及預期結果。未提供時不會聲稱已通過獨立 QA。</p>
+   <p className="saved-apps-note">一般使用者不必寫 JSON：留白會在 AI 編碼前，自動花費最多 8 美分產生並凍結驗收計畫。只在需要自行指定測試時貼上 JSON。AI 計畫仍需通過引用原始需求、操作與預期結果的驗證。</p>
    <label htmlFor="agent-qa-plan-json">原始驗收計畫 JSON</label>
    <textarea id="agent-qa-plan-json" className="composer-input" value={qaJson}
     disabled={busy} onChange={e=>setQaJson(e.target.value)}
@@ -144,7 +155,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    disabled={busy} onChange={e=>setBrowserQaConsent(e.target.checked)}/>
    我另外核准本次獨立雲端瀏覽器 QA；可能產生 Cloudflare 費用，不自動重試。
   </label>
-  <label htmlFor="agent-max-cost">整個專案核准的 AI 費用上限（美分，8～100）</label>
+  <label htmlFor="agent-max-cost">整個專案核准的 AI 費用上限（美分，自動 QA 最低 16；最多 100）</label>
   <input id="agent-max-cost" type="number" min={8} max={100} step={1}
    value={approvedCents} disabled={busy}
    onChange={e=>setApprovedCents(Number(e.target.value))}/>
@@ -152,7 +163,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    不會自動部署、不會把模擬測試標成真實 QA PASS。</p>
   <button type="button" className="btn btn-primary"
    disabled={busy||!aiConsent||prompt.trim().length<5||
-    !Number.isSafeInteger(approvedCents)||approvedCents<8||approvedCents>100}
+    !Number.isSafeInteger(approvedCents)||
+    approvedCents<(qaJson.trim()?8:16)||approvedCents>100}
    onClick={()=>{void execute(false);}}>
    {busy?"正在執行並保存 Agent 工作…":"建立新多檔案 App 專案"}
   </button>

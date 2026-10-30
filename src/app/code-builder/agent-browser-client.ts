@@ -121,8 +121,9 @@ export class BrowserCodingAgent {
   if(qaPlan&&!parseQaPlan(qaPlan,prompt.trim()))
    throw Error("原始驗收計畫與需求不一致，已停止。");
   if(!opts.allowAi||prompt.trim().length<5||prompt.length>800||
-   !Number.isSafeInteger(opts.approvedCents)||opts.approvedCents<8||
-   opts.approvedCents>100)throw Error("請先核准 AI 費用上限與需求。");
+   !Number.isSafeInteger(opts.approvedCents)||
+   opts.approvedCents<(qaPlan?8:16)||opts.approvedCents>100)
+   throw Error("自動 QA 規劃需要至少 16 美分的專案總預算（QA 與首次編碼各 8 美分）。");
   const logical="agent_"+crypto.randomUUID();
   const key=await this.keys.keyForCreate(logical);
   const data=await signedPost<{job_id:string}>("/api/v1/agent-jobs",{
@@ -182,6 +183,25 @@ export class BrowserCodingAgent {
   if(!target?.qaPlan)throw Error("沒有可凍結的原始 QA 計畫。");
   await this.post("/qa-plan",{anonymous_id:this.owner,expected_revision:0,
    original_prompt:target.prompt,original_plan:target.qaPlan});
+ }
+ /** One bounded paid model call, journaled by an immutable job-scoped key.
+  * Validate the model plan and freeze it BEFORE the coding model begins.
+  * Failed or uncertain outcomes never trigger an additional provider call.
+  */
+ async generateOriginalQaPlan():Promise<QaPlan>{
+  const target=this.target;
+  if(!target)throw Error("NO_AGENT_JOB");
+  if(target.qaPlan){await this.freezeOriginalQaPlan();return target.qaPlan;}
+  const result=await this.post<{original_plan:unknown;status:string}>(
+   "/qa-generate",{anonymous_id:this.owner,expected_revision:0,
+    original_prompt:target.prompt,explicit_ai_consent:true,
+    max_charge_cents:8,max_output_tokens:4096});
+  const plan=parseQaPlan(result.original_plan,target.prompt);
+  if(result.status!=="QA_ORIGINAL_PLAN_FROZEN"||!plan)
+   throw Error("AI 產生的原始 QA 計畫無法驗證；未開始編碼。");
+  this.target={...target,qaPlan:plan};
+  saveTarget(this.target);
+  return plan;
  }
  /** Independently execute browser acceptance only after a proven build/test.
   * Caller consent is per click, and repeated requests never retry a paid run.
