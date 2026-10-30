@@ -5,7 +5,7 @@ import {CloudflareIsolatedSandboxAdapter,type IsolatedContainer,
  from "../../src/platform/agent/cloudflare-sandbox-adapter.js";
 import type {SandboxLimits} from "../../src/platform/agent/sandbox-adapter.js";
 import type {AgentToolName,AgentToolCall} from "../../src/platform/agent/agent-contract.js";
-import {PINNED_VITE_BIN,PINNED_MODULES,PINNED_WEB_SMOKE,sandboxCommand,sandboxWorkspaceRoot}
+import {PINNED_VITE_BIN,PINNED_MODULES,PINNED_WEB_SMOKE,sandboxCommand,sandboxWorkspaceRoot,sandboxBuildResetArgv}
  from "../../src/platform/agent/sandbox-commands.js";
 const job="job_12345678";
 const limits:SandboxLimits={wall_time_ms:2000,cpu_millis:1000,
@@ -92,6 +92,24 @@ describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)"
   expect(fake.roots[0]).not.toBe(fake.roots[1]);
   expect(sandboxWorkspaceRoot(job,cleaned)).toBe(sandboxWorkspaceRoot(job,cleaned));
   expect(()=>sandboxWorkspaceRoot("../bad",cleaned)).toThrow("SANDBOX_WORKSPACE_UNSAFE");
+ });
+ it("clears only the exact hash-bound build folder on a repeat run_build",async()=>{
+  const original=await project();
+  const oldFile=original.files.find(f=>f.path==="src/main.ts")!;
+  const revised=await applyProjectEdits(original,original.project_hash,[{
+   operation:"replace",path:oldFile.path,previous_hash:oldFile.hash,
+   content:"console.log(2)"
+  }]);
+  const first=sandboxBuildResetArgv(job,original);
+  const second=sandboxBuildResetArgv(job,revised);
+  expect(first).toEqual(["rm","-rf","--",sandboxWorkspaceRoot(job,original)]);
+  expect(second).toEqual(["rm","-rf","--",sandboxWorkspaceRoot(job,revised)]);
+  expect(first[3]).not.toBe(second[3]);
+  expect(first[3]).toMatch(/^\\/workspace\\/appf2_job_12345678\\/[a-f0-9]{64}$/u);
+  expect(()=>sandboxBuildResetArgv("../escape",original))
+   .toThrow("SANDBOX_WORKSPACE_UNSAFE");
+  expect(()=>sandboxBuildResetArgv(job,{...original,project_hash:"../escape"}))
+   .toThrow("SANDBOX_WORKSPACE_UNSAFE");
  });
  it("refuses forged commands, stale project bytes and unsafe paths",async()=>{
   const fake=new Stub();
