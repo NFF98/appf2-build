@@ -85,7 +85,8 @@ export async function savedAgentProjectZip(job:CandidateJob):Promise<Uint8Array<
   if(!validPath(file.path)||file.path==="APPF2-PROJECT.json"||
    taken.has(file.path.toLowerCase())||
    typeof file.hash!=="string"||!SHA.test(file.hash)||
-   typeof file.content!=="string"||!Number.isSafeInteger(file.bytes))
+   typeof file.content!=="string"||typeof file.bytes!=="number"||
+   !Number.isSafeInteger(file.bytes))
    throw Error("AGENT_ZIP_PATH_INVALID");
   taken.add(file.path.toLowerCase());
   const data=enc.encode(file.content);
