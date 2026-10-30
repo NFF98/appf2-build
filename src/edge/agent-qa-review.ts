@@ -32,15 +32,15 @@ export async function reviewAgentQa(input:QaReviewInput,deps:{
  if(!validQaReviewBody(input)||input.anonymous_id!==deps.owner)
   throw Error("QA_REVIEW_INVALID");
  const creator=(await deps.db.query<{job_id:string}>(
-  "SELECT job_id::text FROM public.appf2_agent_job WHERE job_id=$1::uuid "+
+  "SELECT job_id::text\n FROM public.appf2_agent_job WHERE job_id=$1::uuid "+
   "AND owner_anonymous_id=$2::uuid AND owner_key_thumbprint=$3::text LIMIT 1",
   [deps.jobId,deps.owner,deps.ownerThumb])).rows[0];
  if(creator?.job_id!==deps.jobId)throw Error("QA_REVIEW_NOT_CREATOR");
  const current=await recoverAgentJob(deps.db,deps.jobId,deps.owner);
  if(!current)throw Error("QA_REVIEW_JOB_MISSING");
  const last=current.job.checkpoint.completed_call_ids.at(-1)??"";
- const rows=await deps.db.query<SavedRun>(String.raw`SELECT job_id::text,
- owner_anonymous_id::text,call_id,model_call_key,job_revision,
+ const rows=await deps.db.query<SavedRun>(String.raw`SELECT job_id::text,owner_anonymous_id::text,call_id,
+ model_call_key,job_revision,
  checkpoint_hash,project_hash,call_hash,max_charge_cents,status,receipt_json
  FROM public.appf2_agent_sandbox_call
  WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid

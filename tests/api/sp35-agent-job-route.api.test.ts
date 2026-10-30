@@ -1488,3 +1488,94 @@ describe("Sprint 3.5 replay-safe continuation after a saved tool but no next mod
   }});
  });
 });
+
+describe("Sprint 3.5 owner-signed independent QA packet: no publication or paid dispatch",()=>{
+ const secret="qa-trusted-verifier-secret-not-in-client-or-model-abc";
+ const prompt="按加分按鈕更新得分，並且打開排行榜";
+ const plan={version:"1" as const,criteria:[{
+  id:"score",source_quote:"更新得分",description:"更新得分的畫面",
+  steps:[{action:"click" as const,role:"button" as const,name:"加分"}],
+  assertions:[{kind:"text_includes" as const,text:"得分：1"}],automatable:true
+ },{
+  id:"rank",source_quote:"打開排行榜",description:"顯示排行榜",
+  steps:[{action:"click" as const,role:"button" as const,name:"排行榜"}],
+  assertions:[{kind:"visible" as const,role:"heading" as const,name:"排行榜"}],
+  automatable:true
+ }]};
+ const call="call_qa_test_run123456";
+ const artifact="sha256:"+"b".repeat(64);
+ it("accepts only verified original-plan packet and saved successful Sandbox run",async()=>{
+  const {sealAgentQaPacket}=await import("../../src/platform/agent/qa-packet.js");
+  const {checkpointHash}=await import("../../src/platform/agent/postgres-agent-jobs.js");
+  const author=await client(),wrong=await client(),db=new Database();
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  const qaEnv={...env,APPF2_AGENT_QA_REVIEW_ENABLED:"1",
+   APPF2_AGENT_QA_VERIFIER_SECRET:secret};
+  expect((await worker(await signed(author,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt
+  },"qa_create_12345678"),env)).status).toBe(201);
+  const old=db.jobs.get(JOB_ID)!;
+  const cp={...old.checkpoint,state:"TESTING" as const,step:1,
+   completed_call_ids:[call]};
+  db.jobs.set(JOB_ID,{...old,checkpoint:cp,
+   job_state:"TESTING",checkpoint_hash:await checkpointHash(cp)});
+  db.sandboxCalls.set(call,{
+   job_id:JOB_ID,owner_anonymous_id:OWNER,call_id:call,
+   model_call_key:"qa_model_call123456",
+   job_revision:0,checkpoint_hash:old.checkpoint_hash,
+   project_hash:old.project_hash,call_hash:artifact,max_charge_cents:0,
+   status:"SUCCEEDED",receipt_json:{call_id:call,project_hash:old.project_hash,
+    exit_code:0,timed_out:false,detail:"Tests passed",
+    output_digest:artifact,
+    runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"}
+  });
+  const receipt={version:"APPF2_CANDIDATE_QA_V1" as const,
+   source_project_hash:old.project_hash,built_artifact_hash:artifact,
+   sandbox_execution_id:call,checks:[
+    {criterion_id:"score",category:"BROWSER" as const,verdict:"PASS" as const,
+     evidence_hash:artifact},
+    {criterion_id:"rank",category:"BROWSER" as const,verdict:"PASS" as const,
+     evidence_hash:artifact}
+   ],runner_attestation:null};
+  const packet=await sealAgentQaPacket({version:"APPF2_AGENT_QA_PACKET_V1",
+   job_id:JOB_ID,original_prompt:prompt,original_plan:plan,receipt},secret);
+  const qaPath="/api/v1/agent-jobs/"+JOB_ID+"/qa-review";
+  const input={anonymous_id:OWNER,packet};
+  expect((await worker(await signed(author,qaPath,input,
+   "qa_review_off123456"),env)).status).toBe(404);
+  const good=await worker(await signed(author,qaPath,input,
+   "qa_review_good123456"),qaEnv);
+  expect(good.status).toBe(200);
+  expect(await good.json()).toMatchObject({data:{
+   status:"INDEPENDENT_QA_REVIEWED",ready_for_review:true,
+   publication_authorized:false,app_published:false,failures:[]
+  }});
+  expect(db.jobs.get(JOB_ID)?.job_state).toBe("TESTING");
+  expect(db.modelCalls.size).toBe(0);
+  expect((await worker(await signed(wrong,qaPath,input,
+   "qa_review_intruder123456"),qaEnv)).status).toBe(503);
+  const replaced={...packet,original_plan:{...plan,criteria:plan.criteria.slice(0,1)}};
+  const forged=await worker(await signed(author,qaPath,{
+   anonymous_id:OWNER,packet:replaced
+  },"qa_review_changed123456"),qaEnv);
+  expect(forged.status).toBe(200);
+  expect(await forged.json()).toMatchObject({data:{
+   ready_for_review:false,publication_authorized:false,
+   failures:expect.arrayContaining(["QA_PACKET_SEAL_INVALID"])
+  }});
+  const changedPrompt=await worker(await signed(author,qaPath,{
+   anonymous_id:OWNER,packet:{...packet,original_prompt:"新需求但未授權"}
+  },"qa_review_prompt123456"),qaEnv);
+  expect(await changedPrompt.json()).toMatchObject({data:{
+   ready_for_review:false,
+   failures:expect.arrayContaining(["QA_PROMPT_MISMATCH"])
+  }});
+  db.sandboxCalls.set(call,{...db.sandboxCalls.get(call)!,status:"BLOCKED_UNCERTAIN"});
+  const uncertain=await worker(await signed(author,qaPath,input,
+   "qa_review_uncertain123456"),qaEnv);
+  expect(await uncertain.json()).toMatchObject({data:{
+   ready_for_review:false,
+   failures:expect.arrayContaining(["QA_NO_PASSED_SANDBOX_RUN"])
+  }});
+ });
+});

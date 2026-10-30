@@ -53,7 +53,8 @@ export function validAgentQaPacket(x:unknown):x is AgentQaPacket{
   typeof r.built_artifact_hash==="string"&&
   typeof r.sandbox_execution_id==="string"&&
   typeof r.runner_attestation==="string"&&
-  r.checks.every(c=>record(c)&&typeof c.criterion_id==="string"&&
+  Array.isArray(r.checks)&&r.checks.every((c:unknown)=>record(c)&&
+   typeof c.criterion_id==="string"&&
    typeof c.category==="string"&&typeof c.verdict==="string"&&
    (c.evidence_hash===null||typeof c.evidence_hash==="string"))&&
   parseQaPlan(x.original_plan,x.original_prompt)!==null;
