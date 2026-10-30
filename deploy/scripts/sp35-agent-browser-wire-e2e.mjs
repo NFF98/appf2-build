@@ -28,10 +28,11 @@ function json(res,status,data){
   "Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});
  res.end(JSON.stringify(status===200||status===201?{data}:{error:data}));
 }
+// eslint-disable-next-line complexity -- Signed creator, model and mock tool paths must remain distinct.
 async function api(req,res,url){
  const bytes=[];
  for await(const chunk of req)bytes.push(chunk);
- const raw=Buffer.concat(bytes),headers=new Headers(req.headers);
+ const raw=Buffer.concat(bytes),headers=new globalThis.Headers(req.headers);
  const idempotencyKey=headers.get("Idempotency-Key");
  if(!idempotencyKey||headers.get("Origin")!==url.origin||
   headers.get("Sec-Fetch-Site")==="cross-site"){
