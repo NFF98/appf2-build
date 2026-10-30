@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from "react";
-import {BrowserCodingAgent,savedCandidateTarget,type AgentBrowserOptions,
+import {BrowserCodingAgent,savedCandidateTarget,readSavedCandidateLibrary,
+ chooseSavedCandidate,type AgentBrowserOptions,
  type CandidateSnapshot} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
@@ -27,6 +28,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [error,setError]=useState("");
  const [snapshot,setSnapshot]=useState<CandidateSnapshot|null>(null);
  const [saved,setSaved]=useState(()=>savedCandidateTarget()!==null);
+ const [catalog,setCatalog]=useState(()=>readSavedCandidateLibrary());
  const agent=useRef<BrowserCodingAgent|null>(null);
  const stop=useRef(false);
  const previewHost=useRef<HTMLDivElement>(null);
@@ -45,6 +47,31 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  };
  const options=():AgentBrowserOptions=>({
   allowAi:aiConsent,allowContainer:containerConsent,approvedCents});
+ /** No paid dispatch: select a stored card then verify the original owner
+  * signing key against the current persisted DB head before showing source.
+  */
+ const openSavedCandidate=async(jobId:string)=>{
+  if(busy)return;
+  setBusy(true);setError("");setQaOutcome("");setQaChecks([]);
+  previewHost.current?.replaceChildren();setPreviewReady(false);
+  try{
+   if(!chooseSavedCandidate(jobId))throw Error("已保存的專案指標已過期。");
+   // A previous live agent may hold a DIFFERENT job's signing key.
+   const worker=new BrowserCodingAgent();
+   agent.current=worker;
+   const target=await worker.restore();
+   if(!target||target.jobId!==jobId)
+    throw Error("無法恢復原建立者的專案簽章。");
+   const job=await worker.read();
+   if(job.job_id!==jobId)throw Error("已保存專案身分不一致。");
+   setPrompt(target.prompt);setQaJson("");setSaved(true);
+   setSnapshot({job,progress:await worker.progress(),
+    message:"已恢復保存的專案，不重新執行 AI 或雲端建置。",
+    completed_steps:0});
+   setCatalog([...readSavedCandidateLibrary()]);
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const extend=async()=>{
   if(busy||!saved)return;
   setBusy(true);setError("");
@@ -83,13 +110,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     }
    }else{
     await worker.create(prompt,options(),acceptancePlan());
-    setSaved(true);
+    setSaved(true);setCatalog([...readSavedCandidateLibrary()]);
     const initial=await worker.read();
     setSnapshot({job:initial,progress:null,
      message:"專案已保存；正在驗證並凍結開發前的原始 QA 計畫…",completed_steps:0});
     // If no JSON is supplied, generate the plan automatically from the
     // original natural-language request, never from produced source code.
     await worker.generateOriginalQaPlan();
+    setCatalog([...readSavedCandidateLibrary()]);
     setSnapshot({job:await worker.read(),progress:null,
      message:"原始 QA 計畫已凍結；現在才開始 AI 編碼。",completed_steps:0});
     await worker.plan();
@@ -186,6 +214,18 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
   <p className="saved-apps-note">真正的多檔案程式專案；AI 可以編寫、保存、要求隔離建置與修復。
    功能是否能操作需獨立驗證；目前生成的是私人候選原始碼，<strong>尚未自動發布成可用 App</strong>。</p>
+  {catalog.length>0?<section aria-label="已保存的 Agent 專案">
+   <h3>已保存的多檔案 App 專案（此瀏覽器）</h3>
+   <p className="saved-apps-note">選擇原專案繼續開發或下載程式，
+    不會重新生成或支付 AI 費用。原始簽章金鑰有效期為 24 小時；
+    這是私人候選工作清單，不是已發布 App。</p>
+   <ul>{catalog.map(item=><li key={item.jobId}>
+    <button className="btn btn-secondary" type="button" disabled={busy}
+     onClick={()=>{void openSavedCandidate(item.jobId);}}>
+     開啟：{item.prompt.slice(0,65)}
+    </button>
+   </li>)}</ul>
+  </section>:null}
   <label htmlFor="code-builder-prompt">用一句話描述要做的 App</label>
   <textarea id="code-builder-prompt" className="composer-input" value={prompt}
    maxLength={800} disabled={busy} onChange={e=>setPrompt(e.target.value)}
