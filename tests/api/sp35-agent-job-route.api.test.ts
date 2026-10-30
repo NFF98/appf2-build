@@ -1704,3 +1704,98 @@ describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
   expect(db.jobs.get(JOB_ID)?.job_state).toBe("TESTING");
  });
 });
+
+describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → consented AI fix",()=>{
+ it("persists failure, refuses forged repair, charges the model at most once",async()=>{
+  const creator=await client(),db=new Database();
+  const prompt="按 Add 按鈕顯示 42 的多人計分遊戲";
+  const plan={version:"1" as const,criteria:[{id:"show_score",
+   source_quote:"顯示 42",description:"點擊後應有 42",automatable:true,
+   steps:[{action:"click" as const,role:"button" as const,name:"Add"}],
+   assertions:[{kind:"text_appears" as const,text:"42"}]}]};
+  const bearer="private-qa-service-bearer-fenced-1234567890",
+   verifierSecret="separate-trusted-browser-qa-verifier-secret-abcdef";
+  let qaDispatches=0,modelDispatches=0;
+  const agent={...db.makeDeps(),
+   sendModel:async({request}:{request:{input:unknown}})=>{
+    modelDispatches++;
+    const summary=String(request.input);
+    expect(summary).toContain("APPF2_QA_REPAIR_V1");
+    expect(summary).toContain("FAIL");
+    expect(summary).toContain("project_hash");
+    return {id:"resp_qarepaired123456",status:"completed",
+     usage:{input_tokens:100,output_tokens:50},output:[]};
+   }};
+  const envQa={...env,APPF2_AGENT_QA_BROWSER_ENABLED:"1",
+   APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"mock-openai-agent-key-123456",
+   APPF2_QA_PRIVATE_TOKEN:bearer,APPF2_AGENT_QA_VERIFIER_SECRET:verifierSecret,
+   APPF2_QA_BROWSER_SERVICE:{fetch:async()=>{
+    qaDispatches++;
+    return Response.json({data:{ready_for_review:false,packet:null,
+     checks:[{criterion_id:"show_score",category:"BROWSER",
+      verdict:"FAIL",evidence_hash:null}]}});
+   }}};
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent});
+  expect((await worker(await signed(creator,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:100,explicit_ai_consent:true
+  },"qa_failed_create123456"),envQa)).status).toBe(201);
+  const initial=db.jobs.get(JOB_ID)!;
+  const testId="call_qafailed_test123456",buildId="call_qafailed_build123456";
+  const cp={...initial.checkpoint,state:"TESTING" as const,
+   step:2,completed_call_ids:[buildId,testId]};
+  const {checkpointHash}=await import("../../src/platform/agent/postgres-agent-jobs.js");
+  db.jobs.set(JOB_ID,{...initial,revision:1,job_state:"TESTING",
+   checkpoint:cp,checkpoint_hash:await checkpointHash(cp)});
+  for(const id of [buildId,testId]){
+   db.sandboxCalls.set(id,{job_id:JOB_ID,owner_anonymous_id:OWNER,
+    call_id:id,model_call_key:"qa_model_"+id,job_revision:0,
+    checkpoint_hash:initial.checkpoint_hash,
+    project_hash:initial.project_hash,call_hash:"sha256:"+"f".repeat(64),
+    max_charge_cents:1,status:"SUCCEEDED",receipt_json:{
+     call_id:id,project_hash:initial.project_hash,exit_code:0,
+     timed_out:false,runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"
+    }});
+  }
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/qa-run";
+  const repairPath="/api/v1/agent-jobs/"+JOB_ID+"/qa-repair";
+  const repair={anonymous_id:OWNER,expected_revision:2,
+   model_call_key:"qa_repair_model123456",original_prompt:prompt,original_plan:plan,
+   max_charge_cents:5,max_output_tokens:512,explicit_ai_consent:true};
+  expect((await worker(await signed(creator,repairPath,repair,
+   "qa_repair_before_run123456"),envQa)).status).toBe(503);
+  const qa=await worker(await signed(creator,path,{anonymous_id:OWNER,
+   job_id:JOB_ID,expected_revision:1,project_hash:initial.project_hash,
+   build_call_id:buildId,test_call_id:testId,
+   original_prompt:prompt,original_plan:plan,explicit_browser_qa_consent:true
+  },"qa_fail_run123456"),envQa);
+  expect(qa.status).toBe(200);
+  expect(await qa.json()).toMatchObject({data:{
+   status:"BROWSER_QA_FAILED_REPAIR_READY",revision:2,
+   job_state:"REPAIRING",ready_for_review:false,app_published:false
+  }});
+  expect(qaDispatches).toBe(1);
+  expect(db.jobs.get(JOB_ID)?.job_state).toBe("REPAIRING");
+  expect((await worker(await signed(creator,repairPath,{
+   ...repair,original_prompt:prompt+"篡改"
+  },"qa_repair_forged123456"),envQa)).status).toBe(503);
+  expect(modelDispatches).toBe(0);
+  expect((await worker(await signed(creator,repairPath,{
+   ...repair,explicit_ai_consent:false
+  },"qa_repair_unsignedconsent123456"),envQa)).status).toBe(400);
+  const completed=await worker(await signed(creator,repairPath,repair,
+   "qa_repair_signed123456"),envQa);
+  expect(completed.status).toBe(200);
+  expect(await completed.json()).toMatchObject({data:{
+   status:"QA_REPAIR_MODEL_SAVED",source:"PROVIDER",
+   app_published:false,next_action:"PROCESS_SAVED_MODEL"
+  }});
+  expect(modelDispatches).toBe(1);
+  const replay=await worker(await signed(creator,repairPath,repair,
+   "qa_repair_replay123456"),envQa);
+  expect(replay.status).toBe(200);
+  expect(await replay.json()).toMatchObject({data:{source:"DURABLE_REPLAY"}});
+  expect(modelDispatches).toBe(1);
+  expect(db.modelCalls.get(repair.model_call_key)?.status).toBe("SUCCEEDED");
+ });
+});
