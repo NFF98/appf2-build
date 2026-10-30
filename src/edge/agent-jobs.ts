@@ -18,6 +18,7 @@ import {reviewAgentQa,validQaReviewBody} from "./agent-qa-review.js";
 import {runSignedIndependentBrowserQa,validBrowserQaRunBody} from "./agent-qa-run.js";
 import {executeSignedQaRepair,validQaRepairBody} from "./agent-qa-repair.js";
 import {freezeAgentQaPlan,validFreezeQaPlanBody} from "./agent-qa-plan.js";
+import {readSignedPreviewAsset,validPreviewAssetBody} from "./agent-preview-asset.js";
 import {generateAndFreezeOriginalQa,validGenerateQaBody} from "./agent-qa-generate.js";
 import type {PaidModelTurnDeps} from "../platform/agent/journaled-model-gateway.js";
 import {WorkerPostgresExecutor,type WorkerRequestDbContext}
@@ -44,6 +45,7 @@ const QA_REVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-review$/u;
 const QA_RUN_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-run$/u;
 const QA_REPAIR_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-repair$/u;
 const QA_PLAN_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-plan$/u;
+const PREVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/preview-asset$/u;
 const QA_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-generate$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -149,8 +151,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname);
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch)return undefined;
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -181,6 +183,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   qaPlanMatch?(validFreezeQaPlanBody(parsed)?parsed:null):
   qaRepairMatch?(validQaRepairBody(parsed)?parsed:null):
   qaRunMatch?(validBrowserQaRunBody(parsed)?parsed:null):
+  previewMatch?(validPreviewAssetBody(parsed)?parsed:null):
   qaMatch?(validQaReviewBody(parsed)?parsed:null):
   progressMatch?(validAgentProgressBody(parsed)?parsed:null):
   seqMatch?(validAgentSequenceBody(parsed)?parsed:null):
@@ -224,6 +227,15 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    const result=await executeSignedQaRepair(info,{db,
     jobId:qaRepairMatch[1]??"",owner:info.anonymous_id,ownerThumb,
     apiKey:env.APPF2_OPENAI_AGENT_API_KEY,send:ctx.deps?.sendModel});
+   return json(200,{data:result});
+  }
+  if(previewMatch){
+   if(!validPreviewAssetBody(info))return denied();
+   const result=await readSignedPreviewAsset(info,{db,
+    jobId:previewMatch[1]??"",owner:info.anonymous_id,ownerThumb,
+    brokerService:env.APPF2_SANDBOX_BROKER_SERVICE,
+    brokerToken:env.APPF2_SANDBOX_BROKER_TOKEN??"",
+    allowedJobId:env.APPF2_SANDBOX_ALLOWED_JOB_ID??""});
    return json(200,{data:result});
   }
   if(qaRunMatch){
