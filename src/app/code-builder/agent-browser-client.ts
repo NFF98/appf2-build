@@ -85,6 +85,7 @@ export type SavedCandidate=AgentStoredTarget&{readonly savedAt:number};
  * Every restore still requires the matching nonextractable IndexedDB key and
  * server-side owner PoP. No code, response body, or API secret is stored.
  */
+// eslint-disable-next-line complexity -- Expiry, integrity, duplicate and malformed stored records fail closed.
 export function readSavedCandidateLibrary():readonly SavedCandidate[]{
  try{
   const stored=localStorage.getItem(LIBRARY_SLOT);
