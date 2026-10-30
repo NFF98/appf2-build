@@ -78,6 +78,45 @@ function validatedTarget(v:unknown):AgentStoredTarget|null{
   ...(qaPlan?{qaPlan}:{})};
 }
 const CANDIDATE_RECOVERY_MS=24*60*60*1000;
+const LIBRARY_SLOT="appf2.agent.candidate.library.v1";
+const MAX_RECENT_CANDIDATES=8;
+export type SavedCandidate=AgentStoredTarget&{readonly savedAt:number};
+/** A small local browser index of persisted jobs, NOT an access grant.
+ * Every restore still requires the matching nonextractable IndexedDB key and
+ * server-side owner PoP. No code, response body, or API secret is stored.
+ */
+export function readSavedCandidateLibrary():readonly SavedCandidate[]{
+ try{
+  const raw=localStorage.getItem(LIBRARY_SLOT);
+  if(!raw||raw.length>100000)return [];
+  const parsed:unknown=JSON.parse(raw);
+  if(!Array.isArray(parsed))return [];
+  const result:SavedCandidate[]=[],seen=new Set<string>();
+  for(const item of parsed.slice(0,MAX_RECENT_CANDIDATES*2)){
+   if(typeof item!=="object"||item===null||Array.isArray(item))continue;
+   const value=item as Record<string,unknown>;
+   const age=Date.now()-Number(value.savedAt);
+   if(typeof value.savedAt!=="number"||!Number.isFinite(age)||
+    age< -60000||age>CANDIDATE_RECOVERY_MS)continue;
+   const target=validatedTarget(item);
+   if(!target||seen.has(target.jobId))continue;
+   seen.add(target.jobId);
+   result.push({...target,savedAt:value.savedAt});
+   if(result.length>=MAX_RECENT_CANDIDATES)break;
+  }
+  return result;
+ }catch{return [];}
+}
+/** Selecting a saved card performs no paid operations and does NOT renew age. */
+export function chooseSavedCandidate(jobId:string):boolean{
+ const entry=readSavedCandidateLibrary().find(x=>x.jobId===jobId);
+ if(!entry)return false;
+ try{
+  localStorage.setItem(SLOT,JSON.stringify(entry));
+  sessionStorage.setItem(SLOT,JSON.stringify(entry));
+  return true;
+ }catch{return false;}
+}
 /** Persist only the target and frozen requirements in this browser profile.
  * The P-256 private signing key stays nonextractable in IndexedDB; an ID or
  * localStorage record alone never grants creator access. Expire both at 24h.
@@ -108,10 +147,18 @@ export function savedCandidateTarget():AgentStoredTarget|null{
  catch{return null;}
 }
 function saveTarget(value:AgentStoredTarget):void{
- const data=JSON.stringify(value);
- try{sessionStorage.setItem(SLOT,data);}catch{ /* Memory-only fallback. */ }
- try{localStorage.setItem(SLOT,JSON.stringify({...value,savedAt:Date.now()}));}
- catch{ /* Private mode degrades to tab-only recovery. */ }
+ const prior=readSavedCandidateLibrary();
+ // Do not extend a job's 24-hour proof key just by reading/replanning it.
+ const savedAt=prior.find(x=>x.jobId===value.jobId)?.savedAt??Date.now();
+ const record={...value,savedAt};
+ try{sessionStorage.setItem(SLOT,JSON.stringify(record));}
+ catch{ /* Private mode can still use live in-memory key. */ }
+ try{
+  localStorage.setItem(SLOT,JSON.stringify(record));
+  const recent=[record,...prior.filter(x=>x.jobId!==value.jobId)]
+   .slice(0,MAX_RECENT_CANDIDATES);
+  localStorage.setItem(LIBRARY_SLOT,JSON.stringify(recent));
+ }catch{ /* Private browsing degrades to tab-only recovery. */ }
 }
 function ring():PopKeyring{
  return new PopKeyring({subtle:crypto.subtle,now:Date.now,
