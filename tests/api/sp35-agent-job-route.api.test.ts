@@ -1848,7 +1848,8 @@ describe("Sprint 3.5 one-sentence natural language to immutable AI-generated QA 
   const agent={...db.makeDeps(),sendModel:async({request}:{request:{input:unknown}})=>{
    sent++;expect(typeof request.input).toBe("string");
    expect(String(request.input)).toContain("ORIGINAL_USER_REQUEST_JSON");
-   expect(String(request.input)).not.toContain("CURRENT_PROJECT_FILES_JSON");
+   if(sent===1)expect(String(request.input)).not.toContain("CURRENT_PROJECT_FILES_JSON");
+   else expect(String(request.input)).toContain("CURRENT_PROJECT_FILES_JSON");
    return modelResponse(JSON.stringify(rawPlan));
   }};
   const worker=createWorkerFetch({}, {now:()=>TIME,agent});
