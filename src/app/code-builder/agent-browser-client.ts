@@ -137,6 +137,7 @@ export class BrowserCodingAgent {
  /** At most six steps per click; every AI and Sandbox side effect independently signed.
   * No request is reissued after any network error or unknown paid outcome.
   */
+ // eslint-disable-next-line complexity -- One authorized response per tool, no retry on uncertain charge.
  async advance(opts:AgentBrowserOptions,onProgress:(s:CandidateSnapshot)=>void,
  shouldStop:()=>boolean=()=>false):Promise<CandidateSnapshot>{
   if(!opts.allowAi)throw Error("AI 執行必須經過明確同意。");
@@ -161,10 +162,8 @@ export class BrowserCodingAgent {
     anonymous_id:this.owner,model_call_key:progress.resume_model_call_key,
     expected_revision:progress.revision,
     ...(opts.allowContainer?{explicit_container_consent:true,max_container_charge_cents:5}:{}),
-    ...(i<MAX_TURNS_PER_CLICK-1?{
-     explicit_ai_consent:true,next_model_call_key:"agent_next_"+crypto.randomUUID(),
-     max_ai_charge_cents:8,max_output_tokens:4096
-    }:{})
+    explicit_ai_consent:true,next_model_call_key:"agent_next_"+crypto.randomUUID(),
+    max_ai_charge_cents:8,max_output_tokens:4096
    };
    const applied=await this.post<Step>("/auto-step",body);
    completed++;

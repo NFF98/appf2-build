@@ -113,7 +113,7 @@ export async function runSignedAgentStep(input:AutoStepInput,deps:AutoStepDeps):
  const jobState=sandbox&&"job_state" in done?done.job_state:"CODING";
  const qaPending=sandbox&&call.name==="run_test"&&
   "exit_code" in done&&done.exit_code===0;
- if(input.explicit_ai_consent!==true)
+ if(qaPending||input.explicit_ai_consent!==true)
   return result(qaPending?"INDEPENDENT_QA_REQUIRED":"STEP_APPLIED",
    qaPending?"VERIFY_ORIGINAL_REQUIREMENTS":"NEXT_MODEL_NEEDS_SIGNED_CONSENT",
    done.revision,done.project_hash,jobState);

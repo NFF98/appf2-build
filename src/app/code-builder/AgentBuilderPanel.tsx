@@ -9,6 +9,7 @@ function failureMessage(e:unknown):string{
 /** Real multi-file Agent entry, not the legacy single-file code-app publisher.
  * Candidate is viewable as source only until independent QA/publishing exists.
  */
+// eslint-disable-next-line complexity -- Explicit signed AI and container approvals never silently merge.
 export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [prompt,setPrompt]=useState(suggestedPrompt?.text??"");
  const [aiConsent,setAiConsent]=useState(false);
@@ -25,7 +26,6 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  },[suggestedPrompt]);
  const options=():AgentBrowserOptions=>({
   allowAi:aiConsent,allowContainer:containerConsent,approvedCents});
- // eslint-disable-next-line complexity -- Each stage writes only signed durable state.
  const execute=async(resume:boolean)=>{
   if(busy||!aiConsent)return;
   setBusy(true);setError("");stop.current=false;
@@ -34,6 +34,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    agent.current=worker;
    if(resume){
     if(!await worker.restore())throw Error("找不到已保存的 Agent 工作。");
+    const progress=await worker.progress();
+    if(progress.calls.length===0)await worker.plan();
    }else{
     await worker.create(prompt,options());
     setSaved(true);
