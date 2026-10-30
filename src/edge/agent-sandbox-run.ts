@@ -74,6 +74,7 @@ export function validSandboxRunBody(x:unknown):x is SandboxRunInput{
   Number.isSafeInteger(y.max_charge_cents)&&Number(y.max_charge_cents)>=1&&
   Number(y.max_charge_cents)<=100;
 }
+// eslint-disable-next-line complexity -- Optional service binding plus legacy strict network origin are independent guards.
 export function validPrivateBrokerConfig(url:string,token:string,
  allowedJobId:string,jobId:string,
  brokerService?:SandboxServiceBinding):boolean{
