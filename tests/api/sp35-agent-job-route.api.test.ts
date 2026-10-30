@@ -1825,3 +1825,94 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   expect(db.modelCalls.get(repair.model_call_key)?.status).toBe("SUCCEEDED");
  });
 });
+
+describe("Sprint 3.5 one-sentence natural language to immutable AI-generated QA plan",()=>{
+ const prompt="製作多人計分 App，按加分後顯示新得分 42";
+ const rawPlan={version:"1",criteria:[{
+  id:"model_assigned_different_id",source_quote:"加分後顯示新得分 42",
+  description:"點擊加分應顯示 42",automatable:true,
+  steps:[{action:"click",role:"button",name:"加分"}],
+  assertions:[{kind:"text_appears",text:"42"}]
+ }]};
+ const input={anonymous_id:OWNER,expected_revision:0,original_prompt:prompt,
+  explicit_ai_consent:true,max_charge_cents:8,max_output_tokens:4096};
+ const path="/api/v1/agent-jobs/"+JOB_ID+"/qa-generate";
+ const modelResponse=(text:string)=>({id:"resp_auto_qa_plan_123456",status:"completed",
+  usage:{input_tokens:310,output_tokens:210},
+  output:[{type:"message",role:"assistant",
+   content:[{type:"output_text",text}]}]});
+ it("journals exactly one paid planner, checks quoted requirements, freezes before coding",async()=>{
+  const person=await client(),db=new Database();let sent=0;
+  const paid={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"fake-model-api-key-123456789"};
+  const agent={...db.makeDeps(),sendModel:async({request}:{request:{input:unknown}})=>{
+   sent++;expect(typeof request.input).toBe("string");
+   expect(String(request.input)).toContain("ORIGINAL_USER_REQUEST_JSON");
+   expect(String(request.input)).not.toContain("CURRENT_PROJECT_FILES_JSON");
+   return modelResponse(JSON.stringify(rawPlan));
+  }};
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent});
+  const create=await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:60,explicit_ai_consent:true
+  },"qa_ai_auto_create123456"),paid);
+  expect(create.status).toBe(201);
+  const first=await worker(await signed(person,path,input,
+   "qa_ai_auto_first123456"),paid);
+  expect(first.status).toBe(200);
+  expect(await first.json()).toMatchObject({data:{
+   status:"QA_ORIGINAL_PLAN_FROZEN",source:"PROVIDER",
+   criteria_count:1,original_plan:{criteria:[{
+    id:"req_1",source_quote:"加分後顯示新得分 42"}]},app_published:false
+  }});
+  expect(sent).toBe(1);
+  expect(db.modelCalls.get("qa_original_plan_"+JOB_ID)?.status).toBe("SUCCEEDED");
+  expect(db.frozenQa.get(JOB_ID)?.original_plan).toMatchObject({
+   criteria:[{id:"req_1",source_quote:"加分後顯示新得分 42"}]});
+  const replay=await worker(await signed(person,path,input,
+   "qa_ai_auto_replay123456"),paid);
+  expect(replay.status).toBe(200);
+  expect(await replay.json()).toMatchObject({data:{source:"FROZEN_REPLAY"}});
+  expect(sent).toBe(1);
+  expect((await worker(await signed(person,path,{
+   ...input,original_prompt:prompt+"（被修改）"
+  },"qa_ai_auto_tamper123456"),paid)).status).toBe(503);
+  expect(sent).toBe(1);
+  const planning=await worker(await signed(person,
+   "/api/v1/agent-jobs/"+JOB_ID+"/model-plan",{
+    anonymous_id:OWNER,prompt,model_call_key:"first_coding_model123456",
+    max_charge_cents:8,max_output_tokens:4096,explicit_ai_consent:true
+   },"qa_ai_auto_code123456"),paid);
+  expect(planning.status).toBe(200);
+  expect(sent).toBe(2);
+  expect(db.jobs.get(JOB_ID)?.job_state).toBe("PLANNING");
+  expect((await worker(await signed(person,path,input,
+   "qa_ai_auto_too_late123456"),paid)).status).toBe(503);
+  expect(sent).toBe(2);
+ });
+ it("rejects model invented quotes, incomplete outputs and bypassed consent without retry",async()=>{
+  const person=await client(),db=new Database();let sent=0;
+  const paid={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"fake-model-api-key-123456789"};
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:{
+   ...db.makeDeps(),sendModel:async()=>{
+    sent++;return modelResponse(JSON.stringify({...rawPlan,criteria:[{
+     ...rawPlan.criteria[0],source_quote:"模型臆造：不存在的獎勵"}]}));
+   }
+  }});
+  expect((await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:60,explicit_ai_consent:true
+  },"qa_ai_fail_create123456"),paid)).status).toBe(201);
+  expect((await worker(await signed(person,path,{
+   ...input,explicit_ai_consent:false
+  },"qa_ai_bad_consent123456"),paid)).status).toBe(400);
+  expect(sent).toBe(0);
+  expect((await worker(await signed(person,path,input,
+   "qa_ai_invalid_result123456"),paid)).status).toBe(503);
+  expect(db.frozenQa.size).toBe(0);
+  expect(sent).toBe(1);
+  expect((await worker(await signed(person,path,input,
+   "qa_ai_no_recharge123456"),paid)).status).toBe(503);
+  expect(sent).toBe(1);
+  expect(db.modelCalls.get("qa_original_plan_"+JOB_ID)?.status).toBe("SUCCEEDED");
+ });
+});
