@@ -211,7 +211,9 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
     modelEnabled:env.APPF2_AGENT_MODEL_EXECUTION_ENABLED==="1",
     apiKey:env.APPF2_OPENAI_AGENT_API_KEY??"",
     brokerEnabled:env.APPF2_AGENT_SANDBOX_EXECUTION_ENABLED==="1",
-    brokerUrl:env.APPF2_SANDBOX_BROKER_URL??"",
+    brokerUrl:env.APPF2_SANDBOX_BROKER_SERVICE?"":
+     env.APPF2_SANDBOX_BROKER_URL??"",
+    brokerService:env.APPF2_SANDBOX_BROKER_SERVICE,
     brokerToken:env.APPF2_SANDBOX_BROKER_TOKEN??"",
     allowedJobId:env.APPF2_SANDBOX_ALLOWED_JOB_ID??"",
     sendModel:ctx.deps?.sendModel,sendSandbox:ctx.deps?.sendSandbox
@@ -225,7 +227,9 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
     modelEnabled:env.APPF2_AGENT_MODEL_EXECUTION_ENABLED==="1",
     apiKey:env.APPF2_OPENAI_AGENT_API_KEY??"",
     brokerEnabled:env.APPF2_AGENT_SANDBOX_EXECUTION_ENABLED==="1",
-    brokerUrl:env.APPF2_SANDBOX_BROKER_URL??"",
+    brokerUrl:env.APPF2_SANDBOX_BROKER_SERVICE?"":
+     env.APPF2_SANDBOX_BROKER_URL??"",
+    brokerService:env.APPF2_SANDBOX_BROKER_SERVICE,
     brokerToken:env.APPF2_SANDBOX_BROKER_TOKEN??"",
     allowedJobId:env.APPF2_SANDBOX_ALLOWED_JOB_ID??"",
     sendModel:ctx.deps?.sendModel,sendSandbox:ctx.deps?.sendSandbox
@@ -236,8 +240,11 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    if(!validSandboxRunBody(info))return denied();
    const result=await executeSignedSandboxTool(info,{
     db,jobId:sandboxMatch[1]??"",owner:info.anonymous_id,ownerThumb,
-    brokerUrl:env.APPF2_SANDBOX_BROKER_URL??"",
+    brokerUrl:env.APPF2_SANDBOX_BROKER_SERVICE?"":
+     env.APPF2_SANDBOX_BROKER_URL??"",
+    brokerService:env.APPF2_SANDBOX_BROKER_SERVICE,
     brokerToken:env.APPF2_SANDBOX_BROKER_TOKEN??"",
+    brokerService:env.APPF2_SANDBOX_BROKER_SERVICE,
     allowedJobId:env.APPF2_SANDBOX_ALLOWED_JOB_ID??"",
     send:ctx.deps?.sendSandbox
    });

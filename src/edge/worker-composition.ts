@@ -58,6 +58,8 @@ export interface Appf2WorkerEnv {
   /** Private Sandbox bridge: pinned UUID, or explicit OWNER_SCOPED_JOBS mode.
    * Both require creator PoP, model journal and DB budget; OFF by default. */
   readonly APPF2_AGENT_SANDBOX_EXECUTION_ENABLED?: string;
+  /** Real private Worker Service Binding. Does not expose workers_dev. */
+  readonly APPF2_SANDBOX_BROKER_SERVICE?: Fetcher;
   readonly APPF2_SANDBOX_BROKER_URL?: string;
   readonly APPF2_SANDBOX_BROKER_TOKEN?: string;
   readonly APPF2_SANDBOX_ALLOWED_JOB_ID?: string;

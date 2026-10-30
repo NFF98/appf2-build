@@ -20,9 +20,12 @@ export type SandboxRunInput={
  readonly expected_revision:number;readonly explicit_container_consent:true;
  readonly max_charge_cents:number;
 };
+/** Private Worker-to-Worker service binding. No public workers.dev URL needed. */
+export type SandboxServiceBinding={fetch:(request:Request)=>Promise<Response>};
 export type SandboxRunDeps={
  readonly db:AgentJobExecutor;readonly jobId:string;readonly owner:string;
  readonly ownerThumb:string;readonly brokerUrl:string;
+ readonly brokerService?:SandboxServiceBinding;
  readonly brokerToken:string;readonly allowedJobId:string;
  readonly send?:(task:{job_id:string;project:ProjectSnapshot;call:AgentToolCall},
   url:string,token:string)=>Promise<unknown>;
@@ -72,7 +75,13 @@ export function validSandboxRunBody(x:unknown):x is SandboxRunInput{
   Number(y.max_charge_cents)<=100;
 }
 export function validPrivateBrokerConfig(url:string,token:string,
- allowedJobId:string,jobId:string):boolean{
+ allowedJobId:string,jobId:string,
+ brokerService?:SandboxServiceBinding):boolean{
+ if(brokerService!==undefined){
+  return typeof brokerService.fetch==="function"&&url===""&&
+   token.length>=32&&token.length<=512&&
+   sandboxJobAllowed(allowedJobId,jobId);
+ }
  try{
   const parsed=new URL(url);
   return parsed.protocol==="https:"&&parsed.hostname.endsWith(".workers.dev")&&
@@ -84,12 +93,17 @@ export function validPrivateBrokerConfig(url:string,token:string,
 }
 export async function sendPrivateSandboxTask(task:{
  job_id:string;project:ProjectSnapshot;call:AgentToolCall
-},baseUrl:string,token:string):Promise<unknown>{
- const response=await fetch(baseUrl+"internal/execute",{
+},baseUrl:string,token:string,
+ service?:SandboxServiceBinding):Promise<unknown>{
+ const request=new Request((service?"https://appf2-private-sandbox.invalid/":baseUrl)+
+  "internal/execute",{
   method:"POST",redirect:"error",
   headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
   body:JSON.stringify(task),signal:AbortSignal.timeout(45000)
  });
+ // The private service binding is always preferred; never fall back to
+ // public fetch after a private error or a possibly paid execution.
+ const response=service?await service.fetch(request):await fetch(request);
  if(!response.ok)throw Error("SANDBOX_BROKER_UNAVAILABLE");
  const raw=await response.text();
  if(raw.length>16384)throw Error("SANDBOX_BROKER_OVERSIZED");
@@ -152,7 +166,7 @@ async function executeOnce(db:AgentJobExecutor,row:StoredCall,task:{
  let result:SandboxEvidence;
  try{
   const raw=await (deps.send??sendPrivateSandboxTask)(
-   task,deps.brokerUrl,deps.brokerToken);
+   task,deps.brokerUrl,deps.brokerToken,deps.brokerService);
   result=await verifiedEvidence(raw,task.call);
   const saved=await db.query<{call_id:string}>(COMPLETE,
    [row.job_id,row.owner_anonymous_id,row.call_id,JSON.stringify(result)]);
@@ -170,7 +184,7 @@ export async function executeSignedSandboxTool(input:SandboxRunInput,
  deps:SandboxRunDeps):Promise<SandboxRunResult>{
  if(!validSandboxRunBody(input)||input.anonymous_id!==deps.owner||
   !validPrivateBrokerConfig(deps.brokerUrl,deps.brokerToken,
-   deps.allowedJobId,deps.jobId))
+   deps.allowedJobId,deps.jobId,deps.brokerService))
   throw Error("SANDBOX_PRIVATE_EXECUTION_DISABLED");
  const creator=(await deps.db.query<{job_id:string}>(`SELECT job_id::text
   FROM public.appf2_agent_job WHERE job_id=$1::uuid

@@ -23,6 +23,7 @@ export type AutoStepDeps={
  readonly db:AgentJobExecutor;readonly jobId:string;readonly owner:string;
  readonly ownerThumb:string;readonly modelEnabled:boolean;readonly apiKey:string;
  readonly brokerEnabled:boolean;readonly brokerUrl:string;readonly brokerToken:string;
+ readonly brokerService?:SandboxRunDeps["brokerService"];
  readonly allowedJobId:string;readonly sendModel?:PaidModelTurnDeps["send"];
  readonly sendSandbox?:SandboxRunDeps["send"];
 };
@@ -109,6 +110,7 @@ export async function runSignedAgentStep(input:AutoStepInput,deps:AutoStepDeps):
    max_charge_cents:input.max_container_charge_cents!
   },{db:deps.db,jobId:deps.jobId,owner:deps.owner,ownerThumb:deps.ownerThumb,
    brokerUrl:deps.brokerUrl,brokerToken:deps.brokerToken,
+   brokerService:deps.brokerService,
    allowedJobId:deps.allowedJobId,send:deps.sendSandbox}):
   await applyStoredModelEdit({
    anonymous_id:input.anonymous_id,model_call_key:input.model_call_key,

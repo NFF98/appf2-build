@@ -62,3 +62,16 @@ the network-denied container, and checks real browser rendering including
 a prompt with HTML-like content. These checks are independent from Vite exit
 status but **only validate trusted source**. They never count as an
 unknown model-authored app QA pass or authorize publication.
+
+## Private Worker-to-Worker transport
+
+The Sandbox Worker remains `workers_dev:false`. The agent Worker now supports
+`APPF2_SANDBOX_BROKER_SERVICE` as a **private Cloudflare Service Binding**
+to service `appf2-sp35-private-sandbox`. The binding and token are configured
+only in protected deployment configuration; no public `workers.dev` URL is
+necessary. With a binding configured, `APPF2_SANDBOX_BROKER_URL` is ignored,
+and a failed private request never retries or falls back to public fetch.
+The protected agent Worker must still enable both the candidate and Sandbox
+feature flags and provide a private bearer token (minimum 32 characters),
+owner-signed job and exact DB reservation/consent. Do NOT deploy or enable
+paid container consent as part of ordinary GitHub PR CI.
