@@ -34,7 +34,7 @@ export async function advanceWithApprovedQaRepair(agent:LifecycleAgent,
  const first=await agent.advance(options,onProgress,shouldStop);
  // Consent is for this click only. Never silently spend Browser QA on reopen.
  if(shouldStop()||!options.allowAi||!browserQaConsent||
-  first.job.status!=="TESTING")
+  first.job.status!=="TESTING"||first.completed_steps<1)
   return {snapshot:first,qa:null,repairStarted:false};
  const qa=await agent.independentQa(true);
  const inspected=await agent.read();
