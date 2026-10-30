@@ -1,6 +1,7 @@
 /** The only AI repair entry after independently verified Browser QA failures.
  * Paid Responses dispatch uses the existing PostgreSQL at-most-once journal.
  */
+import {verifyFrozenQaPlan} from "./agent-qa-plan.js";
 import {recoverAgentJob} from "../platform/agent/durable-agent-service.js";
 import {runJournaledPaidModelTurn,type PaidModelTurnDeps}
  from "../platform/agent/journaled-model-gateway.js";
@@ -63,6 +64,8 @@ export async function executeSignedQaRepair(input:QaRepairInput,deps:QaRepairDep
  if(current.job.request_hash!==hash)throw Error("QA_REPAIR_CHANGED_ORIGINAL_PROMPT");
  const plan=parseQaPlan(input.original_plan,input.original_prompt);
  if(!plan)throw Error("QA_REPAIR_PLAN_INVALID");
+ if(!await verifyFrozenQaPlan(deps.db,deps.jobId,deps.owner,
+  input.original_prompt,plan))throw Error("QA_REPAIR_PLAN_NOT_FROZEN");
  const journal=(await deps.db.query<SavedQa>(
   "SELECT job_revision,status,receipt_json FROM public.appf2_agent_browser_qa_attempt "+
   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid AND project_hash=$3::text LIMIT 1",

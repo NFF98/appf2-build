@@ -3,6 +3,7 @@
  * current immutable snapshot are checked BEFORE a durable one-shot reservation.
  * Ambiguous delivery is NEVER retried. No App publication authority exists.
  */
+import {verifyFrozenQaPlan} from "./agent-qa-plan.js";
 import {recoverAgentJob,advanceDurableAgentJob} from "../platform/agent/durable-agent-service.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {validPrivateBrowserQaTask,validQaObservedChecks,type PrivateBrowserQaTask}
@@ -89,6 +90,8 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
  const digest=await sha256CodeBytes(new TextEncoder().encode(
   "APPF2_AGENT_REQUEST_V1\u0000"+input.original_prompt.trim()));
  if(digest!==current.job.request_hash)throw Error("QA_ORIGINAL_PROMPT_CHANGED");
+ if(!await verifyFrozenQaPlan(deps.db,deps.jobId,deps.owner,
+  input.original_prompt,input.original_plan))throw Error("QA_ORIGINAL_PLAN_NOT_FROZEN");
  const test=(await deps.db.query<SandboxRow>(
   "SELECT job_id::text,owner_anonymous_id::text,call_id,model_call_key,"+
   "job_revision,checkpoint_hash,project_hash,call_hash,max_charge_cents,status,receipt_json "+
