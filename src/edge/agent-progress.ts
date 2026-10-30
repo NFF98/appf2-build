@@ -79,7 +79,7 @@ function examine(current:RecoveredAgentJob,row:ModelCallRow|null,
  if(atHead||renewedHead){
   if(callId===undefined)
    return state(key,"INDEPENDENT_QA_REQUIRED",row.job_revision,null,row.response_id);
-  if(!["read_file","write_file","write_files","delete_file",
+  if(!["read_file","inspect_project","write_file","write_files","delete_file",
    "run_build","run_test"].includes(tool??""))
    return state(key,"INVALID_MODEL_RESPONSE",row.job_revision);
   return state(key,"CURRENT_MODEL_READY",row.job_revision,tool,row.response_id);
