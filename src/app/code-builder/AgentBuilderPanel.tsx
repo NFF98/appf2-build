@@ -3,6 +3,7 @@ import {BrowserCodingAgent,savedCandidateTarget,type AgentBrowserOptions,
  type CandidateSnapshot} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
+import {savedAgentProjectZip} from "./agent-project-zip.js";
 
 type Props={readonly suggestedPrompt?:{text:string;revision:number}|null};
 function failureMessage(e:unknown):string{
@@ -116,6 +117,29 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    }
   }finally{setBusy(false);}
  };
+ const downloadSource=async()=>{
+  if(busy||!saved)return;
+  setBusy(true);setError("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   const target=await worker.restore();
+   if(!target)throw Error("找不到已保存專案的簽章金鑰。");
+   // Fetch the latest PoP-protected DB head; never export an old UI snapshot.
+   const latest=await worker.read();
+   if(latest.job_id!==target.jobId)throw Error("專案身分不一致，停止匯出。");
+   const zip=await savedAgentProjectZip(latest);
+   const url=URL.createObjectURL(new Blob([zip],{type:"application/zip"}));
+   const link=document.createElement("a");
+   link.href=url;link.download="appf2-agent-"+target.jobId+"-v"+latest.revision+".zip";
+   document.body.append(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),2000);
+   setSnapshot({job:latest,progress:null,
+    message:"已匯出資料庫最新版本的完整原始碼 ZIP；沒有重新呼叫 AI、建置或部署。",
+    completed_steps:0});
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const runQa=async(repair:boolean)=>{
   if(busy)return;
   setBusy(true);setError("");setQaOutcome("");
@@ -202,6 +226,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     ：{c.verdict}
    </li>)}</ul>
   </section>:null}
+  {snapshot&&snapshot.job.files.length>0?
+   <button type="button" className="btn btn-secondary"
+    disabled={busy} onClick={()=>{void downloadSource();}}>
+    下載目前已保存的多檔案專案 ZIP（不花 AI 費用）
+   </button>:null}
   {snapshot&&snapshot.job.checkpoint?.budget.max_steps<512?
    <button type="button" className="btn btn-secondary"
     disabled={busy} onClick={()=>{void extend();}}>延長 16 步（費用上限不變）</button>:null}
