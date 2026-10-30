@@ -1564,7 +1564,7 @@ describe("Sprint 3.5 owner-signed independent QA packet: no publication or paid 
    failures:expect.arrayContaining(["QA_PACKET_SEAL_INVALID"])
   }});
   const changedPrompt=await worker(await signed(author,qaPath,{
-   anonymous_id:OWNER,packet:{...packet,original_prompt:"新需求但未授權"}
+   anonymous_id:OWNER,packet:{...packet,original_prompt:prompt+"（新增需求未獲原始授權）"}
   },"qa_review_prompt123456"),qaEnv);
   expect(await changedPrompt.json()).toMatchObject({data:{
    ready_for_review:false,
