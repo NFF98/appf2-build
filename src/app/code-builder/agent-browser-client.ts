@@ -25,7 +25,7 @@ export async function stableAgentContinuationKey(kind:"agent_recover"|"agent_nex
  if(!ID.test(jobId)||!KEY.test(priorModelKey)||
   !Number.isSafeInteger(revision)||revision<0)
   throw Error("AGENT_CONTINUATION_KEY_INVALID");
- const bytes=new TextEncoder().encode("APPF2_AGENT_CONTINUATION_KEY_V1\\u0000"+
+ const bytes=new TextEncoder().encode("APPF2_AGENT_CONTINUATION_KEY_V1:"+
   JSON.stringify([kind,jobId,priorModelKey,revision]));
  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",bytes));
  return kind+"_"+Array.from(digest.slice(0,20),
