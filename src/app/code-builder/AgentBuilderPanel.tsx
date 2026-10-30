@@ -62,7 +62,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    agent.current=worker;
    if(resume){
     if(!await worker.restore())throw Error("找不到已保存的 Agent 工作。");
-    const [job,progress]=await Promise.all([worker.read(),worker.progress()]);
+    const job=await worker.read();
     // Never resend first paid model call after PLANNING was journaled or
     // may be in an unknown state (e.g. browser closed mid-call).
     if(job.revision===0){

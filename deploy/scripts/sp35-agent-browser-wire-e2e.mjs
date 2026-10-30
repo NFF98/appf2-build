@@ -39,7 +39,7 @@ function json(res,status,data){
   "Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});
  res.end(JSON.stringify(status===200||status===201?{data}:{error:data}));
 }
-// eslint-disable-next-line complexity -- Signed creator, model and mock tool paths must remain distinct.
+// eslint-disable-next-line complexity, max-lines-per-function -- Signed creator and independent QA model routes are distinct.
 async function api(req,res,url){
  const bytes=[];
  for await(const chunk of req)bytes.push(chunk);

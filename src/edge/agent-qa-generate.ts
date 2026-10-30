@@ -31,11 +31,14 @@ export function validGenerateQaBody(raw:unknown):raw is GenerateQaInput{
   x.original_prompt.length<=800&&x.explicit_ai_consent===true&&
   x.max_charge_cents===8&&x.max_output_tokens===4096;
 }
+// eslint-disable-next-line complexity -- Only complete, single-message no-tool AI JSON is allowed.
 export function parseGeneratedQaResponse(response:unknown,prompt:string):QaPlan|null{
  if(typeof response!=="object"||response===null||Array.isArray(response))
   return null;
  const r=response as Record<string,unknown>;
- if(r.status!=="completed"||!Array.isArray(r.output)||r.output.length>24)
+ if(r.status!=="completed"||!Array.isArray(r.output)||r.output.length>24||
+  r.output.some(item=>typeof item==="object"&&item!==null&&
+   (item as Record<string,unknown>).type==="function_call"))
   return null;
  const messages=r.output.filter(v=>typeof v==="object"&&v!==null&&
   (v as Record<string,unknown>).type==="message") as Record<string,unknown>[];
