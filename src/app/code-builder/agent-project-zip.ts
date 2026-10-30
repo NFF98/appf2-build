@@ -29,50 +29,40 @@ function entry(path:string,content:string):Entry{
  return {name,data,crc:crc32(data)};
 }
 function makeZip(entries:readonly Entry[]):Uint8Array<ArrayBuffer>{
- const locals:number[]=[],central:number[]=[];
- let size=22;
+ const locals=entries.reduce((n,f)=>n+30+f.name.length+f.data.length,0);
+ const central=entries.reduce((n,f)=>n+46+f.name.length,0);
+ const bytes=new Uint8Array(new ArrayBuffer(locals+central+22));
+ const view=new DataView(bytes.buffer);
+ let localPos=0,centralPos=locals;
  for(const f of entries){
-  locals.push(size);size+=30+f.name.length+f.data.length;
+  const start=localPos;
+  u32(view,localPos,0x04034b50);u16(view,localPos+4,20);
+  u16(view,localPos+6,0x0800);u16(view,localPos+8,0);
+  u16(view,localPos+10,0);u16(view,localPos+12,0);
+  u32(view,localPos+14,f.crc);u32(view,localPos+18,f.data.length);
+  u32(view,localPos+22,f.data.length);u16(view,localPos+26,f.name.length);
+  u16(view,localPos+28,0);
+  bytes.set(f.name,localPos+30);
+  bytes.set(f.data,localPos+30+f.name.length);
+  localPos+=30+f.name.length+f.data.length;
+  u32(view,centralPos,0x02014b50);u16(view,centralPos+4,20);
+  u16(view,centralPos+6,20);u16(view,centralPos+8,0x0800);
+  u16(view,centralPos+10,0);u16(view,centralPos+12,0);
+  u16(view,centralPos+14,0);u32(view,centralPos+16,f.crc);
+  u32(view,centralPos+20,f.data.length);u32(view,centralPos+24,f.data.length);
+  u16(view,centralPos+28,f.name.length);u16(view,centralPos+30,0);
+  u16(view,centralPos+32,0);u16(view,centralPos+34,0);
+  u16(view,centralPos+36,0);u32(view,centralPos+38,0);
+  u32(view,centralPos+42,start);bytes.set(f.name,centralPos+46);
+  centralPos+=46+f.name.length;
  }
- const cdStart=size;
- for(const f of entries){central.push(size);size+=46+f.name.length;}
- const bytes=new Uint8Array(new ArrayBuffer(size)),view=new DataView(bytes.buffer);
- let pos=22;
- for(const [i,f] of entries.entries()){
-  u32(view,pos,0x04034b50);u16(view,pos+4,20);u16(view,pos+6,0x0800);
-  u16(view,pos+8,0);u16(view,pos+10,0);u16(view,pos+12,0);
-  u32(view,pos+14,f.crc);u32(view,pos+18,f.data.length);
-  u32(view,pos+22,f.data.length);u16(view,pos+26,f.name.length);
-  u16(view,pos+28,0);
-  bytes.set(f.name,pos+30);bytes.set(f.data,pos+30+f.name.length);
-  pos=central[i];
-  u32(view,pos,0x02014b50);u16(view,pos+4,20);u16(view,pos+6,20);
-  u16(view,pos+8,0x0800);u16(view,pos+10,0);
-  u16(view,pos+12,0);u16(view,pos+14,0);
-  u32(view,pos+16,f.crc);u32(view,pos+20,f.data.length);
-  u32(view,pos+24,f.data.length);u16(view,pos+28,f.name.length);
-  u16(view,pos+30,0);u16(view,pos+32,0);u16(view,pos+34,0);
-  u16(view,pos+36,0);u32(view,pos+38,0);u32(view,pos+42,locals[i]);
-  bytes.set(f.name,pos+46);
- }
- // Append end-of-central-directory at the beginning to avoid another
- // allocation; rotate the completed ZIP into standard local→CD→EOCD order.
- const out=new Uint8Array(new ArrayBuffer(size));
- out.set(bytes.subarray(22),0);
- const end=size-22,dv=new DataView(out.buffer);
- u32(dv,end,0x06054b50);u16(dv,end+4,0);u16(dv,end+6,0);
- u16(dv,end+8,entries.length);u16(dv,end+10,entries.length);
- u32(dv,end+12,size-22-(cdStart-22));u32(dv,end+16,cdStart-22);
- u16(dv,end+20,0);
- // Central-directory offsets were calculated with the 22-byte scratch
- // prefix; correct the offset fields when copying to the final archive.
- let centralAt=cdStart-22;
- for(const f of entries){
-  const oldLocal=dv.getUint32(centralAt+42,true);
-  u32(dv,centralAt+42,oldLocal-22);
-  centralAt+=46+f.name.length;
- }
- return out;
+ if(localPos!==locals||centralPos!==locals+central)
+  throw Error("AGENT_ZIP_LAYOUT_MISMATCH");
+ const end=locals+central;
+ u32(view,end,0x06054b50);u16(view,end+4,0);u16(view,end+6,0);
+ u16(view,end+8,entries.length);u16(view,end+10,entries.length);
+ u32(view,end+12,central);u32(view,end+16,locals);u16(view,end+20,0);
+ return bytes;
 }
 // eslint-disable-next-line complexity -- Source, size, path and hash integrity checks must remain fail-closed.
 export async function savedAgentProjectZip(job:CandidateJob):Promise<Uint8Array<ArrayBuffer>>{
