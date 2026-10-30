@@ -47,6 +47,7 @@ if(!current.implementation_enabled){
   // inventory are independently verified by the preceding Human preflight.
   // This grants execution of REAL free product tests, not implementation
   // authority, Cloudflare deployment, merge or a synthetic release PASS.
+  // eslint-disable-next-line complexity -- Exact PR identity, bounded paths and HOLD safeguards are all independent.
   const sp35FiveCore=(()=>{
     if(process.env.GITHUB_EVENT_NAME!=="pull_request"||
       base!=="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b"||
