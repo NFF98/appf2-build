@@ -2,7 +2,7 @@
  * Data-only coding-agent protocol. A model message is never an OS command.
  * The runtime may only dispatch these calls to an authenticated sandbox broker.
  */
-export const AGENT_TOOLS=["read_file","write_file","write_files","delete_file","run_build","run_test","read_diagnostics"] as const;
+export const AGENT_TOOLS=["read_file","inspect_project","write_file","write_files","delete_file","run_build","run_test","read_diagnostics"] as const;
 export type AgentToolName=typeof AGENT_TOOLS[number];
 export type AgentToolCall={
  readonly call_id:string;
@@ -41,7 +41,8 @@ function exact(v:unknown,keys:readonly string[]):v is Record<string,unknown>{
  return obj(v)&&Object.keys(v).length===keys.length&&Object.keys(v).every(k=>keys.includes(k));
 }
 function argumentsFor(name:AgentToolName):readonly string[]{
- return name==="read_file"||name==="delete_file"?["path"]:
+ return name==="inspect_project"?["path","offset"]:
+  name==="read_file"||name==="delete_file"?["path"]:
   name==="write_file"?["path","content","previous_hash"]:
    name==="write_files"?["edits_json"]:
    name==="run_build"||name==="run_test"?["target"]:[];
@@ -86,10 +87,12 @@ export function parseAgentToolCall(input:unknown):AgentToolCall|null{
  if(name==="run_build"||name==="run_test"){
   if(input.args.target!=="project")return null;
  }
+ if(name==="inspect_project"&&
+  !inspectProjectArgs(input.args.path,input.args.offset))return null;
  if(name==="write_file"&&typeof input.args.content==="string"&&input.args.content.length>256*1024)return null;
  if(name==="write_files"&&
   (typeof input.args.edits_json!=="string"||parseAgentBatchWrites(input.args.edits_json)===null))return null;
- if("path" in input.args){
+ if("path" in input.args&&name!=="inspect_project"){
   const path=input.args.path;
   if(typeof path!=="string"||path.length>180)return null;
   // Safe path validation is enforced again by the workspace implementation.
@@ -100,6 +103,7 @@ export function parseAgentToolCall(input:unknown):AgentToolCall|null{
  return input as AgentToolCall;
 }
 import {assertWorkspacePath as assertPath} from "./project-workspace.js";
+import {inspectProjectArgs} from "./verified-project-inspection.js";
 // eslint-disable-next-line complexity -- Durable budget and replay boundaries are intentionally explicit.
 export function validateAgentCheckpoint(input:unknown):input is AgentCheckpoint{
  if(!exact(input,["version","job_id","state","project_hash","step","tokens_used",
