@@ -55,6 +55,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
+ // eslint-disable-next-line complexity -- Explicit one-click AI, browser QA and repair require separate consent gates.
  const execute=async(resume:boolean)=>{
   if(busy||!aiConsent)return;
   setBusy(true);setError("");stop.current=false;
