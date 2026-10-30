@@ -13,6 +13,7 @@ import {executeSignedSandboxTool,validSandboxRunBody,
  type SandboxRunDeps} from "./agent-sandbox-run.js";
 import {runSignedAgentStep,validAutoStepBody} from "./agent-auto-step.js";
 import {runSignedAgentSequence,validAgentSequenceBody} from "./agent-sequence.js";
+import {inspectAgentProgress,validAgentProgressBody} from "./agent-progress.js";
 import type {PaidModelTurnDeps} from "../platform/agent/journaled-model-gateway.js";
 import {WorkerPostgresExecutor,type WorkerRequestDbContext}
  from "../platform/blueprint/worker-postgres-executor.js";
@@ -32,6 +33,7 @@ const STATUS_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/model-status$/u;
 const SANDBOX_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/sandbox-run$/u;
 const AUTOSTEP_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/auto-step$/u;
 const SEQUENCE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/agent-sequence$/u;
+const PROGRESS_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/agent-progress$/u;
 const BUDGET_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/extend-budget$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -137,8 +139,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname);
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch)return undefined;
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname);
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -159,7 +161,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(isModel&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED!=="1")return denied();
  if(sandboxMatch&&env.APPF2_AGENT_SANDBOX_EXECUTION_ENABLED!=="1")return denied();
  if((autoMatch||seqMatch)&&env.APPF2_AGENT_AUTOSTEP_ENABLED!=="1")return denied();
- const info=seqMatch?(validAgentSequenceBody(parsed)?parsed:null):
+ const info=progressMatch?(validAgentProgressBody(parsed)?parsed:null):
+  seqMatch?(validAgentSequenceBody(parsed)?parsed:null):
   autoMatch?(validAutoStepBody(parsed)?parsed:null):
   budgetMatch?(validExtendBudgetBody(parsed)?parsed:null):
   sandboxMatch?(validSandboxRunBody(parsed)?parsed:null):
@@ -180,6 +183,12 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    if(!validExtendBudgetBody(info))return denied();
    const result=await extendSignedAgentBudget(info,{db,
     jobId:budgetMatch[1]??"",owner:info.anonymous_id,ownerThumb});
+   return json(200,{data:result});
+  }
+  if(progressMatch){
+   if(!validAgentProgressBody(info))return denied();
+   const result=await inspectAgentProgress(info,{db,
+    jobId:progressMatch[1]??"",owner:info.anonymous_id,ownerThumb});
    return json(200,{data:result});
   }
   if(seqMatch){

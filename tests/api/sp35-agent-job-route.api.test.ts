@@ -1194,3 +1194,90 @@ describe("Sprint 3.5 owner-signed bounded Agent Sequence (offline only)",()=>{
   expect(db.sandboxCalls.size).toBe(0);
  });
 });
+
+describe("Sprint 3.5 signed journal recovery after interrupted Agent sequences",()=>{
+ it("identifies current model, then an applied model, without another provider call",async()=>{
+  const person=await client(),intruder=await client(),db=new Database();
+  let dispatch=0;
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendModel:async()=>{
+    dispatch++;
+    const snap=Array.from(db.snapshots.values())[0]!.snapshot as {
+     files:{path:string;hash:string}[]};
+    return {id:"resp_progress_first123456",status:"completed",
+     usage:{input_tokens:100,output_tokens:50},output:[{
+      type:"function_call",call_id:"call_progress_edit123456",name:"write_file",
+      arguments:JSON.stringify({path:"src/main.ts",
+       content:"document.querySelector('#app')!.textContent='Ready';",
+       previous_hash:snap.files.find(f=>f.path==="src/main.ts")!.hash})}]};
+   }
+  }});
+  const prompt="建立完整可操作的多人骰子遊戲與排行榜";
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  const enabled={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  expect((await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:20,explicit_ai_consent:true
+  },"progress_create_123456"),env)).status).toBe(201);
+  expect((await worker(await signed(person,root+"/model-plan",{
+   anonymous_id:OWNER,prompt,model_call_key:"progress_model_123456",
+   max_charge_cents:4,max_output_tokens:1024,explicit_ai_consent:true
+  },"progress_plan_12345678"),enabled)).status).toBe(200);
+  const path=root+"/agent-progress";
+  const body={anonymous_id:OWNER,model_call_keys:["progress_model_123456","absent_model_123456"]};
+  const before=await worker(await signed(person,path,body,"progress_read_123456"),env);
+  expect(before.status).toBe(200);
+  expect(await before.json()).toMatchObject({data:{
+   status:"RECOVERY_INSPECTED",revision:1,can_resume:true,
+   resume_model_call_key:"progress_model_123456",next_action:"SIGN_NEXT_SEQUENCE",
+   scope:"SUBMITTED_KEYS_ONLY",app_published:false,
+   calls:[{state:"CURRENT_MODEL_READY",tool:"write_file",requires_container_consent:false},
+    {state:"MODEL_MISSING"}]}});
+  const denied=await worker(await signed(intruder,path,body,"progress_spoof_123456"),env);
+  expect(denied.status).toBe(503);
+  const applied=await worker(await signed(person,root+"/auto-step",{
+   anonymous_id:OWNER,model_call_key:"progress_model_123456",expected_revision:1
+  },"progress_apply_123456"),{...env,APPF2_AGENT_AUTOSTEP_ENABLED:"1"});
+  expect(applied.status).toBe(200);
+  const after=await worker(await signed(person,path,body,"progress_again_123456"),env);
+  expect(after.status).toBe(200);
+  expect(await after.json()).toMatchObject({data:{
+   revision:2,can_resume:false,resume_model_call_key:null,
+   calls:[{state:"ALREADY_APPLIED"},{state:"MODEL_MISSING"}]}});
+  expect(dispatch).toBe(1);
+ });
+ it("flags uncertain costs and refuses malformed or repeated keys",async()=>{
+  const person=await client(),db=new Database();
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt:"製作多人骰子遊戲與排行榜"
+  },"uncertain_create_123456"),env);
+  const job=db.jobs.get(JOB_ID)!;
+  db.modelCalls.set("uncertain_model_123456",{job_id:JOB_ID,
+   owner_anonymous_id:OWNER,call_key:"uncertain_model_123456",
+   job_revision:0,checkpoint_hash:job.checkpoint_hash,
+   request_hash:job.request_hash,model:"gpt-6.1-sol",
+   max_charge_cents:3,status:"BLOCKED_UNCERTAIN",
+   response_json:null,response_id:null,input_tokens:null,output_tokens:null});
+  const path=root+"/agent-progress";
+  const body={anonymous_id:OWNER,model_call_keys:["uncertain_model_123456"]};
+  const result=await worker(await signed(person,path,body,"uncertain_read_123456"),env);
+  expect(result.status).toBe(200);
+  expect(await result.json()).toMatchObject({data:{
+   can_resume:false,next_action:"AWAIT_MODEL_RECONCILIATION",
+   calls:[{state:"MODEL_UNCERTAIN"}]}});
+  const bad=[
+   ["uncertain_model_123456","uncertain_model_123456"],
+   [],
+   ["../secrets"]
+  ];
+  for(let i=0;i<bad.length;i++){
+   const resp=await worker(await signed(person,path,{
+    anonymous_id:OWNER,model_call_keys:bad[i]
+   },"progress_bad_123456"+i),env);
+   expect(resp.status).toBe(400);
+  }
+  expect(db.modelCalls.size).toBe(1);
+ });
+});
