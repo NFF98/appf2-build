@@ -1,5 +1,5 @@
 import {describe,it,expect} from "vitest";
-import {validPrivateBrowserQaTask,strictQaChecks}
+import {validPrivateBrowserQaTask,strictQaChecks,observedBrowserEvidenceHash}
  from "../../src/platform/agent/qa-browser-contract.js";
 import {consistentBrowserQaResult} from "../../src/edge/agent-qa-run.js";
 const prompt="按 Add 按鈕後顯示測試結果 42";
@@ -84,3 +84,32 @@ describe("Browser QA response consistency before durable one-shot admission",()=
  });
 });
 
+describe("Independent Browser QA hashes actual observed page state",()=>{
+ it("binds PASS evidence to actual DOM changes, snapshot and fetched assets",async()=>{
+  const paths=["index.html","assets/app-1.js"];
+  const a=await observedBrowserEvidenceHash(task,"click_result",
+   "<main>before</main>","<main>after 42</main>",paths);
+  const repeat=await observedBrowserEvidenceHash(task,"click_result",
+   "<main>before</main>","<main>after 42</main>",paths.slice().reverse());
+  expect(a).toBe(repeat);
+  expect(a).toMatch(/^sha256:[0-9a-f]{64}$/u);
+  expect(await observedBrowserEvidenceHash(task,"click_result",
+   "<main>before</main>","<main>after 43</main>",paths)).not.toBe(a);
+  expect(await observedBrowserEvidenceHash(task,"click_result",
+   "<main>earlier</main>","<main>after 42</main>",paths)).not.toBe(a);
+  expect(await observedBrowserEvidenceHash(task,"click_result",
+   "<main>before</main>","<main>after 42</main>",["index.html"])).not.toBe(a);
+  expect(await observedBrowserEvidenceHash({...task,
+   project_hash:"sha256:"+"e".repeat(64)},"click_result",
+   "<main>before</main>","<main>after 42</main>",paths)).not.toBe(a);
+ });
+ it("rejects non-observed or unbound PASS evidence",async()=>{
+  await expect(observedBrowserEvidenceHash(task,"not_a_criterion","A","B",
+   ["index.html"])).rejects.toThrow("QA_OBSERVED_EVIDENCE_INVALID");
+  await expect(observedBrowserEvidenceHash(task,"click_result","A","B",
+   ["assets/app.js"])).rejects.toThrow("QA_OBSERVED_EVIDENCE_INVALID");
+  await expect(observedBrowserEvidenceHash(task,"click_result","A",
+   "B".repeat(100001),["index.html"]))
+   .rejects.toThrow("QA_OBSERVED_EVIDENCE_INVALID");
+ });
+});
