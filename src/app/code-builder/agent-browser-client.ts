@@ -13,7 +13,7 @@ import {qaRepairCallKey} from "../../platform/agent/qa-repair-key.js";
 
 const SLOT="appf2.agent.candidate.job.v1";
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-const MAX_TURNS_PER_CLICK=6;
+export const MAX_TURNS_PER_CLICK=6;
 const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
 /** Same job, saved tool and CAS head always use the same paid model-call key.
  * If the browser loses an HTTP response, a later resume cannot accidentally
@@ -269,11 +269,14 @@ export class BrowserCodingAgent {
   */
  // eslint-disable-next-line complexity -- One authorized response per tool, no retry on uncertain charge.
  async advance(opts:AgentBrowserOptions,onProgress:(s:CandidateSnapshot)=>void,
- shouldStop:()=>boolean=()=>false):Promise<CandidateSnapshot>{
+ shouldStop:()=>boolean=()=>false,
+ maxTurns=MAX_TURNS_PER_CLICK):Promise<CandidateSnapshot>{
+  if(!Number.isSafeInteger(maxTurns)||maxTurns<0||maxTurns>MAX_TURNS_PER_CLICK)
+   throw Error("AGENT_STEP_LIMIT_INVALID");
   if(!opts.allowAi)throw Error("AI 執行必須經過明確同意。");
   let completed=0;
   let message="已保存專案；準備讀取持久化 Agent 狀態。";
-  for(let i=0;i<MAX_TURNS_PER_CLICK&&!shouldStop();i++){
+  for(let i=0;i<maxTurns&&!shouldStop();i++){
    const progress=await this.progress();
    if(progress.can_continue_saved_tool_result&&
     progress.resume_previous_model_call_key){
@@ -338,7 +341,7 @@ export class BrowserCodingAgent {
    if(applied.status!=="MODEL_RESPONSE_SAVED")break;
   }
   const job=await this.read(),progress=await this.progress();
-  if(completed===MAX_TURNS_PER_CLICK)
+  if(completed===maxTurns&&maxTurns===MAX_TURNS_PER_CLICK)
    message="本次最多六步已完成；可從保存的進度繼續，不會重跑已完成步驟。";
   return {job,progress,message,completed_steps:completed};
  }
