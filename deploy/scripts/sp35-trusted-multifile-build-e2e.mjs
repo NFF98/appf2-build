@@ -44,17 +44,17 @@ try{
  // Independent QA must observe what a user can actually see, not DOM
  // textContent, which includes hidden/script/template decoys.
  const seen=await page.evaluate(()=>{
-  const trap=document.createElement("span");
+  const trap=globalThis.document.createElement("span");
   trap.textContent="APPF2_HIDDEN_QA_TRAP";
   trap.style.display="none";
-  document.body.append(trap);
-  const invisible=document.createElement("button");
+  globalThis.document.body.append(trap);
+  const invisible=globalThis.document.createElement("button");
   invisible.textContent="Invisible QA Control";
   invisible.style.opacity="0";
-  document.body.append(invisible);
-  return {raw:document.body.textContent??"",
-   visible:document.body.innerText,
-   opacity:getComputedStyle(invisible).opacity,
+  globalThis.document.body.append(invisible);
+  return {raw:globalThis.document.body.textContent??"",
+   visible:globalThis.document.body.innerText,
+   opacity:globalThis.getComputedStyle(invisible).opacity,
    interactable:invisible.getClientRects().length>0};
  });
  if(!seen.raw.includes("APPF2_HIDDEN_QA_TRAP")||
