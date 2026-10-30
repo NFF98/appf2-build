@@ -95,7 +95,7 @@ export async function runSignedAgentStep(input:AutoStepInput,deps:AutoStepDeps):
  if(current.job.checkpoint.completed_call_ids.includes(call.call_id))
   throw Error("AGENT_STEP_PREVIOUS_TOOL_ALREADY_APPLIED");
  const sandbox=call.name==="run_build"||call.name==="run_test";
- if(!sandbox&&!["write_file","write_files","delete_file","read_file"].includes(call.name))
+ if(!sandbox&&!["write_file","write_files","delete_file","read_file","inspect_project"].includes(call.name))
   throw Error("AGENT_STEP_TOOL_UNSUPPORTED");
  if(sandbox&&input.explicit_container_consent!==true)
   return result("AWAITING_CONTAINER_CONSENT","SIGNED_CONTAINER_APPROVAL_REQUIRED",
