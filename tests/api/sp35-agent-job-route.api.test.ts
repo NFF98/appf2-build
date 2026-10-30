@@ -1302,3 +1302,91 @@ describe("Sprint 3.5 signed journal recovery after interrupted Agent sequences",
   expect(db.modelCalls.size).toBe(1);
  });
 });
+
+describe("Sprint 3.5 owner-signed budget renewal preserves unconsumed AI response",()=>{
+ it("renews 8→24 steps then applies saved edit and continues AI without recharging first call",async()=>{
+  const person=await client(),db=new Database();
+  let sendCount=0;
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendModel:async({request}:{request:{previous_response_id?:string}})=>{
+    sendCount++;
+    if(sendCount===1){
+     const snapshot=Array.from(db.snapshots.values())[0]!.snapshot as {
+      files:{path:string;hash:string}[]};
+     return {id:"resp_renewal_first123456",status:"completed",
+      usage:{input_tokens:100,output_tokens:90},output:[{
+       type:"function_call",call_id:"call_renewal_edit123456",
+       name:"write_file",arguments:JSON.stringify({
+        path:"src/main.ts",content:"document.querySelector('#app')!.textContent='Repaired';",
+        previous_hash:snapshot.files.find(f=>f.path==="src/main.ts")!.hash
+       })}]};
+    }
+    expect(request.previous_response_id).toBe("resp_renewal_first123456");
+    return {id:"resp_renewal_second123456",status:"completed",
+     usage:{input_tokens:70,output_tokens:40},output:[{
+      type:"function_call",call_id:"call_renewal_build123456",
+      name:"run_build",arguments:JSON.stringify({target:"project"})}]};
+   }
+  }});
+  const root="/api/v1/agent-jobs/"+JOB_ID;
+  const prompt="製作具有多人分數排行的十八啦互動骰子遊戲";
+  const modelEnv={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_AGENT_AUTOSTEP_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  expect((await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:60,explicit_ai_consent:true
+  },"renew_create_12345678"),env)).status).toBe(201);
+  expect((await worker(await signed(person,root+"/model-plan",{
+   anonymous_id:OWNER,prompt,model_call_key:"renew_first_model123456",
+   max_charge_cents:8,max_output_tokens:1024,explicit_ai_consent:true
+  },"renew_plan_12345678"),modelEnv)).status).toBe(200);
+  expect(sendCount).toBe(1);
+  const old=db.jobs.get(JOB_ID)!;
+  expect(old.revision).toBe(1);
+  const renew=await worker(await signed(person,root+"/extend-budget",{
+   anonymous_id:OWNER,expected_revision:1,explicit_budget_consent:true,
+   new_max_steps:24,new_max_cost_cents:60
+  },"renew_steps_12345678"),env);
+  expect(renew.status).toBe(200);
+  expect((await renew.json())).toMatchObject({data:{
+   status:"BUDGET_EXTENDED",revision:2,budget:{max_steps:24,max_cost_cents:60}
+  }});
+  const found=await worker(await signed(person,root+"/agent-progress",{
+   anonymous_id:OWNER
+  },"renew_progress_12345678"),env);
+  expect(found.status).toBe(200);
+  expect(await found.json()).toMatchObject({data:{
+   can_resume:true,revision:2,
+   resume_model_call_key:"renew_first_model123456",
+   calls:[{state:"CURRENT_MODEL_READY",tool:"write_file"}]
+  }});
+  const applied=await worker(await signed(person,root+"/auto-step",{
+   anonymous_id:OWNER,model_call_key:"renew_first_model123456",
+   expected_revision:2,explicit_ai_consent:true,
+   next_model_call_key:"renew_second_model123456",
+   max_ai_charge_cents:8,max_output_tokens:1024
+  },"renew_apply_12345678"),modelEnv);
+  expect(applied.status).toBe(200);
+  expect(await applied.json()).toMatchObject({data:{
+   status:"MODEL_RESPONSE_SAVED",revision:3,app_published:false
+  }});
+  expect(sendCount).toBe(2);
+  expect(db.jobs.get(JOB_ID)!.checkpoint.completed_call_ids)
+   .toContain("call_renewal_edit123456");
+  const again=await worker(await signed(person,root+"/auto-step",{
+   anonymous_id:OWNER,model_call_key:"renew_first_model123456",
+   expected_revision:2,explicit_ai_consent:true,
+   next_model_call_key:"renew_another_model123456",
+   max_ai_charge_cents:8,max_output_tokens:1024
+  },"renew_replay_12345678"),modelEnv);
+  expect(again.status).toBe(503);
+  expect(sendCount).toBe(2);
+  const active=await worker(await signed(person,root+"/agent-progress",{
+   anonymous_id:OWNER
+  },"renew_progress_again_123456"),env);
+  expect(await active.json()).toMatchObject({data:{
+   can_resume:true,revision:3,
+   resume_model_call_key:"renew_second_model123456"
+  }});
+ });
+});

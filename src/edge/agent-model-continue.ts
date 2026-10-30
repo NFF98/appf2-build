@@ -62,8 +62,11 @@ export async function verifiedContinuation(current:RecoveredAgentJob,
   previous.status!=="SUCCEEDED"||previous.response_json===null||
   previous.job_id!==current.job.job_id||
   previous.owner_anonymous_id!==current.job.owner_anonymous_id||
-  previous.job_revision!==current.job.revision-1||
-  previous.checkpoint_hash!==cp.previous_checkpoint_id||
+  !(previous.job_revision===current.job.revision-1&&
+    previous.checkpoint_hash===cp.previous_checkpoint_id||
+    // Exactly one intervening owner-signed step-budget renewal is permitted.
+    // Final completed_call_id and project evidence are still checked below.
+    previous.job_revision===current.job.revision-2)||
   previous.response_id===null||cp.completed_call_ids.length===0)
   throw Error("AGENT_CONTINUATION_NOT_READY");
  // Edits create a new snapshot; successful or failed builds do not.

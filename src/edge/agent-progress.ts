@@ -60,12 +60,19 @@ function examine(current:RecoveredAgentJob,row:ModelCallRow|null,
  const job=current.job;
  const atHead=row.job_revision===job.revision&&
   row.checkpoint_hash===job.checkpoint_hash;
- const parsed=parseAgentResponsesBatch(row.response_json,current.project.project_hash);
+ // Only the immediately prior snapshot may be used to prove a completed
+ // edit; older revisions are never reconstructed from untrusted model prose.
+ const parsed=parseAgentResponsesBatch(row.response_json,current.project.project_hash)??
+  (current.project.parent_hash&&row.job_revision>=job.revision-2?
+   parseAgentResponsesBatch(row.response_json,current.project.parent_hash):null);
  if(!parsed||parsed.response_id!==row.response_id||parsed.calls.length>1)
   return state(key,"INVALID_MODEL_RESPONSE",row.job_revision);
  const tool=parsed.calls[0]?.name??null;
  const callId=parsed.calls[0]?.call_id;
- if(atHead){
+ const renewedHead=row.job_revision===job.revision-1&&
+  row.checkpoint_hash===job.checkpoint.previous_checkpoint_id&&
+  !job.checkpoint.completed_call_ids.includes(callId??"");
+ if(atHead||renewedHead){
   if(callId===undefined)
    return state(key,"INDEPENDENT_QA_REQUIRED",row.job_revision,null,row.response_id);
   if(!["read_file","write_file","write_files","delete_file",

@@ -77,9 +77,12 @@ export async function runSignedAgentStep(input:AutoStepInput,deps:AutoStepDeps):
  if(!current||current.job.revision!==input.expected_revision)
   throw Error("AGENT_STEP_STALE");
  const prev=await getModelCall(deps.db,deps.jobId,deps.owner,input.model_call_key);
+ const sameHead=prev?.job_revision===current.job.revision&&
+  prev.checkpoint_hash===current.job.checkpoint_hash;
+ const signedBudgetHead=prev?.job_revision===current.job.revision-1&&
+  prev.checkpoint_hash===current.job.checkpoint.previous_checkpoint_id;
  if(!prev||prev.status!=="SUCCEEDED"||prev.response_json===null||
-  prev.job_revision!==current.job.revision||
-  prev.checkpoint_hash!==current.job.checkpoint_hash)
+  (!sameHead&&!signedBudgetHead))
   throw Error("AGENT_STEP_PREVIOUS_MODEL_UNPROVEN");
  const batch=parseAgentResponsesBatch(prev.response_json,current.project.project_hash);
  if(!batch||batch.response_id!==prev.response_id||batch.calls.length>1)
@@ -88,6 +91,8 @@ export async function runSignedAgentStep(input:AutoStepInput,deps:AutoStepDeps):
   "VERIFY_ORIGINAL_REQUIREMENTS",current.job.revision,
   current.project.project_hash,current.job.job_state);
  const call=batch.calls[0];
+ if(current.job.checkpoint.completed_call_ids.includes(call.call_id))
+  throw Error("AGENT_STEP_PREVIOUS_TOOL_ALREADY_APPLIED");
  const sandbox=call.name==="run_build"||call.name==="run_test";
  if(!sandbox&&!["write_file","write_files","delete_file","read_file"].includes(call.name))
   throw Error("AGENT_STEP_TOOL_UNSUPPORTED");
