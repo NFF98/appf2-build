@@ -14,7 +14,7 @@ import {verifyProjectSnapshot,type ProjectSnapshot}
 import {parseAgentToolCall,type AgentToolCall}
  from "../../src/platform/agent/agent-contract.js";
 import {sha256CodeBytes} from "../../src/platform/blueprint/code-artifact-v2.js";
-import {sandboxCommand,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,PINNED_MODULES}
+import {sandboxCommand,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,sandboxBuildResetArgv,PINNED_MODULES}
  from "../../src/platform/agent/sandbox-commands.js";
 const JOB=/^[A-Za-z0-9_-]{8,80}$/u;
 const MAX_BODY=4*1024*1024+128*1024;
@@ -126,6 +126,18 @@ export class SandboxJob extends DurableObject<Env>{
   }
   await this.ready();
   const dir=sandboxWorkspaceRoot(task.job_id,task.project);
+  if(task.call.name==="run_build"){
+   // Even identical source hashes can be built twice. A previous failed build,
+   // test, or generated output must not make a fresh run falsely succeed.
+   // Keep run_test on the SAME verified build tree (dist/ must remain available).
+   const runner=this.ctx.container;
+   if(!runner)throw Error("SANDBOX_CONTAINER_LOST");
+   const reset=await runner.exec(sandboxBuildResetArgv(task.job_id,task.project),
+    {cwd:"/workspace",timeout:5000});
+   const cleared=await reset.output({encoding:"utf8",maxBytes:512,timeout:5000});
+   if(cleared.exitCode!==0||cleared.timedOut)
+    throw Error("SANDBOX_WORKSPACE_RESET_FAILED");
+  }
   await this.files.mkdir(dir,{recursive:true});
   for(const f of task.project.files){
    const parts=f.path.split("/");
