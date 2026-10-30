@@ -1737,6 +1737,7 @@ describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
  });
 });
 
+/* eslint-disable max-lines-per-function -- Signed QA failure, one paid model call and real durable edit are one integrated scenario. */
 describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → consented AI fix",()=>{
  it("persists failure, refuses forged repair, charges the model at most once",async()=>{
   const creator=await client(),db=new Database();
@@ -1886,6 +1887,7 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
  });
 });
 
+/* eslint-enable max-lines-per-function */
 describe("Sprint 3.5 one-sentence natural language to immutable AI-generated QA plan",()=>{
  const prompt="製作多人計分 App，按加分後顯示新得分 42";
  const rawPlan={version:"1",criteria:[{
