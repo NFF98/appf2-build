@@ -80,6 +80,7 @@ function examine(current:RecoveredAgentJob,row:ModelCallRow|null,
 }
 /** Independent PoP creator verification, even when the caller knows a job UUID. */
 
+// eslint-disable-next-line complexity -- Independently verify creator, journal, source, budget and QA state.
 export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  readonly db:AgentJobExecutor;readonly jobId:string;
  readonly owner:string;readonly ownerThumb:string;
