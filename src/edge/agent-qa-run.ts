@@ -25,6 +25,7 @@ export function validBrowserQaRunBody(x:unknown):x is BrowserQaRunInput{
 }
 type SandboxRow={readonly job_id:string;readonly owner_anonymous_id:string;
  readonly call_id:string;readonly project_hash:string;readonly status:string;
+ readonly job_revision:number;
  readonly receipt_json:unknown};
 type QaResponse={readonly ready_for_review:boolean;readonly packet:unknown;
  readonly checks:unknown};
@@ -97,6 +98,23 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
  if(!passedSavedTest(test,{jobId:deps.jobId,owner:deps.owner,
   projectHash:input.project_hash,testCallId:input.test_call_id}))
   throw Error("QA_TEST_RUN_NOT_INDEPENDENTLY_PROVEN");
+ // Verify successful build provenance BEFORE any paid Browser Run dispatch.
+ // The private Sandbox releases compiled assets only for the exact build ID.
+ const build=(await deps.db.query<SandboxRow>(
+  "SELECT job_id::text,owner_anonymous_id::text,call_id,model_call_key,"+
+  "job_revision,checkpoint_hash,project_hash,call_hash,max_charge_cents,status,receipt_json "+
+  "FROM public.appf2_agent_sandbox_call WHERE job_id=$1::uuid "+
+  "AND owner_anonymous_id=$2::uuid AND call_id=$3::text LIMIT 1",
+  [deps.jobId,deps.owner,input.build_call_id])).rows[0];
+ const completed=current.job.checkpoint.completed_call_ids;
+ if(!passedSavedTest(build,{jobId:deps.jobId,owner:deps.owner,
+  projectHash:input.project_hash,testCallId:input.build_call_id})||
+  !Number.isSafeInteger(build.job_revision)||
+  !Number.isSafeInteger(test.job_revision)||
+  build.job_revision>test.job_revision||
+  completed.indexOf(input.build_call_id)<0||
+  completed.indexOf(input.build_call_id)>=completed.indexOf(input.test_call_id))
+  throw Error("QA_BUILD_NOT_IN_PROVEN_CHECKPOINT");
  const inserted=await deps.db.query<{job_id:string}>(
   "INSERT INTO public.appf2_agent_browser_qa_attempt("+
   "job_id,owner_anonymous_id,project_hash,job_revision,build_call_id,test_call_id) "+

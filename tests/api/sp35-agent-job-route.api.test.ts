@@ -1629,7 +1629,7 @@ describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
   const original=db.jobs.get(JOB_ID)!;
   const testId="call_qa_run_test123456",buildId="call_qa_run_build123456";
   const cp={...original.checkpoint,state:"TESTING" as const,
-   step:1,completed_call_ids:[testId]};
+   step:2,completed_call_ids:[buildId,testId]};
   db.jobs.set(JOB_ID,{...original,revision:1,
    checkpoint:cp,job_state:"TESTING",checkpoint_hash:await checkpointHash(cp)});
   db.sandboxCalls.set(testId,{job_id:JOB_ID,owner_anonymous_id:OWNER,
@@ -1639,6 +1639,15 @@ describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
    call_hash:"sha256:"+"f".repeat(64),max_charge_cents:1,
    status:"SUCCEEDED",receipt_json:{
     call_id:testId,project_hash:original.project_hash,exit_code:0,
+    timed_out:false,runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"
+   }});
+  db.sandboxCalls.set(buildId,{job_id:JOB_ID,owner_anonymous_id:OWNER,
+   call_id:buildId,model_call_key:"qa_build_model123456",job_revision:0,
+   checkpoint_hash:original.checkpoint_hash,
+   project_hash:original.project_hash,
+   call_hash:"sha256:"+"a".repeat(64),max_charge_cents:1,
+   status:"SUCCEEDED",receipt_json:{
+    call_id:buildId,project_hash:original.project_hash,exit_code:0,
     timed_out:false,runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"
    }});
   const artifact="sha256:"+"b".repeat(64);
@@ -1666,6 +1675,15 @@ describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
    ...body,original_prompt:prompt+"被改寫"
   },"qa_run_changed_prompt123456"),qaEnv)).status).toBe(503);
   expect(dispatches).toBe(0);
+  expect((await worker(await signed(creator,path,{
+   ...body,build_call_id:"call_forged_build_123456"
+  },"qa_run_fake_build123456"),qaEnv)).status).toBe(503);
+  expect(dispatches).toBe(0);
+  db.sandboxCalls.set(buildId,{...db.sandboxCalls.get(buildId)!,status:"BLOCKED_UNCERTAIN"});
+  expect((await worker(await signed(creator,path,body,
+   "qa_run_unproven_build123456"),qaEnv)).status).toBe(503);
+  expect(dispatches).toBe(0);
+  db.sandboxCalls.set(buildId,{...db.sandboxCalls.get(buildId)!,status:"SUCCEEDED"});
   const success=await worker(await signed(creator,path,body,
    "qa_run_authorized123456"),qaEnv);
   expect(success.status).toBe(200);
