@@ -115,11 +115,14 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  const active=rows.filter(x=>x.state==="CURRENT_MODEL_READY");
  const uncertain=rows.some(x=>x.state==="MODEL_UNCERTAIN");
  const pending=rows.some(x=>x.state==="MODEL_PENDING");
- const qa=rows.some(x=>x.state==="INDEPENDENT_QA_REQUIRED");
+ const qa=rows.some(x=>x.state==="INDEPENDENT_QA_REQUIRED")||
+  // A successful run_test enters TESTING: only independent QA may admit it.
+  (current.job.job_state==="TESTING"&&rows.some(x=>
+   x.last_completed_tool&&x.tool==="run_test"));
  const last=rows.filter(x=>x.state==="ALREADY_APPLIED"&&x.last_completed_tool);
  const remaining=current.job.checkpoint.budget.max_steps-current.job.checkpoint.step;
  const eligible=!uncertain&&!pending&&!qa&&active.length===0&&last.length===1&&
-  remaining>0&&["CODING","REPAIRING","BUILDING","TESTING"].includes(current.job.job_state);
+  remaining>0&&["CODING","REPAIRING","BUILDING"].includes(current.job.job_state);
 
  const can_resume=!uncertain&&!qa&&active.length===1&&remaining>0&&
   !["READY","FAILED","AWAITING_CONSENT"].includes(current.job.job_state);
