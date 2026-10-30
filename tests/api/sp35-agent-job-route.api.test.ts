@@ -1390,3 +1390,101 @@ describe("Sprint 3.5 owner-signed budget renewal preserves unconsumed AI respons
   }});
  });
 });
+
+describe("Sprint 3.5 replay-safe continuation after a saved tool but no next model",()=>{
+ it("recovers a data-only edit and dispatches only the missing AI response",async()=>{
+  const person=await client(),db=new Database();
+  let sent=0;
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:{...db.makeDeps(),
+   sendModel:async({request}:{request:{previous_response_id?:string}})=>{
+    sent++;
+    if(sent===1){
+     const snapshot=Array.from(db.snapshots.values())[0]!.snapshot as {
+      files:{path:string;hash:string}[]};
+     return {id:"resp_paused_first123456",status:"completed",
+      usage:{input_tokens:60,output_tokens:40},output:[{
+       type:"function_call",name:"write_file",call_id:"call_paused_edit123456",
+       arguments:JSON.stringify({path:"src/main.ts",
+        content:"document.querySelector('#app')!.textContent='Saved';",
+        previous_hash:snapshot.files.find(x=>x.path==="src/main.ts")!.hash})}]};
+    }
+    expect(request.previous_response_id).toBe("resp_paused_first123456");
+    return {id:"resp_paused_second123456",status:"completed",
+     usage:{input_tokens:40,output_tokens:30},output:[{
+      type:"function_call",name:"run_build",call_id:"call_paused_build123456",
+      arguments:JSON.stringify({target:"project"})}]};
+   }
+  }});
+  const prompt="製作四人十八啦互動遊戲與排行榜",root="/api/v1/agent-jobs/"+JOB_ID;
+  const paid={...env,APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
+   APPF2_AGENT_AUTOSTEP_ENABLED:"1",
+   APPF2_OPENAI_AGENT_API_KEY:"unit_test_fake_provider_key_123456"};
+  expect((await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt,max_cost_cents:60,explicit_ai_consent:true
+  },"paused_create_123456"),env)).status).toBe(201);
+  expect((await worker(await signed(person,root+"/model-plan",{
+   anonymous_id:OWNER,prompt,model_call_key:"paused_first_model123456",
+   max_charge_cents:8,max_output_tokens:1024,explicit_ai_consent:true
+  },"paused_plan_123456"),paid)).status).toBe(200);
+  expect((await worker(await signed(person,root+"/auto-step",{
+   anonymous_id:OWNER,model_call_key:"paused_first_model123456",
+   expected_revision:1
+  },"paused_apply_123456"),paid)).status).toBe(200);
+  expect(sent).toBe(1);
+  const progress=await worker(await signed(person,root+"/agent-progress",{
+   anonymous_id:OWNER
+  },"paused_progress_123456"),env);
+  expect(progress.status).toBe(200);
+  expect(await progress.json()).toMatchObject({data:{
+   can_resume:false,can_continue_saved_tool_result:true,
+   resume_previous_model_call_key:"paused_first_model123456",
+   next_action:"CONTINUE_SAVED_TOOL_RESULT",revision:2,app_published:false
+  }});
+  const continued=await worker(await signed(person,root+"/model-continue",{
+   anonymous_id:OWNER,previous_model_call_key:"paused_first_model123456",
+   model_call_key:"paused_second_model123456",expected_revision:2,
+   max_charge_cents:8,max_output_tokens:1024,explicit_ai_consent:true
+  },"paused_continue_123456"),paid);
+  expect(continued.status).toBe(200);
+  expect(sent).toBe(2);
+  const resume=await worker(await signed(person,root+"/agent-progress",{
+   anonymous_id:OWNER
+  },"paused_progress_2_123456"),env);
+  expect(await resume.json()).toMatchObject({data:{
+   can_resume:true,can_continue_saved_tool_result:false,
+   resume_model_call_key:"paused_second_model123456",
+   next_action:"SIGN_NEXT_SEQUENCE",revision:2
+  }});
+  expect(db.jobs.get(JOB_ID)!.checkpoint.completed_call_ids)
+   .toEqual(["call_paused_edit123456"]);
+  const again=await worker(await signed(person,root+"/auto-step",{
+   anonymous_id:OWNER,model_call_key:"paused_first_model123456",
+   expected_revision:1
+  },"paused_replay_123456"),paid);
+  expect(again.status).toBe(503);
+  expect(sent).toBe(2);
+ });
+ it("does not offer another payable continuation when any model charge is uncertain",async()=>{
+  const person=await client(),db=new Database();
+  const worker=createWorkerFetch({}, {now:()=>TIME,agent:db.makeDeps()});
+  await worker(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt:"製作多人互動計分遊戲"
+  },"paused_unknown_create_123456"),env);
+  const job=db.jobs.get(JOB_ID)!;
+  db.modelCalls.set("paused_uncertain_123456",{job_id:JOB_ID,
+   owner_anonymous_id:OWNER,call_key:"paused_uncertain_123456",
+   job_revision:0,checkpoint_hash:job.checkpoint_hash,
+   request_hash:job.request_hash,model:"gpt-6.1-sol",
+   max_charge_cents:8,status:"BLOCKED_UNCERTAIN",
+   response_json:null,response_id:null,input_tokens:null,output_tokens:null});
+  const result=await worker(await signed(person,
+   "/api/v1/agent-jobs/"+JOB_ID+"/agent-progress",{
+    anonymous_id:OWNER
+   },"paused_unknown_status_123456"),env);
+  expect(await result.json()).toMatchObject({data:{
+   can_continue_saved_tool_result:false,
+   resume_previous_model_call_key:null,
+   next_action:"AWAIT_MODEL_RECONCILIATION"
+  }});
+ });
+});

@@ -17,15 +17,19 @@ type ProgressState="CURRENT_MODEL_READY"|"INDEPENDENT_QA_REQUIRED"|
  "MODEL_MISSING"|"INVALID_MODEL_RESPONSE";
 type CallProgress={readonly model_call_key:string;readonly state:ProgressState;
  readonly job_revision:number|null;readonly tool:string|null;
- readonly requires_container_consent:boolean;readonly response_id:string|null};
+ readonly requires_container_consent:boolean;readonly response_id:string|null;
+ readonly last_completed_tool:boolean};
 export type AgentProgress={
  readonly status:"RECOVERY_INSPECTED";readonly revision:number;
  readonly checkpoint_hash:string;readonly project_hash:string;
  readonly job_state:string;readonly completed_steps:number;
  readonly remaining_steps:number;readonly calls:readonly CallProgress[];
  readonly can_resume:boolean;readonly resume_model_call_key:string|null;
+ readonly can_continue_saved_tool_result:boolean;
+ readonly resume_previous_model_call_key:string|null;
  readonly next_action:"SIGN_NEXT_SEQUENCE"|"AWAIT_MODEL_RECONCILIATION"|
-  "VERIFY_INDEPENDENT_QA"|"BUDGET_RENEWAL_REQUIRED"|"NO_PROVEN_PENDING_MODEL"|
+  "VERIFY_INDEPENDENT_QA"|"BUDGET_RENEWAL_REQUIRED"|"CONTINUE_SAVED_TOOL_RESULT"|
+  "NO_PROVEN_PENDING_MODEL"|
   "RECONCILE_AMBIGUOUS_HEAD";
  readonly scope:"SUBMITTED_KEYS_ONLY"|"RECENT_EIGHT_STORED_CALLS";
  readonly app_published:false;
@@ -46,7 +50,7 @@ function state(key:string,kind:ProgressState,rev:number|null=null,
  tool:string|null=null,responseId:string|null=null):CallProgress{
  return {model_call_key:key,state:kind,job_revision:rev,tool,
   requires_container_consent:tool==="run_build"||tool==="run_test",
-  response_id:responseId};
+  response_id:responseId,last_completed_tool:false};
 }
 /** Only a saved response matching the exact source and checkpoint is resumable. */
 // eslint-disable-next-line complexity -- Source, CAS, replay, charge and QA boundaries.
@@ -82,7 +86,9 @@ function examine(current:RecoveredAgentJob,row:ModelCallRow|null,
  }
  if(row.job_revision<job.revision&&callId!==undefined&&
   job.checkpoint.completed_call_ids.includes(callId))
-  return state(key,"ALREADY_APPLIED",row.job_revision,tool,row.response_id);
+  return {...state(key,"ALREADY_APPLIED",row.job_revision,tool,row.response_id),
+   last_completed_tool:callId===job.checkpoint.completed_call_ids.at(-1)&&
+    row.job_revision>=job.revision-2};
  return state(key,"STALE_MODEL",row.job_revision);
 }
 /** Independent PoP creator verification, even when the caller knows a job UUID. */
@@ -108,21 +114,29 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
    examine(current,await getModelCall(deps.db,deps.jobId,deps.owner,key),key)));
  const active=rows.filter(x=>x.state==="CURRENT_MODEL_READY");
  const uncertain=rows.some(x=>x.state==="MODEL_UNCERTAIN");
+ const pending=rows.some(x=>x.state==="MODEL_PENDING");
  const qa=rows.some(x=>x.state==="INDEPENDENT_QA_REQUIRED");
+ const last=rows.filter(x=>x.state==="ALREADY_APPLIED"&&x.last_completed_tool);
  const remaining=current.job.checkpoint.budget.max_steps-current.job.checkpoint.step;
+ const eligible=!uncertain&&!pending&&!qa&&active.length===0&&last.length===1&&
+  remaining>0&&["CODING","REPAIRING","BUILDING","TESTING"].includes(current.job.job_state);
+
  const can_resume=!uncertain&&!qa&&active.length===1&&remaining>0&&
   !["READY","FAILED","AWAITING_CONSENT"].includes(current.job.job_state);
- const next_action:AgentProgress["next_action"]=uncertain?
-  "AWAIT_MODEL_RECONCILIATION":active.length>1?
+ const next_action:AgentProgress["next_action"]=uncertain||pending?
+  "AWAIT_MODEL_RECONCILIATION":active.length>1||last.length>1?
    "RECONCILE_AMBIGUOUS_HEAD":qa?
-    "VERIFY_INDEPENDENT_QA":remaining===0&&active.length===1?
+    "VERIFY_INDEPENDENT_QA":remaining===0&&(active.length===1||last.length===1)?
      "BUDGET_RENEWAL_REQUIRED":can_resume?
-      "SIGN_NEXT_SEQUENCE":"NO_PROVEN_PENDING_MODEL";
+      "SIGN_NEXT_SEQUENCE":eligible?
+       "CONTINUE_SAVED_TOOL_RESULT":"NO_PROVEN_PENDING_MODEL";
  return {status:"RECOVERY_INSPECTED",revision:current.job.revision,
   checkpoint_hash:current.job.checkpoint_hash,
   project_hash:current.project.project_hash,job_state:current.job.job_state,
   completed_steps:current.job.checkpoint.step,remaining_steps:remaining,
   calls:rows,can_resume,resume_model_call_key:can_resume?active[0].model_call_key:null,
+  can_continue_saved_tool_result:eligible,
+  resume_previous_model_call_key:eligible?last[0].model_call_key:null,
   next_action,scope:input.model_call_keys===undefined?
    "RECENT_EIGHT_STORED_CALLS":"SUBMITTED_KEYS_ONLY",app_published:false};
 }

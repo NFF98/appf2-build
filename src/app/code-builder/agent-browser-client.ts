@@ -30,6 +30,8 @@ export type CandidateJob={readonly job_id:string;readonly revision:number;
 type Progress={readonly revision:number;readonly remaining_steps:number;
  readonly can_resume:boolean;
  readonly resume_model_call_key:string|null;readonly next_action:string;
+ readonly can_continue_saved_tool_result?:boolean;
+ readonly resume_previous_model_call_key?:string|null;
  readonly calls:readonly {model_call_key:string;state:string;
   tool:string|null;requires_container_consent:boolean}[]};
 type Step={readonly status:string;readonly action:string;readonly revision:number};
@@ -179,6 +181,27 @@ export class BrowserCodingAgent {
   let message="已保存專案；準備讀取持久化 Agent 狀態。";
   for(let i=0;i<MAX_TURNS_PER_CLICK&&!shouldStop();i++){
    const progress=await this.progress();
+   if(progress.can_continue_saved_tool_result&&
+    progress.resume_previous_model_call_key){
+    if(progress.remaining_steps<1){
+     message="工作步數已用盡，請先簽章延長（不會增加已核准費用）。";
+     break;
+    }
+    // The preceding tool already changed the durable project. Do NOT replay
+    // it or invent its output; continue from the saved model response/receipt.
+    await this.post("/model-continue",{
+     anonymous_id:this.owner,
+     previous_model_call_key:progress.resume_previous_model_call_key,
+     model_call_key:"agent_recover_"+crypto.randomUUID(),
+     expected_revision:progress.revision,
+     max_charge_cents:8,max_output_tokens:4096,explicit_ai_consent:true
+    });
+    completed++;
+    message="已從保存的工具結果接續 AI，沒有重新執行已完成工具。";
+    onProgress({job:await this.read(),progress:await this.progress(),
+     message,completed_steps:completed});
+    continue;
+   }
    if(!progress.can_resume||!progress.resume_model_call_key){
     message=progress.next_action==="BUDGET_RENEWAL_REQUIRED"?
      "已達本次工作步數上限；可簽章延長步數，不會增加已核准費用。":
