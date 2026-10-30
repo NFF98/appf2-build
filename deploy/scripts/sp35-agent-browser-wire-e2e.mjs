@@ -8,6 +8,7 @@ import {build} from "vite";
 import {chromium} from "@playwright/test";
 import {verifyMutationProof} from "../../dist/src/edge/create-proof.js";
 import {validFreezeQaPlanBody} from "../../dist/src/edge/agent-qa-plan.js";
+import {qaRepairCallKey} from "../../dist/src/platform/agent/qa-repair-key.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import http from "node:http";
@@ -17,7 +18,7 @@ const out=path.join(root,"dist/web");
 const jobId="da4d1bd2-2cce-4c96-a197-637b5e71a3bd";
 const code=JSON.stringify({name:"mock-candidate",private:true,type:"module"});
 const job={job_id:jobId,revision:0,status:"CREATED",project_hash:"sha256:"+"a".repeat(64),
- checkpoint:{step:0,budget:{max_steps:8,max_tokens:8192,max_cost_cents:60}},
+ checkpoint:{step:0,completed_call_ids:[],budget:{max_steps:8,max_tokens:8192,max_cost_cents:60}},
  files:[{path:"index.html",content:"<div id='app'></div>"},
   {path:"src/main.ts",content:"document.getElementById('app')?.replaceChildren();"},
   {path:"src/style.css",content:"body{color:#222}"},
@@ -25,6 +26,7 @@ const job={job_id:jobId,revision:0,status:"CREATED",project_hash:"sha256:"+"a".r
 let owner=null,thumb=null,firstKey=null;
 let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCount=0;
 let qaFreezeCount=0,frozenPlan=null,createdPrompt=null;
+let qaRunCount=0,qaRepairCount=0,lastRepairKey=null;
 let server=null,browser=null;
 function json(res,status,data){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
@@ -71,6 +73,35 @@ async function api(req,res,url){
   frozenPlan=body.original_plan;qaFreezeCount++;
   json(res,200,{status:"QA_ORIGINAL_PLAN_FROZEN",criteria_count:1,
    project_hash:job.project_hash,revision:0,app_published:false});return;
+ }
+ if(url.pathname===base+"/qa-run"){
+  const completed=job.checkpoint.completed_call_ids;
+  if(job.status!=="TESTING"||body.explicit_browser_qa_consent!==true||
+   body.job_id!==jobId||body.expected_revision!==job.revision||
+   body.project_hash!==job.project_hash||
+   body.original_prompt!==createdPrompt||
+   JSON.stringify(body.original_plan)!==JSON.stringify(frozenPlan)||
+   body.build_call_id!==completed.at(-2)||body.test_call_id!==completed.at(-1)){
+   json(res,503,"QA_NOT_PROVEN");return;
+  }
+  qaRunCount++;job.status="REPAIRING";job.revision++;
+  json(res,200,{status:"BROWSER_QA_FAILED_REPAIR_READY",
+   ready_for_review:false,app_published:false,
+   checks:[{criterion_id:"score_ui",category:"BROWSER",verdict:"FAIL",evidence_hash:null}]});
+  return;
+ }
+ if(url.pathname===base+"/qa-repair"){
+  if(job.status!=="REPAIRING"||body.explicit_ai_consent!==true||
+   body.expected_revision!==job.revision||body.max_charge_cents!==8||
+   body.max_output_tokens!==4096||body.original_prompt!==createdPrompt||
+   JSON.stringify(body.original_plan)!==JSON.stringify(frozenPlan)||
+   body.model_call_key!==qaRepairCallKey(job.project_hash)){
+   json(res,503,"QA_REPAIR_NOT_APPROVED");return;
+  }
+  if(lastRepairKey===null){lastRepairKey=body.model_call_key;qaRepairCount++;}
+  json(res,200,{status:"QA_REPAIR_MODEL_SAVED",response_id:"resp_repair_mock123456",
+   source:lastRepairKey===body.model_call_key?"DURABLE_REPLAY":"PROVIDER",
+   ready_for_review:false,app_published:false});return;
  }
  if(url.pathname===base+"/model-plan"){
   if(planDone||qaFreezeCount!==1||!frozenPlan||
@@ -199,7 +230,40 @@ try{
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
  if(renewCount!==1||qaFreezeCount!==1||planCount!==1||stepCount!==1)
   throw Error("AGENT_BUDGET_RELOAD_SPENT_EXTRA");
- console.log("SP35 REAL FIRST-PARTY CHROMIUM → PRE-CODE FROZEN ORIGINAL QA PLAN → SIGNED AGENT CREATE/PLAN/EDIT/RECOVERY: PASS (MOCK MODEL, NO CLOUD)");
+ // Simulate a separately saved successful build+test checkpoint; no model
+ // or container is actually run by this first-party browser wiring fixture.
+ job.status="TESTING";job.revision++;job.checkpoint.step=4;
+ job.checkpoint.completed_call_ids=["call_browser_build_123456",
+  "call_browser_test_123456"];
+ await page.reload({waitUntil:"domcontentloaded",timeout:15000});
+ await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
+ await page.getByText("已保存專案 · TESTING").waitFor({timeout:15000});
+ const qaButton=page.getByRole("button",{
+  name:"開始獨立瀏覽器 QA（需另行授權）"});
+ if(await qaButton.isEnabled())throw Error("BROWSER_QA_SPENT_WITHOUT_SEPARATE_CONSENT");
+ await page.getByLabel(/我另外核准本次獨立雲端瀏覽器 QA/u).check();
+ await qaButton.click();
+ await page.getByText("已保存專案 · REPAIRING").waitFor({timeout:15000});
+ await page.getByText("使用者操作後計分改變：FAIL").waitFor({timeout:15000});
+ if(qaRunCount!==1||job.status!=="REPAIRING")
+  throw Error("BROWSER_QA_DID_NOT_SAVE_REPAIRING");
+ await page.getByRole("button",{
+  name:"根據 QA 失敗結果要求 AI 修復（需另行授權）"}).click();
+ await page.getByText("修復模型回應已保存",{exact:false}).waitFor({timeout:15000});
+ if(qaRepairCount!==1||!lastRepairKey||
+  lastRepairKey!==qaRepairCallKey(job.project_hash))
+  throw Error("BROWSER_QA_REPAIR_UNSTABLE_OR_NOT_SIGNED");
+ await page.reload({waitUntil:"domcontentloaded",timeout:15000});
+ await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
+ await page.getByText("已保存專案 · REPAIRING").waitFor({timeout:15000});
+ await page.getByRole("button",{
+  name:"根據 QA 失敗結果要求 AI 修復（需另行授權）"}).click();
+ await page.getByText("修復模型回應已保存",{exact:false}).waitFor({timeout:15000});
+ if(qaRunCount!==1||qaRepairCount!==1||planCount!==1)
+  throw Error("BROWSER_QA_RELOAD_REPLAYED_PAID_REPAIR");
+ console.log("SP35 REAL FIRST-PARTY CHROMIUM → FROZEN QA PLAN → SIGNED QA FAILURE → REPAIRING → ONE-SHOT AI REPAIR UI: PASS (MOCK QA/MODEL, NO CLOUD)");
 }finally{
  if(browser)await browser.close();
  if(server)await new Promise(resolve=>server.close(resolve));
