@@ -9,6 +9,8 @@ import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {parseQaPlan} from "../platform/qa/requirement-contract.js";
 import {validQaObservedChecks} from "../platform/agent/qa-browser-contract.js";
 import {qaRepairCallKey} from "../platform/agent/qa-repair-key.js";
+import {determineQaRepairStrategy,type SavedQaHistory}
+ from "../platform/agent/qa-repair-strategy.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
 export type QaRepairInput={readonly anonymous_id:string;readonly expected_revision:number;
@@ -75,9 +77,28 @@ export async function executeSignedQaRepair(input:QaRepairInput,deps:QaRepairDep
   [deps.jobId,deps.owner,current.project.project_hash])).rows[0];
  const failed=failedChecks(journal,current.job.revision,plan);
  if(!failed)throw Error("QA_REPAIR_NO_INDEPENDENT_FAILURE");
- const context=JSON.stringify({protocol:"APPF2_QA_REPAIR_V1",
-  instruction:"Fix observed requirements using only signed data-only project tools. "+
+ // Historical entries are PRIVATE, job- and owner-scoped, already persisted
+ // by the independent verifier. An authoring model cannot forge this signal.
+ const history=(await deps.db.query<SavedQaHistory>(
+  "SELECT project_hash,status,receipt_json FROM public.appf2_agent_browser_qa_attempt "+
+  "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
+  "AND status='SUCCEEDED' ORDER BY created_at DESC,project_hash DESC LIMIT 8",
+  [deps.jobId,deps.owner])).rows;
+ const strategy=determineQaRepairStrategy(plan,history);
+ const rethink=strategy.mode==="RETHINK_ROOT_CAUSE";
+ const context=JSON.stringify({protocol:"APPF2_QA_REPAIR_V2",
+  instruction:rethink?
+   "Three independent browser checks failed on distinct saved project versions "+
+   "with the SAME remaining requirements. Stop repeating the previous patch. "+
+   "Investigate the root cause, trace the real UI logic and choose a different "+
+   "implementation approach using signed read_file / write_files tools. "+
+   "Preserve all original requirements; never edit the frozen QA plan. "+
+   "Run real build and test after editing.":
+   "Fix observed requirements using only signed data-only project tools. "+
    "Never assume tests pass. Run build and test after editing.",
+  strategy_mode:strategy.mode,
+  verified_failure_count:strategy.verified_failure_count,
+  stalled_failure_count:strategy.stalled_failure_count,
   project_hash:current.project.project_hash,
   original_prompt:input.original_prompt,original_plan:plan,
   browser_failures:failed,
@@ -92,5 +113,6 @@ export async function executeSignedQaRepair(input:QaRepairInput,deps:QaRepairDep
   response_id:(saved.response as {id:string}).id,source:saved.source,
   revision:current.job.revision,project_hash:current.project.project_hash,
   next_action:"PROCESS_SAVED_MODEL" as const,
+  strategy_mode:strategy.mode,
   ready_for_review:false as const,app_published:false as const};
 }
