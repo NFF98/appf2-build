@@ -184,6 +184,7 @@ async function verify(env:Env,task:PrivateBrowserQaTask){
  return {ready_for_review:true,checks,packet,app_published:false};
 }
 export default {
+ // eslint-disable-next-line complexity -- Private paid browser, request and provenance gates.
  async fetch(request:Request,env:Env):Promise<Response>{
   if(new URL(request.url).pathname!=="/internal/verify-built-app"||
    request.method!=="POST"||new URL(request.url).search)

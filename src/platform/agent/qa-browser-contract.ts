@@ -17,6 +17,7 @@ export type PrivateQaCheck={readonly criterion_id:string;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const SHA=/^sha256:[a-f0-9]{64}$/u;
 const CALL=/^call_[A-Za-z0-9_-]{4,74}$/u;
+// eslint-disable-next-line complexity -- Every untrusted payment and QA field fails closed.
 export function validPrivateBrowserQaTask(x:unknown):x is PrivateBrowserQaTask{
  if(typeof x!=="object"||x===null||Array.isArray(x))return false;
  const v=x as Record<string,unknown>;
