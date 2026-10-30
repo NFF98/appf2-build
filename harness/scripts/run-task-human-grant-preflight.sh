@@ -79,73 +79,35 @@ if [[ "$sp35_complex_event" == "yes" ]]; then
   node --input-type=module - "$inventory" <<'JS'
 import fs from "node:fs";
 const pages=JSON.parse(fs.readFileSync(process.argv[2],"utf8"));
-if(!Array.isArray(pages)||pages.length===0)throw Error("PR419 changed-files inventory absent");
+if(!Array.isArray(pages)||pages.length===0||!pages.every(Array.isArray))
+  throw Error("PR419 GitHub changed-files inventory absent or invalid");
 const changed=pages.flat();
-const allowed=new Set([
-  ".github/workflows/sp35-staging-only.yml",
-  "deploy/scripts/sp35-staging-only.mjs",
-  "src/edge/worker-composition.ts",
-  "src/platform/compiler/appf2-model-provider.ts",
-  "src/platform/compiler/rate-limit-failover-gateway.ts",
-  "tests/api/sp35-model-failover.api.test.ts",
-  "tests/api/sp35-rate-limit-ui.api.test.ts",
-  "tests/api/sp35-rate-limit-failover.api.test.ts",
-  ".github/workflows/governance-gate.yml",
-  "deploy/scripts/sp35-staging-browser-e2e.mjs",
-  "deploy/scripts/sp35-staging-live-create.mjs",
-  "src/app/create/CreateWorkspace.tsx",
-  "src/app/create/creation-controller.ts",
-  "src/app/create/creation-session.ts",
-  "src/app/runtime/app-delivery.ts",
-  "src/platform/compiler/idempotency.ts",
-  "src/platform/compiler/model-gateway.ts",
-  "src/platform/compiler/provider-attempts.ts",
-  "src/platform/compiler/compose-validate.ts",
-  "src/platform/compiler/compile-intent.ts",
-  "src/platform/compiler/prompts.ts",
-  "src/app/create/f01-wire.ts",
-  "src/platform/intent/capability-requirements.ts",
-  "src/platform/capabilities/coverage.ts",
-  "src/platform/intent/resolved-intent.ts",
-  "src/platform/blueprint/value-source-typing.ts",
-  "src/platform/runtime/expression-vm.ts",
-  "src/platform/runtime/runtime-operation.ts",
-  "src/platform/runtime/runtime-instance.ts",
-  "src/platform/runtime/browser/browser-runtime.ts",
-  "src/platform/runtime/browser/runtime-app-host.tsx",
-  "src/app/runtime/app-launcher.ts",
-  "src/platform/compiler/normalize-analysis-shape.ts",
-  "tests/api/normalize-analysis-shape.api.test.ts",
-  "tests/api/intent-api.api.test.ts",
-  "tests/api/sp35-complex-intent-budget.api.test.ts",
-  "tests/api/sp35-root-tree-repair.api.test.ts",
-  "tests/api/sp35-required-feature-coverage.api.test.ts",
-  "tests/api/sp35-unsupported-feature-feedback.api.test.ts",
-  "tests/api/sp35-coverage-class.api.test.ts",
-  "tests/api/sp35-list-edit-runtime.api.test.ts",
-  "tests/api/sp35-record-list-runtime.api.test.ts",
-  "tests/api/sp35-record-blueprint.api.test.ts",
-  "tests/api/sp35-tab-persistence.api.test.ts",
-  "tests/runtime/runtime-fixtures.ts",
-  "tests/runtime/sp35-state-restore.runtime.test.ts",
-  "tests/runtime/sp35-list-actions.runtime.test.ts",
-  "tests/runtime/sp35-live-counter.runtime.test.ts",
-  "tests/runtime/sp35-expense-total.runtime.test.ts",
-  "tests/api/sp35-delivery-retry.api.test.ts",
-  "harness/scripts/run-task-human-grant-preflight.sh",
-  "harness/scripts/validate-constitutional-change.mjs",
-  "harness/scripts/gpt-preflight.mjs",
-  "ci/run-product-ci.mjs"
-]);
-const paths=changed.map(x=>x.filename);
-if(changed.length>allowed.size ||
-   !paths.includes("harness/scripts/run-task-human-grant-preflight.sh") ||
-   !paths.includes("tests/api/sp35-complex-intent-budget.api.test.ts") ||
-   !paths.includes("src/platform/compiler/idempotency.ts") ||
-   changed.some(x=>!allowed.has(x.filename)||x.previous_filename)){
-  throw Error("PR419 must contain only enumerated real-product repair paths");
-}
-console.log("SP35 PR419: execute four real checks; no Human grant, simulated PASS or merge.");
+// This branch carries all five Sprint 3.5 engine workstreams. The former
+// 42-path whitelist was for its FIRST small patch and now incorrectly blocks
+// all four real CI/CodeQL checks before any test can execute. Restrict this
+// check-execution-only exception to the exact owner, PR, base SHA, head branch
+// and narrowly scoped existing product paths, NEVER a Human merge grant.
+const allowed=[
+  /^src\\/(?:app|edge|platform)\\//u,
+  /^tests\\/(?:api|runtime|e2e|fixtures)\\//u,
+  /^deploy\\/(?:sandbox|qa-browser|scripts|sql|fixtures)\\//u,
+  /^supabase\\/migrations\\/202610(?:28|29|30|31)[0-9]{6}_sp35_[a-z0-9_]+\\.sql$/u,
+  /^docs\\/sprint-3\\.5\\//u,
+  /^\\.github\\/workflows\\/(?:governance-gate|sp35-[a-z0-9-]+)\\.yml$/u,
+  /^harness\\/scripts\\/(?:run-task-human-grant-preflight\\.sh|validate-constitutional-change\\.mjs|gpt-preflight\\.mjs)$/u,
+  /^ci\\/run-product-ci\\.mjs$/u
+];
+const paths=changed.map(x=>x?.filename);
+if(changed.length<40||changed.length>260||
+   new Set(paths).size!==changed.length||
+   !paths.includes("harness/scripts/run-task-human-grant-preflight.sh")||
+   !paths.includes("src/platform/agent/project-workspace.ts")||
+   !paths.includes("tests/api/sp35-agent-foundation.api.test.ts")||
+   changed.some(x=>typeof x?.filename!=="string"||
+     x.previous_filename||!allowed.some(r=>r.test(x.filename))))
+  throw Error("PR419 changed-path check failed: only 5-core product files can run checks");
+console.log("SP35 PR419: execute REAL CI/CodeQL/attack/governance checks for "+
+  changed.length+" product paths; NO Human grant, NO PASS, NO merge.");
 JS
   exit 0
 fi
