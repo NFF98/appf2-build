@@ -87,8 +87,11 @@ export type SavedCandidate=AgentStoredTarget&{readonly savedAt:number};
  */
 export function readSavedCandidateLibrary():readonly SavedCandidate[]{
  try{
-  const raw=localStorage.getItem(LIBRARY_SLOT);
-  if(!raw||raw.length>100000)return [];
+  const stored=localStorage.getItem(LIBRARY_SLOT);
+  // Migrate the previous one-job pointer, preserving the original expiry.
+  const legacy=localStorage.getItem(SLOT);
+  const raw=stored??(legacy?"["+legacy+"]":null);
+  if(!raw||raw.length>250000)return [];
   const parsed:unknown=JSON.parse(raw);
   if(!Array.isArray(parsed))return [];
   const result:SavedCandidate[]=[],seen=new Set<string>();
@@ -146,7 +149,7 @@ export function savedCandidateTarget():AgentStoredTarget|null{
  try{return validatedTarget(JSON.parse(sessionStorage.getItem(SLOT)??"null"));}
  catch{return null;}
 }
-function saveTarget(value:AgentStoredTarget):void{
+export function saveTarget(value:AgentStoredTarget):void{
  const prior=readSavedCandidateLibrary();
  // Do not extend a job's 24-hour proof key just by reading/replanning it.
  const savedAt=prior.find(x=>x.jobId===value.jobId)?.savedAt??Date.now();
