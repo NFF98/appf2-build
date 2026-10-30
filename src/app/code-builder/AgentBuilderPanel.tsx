@@ -10,7 +10,7 @@ function failureMessage(e:unknown):string{
 /** Real multi-file Agent entry, not the legacy single-file code-app publisher.
  * Candidate is viewable as source only until independent QA/publishing exists.
  */
-// eslint-disable-next-line complexity -- Explicit signed AI and container approvals never silently merge.
+// eslint-disable-next-line complexity, max-lines-per-function -- Signed authoring, QA and repair controls share the immutable candidate state.
 export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [prompt,setPrompt]=useState(suggestedPrompt?.text??"");
  const [aiConsent,setAiConsent]=useState(false);
@@ -127,7 +127,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    <p className="saved-apps-note">此計畫需在 AI 開始寫程式前保存。每項 source_quote 必須取自原始需求，且需列出實際操作及預期結果。未提供時不會聲稱已通過獨立 QA。</p>
    <label htmlFor="agent-qa-plan-json">原始驗收計畫 JSON</label>
    <textarea id="agent-qa-plan-json" className="composer-input" value={qaJson}
-    disabled={busy||saved} onChange={e=>setQaJson(e.target.value)}
+    disabled={busy} onChange={e=>setQaJson(e.target.value)}
     placeholder='{"version":"1","criteria":[{"id":"check_button","source_quote":"按鈕","description":"點擊後顯示結果","steps":[{"action":"click","role":"button","name":"開始"}],"assertions":[{"kind":"text_appears","text":"完成"}],"automatable":true}]}' />
   </details>
   <label className="code-builder-consent"><input type="checkbox" checked={aiConsent}
