@@ -252,7 +252,7 @@ try{
  const qaButton=page.getByRole("button",{
   name:"開始獨立瀏覽器 QA（需另行授權）"});
  if(await qaButton.isEnabled())throw Error("BROWSER_QA_SPENT_WITHOUT_SEPARATE_CONSENT");
- await page.getByLabel(/我另外核准本次獨立雲端瀏覽器 QA/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await qaButton.click();
  await page.getByText("已保存專案 · REPAIRING").waitFor({timeout:15000});
  await page.getByText("使用者操作後計分改變：FAIL").waitFor({timeout:15000});
