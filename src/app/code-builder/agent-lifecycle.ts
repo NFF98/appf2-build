@@ -5,8 +5,8 @@
  * This never publishes, deploys, retries unknown outcomes, or starts a second
  * Browser QA run without a new click.
  */
-import type {AgentBrowserOptions,CandidateSnapshot,CandidateJob}
- from "./agent-browser-client.js";
+import {MAX_TURNS_PER_CLICK,type AgentBrowserOptions,type CandidateSnapshot,
+ type CandidateJob} from "./agent-browser-client.js";
 
 export type QaObservation={
  readonly ready_for_review:boolean;
@@ -16,7 +16,7 @@ type AgentProgress=CandidateSnapshot["progress"];
 export type LifecycleAgent={
  advance(options:AgentBrowserOptions,
   onProgress:(snapshot:CandidateSnapshot)=>void,
-  shouldStop:()=>boolean):Promise<CandidateSnapshot>;
+  shouldStop:()=>boolean,maxTurns?:number):Promise<CandidateSnapshot>;
  independentQa(consent:boolean):Promise<QaObservation>;
  repairFailedQa(consent:boolean):Promise<unknown>;
  read():Promise<CandidateJob>;
@@ -46,7 +46,10 @@ export async function advanceWithApprovedQaRepair(agent:LifecycleAgent,
   completed_steps:first.completed_steps
  };
  onProgress(snapshot);
- if(qa.ready_for_review||shouldStop())
+ const remaining=MAX_TURNS_PER_CLICK-first.completed_steps;
+ // The repair must not turn a six-step click into a second six-step batch.
+ // Save the QA failure; a fresh user click may authorize its repair later.
+ if(qa.ready_for_review||shouldStop()||remaining<1)
   return {snapshot,qa,repairStarted:false};
  // A failed independent Browser QA must have durably moved this exact
  // project into REPAIRING. A network error never authorizes a new attempt.
@@ -55,7 +58,7 @@ export async function advanceWithApprovedQaRepair(agent:LifecycleAgent,
  // The prior checkbox authorizes ONE bounded paid model repair. Each HTTP
  // request still carries fresh owner PoP, journal key and budget admission.
  await agent.repairFailedQa(true);
- const next=await agent.advance(options,onProgress,shouldStop);
+ const next=await agent.advance(options,onProgress,shouldStop,remaining);
  return {snapshot:{...next,message:
    "已保存一次 AI 修復及接續建置結果；再次獨立 QA 必須另行核准。"},
   qa,repairStarted:true};
