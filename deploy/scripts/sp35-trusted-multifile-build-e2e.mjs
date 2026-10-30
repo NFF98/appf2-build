@@ -41,6 +41,28 @@ try{
  await page.getByRole("button",{name:"Add"}).click();
  const actual=await page.locator("#result").textContent();
  if(actual!=="APPF2_MULTIFILE_COMPILED_42")throw Error("MULTIFILE_BROWSER_ASSERTION_FAILED:"+actual);
+ // Independent QA must observe what a user can actually see, not DOM
+ // textContent, which includes hidden/script/template decoys.
+ const seen=await page.evaluate(()=>{
+  const trap=document.createElement("span");
+  trap.textContent="APPF2_HIDDEN_QA_TRAP";
+  trap.style.display="none";
+  document.body.append(trap);
+  const invisible=document.createElement("button");
+  invisible.textContent="Invisible QA Control";
+  invisible.style.opacity="0";
+  document.body.append(invisible);
+  return {raw:document.body.textContent??"",
+   visible:document.body.innerText,
+   opacity:getComputedStyle(invisible).opacity,
+   interactable:invisible.getClientRects().length>0};
+ });
+ if(!seen.raw.includes("APPF2_HIDDEN_QA_TRAP")||
+    seen.visible.includes("APPF2_HIDDEN_QA_TRAP")||
+    !seen.visible.includes("APPF2_MULTIFILE_COMPILED_42")||
+    seen.opacity!=="0"||!seen.interactable)
+  throw Error("MULTIFILE_BROWSER_HIDDEN_QA_TRAP_NOT_REJECTED");
+ console.log("SP35 CHROMIUM QA VISIBILITY: hidden text excluded; invisible controls rejected by QA guard");
  console.log("SP35 TRUSTED MULTI-FILE VITE BUILD + CHROMIUM INTERACTION: PASS (NO AI, NO CLOUD SANDBOX)");
 }finally{
  if(browser)await browser.close();
