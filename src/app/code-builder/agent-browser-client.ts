@@ -75,13 +75,39 @@ function validatedTarget(v:unknown):AgentStoredTarget|null{
  return {jobId:String(x.jobId),prompt:x.prompt,firstModelKey:x.firstModelKey,
   ...(qaPlan?{qaPlan}:{})};
 }
+const CANDIDATE_RECOVERY_MS=24*60*60*1000;
+/** Persist only the target and frozen requirements in this browser profile.
+ * The P-256 private signing key stays nonextractable in IndexedDB; an ID or
+ * localStorage record alone never grants creator access. Expire both at 24h.
+ */
 export function savedCandidateTarget():AgentStoredTarget|null{
- try {return validatedTarget(JSON.parse(sessionStorage.getItem(SLOT)??"null"));}
+ try{
+  const raw=localStorage.getItem(SLOT);
+  if(raw!==null){
+   if(raw.length>25000){localStorage.removeItem(SLOT);return null;}
+   const data:unknown=JSON.parse(raw);
+   if(typeof data!=="object"||data===null||Array.isArray(data)){
+    localStorage.removeItem(SLOT);return null;
+   }
+   const record=data as Record<string,unknown>;
+   const age=Date.now()-Number(record.savedAt);
+   if(typeof record.savedAt!=="number"||
+    !Number.isFinite(age)||age< -60000||age>CANDIDATE_RECOVERY_MS){
+    localStorage.removeItem(SLOT);return null;
+   }
+   const target=validatedTarget(data);
+   if(!target)localStorage.removeItem(SLOT);
+   return target;
+  }
+ }catch{ /* Private mode or storage disabled: retain same-tab behavior. */ }
+ try{return validatedTarget(JSON.parse(sessionStorage.getItem(SLOT)??"null"));}
  catch{return null;}
 }
 function saveTarget(value:AgentStoredTarget):void{
- try{sessionStorage.setItem(SLOT,JSON.stringify(value));}
- catch{ /* Browser can still operate until reload. */ }
+ const data=JSON.stringify(value);
+ try{sessionStorage.setItem(SLOT,data);}catch{ /* Memory-only fallback. */ }
+ try{localStorage.setItem(SLOT,JSON.stringify({...value,savedAt:Date.now()}));}
+ catch{ /* Private mode degrades to tab-only recovery. */ }
 }
 function ring():PopKeyring{
  return new PopKeyring({subtle:crypto.subtle,now:Date.now,
