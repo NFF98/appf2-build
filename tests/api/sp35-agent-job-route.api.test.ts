@@ -47,6 +47,7 @@ class Database {
  sandboxCalls=new Map<string,{status:string;receipt_json:unknown|null;job_id:string;owner_anonymous_id:string;call_id:string;model_call_key:string;job_revision:number;checkpoint_hash:string;project_hash:string;call_hash:string;max_charge_cents:number}>();
  identities=new Map<string,{thumb:string;key:string}>();
  qaAttempts=new Map<string,{status:string;receipt_json:unknown|null;job_revision:number}>();
+ frozenQa=new Map<string,{original_plan:unknown}>();
  context:WorkerRequestDbContext|null=null;
  readonly db={
   close:async()=>undefined,
@@ -61,6 +62,16 @@ class Database {
      project_hash:String(args[4]),checkpoint_hash:String(args[3]),
      checkpoint,job_state:String(args[5])});
     return {rows:[{job_id:row.job_id} as T]};
+   }
+   if(sql.startsWith("INSERT INTO public.appf2_agent_qa_plan")){
+    const job=String(args[0]);
+    if(this.frozenQa.has(job))return {rows:[]};
+    this.frozenQa.set(job,{original_plan:JSON.parse(String(args[3])) as unknown});
+    return {rows:[{job_id:job} as T]};
+   }
+   if(sql.startsWith("SELECT original_plan FROM public.appf2_agent_qa_plan")){
+    const plan=this.frozenQa.get(String(args[0]));
+    return {rows:plan?[plan as T]:[]};
    }
    if(sql.startsWith("INSERT INTO public.appf2_agent_browser_qa_attempt(")){
     const id=String(args[0])+":"+String(args[2]);
@@ -1631,6 +1642,13 @@ describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
   expect((await worker(await signed(creator,"/api/v1/agent-jobs",{
    anonymous_id:OWNER,prompt
   },"qa_run_create_123456"),env)).status).toBe(201);
+  expect((await worker(await signed(creator,"/api/v1/agent-jobs/"+JOB_ID+"/qa-plan",{
+   anonymous_id:OWNER,expected_revision:0,original_prompt:prompt,original_plan:plan
+  },"qa_run_freeze_123456"),env)).status).toBe(200);
+  expect((await worker(await signed(creator,"/api/v1/agent-jobs/"+JOB_ID+"/qa-plan",{
+   anonymous_id:OWNER,expected_revision:0,original_prompt:prompt,
+   original_plan:{...plan,criteria:[{...plan.criteria[0],description:"竄改驗收描述"}]}
+  },"qa_run_rewrite123456"),env)).status).toBe(503);
   const original=db.jobs.get(JOB_ID)!;
   const testId="call_qa_run_test123456",buildId="call_qa_run_build123456";
   const cp={...original.checkpoint,state:"TESTING" as const,
@@ -1740,6 +1758,9 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   expect((await worker(await signed(creator,"/api/v1/agent-jobs",{
    anonymous_id:OWNER,prompt,max_cost_cents:100,explicit_ai_consent:true
   },"qa_failed_create123456"),envQa)).status).toBe(201);
+  expect((await worker(await signed(creator,"/api/v1/agent-jobs/"+JOB_ID+"/qa-plan",{
+   anonymous_id:OWNER,expected_revision:0,original_prompt:prompt,original_plan:plan
+  },"qa_fail_freeze123456"),envQa)).status).toBe(200);
   const initial=db.jobs.get(JOB_ID)!;
   const testId="call_qafailed_test123456",buildId="call_qafailed_build123456";
   const cp={...initial.checkpoint,state:"TESTING" as const,
