@@ -10,6 +10,7 @@ import {executeAgentTurn} from "../platform/agent/agent-turn.js";
 import {parseAgentResponsesBatch} from "../platform/agent/responses-api.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {provenProjectRead} from "../platform/agent/verified-project-read.js";
+import {provenProjectInspection} from "../platform/agent/verified-project-inspection.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 export type ApplyModelEditInput={
  readonly anonymous_id:string;readonly model_call_key:string;
@@ -68,13 +69,14 @@ export async function applyStoredModelEdit(input:ApplyModelEditInput,
  if(!exactHead&&!renewedHead)
   return failEdit();
  const call=currentParsed.calls[0];
- if(!["write_file","write_files","delete_file","read_file"].includes(call.name))
+ if(!["write_file","write_files","delete_file","read_file","inspect_project"].includes(call.name))
   return failEdit();
  const edit=await executeAgentTurn(current,record.response_json,{
   broker:async(_project,requested)=>{
    if(requested.call_id!==call.call_id||requested.name!==call.name)
     throw Error("AGENT_EDIT_CALL_MISMATCH");
    if(requested.name==="read_file")return provenProjectRead(current.project,requested);
+   if(requested.name==="inspect_project")return provenProjectInspection(current.project,requested);
    const detail="DATA_ONLY_EDIT_ADMITTED_NO_EXECUTION";
    return {call_id:call.call_id,project_hash:current.project.project_hash,
     exit_code:0,timed_out:false,detail,
@@ -84,7 +86,8 @@ export async function applyStoredModelEdit(input:ApplyModelEditInput,
   persist:(previous,next,project)=>advanceDurableAgentJob(deps.db,
    previous.job,deps.owner,next,project)
  });
- return {status:call.name==="read_file"?"FILE_READ_SAVED":"FILE_EDIT_SAVED",
+ return {status:["read_file","inspect_project"].includes(call.name)?
+   "FILE_READ_SAVED":"FILE_EDIT_SAVED",
   project_hash:edit.saved.project.project_hash,
   revision:edit.saved.job.revision};
 }
