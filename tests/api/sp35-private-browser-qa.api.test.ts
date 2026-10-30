@@ -1,0 +1,39 @@
+import {describe,it,expect} from "vitest";
+import {validPrivateBrowserQaTask,strictQaChecks}
+ from "../../src/platform/agent/qa-browser-contract.js";
+const prompt="按 Add 按鈕後顯示測試結果 42";
+const criterion={id:"click_result",source_quote:"測試結果 42",
+ description:"實際更新結果",automatable:true,
+ steps:[{action:"click" as const,role:"button" as const,name:"Add"}],
+ assertions:[{kind:"text_appears" as const,text:"測試結果 42"}]};
+const task={job_id:"ba45436c-c3f1-44f1-adc6-bdd0fb1592e7",
+ project_hash:"sha256:"+"d".repeat(64),build_call_id:"call_build_123456",
+ test_call_id:"call_test_123456",original_prompt:prompt,
+ original_plan:{version:"1" as const,criteria:[criterion]},
+ explicit_browser_qa_consent:true};
+describe("Private Browser QA isolated Cloudflare plan and consent",()=>{
+ it("accepts only bounded original-prompt-matched owner-approved task",()=>{
+  expect(validPrivateBrowserQaTask(task)).toBe(true);
+  for(const field of ["build_call_id","test_call_id","original_prompt",
+   "project_hash","job_id","explicit_browser_qa_consent"]){
+   const v={...task,[field]:null};
+   expect(validPrivateBrowserQaTask(v)).toBe(false);
+  }
+  expect(validPrivateBrowserQaTask({...task,unexpected:true})).toBe(false);
+  expect(validPrivateBrowserQaTask({...task,test_call_id:task.build_call_id})).toBe(false);
+  expect(validPrivateBrowserQaTask({...task,original_prompt:"another prompt"})).toBe(false);
+  expect(validPrivateBrowserQaTask({...task,original_plan:{version:"1",criteria:[]}})).toBe(false);
+  expect(validPrivateBrowserQaTask({...task,original_plan:{version:"1",
+   criteria:Array.from({length:11},(_,i)=>({...criterion,id:"test_"+i}))}})).toBe(false);
+ });
+ it("fails closed on untested, omitted, reordered, duplicate or unproven checks",()=>{
+  const passed={criterion_id:criterion.id,category:"BROWSER" as const,
+   verdict:"PASS" as const,evidence_hash:"sha256:"+"c".repeat(64)};
+  expect(strictQaChecks(task.original_plan,[passed])).toBe(true);
+  expect(strictQaChecks(task.original_plan,[])).toBe(false);
+  expect(strictQaChecks(task.original_plan,[passed,passed])).toBe(false);
+  expect(strictQaChecks(task.original_plan,[{...passed,verdict:"FAIL"}])).toBe(false);
+  expect(strictQaChecks(task.original_plan,[{...passed,evidence_hash:null}])).toBe(false);
+  expect(strictQaChecks(task.original_plan,[{...passed,criterion_id:"wrong"}])).toBe(false);
+ });
+});
