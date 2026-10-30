@@ -1,6 +1,7 @@
 import {describe,it,expect} from "vitest";
 import {validPrivateBrowserQaTask,strictQaChecks}
  from "../../src/platform/agent/qa-browser-contract.js";
+import {consistentBrowserQaResult} from "../../src/edge/agent-qa-run.js";
 const prompt="按 Add 按鈕後顯示測試結果 42";
 const criterion={id:"click_result",source_quote:"測試結果 42",
  description:"實際更新結果",automatable:true,
@@ -57,3 +58,29 @@ describe("Independent Browser QA negative-result evidence",()=>{
   expect(validQaObservedChecks(plan,[{...pass,verdict:"FAIL"}])).toBe(false);
  });
 });
+
+describe("Browser QA response consistency before durable one-shot admission",()=>{
+ const passed={criterion_id:criterion.id,category:"BROWSER" as const,
+  verdict:"PASS" as const,evidence_hash:"sha256:"+"c".repeat(64)};
+ const failed={...passed,verdict:"FAIL" as const,evidence_hash:null};
+ const plan=task.original_plan;
+ it("allows a fully checked PASS with a verifier packet, never an empty packet",()=>{
+  expect(consistentBrowserQaResult(plan,{ready_for_review:true,
+   checks:[passed],packet:{version:"APPF2_AGENT_QA_PACKET_V1"}})).toBe(true);
+  expect(consistentBrowserQaResult(plan,{ready_for_review:true,
+   checks:[passed],packet:null})).toBe(false);
+  expect(consistentBrowserQaResult(plan,{ready_for_review:true,
+   checks:[failed],packet:{version:"APPF2_AGENT_QA_PACKET_V1"}})).toBe(false);
+ });
+ it("accepts a genuine failed observation only without a success packet",()=>{
+  expect(consistentBrowserQaResult(plan,{ready_for_review:false,
+   checks:[failed],packet:null})).toBe(true);
+  expect(consistentBrowserQaResult(plan,{ready_for_review:false,
+   checks:[passed],packet:null})).toBe(false);
+  expect(consistentBrowserQaResult(plan,{ready_for_review:false,
+   checks:[failed],packet:{forged:true}})).toBe(false);
+  expect(consistentBrowserQaResult(plan,{ready_for_review:true,
+   checks:[{...passed,criterion_id:"wrong"}],packet:{}})).toBe(false);
+ });
+});
+
