@@ -39,7 +39,8 @@ export async function stableAgentContinuationKey(kind:"agent_recover"|"agent_nex
 export function enoughAgentStepsForContinuation(remaining:number):boolean{
  return Number.isSafeInteger(remaining)&&remaining>=2;
 }
-export type CandidateFile={readonly path:string;readonly content:string};
+export type CandidateFile={readonly path:string;readonly content:string;
+ readonly hash?:string;readonly bytes?:number};
 export type CandidateJob={readonly job_id:string;readonly revision:number;
  readonly project_hash:string;readonly status:string;
  readonly files:readonly CandidateFile[];
