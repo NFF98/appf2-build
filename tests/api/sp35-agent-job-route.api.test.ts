@@ -98,6 +98,10 @@ class Database {
      } as T));
     return {rows};
    }
+   if(sql.startsWith("SELECT status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
+    const row=this.qaAttempts.get(String(args[0])+":"+String(args[2]));
+    return {rows:row?[row as T]:[]};
+   }
    if(sql.startsWith("SELECT job_revision,status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
     const id=String(args[0])+":"+String(args[2]),row=this.qaAttempts.get(id);
     return {rows:row?[row as T]:[]};
@@ -1808,6 +1812,16 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   }});
   expect(qaDispatches).toBe(1);
   expect(db.jobs.get(JOB_ID)?.job_state).toBe("REPAIRING");
+  // The successful run_test must NOT be offered as a model continuation
+  // after independent QA has durably failed. Only the signed QA repair may proceed.
+  const beforeRepair=await worker(await signed(creator,
+   "/api/v1/agent-jobs/"+JOB_ID+"/agent-progress",{anonymous_id:OWNER},
+   "qa_fail_progress123456"),envQa);
+  expect(beforeRepair.status).toBe(200);
+  expect(await beforeRepair.json()).toMatchObject({data:{
+   can_continue_saved_tool_result:false,
+   can_resume:false,next_action:"OWNER_APPROVED_QA_REPAIR_REQUIRED"
+  }});
   expect((await worker(await signed(creator,repairPath,{
    ...repair,original_prompt:prompt+"篡改"
   },"qa_repair_forged123456"),envQa)).status).toBe(503);
