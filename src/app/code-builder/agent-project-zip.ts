@@ -74,6 +74,7 @@ function makeZip(entries:readonly Entry[]):Uint8Array<ArrayBuffer>{
  }
  return out;
 }
+// eslint-disable-next-line complexity -- Source, size, path and hash integrity checks must remain fail-closed.
 export async function savedAgentProjectZip(job:CandidateJob):Promise<Uint8Array<ArrayBuffer>>{
  if(!SHA.test(job.project_hash)||!Number.isSafeInteger(job.revision)||
   job.revision<0||!Array.isArray(job.files)||
