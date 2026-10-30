@@ -106,8 +106,11 @@ async function named(page:Page,role:string,name:string){
  if(matches.length!==1)throw Error("QA_CONTROL_NOT_UNIQUE:"+role);
  return matches[0]!;
 }
+/** QA must assert rendered, user-visible text: textContent also includes
+ * display:none, hidden, script and template nodes, causing false PASS.
+ */
 async function bodyText(page:Page):Promise<string>{
- return page.$eval("body",el=>el.textContent??"");
+ return page.$eval("body",el=>(el as HTMLElement).innerText??"");
 }
 async function applyStep(page:Page,s:QaStep):Promise<void>{
  const h=await named(page,s.role,s.name);
@@ -119,7 +122,20 @@ async function assertion(page:Page,a:QaAssertion,before:string,
  if(a.kind==="text_includes")return (await bodyText(page)).includes(a.text);
  if(a.kind==="text_appears")
   return !before.includes(a.text)&&(await bodyText(page)).includes(a.text);
- if(a.kind==="visible")return (await named(page,a.role,a.name)).isIntersectingViewport();
+ if(a.kind==="visible"){
+  const handle=await named(page,a.role,a.name);
+  const shown=await handle.evaluate(el=>{
+   for(let node:Element|null=el;node;node=node.parentElement){
+    const style=getComputedStyle(node);
+    if(style.display==="none"||style.visibility==="hidden"||
+      style.visibility==="collapse"||Number(style.opacity)===0||
+      node.getAttribute("aria-hidden")==="true"||node.hasAttribute("hidden"))
+     return false;
+   }
+   return el.getClientRects().length>0;
+  });
+  return shown&&await handle.isIntersectingViewport();
+ }
  if(a.kind==="element_count")return (await page.$$(a.selector)).length===a.count;
  if(a.kind==="text_changes")
   return old.get(a.selector)!==(await page.$eval(a.selector,e=>e.textContent??""));
