@@ -1756,7 +1756,12 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
     expect(summary).toContain("FAIL");
     expect(summary).toContain("project_hash");
     return {id:"resp_qarepaired123456",status:"completed",
-     usage:{input_tokens:100,output_tokens:50},output:[]};
+     usage:{input_tokens:100,output_tokens:50},
+     output:[{type:"function_call",call_id:"call_qa_real_fix_123456",
+      name:"write_file",arguments:JSON.stringify({
+       path:"src/repair.ts",content:"export const repairedScore = 42;",
+       previous_hash:""
+      })}]};
    }};
   const envQa={...env,APPF2_AGENT_QA_BROWSER_ENABLED:"1",
    APPF2_AGENT_MODEL_EXECUTION_ENABLED:"1",
@@ -1847,6 +1852,37 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   expect(await replay.json()).toMatchObject({data:{source:"DURABLE_REPLAY"}});
   expect(modelDispatches).toBe(1);
   expect(db.modelCalls.get(repair.model_call_key)?.status).toBe("SUCCEEDED");
+  const pending=await worker(await signed(creator,
+   "/api/v1/agent-jobs/"+JOB_ID+"/agent-progress",{anonymous_id:OWNER},
+   "qa_repair_progress123456"),envQa);
+  expect(pending.status).toBe(200);
+  expect(await pending.json()).toMatchObject({data:{
+   can_resume:true,resume_model_call_key:repair.model_call_key,
+   next_action:"SIGN_NEXT_SEQUENCE"
+  }});
+  // Use the already journaled model response: no second paid request.
+  // Actual Worker data-only tool application must commit a new project hash.
+  const applied=await worker(await signed(creator,
+   "/api/v1/agent-jobs/"+JOB_ID+"/auto-step",{
+    anonymous_id:OWNER,model_call_key:repair.model_call_key,
+    expected_revision:2
+   },"qa_repair_apply123456"),envQa);
+  expect(applied.status).toBe(200);
+  expect(await applied.json()).toMatchObject({data:{
+   status:"STEP_APPLIED",job_state:"CODING",app_published:false
+  }});
+  expect(db.jobs.get(JOB_ID)?.revision).toBe(3);
+  expect(db.jobs.get(JOB_ID)?.project_hash).not.toBe(initial.project_hash);
+  expect(modelDispatches).toBe(1);
+  const saved=(await worker(await signed(creator,
+   "/api/v1/agent-jobs/"+JOB_ID,{anonymous_id:OWNER},
+   "qa_repair_read123456"),envQa));
+  expect(saved.status).toBe(200);
+  expect(await saved.json()).toMatchObject({data:{
+   files:expect.arrayContaining([expect.objectContaining({
+    path:"src/repair.ts",content:"export const repairedScore = 42;"
+   })]),app_published:false
+  }});
  });
 });
 
