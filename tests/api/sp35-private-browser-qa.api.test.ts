@@ -37,3 +37,24 @@ describe("Private Browser QA isolated Cloudflare plan and consent",()=>{
   expect(strictQaChecks(task.original_plan,[{...passed,criterion_id:"wrong"}])).toBe(false);
  });
 });
+
+describe("Independent Browser QA negative-result evidence",()=>{
+ const prompt="按 Add 按鈕後顯示測試結果 42";
+ const criteria=[{id:"click_result",source_quote:"測試結果 42",
+  description:"實際更新結果",automatable:true,
+  steps:[{action:"click" as const,role:"button" as const,name:"Add"}],
+  assertions:[{kind:"text_appears" as const,text:"測試結果 42"}]}];
+ const plan={version:"1" as const,criteria};
+ it("rejects missing, forged, reordered and non-cryptographic QA observations",async()=>{
+  const {validQaObservedChecks}=await import("../../src/platform/agent/qa-browser-contract.js");
+  const pass={criterion_id:"click_result",category:"BROWSER" as const,
+   verdict:"PASS" as const,evidence_hash:"sha256:"+"a".repeat(64)};
+  expect(validQaObservedChecks(plan,[pass])).toBe(true);
+  expect(validQaObservedChecks(plan,[{...pass,verdict:"FAIL",evidence_hash:null}])).toBe(true);
+  expect(validQaObservedChecks(plan,[])).toBe(false);
+  expect(validQaObservedChecks(plan,[{...pass,criterion_id:"other"}])).toBe(false);
+  expect(validQaObservedChecks(plan,[{...pass,category:"MODEL"}])).toBe(false);
+  expect(validQaObservedChecks(plan,[{...pass,evidence_hash:"pretend"}])).toBe(false);
+  expect(validQaObservedChecks(plan,[{...pass,verdict:"FAIL"}])).toBe(false);
+ });
+});

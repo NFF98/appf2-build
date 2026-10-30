@@ -3,9 +3,9 @@
  * current immutable snapshot are checked BEFORE a durable one-shot reservation.
  * Ambiguous delivery is NEVER retried. No App publication authority exists.
  */
-import {recoverAgentJob} from "../platform/agent/durable-agent-service.js";
+import {recoverAgentJob,advanceDurableAgentJob} from "../platform/agent/durable-agent-service.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
-import {validPrivateBrowserQaTask,type PrivateBrowserQaTask}
+import {validPrivateBrowserQaTask,validQaObservedChecks,type PrivateBrowserQaTask}
  from "../platform/agent/qa-browser-contract.js";
 import {reviewAgentQa} from "./agent-qa-review.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
@@ -128,6 +128,11 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
  let response:QaResponse;
  try{
   response=await dispatchQa(deps.service,deps.privateToken,task);
+  if(!validQaObservedChecks(task.original_plan,response.checks)||
+   (!response.ready_for_review&&
+    (response.checks as import("../platform/agent/qa-browser-contract.js").PrivateQaCheck[])
+     .every(x=>x.verdict==="PASS")))
+   throw Error("QA_INDEPENDENT_CHECKS_INVALID");
   const saved=await deps.db.query<{job_id:string}>(
    "UPDATE public.appf2_agent_browser_qa_attempt SET status='SUCCEEDED',"+
    "receipt_json=$4::jsonb WHERE job_id=$1::uuid AND "+
@@ -144,8 +149,17 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
   throw Error("QA_UNKNOWN_RESULT_NO_RETRY");
  }
  if(!response.ready_for_review){
-  return {status:"BROWSER_QA_FAILED" as const,checks:response.checks,
-   ready_for_review:false,app_published:false,publication_authorized:false};
+  // A failed independently observed requirement re-opens the exact saved
+  // project for an owner-consented model repair; no model spend happens here.
+  const next={...current.job.checkpoint,state:"REPAIRING" as const,
+   previous_checkpoint_id:current.job.checkpoint_hash};
+  const repaired=await advanceDurableAgentJob(deps.db,current.job,deps.owner,next);
+  return {status:"BROWSER_QA_FAILED_REPAIR_READY" as const,
+   checks:response.checks,ready_for_review:false,
+   revision:repaired.job.revision,job_state:repaired.job.job_state,
+   project_hash:repaired.project.project_hash,
+   next_action:"OWNER_APPROVED_QA_REPAIR_MODEL" as const,
+   app_published:false,publication_authorized:false};
  }
  // Packet from the separate verifier is still independently rechecked under
  // creator, current revision, original prompt, and saved Sandbox evidence.

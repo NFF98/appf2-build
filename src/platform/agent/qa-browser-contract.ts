@@ -33,6 +33,21 @@ export function validPrivateBrowserQaTask(x:unknown):x is PrivateBrowserQaTask{
  const plan=parseQaPlan(v.original_plan,v.original_prompt);
  return plan!==null&&plan.criteria.length<=10;
 }
+/** Independently verify every reported criterion before persisting failure evidence. */
+export function validQaObservedChecks(plan:QaPlan,raw:unknown):raw is PrivateQaCheck[]{
+ if(!Array.isArray(raw)||raw.length!==plan.criteria.length)return false;
+ return plan.criteria.every((c,i)=>{
+  const r:unknown=raw[i];
+  if(typeof r!=="object"||r===null||Array.isArray(r))return false;
+  const x=r as Record<string,unknown>;
+  return Object.keys(x).sort().join(",")===
+   "category,criterion_id,evidence_hash,verdict"&&
+   x.criterion_id===c.id&&x.category==="BROWSER"&&
+   (x.verdict==="PASS"?
+    /^sha256:[0-9a-f]{64}$/u.test(String(x.evidence_hash)):
+    (x.verdict==="FAIL"||x.verdict==="UNTESTED")&&x.evidence_hash===null);
+ });
+}
 /** Browser QA can never silently accept unknown/unsupported requirements. */
 export function strictQaChecks(plan:QaPlan,observed:readonly PrivateQaCheck[]):boolean{
  return plan.criteria.length===observed.length&&
