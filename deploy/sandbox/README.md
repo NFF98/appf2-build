@@ -75,3 +75,14 @@ The protected agent Worker must still enable both the candidate and Sandbox
 feature flags and provide a private bearer token (minimum 32 characters),
 owner-signed job and exact DB reservation/consent. Do NOT deploy or enable
 paid container consent as part of ordinary GitHub PR CI.
+
+## Read-only compiled asset handoff for independent browser QA
+
+The private `POST /internal/build-asset` API requires the private bearer and a
+strict {job_id, project_hash, build_call_id, path} object. It serves only
+`index.html` or `assets/<hashed-name>.js/.css` from the most recently
+successfully compiled, still-running, hash-matched job container. It never
+starts the container, executes a test, replays a paid call, or serves source.
+The response is capped to 2 MiB and has no public route. No successful build
+implies independent QA. Cloudflare Browser Run still needs a separate,
+non-public trusted verifier, distinct cost permission and original plan.

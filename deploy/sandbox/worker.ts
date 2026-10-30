@@ -5,6 +5,8 @@
  */
 import {DurableObject,WorkflowEntrypoint} from "cloudflare:workers";
 import {sandboxJobAllowed} from "../../src/platform/agent/private-sandbox-authorization.js";
+import {validBuiltAssetRequest,builtAssetContentType,MAX_BUILT_ASSET_BYTES,
+ type BuiltAssetRequest} from "../../src/platform/agent/private-built-artifact.js";
 import type {WorkflowStep,WorkflowEvent} from "cloudflare:workers";
 import {Files} from "@cloudflare/sandbox";
 import {verifyProjectSnapshot,type ProjectSnapshot}
@@ -72,6 +74,29 @@ export class SandboxJob extends DurableObject<Env>{
   }
  }
  // eslint-disable-next-line complexity -- Strict checkpoint + immutable file checks before execution.
+ /** Read-only: never starts or retries a container, never runs source.
+  * Exactly the most recently proved successful build in this job. */
+ async readBuiltAsset(query:BuiltAssetRequest):Promise<Response>{
+  if(!validBuiltAssetRequest(query))
+   return new Response("Not Found",{status:404});
+  const [project,callId]=await Promise.all([
+   this.ctx.storage.get<string>("verified_build_project_hash"),
+   this.ctx.storage.get<string>("verified_build_call_id")]);
+  if(project!==query.project_hash||callId!==query.build_call_id||
+   !this.ctx.container?.running)
+   return new Response("Not Found",{status:404});
+  const dir=sandboxWorkspaceRoot(query.job_id,{
+   project_hash:query.project_hash
+  } as ProjectSnapshot);
+  const file=await this.files.readFile(dir+"/dist/"+query.path);
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  if(bytes.byteLength===0||bytes.byteLength>MAX_BUILT_ASSET_BYTES)
+   return new Response("Too Large",{status:413});
+  return new Response(bytes,{
+   headers:{"Content-Type":builtAssetContentType(query.path),
+    "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}
+  });
+ }
  async runTask(task:Task):Promise<Receipt>{
   if(!(await verifyProjectSnapshot(task.project))||
    !parseAgentToolCall(task.call)||
@@ -95,7 +120,10 @@ export class SandboxJob extends DurableObject<Env>{
     throw Error("SANDBOX_TEST_REQUIRES_MATCHING_SUCCESSFUL_BUILD");
   }
   await this.ctx.storage.put({[key]:{hash,status:"RUNNING"},job_call_count:count+1});
-  if(task.call.name==="run_build")await this.ctx.storage.delete("verified_build_project_hash");
+  if(task.call.name==="run_build"){
+   await this.ctx.storage.delete("verified_build_project_hash");
+   await this.ctx.storage.delete("verified_build_call_id");
+  }
   await this.ready();
   const dir=sandboxWorkspaceRoot(task.job_id,task.project);
   await this.files.mkdir(dir,{recursive:true});
@@ -129,7 +157,10 @@ export class SandboxJob extends DurableObject<Env>{
   }
   await this.ctx.storage.put(key,{hash,status:"DONE",receipt:result});
   if(task.call.name==="run_build"&&result.exit_code===0&&!result.timed_out)
-   await this.ctx.storage.put("verified_build_project_hash",task.project.project_hash);
+   await this.ctx.storage.put({
+    verified_build_project_hash:task.project.project_hash,
+    verified_build_call_id:task.call.call_id
+   });
   return result;
  }
 }
@@ -181,6 +212,22 @@ export default {
   const url=new URL(request.url);
   if(request.method==="GET"&&url.pathname.startsWith("/internal/workflow/status/"))
    return workflowStatus(request,env,url);
+  if(request.method==="POST"&&url.pathname==="/internal/build-asset"&&!url.search){
+   if(!(await authorized(request,env.APPF2_SANDBOX_TOKEN)))
+    return new Response("Not Found",{status:404});
+   if(Number(request.headers.get("Content-Length")??0)>1024)
+    return new Response("Too Large",{status:413});
+   const body=await request.text();
+   if(body.length>1024)return new Response("Too Large",{status:413});
+   let query:unknown;
+   try{query=JSON.parse(body);}catch{return new Response("Bad Request",{status:400});}
+   if(!validBuiltAssetRequest(query)||
+    !sandboxJobAllowed(env.APPF2_SANDBOX_ALLOWED_JOB_ID,query.job_id))
+    return new Response("Not Found",{status:404});
+   try{
+    return await env.APPF2_CONTAINER.getByName(query.job_id).readBuiltAsset(query);
+   }catch{return new Response("Not Found",{status:404});}
+  }
   if(request.method!=="POST"||
    !["/internal/execute","/internal/workflow/start"].includes(url.pathname)||url.search)
    return new Response("Not Found",{status:404});
