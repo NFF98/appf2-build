@@ -10,6 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import http from "node:http";
 import {spawnSync} from "node:child_process";
+import {createHash} from "node:crypto";
 import {chromium} from "@playwright/test";
 import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-workspace.js";
 import {stageVerifiedFreeCiProject} from "./sp35-free-ci-stage-project.mjs";
@@ -23,21 +24,42 @@ if(process.env.GITHUB_REPOSITORY!=="NFF98/appf2-build"||
  process.env.GITHUB_EVENT_NAME!=="workflow_dispatch"||
  process.env.GITHUB_REF!=="refs/heads/product/sprint-3.5-complex-intent-recovery-20261026")
  throw Error("FREE_CI_UNTRUSTED_RUN");
-const requestUrl=process.env.ACTIONS_ID_TOKEN_REQUEST_URL??"";
-const requestToken=process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN??"";
-// GitHub-hosted runners also use regional pipelinesghub* endpoints.
-// Validate the *entire* official hostname before sending the bearer token.
-const endpoint=trustedFreeCiOidcRequestUrl(requestUrl);
-if(!endpoint||requestToken.length<20)
- throw Error("FREE_CI_OIDC_NOT_PROVIDED");
-endpoint.searchParams.set("audience",audience);
-const assertion=await fetch(endpoint,{headers:{
- Authorization:"Bearer "+requestToken},signal:globalThis.AbortSignal.timeout(12000)});
-const oidc=await assertion.json().catch(()=>null);
-if(!assertion.ok||typeof oidc?.value!=="string")
- throw Error("FREE_CI_OIDC_ISSUANCE_FAILED");
+async function newOidc(){
+ const endpoint=trustedFreeCiOidcRequestUrl(
+  process.env.ACTIONS_ID_TOKEN_REQUEST_URL??"");
+ const secret=process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN??"";
+ if(!endpoint||secret.length<20)throw Error("FREE_CI_OIDC_NOT_PROVIDED");
+ endpoint.searchParams.set("audience",audience);
+ const response=await fetch(endpoint,{headers:{"Authorization":"Bearer "+secret},
+  signal:globalThis.AbortSignal.timeout(12000)});
+ const body=await response.json().catch(()=>null);
+ if(!response.ok||typeof body?.value!=="string")
+  throw Error("FREE_CI_OIDC_ISSUANCE_FAILED");
+ return body.value;
+}
+async function artifactHash(root){
+ const files=[];
+ async function visit(dir,relative){
+  const entries=await fs.readdir(dir,{withFileTypes:true});
+  for(const item of entries){
+   const name=relative?relative+"/"+item.name:item.name;
+   const absolute=path.join(dir,item.name);
+   if(item.isDirectory())await visit(absolute,name);
+   else if(item.isFile()){
+    const bytes=await fs.readFile(absolute);
+    if(bytes.length>5*1024*1024)throw Error("FREE_CI_ARTIFACT_SIZE_LIMIT");
+    files.push([name,createHash("sha256").update(bytes).digest("hex")]);
+   }else throw Error("FREE_CI_ARTIFACT_UNSAFE_FILE");
+   if(files.length>128)throw Error("FREE_CI_ARTIFACT_COUNT_LIMIT");
+  }
+ }
+ await visit(root,"");
+ files.sort((a,b)=>a[0].localeCompare(b[0],"en"));
+ if(!files.some(x=>x[0]==="index.html"))throw Error("FREE_CI_ARTIFACT_NO_INDEX");
+ return "sha256:"+createHash("sha256").update(JSON.stringify(files)).digest("hex");
+}
 const source=await fetch(host+"/api/v1/internal/free-ci/source",{
- method:"POST",headers:{"Authorization":"Bearer "+oidc.value,
+ method:"POST",headers:{"Authorization":"Bearer "+await newOidc(),
   "Content-Type":"application/json"},body:JSON.stringify({ticket}),
  signal:globalThis.AbortSignal.timeout(25000),redirect:"error"});
 const data=await source.json().catch(()=>null);
@@ -87,10 +109,29 @@ try{
  await ctx.route("**/*",route=>route.request().url().startsWith(origin+"/")?
   route.continue():route.abort());
  const page=await ctx.newPage();
+ const errors=[];
+ page.on("pageerror",error=>errors.push(error.message));
  await page.goto(origin,{waitUntil:"load",timeout:15000});
  await page.locator("body").waitFor({state:"visible",timeout:12000});
- console.log("SP35 PRIVATE FREE CI: OIDC verified by Worker, DB snapshot hash verified, Docker build + Chromium render PASS");
- console.log("SP35 LIMIT: smoke only; original-requirement independent QA/receipt and v2 publication NOT VERIFIED");
+ if(!(await page.locator("body").innerText()).trim()||errors.length)
+  throw Error("FREE_CI_CHROMIUM_RENDER_FAILED");
+ const receipt={version:"APPF2_FREE_CI_SMOKE_V1",
+  project_hash:project.project_hash,
+  artifact_hash:await artifactHash(path.join(tmp,"dist")),
+  checks:{locked_build:true,chromium_render:true}};
+ const saved=await fetch(host+"/api/v1/internal/free-ci/result",{
+  method:"POST",headers:{"Authorization":"Bearer "+await newOidc(),
+   "Content-Type":"application/json"},body:JSON.stringify({ticket,result:receipt}),
+  signal:globalThis.AbortSignal.timeout(25000),redirect:"error"});
+ const stored=await saved.json().catch(()=>null);
+ if(saved.status!==200||!["RECORDED","REPLAYED"].includes(stored?.data?.status)||
+  stored.data.project_hash!==project.project_hash||
+  stored.data.original_requirements_qa!==false||
+  stored.data.app_published!==false)
+  throw Error("FREE_CI_SMOKE_RECEIPT_NOT_DURABLE_HTTP_"+saved.status);
+ console.log("SP35 PRIVATE FREE CI: GitHub OIDC verified, locked Docker build + Chromium render PASS");
+ console.log("SP35 FREE CI RECEIPT: same Job/hash persisted in PostgreSQL "+stored.data.status);
+ console.log("SP35 LIMIT: browser smoke only, original acceptance QA and publication NOT VERIFIED");
  await ctx.close();
 }finally{
  await browser?.close().catch(()=>{});
