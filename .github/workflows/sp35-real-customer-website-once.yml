@@ -31,3 +31,5 @@ jobs:
 # This workflow NEVER automatically retries or calls provider directly. Its one
 # Staging browser click may approve at most one 8c QA, 20c CODE and 16c REPAIR.
 # Production, Cloudflare paid Containers and paid Browser Run are disallowed.
+
+# GPT-6.1 Sol once-only customer website E2E, authorized Sprint 3.5 Staging recheck after previous pre-provider SQL rejection. Do not rerun automatically.
