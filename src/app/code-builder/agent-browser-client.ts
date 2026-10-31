@@ -44,7 +44,7 @@ export function enoughAgentStepsForContinuation(remaining:number):boolean{
 export type CandidateFile={readonly path:string;readonly content:string;
  readonly hash?:string;readonly bytes?:number};
 export type SavedFreeCiSmoke={readonly status:"BUILD_BROWSER_SMOKE";readonly run_id:string;
- readonly artifact_hash:string;
+ readonly artifact_hash:string;readonly preview_ready:boolean;
  readonly qa_plan_hash?:string;
  readonly qa_checks?:readonly {criterion_id:string;verdict:"PASS"|"FAIL"|"UNTESTED";evidence_hash:string|null}[];
  readonly original_requirements_qa:false;
@@ -386,7 +386,7 @@ export class BrowserCodingAgent {
   */
  async freeCiPreview():Promise<PreviewSource>{
   const job=await this.read();
-  if(!job.free_ci||job.free_ci.app_published!==false)
+  if(!job.free_ci?.preview_ready||job.free_ci.app_published!==false)
    throw Error("此版本尚無免費 Docker 可操作建置成果。");
   const result=await this.post<PreviewSource&{app_published:false}>(
    "/free-ci-preview",{anonymous_id:this.owner,

@@ -23,6 +23,9 @@ class Db implements AgentJobExecutor{
   if(sql.includes("SELECT run_id,built_artifact_hash")){
    return {rows:this.saved?[this.saved as T]:[]};
   }
+  if(sql.includes("SELECT EXISTS(SELECT 1 FROM public.appf2_agent_free_ci_preview")){
+   return {rows:[{ready:false} as T]};
+  }
   throw Error("UNEXPECTED_SQL");
  }
 }
@@ -33,7 +36,7 @@ describe("SP35 free GitHub OIDC result returns to original private Job",()=>{
   expect(await persistFreeCiSmoke(db,scope,report)).toBe("REPLAYED");
   expect(await readFreeCiSmoke(db,job,owner,hash)).toEqual({
    status:"BUILD_BROWSER_SMOKE",run_id:scope.runId,artifact_hash:artifact,
-   original_requirements_qa:false,app_published:false});
+   preview_ready:false,original_requirements_qa:false,app_published:false});
   await expect(persistFreeCiSmoke(db,scope,{...report,
    artifact_hash:"sha256:"+"c".repeat(64)})).rejects.toThrow("CONFLICT");
  });

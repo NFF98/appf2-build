@@ -105,14 +105,22 @@ export async function readFreeCiSmoke(db:AgentJobExecutor,jobId:string,
   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid AND project_hash=$3::text",
   [jobId,owner,projectHash]);
  const row=found.rows[0];
+ if(!row)return null;
+ const preview=await db.query<{ready:boolean}>(
+  "SELECT EXISTS(SELECT 1 FROM public.appf2_agent_free_ci_preview p "+
+  "WHERE p.job_id=$1::uuid AND p.owner_anonymous_id=$2::uuid "+
+  "AND p.project_hash=$3::text AND p.run_id=$4::text "+
+  "AND p.artifact_hash=$5::text) AS ready",
+  [jobId,owner,projectHash,row.run_id,row.built_artifact_hash]);
+ const preview_ready=preview.rows[0]?.ready===true;
  const data=typeof row?.receipt_json==="object"&&row.receipt_json!==null?
   row.receipt_json as {qa_plan_hash?:unknown;qa_checks?:unknown}:null;
  const qa=data&&typeof data.qa_plan_hash==="string"&&
   SHA.test(data.qa_plan_hash)&&validQaChecks(data.qa_checks)?
    {qa_plan_hash:data.qa_plan_hash,qa_checks:data.qa_checks}:null;
- return row?{status:"BUILD_BROWSER_SMOKE" as const,run_id:row.run_id,
-  artifact_hash:row.built_artifact_hash,...(qa??{}),
-  original_requirements_qa:false as const,app_published:false as const}:null;
+ return {status:"BUILD_BROWSER_SMOKE" as const,run_id:row.run_id,
+  artifact_hash:row.built_artifact_hash,preview_ready,...(qa??{}),
+  original_requirements_qa:false as const,app_published:false as const};
 }
 /** OIDC identity + AES source ticket authenticate before owner-scoped DB write. */
 // eslint-disable-next-line complexity -- Every token/claim and content boundary fails closed.

@@ -97,6 +97,26 @@ while(Date.now()<deadline){
   last.qa_checks[0]?.verdict!=="PASS"||
   !/^sha256:[a-f0-9]{64}$/u.test(last.qa_checks[0].evidence_hash))
   throw Error("FREE_LIVE_DISPATCH_RECEIPT_NOT_VERIFIED");
+ // An immutable smoke/QA receipt can arrive BEFORE the separate artifact
+ // upload; do not mislabel the App as reopenable until PostgreSQL confirms.
+ if(current.free_ci.preview_ready!==true)continue;
+ const reopened=await signed(base+"/free-ci-preview",{
+  anonymous_id:owner,expected_project_hash:imported.project_hash},200);
+ if(reopened.project_hash!==imported.project_hash||
+  reopened.app_published!==false||
+  typeof reopened.index_html!=="string"||
+  !reopened.index_html.includes("assets/")||
+  typeof reopened.javascript!=="string"||
+  reopened.javascript.length<100||
+  typeof reopened.css!=="string")
+  throw Error("FREE_LIVE_PRIVATE_SAVED_APP_REOPEN_NOT_VERIFIED");
+ const another=await signed(base+"/free-ci-preview",{
+  anonymous_id:owner,expected_project_hash:imported.project_hash},200);
+ if(another.javascript!==reopened.javascript||
+  another.index_html!==reopened.index_html||
+  another.css!==reopened.css)
+  throw Error("FREE_LIVE_PRIVATE_SAVED_APP_REOPEN_NOT_IMMUTABLE");
+ console.log("SP35 REAL FREE APP PRIVATE SAVED→OWNER-P256 REOPEN SAME BYTES, NO AI PASS");
  console.log("SP35 REAL FREE JOB→GITHUB OIDC→DOCKER→CHROMIUM QA→ORIGINAL POSTGRES JOB PASS");
  console.log("SP35 FREE REAL GITHUB RUN: "+last.run_id);
  console.log("SP35 LIMIT: fixed zero-cost operator-authored source only, NOT AI-generated or public Blueprint v2");

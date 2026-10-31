@@ -437,7 +437,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   {snapshot&&(["TESTING","REPAIRING"].includes(snapshot.job.status)||
    Boolean(snapshot.job.free_ci))?
    <section aria-label="私人多檔案 App 互動預覽">
-    {snapshot.job.free_ci?
+    {snapshot.job.free_ci?.preview_ready?
      <button type="button" className="btn btn-primary" disabled={busy}
       onClick={()=>{void openFreeCiPreview();}}>
       開啟已保存的免費 Docker App（私人、零 AI、可操作）
@@ -495,6 +495,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      {snapshot.job.free_ci.qa_checks?.length?
       <ul>{snapshot.job.free_ci.qa_checks.map(c=>
        <li key={c.criterion_id}>{c.criterion_id}：{c.verdict}</li>)}</ul>:null}
+     <p>{snapshot.job.free_ci.preview_ready?
+      "建置 App 已完整保存，可直接免費重新開啟。":
+      "Runner 建置已完成，但 App 產物尚未確認保存，暫時不能開啟。"}</p>
      <p>已完成禁網路 Docker 建置及基本 Chromium 頁面檢查；
       <strong>不是原始需求 QA 通過，也不是正式 App 卡片或分享</strong>。</p>
      {/^[0-9]{6,20}$/u.test(snapshot.job.free_ci.run_id)?
