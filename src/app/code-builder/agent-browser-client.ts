@@ -380,6 +380,33 @@ export class BrowserCodingAgent {
   saveTarget(this.target);
   return plan;
  }
+ /** Owner-signed, journaled per-call AI model in the SAME Worker Job.
+  * One paid call per phase; server stores reservation BEFORE provider fetch.
+  * Each phase is an explicit original-creator consent, never a blind retry.
+  */
+ async freeAiStage(stage:"QA"|"CODE"|"REPAIR"):Promise<{
+  readonly status:string;readonly original_plan?:QaPlan;
+  readonly project_hash?:string;readonly revision?:number;
+  readonly app_published:false
+ }>{
+  const target=this.target;
+  if(!target)throw Error("NO_AGENT_JOB");
+  const job=await this.read();
+  const result=await this.post<{status:string;original_plan?:QaPlan;
+   project_hash?:string;revision?:number;app_published:false}>(
+   "/free-ai-stage",{anonymous_id:this.owner,
+    original_prompt:target.prompt,expected_project_hash:job.project_hash,
+    stage,explicit_ai_consent:true,explicit_free_ci_consent:true});
+  if(result.app_published!==false)
+   throw Error("付費 AI 處理不得直接發布 App。");
+  if(result.original_plan){
+   const parsed=parseQaPlan(result.original_plan,target.prompt);
+   if(!parsed)throw Error("原始需求驗收計畫不可驗證。");
+   this.target={...target,qaPlan:parsed};
+   saveTarget(this.target);
+  }
+  return result;
+ }
  /** Explicit, separately signed PUBLIC release of a fully QA-passing saved App.
   * The server refuses missing plans, FAIL, UNTESTED and stale hashes.
   * Only an owner-signed click may make the resulting /code/ card shareable.

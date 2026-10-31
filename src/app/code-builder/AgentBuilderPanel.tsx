@@ -24,6 +24,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [freeCiConsent,setFreeCiConsent]=useState(false);
  const [freeCiStatus,setFreeCiStatus]=useState("");
  const [publicShareConsent,setPublicShareConsent]=useState(false);
+ const [autoRepairConsent,setAutoRepairConsent]=useState(false);
  const [publishedUrl,setPublishedUrl]=useState("");
  const [qaJson,setQaJson]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
@@ -256,6 +257,66 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){previewHost.current?.replaceChildren();setError(failureMessage(e));}
   finally{setBusy(false);}
  };
+ /** Product flow: real language → journaled paid AI → GitHub free Docker →
+  * Chromium frozen-case observations → immutable private App; one optional
+  * explicitly authorized repair, then optional owner-approved publication.
+  */
+ const startFreeAi=async()=>{
+  if(busy||!aiConsent||!containerConsent||!browserQaConsent||!freeCiConsent||
+   approvedCents<44)return;
+  setBusy(true);setError("");setQaOutcome("");setPublishedUrl("");
+  setQaChecks([]);setPreviewReady(false);stop.current=false;
+  try{
+   const readiness=await fetch("/api/v1/agent-readiness",{cache:"no-store"});
+   const status=await readiness.json() as {data?:{free_ci_paid_ai_available?:boolean}};
+   if(!readiness.ok||status.data?.free_ci_paid_ai_available!==true)
+    throw Error("Staging 真 AI 安全通道尚未部署，沒有執行付費模型。");
+   const worker=new BrowserCodingAgent();agent.current=worker;
+   await worker.create(prompt,{allowAi:true,allowContainer:false,
+    approvedCents},acceptancePlan());
+   setSaved(true);setCatalog([...readSavedCandidateLibrary()]);
+   setSnapshot({job:await worker.read(),progress:null,
+    message:"已保存原始需求；獨立 QA 計畫必須在編碼前凍結。",completed_steps:0});
+   if(savedCandidateTarget()?.qaPlan)await worker.freezeOriginalQaPlan();
+   else await worker.freeAiStage("QA");
+   const created=await worker.freeAiStage("CODE");
+   let current=await worker.read();
+   setSnapshot({job:current,progress:null,
+    message:created.status==="AI_SOURCE_SAVED_FREE_CI_QUEUED"?
+     "真 AI 多檔案已保存並派發免費 Docker，正在等候真實 Browser QA。":
+     "AI 程式已保存，但 GitHub 派發尚未證實；可手動重新派發。",
+    completed_steps:0});
+   let repaired=false;
+   for(let i=0;i<45&&!stop.current;i++){
+    await new Promise<void>(resolve=>window.setTimeout(resolve,8000));
+    current=await worker.read();
+    setSnapshot({job:current,progress:null,
+     message:"正在讀取原 Job 的真正 Docker／Chromium 收據，不重新呼叫模型。",
+     completed_steps:0});
+    if(!current.free_ci)continue;
+    const checks=current.free_ci.qa_checks??[];
+    if(!current.free_ci.preview_ready)continue;
+    setQaChecks(checks);
+    if(checks.length>0&&checks.every(c=>c.verdict==="PASS")){
+     setQaOutcome("原需求逐條 Browser QA PASS；App 已保存，可零 AI 重用。");
+     if(publicShareConsent){
+      const shared=await worker.publishFreeCiApp(prompt.trim().slice(0,75),true);
+      setPublishedUrl(shared.url);
+     }
+     break;
+    }
+    if(autoRepairConsent&&!repaired&&checks.some(c=>c.verdict==="FAIL")){
+     repaired=true;
+     setQaOutcome("Browser QA 找到 FAIL；依本次 16 美分上限授權修復一次，原 Job 仍保留。");
+     await worker.freeAiStage("REPAIR");
+     continue;
+    }
+    setQaOutcome("瀏覽器 QA 有 FAIL／UNTESTED；未發布，原 Job 保留可接續修復。");
+    break;
+   }
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const publishFreeApp=async()=>{
   if(busy||!publicShareConsent)return;
   setBusy(true);setError("");setPublishedUrl("");
@@ -416,7 +477,26 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   <p className="saved-apps-note">每按一次開發加修復總計最多六個 Agent 步驟，另可依授權做一次獨立 QA；費用仍受伺服器總預算限制。
    免費 Runner 已用原始建立者簽章測通 Docker、Chromium、QA 收據及私人 App 保存／重開；
    但測試程式不是 AI 生成作品。Staging 仍禁止付費 AI／容器，並禁止未經完整 QA 的正式發布。</p>
+  <label className="code-builder-consent">
+   <input type="checkbox" checked={autoRepairConsent} disabled={busy}
+    onChange={e=>setAutoRepairConsent(e.target.checked)}/>
+   我授權真實 Browser QA 出現 FAIL 時，自動呼叫最多一次修復 AI（預留 16 美分）
+   並保留所有原始專案版本；網路或付款結果不明時絕不重試。
+  </label>
   <button type="button" className="btn btn-primary"
+   disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
+    !freeCiConsent||approvedCents<44||prompt.trim().length<5}
+   onClick={()=>{void startFreeAi();}}>
+   {busy?"真 AI／免費 Docker／Browser QA 正在執行…":
+    "一鍵真 AI 生成 App → 免費 Docker → QA → 保存／分享"}
+  </button>
+  <p className="saved-apps-note">
+   新版免費 Runner AI 模式：最多 8 美分原始 QA 規劃、20 美分編碼，
+   另可明確核准一次最多 16 美分修復；全程沿用同一原 Job。
+   預留費用是上限，不是實際帳單。網路出錯後須先查已保存狀態，
+   不會自動重複扣費。公開分享仍需另外勾選明確同意。
+  </p>
+  <button type="button" className="btn btn-secondary"
    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
     prompt.trim().length<5||
     !Number.isSafeInteger(approvedCents)||
