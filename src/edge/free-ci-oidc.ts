@@ -18,15 +18,15 @@ function json(bytes:Uint8Array):Record<string,unknown>|null{
  }catch{return null;}
 }
 // eslint-disable-next-line complexity -- Each GitHub OIDC claim is a required independent trust boundary.
-export async function verifyFreeCiOidc(token:string,nowMs:number,
- loadKeys:()=>Promise<unknown>):Promise<boolean>{
+export async function verifiedFreeCiOidcRunId(token:string,nowMs:number,
+ loadKeys:()=>Promise<unknown>):Promise<string|null>{
  try{
-  if(token.length>12000)return false;
+  if(token.length>12000)return null;
   const parts=token.split(".");
-  if(parts.length!==3)return false;
+  if(parts.length!==3)return null;
   const header=json(decoded(parts[0])),claims=json(decoded(parts[1]));
   if(!header||!claims||header.alg!=="RS256"||
-   typeof header.kid!=="string"||header.kid.length>180)return false;
+   typeof header.kid!=="string"||header.kid.length>180)return null;
   const now=Math.floor(nowMs/1000);
   if(claims.iss!==ISSUER||claims.aud!==FREE_CI_AUDIENCE||
    claims.repository!=="NFF98/appf2-build"||
@@ -38,26 +38,35 @@ export async function verifyFreeCiOidc(token:string,nowMs:number,
    typeof claims.iat!=="number"||typeof claims.exp!=="number"||
    claims.iat>now+60||claims.exp<now||claims.exp>now+900||
    typeof claims.run_id!=="string"||!/^[0-9]{6,20}$/u.test(claims.run_id))
-   return false;
+   return null;
   const keys=await loadKeys();
   if(typeof keys!=="object"||keys===null||!("keys" in keys)||
-   !Array.isArray(keys.keys))return false;
+   !Array.isArray(keys.keys))return null;
   const jwk=keys.keys.find((k:unknown)=>typeof k==="object"&&k!==null&&
    "kid" in k&&k.kid===header.kid&&"kty" in k&&k.kty==="RSA"&&
    "use" in k&&k.use==="sig"&&"alg" in k&&k.alg==="RS256");
-  if(!jwk)return false;
+  if(!jwk)return null;
   const key=await crypto.subtle.importKey("jwk",jwk,{
    name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
-  return crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decoded(parts[2]),
+  const verified=await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decoded(parts[2]),
    new TextEncoder().encode(parts[0]+"."+parts[1]));
- }catch{return false;}
+  return verified?claims.run_id as string:null;
+ }catch{return null;}
 }
-export async function verifyLiveFreeCiOidc(token:string,nowMs:number):
- Promise<boolean>{
- return verifyFreeCiOidc(token,nowMs,async()=>{
+export async function verifyFreeCiOidc(token:string,nowMs:number,
+ loadKeys:()=>Promise<unknown>):Promise<boolean>{
+ return (await verifiedFreeCiOidcRunId(token,nowMs,loadKeys))!==null;
+}
+export async function verifiedLiveFreeCiOidcRunId(token:string,nowMs:number):
+ Promise<string|null>{
+ return verifiedFreeCiOidcRunId(token,nowMs,async()=>{
   const r=await globalThis.fetch(ISSUER+"/.well-known/jwks",{
    method:"GET",signal:globalThis.AbortSignal.timeout(7000)});
   if(!r.ok)throw Error("FREE_CI_JWKS_UNAVAILABLE");
   return r.json();
  });
+}
+export async function verifyLiveFreeCiOidc(token:string,nowMs:number):
+ Promise<boolean>{
+ return (await verifiedLiveFreeCiOidcRunId(token,nowMs))!==null;
 }
