@@ -2,7 +2,7 @@
  * FREE runner workflow. Never trust decoded JWT without RS256/JWKS verification.
  */
 const ISSUER="https://token.actions.githubusercontent.com";
-const WORKFLOW="NFF98/appf2-build/.github/workflows/sp35-free-ci-job.yml@"+
+const WORKFLOW="NFF98/appf2-build/.github/workflows/sp35-staging-only.yml@"+
  "refs/heads/product/sprint-3.5-complex-intent-recovery-20261026";
 export const FREE_CI_AUDIENCE="appf2-sp35-free-ci-private-source-v1";
 function decoded(s:string):Uint8Array<ArrayBuffer>{

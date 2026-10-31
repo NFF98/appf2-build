@@ -1,4 +1,4 @@
-name: Sprint 3.5 free private Agent CI build (OIDC, no paid cloud)
+name: Sprint 3.5 free private Agent CI reference (use existing Staging dispatch)
 on:
   push:
     branches:

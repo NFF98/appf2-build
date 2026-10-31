@@ -37,7 +37,7 @@ export async function dispatchFreeCiJob(input:FreeCiDispatchInput,ctx:{
  const ticket=await sealFreeCiTicket({job_id:ctx.jobId,owner:input.anonymous_id,
   project_hash:project.project.project_hash},ctx.ticketSecret,ctx.nowMs);
  const url="https://api.github.com/repos/NFF98/appf2-build/actions/workflows/"+
-  "sp35-free-ci-job.yml/dispatches";
+  "sp35-staging-only.yml/dispatches";
  const send=ctx.send??fetch;
  const response=await send(url,{method:"POST",headers:{
   Authorization:"Bearer "+ctx.token,Accept:"application/vnd.github+json",
