@@ -118,7 +118,36 @@ function docker(args){
  const result=spawnSync("docker",args,{
   encoding:"utf8",timeout:140000,maxBuffer:512*1024});
  if(result.error||result.status!==0)
-  throw Error("FREE_CI_BUILD_FAILED:"+String(result.status));
+  throw Error("FREE_CI_BUILD_FAILED:"+String(result.status)+":"+
+   (String(result.stderr??"")+"\n"+String(result.stdout??""))
+    .slice(-1000).replace(/[\u0000-\u001f]/gu," "));
+}
+/** Only code build/render failure, never infrastructure errors, is eligible
+ * for an OIDC-attested failure receipt. It is NOT QA PASS or a built artifact.
+ */
+async function persistFailure(stage,excerpt){
+ if(plan===null||typeof originalPlanHash!=="string")
+  throw Error("FREE_CI_FAILURE_REQUIRES_ORIGINAL_FROZEN_PLAN");
+ const code=stage==="BUILD"?"FREE_CI_BUILD_FAILED":"FREE_CI_CHROMIUM_RENDER_FAILED";
+ const diagnostic=String(excerpt).slice(-1150)
+  .replace(/[\u0000-\u001f]/gu," ").trim()||code;
+ const artifact_hash="sha256:"+createHash("sha256").update(JSON.stringify([
+  "APPF2_FREE_CI_BUILD_FAILURE_V1",project.project_hash,stage,code,diagnostic
+ ])).digest("hex");
+ const receipt={version:"APPF2_FREE_CI_BUILD_FAILURE_V1",
+  project_hash:project.project_hash,artifact_hash,
+  failure_stage:stage,diagnostic_code:code,
+  diagnostic_excerpt:diagnostic,qa_plan_hash:originalPlanHash};
+ const saved=await fetch(host+"/api/v1/internal/free-ci/result",{
+  method:"POST",headers:{"Authorization":"Bearer "+await newOidc(),
+   "Content-Type":"application/json"},body:JSON.stringify({ticket,result:receipt}),
+  signal:globalThis.AbortSignal.timeout(25000),redirect:"error"});
+ const stored=await saved.json().catch(()=>null);
+ if(saved.status!==200||!["RECORDED","REPLAYED"].includes(stored?.data?.status)||
+  stored.data.project_hash!==project.project_hash||
+  stored.data.app_published!==false)
+  throw Error("FREE_CI_BUILD_FAILURE_RECEIPT_NOT_DURABLE_HTTP_"+saved.status);
+ console.log("SP35 FREE CI: durable signed "+stage+" failure, no fake QA PASS");
 }
 try{
  const staged=await stageVerifiedFreeCiProject(project,tmp);
@@ -127,12 +156,19 @@ try{
  docker(["build","-t","appf2-sp35-free-ci:oidc",
   "-f","deploy/free-ci/Dockerfile","deploy"]);
  const uid=process.getuid?.()??1000,gid=process.getgid?.()??1000;
- docker(["run","--rm","--network","none","--cap-drop","ALL",
-  "--security-opt","no-new-privileges","--pids-limit","100",
-  "--memory","768m","--cpus","1","--user",uid+":"+gid,
-  "--tmpfs","/tmp:rw,nosuid,size=64m",
-  "-v",tmp+":/workspace/agent:rw","-w","/workspace/agent",
-  "appf2-sp35-free-ci:oidc","node","/opt/appf2/build-locked.mjs"]);
+ try{
+  docker(["run","--rm","--network","none","--cap-drop","ALL",
+   "--security-opt","no-new-privileges","--pids-limit","100",
+   "--memory","768m","--cpus","1","--user",uid+":"+gid,
+   "--tmpfs","/tmp:rw,nosuid,size=64m",
+   "-v",tmp+":/workspace/agent:rw","-w","/workspace/agent",
+   "appf2-sp35-free-ci:oidc","node","/opt/appf2/build-locked.mjs"]);
+ }catch(err){
+  // A timeout/null exit is a runner issue, NOT proof user code is invalid.
+  if(/^FREE_CI_BUILD_FAILED:[1-9][0-9]*:/u.test(String(err)))
+   await persistFailure("BUILD",String(err));
+  throw err;
+ }
  const html=await fs.readFile(path.join(tmp,"dist/index.html"),"utf8");
  if(html.length<50)throw Error("FREE_CI_BUILD_HTML_EMPTY");
  server=http.createServer(async(req,res)=>{
@@ -156,10 +192,15 @@ try{
  const page=await ctx.newPage();
  const errors=[];
  page.on("pageerror",error=>errors.push(error.message));
- await page.goto(origin,{waitUntil:"load",timeout:15000});
- await page.locator("body").waitFor({state:"visible",timeout:12000});
- if(!(await page.locator("body").innerText()).trim()||errors.length)
-  throw Error("FREE_CI_CHROMIUM_RENDER_FAILED");
+ try{
+  await page.goto(origin,{waitUntil:"load",timeout:15000});
+  await page.locator("body").waitFor({state:"visible",timeout:12000});
+  if(!(await page.locator("body").innerText()).trim()||errors.length)
+   throw Error("FREE_CI_CHROMIUM_RENDER_FAILED:"+errors.slice(0,2).join(";"));
+ }catch(err){
+  await persistFailure("RENDER",String(err));
+  throw err;
+ }
  const qaChecks=[];
  if(plan){
   if(!Array.isArray(plan.criteria)||plan.criteria.length<1||
