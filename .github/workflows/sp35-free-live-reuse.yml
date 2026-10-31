@@ -24,3 +24,5 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Real Staging published App open/click/reload in two browsers, no AI
         run: node deploy/scripts/sp35-free-live-reuse-e2e.mjs
+      - name: Real Staging new Agent creator UI, no consent and zero AI
+        run: node deploy/scripts/sp35-free-agent-ui-staging-smoke.mjs
