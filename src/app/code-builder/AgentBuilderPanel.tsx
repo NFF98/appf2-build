@@ -148,6 +148,22 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    }
   }finally{setBusy(false);}
  };
+ /** Read-only recovery: never dispatches AI, containers or QA. */
+ const refreshSavedProgress=async()=>{
+  if(busy||!saved)return;
+  setBusy(true);setError("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())
+    throw Error("找不到原專案的簽章金鑰，無法讀取已保存進度。");
+   const job=await worker.read();
+   const progress=await worker.progress();
+   setSnapshot({job,progress,completed_steps:0,
+    message:"已從資料庫讀取最新工作與獨立 QA 紀錄，沒有重新呼叫 AI、容器或瀏覽器 QA。"});
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const openPrivatePreview=async()=>{
   if(busy||!containerConsent)return;
   setBusy(true);setError("");setPreviewReady(false);
@@ -210,6 +226,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   finally{setBusy(false);}
  };
  const frozenPlan=savedCandidateTarget()?.qaPlan;
+ const qaAttemptState=snapshot?.progress?.qa_attempt_state;
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
   <p className="saved-apps-note">真正的多檔案程式專案；AI 可以編寫、保存、要求隔離建置與修復。
@@ -265,10 +282,25 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   </button>
   {saved?<button type="button" className="btn btn-secondary"
     disabled={busy||!aiConsent} onClick={()=>{void execute(true);}}>繼續上次保存的 Agent 工作</button>:null}
-  {snapshot?.job.status==="TESTING"&&frozenPlan?
+  {saved?<button type="button" className="btn btn-secondary"
+    disabled={busy} onClick={()=>{void refreshSavedProgress();}}>
+    查詢已保存的產品進度與 QA 紀錄（不扣費）
+   </button>:null}
+  {snapshot?.job.status==="TESTING"&&frozenPlan&&
+   qaAttemptState==="NOT_RUN"?
    <button type="button" className="btn btn-secondary"
     disabled={busy||!browserQaConsent}
     onClick={()=>{void runQa(false);}}>開始獨立瀏覽器 QA（需另行授權）</button>:null}
+  {snapshot?.job.status==="TESTING"&&qaAttemptState==="RESULT_RECORDED"?
+   <p role="status" className="saved-apps-note">
+    資料庫已保存此版本的獨立 Browser QA 回應。這不是重新驗證的 PASS，
+    不可直接發布；禁止重送同一次付費 QA，請依已保存結果接續審核。
+   </p>:null}
+  {snapshot?.job.status==="TESTING"&&
+   (qaAttemptState==="IN_FLIGHT"||qaAttemptState==="BLOCKED_UNCERTAIN")?
+   <p role="status" className="saved-apps-note">
+    獨立 Browser QA 的執行結果仍不確定；已停止重試以避免重複費用。
+   </p>:null}
   {snapshot?.job.status==="REPAIRING"&&frozenPlan?
    <button type="button" className="btn btn-secondary"
     disabled={busy||!aiConsent}
