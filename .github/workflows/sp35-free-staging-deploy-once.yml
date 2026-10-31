@@ -97,3 +97,6 @@ jobs:
         run: |
           echo "SP35 FREE STAGING DEPLOY: Worker+SPA+Agent+PG route checked; NO paid AI, Browser Run, Cloudflare Containers or Production deploy"
           echo "SP35 FIVE-CORE PRODUCT REAL E2E: NOT_COMPLETE"
+
+# Repo Secret now configured by Human; redeploy without paid AI/Containers.
+# [SP35-FREE-STAGING-DEPLOY-ONCE] validates credential presence and routes.
