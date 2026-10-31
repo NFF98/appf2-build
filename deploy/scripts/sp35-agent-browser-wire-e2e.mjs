@@ -312,7 +312,7 @@ try{
   throw Error("AGENT_WIRE_PROOF_OR_PAYLOAD_MISSING");
  // Reopening a saved card must restore its original proof key and last
  // Postgres job head; NEVER start a new model/QA/container operation.
- await page.getByRole("button",{name:"開啟："+prompt}).click();
+ await page.getByRole("button",{name:"開啟／重用："+prompt}).click();
  await page.getByText("已恢復保存的專案，不重新執行 AI 或雲端建置。")
   .waitFor({timeout:15000});
  if(planCount!==1||autoPlanCount!==1||stepCount!==1||
