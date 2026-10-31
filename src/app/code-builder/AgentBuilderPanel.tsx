@@ -6,6 +6,7 @@ import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
 import {savedAgentProjectZip} from "./agent-project-zip.js";
 import {createPrivatePreviewFrame} from "./agent-private-preview.js";
+import {requireAgentBuildReadiness} from "./agent-readiness.js";
 
 type Props={readonly suggestedPrompt?:{text:string;revision:number}|null};
 function failureMessage(e:unknown):string{
@@ -132,7 +133,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  };
  // eslint-disable-next-line complexity -- Explicit one-click AI, browser QA and repair require separate consent gates.
  const execute=async(resume:boolean)=>{
-  if(busy||!aiConsent)return;
+  if(busy||!aiConsent||!containerConsent||!browserQaConsent)return;
   // Never carry one project's QA or preview into a new immutable snapshot.
   setQaChecks([]);setQaOutcome("");setPreviewReady(false);
   previewHost.current?.replaceChildren();
@@ -156,6 +157,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      await worker.plan();
     }
    }else{
+    // Verifies flags/bindings BEFORE signed Job creation or any paid model call.
+    await requireAgentBuildReadiness();
     await worker.create(prompt,options(),acceptancePlan());
     setSaved(true);setCatalog([...readSavedCandidateLibrary()]);
     const initial=await worker.read();
@@ -335,9 +338,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    value={approvedCents} disabled={busy}
    onChange={e=>setApprovedCents(Number(e.target.value))}/>
   <p className="saved-apps-note">每按一次開發加修復總計最多六個 Agent 步驟，另可依授權做一次獨立 QA；費用仍受伺服器總預算限制。
+   建立前先唯讀檢查 AI／Sandbox／Browser QA 是否配置，缺服務不先扣 AI 費；
    不會自動部署、不會把模擬測試標成真實 QA PASS。</p>
   <button type="button" className="btn btn-primary"
-   disabled={busy||!aiConsent||prompt.trim().length<5||
+   disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
+    prompt.trim().length<5||
     !Number.isSafeInteger(approvedCents)||
     approvedCents<(qaJson.trim()?8:16)||approvedCents>100}
    onClick={()=>{void execute(false);}}>

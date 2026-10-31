@@ -5,6 +5,7 @@ import { NO_REQUEST_DB_CONTEXT, type WorkerRequestDbContext } from "../platform/
 import { routeBlueprintDelivery, type BlueprintDeliveryFactory, type BlueprintDeliveryComposition } from "./blueprint-delivery.js";
 import { routePublishedApps } from "./published-apps.js";
 import {routeCodeBuilder} from "./code-builder-v2.js";
+import {routeAgentReadiness} from "./agent-readiness.js";
 import {routeAgentJobs,type AgentJobRouteDeps} from "./agent-jobs.js";
 import { claimsMutationProof, reservedCreateIdempotencyKey, verifyMutationProof } from "./create-proof.js";
 import { EVENTS_BATCH_ROUTE } from "./events-batch.js";
@@ -210,6 +211,8 @@ export function createWorkerFetch(factories: Partial<WorkerCompositionFactories>
     if (delivered !== undefined) return delivered;
     const published=await routePublishedApps({request,url,env,nowMs,delivery:deliveryFactory});
     if(published!==undefined)return published;
+    const readiness=routeAgentReadiness(request,url,env);
+    if(readiness!==undefined)return readiness;
     const agentJob=await routeAgentJobs({request,url,env,nowMs,deps:options.agent});
     if(agentJob!==undefined)return agentJob;
     const codeApp=await routeCodeBuilder({request,url,env});

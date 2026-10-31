@@ -261,6 +261,10 @@ try{
  await build({configFile:path.join(root,"tooling/web/vite.config.ts"),logLevel:"error"});
  server=http.createServer((req,res)=>{
   const url=new URL(req.url??"/","http://"+req.headers.host);
+  if(url.pathname==="/api/v1/agent-readiness"&&req.method==="GET"){
+   json(res,200,{status:"CONFIGURED_NOT_VERIFIED",can_start_paid_generation:true,missing:[]});
+   return;
+  }
   const action=url.pathname.startsWith("/api/v1/")?api(req,res,url):
    staticFile(req,res,url);
   void action.catch(e=>{console.error("BROWSER_WIRE_API_ERROR",e);
@@ -284,6 +288,8 @@ try{
  await page.getByRole("textbox",{name:"用一句話描述要做的 App"}).fill(prompt);
  // No QA JSON authored or pasted: the product must auto-plan from one sentence.
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  if(!(await primary.isEnabled()))throw Error("AGENT_CONSENT_UI_BROKEN");
  await primary.click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
