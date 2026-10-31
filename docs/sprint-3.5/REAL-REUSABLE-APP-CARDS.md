@@ -1,9 +1,15 @@
-# APPf2 Sprint 3.5 — Real Reusable App Cards (PRODUCT DELTA, 2026-10-28)
+# APPf2 Sprint 3.5 — Real Reusable App Cards (historical implementation notes, 2026-10-28)
+
+> **2026-10-31 SCOPE CORRECTION — NOT SPRINT 3.5 DELIVERY AUTHORITY**
+> 本檔為 10/28 的既有功能實驗、驗收紀錄和候選提案，不是 Product Design SSOT，也不是新功能授權；不得以本檔 B／Public Gallery／永久保存要求擴張 Sprint 3.5。當前唯一 Design 範圍判準：
+> `NFF98/appf2-design/working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md (Design PR #45, commit ee5f58fd672386f0b8542bda2066d5af471a9352, §0)`。
+> Sprint 3.5 只做真實 AI 多檔案 → PostgreSQL Agent Job 恢復 → 私有 Sandbox 建置 → 獨立 Browser QA／修復 → 私有可操作 Stage A 預覽。Phase 1 F05 **基本** Share／Restore 仍屬原 Phase 1 Core Loop，但新 **v2** 公開 Gallery／正式發布不是本次 Stage A Gate；Phase 2 才涉及帳號級 Save、History、Owner、F10 語意重用。
+> **既有 v1／單檔卡片相容性和已實作安全性不可移除；保留本檔舊段落僅供追蹤實作與歷史測試，不代表本 Sprint 必交付。**
 
 Status: **Sprint 3.5 implementation addendum / NOT a new BS baseline or Sprint 4**.
 Scope: PR #419 only. Product priority; no 16P / governance workflows in the product critical path.
 Source boundaries: Phase 1 F05 Share / Restore and EXECUTION-ADMISSION §8.1; F10 semantic retrieval remains DEFERRED.
-This document is product acceptance truth for this change, **not** authorization to weaken grants, ownership, branch protection, or production release.
+This document is historical implementation evidence; Product Design scope is owned exclusively by the Design PR #45 Working §0. It never authorizes expanding Sprint 3.5, weakening grants, or releasing Production.
 
 ## Outcome and two distinct products
 
@@ -48,7 +54,7 @@ Click **Open** must fetch the **original canonical Blueprint** using existing or
 **Status accounting**: A and B reported independently; the word “REAL PASS” requires matching real evidence. No assertion that any arbitrary language or generated App is universally validated.
 
 
-## B — Executable F05 public gallery contract (approved Sprint 3.5 delta, 2026-10-28)
+## B — Historical public gallery proposal / existing implementation record (NOT Sprint 3.5 Stage A gate)
 
 **Publishing is an explicit original-holder action, NEVER implicit because a test passed.** The S03 creator presses `公開分享` and confirms that the reusable App **definition/initial data**, but **not their private runtime state**, will be visible to anonymous visitors. The creator must hold the exact scoped cookie + original nonextractable PoP + fresh `share:create` grant, from the *same* immutable compiled hash. The server independently verifies exact original lineage + **fresh executable F02 admission before insertion**. No third party may publish a known hash, even if they know an intent or anonymous UUID.
 

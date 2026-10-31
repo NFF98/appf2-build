@@ -1,9 +1,15 @@
 # APPf2 Sprint 3.5 — Hybrid Blueprint / Code Artifact implementation slice
 
-Source: [APPf2 Design PR #45](https://github.com/NFF98/appf2-design/pull/45), revised Working architecture at commit `f45517f97950d3e78aee20694adefbcefd1ed653` (final code-first single-generator decision).
-Status: **Design-first experimental Build slice on PR #419**. Not a production user-facing Code Builder, not a version promotion of F02 v1. Sprint 4 not started.
+> **2026-10-31 SCOPE CORRECTION — NOT SPRINT 3.5 DELIVERY AUTHORITY**
+> 本檔為 10/28 的既有功能實驗、驗收紀錄和候選提案，不是 Product Design SSOT，也不是新功能授權；不得以本檔 B／Public Gallery／永久保存要求擴張 Sprint 3.5。當前唯一 Design 範圍判準：
+> `NFF98/appf2-design/working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md (Design PR #45, commit ee5f58fd672386f0b8542bda2066d5af471a9352, §0)`。
+> Sprint 3.5 只做真實 AI 多檔案 → PostgreSQL Agent Job 恢復 → 私有 Sandbox 建置 → 獨立 Browser QA／修復 → 私有可操作 Stage A 預覽。Phase 1 F05 **基本** Share／Restore 仍屬原 Phase 1 Core Loop，但新 **v2** 公開 Gallery／正式發布不是本次 Stage A Gate；Phase 2 才涉及帳號級 Save、History、Owner、F10 語意重用。
+> **既有 v1／單檔卡片相容性和已實作安全性不可移除；保留本檔舊段落僅供追蹤實作與歷史測試，不代表本 Sprint 必交付。**
 
-## Final product direction (2026-10-28 user decision)
+Source: [APPf2 Design PR #45](https://github.com/NFF98/appf2-design/pull/45), revised Working architecture at commit `f45517f97950d3e78aee20694adefbcefd1ed653` (final code-first single-generator decision).
+Status: **Design-first experimental Build slice on PR #419, now Stage A scope-locked to Design PR #45 Working §0**. Not a production user-facing Code Builder, not a version promotion of F02 v1. Sprint 4 not started.
+
+## Long-term product direction (2026-10-28 user decision; NOT a Sprint 3.5 release checklist)
 
 **One natural-language request → one general AI Code Builder → Blueprint v2 → automatic compile/security/real browser tests → one shareable App card.**
 
