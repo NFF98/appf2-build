@@ -19,7 +19,7 @@ function json(bytes:Uint8Array):Record<string,unknown>|null{
 }
 // eslint-disable-next-line complexity -- Each GitHub OIDC claim is a required independent trust boundary.
 export async function verifiedFreeCiOidcRunId(token:string,nowMs:number,
- loadKeys:()=>Promise<unknown>):Promise<string|null>{
+ loadKeys:()=>Promise<unknown>,audience=FREE_CI_AUDIENCE):Promise<string|null>{
  try{
   if(token.length>12000)return null;
   const parts=token.split(".");
@@ -28,7 +28,9 @@ export async function verifiedFreeCiOidcRunId(token:string,nowMs:number,
   if(!header||!claims||header.alg!=="RS256"||
    typeof header.kid!=="string"||header.kid.length>180)return null;
   const now=Math.floor(nowMs/1000);
-  if(claims.iss!==ISSUER||claims.aud!==FREE_CI_AUDIENCE||
+  if(claims.iss!==ISSUER||
+   ![FREE_CI_AUDIENCE,"appf2-sp35-gpt6-model-runner-v1"].includes(audience)||
+   claims.aud!==audience||
    claims.repository!=="NFF98/appf2-build"||
    claims.ref!=="refs/heads/product/sprint-3.5-complex-intent-recovery-20261026"||
    claims.workflow_ref!==WORKFLOW||
@@ -57,14 +59,14 @@ export async function verifyFreeCiOidc(token:string,nowMs:number,
  loadKeys:()=>Promise<unknown>):Promise<boolean>{
  return (await verifiedFreeCiOidcRunId(token,nowMs,loadKeys))!==null;
 }
-export async function verifiedLiveFreeCiOidcRunId(token:string,nowMs:number):
- Promise<string|null>{
+export async function verifiedLiveFreeCiOidcRunId(token:string,nowMs:number,
+ audience=FREE_CI_AUDIENCE):Promise<string|null>{
  return verifiedFreeCiOidcRunId(token,nowMs,async()=>{
   const r=await globalThis.fetch(ISSUER+"/.well-known/jwks",{
    method:"GET",signal:globalThis.AbortSignal.timeout(7000)});
   if(!r.ok)throw Error("FREE_CI_JWKS_UNAVAILABLE");
   return r.json();
- });
+ },audience);
 }
 export async function verifyLiveFreeCiOidc(token:string,nowMs:number):
  Promise<boolean>{
