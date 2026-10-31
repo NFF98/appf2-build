@@ -648,17 +648,26 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     · {snapshot.job.files.length} 個檔案 · 尚未發布</p>
    {snapshot.job.free_ci?
     <section aria-label="原工作免費 Docker 建置收據" role="status">
-     <h4>免費 Docker／Chromium 建置收據（已儲存 PostgreSQL）</h4>
+     <h4>{snapshot.job.free_ci.status==="BUILD_FAILED"?
+      "免費 Docker／Chromium 失敗證據（已儲存 PostgreSQL）":
+      "免費 Docker／Chromium 建置收據（已儲存 PostgreSQL）"}</h4>
      <p>來源版本：{snapshot.job.project_hash.slice(0,19)}… ·
-      建置產物：{snapshot.job.free_ci.artifact_hash.slice(0,19)}…</p>
+      {snapshot.job.free_ci.status==="BUILD_FAILED"?"診斷指紋":"建置產物"}：
+      {snapshot.job.free_ci.artifact_hash.slice(0,19)}…</p>
      {snapshot.job.free_ci.qa_checks?.length?
       <ul>{snapshot.job.free_ci.qa_checks.map(c=>
        <li key={c.criterion_id}>{c.criterion_id}：{c.verdict}</li>)}</ul>:null}
-     <p>{snapshot.job.free_ci.preview_ready?
-      "建置 App 已完整保存，可直接免費重新開啟。":
-      "Runner 建置已完成，但 App 產物尚未確認保存，暫時不能開啟。"}</p>
-     <p>已完成禁網路 Docker 建置及基本 Chromium 頁面檢查；
-      <strong>不是原始需求 QA 通過，也不是正式 App 卡片或分享</strong>。</p>
+     {snapshot.job.free_ci.status==="BUILD_FAILED"?
+      <p role="alert">編譯或渲染失敗；這不是 QA PASS，也沒有可分享 App。
+       已保存診斷供授權後的 AI 修復：
+       {String(snapshot.job.free_ci.diagnostic_excerpt??"未提供診斷").slice(0,600)}</p>:
+      <>
+       <p>{snapshot.job.free_ci.preview_ready?
+        "建置 App 已完整保存，可直接免費重新開啟。":
+        "Runner 已驗證建置，但 App 產物仍待保存，暫時不能開啟。"}</p>
+       <p>已完成禁網路 Docker 建置及 Chromium 基本頁面檢查；
+        <strong>尚須原始需求 QA 完整 PASS 才能公開分享</strong>。</p>
+      </>}
      {/^[0-9]{6,20}$/u.test(snapshot.job.free_ci.run_id)?
       <a href={"https://github.com/NFF98/appf2-build/actions/runs/"+
        snapshot.job.free_ci.run_id} target="_blank" rel="noopener noreferrer">
