@@ -264,7 +264,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   */
  /* eslint-disable max-depth -- bounded receipt polling only; original requirements still fail closed. */
  // eslint-disable-next-line complexity -- Signed CI polling and optional repair are bounded.
- const startFreeAi=async()=>{
+ const startFreeAi=async(resume=false)=>{
   if(busy||!aiConsent||!containerConsent||!browserQaConsent||!freeCiConsent||
    approvedCents<44)return;
   setBusy(true);setError("");setQaOutcome("");setPublishedUrl("");
@@ -275,12 +275,25 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    if(!readiness.ok||status.data?.free_ci_paid_ai_available!==true)
     throw Error("Staging 真 AI 安全通道尚未部署，沒有執行付費模型。");
    const worker=new BrowserCodingAgent();agent.current=worker;
-   await worker.create(prompt,{allowAi:true,allowContainer:false,
-    approvedCents},acceptancePlan());
+   if(resume){
+    const target=await worker.restore();
+    if(!target)throw Error("原建立者的保存工作或簽章已過期，禁止新建替代付費 Job。");
+    const existing=await worker.read();
+    if(existing.revision!==0)throw Error(
+     "原 Job 已進入編碼後階段；請查詢既有 Docker／QA 收據，不重新生成。");
+    setPrompt(target.prompt);
+   }else{
+    await worker.create(prompt,{allowAi:true,allowContainer:false,
+     approvedCents},acceptancePlan());
+   }
    setSaved(true);setCatalog([...readSavedCandidateLibrary()]);
    setSnapshot({job:await worker.read(),progress:null,
-    message:"已保存原始需求；獨立 QA 計畫必須在編碼前凍結。",completed_steps:0});
-   if(savedCandidateTarget()?.qaPlan)await worker.freezeOriginalQaPlan();
+    message:resume?
+     "正在用同一個已保存的 GPT-6 Job 繼續查詢回應；不建立新工作。":
+     "已保存原始需求；獨立 QA 計畫必須在編碼前凍結。",
+    completed_steps:0});
+   if(savedCandidateTarget()?.qaPlan&&!resume)
+    await worker.freezeOriginalQaPlan();
    else await worker.freeAiStage("QA");
    const created=await worker.freeAiStage("CODE");
    let current=await worker.read();
@@ -525,6 +538,12 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    {busy?"真 AI／免費 Docker／Browser QA 正在執行…":
     "一鍵真 AI 生成 App → 免費 Docker → QA → 保存／分享"}
   </button>
+  {saved?<button type="button" className="btn btn-secondary"
+   disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
+    !freeCiConsent||approvedCents<44}
+   onClick={()=>{void startFreeAi(true);}}>
+   接續已保存的 GPT-6 工作（只查同一模型回應，不新建付費 Job）
+  </button>:null}
   <p className="saved-apps-note">
    新版免費 Runner AI 模式使用 GPT-6.1 Sol（不是 gpt-4.1-mini）：最多 8 美分原始 QA 規劃、20 美分編碼，
    另可明確核准一次最多 16 美分修復；全程沿用同一原 Job。
