@@ -106,6 +106,7 @@ export class SandboxJob extends DurableObject<Env>{
  /** Read-only: never wakes a paid container, even after idle eviction.
   * Only exact verified latest build assets are returned.
   */
+ // eslint-disable-next-line complexity -- Proven build, bounded SQLite chunks and legacy fallback are separate security gates.
  async readBuiltAsset(query:BuiltAssetRequest):Promise<Response>{
   if(!validBuiltAssetRequest(query))
    return new Response("Not Found",{status:404});
