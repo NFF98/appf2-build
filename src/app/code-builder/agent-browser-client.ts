@@ -43,7 +43,9 @@ export function enoughAgentStepsForContinuation(remaining:number):boolean{
 }
 export type CandidateFile={readonly path:string;readonly content:string;
  readonly hash?:string;readonly bytes?:number};
-export type SavedFreeCiSmoke={readonly status:"BUILD_BROWSER_SMOKE";readonly run_id:string;
+export type SavedFreeCiSmoke={readonly status:"BUILD_BROWSER_SMOKE"|"BUILD_FAILED";readonly run_id:string;
+ readonly failure_stage?:unknown;readonly diagnostic_code?:unknown;
+ readonly diagnostic_excerpt?:unknown;
  readonly artifact_hash:string;readonly preview_ready:boolean;
  readonly qa_plan_hash?:string;
  readonly qa_checks?:readonly {criterion_id:string;verdict:"PASS"|"FAIL"|"UNTESTED";evidence_hash:string|null}[];
