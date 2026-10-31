@@ -1,0 +1,51 @@
+/** At-most-once GPT-6 GitHub Runner dispatch.
+ * Worker reserves cost and the exact request under the original creator's
+ * DB context BEFORE dispatch. GitHub sees only encrypted scope ticket.
+ * A network timeout or non-204 dispatch is NEVER retried automatically.
+ */
+import {sealAiRunnerTicket} from "../platform/agent/free-ai-runner-ticket.js";
+import {claimModelCall,type ModelCallRow} from
+ "../platform/agent/postgres-model-calls.js";
+import {validFreeCiGitHubToken} from "./free-ci-dispatch.js";
+import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
+export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
+ projectHash:string,request:unknown,token:string,ticketSecret:string,
+ nowMs:number):Promise<void>{
+ if(row.status!=="RESERVED"||row.model!=="gpt-6.1-sol"||
+  !validFreeCiGitHubToken(token)||ticketSecret.length<32)
+  throw Error("SP35_AI_RUNNER_NOT_AUTHORIZED");
+ const payload=JSON.stringify(request);
+ if(!payload||payload.length>44000)
+  throw Error("SP35_AI_RUNNER_REQUEST_TOO_LARGE");
+ const stored=(await db.query<{call_key:string}>(`INSERT INTO
+  public.appf2_agent_model_runner_request
+  (job_id,owner_anonymous_id,call_key,request_hash,model,request_json)
+  VALUES($1::uuid,$2::uuid,$3::text,$4::text,'gpt-6.1-sol',$5::jsonb)
+  ON CONFLICT(job_id,call_key) DO NOTHING RETURNING call_key`,
+  [row.job_id,row.owner_anonymous_id,row.call_key,row.request_hash,payload]))
+  .rows[0];
+ if(stored?.call_key!==row.call_key)
+  throw Error("SP35_AI_RUNNER_ALREADY_DISPATCHED_NO_RETRY");
+ await claimModelCall(db,row);
+ const ticket=await sealAiRunnerTicket({job_id:row.job_id,
+  owner:row.owner_anonymous_id,project_hash:projectHash,
+  call_key:row.call_key,request_hash:row.request_hash},ticketSecret,nowMs);
+ let dispatched=false;
+ try{
+  const response=await fetch(
+   "https://api.github.com/repos/NFF98/appf2-build/actions/workflows/"+
+   "sp35-staging-only.yml/dispatches",{
+    method:"POST",headers:{
+     Authorization:"Bearer "+token,
+     Accept:"application/vnd.github+json",
+     "X-GitHub-Api-Version":"2022-11-28",
+     "User-Agent":"appf2-sp35-gpt6-paid-runner",
+     "Content-Type":"application/json"},
+    body:JSON.stringify({ref:"product/sprint-3.5-complex-intent-recovery-20261026",
+     inputs:{ai_ticket:ticket}}),
+    signal:AbortSignal.timeout(12000),redirect:"error"});
+  dispatched=response.status===204;
+ }catch{ /* GitHub dispatch may have occurred: fail closed. */ }
+ if(!dispatched)
+  throw Error("SP35_AI_RUNNER_DISPATCH_UNKNOWN_NO_RETRY");
+}
