@@ -28,8 +28,11 @@ function signedSuccess(row:Stored,jobId:string,owner:string,hash:string):boolean
 /** Tool identity comes from the journaled model response, never a filename
  * guess, browser value or an arbitrary container receipt.
  */
+type ProvenContext={readonly db:AgentJobExecutor;readonly jobId:string;
+ readonly owner:string;readonly hash:string};
 async function provenTool(row:Stored,tool:"run_build"|"run_test",
- db:AgentJobExecutor,jobId:string,owner:string,hash:string):Promise<boolean>{
+ ctx:ProvenContext):Promise<boolean>{
+ const {db,jobId,owner,hash}=ctx;
  if(!signedSuccess(row,jobId,owner,hash))return false;
  const model=await getModelCall(db,jobId,owner,row.model_call_key);
  if(model?.status!=="SUCCEEDED"||!model.response_json||
@@ -62,14 +65,15 @@ export async function inspectProvenPreviewPair(db:AgentJobExecutor,jobId:string,
  const byId=new Map(rows.map(row=>[row.call_id,row]));
  if(byId.size!==rows.length)return null;
  const test=byId.get(last);
- if(!test||!await provenTool(test,"run_test",db,jobId,owner,projectHash))
+ const ctx={db,jobId,owner,hash:projectHash};
+ if(!test||!await provenTool(test,"run_test",ctx))
   return null;
  for(let i=completed.length-2;i>=0;i--){
   const id=completed[i];
   if(!id)continue;
   const build=byId.get(id);
   if(build&&build.job_revision<=test.job_revision&&
-   await provenTool(build,"run_build",db,jobId,owner,projectHash))
+   await provenTool(build,"run_build",ctx))
    return {build_call_id:id,test_call_id:last};
  }
  return null;
