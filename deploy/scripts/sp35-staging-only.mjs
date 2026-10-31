@@ -119,7 +119,9 @@ const config = {
   name,
   main: "src/edge/worker-entry.ts",
   compatibility_date: "2026-10-20",
-  compatibility_flags: ["nodejs_compat"],
+  // Staging-only egress test: route Cloudflare-hosted public API endpoints
+  // through their public front door, not a Workers private origin shortcut.
+  compatibility_flags: ["nodejs_compat","global_fetch_strictly_public"],
   workers_dev: true,
   assets: {
     directory: "./dist/web",
