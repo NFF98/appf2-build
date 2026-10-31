@@ -213,7 +213,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
- const runQa=async(repair:boolean)=>{
+ const runQa=async(repair:boolean,reconcileOnly=false)=>{
   if(busy)return;
   setBusy(true);setError("");setQaOutcome("");
   try{
@@ -225,12 +225,15 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     await worker.repairFailedQa(true);
     setQaOutcome("修復模型回應已保存。請點「繼續上次保存的 Agent 工作」套用修復、重新建置和測試。");
    }else{
-    if(!browserQaConsent)throw Error("必須另外授權本次獨立瀏覽器 QA。");
-    const result=await worker.independentQa(true);
+    if(!reconcileOnly&&!browserQaConsent)
+     throw Error("必須另外授權本次獨立瀏覽器 QA。");
+    const result=await worker.independentQa(true,reconcileOnly);
     setQaChecks(result.checks);
     setQaOutcome(result.ready_for_review?
      "原始需求的獨立 QA 已通過，可供後續人工審核；App 尚未發布。":
-     "獨立 QA 未通過。檢查已保存的失敗條件後，可另行授權 AI 修復。");
+     reconcileOnly?
+      "已從資料庫恢復 QA 失敗結果，不重新呼叫雲端瀏覽器；可授權 AI 修復。":
+      "獨立 QA 未通過。檢查已保存的失敗條件後，可另行授權 AI 修復。");
    }
    setSnapshot({job:await worker.read(),progress:await worker.progress(),
     message:"獨立 QA / 修復結果已保存，尚未發布 App。",completed_steps:0});
@@ -311,6 +314,10 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    <p role="status" className="saved-apps-note">
     資料庫已保存此版本的獨立 Browser QA 回應。這不是重新驗證的 PASS，
     不可直接發布；禁止重送同一次付費 QA，請依已保存結果接續審核。
+    <button type="button" className="btn btn-secondary"
+     disabled={busy} onClick={()=>{void runQa(false,true);}}>
+     依已保存 QA 證據恢復專案狀態（不重跑、不扣費）
+    </button>
    </p>:null}
   {snapshot?.job.status==="TESTING"&&
    (qaAttemptState==="IN_FLIGHT"||qaAttemptState==="BLOCKED_UNCERTAIN")?
