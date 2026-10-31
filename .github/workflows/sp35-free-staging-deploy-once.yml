@@ -149,3 +149,5 @@ jobs:
 # Staging-only deployment for owner-private built Vite assets, without public publication.
 
 # Recheck privately saved Vite bundle: owned, DB-persisted and opened twice without AI.
+
+# Reconcile FREE_CI_READY configured-but-no-paid-generation status and owner one-click private card reopening.
