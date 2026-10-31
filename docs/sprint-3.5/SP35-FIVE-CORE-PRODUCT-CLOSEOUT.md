@@ -152,6 +152,17 @@
 
 **結果口徑**：免費 Docker 工程鏈 verified PASS；**真實線上新五核 C1–C5 = 0/5（0%）**；舊單檔真產品重開 = PASS；本輪沒有新付費訂閱／Container／Browser Run／模型 API 呼叫，沒有合併或發布 PR。
 
+## F.7 2026-10-31 已真實部署 Staging — Cloudflare Containers 零新增費用
+
+**已完成，不可再寫成「新版 Agent 尚未部署」或「Staging Agent API 404」。**
+- **部署來源**：Build PR #419 commit `3e6bd0ac70bbf9803b034cea3ce3fe4e26e07af4`；真正 GitHub Actions [run #41170638897 — SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/41170638897)，job `124447660757`，`wrangler@4.135.0` 實際上傳 `appf2-sp35-417-staging` Worker／SPA，無合併或正式 Production 部署。
+- **真實同源網站**：[https://appf2-sp35-417-staging.juiyuang69.workers.dev](https://appf2-sp35-417-staging.juiyuang69.workers.dev)。同一工作流實測 `GET /api/v1/health` **200 JSON UP**、`GET /` **200 SPA**、無簽章 `POST /api/v1/intents` **400/F01-ERR-001**（安全拒絕正確）。
+- **新 Agent first hop 已解除**：`GET /api/v1/agent-readiness` **HTTP 200**，`execution_mode=FREE_CI_NOT_CONNECTED`、`can_start_paid_generation=false`。**這是正確部署 + 成本保護，不是完整免費 AI/CI Agent 已可生成**。
+- **真實 PostgreSQL 第一次產品 Job 驗證 PASS**：`sp35-live-agent-db-smoke.mjs` 以真正 P-256 簽章 `POST /api/v1/agent-jobs` **HTTP 201**，建立 4 檔案候選、資料庫保存，再簽章 `POST /api/v1/agent-jobs/:id` **HTTP 200**，讀回相同 Job/hash/source；沒有呼叫 AI 或 Container。Run 日誌：`SP35_PRODUCT_REAL_DB_PASS`。
+- **零新增費用部署**：沿用 Cloudflare 帳號已存在的 3 個 Hyperdrive，沒有建立任何新 DB／Cloudflare Container／Browser Run／訂閱或 AI 模型呼叫；Staging 專用部署 `APPF2_STAGING_FREE_ONLY_NO_AI=1` 使用不可用的模型憑證，關閉付費新生成，且移除 Cloudflare Browser Run binding。公開既有 App 可重開的能力需保留，**Staging 上新 AI 生成暫時刻意停止**，避免超出使用者核准費用。
+- **前次失敗與修正**：[run #41170526299](https://github.com/NFF98/appf2-build/actions/runs/41170526299) 首次部署因缺少現有 `@cloudflare/puppeteer@1.1.0` 打包依賴，在 Wrangler 上傳前 FAIL；於同一 PR workflow 增加固定版依賴後 [#41170638897](https://github.com/NFF98/appf2-build/actions/runs/41170638897) 完整 SUCCESS。
+- **E2E 口徑**：**Staging 部署 + Agent/API + 真 PG Job CREATE/REOPEN 已 PASS**；新五核完整生成／安全免費 CI Docker／QA receipt／v2 發布、分享、真 generated backend DB CRUD 尚未同一 Job 驗收，因此 C1–C5 full acceptance **仍 0/5**。下一個 blocker 已從舊 `404/未部署` 轉為**`FREE_CI_SECURE_JOB_TRANSPORT_NOT_CONNECTED`**。不要再重查「Staging 是否部署」；直接補安全 Runner 派發與獨立 QA／immutable card 寫回。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
