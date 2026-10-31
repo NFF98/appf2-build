@@ -10,9 +10,8 @@ export async function requireAgentBuildReadiness():Promise<void>{
   "網站尚未部署新版多檔案 Agent 的完整服務；已停止，沒有呼叫付費 AI。");
  let body:unknown;
  try{body=await response.json();}catch{body=null;}
- if(body&&typeof body==="object"&&"data" in body&&body.data&&
-  typeof body.data==="object"&&"execution_mode" in body.data&&
-  body.data.execution_mode==="FREE_CI_READY")
+ const currentMode=(body as {data?:{execution_mode?:unknown}}|null)?.data?.execution_mode;
+ if(currentMode==="FREE_CI_READY")
   throw Error("免費 Docker 已接通，但目前模式禁止付費 AI 生成。已保留已保存的專案，可用免費 Runner 驗證。");
  if(!body||typeof body!=="object"||!("data" in body)||
   !body.data||typeof body.data!=="object"||
