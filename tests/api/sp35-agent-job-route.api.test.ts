@@ -1814,6 +1814,15 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
    max_charge_cents:5,max_output_tokens:512,explicit_ai_consent:true};
   expect((await worker(await signed(creator,repairPath,repair,
    "qa_repair_before_run123456"),envQa)).status).toBe(503);
+  // Read-only reconciliation must NEVER start a new Cloudflare Browser run
+  // if no prior QA receipt has been committed.
+  const missing=await worker(await signed(creator,path,{anonymous_id:OWNER,
+   job_id:JOB_ID,expected_revision:1,project_hash:initial.project_hash,
+   build_call_id:buildId,test_call_id:testId,reconcile_only:true,
+   original_prompt:prompt,original_plan:plan,explicit_browser_qa_consent:true
+  },"qa_reconcile_missing123456"),envQa);
+  expect(missing.status).toBe(503);
+  expect(qaDispatches).toBe(0);
   const qa=await worker(await signed(creator,path,{anonymous_id:OWNER,
    job_id:JOB_ID,expected_revision:1,project_hash:initial.project_hash,
    build_call_id:buildId,test_call_id:testId,
@@ -1834,7 +1843,8 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   const recovered=await worker(await signed(creator,path,{anonymous_id:OWNER,
    job_id:JOB_ID,expected_revision:1,project_hash:initial.project_hash,
    build_call_id:buildId,test_call_id:testId,
-   original_prompt:prompt,original_plan:plan,explicit_browser_qa_consent:true
+   original_prompt:prompt,original_plan:plan,explicit_browser_qa_consent:true,
+   reconcile_only:true
   },"qa_reconcile_saved123456"),envQa);
   expect(recovered.status).toBe(200);
   expect(await recovered.json()).toMatchObject({data:{
