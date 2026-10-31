@@ -13,6 +13,7 @@ import {spawnSync} from "node:child_process";
 import {chromium} from "@playwright/test";
 import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-workspace.js";
 import {stageVerifiedFreeCiProject} from "./sp35-free-ci-stage-project.mjs";
+import {trustedFreeCiOidcRequestUrl} from "../../dist/src/edge/free-ci-oidc-request-url.js";
 const host="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
 const ticket=process.env.APPF2_FREE_CI_TICKET??"";
 const audience="appf2-sp35-free-ci-private-source-v1";
@@ -24,9 +25,11 @@ if(process.env.GITHUB_REPOSITORY!=="NFF98/appf2-build"||
  throw Error("FREE_CI_UNTRUSTED_RUN");
 const requestUrl=process.env.ACTIONS_ID_TOKEN_REQUEST_URL??"";
 const requestToken=process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN??"";
-if(!requestUrl.startsWith("https://pipelines.actions.githubusercontent.com/")||
- requestToken.length<20)throw Error("FREE_CI_OIDC_NOT_PROVIDED");
-const endpoint=new URL(requestUrl);
+// GitHub-hosted runners also use regional pipelinesghub* endpoints.
+// Validate the *entire* official hostname before sending the bearer token.
+const endpoint=trustedFreeCiOidcRequestUrl(requestUrl);
+if(!endpoint||requestToken.length<20)
+ throw Error("FREE_CI_OIDC_NOT_PROVIDED");
 endpoint.searchParams.set("audience",audience);
 const assertion=await fetch(endpoint,{headers:{
  Authorization:"Bearer "+requestToken},signal:globalThis.AbortSignal.timeout(12000)});

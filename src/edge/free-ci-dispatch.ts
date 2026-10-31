@@ -15,13 +15,17 @@ export function validFreeCiDispatchInput(x:unknown):x is FreeCiDispatchInput{
   typeof o.anonymous_id==="string"&&OWNER.test(o.anonymous_id)&&
   o.explicit_free_ci_consent===true;
 }
+/** App installation tokens (ghs_) are preferable to long-lived PATs. */
+export function validFreeCiGitHubToken(token:string):boolean{
+ return token.length>=24&&/^(?:github_pat_|ghp_|ghs_)[A-Za-z0-9_]+$/u.test(token);
+}
 export async function dispatchFreeCiJob(input:FreeCiDispatchInput,ctx:{
  db:AgentJobExecutor;jobId:string;ownerThumb:string;nowMs:number;
  token:string;ticketSecret:string;
  send?:(url:string,init:RequestInit)=>Promise<Response>;
 }):Promise<{status:"FREE_CI_QUEUED";app_published:false}>{
- if(ctx.token.length<24||!ctx.token.startsWith("github_pat_")&&
-  !ctx.token.startsWith("ghp_"))throw Error("FREE_CI_GITHUB_TOKEN_NOT_CONFIGURED");
+ if(!validFreeCiGitHubToken(ctx.token))
+  throw Error("FREE_CI_GITHUB_TOKEN_NOT_CONFIGURED");
  const owner=(await ctx.db.query<{job_id:string}>(
   "SELECT job_id::text FROM public.appf2_agent_job "+
   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
