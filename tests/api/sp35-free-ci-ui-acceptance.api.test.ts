@@ -17,7 +17,7 @@ describe("Sprint 3.5 browser UI original-plan QA admission",()=>{
   expect(allFrozenFreeCiChecksPassed(plan,passed.slice(0,1))).toBe(false);
   expect(allFrozenFreeCiChecksPassed(plan,null)).toBe(false);
   expect(allFrozenFreeCiChecksPassed(null,passed)).toBe(false);
-  expect(allFrozenFreeCiChecksPassed({criteria:[]} as QaPlan,passed)).toBe(false);
+  expect(allFrozenFreeCiChecksPassed({criteria:[]} as unknown as QaPlan,passed)).toBe(false);
  });
  it("does not grant completion for duplicate, unknown, shuffled or failed receipts",()=>{
   expect(allFrozenFreeCiChecksPassed(plan,[passed[0]!,passed[0]!])).toBe(false);
