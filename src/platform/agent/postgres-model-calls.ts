@@ -140,7 +140,8 @@ export async function claimModelCall(db:AgentJobExecutor,row:ModelCallRow):Promi
 // eslint-disable-next-line max-params -- DB call completion uses prevalidated immutable evidence.
 export async function completeModelCall(db:AgentJobExecutor,row:ModelCallRow,
  response:unknown,id:string,inputTokens:number,outputTokens:number):Promise<void>{
- if(row.status!=="RESERVED"||!/^resp_[A-Za-z0-9_-]{6,160}$/u.test(id)||
+ if((row.status!=="RESERVED"&&row.status!=="IN_FLIGHT")||
+  !/^resp_[A-Za-z0-9_-]{6,160}$/u.test(id)||
   !Number.isSafeInteger(inputTokens)||inputTokens<0||
   !Number.isSafeInteger(outputTokens)||outputTokens<0)
   throw Error("MODEL_CALL_COMPLETION_INVALID");
