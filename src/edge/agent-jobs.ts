@@ -16,6 +16,8 @@ import {dispatchFreeCiJob,validFreeCiDispatchInput} from "./free-ci-dispatch.js"
 import {publishVerifiedPrivateApp,validPublishOwnerAppBody}
  from "./agent-share-publish.js";
 import {runFreeCiAiStage,validFreeAiCodeInput} from "./free-ci-ai-code.js";
+import {sealAiRunnerTicket,openAiRunnerTicket}
+ from "../platform/agent/free-ai-runner-ticket.js";
 import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
 import {applyStoredModelEdit,validApplyModelEditBody} from "./agent-model-apply.js";
 import {executeAgentModelContinuation,validModelContinueBody} from "./agent-model-continue.js";
@@ -266,7 +268,21 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
      e.name==="TimeoutError"||e.name==="AbortError")?
      "WORKER_MODEL_GET_TIMEOUT":"WORKER_MODEL_GET_NETWORK_ERROR";
    }
-   return json(200,{data:{status:result,model:"gpt-6.1-sol",
+   let ticketStatus="CRYPTO_ERROR";
+   try{
+    const hash=await sha256CodeBytes(new TextEncoder().encode(
+     "SP35_NO_CHARGE_TICKET_TEST_V1"));
+    const ciphertext=await sealAiRunnerTicket({
+     job_id:freeAiProbeMatch[1]??"",owner:info.anonymous_id,
+     project_hash:hash,call_key:"sp35_free_ai_qa_v1",
+     request_hash:hash},env.APPF2_IDENTITY_COOKIE_SECRET,nowMs);
+    const opened=await openAiRunnerTicket(ciphertext,
+     env.APPF2_IDENTITY_COOKIE_SECRET,nowMs);
+    ticketStatus=opened?.job_id===freeAiProbeMatch[1]?
+     "CRYPTO_READY":"CRYPTO_ERROR";
+   }catch{ /* Confidential ticket failure has no user-visible contents. */ }
+   return json(200,{data:{status:result,
+    ticket_crypto_status:ticketStatus,model:"gpt-6.1-sol",
     paid_model_posts:0}});
   }
   if(freeAiMatch){
