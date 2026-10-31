@@ -145,3 +145,5 @@ jobs:
 # Recheck real GitHub dispatch result class after owner-signed no-cost Job import.
 # Staging Hyperdrive cold-start: allow long zero-cost source-import only; preserve no-AI limits.
 # GitHub REST: Worker dispatch uses explicit User-Agent, rerun real signed product path.
+
+# Staging-only deployment for owner-private built Vite assets, without public publication.
