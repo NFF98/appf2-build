@@ -27,3 +27,5 @@ jobs:
 # Retry real signed free OIDC source only; no new model, Containers or Production.
 
 # OIDC official run-actions Azure host allowlisted; retry signed source without bypass.
+
+# Verify the OIDC ticket stays out of GitHub step environment logs.

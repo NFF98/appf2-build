@@ -17,7 +17,18 @@ import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-works
 import {stageVerifiedFreeCiProject} from "./sp35-free-ci-stage-project.mjs";
 import {trustedFreeCiOidcRequestUrl} from "../../dist/src/edge/free-ci-oidc-request-url.js";
 const host="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
-const ticket=process.env.APPF2_FREE_CI_TICKET??"";
+// The workflow_dispatch ticket must be read from the protected runner event
+// file, NEVER from a step-level environment value printed in Actions logs.
+const eventFile=process.env.GITHUB_EVENT_PATH??"";
+if(!/^\/home\/runner\/work\/_temp\/_github_workflow\/event\.json$/u.test(eventFile))
+ throw Error("FREE_CI_EVENT_FILE_UNTRUSTED");
+const eventBody=await fs.readFile(eventFile,"utf8");
+if(eventBody.length>16000)throw Error("FREE_CI_EVENT_FILE_SIZE_LIMIT");
+const event=JSON.parse(eventBody);
+if(event?.ref!=="refs/heads/product/sprint-3.5-complex-intent-recovery-20261026"||
+ typeof event?.inputs?.ticket!=="string")
+ throw Error("FREE_CI_EVENT_INPUT_INVALID");
+const ticket=event.inputs.ticket;
 const audience="appf2-sp35-free-ci-private-source-v1";
 if(!/^[A-Za-z0-9_-]{80,3000}$/u.test(ticket))
  throw Error("FREE_CI_DISPATCH_TICKET_INVALID");
