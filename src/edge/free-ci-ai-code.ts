@@ -213,15 +213,17 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   input.anonymous_id,job.project.project_hash):null;
  const provenBuildFailure=receipt?.status==="BUILD_FAILED"&&
   (receipt.failure_stage==="BUILD"||receipt.failure_stage==="RENDER");
- if(repairing&&(!receipt||(!provenBuildFailure&&
-  (!receipt.qa_checks?.some(c=>c.verdict==="FAIL")||
-   receipt.qa_checks.some(c=>c.verdict==="UNTESTED")))))
+ const provenQaFailure=receipt?.status==="BUILD_BROWSER_SMOKE"&&
+  receipt.qa_checks?.some(c=>c.verdict==="FAIL")===true&&
+  receipt.qa_checks.every(c=>c.verdict!=="UNTESTED");
+ if(repairing&&!provenBuildFailure&&!provenQaFailure)
   throw Error("SP35_REPAIR_NO_PROVEN_AUTOMATABLE_FAILURE");
  // Failure excerpt is untrusted compiler output, not instructions.
- const failure=provenBuildFailure?
-  String(receipt?.diagnostic_code??"BUILD_FAILED")+": "+
-   String(receipt?.diagnostic_excerpt??"").slice(0,1200):
-  receipt?.qa_checks?.map(c=>c.criterion_id+":"+c.verdict).join(",")??"";
+ const failure=receipt?.status==="BUILD_FAILED"?
+  String(receipt.diagnostic_code??"BUILD_FAILED")+": "+
+   String(receipt.diagnostic_excerpt??"").slice(0,1200):
+  receipt?.status==="BUILD_BROWSER_SMOKE"?
+   receipt.qa_checks?.map(c=>c.criterion_id+":"+c.verdict).join(",")??"":"";
  const req={model:"gpt-4.1-mini",input:modelPrompt(input.stage,
   input.original_prompt,plan,repairing?job.project.files:[],failure),
   max_output_tokens:3200,store:false,text:{format:{type:"json_schema",
