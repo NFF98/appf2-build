@@ -99,7 +99,9 @@ async function api(req,res,url){
   if(!["TESTING","REPAIRING"].includes(job.status)||
    body.explicit_container_preview_consent!==true||
    body.expected_revision!==job.revision||body.project_hash!==job.project_hash||
-   body.build_call_id!==last.at(-2)||body.test_call_id!==last.at(-1)){
+   last.indexOf(body.build_call_id)<0||
+    last.indexOf(body.build_call_id)>=last.lastIndexOf(body.test_call_id)||
+    body.test_call_id!==last.at(-1)){
    json(res,503,"PRIVATE_PREVIEW_NOT_PROVEN");return;
   }
   const built={
@@ -122,7 +124,9 @@ async function api(req,res,url){
    body.project_hash!==job.project_hash||
    body.original_prompt!==createdPrompt||
    JSON.stringify(body.original_plan)!==JSON.stringify(frozenPlan)||
-   body.build_call_id!==completed.at(-2)||body.test_call_id!==completed.at(-1)){
+   completed.indexOf(body.build_call_id)<0||
+    completed.indexOf(body.build_call_id)>=completed.lastIndexOf(body.test_call_id)||
+    body.test_call_id!==completed.at(-1)){
    json(res,503,"QA_NOT_PROVEN");return;
   }
   if(qaAttemptHashes.has(job.project_hash)){
@@ -180,6 +184,22 @@ async function api(req,res,url){
     qa_observed_checks:qaAttemptHashes.has(job.project_hash)?savedQaChecks:[],
     calls:[{model_call_key:"agent_autotest_12345678",
      state:"CURRENT_MODEL_READY",tool:"run_test",requires_container_consent:true}]});
+   return;
+  }
+  if(job.status==="TESTING"&&job.checkpoint.completed_call_ids.length>=2){
+   const completed=job.checkpoint.completed_call_ids;
+   const build=completed.find(id=>id.includes("_build_"));
+   const test=completed.at(-1);
+   json(res,200,{revision:job.revision,remaining_steps:
+    job.checkpoint.budget.max_steps-job.checkpoint.step,
+    can_resume:false,resume_model_call_key:null,
+    next_action:"VERIFY_INDEPENDENT_QA",
+    qa_attempt_state:qaAttemptHashes.has(job.project_hash)?"RESULT_RECORDED":"NOT_RUN",
+    qa_observed_checks:qaAttemptHashes.has(job.project_hash)?savedQaChecks:[],
+    calls:[{model_call_key:"agent_fixture_build_12345678",state:"ALREADY_APPLIED",
+     call_id:build,tool:"run_build",requires_container_consent:true},
+     {model_call_key:"agent_fixture_test_12345678",state:"ALREADY_APPLIED",
+      call_id:test,tool:"run_test",requires_container_consent:true}]});
    return;
   }
   json(res,200,{revision:job.revision,remaining_steps:job.checkpoint.budget.max_steps-job.checkpoint.step,
@@ -310,7 +330,7 @@ try{
  // or container is actually run by this first-party browser wiring fixture.
  job.status="TESTING";job.revision++;job.checkpoint.step=4;
  job.checkpoint.completed_call_ids=["call_browser_build_123456",
-  "call_browser_test_123456"];
+  "call_browser_inspect_123456","call_browser_test_123456"];
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
