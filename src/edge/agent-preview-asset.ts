@@ -64,8 +64,13 @@ export async function readSignedPreviewAsset(input:PreviewAssetInput,deps:{
   !["TESTING","REPAIRING"].includes(current.job.job_state))
   throw Error("PREVIEW_PROJECT_REVISION_MISMATCH");
  const completed=current.job.checkpoint.completed_call_ids;
- if(completed.at(-2)!==input.build_call_id||
-  completed.at(-1)!==input.test_call_id)
+ // AI may inspect or read project files between a successful build and the
+ // final run_test without changing the immutable source snapshot. Require
+ // the latest test and an earlier build in the same signed checkpoint, not
+ // arbitrary adjacency. Both container receipts are independently checked.
+ if(completed.at(-1)!==input.test_call_id||
+  completed.indexOf(input.build_call_id)<0||
+  completed.indexOf(input.build_call_id)>=completed.lastIndexOf(input.test_call_id))
   throw Error("PREVIEW_NOT_LAST_PROVEN_BUILD_AND_TEST");
  const rows=await deps.db.query<SavedSandbox>(
   "SELECT call_id,project_hash,status,receipt_json "+
