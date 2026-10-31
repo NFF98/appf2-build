@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import {BrowserCodingAgent,savedCandidateTarget,readSavedCandidateLibrary,
- chooseSavedCandidate,paidAgentReconciliationRequired,type AgentBrowserOptions,
+ chooseSavedCandidate,paidAgentReconciliationRequired,allFrozenFreeCiChecksPassed,
+ type AgentBrowserOptions,
  type CandidateSnapshot} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
@@ -320,14 +321,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     if(!current.free_ci.preview_ready){
      // The immutable QA receipt can precede the separate saved bundle.
      // Do not stop while PASS has been proven but preview upload is pending.
-     if(checks.length>0&&checks.every(c=>c.verdict==="PASS")){
+     if(allFrozenFreeCiChecksPassed(savedCandidateTarget()?.qaPlan,checks)){
       setQaOutcome("Docker／Browser QA 已 PASS，等待私人 App 預覽寫入資料庫；尚未公開。");
       continue;
      }
      setQaOutcome("已收到建置收據，但沒有完整 PASS 或可驗證預覽；不發布 App。");
      break;
     }
-    if(checks.length>0&&checks.every(c=>c.verdict==="PASS")){
+    if(allFrozenFreeCiChecksPassed(savedCandidateTarget()?.qaPlan,checks)){
      setQaOutcome("原需求逐條 Browser QA PASS；App 已保存，可零 AI 重用。");
      if(publicShareConsent){
       const shared=await worker.publishFreeCiApp(prompt.trim().slice(0,75),true);
@@ -573,7 +574,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     ：{c.verdict}
    </li>)}</ul>
   </section>:null}
-  {snapshot?.job.free_ci?.preview_ready?
+  {snapshot?.job.free_ci?.preview_ready&&
+   allFrozenFreeCiChecksPassed(savedCandidateTarget()?.qaPlan,
+    snapshot.job.free_ci.qa_checks)?
    <section aria-label="通過 QA 的 App 正式分享">
     <h3>正式 App 卡片與分享（需建立者明確同意）</h3>
     <p className="saved-apps-note">僅當開發前凍結的每條 Browser QA 均為 PASS，
