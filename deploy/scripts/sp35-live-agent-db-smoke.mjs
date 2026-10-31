@@ -70,10 +70,16 @@ const probe=await stamp("/api/v1/agent-jobs/"+jobId+"/free-ai-probe",
  {anonymous_id:owner});
 const classification=probe.data?.data?.status;
 const cryptoStatus=probe.data?.data?.ticket_crypto_status;
+const gitHubStatus=probe.data?.data?.github_get_status;
 if(probe.status!==200||typeof classification!=="string")
  throw Error("SP35_GPT6_WORKER_EGRESS_PROBE_HTTP_"+probe.status);
 if(cryptoStatus!=="CRYPTO_READY")
  throw Error("SP35_AI_RUNNER_TICKET_WORKER_CRYPTO_NOT_PROVEN");
+console.log("SP35 GPT6 WORKER->GITHUB READONLY: "+String(gitHubStatus).slice(0,40)+
+ " (signed creator, NO workflow dispatch, NO model POST)");
+if(gitHubStatus!=="GITHUB_GET_200")
+ throw Error("SP35_AI_RUNNER_WORKER_GITHUB_READONLY_BLOCKED_"+
+  String(gitHubStatus).slice(0,35));
 console.log("SP35 GPT6 WORKER TICKET CRYPTO: "+cryptoStatus+
  " (owner-scoped AES-GCM, NO model or Github dispatch)");
 console.log("SP35 GPT6 WORKER EGRESS: "+classification+
