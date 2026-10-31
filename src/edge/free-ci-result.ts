@@ -21,6 +21,28 @@ export type FreeCiSmoke={
  readonly checks:{readonly locked_build:true;readonly chromium_render:true};
  readonly qa_plan_hash?:string;readonly qa_checks?:readonly FreeCiQaCheck[];
 };
+/** Authenticated failure evidence has NO build artifact and can NEVER be a QA PASS. */
+export type FreeCiBuildFailure={
+ readonly version:"APPF2_FREE_CI_BUILD_FAILURE_V1";
+ readonly project_hash:string;readonly artifact_hash:string;
+ readonly failure_stage:"BUILD"|"RENDER";
+ readonly diagnostic_code:"FREE_CI_BUILD_FAILED"|"FREE_CI_CHROMIUM_RENDER_FAILED";
+ readonly diagnostic_excerpt:string;readonly qa_plan_hash:string;
+};
+export type FreeCiReceipt=FreeCiSmoke|FreeCiBuildFailure;
+export function validFreeCiBuildFailure(x:unknown):x is FreeCiBuildFailure{
+ if(!exact(x,["version","project_hash","artifact_hash","failure_stage",
+  "diagnostic_code","diagnostic_excerpt","qa_plan_hash"]))return false;
+ return x.version==="APPF2_FREE_CI_BUILD_FAILURE_V1"&&
+  typeof x.project_hash==="string"&&SHA.test(x.project_hash)&&
+  typeof x.artifact_hash==="string"&&SHA.test(x.artifact_hash)&&
+  typeof x.qa_plan_hash==="string"&&SHA.test(x.qa_plan_hash)&&
+  ((x.failure_stage==="BUILD"&&x.diagnostic_code==="FREE_CI_BUILD_FAILED")||
+   (x.failure_stage==="RENDER"&&x.diagnostic_code==="FREE_CI_CHROMIUM_RENDER_FAILED"))&&
+  typeof x.diagnostic_excerpt==="string"&&x.diagnostic_excerpt.length>=1&&
+  x.diagnostic_excerpt.length<=1200&&
+  !/[\u0000-\u0008\u000e-\u001f]/u.test(x.diagnostic_excerpt);
+}
 export type FreeCiQaCheck={readonly criterion_id:string;
  readonly verdict:"PASS"|"FAIL"|"UNTESTED";readonly evidence_hash:string|null};
 export function validQaChecks(raw:unknown):raw is readonly FreeCiQaCheck[]{
@@ -36,7 +58,9 @@ export async function frozenFreeCiPlanHash(plan:QaPlan):Promise<string>{
   "APPF2_FREE_CI_FROZEN_PLAN_V1\u0000"+canonicalArtifactJson(plan)));
 }
 /** Only the immutable pre-coding QA plan can bind GitHub OIDC observations. */
-export async function verifiedFreeCiChecks(result:FreeCiSmoke,plan:QaPlan|null){
+export async function verifiedFreeCiChecks(result:FreeCiReceipt,plan:QaPlan|null){
+ if(result.version==="APPF2_FREE_CI_BUILD_FAILURE_V1")
+  return plan!==null&&result.qa_plan_hash===await frozenFreeCiPlanHash(plan);
  if(!plan)return result.qa_plan_hash===undefined&&result.qa_checks===undefined;
  if(!result.qa_checks||result.qa_plan_hash!==await frozenFreeCiPlanHash(plan)||
   result.qa_checks.length!==plan.criteria.length)return false;
@@ -69,14 +93,20 @@ type SavedReceipt={readonly run_id:string;readonly built_artifact_hash:string;
 /** Atomic current job/hash fence and immutable first receipt. */
 // eslint-disable-next-line complexity -- Job, OIDC and original frozen QA plan are independent security gates.
 export async function persistFreeCiSmoke(db:AgentJobExecutor,scope:FreeCiScope,
- result:FreeCiSmoke,plan:QaPlan|null=null):Promise<"RECORDED"|"REPLAYED">{
- if(!validFreeCiSmoke(result)||result.project_hash!==scope.projectHash||
+ result:FreeCiReceipt,plan:QaPlan|null=null):Promise<"RECORDED"|"REPLAYED">{
+ if(!(validFreeCiSmoke(result)||validFreeCiBuildFailure(result))||
+  result.project_hash!==scope.projectHash||
   !/^[0-9]{6,20}$/u.test(scope.runId)||
   !await verifiedFreeCiChecks(result,plan))throw Error("FREE_CI_RECEIPT_INVALID");
- const payload=JSON.stringify({version:result.version,checks:result.checks,
-  ...(result.qa_checks?{qa_plan_hash:result.qa_plan_hash,
-   qa_checks:result.qa_checks}:{}),
-  original_requirements_qa:false,app_published:false});
+ const payload=JSON.stringify(result.version==="APPF2_FREE_CI_BUILD_FAILURE_V1"?
+  {version:result.version,failure_stage:result.failure_stage,
+   diagnostic_code:result.diagnostic_code,
+   diagnostic_excerpt:result.diagnostic_excerpt,qa_plan_hash:result.qa_plan_hash,
+   original_requirements_qa:false,app_published:false}:
+  {version:result.version,checks:result.checks,
+   ...(result.qa_checks?{qa_plan_hash:result.qa_plan_hash,
+    qa_checks:result.qa_checks}:{}),
+   original_requirements_qa:false,app_published:false});
  const inserted=await db.query<{job_id:string}>(`INSERT INTO public.appf2_agent_free_ci_receipt
  (job_id,owner_anonymous_id,project_hash,run_id,built_artifact_hash,receipt_json)
  SELECT j.job_id,j.owner_anonymous_id,j.project_hash,$4::text,$5::text,$6::jsonb
@@ -106,6 +136,14 @@ export async function readFreeCiSmoke(db:AgentJobExecutor,jobId:string,
   [jobId,owner,projectHash]);
  const row=found.rows[0];
  if(!row)return null;
+ const raw=row.receipt_json as {version?:unknown;failure_stage?:unknown;
+  diagnostic_code?:unknown;diagnostic_excerpt?:unknown}|null;
+ if(raw?.version==="APPF2_FREE_CI_BUILD_FAILURE_V1")
+  return {status:"BUILD_FAILED" as const,run_id:row.run_id,
+   artifact_hash:row.built_artifact_hash,preview_ready:false as const,
+   failure_stage:raw.failure_stage,diagnostic_code:raw.diagnostic_code,
+   diagnostic_excerpt:raw.diagnostic_excerpt,
+   original_requirements_qa:false as const,app_published:false as const};
  const preview=await db.query<{ready:boolean}>(
   "SELECT EXISTS(SELECT 1 FROM public.appf2_agent_free_ci_preview p "+
   "WHERE p.job_id=$1::uuid AND p.owner_anonymous_id=$2::uuid "+
@@ -137,7 +175,8 @@ export async function routeFreeCiResult(request:Request,url:URL,
  let parsed:unknown;
  try{parsed=JSON.parse(raw);}catch{return denied();}
  if(!exact(parsed,["ticket","result"])||typeof parsed.ticket!=="string"||
-  !validFreeCiSmoke(parsed.result))return denied();
+  !(validFreeCiSmoke(parsed.result)||
+   validFreeCiBuildFailure(parsed.result)))return denied();
  const ticket=await openFreeCiTicket(parsed.ticket,
   env.APPF2_IDENTITY_COOKIE_SECRET,nowMs);
  if(!ticket||ticket.project_hash!==parsed.result.project_hash)return denied();
