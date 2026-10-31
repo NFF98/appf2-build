@@ -261,7 +261,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   * Chromium frozen-case observations → immutable private App; one optional
   * explicitly authorized repair, then optional owner-approved publication.
   */
- // eslint-disable-next-line complexity, max-depth -- Durable CI receipt polling, bounded repair, and fail-closed publishing require explicit branches.
+ /* eslint-disable max-depth -- bounded receipt polling only; original requirements still fail closed. */
+ // eslint-disable-next-line complexity -- Signed CI polling and optional repair are bounded.
  const startFreeAi=async()=>{
   if(busy||!aiConsent||!containerConsent||!browserQaConsent||!freeCiConsent||
    approvedCents<44)return;
@@ -341,6 +342,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
+ /* eslint-enable max-depth */
  const publishFreeApp=async()=>{
   if(busy||!publicShareConsent)return;
   setBusy(true);setError("");setPublishedUrl("");
