@@ -30,7 +30,7 @@ export function validPreviewAssetBody(raw:unknown):raw is PreviewAssetInput{
 }
 type SavedSandbox={
  readonly call_id:string;readonly project_hash:string;readonly status:string;
- readonly receipt_json:unknown;
+ readonly job_revision:number;readonly receipt_json:unknown;
 };
 function passed(row:SavedSandbox|undefined,call:string,hash:string):boolean{
  if(!row||row.call_id!==call||row.project_hash!==hash||
@@ -73,14 +73,17 @@ export async function readSignedPreviewAsset(input:PreviewAssetInput,deps:{
   completed.indexOf(input.build_call_id)>=completed.lastIndexOf(input.test_call_id))
   throw Error("PREVIEW_NOT_LAST_PROVEN_BUILD_AND_TEST");
  const rows=await deps.db.query<SavedSandbox>(
-  "SELECT call_id,project_hash,status,receipt_json "+
+  "SELECT call_id,project_hash,job_revision,status,receipt_json "+
   "FROM public.appf2_agent_sandbox_call WHERE job_id=$1::uuid "+
   "AND owner_anonymous_id=$2::uuid AND call_id IN ($3::text,$4::text)",
   [deps.jobId,deps.owner,input.build_call_id,input.test_call_id]);
  const build=rows.rows.find(r=>r.call_id===input.build_call_id);
  const test=rows.rows.find(r=>r.call_id===input.test_call_id);
  if(!passed(build,input.build_call_id,input.project_hash)||
-  !passed(test,input.test_call_id,input.project_hash))
+  !passed(test,input.test_call_id,input.project_hash)||
+  !Number.isSafeInteger(build.job_revision)||
+  !Number.isSafeInteger(test.job_revision)||
+  build.job_revision>test.job_revision)
   throw Error("PREVIEW_SUCCESSFUL_BUILD_TEST_NOT_PROVEN");
  const request={job_id:deps.jobId,project_hash:input.project_hash,
   build_call_id:input.build_call_id,path:input.path};
