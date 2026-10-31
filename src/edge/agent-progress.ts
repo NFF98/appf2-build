@@ -46,6 +46,17 @@ export function validAgentProgressBody(raw:unknown):raw is AgentProgressInput{
   x.model_call_keys.every(v=>typeof v==="string"&&KEY.test(v))&&
   new Set(x.model_call_keys).size===x.model_call_keys.length;
 }
+/** A pending or uncertain payment outcome blocks ALL model progress, even
+ * if one older response looks individually ready. The next action must be
+ * read-only reconciliation, never another charged tool/model dispatch.
+ */
+export function mayResumeSavedModel(states:readonly ProgressState[],
+ remaining:number,qaRequired:boolean,jobState:string):boolean{
+ return remaining>0&&!qaRequired&&
+  !states.some(x=>x==="MODEL_PENDING"||x==="MODEL_UNCERTAIN")&&
+  states.filter(x=>x==="CURRENT_MODEL_READY").length===1&&
+  !["READY","FAILED","AWAITING_CONSENT"].includes(jobState);
+}
 function state(key:string,kind:ProgressState,rev:number|null=null,
  tool:string|null=null,responseId:string|null=null):CallProgress{
  return {model_call_key:key,state:kind,job_revision:rev,tool,
@@ -150,8 +161,8 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
   active.length===0&&last.length===1&&
   remaining>0&&["CODING","REPAIRING","BUILDING"].includes(current.job.job_state);
 
- const can_resume=!uncertain&&!qa&&active.length===1&&remaining>0&&
-  !["READY","FAILED","AWAITING_CONSENT"].includes(current.job.job_state);
+ const can_resume=mayResumeSavedModel(rows.map(x=>x.state),
+  remaining,qa,current.job.job_state);
  const next_action:AgentProgress["next_action"]=uncertain||pending?
   "AWAIT_MODEL_RECONCILIATION":active.length>1||last.length>1?
    "RECONCILE_AMBIGUOUS_HEAD":failedIndependentQa&&active.length===0?
