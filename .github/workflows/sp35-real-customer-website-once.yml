@@ -33,3 +33,5 @@ jobs:
 # Production, Cloudflare paid Containers and paid Browser Run are disallowed.
 
 # GPT-6.1 Sol once-only customer website E2E, authorized Sprint 3.5 Staging recheck after previous pre-provider SQL rejection. Do not rerun automatically.
+
+# 2026-10-31 scoped one-shot verification AFTER owner-only model journal INSERT RLS fix (9368faa). One Staging user click, no automatic retry, no production release.
