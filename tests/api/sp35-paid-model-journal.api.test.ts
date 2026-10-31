@@ -3,6 +3,8 @@ import {readFileSync} from "node:fs";
 import {sealAiRunnerTicket,openAiRunnerTicket,aiTicketScopeHash}
  from "../../src/platform/agent/free-ai-runner-ticket.js";
 import {openFreeCiTicket} from "../../src/platform/agent/free-ci-ticket.js";
+import {hasRecordedBrowserQaFailure}
+ from "../../src/edge/free-ci-ai-code.js";
 import {runJournaledPaidModelTurn,type PaidModelTurn}
  from "../../src/platform/agent/journaled-model-gateway.js";
 import {checkpointHash,type AgentJobExecutor,type AgentJobRow}
@@ -109,6 +111,22 @@ describe("SP35 Staging owner reservation migration regression (NO model calls)",
  });
 });
 
+describe("Sprint 3.5 receipt-bound auto repair without false publication",()=>{
+ it("allows one bounded repair when signed QA receipt contains FAIL and unrelated UNTESTED",()=>{
+  expect(hasRecordedBrowserQaFailure({status:"BUILD_BROWSER_SMOKE",
+   qa_checks:[{verdict:"UNTESTED"},{verdict:"FAIL"},{verdict:"FAIL"}]})).toBe(true);
+ });
+ it("never authorizes repair from UNTESTED-only, PASS-only or missing evidence",()=>{
+  expect(hasRecordedBrowserQaFailure({status:"BUILD_BROWSER_SMOKE",
+   qa_checks:[{verdict:"UNTESTED"}]})).toBe(false);
+  expect(hasRecordedBrowserQaFailure({status:"BUILD_BROWSER_SMOKE",
+   qa_checks:[{verdict:"PASS"}]})).toBe(false);
+  expect(hasRecordedBrowserQaFailure({status:"BUILD_BROWSER_SMOKE"})).toBe(false);
+  expect(hasRecordedBrowserQaFailure(null)).toBe(false);
+  expect(hasRecordedBrowserQaFailure({status:"UNTRUSTED",
+   qa_checks:[{verdict:"FAIL"}]})).toBe(false);
+ });
+});
 describe("Sprint 3.5 private GPT-6 GitHub Runner scope, never a provider call",()=>{
  it("encrypts the exact phase+request scope, not the original free Docker ticket",async()=>{
   const secret="s".repeat(64), now=Date.now();
