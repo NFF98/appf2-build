@@ -27,6 +27,7 @@ function exact(x:unknown,keys:readonly string[]):x is Record<string,unknown>{
  return typeof x==="object"&&x!==null&&!Array.isArray(x)&&
   Object.keys(x).sort().join(",")===keys.slice().sort().join(",");
 }
+// eslint-disable-next-line complexity -- OIDC, AES scope, immutable phase and owner checks all fail closed.
 async function session(request:Request,url:URL,env:Appf2WorkerEnv,
  nowMs:number,raw:string):Promise<Session|null>{
  if(env.APPF2_AGENT_FREE_ONLY!=="1"||
@@ -95,6 +96,7 @@ export async function routeFreeAiRunnerSource(request:Request,url:URL,
  }catch{return denied();}
  finally{await scope.db.close();}
 }
+// eslint-disable-next-line complexity -- No individual trust check can be omitted.
 export async function routeFreeAiRunnerResult(request:Request,url:URL,
  env:Appf2WorkerEnv,nowMs:number):Promise<Response|undefined>{
  if(url.pathname!==AI_RUNNER_RESULT)return undefined;
