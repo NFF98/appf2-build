@@ -223,6 +223,12 @@ describe("Sprint 3.5 actual saved build may precede read-only tools",()=>{
    .toEqual({build:"call_build_1234",test:"call_test_1234"});
   expect(provenPreviewBuildAndTest(["call_test_1234"],[build])).toBeNull();
   expect(provenPreviewBuildAndTest(["call_test_1234","call_build_1234"],[
-   build])).toEqual({build:"call_test_1234",test:"call_build_1234"});
+   build])).toBeNull();
+  expect(provenPreviewBuildAndTest([
+   "call_build_1234","call_inspect_9999","call_test_1234"],[
+   build,{state:"ALREADY_APPLIED",tool:"inspect_project",
+    call_id:"call_inspect_9999"},
+   {state:"ALREADY_APPLIED",tool:"run_build",
+    call_id:"call_test_1234"}])).toBeNull();
  });
 });
