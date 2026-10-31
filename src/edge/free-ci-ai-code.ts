@@ -119,6 +119,7 @@ function parseFiles(raw:unknown):readonly {path:string;content:string}[]|null{
 /** A recovered response is fetched only by GET. No second Responses POST.
  * A temporary GET failure preserves IN_FLIGHT and the owner-scoped response ID.
  */
+// eslint-disable-next-line complexity -- Terminal/status/usage validation must fail closed.
 async function recoverBackgroundTurn(db:AgentJobExecutor,row:ModelCallRow,
  key:string,id:string,first?:unknown):Promise<ModelResult>{
  let data=first;
