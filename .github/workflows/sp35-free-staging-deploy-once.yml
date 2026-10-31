@@ -143,3 +143,4 @@ jobs:
 # Repo Secret now configured by Human; redeploy without paid AI/Containers.
 # [SP35-FREE-STAGING-DEPLOY-ONCE] validates credential presence and routes.
 # Recheck real GitHub dispatch result class after owner-signed no-cost Job import.
+# Staging Hyperdrive cold-start: allow long zero-cost source-import only; preserve no-AI limits.

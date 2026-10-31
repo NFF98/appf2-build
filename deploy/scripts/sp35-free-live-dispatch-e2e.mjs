@@ -28,7 +28,7 @@ async function signed(path,body,expected){
    "Sec-Fetch-Site":"same-origin","Idempotency-Key":nonce,
    "X-Appf2-PoP-Key":spki,"X-Appf2-PoP-Signature":signature,
    "X-Appf2-PoP-Timestamp":String(now)},
-  body:bytes,signal:globalThis.AbortSignal.timeout(25000)});
+  body:bytes,signal:globalThis.AbortSignal.timeout(path.endsWith("/import-files")?110000:45000)});
  const reply=await response.json().catch(()=>null);
  if(response.status!==expected||!reply?.data)
   throw Error("FREE_LIVE_DISPATCH_UNEXPECTED_HTTP_"+response.status+"_PATH_"+path+
