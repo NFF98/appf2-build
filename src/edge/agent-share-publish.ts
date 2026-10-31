@@ -70,12 +70,14 @@ export async function publishVerifiedPrivateApp(input:PublishOwnerAppBody,ctx:{
  const plan=parseQaPlan(receipt?.original_plan,input.original_prompt);
  const evidence=receipt?.receipt_json as {qa_checks?:unknown;qa_plan_hash?:unknown;
   original_requirements_qa?:unknown;app_published?:unknown}|null;
- if(!receipt||!plan||!evidence||!validQaChecks(evidence.qa_checks)||
+ const checks=evidence?.qa_checks;
+ if(!receipt||!plan||!evidence||!validQaChecks(checks)||
   evidence.qa_plan_hash!==await frozenFreeCiPlanHash(plan)||
+  checks.length!==plan.criteria.length||
   !plan.criteria.every((c,i)=>c.automatable&&
-   evidence.qa_checks?.[i]?.criterion_id===c.id&&
-   evidence.qa_checks?.[i]?.verdict==="PASS"&&
-   typeof evidence.qa_checks?.[i]?.evidence_hash==="string")||
+   checks[i]?.criterion_id===c.id&&
+   checks[i]?.verdict==="PASS"&&
+   typeof checks[i]?.evidence_hash==="string")||
   evidence.original_requirements_qa!==false||evidence.app_published!==false)
   throw Error("SP35_SHARE_ORIGINAL_QA_NOT_ALL_PASS");
  const asset=receipt.preview_json;
