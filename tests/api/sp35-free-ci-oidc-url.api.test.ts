@@ -48,3 +48,9 @@ describe("SP35 actual GitHub-hosted OIDC source access",()=>{
   expect(validFreeCiGitHubToken("Bearer "+"x".repeat(40))).toBe(false);
  });
 });
+
+test("new GitHub-hosted regional OIDC issuer URL is accepted without trusting lookalikes",()=>{
+ expect(trustedFreeCiOidcRequestUrl("https://run-actions-1-azure-eastus.actions.githubusercontent.com/_apis/distributedtask/idtoken?api-version=2.0")).not.toBeNull();
+ expect(trustedFreeCiOidcRequestUrl("https://run-actions-1-azure-eastus.actions.githubusercontent.com.evil.com/_apis/idtoken")).toBeNull();
+ expect(trustedFreeCiOidcRequestUrl("http://run-actions-1-azure-eastus.actions.githubusercontent.com/_apis/idtoken")).toBeNull();
+});

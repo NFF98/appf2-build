@@ -25,3 +25,5 @@ jobs:
         run: node deploy/scripts/sp35-free-live-dispatch-e2e.mjs
 
 # Retry real signed free OIDC source only; no new model, Containers or Production.
+
+# OIDC official run-actions Azure host allowlisted; retry signed source without bypass.

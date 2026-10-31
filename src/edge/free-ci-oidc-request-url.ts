@@ -8,7 +8,7 @@ export function trustedFreeCiOidcRequestUrl(raw:string):URL|null{
   const url=new URL(raw);
   if(url.protocol!=="https:"||url.username!==""||url.password!==""||
    url.port!==""||url.hash!==""||url.pathname==="/"||
-   !/^pipelines(?:ghub[a-z0-9]+)?\.actions\.githubusercontent\.com$/u.test(url.hostname))
+   !/^(?:pipelines(?:ghub[a-z0-9]+)?|run-actions-[1-9][0-9]{0,2}-azure-[a-z0-9-]{3,32})\.actions\.githubusercontent\.com$/u.test(url.hostname))
    return null;
   return url;
  }catch{return null;}
