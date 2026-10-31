@@ -453,6 +453,12 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    e.message==="SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST"))
    return json(202,{data:{status:"AI_BACKGROUND_PENDING",
     app_published:false}});
+  // Fixed HTTP class only: no encrypted ticket, user prompt, secret,
+  // provider response or SQL detail. A claimed model phase cannot be
+  // automatically re-dispatched even when GitHub's 204 was not observed.
+  if(freeAiMatch&&e instanceof Error&&
+   /^SP35_AI_RUNNER_DISPATCH_UNCONFIRMED_(NETWORK_ERROR|400|401|403|404|409|422|429|500|502|503|OTHER_HTTP)$/u.test(e.message))
+   return json(503,{error:e.message});
   // Never authorize/bill a first model POST when the deployed Worker
   // cannot even perform the signed, no-charge model GET preflight.
   if(freeAiMatch&&e instanceof Error&&
