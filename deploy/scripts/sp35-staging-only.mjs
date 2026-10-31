@@ -65,8 +65,6 @@ if(privateServices && (agentPrivateToken.length < 32 ||
   !/^(?:OWNER_SCOPED_JOBS|[0-9a-f-]{36})$/i.test(agentJobScope) ||
   agentQaToken.length < 32 || agentQaVerifier.length < 32))
   throw Error("STAGING AGENT: incomplete private Sandbox / Browser QA binding secrets");
-const sandboxEnabled = privateServices && agentModelEnabled;
-const qaEnabled = privateServices && agentModelEnabled;
 console.log("STAGING AGENT: candidate="+(agentEnabled?"ENABLED":"DISABLED")+
   " model="+(agentModelEnabled?"KEY_PRESENT_BUT_DISABLED_FREE_ONLY":"DISABLED")+
   " private_services="+(privateServices?"CONFIGURED":"NOT_DEPLOYED"));
