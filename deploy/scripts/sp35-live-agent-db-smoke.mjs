@@ -25,10 +25,10 @@ const keys=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},
 const spki=b64(await crypto.subtle.exportKey("spki",keys.publicKey));
 const stamp=async(path,body)=>{
  const idempotency="sp35AgentSmoke_"+randomUUID().replaceAll("-","");
- const encoded=new TextEncoder().encode(JSON.stringify(body));
+ const encoded=new globalThis.TextEncoder().encode(JSON.stringify(body));
  const digest=b64(await crypto.subtle.digest("SHA-256",encoded));
  const timestamp=Date.now();
- const transcript=new TextEncoder().encode(JSON.stringify([
+ const transcript=new globalThis.TextEncoder().encode(JSON.stringify([
   "APPF2_MUTATION_PoP_V1","POST",path,digest,idempotency,timestamp
  ]));
  const signature=b64(await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},
@@ -39,7 +39,7 @@ const stamp=async(path,body)=>{
    "Sec-Fetch-Site":"same-origin","Idempotency-Key":idempotency,
    "X-Appf2-PoP-Key":spki,"X-Appf2-PoP-Signature":signature,
    "X-Appf2-PoP-Timestamp":String(timestamp)
-  },body:encoded,signal:AbortSignal.timeout(18000)});
+  },body:encoded,signal:globalThis.AbortSignal.timeout(18000)});
  let data;
  try{data=await response.json()}catch{
   throw Error("SP35_AGENT_LIVE_DB: EXPECTED_WORKER_JSON_HTTP_"+response.status);}
