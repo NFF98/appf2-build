@@ -6,7 +6,6 @@ import { routeBlueprintDelivery, type BlueprintDeliveryFactory, type BlueprintDe
 import { routePublishedApps } from "./published-apps.js";
 import {routeCodeBuilder} from "./code-builder-v2.js";
 import {routeAgentJobs,type AgentJobRouteDeps} from "./agent-jobs.js";
-import {routeFreeCiSource} from "./free-ci-source.js";
 import { claimsMutationProof, reservedCreateIdempotencyKey, verifyMutationProof } from "./create-proof.js";
 import { EVENTS_BATCH_ROUTE } from "./events-batch.js";
 import { INTENTS_ROUTE, type IntentApiHttpResponse } from "./intent-api.js";
@@ -211,8 +210,6 @@ export function createWorkerFetch(factories: Partial<WorkerCompositionFactories>
     if (delivered !== undefined) return delivered;
     const published=await routePublishedApps({request,url,env,nowMs,delivery:deliveryFactory});
     if(published!==undefined)return published;
-    const source=await routeFreeCiSource(request,url,env,nowMs);
-    if(source!==undefined)return source;
     const agentJob=await routeAgentJobs({request,url,env,nowMs,deps:options.agent});
     if(agentJob!==undefined)return agentJob;
     const codeApp=await routeCodeBuilder({request,url,env});

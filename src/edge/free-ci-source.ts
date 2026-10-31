@@ -13,6 +13,7 @@ const HEADERS={"Content-Type":"application/json; charset=utf-8",
  "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"};
 const reject=()=>new Response(JSON.stringify({error:"FREE_CI_NOT_AUTHORIZED"}),
  {status:404,headers:HEADERS});
+// eslint-disable-next-line complexity -- Private source is denied on every identity, JWT, hash and scope failure.
 export async function routeFreeCiSource(request:Request,url:URL,
  env:Appf2WorkerEnv,nowMs:number):Promise<Response|undefined>{
  if(url.pathname!==FREE_CI_SOURCE_ROUTE)return undefined;

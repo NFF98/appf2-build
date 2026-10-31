@@ -36,6 +36,7 @@ export async function sealFreeCiTicket(input:Omit<FreeCiTicket,"v"|"expires">,
  all.set(iv);all.set(encrypted,iv.length);
  return encode(all);
 }
+// eslint-disable-next-line complexity -- AES scope and time bounds all fail closed independently.
 export async function openFreeCiTicket(value:string,secret:string,
  nowMs:number):Promise<FreeCiTicket|null>{
  try{

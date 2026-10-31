@@ -17,6 +17,7 @@ function json(bytes:Uint8Array):Record<string,unknown>|null{
    x as Record<string,unknown>:null;
  }catch{return null;}
 }
+// eslint-disable-next-line complexity -- Each GitHub OIDC claim is a required independent trust boundary.
 export async function verifyFreeCiOidc(token:string,nowMs:number,
  loadKeys:()=>Promise<unknown>):Promise<boolean>{
  try{
