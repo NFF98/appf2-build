@@ -14,16 +14,20 @@ import type {QaPlan} from "../platform/qa/requirement-contract.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 import type {SandboxServiceBinding} from "./agent-sandbox-run.js";
 export type BrowserQaRunInput={readonly anonymous_id:string;
- readonly expected_revision:number} & PrivateBrowserQaTask;
+ readonly expected_revision:number;readonly reconcile_only?:true} & PrivateBrowserQaTask;
 export function validBrowserQaRunBody(x:unknown):x is BrowserQaRunInput{
  if(typeof x!=="object"||x===null||Array.isArray(x))return false;
  const v=x as Record<string,unknown>;
- if(Object.keys(v).sort().join(",")!==
-  "anonymous_id,build_call_id,expected_revision,explicit_browser_qa_consent,job_id,original_plan,original_prompt,project_hash,test_call_id"||
-  typeof v.anonymous_id!=="string"||
+ const fields=Object.keys(v).sort().join(",");
+ if(fields!==
+  "anonymous_id,build_call_id,expected_revision,explicit_browser_qa_consent,job_id,original_plan,original_prompt,project_hash,test_call_id"&&fields!==
+  "anonymous_id,build_call_id,expected_revision,explicit_browser_qa_consent,job_id,original_plan,original_prompt,project_hash,reconcile_only,test_call_id")
+  return false;
+ if(v.reconcile_only!==undefined&&v.reconcile_only!==true)return false;
+ if(typeof v.anonymous_id!=="string"||
   !Number.isSafeInteger(v.expected_revision)||Number(v.expected_revision)<1)return false;
- const {anonymous_id,expected_revision,...task}=v;
- void anonymous_id;void expected_revision;
+ const {anonymous_id,expected_revision,reconcile_only,...task}=v;
+ void anonymous_id;void expected_revision;void reconcile_only;
  return validPrivateBrowserQaTask(task);
 }
 type SandboxRow={readonly job_id:string;readonly owner_anonymous_id:string;
@@ -179,6 +183,10 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
   completed.indexOf(input.build_call_id)<0||
   completed.indexOf(input.build_call_id)>=completed.indexOf(input.test_call_id))
   throw Error("QA_BUILD_NOT_IN_PROVEN_CHECKPOINT");
+ // Free recovery must never create a reservation or call the private
+ // Browser Worker. Only an existing, exact successful receipt may advance.
+ if(input.reconcile_only===true)
+  return finishSavedQa(current,await recoverSavedQaResult(input,deps),deps);
  const inserted=await deps.db.query<{job_id:string}>(
   "INSERT INTO public.appf2_agent_browser_qa_attempt("+
   "job_id,owner_anonymous_id,project_hash,job_revision,build_call_id,test_call_id) "+
@@ -190,8 +198,8 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
   const recorded=await recoverSavedQaResult(input,deps);
   return finishSavedQa(current,recorded,deps);
  }
- const {anonymous_id,expected_revision,...task}=input;
- void anonymous_id;void expected_revision;
+ const {anonymous_id,expected_revision,reconcile_only,...task}=input;
+ void anonymous_id;void expected_revision;void reconcile_only;
  let response:QaResponse;
  try{
   response=await dispatchQa(deps.service,deps.privateToken,task);
