@@ -13,6 +13,7 @@ import {getModelCall,reserveModelCall,claimModelCall,completeModelCall,
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {readFreeCiSmoke} from "./free-ci-result.js";
 import {dispatchFreeCiJob} from "./free-ci-dispatch.js";
+import {dispatchAiRunner} from "./free-ai-dispatch.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 const SHA=/^sha256:[a-f0-9]{64}$/u;
 const AMOUNTS={QA:8,CODE:20,REPAIR:16} as const;
@@ -153,10 +154,11 @@ async function recoverBackgroundTurn(db:AgentJobExecutor,row:ModelCallRow,
  return {response:data,inputTokens:Number(response.usage?.input_tokens),
   outputTokens:Number(response.usage?.output_tokens)};
 }
-// eslint-disable-next-line complexity, max-params -- Idempotency fences protect billable HTTP.
+// eslint-disable-next-line complexity, max-params -- Creator-bound immutable dispatch, no repeat POST.
 async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  typeof recoverAgentJob>> & {},owner:string,phase:Phase,request:unknown,
- key:string):Promise<ModelResult>{
+ key:string,runnerToken:string,ticketSecret:string,nowMs:number
+):Promise<ModelResult>{
  const modelKey="sp35_free_ai_"+phase.toLowerCase()+"_v1";
  const json=JSON.stringify(request);
  const digest=await sha256CodeBytes(new TextEncoder().encode(
@@ -166,62 +168,30 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
   throw Error("SP35_PAID_AI_REQUEST_HASH_MISMATCH_NO_RECHARGE");
  if(existing?.status==="SUCCEEDED"&&existing.response_json!==null)
   return {response:existing.response_json,
-   inputTokens:existing.input_tokens??0,outputTokens:existing.output_tokens??0};
+   inputTokens:existing.input_tokens??0,
+   outputTokens:existing.output_tokens??0};
  if(existing?.status==="IN_FLIGHT"){
+  const runner=(await db.query<{call_key:string}>(`SELECT call_key FROM
+   public.appf2_agent_model_runner_request WHERE job_id=$1::uuid
+   AND owner_anonymous_id=$2::uuid AND call_key=$3::text LIMIT 1`,
+   [job.job.job_id,owner,modelKey])).rows[0];
+  if(runner?.call_key===modelKey)
+   throw Error("SP35_BACKGROUND_MODEL_PENDING_NO_POST");
+  // An earlier Worker-side job, never to be recharged.
   const id=await getModelBackgroundId(db,job.job.job_id,owner,modelKey);
   if(!id)throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
   return recoverBackgroundTurn(db,existing,key,id);
  }
- if(existing&&existing.status!=="RESERVED")
-  throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
- // A real signed Worker-to-provider GET was proven unreachable even when the
- // same model GET succeeded from GitHub Actions. Check the actual egress hop
- // BEFORE journal reservation or any potentially billed Responses POST.
- let reachable=false;
- try{
-  const probe=await fetch("https://api.openai.com/v1/models/gpt-6.1-sol",{
-   method:"GET",headers:{"Authorization":"Bearer "+key},
-   redirect:"error",signal:AbortSignal.timeout(10000)});
-  reachable=probe.status===200;
- }catch{ /* No model call, no new reservation and no automatic retry. */ }
- if(!reachable)
-  throw Error("SP35_PAID_AI_WORKER_EGRESS_UNAVAILABLE_NO_POST");
+ if(existing)throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
  const row=await reserveModelCall(db,job.job,owner,{
   call_key:modelKey,request_hash:digest,model:MODEL,
   max_charge_cents:AMOUNTS[phase]});
  if(row.status!=="RESERVED")throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
- await claimModelCall(db,row);
- let failureClass="TRANSPORT_OR_TIMEOUT";
- try{
-  const response=await fetch("https://api.openai.com/v1/responses",{
-   method:"POST",headers:{"Authorization":"Bearer "+key,
-    "Content-Type":"application/json"},body:json,
-   signal:AbortSignal.timeout(18000),redirect:"error"});
-  failureClass=response.status===429?"PROVIDER_RATE_LIMIT":
-   response.status>=500?"PROVIDER_SERVER":
-   response.status!==200?"PROVIDER_REJECTED":"PROVIDER_RESPONSE";
-  const data:unknown=await response.json().catch(()=>null);
-  const remote=data as {id?:unknown}|null;
-  if(response.status!==200||typeof remote?.id!=="string"||
-   !/^resp_[A-Za-z0-9_-]{6,160}$/u.test(remote.id))
-   throw Error("SP35_BACKGROUND_FIRST_RESPONSE_INVALID");
-  failureClass="DURABLE_RESPONSE_SAVE";
-  await saveModelBackgroundId(db,row,remote.id);
-  return await recoverBackgroundTurn(db,row,key,remote.id,data);
- }catch(e){
-  if(e instanceof Error&&(
-   e.message==="SP35_BACKGROUND_MODEL_PENDING_NO_POST"||
-   e.message==="SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST"||
-   e.message.startsWith("SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE_")))
-   throw e;
-  // If POST produced a journaled response ID, NEVER send another POST;
-  // keep querying it by GET on a later creator-signed request.
-  const persisted=await getModelBackgroundId(db,job.job.job_id,
-   owner,modelKey).catch(()=>null);
-  if(persisted)throw Error("SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST");
-  await markModelCallUncertain(db,row).catch(()=>undefined);
-  throw Error("SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE_"+failureClass);
- }
+ await dispatchAiRunner(db,row,job.project.project_hash,request,
+  runnerToken,ticketSecret,nowMs);
+ // The GitHub runner now owns the immutable one-shot provider POST.
+ // The browser will poll by creator-signed API; no Worker AI network.
+ throw Error("SP35_BACKGROUND_MODEL_PENDING_NO_POST");
 }
 type Context={db:AgentJobExecutor;jobId:string;ownerThumb:string;
  modelKey:string;githubToken:string;ticketSecret:string;nowMs:number};
@@ -262,7 +232,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
    input:modelPrompt("QA",input.original_prompt,null,[],""),
    max_output_tokens:3500,background:true,store:true,text:{format:{type:"json_schema",
     name:"appf2_precode_qa",strict:true,schema:qaSchema}}};
-  const data=await paidModelTurn(ctx.db,job,input.anonymous_id,"QA",req,ctx.modelKey);
+  const data=await paidModelTurn(ctx.db,job,input.anonymous_id,"QA",req,
+   ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs);
   const parsed=parsePlan(parsedOutput(data.response),input.original_prompt);
   if(!parsed)throw Error("SP35_PAID_QA_SCHEMA_FAILED_NO_RECHARGE");
   await freezeAgentQaPlan({anonymous_id:input.anonymous_id,expected_revision:0,
@@ -302,7 +273,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  if(repairing&&req.input.length>24000)
   throw Error("SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET");
  const turn=await paidModelTurn(ctx.db,job,input.anonymous_id,
-  input.stage,req,ctx.modelKey);
+  input.stage,req,ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs);
  const files=parseFiles(parsedOutput(turn.response));
  if(!files)throw Error("SP35_PAID_CODE_INVALID_NO_RECHARGE");
  let current=job;
