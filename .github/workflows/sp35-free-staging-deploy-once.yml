@@ -94,6 +94,17 @@ jobs:
           APPF2_MODEL_FALLBACK_PROVIDER: ''
           APPF2_STAGING_BOOTSTRAP_ONLY: '0'
         run: node deploy/scripts/sp35-staging-only.mjs
+      - name: LIVE new private Free CI receipt refuses unauthenticated callbacks
+        run: |
+          node --input-type=module <<'JS'
+          const origin=process.env.APPF2_STAGING_URL;
+          const r=await fetch(origin+"/api/v1/internal/free-ci/result",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ticket:"invalid",result:{}}),
+            signal:AbortSignal.timeout(15000)});
+          if(r.status!==404)throw Error("SP35_FREE_CI_RECEIPT_UNAUTHENTICATED_NOT_DENIED_"+r.status);
+          console.log("SP35 LIVE FREE CI RECEIPT: unauthenticated callback HTTP404 PASS");
+          JS
       - name: LIVE Staging SPA + Worker first-hop (no model)
         run: node deploy/scripts/sp35-staging-smoke.mjs
       - name: LIVE Staging new Agent route, free-only cost guard

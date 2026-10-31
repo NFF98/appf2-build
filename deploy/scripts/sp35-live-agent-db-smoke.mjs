@@ -60,7 +60,8 @@ if(saved.status!==200||job?.job_id!==jobId||job.status!=="CREATED"||
  !Array.isArray(job.files)||job.files.length!==4||
  !job.files.some(f=>f.path==="src/main.ts"&&f.content.includes("候選專案"))||
  !job.files.some(f=>f.path==="index.html"&&f.content.includes("src/main.ts"))||
- job.ai_started!==false||job.app_published!==false)
+ job.ai_started!==false||job.app_published!==false||
+ job.free_ci!==null)
  throw Error("SP35_AGENT_LIVE_DB: SIGNED_POSTGRES_REOPEN_FAILED_HTTP_"+saved.status);
 console.log("SP35_PRODUCT_REAL_DB_PASS: signed CREATE HTTP201, "+
  "saved four-file source, signed REOPEN HTTP200, same hash, no AI or Sandbox. "+
