@@ -120,7 +120,7 @@ function docker(args){
  if(result.error||result.status!==0)
   throw Error("FREE_CI_BUILD_FAILED:"+String(result.status)+":"+
    (String(result.stderr??"")+"\n"+String(result.stdout??""))
-    .slice(-1000).replace(/[\u0000-\u001f]/gu," "));
+    .slice(-1000).replace(/\p{Cc}/gu," "));
 }
 /** Only code build/render failure, never infrastructure errors, is eligible
  * for an OIDC-attested failure receipt. It is NOT QA PASS or a built artifact.
@@ -130,7 +130,7 @@ async function persistFailure(stage,excerpt){
   throw Error("FREE_CI_FAILURE_REQUIRES_ORIGINAL_FROZEN_PLAN");
  const code=stage==="BUILD"?"FREE_CI_BUILD_FAILED":"FREE_CI_CHROMIUM_RENDER_FAILED";
  const diagnostic=String(excerpt).slice(-1150)
-  .replace(/[\u0000-\u001f]/gu," ").trim()||code;
+  .replace(/\p{Cc}/gu," ").trim()||code;
  const artifact_hash="sha256:"+createHash("sha256").update(JSON.stringify([
   "APPF2_FREE_CI_BUILD_FAILURE_V1",project.project_hash,stage,code,diagnostic
  ])).digest("hex");
