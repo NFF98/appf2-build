@@ -43,11 +43,11 @@ export function validFreeAiCodeInput(x:unknown):x is Input{
 const qaSchema={type:"object",additionalProperties:false,required:["criteria"],
  properties:{criteria:{type:"array",items:{type:"object",
   additionalProperties:false,required:["id","source_quote","description",
-   "automatable","action","role","name","expected_text"],
+   "automatable","action","role","name","expected_text","click_count"],
   properties:{id:{type:"string"},source_quote:{type:"string"},
    description:{type:"string"},automatable:{type:"boolean"},
    action:{type:"string"},role:{type:"string"},name:{type:"string"},
-   expected_text:{type:"string"}}}}}} as const;
+   expected_text:{type:"string"},click_count:{type:"integer"}}}}}} as const;
 const codeSchema={type:"object",additionalProperties:false,
  required:["main_ts","style_css"],
  properties:{main_ts:{type:"string"},style_css:{type:"string"}}} as const;
@@ -57,9 +57,14 @@ function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
   "You are an independent PRE-CODE acceptance planner. You have NOT seen any generated code.",
   "Reply ONLY with JSON matching the schema, 1-6 criteria. No markdown.",
   "source_quote MUST be an EXACT substring of the original natural language request, length 2-180.",
-  "If a requirement can be checked by clicking a button and checking newly appearing text:",
-  "set automatable=true,action=click,role=button, exact name and expected_text.",
-  "Otherwise set automatable=false,action=none,role=none,name=none,expected_text=none.",
+  "Each QA criterion runs from a FRESH browser page; no clicks or state persist between criteria.",
+  "For checking initial visible text without interaction, set automatable=true,action=none,",
+  "role=none,name=none,click_count=0 and expected_text to the exact required visible text.",
+  "For button interactions, set automatable=true,action=click,role=button,",
+  "name to the exact accessible button name and click_count to the number of clicks (1-6)",
+  "from a fresh initial page required to reach expected_text. Two clicks means click_count=2.",
+  "For truly untestable criteria use automatable=false,action=none,role=none,",
+  "name=none,click_count=0,expected_text=none; these always block publication.",
   "Never fabricate tests for missing requirements. No special claims of QA success.",
   "ORIGINAL_USER_PROMPT_JSON: "+JSON.stringify(prompt)
  ].join("\n");
@@ -97,10 +102,22 @@ function parsePlan(raw:unknown,prompt:string):QaPlan|null{
  const criteria=values.map((entry:unknown)=>{
   if(typeof entry!=="object"||entry===null)return null;
   const x=entry as Record<string,unknown>;
+  const isPassive=x.automatable===true&&x.action==="none"&&
+   x.click_count===0&&x.role==="none"&&x.name==="none";
+  const clicks=x.automatable===true&&x.action==="click"&&
+   x.role==="button"&&typeof x.name==="string"&&
+   Number.isSafeInteger(x.click_count)&&
+   Number(x.click_count)>=1&&Number(x.click_count)<=6;
+  const validText=typeof x.expected_text==="string"&&
+   x.expected_text.length>=1&&x.expected_text.length<=160&&
+   x.expected_text!=="none";
+  if(x.automatable===true&&(!validText||!isPassive&&!clicks))return null;
   return {id:x.id,source_quote:x.source_quote,description:x.description,
    automatable:x.automatable,
-   steps:x.automatable?[{action:x.action,role:x.role,name:x.name}]:[],
-   assertions:x.automatable?[{kind:"text_appears",text:x.expected_text}]:[]};
+   steps:clicks?Array.from({length:Number(x.click_count)},()=>({
+    action:"click",role:"button",name:x.name})):[],
+   assertions:isPassive?[{kind:"text_includes",text:x.expected_text}]:
+    clicks?[{kind:"text_appears",text:x.expected_text}]:[]};
  });
  return parseQaPlan({version:"1",criteria},prompt);
 }
