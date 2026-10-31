@@ -447,6 +447,11 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    e.message==="SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST"))
    return json(202,{data:{status:"AI_BACKGROUND_PENDING",
     app_published:false}});
+  // Never authorize/bill a first model POST when the deployed Worker
+  // cannot even perform the signed, no-charge model GET preflight.
+  if(freeAiMatch&&e instanceof Error&&
+   e.message==="SP35_PAID_AI_WORKER_EGRESS_UNAVAILABLE_NO_POST")
+   return json(503,{error:"SP35_WORKER_MODEL_EGRESS_BLOCKED_NO_CHARGE"});
   // Creator PoP already verified. Return ONLY one fixed failure category;
   // never reveal OpenAI response bodies, internal SQL, credentials or tokens.
   // A paid phase with uncertain outcome is NEVER safe to auto-retry.
