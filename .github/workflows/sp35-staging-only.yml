@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ inputs.ticket != '' && 'sp35-free-private-ci' || 'appf2-sp35-staging-only' }}
+  group: ${{ startsWith(inputs.ticket, 'ai_runner_v1_') && 'sp35-private-gpt6-model' || (inputs.ticket != '' && 'sp35-free-private-ci' || 'appf2-sp35-staging-only') }}
   cancel-in-progress: false
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
     # Existing workflow is on default branch, so GitHub REST workflow_dispatch
     # resolves this workflow; selecting the Sprint 3.5 branch runs this edition.
     # Crucial: encrypted tickets NEVER trigger the staging deploy or paid tests.
-    if: github.repository == 'NFF98/appf2-build' && github.event_name == 'workflow_dispatch' && inputs.ticket != '' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026'
+    if: github.repository == 'NFF98/appf2-build' && github.event_name == 'workflow_dispatch' && inputs.ticket != '' && !startsWith(inputs.ticket, 'ai_runner_v1_') && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     permissions:
@@ -44,6 +44,30 @@ jobs:
         # A workflow input is an encrypted scoped token: GitHub prints step env
         # fields in logs. Read it only through GITHUB_EVENT_PATH inside Node.
         run: node deploy/scripts/sp35-free-ci-dispatched-build.mjs
+  private-paid-ai:
+    # Same existing workflow_dispatch input: ONLY an encrypted ai_runner_v1_
+    # ticket. The original developer prompt/code/API Key are never GitHub
+    # workflow inputs, outputs, artifacts or logs. Exactly one provider POST.
+    if: github.repository == 'NFF98/appf2-build' && github.event_name == 'workflow_dispatch' && startsWith(inputs.ticket, 'ai_runner_v1_') && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: OIDC private GPT-6 request → ONE paid model POST → immutable PostgreSQL result
+        env:
+          APPF2_RUNNER_AI_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY || secrets.APPF2_MODEL_API_KEY || secrets.OPENAI_API_KEY }}
+        run: node deploy/scripts/sp35-paid-ai-github-runner.mjs
   staging:
     if: inputs.ticket == '' && github.repository == 'NFF98/appf2-build' && github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/product/sprint-3.5-real-worker-routing-20261026' || github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026')
     runs-on: ubuntu-latest
