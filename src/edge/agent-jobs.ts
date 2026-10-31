@@ -6,6 +6,8 @@
 import {verifyMutationProof} from "./create-proof.js";
 import {routeAgentReadiness} from "./agent-readiness.js";
 import {routeFreeCiSource} from "./free-ci-source.js";
+import {routeFreeAiRunnerSource,routeFreeAiRunnerResult}
+ from "./free-ai-runner.js";
 import {routeFreeCiResult,readFreeCiSmoke} from "./free-ci-result.js";
 import {routePrivateFreeCiPreview,FREE_CI_OWNER_PREVIEW,
  validFreeCiOwnerPreviewInput,readSignedFreeCiBuiltPreview} from "./free-ci-preview.js";
@@ -168,6 +170,10 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
  const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname);
+ const paidRunnerSource=await routeFreeAiRunnerSource(request,url,env,nowMs);
+ if(paidRunnerSource!==undefined)return paidRunnerSource;
+ const paidRunnerResult=await routeFreeAiRunnerResult(request,url,env,nowMs);
+ if(paidRunnerResult!==undefined)return paidRunnerResult;
  const privateSource=await routeFreeCiSource(request,url,env,nowMs);
  if(privateSource!==undefined)return privateSource;
  const privateResult=await routeFreeCiResult(request,url,env,nowMs);
