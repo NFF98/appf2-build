@@ -6,6 +6,8 @@
 import {WorkerPostgresExecutor} from "../platform/blueprint/worker-postgres-executor.js";
 import {recoverAgentJob} from "../platform/agent/durable-agent-service.js";
 import {openFreeCiTicket} from "../platform/agent/free-ci-ticket.js";
+import {canonicalArtifactJson,sha256CodeBytes}
+ from "../platform/blueprint/code-artifact-v2.js";
 import {verifyLiveFreeCiOidc} from "./free-ci-oidc.js";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 export const FREE_CI_SOURCE_ROUTE="/api/v1/internal/free-ci/source";
@@ -43,7 +45,18 @@ export async function routeFreeCiSource(request:Request,url:URL,
    return reject();
   if(saved.project.files.length>64||saved.project.files.reduce(
    (sum,f)=>sum+f.bytes,0)>1024*1024)return reject();
+  const original=(await db.query<{original_plan:unknown}>(
+   "SELECT original_plan FROM public.appf2_agent_qa_plan "+
+   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid LIMIT 1",
+   [ticket.job_id,ticket.owner])).rows[0]?.original_plan??null;
+  const canonical=original===null?null:canonicalArtifactJson(original);
+  if(canonical!==null&&(canonical.length>24000||
+   !Array.isArray((original as {criteria?:unknown}).criteria)||
+   (original as {criteria:unknown[]}).criteria.length>20))return reject();
+  const qa_plan_hash=canonical===null?null:await sha256CodeBytes(
+   new TextEncoder().encode("APPF2_FREE_CI_FROZEN_PLAN_V1\u0000"+canonical));
   return new Response(JSON.stringify({data:{job_id:ticket.job_id,
-   project:saved.project}}),{status:200,headers:HEADERS});
+   project:saved.project,original_plan:original,qa_plan_hash}}),
+   {status:200,headers:HEADERS});
  }finally{await db.close();}
 }

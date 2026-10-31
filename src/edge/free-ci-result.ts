@@ -2,6 +2,9 @@
  * Never an original requirement QA PASS, a publication or a share grant.
  */
 import {openFreeCiTicket} from "../platform/agent/free-ci-ticket.js";
+import {canonicalArtifactJson,sha256CodeBytes}
+ from "../platform/blueprint/code-artifact-v2.js";
+import type {QaPlan} from "../platform/qa/requirement-contract.js";
 import {verifiedLiveFreeCiOidcRunId} from "./free-ci-oidc.js";
 import {WorkerPostgresExecutor} from "../platform/blueprint/worker-postgres-executor.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
@@ -16,13 +19,43 @@ export type FreeCiSmoke={
  readonly version:"APPF2_FREE_CI_SMOKE_V1";
  readonly project_hash:string;readonly artifact_hash:string;
  readonly checks:{readonly locked_build:true;readonly chromium_render:true};
+ readonly qa_plan_hash?:string;readonly qa_checks?:readonly FreeCiQaCheck[];
 };
+export type FreeCiQaCheck={readonly criterion_id:string;
+ readonly verdict:"PASS"|"FAIL"|"UNTESTED";readonly evidence_hash:string|null};
+function validQaChecks(raw:unknown):raw is readonly FreeCiQaCheck[]{
+ if(!Array.isArray(raw)||raw.length<1||raw.length>20)return false;
+ return raw.every(x=>exact(x,["criterion_id","verdict","evidence_hash"])&&
+  typeof x.criterion_id==="string"&&/^[a-z][a-z0-9_]{0,39}$/u.test(x.criterion_id)&&
+  ["PASS","FAIL","UNTESTED"].includes(String(x.verdict))&&
+  (x.verdict==="PASS"?typeof x.evidence_hash==="string"&&
+   SHA.test(x.evidence_hash):x.evidence_hash===null));
+}
+export async function frozenFreeCiPlanHash(plan:QaPlan):Promise<string>{
+ return sha256CodeBytes(new TextEncoder().encode(
+  "APPF2_FREE_CI_FROZEN_PLAN_V1\u0000"+canonicalArtifactJson(plan)));
+}
+/** Only the immutable pre-coding QA plan can bind GitHub OIDC observations. */
+export async function verifiedFreeCiChecks(result:FreeCiSmoke,plan:QaPlan|null){
+ if(!plan)return result.qa_plan_hash===undefined&&result.qa_checks===undefined;
+ if(!result.qa_checks||result.qa_plan_hash!==await frozenFreeCiPlanHash(plan)||
+  result.qa_checks.length!==plan.criteria.length)return false;
+ return plan.criteria.every((criterion,i)=>{
+  const r=result.qa_checks?.[i];
+  return r?.criterion_id===criterion.id&&(criterion.automatable||r.verdict!=="PASS");
+ });
+}
 function exact(x:unknown,names:readonly string[]):x is Record<string,unknown>{
  return typeof x==="object"&&x!==null&&!Array.isArray(x)&&
   Object.keys(x).sort().join(",")===names.slice().sort().join(",");
 }
 export function validFreeCiSmoke(value:unknown):value is FreeCiSmoke{
- if(!exact(value,["version","project_hash","artifact_hash","checks"])||
+ const plain=exact(value,["version","project_hash","artifact_hash","checks"]);
+ const withQa=exact(value,["version","project_hash","artifact_hash","checks",
+  "qa_plan_hash","qa_checks"]);
+ if((!plain&&!withQa)||(withQa&&
+  (typeof value.qa_plan_hash!=="string"||!SHA.test(value.qa_plan_hash)||
+   !validQaChecks(value.qa_checks)))||
   value.version!=="APPF2_FREE_CI_SMOKE_V1"||
   typeof value.project_hash!=="string"||!SHA.test(value.project_hash)||
   typeof value.artifact_hash!=="string"||!SHA.test(value.artifact_hash)||
@@ -31,13 +64,17 @@ export function validFreeCiSmoke(value:unknown):value is FreeCiSmoke{
 }
 export type FreeCiScope={readonly jobId:string;readonly owner:string;
  readonly projectHash:string;readonly runId:string};
-type SavedReceipt={readonly run_id:string;readonly built_artifact_hash:string};
+type SavedReceipt={readonly run_id:string;readonly built_artifact_hash:string;
+ readonly receipt_json?:unknown};
 /** Atomic current job/hash fence and immutable first receipt. */
 export async function persistFreeCiSmoke(db:AgentJobExecutor,scope:FreeCiScope,
- result:FreeCiSmoke):Promise<"RECORDED"|"REPLAYED">{
+ result:FreeCiSmoke,plan:QaPlan|null=null):Promise<"RECORDED"|"REPLAYED">{
  if(!validFreeCiSmoke(result)||result.project_hash!==scope.projectHash||
-  !/^[0-9]{6,20}$/u.test(scope.runId))throw Error("FREE_CI_RECEIPT_INVALID");
+  !/^[0-9]{6,20}$/u.test(scope.runId)||
+  !await verifiedFreeCiChecks(result,plan))throw Error("FREE_CI_RECEIPT_INVALID");
  const payload=JSON.stringify({version:result.version,checks:result.checks,
+  ...(result.qa_checks?{qa_plan_hash:result.qa_plan_hash,
+   qa_checks:result.qa_checks}:{}),
   original_requirements_qa:false,app_published:false});
  const inserted=await db.query<{job_id:string}>(`INSERT INTO public.appf2_agent_free_ci_receipt
  (job_id,owner_anonymous_id,project_hash,run_id,built_artifact_hash,receipt_json)
@@ -50,22 +87,30 @@ export async function persistFreeCiSmoke(db:AgentJobExecutor,scope:FreeCiScope,
   result.artifact_hash,payload]);
  if(inserted.rows[0]?.job_id===scope.jobId)return "RECORDED";
  const rows=await db.query<SavedReceipt>(
-  "SELECT run_id,built_artifact_hash FROM public.appf2_agent_free_ci_receipt "+
+  "SELECT run_id,built_artifact_hash,receipt_json FROM public.appf2_agent_free_ci_receipt "+
   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid AND project_hash=$3::text",
   [scope.jobId,scope.owner,scope.projectHash]);
  if(rows.rows[0]?.run_id===scope.runId&&
-  rows.rows[0]?.built_artifact_hash===result.artifact_hash)return "REPLAYED";
+  rows.rows[0]?.built_artifact_hash===result.artifact_hash&&
+  rows.rows[0]?.receipt_json!==undefined&&
+  canonicalArtifactJson(rows.rows[0].receipt_json)===
+   canonicalArtifactJson(JSON.parse(payload)))return "REPLAYED";
  throw Error("FREE_CI_SOURCE_STALE_OR_RESULT_CONFLICT");
 }
 export async function readFreeCiSmoke(db:AgentJobExecutor,jobId:string,
  owner:string,projectHash:string){
  const found=await db.query<SavedReceipt>(
-  "SELECT run_id,built_artifact_hash FROM public.appf2_agent_free_ci_receipt "+
+  "SELECT run_id,built_artifact_hash,receipt_json FROM public.appf2_agent_free_ci_receipt "+
   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid AND project_hash=$3::text",
   [jobId,owner,projectHash]);
  const row=found.rows[0];
+ const data=typeof row?.receipt_json==="object"&&row.receipt_json!==null?
+  row.receipt_json as {qa_plan_hash?:unknown;qa_checks?:unknown}:null;
+ const qa=data&&typeof data.qa_plan_hash==="string"&&
+  SHA.test(data.qa_plan_hash)&&validQaChecks(data.qa_checks)?
+   {qa_plan_hash:data.qa_plan_hash,qa_checks:data.qa_checks}:null;
  return row?{status:"BUILD_BROWSER_SMOKE" as const,run_id:row.run_id,
-  artifact_hash:row.built_artifact_hash,
+  artifact_hash:row.built_artifact_hash,...(qa??{}),
   original_requirements_qa:false as const,app_published:false as const}:null;
 }
 /** OIDC identity + AES source ticket authenticate before owner-scoped DB write. */
@@ -75,11 +120,11 @@ export async function routeFreeCiResult(request:Request,url:URL,
  if(url.pathname!==FREE_CI_RESULT_ROUTE)return undefined;
  if(env.APPF2_AGENT_FREE_ONLY!=="1"||request.method!=="POST"||url.search||
   request.headers.get("Content-Type")?.split(";")[0]!=="application/json"||
-  Number(request.headers.get("Content-Length")??0)>2000)return denied();
+  Number(request.headers.get("Content-Length")??0)>10000)return denied();
  const bearer=request.headers.get("Authorization")??"";
  if(!bearer.startsWith("Bearer ")||bearer.length>12020)return denied();
  const raw=await request.text();
- if(raw.length>2000)return denied();
+ if(raw.length>10000)return denied();
  let parsed:unknown;
  try{parsed=JSON.parse(raw);}catch{return denied();}
  if(!exact(parsed,["ticket","result"])||typeof parsed.ticket!=="string"||
@@ -92,8 +137,12 @@ export async function routeFreeCiResult(request:Request,url:URL,
  const db=new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,
   {anonymousId:ticket.owner,intentId:null});
  try{
+  const frozen=(await db.query<{original_plan:QaPlan}>(
+   "SELECT original_plan FROM public.appf2_agent_qa_plan "+
+   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid LIMIT 1",
+   [ticket.job_id,ticket.owner])).rows[0]?.original_plan??null;
   const status=await persistFreeCiSmoke(db,{jobId:ticket.job_id,
-   owner:ticket.owner,projectHash:ticket.project_hash,runId},parsed.result);
+   owner:ticket.owner,projectHash:ticket.project_hash,runId},parsed.result,frozen);
   return new Response(JSON.stringify({data:{status,job_id:ticket.job_id,
    project_hash:ticket.project_hash,app_published:false,
    original_requirements_qa:false}}),{status:200,headers:HEADERS});
