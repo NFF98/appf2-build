@@ -2,7 +2,7 @@ import {describe,it,expect,afterEach,vi} from "vitest";
 import {mayResumeSavedModel,savedBrowserQaAttemptState,savedQaObservedChecks}
  from "../../src/edge/agent-progress.js";
 import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget,
- paidAgentReconciliationRequired}
+ paidAgentReconciliationRequired,provenPreviewBuildAndTest}
  from "../../src/app/code-builder/agent-browser-client.js";
 const SLOT="appf2.agent.candidate.job.v1";
 const target={jobId:"ba45436c-c3f1-44f1-adc6-bdd0fb1592e7",
@@ -200,5 +200,29 @@ describe("Sprint 3.5 saved Browser QA checks are real read-only progress",()=>{
   expect(savedQaObservedChecks({...good,receipt_json:{
    ...good.receipt_json,checks:[{criterion_id:"<img>",
     category:"BROWSER",verdict:"FAIL",evidence_hash:null}]}})).toEqual([]);
+ });
+});
+
+describe("Sprint 3.5 actual saved build may precede read-only tools",()=>{
+ const build={state:"ALREADY_APPLIED",tool:"run_build",call_id:"call_build_1234"};
+ it("selects verified build before an intervening inspect and latest test",()=>{
+  const ids=["call_build_1234","call_inspect_9999","call_test_1234"];
+  expect(provenPreviewBuildAndTest(ids,[build,{state:"ALREADY_APPLIED",
+   tool:"inspect_project",call_id:"call_inspect_9999"}]))
+   .toEqual({build:"call_build_1234",test:"call_test_1234"});
+ });
+ it("selects the most recent proven build, not an obsolete build",()=>{
+  expect(provenPreviewBuildAndTest([
+   "call_build_old","call_build_new","call_read_1234","call_test_1234"],[
+   {...build,call_id:"call_build_old"},
+   {...build,call_id:"call_build_new"}]))
+   .toEqual({build:"call_build_new",test:"call_test_1234"});
+ });
+ it("supports ordinary adjacent build/test and refuses missing/out-of-order proof",()=>{
+  expect(provenPreviewBuildAndTest(["call_build_1234","call_test_1234"],[]))
+   .toEqual({build:"call_build_1234",test:"call_test_1234"});
+  expect(provenPreviewBuildAndTest(["call_test_1234"],[build])).toBeNull();
+  expect(provenPreviewBuildAndTest(["call_test_1234","call_build_1234"],[
+   build])).toEqual({build:"call_test_1234",test:"call_build_1234"});
  });
 });
