@@ -46,7 +46,8 @@ class Database {
  modelCalls=new Map<string,ModelCallRow>();
  sandboxCalls=new Map<string,{status:string;receipt_json:unknown|null;job_id:string;owner_anonymous_id:string;call_id:string;model_call_key:string;job_revision:number;checkpoint_hash:string;project_hash:string;call_hash:string;max_charge_cents:number}>();
  identities=new Map<string,{thumb:string;key:string}>();
- qaAttempts=new Map<string,{status:string;receipt_json:unknown|null;job_revision:number}>();
+ qaAttempts=new Map<string,{status:string;receipt_json:unknown|null;job_revision:number;
+  build_call_id:string;test_call_id:string}>();
  frozenQa=new Map<string,{original_plan:unknown}>();
  context:WorkerRequestDbContext|null=null;
  readonly db={
@@ -77,7 +78,8 @@ class Database {
     const id=String(args[0])+":"+String(args[2]);
     if(this.qaAttempts.has(id))return {rows:[]};
     this.qaAttempts.set(id,{status:"IN_FLIGHT",receipt_json:null,
-    job_revision:Number(args[3])});
+    job_revision:Number(args[3]),build_call_id:String(args[4]),
+    test_call_id:String(args[5])});
     return {rows:[{job_id:args[0]} as T]};
    }
    if(sql.startsWith("UPDATE public.appf2_agent_browser_qa_attempt")){
@@ -85,7 +87,8 @@ class Database {
     if(!row||row.status!=="IN_FLIGHT")return {rows:[]};
     const status=sql.includes("status='SUCCEEDED'")?"SUCCEEDED":"BLOCKED_UNCERTAIN";
     this.qaAttempts.set(id,{status,receipt_json:status==="SUCCEEDED"?
-     JSON.parse(String(args[3])) as unknown:null,job_revision:row.job_revision});
+     JSON.parse(String(args[3])) as unknown:null,job_revision:row.job_revision,
+     build_call_id:row.build_call_id,test_call_id:row.test_call_id});
     return {rows:[{job_id:args[0]} as T]};
    }
    if(sql.startsWith("SELECT project_hash,status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
@@ -97,6 +100,10 @@ class Database {
       status:row.status,receipt_json:row.receipt_json
      } as T));
     return {rows};
+   }
+   if(sql.startsWith("SELECT status,job_revision,build_call_id,test_call_id,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
+    const row=this.qaAttempts.get(String(args[0])+":"+String(args[2]));
+    return {rows:row?[row as T]:[]};
    }
    if(sql.startsWith("SELECT status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
     const row=this.qaAttempts.get(String(args[0])+":"+String(args[2]));
@@ -1814,6 +1821,23 @@ describe("Sprint 3.5 independent browser QA FAILED → durable REPAIRING → con
   },"qa_fail_run123456"),envQa);
   expect(qa.status).toBe(200);
   expect(await qa.json()).toMatchObject({data:{
+   status:"BROWSER_QA_FAILED_REPAIR_READY",revision:2,
+   job_state:"REPAIRING",ready_for_review:false,app_published:false
+  }});
+  expect(qaDispatches).toBe(1);
+  expect(db.jobs.get(JOB_ID)?.job_state).toBe("REPAIRING");
+  // Simulate a crash between saving Browser QA and committing the DB state.
+  // Reconcile the signed request using the exact journaled result only.
+  const savedRepairing=db.jobs.get(JOB_ID)!;
+  db.jobs.set(JOB_ID,{...savedRepairing,revision:1,job_state:"TESTING",
+   checkpoint:cp,checkpoint_hash:await checkpointHash(cp)});
+  const recovered=await worker(await signed(creator,path,{anonymous_id:OWNER,
+   job_id:JOB_ID,expected_revision:1,project_hash:initial.project_hash,
+   build_call_id:buildId,test_call_id:testId,
+   original_prompt:prompt,original_plan:plan,explicit_browser_qa_consent:true
+  },"qa_reconcile_saved123456"),envQa);
+  expect(recovered.status).toBe(200);
+  expect(await recovered.json()).toMatchObject({data:{
    status:"BROWSER_QA_FAILED_REPAIR_READY",revision:2,
    job_state:"REPAIRING",ready_for_review:false,app_published:false
   }});
