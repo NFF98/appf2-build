@@ -409,6 +409,14 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   }
   return await read(db,info.anonymous_id,ownerThumb,match?.[1]??"");
  }catch(e){
+  // A background response ID is already durably stored. The browser may
+  // query the SAME provider response by signed GET-only continuation; a new
+  // paid model POST is prohibited for this Job+phase.
+  if(freeAiMatch&&e instanceof Error&&(
+   e.message==="SP35_BACKGROUND_MODEL_PENDING_NO_POST"||
+   e.message==="SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST"))
+   return json(202,{data:{status:"AI_BACKGROUND_PENDING",
+    app_published:false}});
   // Creator PoP already verified. Return ONLY one fixed failure category;
   // never reveal OpenAI response bodies, internal SQL, credentials or tokens.
   // A paid phase with uncertain outcome is NEVER safe to auto-retry.
