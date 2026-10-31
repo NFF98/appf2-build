@@ -202,6 +202,16 @@
 - **誠實計分**：四項基礎通道：部署 PASS；免費 CI 派發 PASS（固定輸入）；私有 QA receipt PASS（固定輸入）；私人重開 PASS。完整 AI 自主端到端單一鏈 **0/1（NOT_VERIFIED）**，不是「所有四項工程 0/4」。只在真 AI 生成、完整 QA、正式分享皆通過**同一真 Job**後改為 PASS。
 - **硬限制不變**：僅 PR #419，不合併／Production，不新增費用或付費 Cloudflare Containers/Browser Run，不編造 AI 成果；若要真 AI 實測，須有明確的既有零新增費用供應或 Human 新授權，不能自行呼叫付費 API。
 
+## F.12 2026-10-31 真付費 AI → 免費 Docker → Chromium QA → 私人 App 首次 E2E PASS
+
+**新實測成功：同一個原始 Job，真正由 OpenAI 生成程式，不是 fixture。**
+- [付費模型 + 原建立者 Job + E2E GitHub run #41188277779 — SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/41188277779)：Runner 日誌顯示 `SP35 REAL PAID AI: OpenAI Responses status=completed, model=gpt-4.1-mini, output_tokens=376`，真正生成 `src/main.ts`、`src/style.css`，P-256 owner 寫入 PostgreSQL revision2，Worker 正式 `workflow_dispatch` HTTP204。
+- [真實 GitHub-hosted Runner #41188359539 — SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/41188359539)：GitHub OIDC 身分驗證、原 Job source hash→network-denied Docker Build→Chromium 真 click。凍結原需求驗收 `increment_button` 為 `PASS`，含 SHA 證據；PG 同 Job 收據 run_id `41188359539`，私人 App bundle 保存。原作者用 P-256 重開同一份字元內容兩次，無重新生成。
+- 同輪一個先前 **實際付費模型請求**因輸出格式不符合多檔案 schema 受到拒絕，之後改用官方 OpenAI Responses `text.format=json_schema` strict 成功。第一個測試語法錯誤發生在模型呼叫前。這次共見證兩次已完成的模型回應，實際帳單金額需查看 OpenAI billing，**不要宣稱精確費用或零費用**。
+- **這個 PASS 的精確範圍**：自然語言 → 真模型生成兩檔案 → P-256 原 Job 保存 → GitHub Actions/OIDC → 免費 Docker/Chromium 按鈕「加一」實測 → immutable PG QA 收據 → 私人 App bundle 零 AI 重開。是一個小型互動計分 App 的**真 AI→私人可操作 App 端到端 1/1 PASS**。
+- **不是五核產品全面 PASS**：本次模型由受控 GitHub workflow 呼叫，再用建立者簽章匯入 Job；正式網站上輸入任意需求後全自動呼叫模型、持續自行修復、後端/資料庫生成、Blueprint v2 F02 admission／公開卡片、他人分享 **均未在同一鏈驗證**。現有 `APPF2_AGENT_FREE_ONLY=1` 的網站正式付費 Agent 按鈕仍被安全鎖住，不應說已解鎖。
+- **成本及授權保護**：本次限單個 gpt-4.1-mini Responses 請求，每次最多 3200 output tokens，無額外 Cloudflare Containers／Browser Run 訂閱，未合併或部署 Production。完成後 workflow 另加嚴格 commit-message opt-in marker；一般 Push 無法再觸發付費測試，避免重複扣款。原本工程安全／CodeQL Gate FAIL 與本次專項模型 E2E SUCCESS 應分開呈報。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
