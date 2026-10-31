@@ -18,7 +18,8 @@ const input={anonymous_id:owner,expected_revision:5,project_hash:hash,
  build_call_id:"call_build_1234",test_call_id:"call_test_1234",
  path:"index.html",explicit_container_preview_consent:true as const};
 function proof(id:string){
- return {call_id:id,project_hash:hash,status:"SUCCEEDED",receipt_json:{
+ return {call_id:id,project_hash:hash,job_revision:id===input.build_call_id?3:4,
+  status:"SUCCEEDED",receipt_json:{
   call_id:id,project_hash:hash,exit_code:0,timed_out:false,
   runner_attestation:"APPF2_ISOLATED_CLOUDFLARE_CONTAINER_V1"}};
 }
@@ -92,6 +93,13 @@ describe("Sprint 3.5 private executable App preview gate",()=>{
  it("never contacts the broker when build/test receipt is not proven",async()=>{
   const f=fixture();
   f.rows[1]!.status="BLOCKED_UNCERTAIN";
+  await expect(readSignedPreviewAsset(input,deps(f)))
+   .rejects.toThrow("PREVIEW_SUCCESSFUL_BUILD_TEST_NOT_PROVEN");
+  expect(f.fetchCount).toBe(0);
+ });
+ it("rejects a build receipt from a future revision relative to the latest test",async()=>{
+  const f=fixture();
+  f.rows[0]!.job_revision=6;
   await expect(readSignedPreviewAsset(input,deps(f)))
    .rejects.toThrow("PREVIEW_SUCCESSFUL_BUILD_TEST_NOT_PROVEN");
   expect(f.fetchCount).toBe(0);
