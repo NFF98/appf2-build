@@ -35,3 +35,5 @@ jobs:
 # GPT-6.1 Sol once-only customer website E2E, authorized Sprint 3.5 Staging recheck after previous pre-provider SQL rejection. Do not rerun automatically.
 
 # 2026-10-31 scoped one-shot verification AFTER owner-only model journal INSERT RLS fix (9368faa). One Staging user click, no automatic retry, no production release.
+
+# GPT-6.1 Sol asynchronous background + durable response ID + GET-only resume live Staging one-shot E2E. No automatic repeat, no paid Containers.
