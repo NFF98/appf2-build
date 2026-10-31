@@ -7,6 +7,7 @@ import {verifyMutationProof} from "./create-proof.js";
 import {routeAgentReadiness} from "./agent-readiness.js";
 import {routeFreeCiSource} from "./free-ci-source.js";
 import {routeFreeCiResult,readFreeCiSmoke} from "./free-ci-result.js";
+import {importOwnerFreeSource,validFreeImportInput} from "./agent-import-files.js";
 import {dispatchFreeCiJob,validFreeCiDispatchInput} from "./free-ci-dispatch.js";
 import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
 import {applyStoredModelEdit,validApplyModelEditBody} from "./agent-model-apply.js";
@@ -51,6 +52,7 @@ const QA_REPAIR_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-repair$/u;
 const QA_PLAN_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-plan$/u;
 const PREVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/preview-asset$/u;
 const FREE_CI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ci-dispatch$/u;
+const FREE_IMPORT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-files$/u;
 const QA_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-generate$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -157,7 +159,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname);
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname);
  const privateSource=await routeFreeCiSource(request,url,env,nowMs);
  if(privateSource!==undefined)return privateSource;
  const privateResult=await routeFreeCiResult(request,url,env,nowMs);
@@ -168,7 +170,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(env.APPF2_AGENT_FREE_ONLY==="1"&&
   (modelMatch||continueMatch||qaRepairMatch||qaGenerateMatch||
    sandboxMatch||autoMatch||seqMatch||qaRunMatch))return denied();
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch)return undefined;
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -176,7 +178,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const key=request.headers.get("Idempotency-Key");
  if(!key||!KEY.test(key))return json(400,{error:"AGENT_JOB_KEY_INVALID"});
  // Bound request size before any database side effect.
- const maxBytes=qaMatch||qaRunMatch||qaRepairMatch||qaPlanMatch?24000:1400;
+ const maxBytes=freeImportMatch?200000:qaMatch||qaRunMatch||qaRepairMatch||qaPlanMatch?24000:1400;
  if(Number(request.headers.get("Content-Length")??0)>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
  const bytes=new Uint8Array(await request.arrayBuffer());
  if(bytes.byteLength>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
@@ -195,7 +197,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(qaMatch&&(env.APPF2_AGENT_QA_REVIEW_ENABLED!=="1"||
   !env.APPF2_AGENT_QA_VERIFIER_SECRET))return denied();
  if((autoMatch||seqMatch)&&env.APPF2_AGENT_AUTOSTEP_ENABLED!=="1")return denied();
- const info=freeCiMatch?(validFreeCiDispatchInput(parsed)?parsed:null):
+ const info=freeImportMatch?(validFreeImportInput(parsed)?parsed:null):
+  freeCiMatch?(validFreeCiDispatchInput(parsed)?parsed:null):
   qaGenerateMatch?(validGenerateQaBody(parsed)?parsed:null):
   qaPlanMatch?(validFreezeQaPlanBody(parsed)?parsed:null):
   qaRepairMatch?(validQaRepairBody(parsed)?parsed:null):
@@ -218,6 +221,13 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,
    {anonymousId:info.anonymous_id,intentId:null});
  try{
+  if(freeImportMatch){
+   if(env.APPF2_AGENT_FREE_ONLY!=="1"||!validFreeImportInput(info))
+    return denied();
+   const imported=await importOwnerFreeSource(info,{db,
+    jobId:freeImportMatch[1]??"",ownerThumb});
+   return json(200,{data:imported});
+  }
   if(freeCiMatch){
    if(env.APPF2_AGENT_FREE_ONLY!=="1"||!validFreeCiDispatchInput(info))
     return denied();
