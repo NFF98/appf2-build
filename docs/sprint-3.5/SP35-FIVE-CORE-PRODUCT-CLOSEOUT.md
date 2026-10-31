@@ -250,6 +250,10 @@
 - **Staging 部署與權限檢查**：[Free staging deploy #41207138781](https://github.com/NFF98/appf2-build/actions/runs/41207138781) 的 **GPT-6 API 模型 GET**、**既有 Cloudflare Worker/SPA 上傳**、Staging Worker 同源 API／安全拒絕、P-256 PostgreSQL Job CREATE/Read 步驟已 PASS，最終免費 Docker/Chromium 同 Job 收據正在跑；整個 workflow 必須等結算才可寫 PASS。無額外付費 Cloudflare Containers/Browser Run。
 - **真 GPT-6 網站 E2E 再驗**：[單次核准 Runner #41207255564](https://github.com/NFF98/appf2-build/actions/runs/41207255564) 已啟動，使用同一 Staging、單一網站觸發與原 `44 cents` Job 預算防護；**此節寫入時仍未看到新 GPT-6 QA/CODE/Runner／分享全成功**，待 GitHub Workflow、模型 Journal、原 QA 收據及新公開卡片實測再確認。不得推定實際 provider invoice 等於 reservation cents。
 
+- **第四次真網站 GPT-6 E2E — FAIL_CLOSED（前段傳輸已精確定位）**：[GitHub run #41207255564](https://github.com/NFF98/appf2-build/actions/runs/41207255564) 真 Chromium 在 Staging 新建 44 美分上限 Job，`/free-ai-stage` 回安全錯誤碼 `SP35_PAID_MODEL_TRANSPORT_OR_TIMEOUT_UNCERTAIN`。Supabase 此 Job `sp35_free_ai_qa_v1` 已登記 `gpt-6.1-sol` 但終態 `BLOCKED_UNCERTAIN`，`response_saved=false`、`background_id_saved=false`、revision0。**既無可重查 Response ID，不能安全再送，可能產生帳單；不能將此次稱 GPT-6 QA PASS。** 此結果也證明 F.14 背景回應保存已部署但尚未解決**第一次 Provider HTTP** 路徑。
+- **首個無費用、可重現網路故障**：Build `3b9d2708` 在原 `agent-jobs.ts` 增加建立者 P-256 簽章／原 Job 所有權確認的 `free-ai-probe`；固定 `GET https://api.openai.com/v1/models/gpt-6.1-sol`，不預算保留、不執行模型，回傳固定安全網路分類。Build `20f4d210` 在原 `sp35-live-agent-db-smoke.mjs` 於 signed CREATE/Read 後真正呼叫此 Probe。**Staging run [#41207652938](https://github.com/NFF98/appf2-build/actions/runs/41207652938) Worker/SPA 成功部署，GitHub-hosted Runner 的相同 GPT-6 模型 GET 亦 PASS，但真正 Cloudflare Worker 內 GET 結果 `WORKER_MODEL_GET_NETWORK_ERROR`，使產品 egress Probe 步驟 FAIL。** 故已確認是 **Worker→OpenAI 出站網路/API 呼叫** 阻斷，而不是 GitHub Runner→OpenAI API Key、PostgreSQL、Docker 的問題。已阻止再用付費模型來查這個故障。
+- **受控下一個零付費網路修復**：依 [Cloudflare global fetch public routing 文件](https://developers.cloudflare.com/workers/configuration/compatibility-flags/)，Build `8e0592cb` 僅在 Staging Wrangler config 加入 `global_fetch_strictly_public`，將固定允許的公共 API 子請求走公開路由，未變更 Production；[免費 Staging run #41207932058](https://github.com/NFF98/appf2-build/actions/runs/41207932058) 已啟動重新部署／Creator-signed OpenAI GET Probe，**此條寫入時仍在驗證，絕不預判修復 PASS**。若仍 FAIL，應改為既有 GitHub Runner 端執行 Provider 模型並以原 Job/OIDC 可信回寫，不能再對 Cloudflare Worker 做盲目付費 POST。
+
 **五核狀態／分母不變**：先前 3/5（60%）指基礎通道之部分驗證，不等於 C1–C5 整個「任何自然語言→生成 full-stack→DB CRUD→失敗修復→重新 QA→v2 admission→公開分享」的完整 Gate PASS。嚴格 C1–C5 full-product 全鏈驗收仍 **0/5 完整 PASS**；舊可信基礎／真 Staging 舊卡片 SUCCESS 繼續保全。C1 真 generated backend＋DB CRUD、C4 自動修復重測、C5 跨失敗改策略、v2 full admission 仍要另有真證據。
 
 ## G. 執行交接（只寫已證實事實）
@@ -259,7 +263,7 @@
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 已更新免費路線於 `a9651594baf79753a05b1f608466cbc93a316c51`；Build PR #419 本檔 |
 | D0 | **DONE — 真 Staging 第一雲端阻斷已定位** | F.2 / run #41167547686：Health UP，Agent Readiness HTTP 404，private Sandbox / Browser QA Workers NOT_LISTED，Cloudflare plan 403 UNKNOWN；不重做已成功的原程式 |
 | D1 | **PARTIAL — 新 Agent Staging + 保密 Job→免費 Runner→PG 收據已實際 PASS** | F.11–F.13 / #41196371312、#41196844121；舊 `FREE_CI_NOT_CONNECTED`／未部署說法已過期；仍須 GPT-6 真站鏈驗證 |
-| D2 | **IN_PROGRESS — GPT-6 background response durable GET-only recovery 已開發／Staging 已部署，產品完整閉環尚缺真測** | F.14 / Build `969ff511`、`37d491ba`、`43e1adf9`，Supabase 新回應 ID 內部表 RLS 驗證 PASS；前次 BLOCKED_UNCERTAIN 不重扣 |
-| D3 | **RUNNING / NOT_PASSED** | F.14 / [#41207255564](https://github.com/NFF98/appf2-build/actions/runs/41207255564) 真實 GPT-6 網站 E2E 已啟動未結算；C1–C5 全產品 Gate **0/5 full PASS**，不能以免費 fixture／模型 GET 200 冒稱 100% |
+| D2 | **IN_PROGRESS — GPT-6 背景續查機制已部署，但首個 Worker→OpenAI fetch 已證實失敗** | F.14 / #41207255564 模型 QA BLOCKED_UNCERTAIN，#41207652938 真 Worker 無費用 GET = `WORKER_MODEL_GET_NETWORK_ERROR`；只在 Staging 測公網路由相容旗標，否則改走既有免費 GitHub Runner |
+| D3 | **FAIL_CLOSED / NOT_PASSED** | F.14 / GPT-6 真網站 [#41207255564](https://github.com/NFF98/appf2-build/actions/runs/41207255564) HTTP503，無回應 ID；最新 [Worker 免費 egress test #41207932058](https://github.com/NFF98/appf2-build/actions/runs/41207932058) 尚在跑。C1–C5 完整產品 Gate **0/5 PASS**，歷史已成功的基礎鏈照實保留 |
 
 **跨對話唯一口令：**「繼續 `SP35-FIVE-CORE-PRODUCT-CLOSEOUT` 的下一個未完成 D 關卡；先讀此檔 F/G 節與 PR #419 HEAD，只修首個真實 BLOCK，每次結尾報 C1–C5 的產品狀態與證據。」
