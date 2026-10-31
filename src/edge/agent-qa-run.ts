@@ -92,7 +92,7 @@ type Dependencies={
  * Run or model transport is contacted, and CAS rejects concurrent changes.
  */
 async function finishSavedQa(current:NonNullable<Awaited<ReturnType<typeof recoverAgentJob>>>,
- input:BrowserQaRunInput,response:QaResponse,deps:Dependencies){
+ response:QaResponse,deps:Dependencies){
  if(!response.ready_for_review){
   const next={...current.job.checkpoint,state:"REPAIRING" as const,
    previous_checkpoint_id:current.job.checkpoint_hash};
@@ -188,7 +188,7 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
    input.build_call_id,input.test_call_id]);
  if(inserted.rows.length!==1){
   const recorded=await recoverSavedQaResult(input,deps);
-  return finishSavedQa(current,input,recorded,deps);
+  return finishSavedQa(current,recorded,deps);
  }
  const {anonymous_id,expected_revision,...task}=input;
  void anonymous_id;void expected_revision;
@@ -212,5 +212,5 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
    [deps.jobId,deps.owner,input.project_hash]).catch(()=>undefined);
   throw Error("QA_UNKNOWN_RESULT_NO_RETRY");
  }
- return finishSavedQa(current,input,response,deps);
+ return finishSavedQa(current,response,deps);
 }
