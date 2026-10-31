@@ -2,7 +2,7 @@ import {describe,it,expect,afterEach,vi} from "vitest";
 import {mayResumeSavedModel,savedBrowserQaAttemptState,savedQaObservedChecks}
  from "../../src/edge/agent-progress.js";
 import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget,
- paidAgentReconciliationRequired,provenPreviewBuildAndTest}
+ paidAgentReconciliationRequired,provenPreviewBuildAndTest,savedPreviewPair}
  from "../../src/app/code-builder/agent-browser-client.js";
 const SLOT="appf2.agent.candidate.job.v1";
 const target={jobId:"ba45436c-c3f1-44f1-adc6-bdd0fb1592e7",
@@ -230,5 +230,27 @@ describe("Sprint 3.5 actual saved build may precede read-only tools",()=>{
     call_id:"call_inspect_9999"},
    {state:"ALREADY_APPLIED",tool:"run_build",
     call_id:"call_test_1234"}])).toBeNull();
+ });
+});
+
+describe("Sprint 3.5 preview uses authoritative full-checkpoint server proof",()=>{
+ const ids=["call_build_old","call_inspect_1","call_test_new"];
+ const progress={revision:3,remaining_steps:2,can_resume:false,
+  resume_model_call_key:null,next_action:"VERIFY_INDEPENDENT_QA",
+  calls:[] as {model_call_key:string;state:string;tool:string|null;
+   requires_container_consent:boolean}[]};
+ it("uses signed server pair even when original build is absent from recent 8 calls",()=>{
+  expect(savedPreviewPair({...progress,proven_preview_pair:{
+   build_call_id:"call_build_old",test_call_id:"call_test_new"}},ids))
+   .toEqual({build:"call_build_old",test:"call_test_new"});
+ });
+ it("fails closed when authoritative server explicitly denies provenance",()=>{
+  expect(savedPreviewPair({...progress,proven_preview_pair:null},ids))
+   .toBeNull();
+ });
+ it("rejects forged server pair outside immutable checkpoint",()=>{
+  expect(savedPreviewPair({...progress,proven_preview_pair:{
+   build_call_id:"call_other",test_call_id:"call_test_new"}},ids))
+   .toBeNull();
  });
 });
