@@ -67,6 +67,7 @@ export type FreeCiScope={readonly jobId:string;readonly owner:string;
 type SavedReceipt={readonly run_id:string;readonly built_artifact_hash:string;
  readonly receipt_json?:unknown};
 /** Atomic current job/hash fence and immutable first receipt. */
+// eslint-disable-next-line complexity -- Job, OIDC and original frozen QA plan are independent security gates.
 export async function persistFreeCiSmoke(db:AgentJobExecutor,scope:FreeCiScope,
  result:FreeCiSmoke,plan:QaPlan|null=null):Promise<"RECORDED"|"REPLAYED">{
  if(!validFreeCiSmoke(result)||result.project_hash!==scope.projectHash||
