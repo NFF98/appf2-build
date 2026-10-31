@@ -17,7 +17,7 @@ const MAX_OUTPUT_TOKENS=3200;
 async function callRealOpenAi(){
  const system=[
   "You are an application coding agent. Return ONLY a valid JSON object, no markdown.",
-  "Shape: {\"files\":[{\"path\":\"src/main.ts\",\"content\":\"...\"},{\"path\":\"src/style.css\",\"content\":\"...\"}]}",
+  "Return JSON with two string fields: main_ts (complete src/main.ts), style_css (complete src/style.css)." ,
   "Implement ORIGINAL_USER_REQUEST in a production-quality usable DOM app, not a placeholder.",
   "Use only native browser APIs and existing Vite; no external dependencies/assets/network.",
   "The preexisting index.html has a #app element and imports src/main.ts.",
@@ -31,7 +31,11 @@ async function callRealOpenAi(){
   method:"POST",headers:{"Authorization":"Bearer "+key,
    "Content-Type":"application/json"},
   body:JSON.stringify({model:"gpt-4.1-mini",input:system,
-   max_output_tokens:MAX_OUTPUT_TOKENS,store:false}),
+   max_output_tokens:MAX_OUTPUT_TOKENS,store:false,
+   text:{format:{type:"json_schema",name:"appf2_vite_generated_files",
+    strict:true,schema:{type:"object",additionalProperties:false,
+     required:["main_ts","style_css"],properties:{
+      main_ts:{type:"string"},style_css:{type:"string"}}}}}}),
   signal:globalThis.AbortSignal.timeout(90000),redirect:"error"});
  const obj=await response.json().catch(()=>null);
  if(response.status!==200||obj?.status!=="completed")
@@ -42,10 +46,11 @@ async function callRealOpenAi(){
   .map(x=>x.text).join("");
  let payload;
  try{payload=JSON.parse(output);}catch{throw Error("SP35_REAL_AI_OUTPUT_NOT_JSON");}
- if(!payload||Object.keys(payload).sort().join(",")!=="files"||
-  !Array.isArray(payload.files)||payload.files.length!==2)
-  throw Error("SP35_REAL_AI_OUTPUT_INVALID_FILES");
- const files=payload.files;
+ if(!payload||Object.keys(payload).sort().join(",")!=="main_ts,style_css"||
+  typeof payload.main_ts!=="string"||typeof payload.style_css!=="string")
+  throw Error("SP35_REAL_AI_OUTPUT_SCHEMA_REJECTED");
+ const files=[{path:"src/main.ts",content:payload.main_ts},
+  {path:"src/style.css",content:payload.style_css}];
  const paths=new Set(files.map(x=>x?.path));
  if(paths.size!==2||!paths.has("src/main.ts")||!paths.has("src/style.css")||
   files.some(x=>Object.keys(x).sort().join(",")!=="content,path"||
