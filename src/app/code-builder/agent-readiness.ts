@@ -1,6 +1,7 @@
 /** Fail closed before creating a billable Agent Job when the live Worker
  * does not have every required service binding. No AI, DB or container calls.
  */
+// eslint-disable-next-line complexity -- Distinct free-CI, paid-model, service and malformed-response gates must fail closed.
 export async function requireAgentBuildReadiness():Promise<void>{
  let response:Response;
  try{response=await fetch("/api/v1/agent-readiness",
