@@ -97,7 +97,7 @@
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
 | --- | --- | --- |
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 更新於 `6ed57015d340b1863da5ecb5d586b28263b012d0`；Build PR #419 本檔 |
-| D0 | **PARTIAL — 已辨認未經真實 Staging 證實的新 Agent 部署／binding，並加上 GitHub GET-only 診斷** | 本檔 F.1；需讀新 readonly run 的 `SP35 STAGING LIVE HEALTH`、`SP35 WORKER`，再確認 Agent API；絕不把工具無法連線當作實際網站 DOWN |
+| D0 | **FIRST CLOUD BLOCK IDENTIFIED — REAL GET VERIFIED** | 本檔 F.2 / run #41166865747：Staging Health JSON UP，但所需 private Sandbox / Browser QA Worker **NOT_LISTED**；方案 403 UNKNOWN。下一步確認部署/權限/實際 Agent route，不再重做已成功的產品程式 |
 | D1 | **FOUNDATION CODE IMPLEMENTED；CLOUD E2E NOT_VERIFIED** | 沿用既有 Agent/Journal/Sandbox/QA；只補真實部署連線／必要錯誤；已 PASS 的 offline foundation 不再重做 |
 | D2 | **舊單檔卡片 STAGING PASS；新多檔案完整鏈 NOT_VERIFIED** | 沿用既有公開卡片／F05，接新 Agent QA→v2 admission→卡片；生成後端 DB Profile 尚缺 |
 | D3 | NOT_RUN | 五核產品 REAL E2E = **NOT_VERIFIED** |
