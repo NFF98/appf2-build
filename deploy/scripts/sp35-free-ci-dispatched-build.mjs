@@ -1,3 +1,4 @@
+/* eslint-disable max-depth -- Frozen independent QA cases require bounded nested fail-closed per-case execution. */
 /**
  * Triggered from a creator-P256 signed Worker dispatch. GitHub receives only
  * a 30-minute encrypted ticket; never source/prompt/DB credential. Runner
