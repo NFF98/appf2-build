@@ -48,6 +48,39 @@ const UNCERTAIN=`UPDATE public.appf2_agent_model_call
  SET status='BLOCKED_UNCERTAIN'
  WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid AND call_key=$3::text
  AND status='IN_FLIGHT' RETURNING call_key`;
+/** Recover exactly one already-created background response. All SQL queries run
+ * under the creator-bound app.anonymous_id + SET LOCAL ROLE appf2_worker.
+ * The response ID is not a bearer authority: GET still needs server API key.
+ */
+const BACKGROUND_GET=`SELECT response_id FROM public.appf2_agent_model_background_ref
+ WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid AND call_key=$3::text
+ LIMIT 1`;
+const BACKGROUND_INSERT=`INSERT INTO public.appf2_agent_model_background_ref(
+ job_id,owner_anonymous_id,call_key,response_id)
+ VALUES($1::uuid,$2::uuid,$3::text,$4::text)
+ ON CONFLICT (job_id,call_key) DO NOTHING RETURNING response_id`;
+export async function getModelBackgroundId(db:AgentJobExecutor,
+ jobId:string,owner:string,callKey:string):Promise<string|null>{
+ if(!KEY.test(callKey))throw Error("MODEL_BACKGROUND_KEY_INVALID");
+ const result=(await db.query<{response_id:string}>(BACKGROUND_GET,
+  [jobId,owner,callKey])).rows[0];
+ if(!result)return null;
+ if(!/^resp_[A-Za-z0-9_-]{6,160}$/u.test(result.response_id))
+  throw Error("MODEL_BACKGROUND_ID_INVALID");
+ return result.response_id;
+}
+export async function saveModelBackgroundId(db:AgentJobExecutor,row:ModelCallRow,
+ responseId:string):Promise<void>{
+ if(row.status!=="RESERVED"||
+  !/^resp_[A-Za-z0-9_-]{6,160}$/u.test(responseId))
+  throw Error("MODEL_BACKGROUND_RESERVATION_INVALID");
+ await db.query(BACKGROUND_INSERT,[row.job_id,row.owner_anonymous_id,
+  row.call_key,responseId]);
+ const saved=await getModelBackgroundId(db,row.job_id,
+  row.owner_anonymous_id,row.call_key);
+ if(saved!==responseId)throw Error("MODEL_BACKGROUND_REPLAY_MISMATCH");
+}
+
 export function validReservation(input:ModelReservation):boolean{
  return KEY.test(input.call_key)&&HASH.test(input.request_hash)&&
   (input.model==="gpt-6.1-sol"||input.model==="gpt-4.1-mini")&&
