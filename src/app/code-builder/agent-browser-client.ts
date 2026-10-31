@@ -60,7 +60,7 @@ type Progress={readonly revision:number;readonly remaining_steps:number;
  readonly qa_observed_checks?:readonly {criterion_id:string;
   verdict:"PASS"|"FAIL"|"UNTESTED";evidence_hash:string|null}[];
  readonly calls:readonly {model_call_key:string;state:string;
-  tool:string|null;requires_container_consent:boolean}[]};
+  tool:string|null;call_id?:string|null;requires_container_consent:boolean}[]};
 /** Progress exposes normalized MODEL_UNCERTAIN / MODEL_PENDING, not the
  * raw DB journal status BLOCKED_UNCERTAIN. Never start paid planning from an
  * unresolved prior call after a reload or an interrupted request.
@@ -70,6 +70,26 @@ export function paidAgentReconciliationRequired(progress:Pick<Progress,
  return progress.next_action==="AWAIT_MODEL_RECONCILIATION"||
   progress.calls.some(call=>
    call.state==="MODEL_UNCERTAIN"||call.state==="MODEL_PENDING");
+}
+/** A trusted saved run_build may precede read_file/inspect_project before
+ * the latest run_test. Keep the latest tested head and choose the nearest
+ * proven saved build, never blindly assume the preceding checkpoint step
+ * was a build. The server rechecks both signed Sandbox receipts.
+ */
+export function provenPreviewBuildAndTest(completed:readonly string[],
+ calls:readonly {state:string;tool:string|null;call_id?:string|null}[]):
+ {build:string;test:string}|null{
+ const test=completed.at(-1);
+ if(!test)return null;
+ const buildCandidates=calls.filter(c=>c.state==="ALREADY_APPLIED"&&
+  c.tool==="run_build"&&typeof c.call_id==="string").map(c=>c.call_id!);
+ const known=buildCandidates.filter(id=>completed.indexOf(id)>=0&&
+  completed.indexOf(id)<completed.lastIndexOf(test));
+ known.sort((a,b)=>completed.lastIndexOf(b)-completed.lastIndexOf(a));
+ const build=known[0]??completed.at(-2);
+ return build&&build!==test&&completed.indexOf(build)>=0&&
+  completed.indexOf(build)<completed.lastIndexOf(test)?
+  {build,test}:null;
 }
 type Step={readonly status:string;readonly action:string;readonly revision:number};
 export type CandidateSnapshot={readonly job:CandidateJob;readonly progress:Progress|null;
@@ -325,8 +345,10 @@ export class BrowserCodingAgent {
   const job=await this.read(),ids=job.checkpoint.completed_call_ids;
   if(!["TESTING","REPAIRING"].includes(job.status)||ids.length<2)
    throw Error("目前沒有通過隔離建置與測試的 App 可預覽。");
-  const build=ids.at(-2),test=ids.at(-1);
-  if(!build||!test)throw Error("找不到已證明的建置與測試結果。");
+  const recorded=await this.progress();
+  const pair=provenPreviewBuildAndTest(ids,recorded.calls);
+  if(!pair)throw Error("找不到已證明的建置與測試結果。");
+  const {build,test}=pair;
   const get=async(path:string)=>{
    const result=await this.post<PrivatePreviewAsset>("/preview-asset",{
     anonymous_id:this.owner,expected_revision:job.revision,
@@ -358,11 +380,14 @@ export class BrowserCodingAgent {
   const completed=job.checkpoint.completed_call_ids;
   if(job.status!=="TESTING"||!Array.isArray(completed)||completed.length<2)
    throw Error("必須先有已保存的隔離建置與測試，才能啟動獨立 QA。");
+  const recorded=await this.progress();
+  const pair=provenPreviewBuildAndTest(completed,recorded.calls);
+  if(!pair)throw Error("找不到已保存且順序正確的建置與測試證據。");
   return this.post<{status:string;ready_for_review:boolean;checks:readonly {
    criterion_id:string;verdict:string}[];app_published:false}>("/qa-run",{
    anonymous_id:this.owner,job_id:target.jobId,
    expected_revision:job.revision,project_hash:job.project_hash,
-   build_call_id:completed.at(-2),test_call_id:completed.at(-1),
+   build_call_id:pair.build,test_call_id:pair.test,
    original_prompt:target.prompt,original_plan:target.qaPlan,
    explicit_browser_qa_consent:true,
    ...(reconcileOnly?{reconcile_only:true}: {})
