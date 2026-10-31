@@ -8,20 +8,29 @@ export const AGENT_READINESS_ROUTE="/api/v1/agent-readiness";
 const HEADERS={"Content-Type":"application/json; charset=utf-8",
  "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"};
 const has=(value:string|undefined,min=1)=>typeof value==="string"&&value.length>=min;
-export function agentReadiness(env:Appf2WorkerEnv){
- const candidate=env.APPF2_AGENT_CANDIDATE_ENABLED==="1";
- const model=candidate&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED==="1"&&
+function modelConfigured(env:Appf2WorkerEnv,candidate:boolean):boolean{
+ return candidate&&env.APPF2_AGENT_MODEL_EXECUTION_ENABLED==="1"&&
   has(env.APPF2_OPENAI_AGENT_API_KEY,16);
+}
+function sandboxConfigured(env:Appf2WorkerEnv,candidate:boolean):boolean{
  const scope=env.APPF2_SANDBOX_ALLOWED_JOB_ID??"";
- const sandbox=candidate&&env.APPF2_AGENT_SANDBOX_EXECUTION_ENABLED==="1"&&
+ return candidate&&env.APPF2_AGENT_SANDBOX_EXECUTION_ENABLED==="1"&&
   Boolean(env.APPF2_SANDBOX_BROKER_SERVICE)&&
   has(env.APPF2_SANDBOX_BROKER_TOKEN,32)&&
   (scope==="OWNER_SCOPED_JOBS"||/^[0-9a-f-]{36}$/iu.test(scope));
- const browserQa=candidate&&env.APPF2_AGENT_QA_BROWSER_ENABLED==="1"&&
+}
+function qaConfigured(env:Appf2WorkerEnv,candidate:boolean):boolean{
+ return candidate&&env.APPF2_AGENT_QA_BROWSER_ENABLED==="1"&&
   env.APPF2_AGENT_QA_REVIEW_ENABLED==="1"&&
   Boolean(env.APPF2_QA_BROWSER_SERVICE)&&
   has(env.APPF2_QA_PRIVATE_TOKEN,32)&&
   has(env.APPF2_AGENT_QA_VERIFIER_SECRET,32);
+}
+export function agentReadiness(env:Appf2WorkerEnv){
+ const candidate=env.APPF2_AGENT_CANDIDATE_ENABLED==="1";
+ const model=modelConfigured(env,candidate);
+ const sandbox=sandboxConfigured(env,candidate);
+ const browserQa=qaConfigured(env,candidate);
  const missing=[
   ...(!candidate?["AGENT"]:[]),...(!model?["MODEL"]:[]),
   ...(!sandbox?["SANDBOX"]:[]),...(!browserQa?["BROWSER_QA"]:[])

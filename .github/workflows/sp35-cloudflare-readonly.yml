@@ -67,6 +67,32 @@ jobs:
               (kind.includes("application/json")?"_JSON":"_NON_JSON");
           }catch{/* Network errors are unknown, not a product PASS. */}
           console.log("SP35 STAGING LIVE HEALTH: "+health);
+          // A live old Worker may return JSON health even when Agent APIs
+          // and private service bindings are absent. Detect that separately.
+          try{
+            const response=await fetch(origin+"/api/v1/agent-readiness",{
+              method:"GET",redirect:"manual",signal:AbortSignal.timeout(8000)});
+            const kind=response.headers.get("content-type")||"";
+            const body=kind.includes("application/json")?
+              await response.json().catch(()=>null):null;
+            if(response.status===200&&
+              (body?.data?.status==="CONFIGURED_NOT_VERIFIED"||
+               body?.data?.status==="BLOCKED")&&
+              typeof body?.data?.can_start_paid_generation==="boolean"){
+              console.log("SP35 STAGING AGENT CODE: DEPLOYED");
+              console.log("SP35 STAGING AGENT CONFIG: "+
+                (body.data.can_start_paid_generation?
+                  "CONFIGURED_NOT_LIVE_E2E_VERIFIED":
+                  "BLOCKED_MISSING_"+(Array.isArray(body.data.missing)?
+                    body.data.missing.filter(x=>typeof x==="string").join("_"):
+                    "UNKNOWN")));
+            }else{
+              console.log("SP35 STAGING AGENT CODE: NOT_VERIFIED_HTTP_"+
+                response.status);
+            }
+          }catch{
+            console.log("SP35 STAGING AGENT CODE: UNKNOWN_NETWORK");
+          }
           const token=process.env.CLOUDFLARE_API_TOKEN?.trim()||"";
           const account=process.env.CLOUDFLARE_ACCOUNT_ID?.trim()||"";
           if(token.length<20||!/^[a-f0-9]{32}$/i.test(account)){
