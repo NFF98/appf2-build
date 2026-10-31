@@ -225,6 +225,7 @@
 - **第三次 GPT-6 真網站 E2E — FAIL_CLOSED（禁止同 Job 重試）**：[run #41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) 真 Staging Chromium 建立 44 美分上限 Job 成功；Supabase 模型 Journal 首次以 `gpt-6.1-sol` 成功保留 `sp35_free_ai_qa_v1`，證明前次 SQLSTATE 42501 已解除。但最終 `/free-ai-stage` HTTP503，Journal `BLOCKED_UNCERTAIN`、`response_json=NULL`、`output_tokens=NULL`，Job 仍 revision0/CREATED，GitHub Action **FAILURE**。這不是 GPT-6 已成功生成，也不能聲稱本次沒有計費；未知結果不得重試原 Job。
 - **下一個已實作產品修復（尚未部署驗證）**：`0958b6eb` 在 `free-ci-ai-code.ts` 區分固定無敏感資料的 provider rate limit/rejected/server/incomplete/failed、網路／逾時、回應格式、資料庫成果保存等失敗類別；`ab71ba2c` 在建立者已簽章 API 安全回傳代碼、`baf20673` 讓網站保留「不重複扣費」警告並顯示可追查的類別。不暴露模型回覆、提示詞、Token、SQL 明細，且 `BLOCKED_UNCERTAIN` 繼續 fail closed。**此修復只是診斷可見化，不冒稱真正 AI 發布 PASS。**
 - **費用保護**：第三次 Provider 請求結果不明，實際是否收費只能依 OpenAI Billing 核對。此後沒有再觸發付費模型測試。
+- **本輪原位部署真證據（診斷功能已反映到 Staging）**：同一 PR #419 Build `5285a07a` 經現有 [免費 Staging deploy #41198077865](https://github.com/NFF98/appf2-build/actions/runs/41198077865) 的 `Deploy FREE-ONLY Worker + Agent ... + SPA` **步驟 PASS**；同一 Run 的 LIVE 署名 Postgres CREATE＋Read、同源 SPA/Worker、未授權來源拒絕亦 PASS。整體 Workflow 最後的 Worker→GitHub OIDC→Docker→Chromium→原 PG 收據仍在執行（**不可預標整個 Run PASS**）；沒有新增 Cloudflare Containers/Browser Run 訂閱或付費模型呼叫。[現有公開 App 雙 Chromium 重開 #41198077995](https://github.com/NFF98/appf2-build/actions/runs/41198077995) SUCCESS（舊卡片，非新 AI App）。新模型安全錯誤分類碼已進入 Staging bundle，**尚未透過新的付費模型故障實測分類結果**，不拿既有 `BLOCKED_UNCERTAIN` 重試。
 - **實際覆蓋與五核分母**：目前有的「3/5（60%）」說法只代表部分獨立**基礎通道**有 PASS 證據，不代表下列五個完整原始產品驗收 Gate 之中的 3 項已合格。按本文件 A/D 節嚴格標準，**C1–C5 全鏈完整通過 = 0/5（NOT_VERIFIED）**，不能因既有 Docker SUCCESS 直接報成產品 100%。
 
 | 五核 Gate | 2026-10-31 本節最新可證實狀態 | 尚缺真產品證據 |
@@ -235,7 +236,7 @@
 | C4 原需求 QA／自動修復 | **PARTIAL / NOT_VERIFIED**：凍結 QA 與免費 Runner fixture 有 PASS，AI 修復程式存在 | 真 GPT-6 QA FAIL→修復→重建→完整獨立 QA PASS |
 | C5 有限重試／策略／費用 | **PARTIAL / NOT_VERIFIED**：原 Job 預算、不可重送、權限約束有程式和 API Test | 失敗根因改方案、同 Job 續作及越權拒絕、完整真網站反向測試 |
 
-**下一個唯一行動**：先驗證新診斷分類補丁免費 CI、部署至既有 Staging，根據安全結果分類或帳務／可回收的 Provider Response ID 找第一個失敗 Hop；不可重送已 `BLOCKED_UNCERTAIN` 的 Job。之後才依證據繼續同 Job Docker/QA/v2 分享和受控 generated backend/DB CRUD。
+**下一個唯一行動**：先確認 #41198077865 全流程收據與免費 CI 的最終 PASS/FAIL；Worker/SPA 與 PG route 已經真實部署測通。對 GPT-6 不明模型呼叫先用 OpenAI Billing／可回收 Provider Response ID 或之後獨立明確核准的測試分類調查，不可重送已 `BLOCKED_UNCERTAIN` 的 Job；新 AI App 的修復/QA/v2 分享與受控 generated backend/DB CRUD 仍未完成。
 
 ## G. 執行交接（只寫已證實事實）
 
