@@ -202,6 +202,18 @@ async function frozenPlan(db:AgentJobExecutor,id:string,owner:string,prompt:stri
   [id,owner])).rows[0];
  return parseQaPlan(row?.original_plan,prompt);
 }
+/** Repair admission is narrower than publish admission. A real FAIL from
+ * the owner-bound OIDC receipt is actionable even if an unrelated manual
+ * requirement remains UNTESTED. No independent QA evidence => no paid repair.
+ */
+export function hasRecordedBrowserQaFailure(receipt:{
+ readonly status:string;
+ readonly qa_checks?:readonly {readonly verdict:string}[];
+}|null):boolean{
+ return receipt?.status==="BUILD_BROWSER_SMOKE"&&
+  receipt.qa_checks?.some(c=>c.verdict==="FAIL")===true;
+}
+
 /** Paid consent is per phase; at most 8c plan, 20c code, 16c repair.
  * All model charges are journaled BEFORE network access.
  */
@@ -252,9 +264,10 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   input.anonymous_id,job.project.project_hash):null;
  const provenBuildFailure=receipt?.status==="BUILD_FAILED"&&
   (receipt.failure_stage==="BUILD"||receipt.failure_stage==="RENDER");
- const provenQaFailure=receipt?.status==="BUILD_BROWSER_SMOKE"&&
-  receipt.qa_checks?.some(c=>c.verdict==="FAIL")===true&&
-  receipt.qa_checks.every(c=>c.verdict!=="UNTESTED");
+ // An OIDC-attested, frozen-plan-matched FAIL is sufficient to authorize
+ // ONE bounded repair, even when other independent requirements are UNTESTED.
+ // UNTESTED still permanently blocks release until separately proven PASS.
+ const provenQaFailure=hasRecordedBrowserQaFailure(receipt);
  if(repairing&&!provenBuildFailure&&!provenQaFailure)
   throw Error("SP35_REPAIR_NO_PROVEN_AUTOMATABLE_FAILURE");
  // Failure excerpt is untrusted compiler output, not instructions.
