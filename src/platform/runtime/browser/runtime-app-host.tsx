@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { evaluateResult } from "../result-evaluation.js";
 import type { RuntimeInstance } from "../runtime-instance.js";
 import type { RuntimeAppHandle, RuntimeAppHost, RuntimeResultView } from "../runtime-operation.js";
-import { createBrowserRuntime } from "./browser-runtime.js";
+import { createBrowserRuntime, persistBrowserTabState } from "./browser-runtime.js";
 import { displayValue } from "./display-value.js";
 import { RuntimeFrame } from "./RuntimeFrame.js";
 
@@ -36,13 +36,16 @@ export function runtimeAppHandle(runtime: RuntimeInstance, contentHash: string):
 /** F03 browser host: one fresh Instance per delivered Blueprint; a non-READY hydration is disposed, never shown. */
 export function createBrowserAppHost(): RuntimeAppHost {
   return {
-    launch: async (delivery) => {
-      const runtime = createBrowserRuntime(delivery);
+    launch: async (delivery, intentId) => {
+      const runtime = createBrowserRuntime(delivery, intentId);
       const hydrated = await runtime.hydrate();
       if (hydrated.status !== "READY") {
         runtime.dispose();
         return { ok: false, status: hydrated.status };
       }
+      // Commit notifications fire only after a successfully validated Runtime Action.
+      // Never save failed, rejected, or merely rendered UI state.
+      runtime.subscribe(() => persistBrowserTabState(runtime, intentId, delivery.admission.content_hash));
       return { ok: true, app: runtimeAppHandle(runtime, delivery.admission.content_hash) };
     }
   };

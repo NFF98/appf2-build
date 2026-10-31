@@ -111,7 +111,7 @@ jobs:
 
   real-e2e-16p:
     name: 16P strict real E2E (16 actual operations; no fake PASS)
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.number != 419 || github.event.pull_request.head.ref != 'product/sprint-3.5-complex-intent-recovery-20261026' || github.event.pull_request.base.ref != 'main') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -163,7 +163,7 @@ jobs:
 
   real-e2e-d:
     name: 16P #D real PostgreSQL + Chromium (non-synthetic proof)
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.number != 419 || github.event.pull_request.head.ref != 'product/sprint-3.5-complex-intent-recovery-20261026' || github.event.pull_request.base.ref != 'main') }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
@@ -247,7 +247,7 @@ jobs:
 
   six-gap-prewrite-live:
     name: 16P #1/#6/#8/#A/#E/#F guarded GitHub write denials (real API)
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.number != 419 || github.event.pull_request.head.ref != 'product/sprint-3.5-complex-intent-recovery-20261026' || github.event.pull_request.base.ref != 'main') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

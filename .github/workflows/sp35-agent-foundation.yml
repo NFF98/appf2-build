@@ -1,0 +1,53 @@
+name: Sprint 3.5 included-quota Docker + Chromium QA (no paid cloud)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: appf2-sp35-agent-foundation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  trusted-foundation:
+    if: github.repository == 'NFF98/appf2-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install existing staging browser-QA types (no paid model calls)
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
+      - name: Typecheck and lint
+        run: |
+          npm run check:types
+          npm run check:lint
+      - name: Verify real staging Agent deployment and signed DB smoke scripts (NO deploy)
+        run: |
+          node --check deploy/scripts/sp35-staging-only.mjs
+          node --check deploy/scripts/sp35-live-agent-db-smoke.mjs
+      - name: Compile platform
+        run: npm run build
+      - name: API tests (no paid AI)
+        run: npm run test:api
+      - name: Runtime tests
+        run: npm run test:runtime
+      - name: Trusted fixture browser install
+        run: npx playwright install --with-deps chromium
+      - name: Actual trusted multi-file Vite build and browser click
+        run: node deploy/scripts/sp35-trusted-multifile-build-e2e.mjs
+      - name: Real APPf2 homepage to P-256 signed multi-file Agent API browser flow (mock provider only)
+        run: node deploy/scripts/sp35-agent-browser-wire-e2e.mjs
+      - name: Compile real Agent API candidate scaffold and inspect in Chromium (no model)
+        run: node deploy/scripts/sp35-agent-scaffold-browser-e2e.mjs
+      - name: Free-path isolated Docker Vite + Chromium independent QA (trusted fixture only)
+        run: node deploy/scripts/sp35-container-fixture-e2e.mjs
+      - name: LIVE Staging signed PostgreSQL Job source to FREE network-denied Docker then Chromium (no AI)
+        run: node deploy/scripts/sp35-free-live-job-to-docker-e2e.mjs

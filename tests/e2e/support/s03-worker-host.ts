@@ -56,6 +56,9 @@ async function buildOnce(): Promise<SharedBuild> {
 export class S03WorkerHost {
   public readonly calls: HostedCall[] = [];
   public readonly blocked: string[] = [];
+  /** Test-only override. Production SPA and Worker logic are unchanged. */
+  private apiOverride:((request:Request)=>Promise<Response|undefined>)|null=null;
+  public setApiOverride(override:(request:Request)=>Promise<Response|undefined>):void{this.apiOverride=override;}
 
   private constructor(
     private readonly outDir: string,
@@ -73,6 +76,13 @@ export class S03WorkerHost {
     shared ??= buildOnce();
     const { outDir, module } = await shared;
     return new S03WorkerHost(outDir, module.createS03Backend(), module.S03_BACKEND_PROVENANCE);
+  }
+
+  /** Runtime fixture modules are loaded through Vite SSR so registry JSON imports are correct on Node 22. */
+  public static async loadFixture<T>(path:string):Promise<T>{
+    shared ??=buildOnce();
+    const {vite}=await shared;
+    return (await vite.ssrLoadModule(path)) as T;
   }
 
   /** Releases the shared build; call once from `afterAll`. */
@@ -114,9 +124,8 @@ export class S03WorkerHost {
       if (jar.length > 0) headers.set("cookie", jar.map((cookie) => `${cookie.name}=${cookie.value}`).join("; "));
     }
     const body = request.postDataBuffer();
-    const response = await this.backend.handle(
-      new Request(url.href, { method: request.method(), headers, ...(body === null ? {} : { body: new Uint8Array(body) }) })
-    );
+    const forwarded=new Request(url.href,{method:request.method(),headers,...(body===null?{}:{body:new Uint8Array(body)})});
+    const response=(await this.apiOverride?.(forwarded))??await this.backend.handle(forwarded);
     const bytes = Buffer.from(await response.arrayBuffer());
     this.calls.push({ method: request.method(), path: url.pathname, status: response.status, body: bytes.toString("utf8") });
     await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body: bytes });

@@ -12,6 +12,7 @@ export interface EvaluationEnv {
   readonly readRule: (ruleId: string) => RuntimeValue;
   readonly event?: RuntimeValue;
   readonly scope?: ReadonlyMap<string, RuntimeValue>;
+  readonly localDay?: string;
 }
 
 type Evaluate = (source: ValueSource) => EvaluatedValue;
@@ -137,6 +138,105 @@ function stringTransform(transform: (value: string) => string): Operator {
   };
 }
 
+/** Local deterministic LIST changes. No network, mutable shared arrays or silent index coercion. */
+function listIndex(value: EvaluatedValue, length: number): number {
+  const index = asNumber(value);
+  if (!Number.isSafeInteger(index) || index < 0 || index >= length) {
+    return operandFailure("LIST index must reference an existing item.");
+  }
+  return index;
+}
+
+const listEdit = (mode: "APPEND" | "REMOVE_AT" | "REPLACE_AT"): Operator =>
+  (args, evaluate) => {
+    arity(args, mode === "REPLACE_AT" ? 3 : 2, mode === "REPLACE_AT" ? 3 : 2);
+    const first = args[0];
+    if (first === undefined) return operandFailure("Missing LIST source.");
+    const list = [...asList(evaluate(first))];
+    if (mode === "APPEND") {
+      if (list.length >= 500) return operandFailure("LIST exceeds 500 items.");
+      const source = args[1];
+      if (source === undefined) return operandFailure("Missing LIST item.");
+      list.push(present(evaluate(source)));
+    } else {
+      const indexSource = args[1];
+      if (indexSource === undefined) return operandFailure("Missing LIST index.");
+      const index = listIndex(evaluate(indexSource), list.length);
+      if (mode === "REMOVE_AT") list.splice(index, 1);
+      else {
+        const replacement = args[2];
+        if (replacement === undefined) return operandFailure("Missing replacement.");
+        list[index] = present(evaluate(replacement));
+      }
+    }
+    return list;
+  };
+
+/** Immutable, locally typed RECORD edit; the validated Blueprint restricts keys. */
+const setRecordField: Operator = (args, evaluate) => {
+  arity(args, 3, 3);
+  const source = args[0];
+  const fieldSource = args[1];
+  const newValue = args[2];
+  if (source === undefined || fieldSource === undefined || newValue === undefined) {
+    return operandFailure("Missing RECORD_SET operand.");
+  }
+  const current = present(evaluate(source));
+  const field = asString(evaluate(fieldSource));
+  if (!isRuntimeRecord(current) || !/^[a-z][a-z0-9_]{0,63}$/.test(field) ||
+      !Object.hasOwn(current, field)) {
+    return operandFailure("RECORD_SET requires an existing safe field.");
+  }
+  return { ...current, [field]: present(evaluate(newValue)) };
+};
+
+/** Bounded pure filtering, without any dynamic code or mutation. */
+const filterRecordList: Operator = (args, evaluate) => {
+  arity(args, 3, 3);
+  const first = args[0];
+  const fieldSource = args[1];
+  const needleSource = args[2];
+  if (first === undefined || fieldSource === undefined || needleSource === undefined) {
+    return operandFailure("Missing LIST_FILTER_EQ operand.");
+  }
+  const list = asList(evaluate(first));
+  const field = asString(evaluate(fieldSource));
+  if (!/^[a-z][a-z0-9_]{0,63}$/.test(field)) {
+    return operandFailure("LIST_FILTER_EQ field is invalid.");
+  }
+  const needle = primitiveOperand(evaluate(needleSource));
+  return list.filter((item) => {
+    if (!isRuntimeRecord(item) || !Object.hasOwn(item, field)) {
+      return operandFailure("LIST_FILTER_EQ field is absent.");
+    }
+    const value = item[field];
+    if (typeof value !== typeof needle || !["string", "number", "boolean"].includes(typeof value)) {
+      return operandFailure("LIST_FILTER_EQ field type mismatch.");
+    }
+    return value === needle;
+  });
+};
+
+/** Deterministic total of a validated numeric RECORD field; empty lists sum to zero. */
+const sumRecordField: Operator = (args, evaluate) => {
+  arity(args, 2, 2);
+  const list = asList(evaluate(args[0] as ValueSource));
+  const field = asString(evaluate(args[1] as ValueSource));
+  if (!/^[a-z][a-z0-9_]{0,63}$/.test(field)) {
+    return operandFailure("LIST_SUM_BY field is invalid.");
+  }
+  let sum = 0;
+  for (const item of list) {
+    if (!isRuntimeRecord(item) || !Object.hasOwn(item, field)) {
+      return operandFailure("LIST_SUM_BY field is absent.");
+    }
+    const value = item[field];
+    if (typeof value !== "number") return operandFailure("LIST_SUM_BY field is not NUMBER.");
+    sum = finite(sum + value);
+  }
+  return sum;
+};
+
 const OPERATORS: Readonly<Record<string, Operator>> = {
   ADD: (args, evaluate) => finite(numbers(args, evaluate, 2).reduce((sum, value) => sum + value, 0)),
   SUB: (args, evaluate) => {
@@ -207,7 +307,13 @@ const OPERATORS: Readonly<Record<string, Operator>> = {
   },
   LOWER: stringTransform((value) => value.toLowerCase()),
   UPPER: stringTransform((value) => value.toUpperCase()),
-  TRIM: stringTransform((value) => value.trim())
+  TRIM: stringTransform((value) => value.trim()),
+  LIST_APPEND: listEdit("APPEND"),
+  LIST_REMOVE_AT: listEdit("REMOVE_AT"),
+  LIST_REPLACE_AT: listEdit("REPLACE_AT"),
+  RECORD_SET: setRecordField,
+  LIST_FILTER_EQ: filterRecordList,
+  LIST_SUM_BY: sumRecordField
 };
 
 function resolvePath(root: RuntimeValue, path: string): RuntimeValue | undefined {
@@ -249,6 +355,12 @@ export function evaluateValueSource(source: ValueSource, env: EvaluationEnv): Ev
     case "SCOPE":
       return evaluateScope(source.name, source.path, env);
     case "OP": {
+      if (source.op === "LOCAL_DAY") {
+        arity(source.args, 0, 0);
+        const day = env.localDay;
+        return day !== undefined && /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(day)
+          ? day : operandFailure("LOCAL_DAY requires a trusted local calendar snapshot.");
+      }
       const operator = Object.hasOwn(OPERATORS, source.op) ? OPERATORS[source.op] : undefined;
       return operator === undefined ? invariantBroken(`Operator ${source.op} is not allowlisted.`) : operator(source.args, evaluate);
     }

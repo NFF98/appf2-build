@@ -4,6 +4,7 @@ import { nodeInstanceKeyId } from "../node-instance-key.js";
 import type { NodeIsolationRecord, NodeRenderInput, RuntimeInstance, RuntimeNodeRenderer } from "../runtime-instance.js";
 import { isRuntimeRecord, type RuntimeRecord, type RuntimeValue } from "../runtime-value.js";
 import { displayValue } from "./display-value.js";
+import { feedbackForOperation, feedbackForRejection } from "./runtime-action-feedback.js";
 
 type Dispatch = (input: NodeRenderInput<ReactNode>, eventName: string, payload: RuntimeValue) => void;
 
@@ -217,17 +218,32 @@ function keyed(input: NodeRenderInput<ReactNode>, node: ReactNode): ReactNode {
  * dispatch declared events with the Runtime-issued node instance key, so the Shell never writes App state.
  */
 export function RuntimeFrame({ runtime }: { readonly runtime: RuntimeInstance }) {
+  const [, refreshCalendar] = useState(0);
+  const hasCalendar = useMemo(() => JSON.stringify(runtime.blueprint ?? {}).includes('"LOCAL_DAY"'), [runtime]);
+  useEffect(() => {
+    if (!hasCalendar) return undefined;
+    const handle = globalThis.setInterval(() => refreshCalendar(value => value + 1), 60_000);
+    return () => globalThis.clearInterval(handle);
+  }, [hasCalendar]);
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  // Only a committed F03 operation clears the error. Failed/rejected actions
+  // never look like successful state changes in the generated App.
+  useEffect(() => runtime.subscribeOperations((projection) => {
+    const message = feedbackForOperation(projection.status);
+    if (message !== undefined) setActionFeedback(message);
+  }), [runtime]);
   const subscribe = useMemo(() => (onChange: () => void) => runtime.subscribe(() => onChange()), [runtime]);
   useSyncExternalStore(subscribe, () => runtime.actionSequence);
   const renderer = useMemo((): RuntimeNodeRenderer<ReactNode> => {
     const dispatch: Dispatch = (input, eventName, payload) => {
-      runtime.dispatch({
+      const receipt = runtime.dispatch({
         source_node_instance_key: input.node_instance_key,
         event_name: eventName,
         payload,
         origin: "USER",
         lifecycle_generation: input.lifecycle_generation
       });
+      if (!receipt.accepted) setActionFeedback(feedbackForRejection(receipt.reason));
     };
     return {
       render: (input) => keyed(input, renderNode(runtime, input, dispatch)),
@@ -238,5 +254,8 @@ export function RuntimeFrame({ runtime }: { readonly runtime: RuntimeInstance })
       )
     };
   }, [runtime]);
-  return <div className="runtime-frame">{runtime.renderTree(renderer)}</div>;
+  return <div className="runtime-frame">
+    {actionFeedback !== null && <div className="rt-notice rt-notice-ERROR" role="alert">{actionFeedback}</div>}
+    {runtime.renderTree(renderer)}
+  </div>;
 }

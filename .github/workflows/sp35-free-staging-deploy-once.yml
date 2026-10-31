@@ -1,0 +1,198 @@
+name: Sprint 3.5 one-shot free Staging deploy (NO Containers/AI)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+    paths:
+      - .github/workflows/sp35-free-staging-deploy-once.yml
+permissions:
+  contents: read
+concurrency:
+  group: appf2-sp35-staging-only
+  cancel-in-progress: false
+jobs:
+  deploy-free-staging:
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-FREE-STAGING-DEPLOY-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Reuse existing Staging Hyperdrives, NEVER create billed resources
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_IDENTITY_COOKIE_SECRET: ${{ secrets.APPF2_IDENTITY_COOKIE_SECRET }}
+        run: node deploy/scripts/sp35-free-staging-preflight.mjs
+      - name: Install locked app dependencies
+        run: npm ci
+      - name: Install existing pinned Worker dependency for bundle ONLY (no Browser Run)
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
+      - name: Build actual Staging SPA assets
+        run: npm run web:build
+      - name: Verify free Actions dispatch credential presence (never print credential)
+        env:
+          APPF2_FREE_CI_GITHUB_TOKEN: ${{ secrets.APPF2_FREE_CI_GITHUB_TOKEN }}
+        run: |
+          if [ -n "$APPF2_FREE_CI_GITHUB_TOKEN" ]; then
+            echo "SP35 FREE CI CREDENTIAL: PRESENT_NOT_YET_DISPATCH_VERIFIED"
+          else
+            echo "SP35 FREE CI CREDENTIAL: MISSING; Worker will deny autonomous GitHub Actions dispatch"
+          fi
+      - name: Check GitHub Actions-write permission WITHOUT dispatching any workflow
+        env:
+          APPF2_FREE_CI_GITHUB_TOKEN: ${{ secrets.APPF2_FREE_CI_GITHUB_TOKEN }}
+        run: |
+          node --input-type=module <<'JS'
+          import {randomUUID} from "node:crypto";
+          const token=process.env.APPF2_FREE_CI_GITHUB_TOKEN??"";
+          if(!/^(?:github_pat_|ghp_|ghs_)/u.test(token))
+            throw Error("SP35 FREE CI ACTIONS: SECRET_MISSING_OR_UNSUPPORTED");
+          // An ephemeral, nonexistent ref MUST fail validation with 422. This
+          // tests the workflow_dispatch credential without launching a runner.
+          const ref="refs/heads/__sp35_never_existing_"+randomUUID();
+          const response=await fetch(
+            "https://api.github.com/repos/NFF98/appf2-build/actions/workflows/sp35-staging-only.yml/dispatches",{
+              method:"POST",redirect:"error",headers:{
+                "Authorization":"Bearer "+token,
+                "Accept":"application/vnd.github+json",
+                "Content-Type":"application/json",
+                "X-GitHub-Api-Version":"2022-11-28",
+                "User-Agent":"appf2-sp35-free-ci-scoped-preflight"
+              },body:JSON.stringify({ref,inputs:{ticket:""}}),
+              signal:AbortSignal.timeout(15000)
+            });
+          const body=await response.json().catch(()=>null);
+          if(response.status!==422||
+            !/ref|branch|reference/i.test(String(body?.message??"")))
+            throw Error("SP35 FREE CI ACTIONS: WRITE_NOT_VERIFIED_HTTP_"+response.status);
+          console.log("SP35 FREE CI ACTIONS: DISPATCH_AUTHORIZATION_REACHED_REF_VALIDATION; nonexistent ref rejected, NO RUN STARTED");
+          JS
+      - name: Check GPT-6.1 Sol API model access without generating or charging tokens
+        env:
+          APPF2_GPT6_PREFLIGHT_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY || secrets.APPF2_MODEL_API_KEY || secrets.OPENAI_API_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          const token=process.env.APPF2_GPT6_PREFLIGHT_KEY??"";
+          if(token.length<20)throw Error("SP35_GPT6_MODEL_LOOKUP_KEY_MISSING");
+          let response;
+          try{
+            response=await fetch("https://api.openai.com/v1/models/gpt-6.1-sol",{
+              method:"GET",headers:{"Authorization":"Bearer "+token},
+              redirect:"error",signal:AbortSignal.timeout(20000)
+            });
+          }catch{throw Error("SP35_GPT6_MODEL_LOOKUP_NETWORK_UNREACHABLE");}
+          // No POST, no model generation or provider response body in Actions logs.
+          if(response.status!==200)
+            throw Error("SP35_GPT6_MODEL_LOOKUP_NOT_AUTHORIZED_HTTP_"+response.status);
+          const body=await response.json().catch(()=>null);
+          if(body?.id!=="gpt-6.1-sol")
+            throw Error("SP35_GPT6_MODEL_LOOKUP_ID_MISMATCH");
+          console.log("SP35_GPT6_MODEL_ACCESS: GET /v1/models/gpt-6.1-sol HTTP200, no AI generation, no usage tokens");
+          JS
+      - name: Deploy FREE-ONLY Worker + Agent read/create/restore + SPA to Staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_STAGING_WORKER_NAME: ${{ env.APPF2_STAGING_WORKER_NAME }}
+          APPF2_HYPERDRIVE_FRESH_ID: ${{ env.APPF2_HYPERDRIVE_FRESH_ID }}
+          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ env.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
+          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ env.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
+          APPF2_IDENTITY_COOKIE_SECRET: ${{ env.APPF2_IDENTITY_COOKIE_SECRET }}
+          APPF2_MODEL_PROVIDER: openai
+          APPF2_MODEL_BASE_URL: https://api.openai.com/v1
+          APPF2_MODEL_NAME: gpt-4.1
+          # Optional existing Actions-write secret. Never output its value;
+          # if absent, Worker returns fail-closed on creator CI dispatch.
+          APPF2_FREE_CI_GITHUB_TOKEN: ${{ secrets.APPF2_FREE_CI_GITHUB_TOKEN }}
+          APPF2_STAGING_FREE_ONLY_NO_AI: '1'
+          APPF2_STAGING_FREE_PAID_AI: '1'
+          APPF2_FREE_AI_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY || secrets.APPF2_MODEL_API_KEY || secrets.OPENAI_API_KEY }}
+          APPF2_STAGING_AGENT_MODEL_ENABLED: '0'
+          APPF2_STAGING_AGENT_REUSE_OPENAI_KEY: '0'
+          APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED: '0'
+          APPF2_STAGING_XAI_ON_429: '0'
+          APPF2_MODEL_FALLBACK_PROVIDER: ''
+          APPF2_STAGING_BOOTSTRAP_ONLY: '0'
+        run: node deploy/scripts/sp35-staging-only.mjs
+      - name: LIVE new private Free CI receipt refuses unauthenticated callbacks
+        run: |
+          node --input-type=module <<'JS'
+          const origin=process.env.APPF2_STAGING_URL;
+          const r=await fetch(origin+"/api/v1/internal/free-ci/result",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ticket:"invalid",result:{}}),
+            signal:AbortSignal.timeout(15000)});
+          if(r.status!==404)throw Error("SP35_FREE_CI_RECEIPT_UNAUTHENTICATED_NOT_DENIED_"+r.status);
+          console.log("SP35 LIVE FREE CI RECEIPT: unauthenticated callback HTTP404 PASS");
+          JS
+      - name: LIVE Staging SPA + Worker first-hop (no model)
+        run: node deploy/scripts/sp35-staging-smoke.mjs
+      - name: LIVE Staging new Agent route, free-only cost guard
+        run: |
+          node --input-type=module <<'JS'
+          const base=process.env.APPF2_STAGING_URL;
+          if(!/^https:\/\/appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/iu.test(base||""))
+            throw Error("FREE_DEPLOY_UNSAFE_ORIGIN");
+          const response=await fetch(base+"/api/v1/agent-readiness",{
+            method:"GET",signal:AbortSignal.timeout(15000)});
+          const json=await response.json().catch(()=>null);
+          if(response.status!==200||json?.data?.execution_mode!=="FREE_CI_READY"||
+             json.data.can_start_paid_generation!==false)
+            throw Error("FREE_DEPLOY_AGENT_ROUTE_MISSING_OR_PAID_NOT_BLOCKED_HTTP_"+response.status);
+          console.log("SP35 LIVE NEW AGENT ROUTE PASS: FREE_CI_READY configuration only; all paid Agent execution disabled");
+          JS
+      - name: LIVE private Free CI endpoint rejects unsigned requests (no AI)
+        run: |
+          node --input-type=module <<'JS'
+          const origin=process.env.APPF2_STAGING_URL;
+          const r=await fetch(origin+"/api/v1/internal/free-ci/source",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ticket:"not-a-real-ticket"})});
+          if(r.status!==404)throw Error("FREE_CI_PRIVATE_SOURCE_MUST_DENY_UNAUTHENTICATED_HTTP_"+r.status);
+          console.log("SP35 LIVE PRIVATE FREE CI SOURCE: UNSIGNED HTTP404 PASS");
+          JS
+      - name: LIVE PostgreSQL signed Agent Create + Read (no AI)
+        run: node deploy/scripts/sp35-live-agent-db-smoke.mjs
+      - name: REAL owner-signed source → Worker GitHub dispatch → free Docker Chromium → original Job receipt
+        run: node deploy/scripts/sp35-free-live-dispatch-e2e.mjs
+      - name: Final status, zero new AI/Container/Browser usage
+        run: |
+          echo "SP35 FREE STAGING DEPLOY: Worker+SPA+Agent+PG route checked; NO paid AI, Browser Run, Cloudflare Containers or Production deploy"
+          echo "SP35 FIVE-CORE PRODUCT REAL E2E: NOT_COMPLETE"
+
+# Repo Secret now configured by Human; redeploy without paid AI/Containers.
+# [SP35-FREE-STAGING-DEPLOY-ONCE] validates credential presence and routes.
+# Recheck real GitHub dispatch result class after owner-signed no-cost Job import.
+# Staging Hyperdrive cold-start: allow long zero-cost source-import only; preserve no-AI limits.
+# GitHub REST: Worker dispatch uses explicit User-Agent, rerun real signed product path.
+
+# Staging-only deployment for owner-private built Vite assets, without public publication.
+
+# Recheck privately saved Vite bundle: owned, DB-persisted and opened twice without AI.
+
+# Reconcile FREE_CI_READY configured-but-no-paid-generation status and owner one-click private card reopening.
+
+# SP35 2026-10-31 free-only Staging redeploy of c683acc-verified signed build-failure repair path.
+# No paid model invocation, no Cloudflare Containers, no Production deployment.
+
+# SP35 2026-10-31 redeploy latest verified frozen-QA UI gating and saved-preview flow; no paid AI calls, no Production.
+
+# SP35 2026-10-31 GPT-6.1 Sol deployment: Worker model/API QA and browser UI only; explicitly no model invocation by this workflow.
+
+# SP35 2026-10-31: [SP35-FREE-STAGING-DEPLOY-ONCE] deploy safe non-sensitive GPT-6 phase diagnostics to existing staging; no model call, Containers or Production.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] recheck GPT-6.1 Sol provider model GET entitlement, never make a billed Responses POST.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] deliver GPT-6 durable background response journal + safe same-ID resume; no paid AI generated by deploy.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] run exact-Worker signed no-charge GET model egress classification before permitting any further GPT-6 POST.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] check Cloudflare global_fetch_strictly_public egress to fixed OpenAI model GET, no paid POST.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] deploy fail-closed no-charge Worker model egress guard after both signed GET tests failed. Preserve prior free Docker evidence.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] final free-only verification: original Agent job and Docker must PASS independently; Worker GPT-6 egress remains fail-closed and never billed.

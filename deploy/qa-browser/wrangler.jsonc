@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "appf2-sp35-private-browser-qa",
+  "main": "./worker.ts",
+  "compatibility_date": "2026-10-29",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "browser": {
+    "binding": "APPF2_QA_BROWSER"
+  },
+  "services": [
+    {
+      "binding": "APPF2_SANDBOX_BROKER_SERVICE",
+      "service": "appf2-sp35-private-sandbox"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import type {
   ModelGatewayResponse,
   TokenUsage
 } from "./model-gateway.js";
-import { SYSTEM_POLICY } from "./prompts.js";
+import { PROMPT_B_PLAN_VERSION, SYSTEM_POLICY, TYPED_PLAN_POLICY } from "./prompts.js";
 
 export const OPENAI_COMPATIBLE_ADAPTER_ID = "openai-compatible";
 
@@ -18,7 +18,9 @@ export const MODEL_GATEWAY_ENV = Object.freeze({
   apiKey: "APPF2_MODEL_API_KEY",
   model: "APPF2_MODEL_NAME",
   inputCostPerMillion: "APPF2_MODEL_INPUT_COST_PER_MILLION",
-  outputCostPerMillion: "APPF2_MODEL_OUTPUT_COST_PER_MILLION"
+  outputCostPerMillion: "APPF2_MODEL_OUTPUT_COST_PER_MILLION",
+  analysisOutputCap: "APPF2_MODEL_OUTPUT_CAP_ANALYSIS",
+  blueprintOutputCap: "APPF2_MODEL_OUTPUT_CAP_BLUEPRINT"
 });
 
 export type ModelPricing = {
@@ -31,6 +33,7 @@ export type OpenAiCompatibleConfig = {
   readonly apiKey: string;
   readonly model: string;
   readonly pricing?: ModelPricing;
+  readonly outputCaps?: { readonly INTENT_ANALYSIS: number; readonly BLUEPRINT_COMPOSE: number };
   /** DeepSeek ChatCompletions supports JSON object mode; keep schema mode for OpenAI/xAI. */
   readonly outputFormat?: "json_schema" | "json_object";
 };
@@ -46,6 +49,22 @@ export class ModelGatewayConfigError extends Error {
     super(`Model gateway server configuration is missing: ${missing.join(", ")}.`);
     this.name = "ModelGatewayConfigError";
   }
+}
+
+function outputCapsFromEnv(env: Readonly<Record<string, string | undefined>>): OpenAiCompatibleConfig["outputCaps"] {
+  const a = env[MODEL_GATEWAY_ENV.analysisOutputCap];
+  const b = env[MODEL_GATEWAY_ENV.blueprintOutputCap];
+  let outputCaps: OpenAiCompatibleConfig["outputCaps"];
+  if (a !== undefined || b !== undefined) {
+    const analysis = Number(a);
+    const blueprint = Number(b);
+    if (!Number.isInteger(analysis) || analysis < 1024 || analysis > 20000 ||
+        !Number.isInteger(blueprint) || blueprint < 1024 || blueprint > 20000) {
+      throw new ModelGatewayConfigError(["APPF2_MODEL_OUTPUT_CAP_ANALYSIS/BLUEPRINT (1024..20000)"]);
+    }
+    outputCaps = { INTENT_ANALYSIS: analysis, BLUEPRINT_COMPOSE: blueprint };
+  }
+  return outputCaps;
 }
 
 function pricingFrom(env: Readonly<Record<string, string | undefined>>): ModelPricing | undefined {
@@ -68,7 +87,26 @@ export function openAiCompatibleConfigFromEnv(env: Readonly<Record<string, strin
   ].filter(([, value]) => value === "").map(([name]) => name as string);
   if (missing.length > 0) throw new ModelGatewayConfigError(missing);
   const pricing = pricingFrom(env);
-  return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model, ...(pricing === undefined ? {} : { pricing }) };
+  const outputCaps = outputCapsFromEnv(env);
+  return {
+    baseUrl: baseUrl.replace(/\/+$/, ""), apiKey, model,
+    ...(pricing === undefined ? {} : { pricing }),
+    ...(outputCaps === undefined ? {} : { outputCaps })
+  };
+}
+
+/** Never log provider body, arbitrary error strings, request IDs or secrets. */
+const SAFE_UPSTREAM_429_CODES = new Set([
+  "rate_limit_exceeded", "insufficient_quota", "credit_balance_exhausted",
+  "organization_usage_limit_exceeded", "organization_spend_limit_exceeded",
+  "project_spend_limit_exceeded"
+]);
+
+export function safeUpstream429Code(body: unknown): string {
+  if (!isPlainRecord(body) || !isPlainRecord(body.error)) return "unknown";
+  const code = body.error.code;
+  if (typeof code === "string" && SAFE_UPSTREAM_429_CODES.has(code)) return code;
+  return body.error.type === "insufficient_quota" ? "insufficient_quota" : "unknown";
 }
 
 function failureKindForStatus(status: number): ModelFailureKind {
@@ -151,8 +189,15 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
     return JSON.stringify({
       model: this.config.model,
       temperature: 0,
+      ...(this.config.outputCaps === undefined ? {} : {
+        max_completion_tokens: request.operation === "BLUEPRINT_COMPOSE" &&
+          request.prompt_version === PROMPT_B_PLAN_VERSION
+          ? Math.min(this.config.outputCaps.BLUEPRINT_COMPOSE, 6000)
+          : this.config.outputCaps[request.operation]
+      }),
       messages: [
-        { role: "system", content: SYSTEM_POLICY[request.operation] },
+        { role: "system", content: request.operation === "BLUEPRINT_COMPOSE" && request.prompt_version === PROMPT_B_PLAN_VERSION
+          ? TYPED_PLAN_POLICY : SYSTEM_POLICY[request.operation] },
         { role: "user", content: JSON.stringify(request.input_payload) }
       ],
       response_format: this.config.outputFormat === "json_object"
@@ -170,45 +215,82 @@ export class OpenAiCompatibleModelGateway implements ModelGateway {
     return (usage.input_tokens * pricing.input_per_million + usage.output_tokens * pricing.output_per_million) / 1_000_000;
   }
 
-  private async complete(request: ModelGatewayRequest): Promise<ModelGatewayResponse> {
-    const started = this.clock();
-    const metadata = { model_adapter: this.modelAdapter, provider_model: this.config.model };
-    const failed = (kind: ModelFailureKind, retryAfter?: number): ModelGatewayResponse => ({
+  private failedResponse(kind: ModelFailureKind, started: number, retryAfter?: number): ModelGatewayResponse {
+    return {
       status: "FAILED",
-      provider_metadata: metadata,
+      provider_metadata: { model_adapter: this.modelAdapter, provider_model: this.config.model },
       latency_ms: Math.max(0, this.clock() - started),
       failure: retryAfter === undefined ? { kind } : { kind, retry_after_seconds: retryAfter }
-    });
-    if (request.timeout_ms <= 0) return failed("TIMEOUT");
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), request.timeout_ms);
+    };
+  }
+
+  private async sendOnce(
+    request: ModelGatewayRequest, controller: AbortController, started: number
+  ): Promise<{ readonly result: ModelGatewayResponse; readonly retryDelay: number | null }> {
     try {
       const response = await this.fetchImpl(`${this.config.baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: this.headers(),
-        body: this.requestBody(request),
-        signal: controller.signal
+        method: "POST", headers: this.headers(), body: this.requestBody(request), signal: controller.signal
       });
       if (response.status < 200 || response.status >= 300) {
-        // Safe diagnostics only: never log request payload, provider response or bearer key.
         console.warn("APPF2_MODEL_UPSTREAM_STATUS=" + response.status);
-        return failed(failureKindForStatus(response.status), retryAfterSeconds(response.headers.get("retry-after")));
+        const after = retryAfterSeconds(response.headers.get("retry-after"));
+        let retryDelay: number | null = null;
+        if (response.status === 429) {
+          const raw = await response.text().catch(() => "");
+          const code = raw.length <= 8192 ? safeUpstream429Code(parseJson(raw)) : "unknown";
+          console.warn("APPF2_MODEL_UPSTREAM_429_CODE=" + code);
+          if (code === "rate_limit_exceeded") retryDelay = (after ?? 1) * 1000;
+        }
+        return {
+          result: this.failedResponse(failureKindForStatus(response.status), started, after), retryDelay
+        };
       }
       const parsed = parseCompletion(parseJson(await response.text()));
-      if (parsed.output === undefined) return { ...failed("INVALID_OUTPUT"), token_usage: parsed.usage };
+      if (parsed.output === undefined) return {
+        result: { ...this.failedResponse("INVALID_OUTPUT", started), token_usage: parsed.usage },
+        retryDelay: null
+      };
       return {
-        status: "SUCCEEDED",
-        structured_output: parsed.output,
-        provider_metadata: { ...metadata, provider_model: parsed.providerModel ?? this.config.model },
-        token_usage: parsed.usage,
-        latency_ms: Math.max(0, this.clock() - started),
-        estimated_cost: this.estimatedCost(parsed.usage)
+        result: {
+          status: "SUCCEEDED", structured_output: parsed.output,
+          provider_metadata: {
+            model_adapter: this.modelAdapter,
+            provider_model: parsed.providerModel ?? this.config.model
+          },
+          token_usage: parsed.usage,
+          latency_ms: Math.max(0, this.clock() - started),
+          estimated_cost: this.estimatedCost(parsed.usage)
+        },
+        retryDelay: null
       };
     } catch (error: unknown) {
       const kind = error instanceof Error ? error.name.replace(/[^A-Za-z]/gu, "").slice(0,32) : "UNKNOWN";
       console.warn("APPF2_MODEL_UPSTREAM_TRANSPORT=" + kind +
         " ABORTED=" + String(controller.signal.aborted));
-      return failed(controller.signal.aborted ? "TIMEOUT" : "NETWORK");
+      return {
+        result: this.failedResponse(controller.signal.aborted ? "TIMEOUT" : "NETWORK", started),
+        retryDelay: null
+      };
+    }
+  }
+
+  private async complete(request: ModelGatewayRequest): Promise<ModelGatewayResponse> {
+    const started = this.clock();
+    if (request.timeout_ms <= 0) return this.failedResponse("TIMEOUT", started);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), request.timeout_ms);
+    try {
+      const first = await this.sendOnce(request, controller, started);
+      const delay = first.retryDelay;
+      const remaining = request.timeout_ms - (this.clock() - started);
+      if (first.result.status !== "FAILED" ||
+          delay === null || request.provider_policy.max_attempts < 2 ||
+          delay > 2000 || remaining < delay + 2000 || controller.signal.aborted) {
+        return first.result;
+      }
+      if (delay > 0) await new Promise<void>(resolve => setTimeout(resolve, delay));
+      if (controller.signal.aborted) return this.failedResponse("TIMEOUT", started);
+      return (await this.sendOnce(request, controller, started)).result;
     } finally {
       clearTimeout(timer);
     }

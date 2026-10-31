@@ -38,11 +38,28 @@ if(home.status!==200 || !home.headers.get("content-type")?.includes("text/html")
   throw new Error("STAGING SMOKE: real SPA not delivered on same Worker origin (status "+home.status+")");
 }
 console.log("STAGING SMOKE: GET / 200 real SPA on SAME origin");
-const post=await fetch(new URL("/api/v1/intents",base),{
-  method:"POST",headers:{"Content-Type":"application/json","Origin":base.origin},
-  body:JSON.stringify({intent_kind:"CREATE",raw_intent:"smoke unauthorized"})
-});
-const body=await post.text();let parsed;
+// A newly deployed edge may reset one connection during activation. Retry
+// TRANSPORT failures only; an actual HTTP response is never retried or accepted
+// unless the exact unsigned-PoP 400/F01-ERR-001 contract holds below.
+let post,body="";
+for(let i=0;i<3;i++){
+  try {
+    post=await fetch(new URL("/api/v1/intents",base),{
+      method:"POST",headers:{"Content-Type":"application/json","Origin":base.origin},
+      body:JSON.stringify({intent_kind:"CREATE",raw_intent:"smoke unauthorized"}),
+      signal:globalThis.AbortSignal.timeout(10000)
+    });
+    body=await post.text();
+    break;
+  }catch(error) {
+    if(i===2) throw new Error("STAGING SMOKE: unsigned POST transport unavailable after 3 bounded tries", {cause:error});
+    console.warn("STAGING SMOKE: unsigned POST temporary transport error attempt="+(i+1)+
+      " kind="+(error instanceof Error ? error.name : "UNKNOWN"));
+    await sleep(1200*(i+1));
+  }
+}
+if(post===undefined) throw Error("STAGING SMOKE: unsigned POST never received HTTP");
+let parsed;
 try{parsed=JSON.parse(body)}catch{throw new Error("STAGING SMOKE: intents response not JSON, status "+post.status)}
 if (!post.headers.get("content-type")?.includes("application/json")
     || post.status !== 400

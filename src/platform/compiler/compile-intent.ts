@@ -1,4 +1,5 @@
 import type { CoverageResult } from "../capabilities/coverage.js";
+import { certifyCompositeCoverage } from "../capabilities/certified-composition.js";
 import { internalInvariant } from "../intent/intent-contract.js";
 import { restoreTrustedIntentState } from "../intent/intent-state.js";
 import { canonicalJson, isPlainRecord, tryCanonicalJson, type JsonRecord, type JsonValue } from "../intent/json-value.js";
@@ -162,19 +163,64 @@ function observe(run: CompileRun, progress: CreateProgressOperation | null, life
   if (progress !== null) run.dependencies.progressObserver?.(progress.snapshot(lifecycle));
 }
 
+/** Closed F04 debugging shape. No model/user semantic strings, references,
+ * tokens, IDs, provider payload or private values can appear in this log. */
+export function safeUnsupportedSignatures(coverage: CoverageResult,
+  requirements: readonly CapabilityRequirement[]): readonly string[] {
+  const map=new Map(requirements.map(r=>[r.requirement_id,r]));
+  const out=new Set<string>();
+  const canon=(types:readonly string[]):string=>
+    types.map(t=>/^(STRING|NUMBER|BOOLEAN|ENUM|LIST|RECORD)$/.test(t)?t:"OTHER").join("+")||"NONE";
+  for(const result of coverage.requirements) {
+    if(result.status!=="UNSUPPORTED" && result.status!=="EXTERNAL_REQUIRED") continue;
+    const r=map.get(result.requirementId);
+    if(r?.required!==true)continue;
+    const category=/^[a-z][a-z_]{1,39}$/.test(r.interaction_class) ?
+      r.interaction_class : "OTHER";
+    out.add(category+"."+canon(r.input_types)+"."+canon(r.output_types));
+    if(out.size>=12)break;
+  }
+  return [...out];
+}
+
+/** Fail with bounded, user-readable missing feature names from trusted F01 projection.
+ * The server never exposes model/provider errors, secrets, or unbounded raw prompts. */
+export function unsupportedCoverageDetails(
+  coverage: CoverageResult,
+  requirements: readonly CapabilityRequirement[]
+): IntentApiErrorDetails {
+  const byId = new Map(requirements.map((r) => [r.requirement_id, r]));
+  const missing = coverage.requirements
+    .filter((result) => result.status === "UNSUPPORTED" || result.status === "EXTERNAL_REQUIRED")
+    .map((result) => byId.get(result.requirementId))
+    .filter((requirement): requirement is CapabilityRequirement =>
+      requirement !== undefined && requirement.required);
+  return {
+    coverage_status: coverage.status,
+    unsupported_count: missing.length,
+    unsupported_features: missing.slice(0, 6).map((requirement) => requirement.semantic_need.slice(0, 160))
+  };
+}
+
 async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
   const { dependencies, guard, record, evidence } = run;
   const projection = verifiedResolvedIntent(record);
   const ephemeral = bindEphemeralInputs(projection.ephemeral_requirements, run.ephemeralInputs).context;
   const progress = progressApplies(record.intent_kind) ? deriveCreateProgress({ lifecycle_status: "READY", has_structured_intent: true, has_resolved_intent: true }) : null;
   observe(run, progress, record.lifecycle_status);
-  const refreshCoverage = (): CoverageResult => dependencies.coverage({ requirements: projection.resolved_intent.capability_requirements });
+  const refreshCoverage = (): CoverageResult => certifyCompositeCoverage(
+    dependencies.coverage({ requirements: projection.resolved_intent.capability_requirements }),
+    projection.resolved_intent.capability_requirements,
+    record.raw_intent ?? undefined
+  );
   const coverage = refreshCoverage();
   evidence.add("F01-EVT-008", { coverage_status: coverage.status, registry_version: coverage.registryVersion });
   if (!isCoverageAllowed(coverage)) {
+    console.warn("APPF2_F04_UNSUPPORTED_SIGNATURES="+
+      safeUnsupportedSignatures(coverage,projection.resolved_intent.capability_requirements).join("|"));
     const expires = new Date(dependencies.clock().getTime() + RAW_INTENT_RETENTION_MS).toISOString();
     requireTransition(await dependencies.intents.transitionIntent(guardNow(guard, dependencies), { intent_id: record.intent_id, expected_version: record.intent_version, lifecycle_status: "INCOMPATIBLE", expires_at: expires }));
-    throw new IntentApiError("F01-ERR-008", { details: { coverage_status: coverage.status } });
+    throw new IntentApiError("F01-ERR-008", { details: unsupportedCoverageDetails(coverage, projection.resolved_intent.capability_requirements) });
   }
   progress?.complete("F01-CREATE-CP-04");
   const composingVersion = requireTransition(
@@ -190,8 +236,10 @@ async function compileResolved(run: CompileRun): Promise<OperationSuccess> {
     deadline: new RequestDeadline(ROUTE_LEASE_MS[INTENT_ROUTE_KEYS.compile], () => dependencies.clock().getTime()),
     progress,
     resolved: projection.resolved_intent,
+    originalUserIntent: record.raw_intent ?? undefined,
     ephemeral,
     recomposeAvailable: await recomposeAvailable(dependencies, record, run.operation, run.reacquired),
+    maxValidationRecomposes: 1,
     refreshCoverage
   }, composingVersion, coverage);
   observe(run, progress, "VALIDATED");
@@ -247,7 +295,7 @@ async function terminalReplayDetails(
   }
   if (code === "F01-ERR-008" && record.resolved_intent !== null) {
     const coverage = dependencies.coverage({ requirements: requirementsOf(record.resolved_intent) });
-    return isCoverageAllowed(coverage) ? {} : { coverage_status: coverage.status };
+    return isCoverageAllowed(coverage) ? {} : unsupportedCoverageDetails(coverage, requirementsOf(record.resolved_intent));
   }
   return {};
 }

@@ -53,17 +53,21 @@ import {
   type OperationListener,
   type RuntimeOperationHandle
 } from "./runtime-operation.js";
-import { deepFreeze, type RuntimeValue } from "./runtime-value.js";
+import { deepFreeze, isRuntimeRecord, type RuntimeValue } from "./runtime-value.js";
 
 export interface RuntimeServices {
   readonly clock: MonotonicClock;
   readonly scheduler: WakeScheduler;
   /** Cryptographically strong 16-byte seed source (F03 §23). */
   readonly seedSource: () => Uint8Array;
+  /** Trusted browser device calendar YYYY-MM-DD; never from model or user event payload. */
+  readonly calendarDay?: () => string;
   readonly evidence?: RuntimeEvidenceSink;
   readonly effects?: LocalEffectPort;
   /** F07 PRODUCT_SAMPLE decision for this Instance session (F03-EVT-011 / -012); unsampled when omitted. */
   readonly productEvidenceSampled?: boolean;
+  /** Optional browser-only, untrusted saved state loaded after verified admission. */
+  readonly restoreState?: (contentHash: string) => unknown;
 }
 
 export interface RuntimeHostContext {
@@ -245,6 +249,8 @@ export class RuntimeInstance {
     };
   }
 
+  private calendarDay(): string | undefined { return this.host.services.calendarDay?.(); }
+
   public get status(): RuntimeStatus {
     return this.currentStatus;
   }
@@ -283,8 +289,9 @@ export class RuntimeInstance {
       const index = buildExecutionIndex(verified.blueprint, pinnedNodeBinder(this.host.trust));
       assertStaticResourceCeilings(index);
       const store = emptyStore(seedPcg32(this.instanceSeed()));
-      const tx = new StoreTransaction(index, store);
+      let tx = new StoreTransaction(index, store, undefined, this.calendarDay());
       tx.initialize();
+      tx = this.restoreSavedMutable(index, store, verified.contentHash) ?? tx;
       this.lifecycle.reconcile(
         expandNodeInstances(index, tx.env),
         this.lifecycleHost((incarnation, instance) => tx.stageCapability(incarnation.keyId, { key: instance.key, state: this.initialState(index, instance, tx.env) }))
@@ -339,6 +346,14 @@ export class RuntimeInstance {
   public readState(key: string): RuntimeValue | undefined {
     return this.store?.mutable.get(key) ?? this.store?.derived.get(key);
   }
+  /** Tab-local app host projection: mutable fields only, never execution internals. */
+  public snapshotMutableState(): Readonly<Record<string, RuntimeValue>> {
+    if (this.currentStatus !== "READY" || this.store === undefined || this.index === undefined) return {};
+    return Object.fromEntries([...this.index.mutable.keys()].map((key) => [
+      key, deepFreeze(structuredClone(this.store!.mutable.get(key)!))
+    ]));
+  }
+
 
   public readRule(ruleId: string): RuleEntry | undefined {
     return this.store?.rules.get(ruleId);
@@ -454,7 +469,26 @@ export class RuntimeInstance {
   }
 
   private readView(): ReadView | undefined {
-    return this.index === undefined || this.store === undefined ? undefined : { index: this.index, tx: new StoreTransaction(this.index, this.store) };
+    return this.index === undefined || this.store === undefined ? undefined : { index: this.index, tx: new StoreTransaction(this.index, this.store, undefined, this.calendarDay()) };
+  }
+
+  /** Saved browser data is never admission truth: restore only a complete typed snapshot. */
+  private restoreSavedMutable(index: ExecutionIndex, store: CommittedStore, hash: string): StoreTransaction | undefined {
+    if (this.host.services.restoreState === undefined ||
+        index.blueprint.result.outputs.some((output) => output.sensitivity === "DO_NOT_PERSIST")) return undefined;
+    try {
+      const snapshot = this.host.services.restoreState(hash);
+      const keys = [...index.mutable.keys()];
+      if (!isRuntimeRecord(snapshot) || Object.keys(snapshot).length !== keys.length ||
+        !keys.every((key) => Object.hasOwn(snapshot, key) &&
+          valueConforms(snapshot[key], index.mutable.get(key)!))) return undefined;
+      const tx = new StoreTransaction(index, store, undefined, this.calendarDay());
+      tx.initialize();
+      for (const key of keys) tx.writeMutable(key, deepFreeze(structuredClone(snapshot[key]!)));
+      return tx;
+    } catch {
+      return undefined; // Bad local state leaves immutable Blueprint defaults untouched.
+    }
   }
 
   /** H08 / added clone: one capability-local slot per NodeInstanceKey (BF-036), within the pinned local-state budget. */
@@ -506,7 +540,7 @@ export class RuntimeInstance {
     if (!this.dynamicClones) {
       return;
     }
-    const env = new StoreTransaction(index, store).env;
+    const env = new StoreTransaction(index, store, undefined, this.calendarDay()).env;
     this.lifecycle.reconcile(
       expandNodeInstances(index, env),
       this.lifecycleHost((incarnation, instance) => this.initializeClone(index, store, incarnation, instance))
@@ -516,7 +550,7 @@ export class RuntimeInstance {
   /** A failed added-clone initializer isolates only that clone; the Instance and its siblings stay READY. */
   private initializeClone(index: ExecutionIndex, store: CommittedStore, incarnation: CloneIncarnation, instance: ConcreteNodeInstance): void {
     try {
-      const state = this.initialState(index, instance, new StoreTransaction(index, store).env);
+      const state = this.initialState(index, instance, new StoreTransaction(index, store, undefined, this.calendarDay()).env);
       installCapabilitySlot(store, incarnation.keyId, { key: instance.key, state });
     } catch (error: unknown) {
       const failure = asFailure(error);
@@ -715,7 +749,7 @@ export class RuntimeInstance {
     }
     const action = index.actionById.get(actionId) ?? invariantBroken(`Mapped action ${actionId} does not exist.`);
     const guard = new OperationGuard(operation, this.guardHost);
-    const tx = new StoreTransaction(index, store, (boundary) => guard.check(boundary));
+    const tx = new StoreTransaction(index, store, (boundary) => guard.check(boundary), this.calendarDay());
     try {
       guard.check("OPERATION_ADMISSION");
       executeAction({

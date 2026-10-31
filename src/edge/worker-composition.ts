@@ -2,18 +2,21 @@ import { VALIDATOR_REGISTRY } from "../../generated/capabilities/validator-regis
 import { createExecutionAdmissionService } from "../platform/blueprint/execution-admission.js";
 import { SplitBlueprintAdmissionRepository } from "../platform/blueprint/f02-admission-port.js";
 import { PostgresOriginalIntentReadRepository } from "../platform/blueprint/original-intent-lineage.js";
+import { PostgresPublishedShareRepository } from "../platform/blueprint/published-share-repository.js";
 import type { PostgresExecutor } from "../platform/blueprint/postgres-blueprint-repository.js";
 import { createBundledReleaseSource } from "../platform/capabilities/bundled-release.js";
 import { BLUEPRINT_SCHEMA_RANGE, RUNTIME_VERSION } from "../platform/capabilities/registry.js";
 import { CORE_CAPABILITY_HANDLERS } from "../platform/runtime/core-handlers.js";
 import {
   WorkerPostgresExecutor,
+  NO_REQUEST_DB_CONTEXT,
   type HyperdrivePostgresBinding,
   type WorkerRequestDbContext
 } from "../platform/blueprint/worker-postgres-executor.js";
 import { IntentCompilerService } from "../platform/compiler/intent-service.js";
 import { OpenAiCompatibleModelGateway } from "../platform/compiler/openai-compatible-gateway.js";
-import { appf2ModelProviderConfig } from "../platform/compiler/appf2-model-provider.js";
+import { appf2ModelProviderConfig, appf2ModelFallbackConfig } from "../platform/compiler/appf2-model-provider.js";
+import { RateLimitFailoverGateway } from "../platform/compiler/rate-limit-failover-gateway.js";
 import {
   PostgresCompilerRunRepository,
   PostgresIdempotencyRepository,
@@ -40,13 +43,50 @@ export interface Appf2WorkerEnv {
   readonly APPF2_MODEL_BASE_URL: string;
   readonly APPF2_MODEL_API_KEY: string;
   readonly APPF2_MODEL_NAME: string;
+  readonly APPF2_QA_BROWSER?: unknown;
+  /** Candidate multi-file Job API: disabled unless explicitly enabled in a protected staging Worker. */
+  readonly APPF2_AGENT_CANDIDATE_ENABLED?: string;
+  /** User selected no-extra-cost Sprint 3.5; never permit paid Agent dispatch. */
+  readonly APPF2_AGENT_FREE_ONLY?: string;
+  /** Staging-only model key for P256 signed, journaled QA/code/one repair.
+   * Does NOT enable paid Cloudflare Containers, Browser Run or legacy Agent.
+   */
+  readonly APPF2_FREE_AI_GENERATION_ENABLED?: string;
+  readonly APPF2_FREE_AI_KEY?: string;
+  /** OPTIONAL limited GitHub Actions dispatch token; absent => no auto CI, no source leak. */
+  readonly APPF2_FREE_CI_GITHUB_TOKEN?: string;
+  /** Signed single-step orchestration; OFF by default, independent of paid-model/container flags. */
+  readonly APPF2_AGENT_AUTOSTEP_ENABLED?: string;
+  /** Independent verifier secret, never sent to the browser; OFF by default. */
+  readonly APPF2_AGENT_QA_REVIEW_ENABLED?: string;
+  readonly APPF2_AGENT_QA_VERIFIER_SECRET?: string;
+  /** Separate paid Browser Run opt-in, service binding and private token. OFF by default. */
+  readonly APPF2_AGENT_QA_BROWSER_ENABLED?: string;
+  readonly APPF2_QA_BROWSER_SERVICE?: import("./agent-sandbox-run.js").SandboxServiceBinding;
+  readonly APPF2_QA_PRIVATE_TOKEN?: string;
+  /** Second independent opt-in for paid model dispatch: OFF unless "1". */
+  readonly APPF2_AGENT_MODEL_EXECUTION_ENABLED?: string;
+  /** Dedicated OpenAI key; never reuse the F01 provider's key or expose to browser. */
+  readonly APPF2_OPENAI_AGENT_API_KEY?: string;
+  /** Private Sandbox bridge: pinned UUID, or explicit OWNER_SCOPED_JOBS mode.
+   * Both require creator PoP, model journal and DB budget; OFF by default. */
+  readonly APPF2_AGENT_SANDBOX_EXECUTION_ENABLED?: string;
+  /** Real private Worker Service Binding. Does not expose workers_dev. */
+  readonly APPF2_SANDBOX_BROKER_SERVICE?: import("./agent-sandbox-run.js").SandboxServiceBinding;
+  readonly APPF2_SANDBOX_BROKER_URL?: string;
+  readonly APPF2_SANDBOX_BROKER_TOKEN?: string;
+  readonly APPF2_SANDBOX_ALLOWED_JOB_ID?: string;
   readonly APPF2_MODEL_PROVIDER?: "openai" | "xai" | "deepseek";
+  /** Set only with explicit authorization to send a 429 retry to this provider. */
+  readonly APPF2_MODEL_FALLBACK_PROVIDER?: "xai" | "deepseek";
   readonly APPF2_XAI_API_KEY?: string;
   readonly APPF2_XAI_MODEL_NAME?: string;
   readonly APPF2_DEEPSEEK_API_KEY?: string;
   readonly APPF2_DEEPSEEK_MODEL_NAME?: string;
   readonly APPF2_MODEL_INPUT_COST_PER_MILLION?: string;
   readonly APPF2_MODEL_OUTPUT_COST_PER_MILLION?: string;
+  readonly APPF2_MODEL_OUTPUT_CAP_ANALYSIS?: string;
+  readonly APPF2_MODEL_OUTPUT_CAP_BLUEPRINT?: string;
   readonly APPF2_IDENTITY_COOKIE_SECRET: string;
 }
 
@@ -88,8 +128,9 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
     now: () => new Date()
   });
   const runs = new PostgresCompilerRunRepository(executor);
-  const gateway = new OpenAiCompatibleModelGateway(appf2ModelProviderConfig({
+  const aiConfig = {
     APPF2_MODEL_PROVIDER: env.APPF2_MODEL_PROVIDER,
+    APPF2_MODEL_FALLBACK_PROVIDER: env.APPF2_MODEL_FALLBACK_PROVIDER,
     APPF2_MODEL_BASE_URL: env.APPF2_MODEL_BASE_URL,
     APPF2_MODEL_API_KEY: env.APPF2_MODEL_API_KEY,
     APPF2_MODEL_NAME: env.APPF2_MODEL_NAME,
@@ -98,8 +139,16 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
     APPF2_DEEPSEEK_API_KEY: env.APPF2_DEEPSEEK_API_KEY,
     APPF2_DEEPSEEK_MODEL_NAME: env.APPF2_DEEPSEEK_MODEL_NAME,
     APPF2_MODEL_INPUT_COST_PER_MILLION: env.APPF2_MODEL_INPUT_COST_PER_MILLION,
-    APPF2_MODEL_OUTPUT_COST_PER_MILLION: env.APPF2_MODEL_OUTPUT_COST_PER_MILLION
-  }).config);
+    APPF2_MODEL_OUTPUT_COST_PER_MILLION: env.APPF2_MODEL_OUTPUT_COST_PER_MILLION,
+    APPF2_MODEL_OUTPUT_CAP_ANALYSIS: env.APPF2_MODEL_OUTPUT_CAP_ANALYSIS,
+    APPF2_MODEL_OUTPUT_CAP_BLUEPRINT: env.APPF2_MODEL_OUTPUT_CAP_BLUEPRINT
+  };
+  const primary = new OpenAiCompatibleModelGateway(appf2ModelProviderConfig(aiConfig).config);
+  const alternative = appf2ModelFallbackConfig(aiConfig);
+  const gateway = alternative === undefined ? primary :
+    new RateLimitFailoverGateway(primary, new OpenAiCompatibleModelGateway(alternative.config));
+  /* Existing compiler request remains one logical operation, even if explicit
+   * failover after 429 uses one consented alternative. */
   const service = new IntentCompilerService({
     intents: new PostgresIntentRepository(executor),
     runs,
@@ -152,6 +201,29 @@ export function createWorkerRequestComposition(env: Appf2WorkerEnv, context: Wor
 /** Original-Intent body read + fresh execution admission against the deployment's actual bundled handler catalog. */
 export function createBlueprintDeliveryComposition(env: Appf2WorkerEnv, context: WorkerRequestDbContext): BlueprintDeliveryComposition {
   return composeBlueprintDelivery(new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH, context));
+}
+
+/** Public F05 recipient: exact ACTIVE share is checked by a narrow DB function on every request.
+ * No original Intent cookie, grant or model invocation is used for a recipient. */
+export function createPublicShareDeliveryComposition(env:Appf2WorkerEnv,shareId:string):BlueprintDeliveryComposition{
+  const executor=new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,NO_REQUEST_DB_CONTEXT);
+  const content=new PostgresPublishedShareRepository(executor,shareId);
+  return {
+    executor,
+    lineage:{
+      verifyLineage:async hash=>{
+        const row=await content.readContent(hash);
+        return row!==undefined && row.content_hash===hash && row.trust_status==="VALIDATED"
+          ? {verified:true as const,content_hash:hash,own_validation_run_id:shareId,registry_digest:row.admitted_registry_digest,trust_status:row.trust_status}
+          : {verified:false as const,content_hash:hash,failure:"CONTENT_UNKNOWN" as const};
+      },
+      readCanonicalBody:(hash)=>content.readCanonicalBody(hash)
+    },
+    admission:createExecutionAdmissionService({
+      content,releases:createBundledReleaseSource({bundledHandlers:CORE_CAPABILITY_HANDLERS}),
+      runtimeVersion:RUNTIME_VERSION,supportedBlueprintSchemaRange:BLUEPRINT_SCHEMA_RANGE
+    })
+  };
 }
 
 /** The executor must already be bound to the verified request RLS context. */

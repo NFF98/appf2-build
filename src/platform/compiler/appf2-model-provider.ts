@@ -38,7 +38,9 @@ export function appf2ModelProviderConfig(
     const config = openAiCompatibleConfigFromEnv({
       ...env,
       APPF2_MODEL_BASE_URL: env.APPF2_MODEL_BASE_URL?.trim() || "https://api.openai.com/v1",
-      APPF2_MODEL_NAME: env.APPF2_MODEL_NAME?.trim() || "gpt-4.1"
+      APPF2_MODEL_NAME: env.APPF2_MODEL_NAME?.trim() || "gpt-4.1",
+      APPF2_MODEL_OUTPUT_CAP_ANALYSIS: env.APPF2_MODEL_OUTPUT_CAP_ANALYSIS,
+      APPF2_MODEL_OUTPUT_CAP_BLUEPRINT: env.APPF2_MODEL_OUTPUT_CAP_BLUEPRINT
     });
     if (new URL(config.baseUrl).origin !== "https://api.openai.com") {
       throw new ModelGatewayConfigError(["APPF2_MODEL_BASE_URL (OpenAI provider must use api.openai.com)"]);
@@ -46,4 +48,21 @@ export function appf2ModelProviderConfig(
     return { provider, config };
   }
   return alternateProviderConfig(provider, env);
+}
+
+/** Explicit opt-in only. Fallback never selects itself or transfers to an
+ * unconfigured provider; no key or model name is emitted to logs. */
+export function appf2ModelFallbackConfig(
+  env: Readonly<Record<string, string | undefined>>
+): { readonly provider: Appf2ModelProvider; readonly config: OpenAiCompatibleConfig } | undefined {
+  const value = env.APPF2_MODEL_FALLBACK_PROVIDER?.trim().toLowerCase() || "";
+  if (!value) return undefined;
+  if (value !== "xai" && value !== "deepseek") {
+    throw new ModelGatewayConfigError(["APPF2_MODEL_FALLBACK_PROVIDER (expected xai or deepseek)"]);
+  }
+  const primary = (env.APPF2_MODEL_PROVIDER || "openai").trim().toLowerCase();
+  if (value === primary) {
+    throw new ModelGatewayConfigError(["APPF2_MODEL_FALLBACK_PROVIDER (must differ from primary)"]);
+  }
+  return alternateProviderConfig(value, env);
 }

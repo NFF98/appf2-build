@@ -263,7 +263,7 @@ export class CreationController {
     if (step.kind === "ANSWERS" && Object.keys(rejected).length > 0) {
       return this.patch(() => ({ busy: false, phase: decisionPhase(step.decision), problems: rejected }));
     }
-    this.patch(() => ({ busy: false, phase: { kind: "RECOVERABLE_FAILURE", step, reason } }));
+    this.patch(() => ({ busy: false, phase: { kind: "RECOVERABLE_FAILURE", step, reason, ...(failure.kind === "API" ? { code: failure.code, httpStatus: failure.httpStatus, unsupportedFeatures: failure.unsupportedFeatures, unsupportedCount: failure.unsupportedCount } : {}) } }));
   }
 
   private patch(change: (session: CreationSession) => Partial<CreationSession>): void {

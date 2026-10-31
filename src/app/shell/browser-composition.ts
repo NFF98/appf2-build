@@ -3,12 +3,16 @@ import type { RuntimeAppHost } from "../../platform/runtime/runtime-operation.js
 import { CreationController } from "../create/creation-controller.js";
 import { createF01Client } from "../create/f01-client.js";
 import { PopKeyring } from "../create/pop-keyring.js";
+import { createBrowserPopKeyPersistence } from "./tab-app-recovery.js";
 import { findCapsule } from "../discover/capsules.js";
 import { PromptDraftStore } from "../discover/prompt-draft-store.js";
 import { createAppDeliveryClient } from "../runtime/app-delivery.js";
 import { AppLauncher } from "../runtime/app-launcher.js";
+import { createPublishedShareDeliveryClient } from "../runtime/app-delivery.js";
+import { createPublishedAppPublisher, type PublishedAppPublisher } from "../runtime/publish-client.js";
 
 export interface BrowserComposition {
+  readonly publisher:PublishedAppPublisher;
   readonly controller: CreationController;
   readonly launcher: AppLauncher;
 }
@@ -29,14 +33,17 @@ function registeredAppHost(): RuntimeAppHost | null {
  * so the Intent Continuity cookie is always paired with proof from the same browser key.
  */
 export function createBrowserComposition(): BrowserComposition {
-  const keyring = new PopKeyring({ subtle: globalThis.crypto.subtle, now: () => Date.now() });
+  const keyring = new PopKeyring({
+    subtle: globalThis.crypto.subtle, now: () => Date.now(),
+    persistence: createBrowserPopKeyPersistence()
+  });
   const controller = new CreationController({
     client: createF01Client(browserFetch, keyring),
     anonymousId: () => ensureAnonymousId(createBrowserIdentityDependencies()),
     newIdempotencyKey: () => globalThis.crypto.randomUUID()
   });
-  const launcher = new AppLauncher({ delivery: createAppDeliveryClient(browserFetch, keyring), host: registeredAppHost() });
-  return { controller, launcher };
+  const launcher = new AppLauncher({ delivery: createAppDeliveryClient(browserFetch,keyring),published:createPublishedShareDeliveryClient(browserFetch),host:registeredAppHost() });
+  return { controller, launcher,publisher:createPublishedAppPublisher(browserFetch,keyring) };
 }
 
 /** F00 §26 prompt draft in first-party `localStorage`; reading the property itself may throw when storage is blocked. */

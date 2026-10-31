@@ -1,0 +1,70 @@
+import { describe, expect, test } from "vitest";
+import { normalizeAnalysisDescriptorFlags } from "../../src/platform/compiler/normalize-analysis-shape.js";
+import type { JsonValue } from "../../src/platform/intent/json-value.js";
+
+describe("Sprint 3.5 F01 question-type metadata safety", () => {
+  test("drops only blank optional provenance fields and retains verified references", () => {
+    const payload = {
+      actors: [{ id: "owner", source_ref: { policy_id: "", policy_version: "", origin_item_id: "" } }],
+      entities: [{ id: "entry", source_ref: { policy_id: "P1", policy_version: "", origin_item_id: "task" } }],
+      known_inputs: [{ id: "budget", source_ref: { policy_id: "P2" } }],
+      requested_outputs: [{ id: "summary", source: "USER_EXPLICIT",
+        source_ref: { policy_id: "", origin_item_id: "money" } }],
+      capability_hints: [], constraints: [{
+        id: "no_sync", source_ref: { policy_id: "" }, resolution_state: "CONFIRMED",
+        resolved_value: true, materiality: "MATERIAL", policy_risk_flags: []
+      }]
+    };
+    const untouched = structuredClone(payload);
+    const normalized = normalizeAnalysisDescriptorFlags(payload as JsonValue) as typeof payload;
+    expect(normalized.actors[0]).toEqual({ id: "owner" });
+    expect(normalized.entities[0]?.source_ref).toEqual({ policy_id: "P1", origin_item_id: "task" });
+    expect(normalized.known_inputs[0]).toEqual(payload.known_inputs[0]);
+    expect(normalized.requested_outputs[0]?.source_ref).toEqual({ origin_item_id: "money" });
+    expect(normalized.constraints[0]?.resolved_value).toBe(true);
+    expect(normalized.constraints[0]?.source_ref).toBeUndefined();
+    expect(payload).toEqual(untouched);
+  });
+
+  test("deduplicates only identical hint type tokens after safe canonicalization", () => {
+    const source = { requested_outputs: [], capability_hints: [{
+      hint_id: "task_entry", input_types: ["STRING", "STRING", "INTEGER", "NUMBER", "BOOLEAN"],
+      output_types: ["LIST", "ARRAY", "RECORD", "OBJECT"],
+      required: true, semantic_need: "Create new task", source_item_ids: ["task"], impact_level: "HIGH"
+    }] };
+    const original = structuredClone(source);
+    const normalized = normalizeAnalysisDescriptorFlags(source as JsonValue) as typeof source;
+    expect(normalized.capability_hints[0]?.input_types).toEqual(["STRING", "NUMBER", "BOOLEAN"]);
+    expect(normalized.capability_hints[0]?.output_types).toEqual(["LIST", "RECORD"]);
+    expect(normalized.capability_hints[0]?.required).toBe(true);
+    expect(normalized.capability_hints[0]?.semantic_need).toBe("Create new task");
+    expect(source).toEqual(original);
+  });
+
+  test("repairs unambiguous question metadata without modifying required facts or unsafe choice contracts", () => {
+    const payload = { requested_outputs: [], capability_hints: [], constraints: [
+      { id: "weekly_budget", expected_value_type: "NUMBER", question_type: "FREE_TEXT",
+        resolution_state: "UNRESOLVED", alternatives: [], policy_risk_flags: [],
+        required_for_execution: true, source: "USER_EXPLICIT" },
+      { id: "risky", expected_value_type: "NUMBER", question_type: "FREE_TEXT",
+        alternatives: [], policy_risk_flags: ["MONEY"] },
+      { id: "unsupported_choices", expected_value_type: "ENUM", question_type: "FREE_TEXT",
+        alternatives: ["only_one"], policy_risk_flags: [] },
+      { id: "maybe_choice", expected_value_type: "STRING", question_type: "SINGLE_CHOICE",
+        alternatives: ["A", "B"], policy_risk_flags: [] },
+      { id: "safe_choices", expected_value_type: "ENUM", question_type: "FREE_TEXT",
+        alternatives: ["A", "B"], policy_risk_flags: [] }
+    ] };
+    const input = structuredClone(payload);
+    const result = normalizeAnalysisDescriptorFlags(payload as JsonValue) as typeof payload;
+    expect(result.constraints[0]?.question_type).toBe("NUMBER");
+    expect(result.constraints[0]?.expected_value_type).toBe("NUMBER");
+    expect(result.constraints[0]?.source).toBe("USER_EXPLICIT");
+    expect(result.constraints[1]).toEqual(payload.constraints[1]);
+    expect(result.constraints[2]).toEqual(payload.constraints[2]);
+    expect(result.constraints[3]).toEqual(payload.constraints[3]);
+    expect(result.constraints[4]?.question_type).toBe("SINGLE_CHOICE");
+    expect(payload).toEqual(input);
+  });
+
+});

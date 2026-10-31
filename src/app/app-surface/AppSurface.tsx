@@ -5,6 +5,7 @@ import { RuntimeProcessingPresenter } from "../runtime/runtime-processing.js";
 import { RuntimeProcessingLayer } from "../runtime/RuntimeProcessingLayer.js";
 import { Brand } from "../shell/Brand.js";
 import { changeEntryFor, type AppSession, type ChangeChoice, type ChangeEntry } from "./app-session.js";
+import { ResultCorrectionDialog } from "./ResultCorrectionDialog.js";
 
 /** S03 entries handed to their owning surfaces (S05A / S05B, O01 Share, O02 Correction). */
 export type AppSurfaceEntry = ChangeEntry | { readonly destination: "O01" } | { readonly destination: "O02" };
@@ -31,6 +32,7 @@ type AppSurfaceProps = {
   readonly session: AppSession;
   readonly onHome: () => void;
   readonly onEntry: (entry: AppSurfaceEntry) => EntryHandoff;
+  readonly onPublish?:()=>Promise<string|null>;
   readonly inspection?: InspectionContext;
 };
 
@@ -164,11 +166,17 @@ function EntryNotice({ notice, onDismiss }: { readonly notice: UnavailableNotice
  * hands Share / Modify / Remix / Correction to their owners and never mutates the Runtime or its Blueprint; an entry
  * whose owner is unavailable is answered in place and leaves the App, its result and the focused control as they are.
  */
-export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceProps) {
+// eslint-disable-next-line complexity, max-lines-per-function -- Actual F03 controls and explicit F05 consent must keep the same App owner/session boundary.
+export function AppSurface({ session, onHome, onEntry, onPublish, inspection }: AppSurfaceProps) {
   const { current } = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const { app, contentHash } = current;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [notice, setNotice] = useState<UnavailableNotice | null>(null);
+  const [publishOpen,setPublishOpen]=useState(false);
+  const [correctionOpen,setCorrectionOpen]=useState(false);
+  const [publishing,setPublishing]=useState(false);
+  const [publishedUrl,setPublishedUrl]=useState<string|null>(null);
+  const [publishFailed,setPublishFailed]=useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const modifyRef = useRef<HTMLButtonElement>(null);
   const [presenter, setPresenter] = useState<RuntimeProcessingPresenter | null>(null);
@@ -190,10 +198,34 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
   }, [sheetOpen]);
 
   const enter = (entry: AppSurfaceEntry): void => {
+    if(entry.destination==="O01"&&onPublish!==undefined){setPublishOpen(true);setPublishFailed(false);return;}
+    if(entry.destination==="O02"&&inspection===undefined){setCorrectionOpen(true);setNotice(null);return;}
     const handoff = onEntry(entry);
     setNotice((previous) =>
       handoff === "UNAVAILABLE" ? { destination: entry.destination, sequence: (previous?.sequence ?? 0) + 1, contentHash } : null
     );
+  };
+  /** Find a real user-editable F03 input. No direct Result/Blueprint mutation. */
+  const editInputs=():boolean=>{
+    const node=mainRef.current?.querySelector<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>(
+      '.s03-app input:not([type="hidden"]):not(:disabled):not([readonly]), '+
+      '.s03-app textarea:not(:disabled):not([readonly]), .s03-app select:not(:disabled)'
+    );
+    if(node===undefined||node===null)return false;
+    setCorrectionOpen(false);
+    globalThis.requestAnimationFrame(()=>{
+      node.scrollIntoView({block:"center",behavior:"instant"});
+      node.focus({preventScroll:true});
+    });
+    return true;
+  };
+  const confirmPublish=async():Promise<void>=>{
+    if(onPublish===undefined||publishing)return;
+    setPublishing(true);
+    const url=await onPublish();
+    setPublishing(false);
+    if(url===null){setPublishFailed(true);return;}
+    setPublishedUrl(url);setPublishOpen(false);
   };
   const visibleNotice = notice?.contentHash === contentHash ? notice : null;
   const choose = (choice: ChangeChoice): void => {
@@ -205,7 +237,7 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
 
   return (
     <div className={visibleNotice === null ? "s03" : "s03 s03-with-notice"}>
-      <header className="s03-header" inert={sheetOpen}>
+      <header className="s03-header" inert={sheetOpen||correctionOpen}>
         <button type="button" className="s03-home" aria-label="回到首頁" onClick={onHome}>
           <Brand />
         </button>
@@ -236,12 +268,12 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
           </button>
         </div>
       ) : null}
-      <main className="s03-main" ref={mainRef} tabIndex={-1} aria-label={title} inert={sheetOpen}>
+      <main className="s03-main" ref={mainRef} tabIndex={-1} aria-label={title} inert={sheetOpen||correctionOpen}>
         <div className="s03-processing">{presenter === null ? null : <RuntimeProcessingLayer presenter={presenter} />}</div>
         <GeneratedApp app={app} />
         <ResultSurface app={app} onCorrection={() => enter({ destination: "O02" })} />
       </main>
-      <nav className="s03-bottom-nav" aria-label="App 導覽" inert={sheetOpen}>
+      <nav className="s03-bottom-nav" aria-label="App 導覽" inert={sheetOpen||correctionOpen}>
         <ul className="s03-bottom-list">
           <li>
             <button type="button" className="s03-nav-item is-active" aria-current="page">
@@ -269,6 +301,23 @@ export function AppSurface({ session, onHome, onEntry, inspection }: AppSurfaceP
       <div className="s03-notice-host" inert={sheetOpen}>
         <EntryNotice notice={visibleNotice} onDismiss={() => setNotice(null)} />
       </div>
+      {publishedUrl!==null?<section className="s03-notice" role="status" aria-label="公開分享連結">
+        <p>已公開！其他人可直接使用，不需再次產生 AI。</p>
+        <a href={publishedUrl}>{publishedUrl}</a>
+        <button type="button" className="btn btn-secondary" onClick={()=>setPublishedUrl(null)}>關閉</button>
+      </section>:null}
+      {publishOpen?<div className="s03-sheet-backdrop">
+        <div className="s03-sheet" role="dialog" aria-modal="true" aria-labelledby="publish-title">
+          <h2 id="publish-title">公開分享這個 App？</h2>
+          <p>公開的是 App 設計與初始資料，任何人都能從首頁直接使用。你的個人操作紀錄不會分享。請確認設計裡沒有私人資料。</p>
+          {publishFailed?<p role="alert">發布失敗或沒有原作者權限；未公開，也沒有再次呼叫 AI。</p>:null}
+          <button type="button" className="btn btn-primary" disabled={publishing} onClick={()=>{void confirmPublish();}}>
+            {publishing?"正在核對原作者授權…":"確認公開（不使用 AI）"}
+          </button>
+          <button type="button" className="btn btn-secondary" disabled={publishing} onClick={()=>setPublishOpen(false)}>取消</button>
+        </div>
+      </div>:null}
+      {correctionOpen?<ResultCorrectionDialog app={app} onClose={()=>setCorrectionOpen(false)} onEditInputs={editInputs}/>:null}
       {sheetOpen ? <ChangeSheet onChoose={choose} onClose={closeSheet} /> : null}
     </div>
   );
