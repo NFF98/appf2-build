@@ -144,3 +144,4 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] validates credential presence and routes.
 # Recheck real GitHub dispatch result class after owner-signed no-cost Job import.
 # Staging Hyperdrive cold-start: allow long zero-cost source-import only; preserve no-AI limits.
+# GitHub REST: Worker dispatch uses explicit User-Agent, rerun real signed product path.
