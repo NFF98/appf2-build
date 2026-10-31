@@ -89,6 +89,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  // eslint-disable-next-line complexity -- Explicit one-click AI, browser QA and repair require separate consent gates.
  const execute=async(resume:boolean)=>{
   if(busy||!aiConsent)return;
+  // Never carry one project's QA or preview into a new immutable snapshot.
+  setQaChecks([]);setQaOutcome("");setPreviewReady(false);
+  previewHost.current?.replaceChildren();
   setBusy(true);setError("");stop.current=false;
   try{
    const worker=agent.current??new BrowserCodingAgent();
