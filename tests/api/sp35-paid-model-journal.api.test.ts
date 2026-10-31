@@ -127,6 +127,18 @@ describe("Sprint 3.5 private GPT-6 GitHub Runner scope, never a provider call",(
   expect(await aiTicketScopeHash({...base,request_hash:"sha256:"+"b".repeat(64)}))
    .not.toBe(opened?.project_hash);
  });
+ it("commits immutable request and closes Hyperdrive before GitHub dispatch",()=>{
+  const source=readFileSync("src/edge/free-ai-dispatch.ts","utf8");
+  const stored=source.indexOf("appf2_agent_model_runner_request");
+  const claimed=source.indexOf("await claimModelCall(db,row)");
+  const closed=source.indexOf("await db.close()");
+  const sent=source.indexOf("await sendFreeCiGithubDispatch(");
+  expect(stored).toBeGreaterThan(0);
+  expect(claimed).toBeGreaterThan(stored);
+  expect(closed).toBeGreaterThan(claimed);
+  expect(sent).toBeGreaterThan(closed);
+  expect(source).toContain("SP35_AI_RUNNER_DISPATCH_UNCONFIRMED_");
+ });
  it("separates private paid AI from existing free Docker and staging jobs",()=>{
   const workflow=readFileSync(".github/workflows/sp35-staging-only.yml","utf8");
   const script=readFileSync("deploy/scripts/sp35-paid-ai-github-runner.mjs","utf8");
