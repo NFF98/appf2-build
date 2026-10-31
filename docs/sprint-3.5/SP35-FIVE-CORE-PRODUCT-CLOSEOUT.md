@@ -82,12 +82,22 @@
 
 **口徑更正**：以前交接把 D0–D2 全標 `NOT_RUN` 造成「三天歸零」誤解。D0–D3 只指**這份收尾計畫尚未完成的專項驗收**，不代表 10/28–31 的功能、Git commit、Staging 真實歷史、測試都沒有完成。另需在每次交接同時報「已存在的工程資產」及「剩餘產品驗收」。
 
-## G. 執行交接紀錄（只寫已證實事實）
+## F.1 本輪 D0 直接觀察（2026-10-31）
+
+- 已核對既有真 Staging [run 40661201647](https://github.com/NFF98/appf2-build/actions/runs/40661201647) 在 **2026-10-28** 部署舊單檔路線，健康 GET JSON 200 並有真 AI／PG／Browser 卡片 PASS；不能證明 **2026-10-31 新 Agent** 已佈署。
+- 新 Agent 原始碼確實在 PR #419 HEAD；Staging 發版 Workflow 需要獨立 `workflow_dispatch`、私有服務選配 `APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED=1`、模型部署開關，**GitHub push 不會自動佈署**。沒有真實 URL／request 證據前，不能把新五核標 E2E PASS。
+- Cloudflare [readonly check 41166333586](https://github.com/NFF98/appf2-build/actions/runs/41166333586) SUCCESS 僅代表無付費的查詢流程執行；訂閱 API `403` 不等於 Workers 訂閱未開通。
+- 外部觀測接口目前無法直接連到 Staging（工具回網路／DNS 不可及），**不是**證明 Staging 本身離線。已在既有免費 `sp35-cloudflare-readonly.yml` 增加 GitHub runner 的**只讀** Staging `GET /api/v1/health` 及 Cloudflare Scripts 列舉檢查；不觸發佈署、付費 AI、容器或 Browser。
+- 本輪查到可重現於 [CI 41166333596](https://github.com/NFF98/appf2-build/actions/runs/41166333596) 的非產品核心回歸：427 API PASS、單一 2 MiB 編譯資產深度比較超 5 秒。將 Vitest 巨型 typed-array deep diff 改為**逐位元組 native Buffer equality**，保留真正 bytes 不變；需以新的 GitHub run 再驗證。**這只修工程測試信號，不冒充產品 E2E 改善。**
+
+**最早尚未排除的產品 BLOCK**：目前 Staging 是否跑到新的 Agent API、是否具備私有 Sandbox/QA Worker binding，與真 AI/PG 可用證據。待上述只讀結果排除後才啟動任何需授權的雲端測試／集中產品程式修復。
+
+## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
 | --- | --- | --- |
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 更新於 `6ed57015d340b1863da5ecb5d586b28263b012d0`；Build PR #419 本檔 |
-| D0 | **PARTIAL**（已盤點 GitHub/10-28～31 程式與測試；live First-Hop 仍待查） | **不重做已 PASS 的單檔 Staging 與 offline foundation**；下一步只確認新 Agent 的真 Cloud first failing hop，已知 Cloudflare subscription READ HTTP 403 |
+| D0 | **PARTIAL — 已辨認未經真實 Staging 證實的新 Agent 部署／binding，並加上 GitHub GET-only 診斷** | 本檔 F.1；需讀新 readonly run 的 `SP35 STAGING LIVE HEALTH`、`SP35 WORKER`，再確認 Agent API；絕不把工具無法連線當作實際網站 DOWN |
 | D1 | **FOUNDATION CODE IMPLEMENTED；CLOUD E2E NOT_VERIFIED** | 沿用既有 Agent/Journal/Sandbox/QA；只補真實部署連線／必要錯誤；已 PASS 的 offline foundation 不再重做 |
 | D2 | **舊單檔卡片 STAGING PASS；新多檔案完整鏈 NOT_VERIFIED** | 沿用既有公開卡片／F05，接新 Agent QA→v2 admission→卡片；生成後端 DB Profile 尚缺 |
 | D3 | NOT_RUN | 五核產品 REAL E2E = **NOT_VERIFIED** |
