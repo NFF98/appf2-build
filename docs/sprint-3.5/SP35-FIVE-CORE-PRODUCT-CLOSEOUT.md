@@ -139,13 +139,26 @@
 - 現在**唯一下一個產品 Hop**：既有 Worker／PostgreSQL 的創作者簽章 Job 用**不暴露來源與密鑰**的通道派發至免費 CI Docker，安全收取同 Job source hash／artifact manifest／獨立 Browser QA 可信收據，接 Blueprint v2 admission／基本 F05 卡片；同時完成受控後端＋資料庫 CRUD。尚未具備正式 secure job dispatch／runner receipt 時不可開啟 `FREE_CI_READY`，也不能把 0/5 假升級。
 - 本輪無 Cloudflare Containers、Browser Run、付費模型請求、新訂閱、Production 部署；PR #419 仍 Open。
 
+## F.6 免費 ProjectSnapshot→Docker→獨立 Chromium 已正式驗證 PASS（2026-10-31）
+
+**同一 Build SHA `7763163281c482737ce2c780128144cfe61a0e55` 的新 GitHub Actions 證據：**
+
+- [免費 Foundation #41169846578 — SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/41169846578)：Typecheck、Lint、平台編譯、API（76 個 test files PASS、8 skipped）、Runtime（12 files PASS）、P-256 Agent 前端 Mock QA／一次修復、**驗證來源 ProjectSnapshot 雜湊→固定免費 Docker Vite 建置→真實 Chromium Click→獨立 Browser QA＋HMAC 驗證**皆 PASS；測試 logs 顯示 `SP35 VERIFIED PROJECT SNAPSHOT → FREE LOCKED DOCKER VITE: PASS`、`SP35 INDEPENDENT DOCKER + CHROMIUM QA HMAC VERIFIED: PASS`。原始碼仍來自**可信 Repo Fixture**，沒有真模型、沒有真創作者私有 Job 提交／發布，**不能**算 C1–C5 任一完整產品 E2E PASS。
+- [真實 Staging 免費重用 #41169846623 — SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/41169846623)：舊單檔 Code App 在兩個全新 Browser Context 直接使用、點擊、刷新，**沒有新 AI／沒有 DB 寫入／沒有新雲端容器**。舊版功能已證實，與新五核驗收分開。
+- [Cloudflare 唯讀 #41169846555 — SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/41169846555) 不代表完成 Agent 新版部署；目前依 Human 指示**不再要求 Cloudflare Containers/Browsers Paid**。
+- Legacy `CI Gate`、Governance、CodeQL 現有 Workflow 因 Human Task 授權預檢失敗；**不把這些既有治理 FAIL 當作免費 Docker Sandbox 的產品失敗，也不擅自關閉安全測試**。上列專項 Foundation 獨立 PASS 可驗。
+
+**目前唯一真正產品閉環未完成：** 將真正自然語言 AI 生成的**私有**多檔案 Job 由既有 Worker/PG 安全派發至免費 Runner（不能把原始碼或 token 暴露在公開 Actions Logs/Inputs），由可信 Runner 隔離建置與獨立 Chromium 對原需求測試、可信 hash／QA 收據回寫原 Job，接 F02 v2 immutable admission、F05 受同意分享與可重開卡片。另需完成受控 generated backend／DB CRUD。**Secure Job Transport 尚未實作，所以 Worker 唯讀 readiness 必須顯示 `FREE_CI_NOT_CONNECTED`，前端不可提前扣 AI 費**。
+
+**結果口徑**：免費 Docker 工程鏈 verified PASS；**真實線上新五核 C1–C5 = 0/5（0%）**；舊單檔真產品重開 = PASS；本輪沒有新付費訂閱／Container／Browser Run／模型 API 呼叫，沒有合併或發布 PR。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
 | --- | --- | --- |
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 已更新免費路線於 `a9651594baf79753a05b1f608466cbc93a316c51`；Build PR #419 本檔 |
 | D0 | **DONE — 真 Staging 第一雲端阻斷已定位** | F.2 / run #41167547686：Health UP，Agent Readiness HTTP 404，private Sandbox / Browser QA Workers NOT_LISTED，Cloudflare plan 403 UNKNOWN；不重做已成功的原程式 |
-| D1 | **IN_PROGRESS — 已補 ProjectSnapshot→免費 Docker 通用入口及伺服器成本鎖；新 Agent E2E 尚未端到端** | F.3–F.5；新 runner CI 尚待重驗；下一步先做不暴露來源的可信 Job dispatch／receipt，再接 QA/v2、受控 full-stack DB，付費 Cloudflare 路線禁用 |
+| D1 | **IN_PROGRESS — ProjectSnapshot→免費 Docker→Chromium 專項 CI PASS；新 Agent 真線上 E2E 尚未端到端** | F.6 / #41169846578 同 SHA PASS（可信 fixture）。下一個實際 BLOCK：保密私有 Job 的安全派發／QA receipt 回寫；未完成前維持 FREE_CI_NOT_CONNECTED、不得開啟付費路線 |
 | D2 | **舊單檔卡片 LIVE GET-ONLY E2E PASS；新多檔案完整鏈 NOT_VERIFIED** | [#41168625022](https://github.com/NFF98/appf2-build/actions/runs/41168625022)：2 context click/reload 0 AI；新 Agent QA→v2 admission→卡片、受控後端 DB Profile 尚未接通 |
 | D3 | NOT_RUN | 五核產品 REAL E2E = **NOT_VERIFIED** |
 
