@@ -39,6 +39,9 @@ const account = required("CLOUDFLARE_ACCOUNT_ID");
 // Authorized FREE-ONLY staging deployment keeps DB/Agent routes without
 // enabling billable AI credentials or any Cloudflare Browser Run entitlement.
 const noNewAi=process.env.APPF2_STAGING_FREE_ONLY_NO_AI==="1";
+const freeAiSecret=process.env.APPF2_FREE_AI_KEY?.trim()??"";
+const approvedFreeAi=!bootstrapOnly&&
+ process.env.APPF2_STAGING_FREE_PAID_AI==="1"&&freeAiSecret.length>=16;
 const modelSecret = bootstrapOnly ? null :
  (noNewAi ? "APPF2_SP35_FREE_ONLY_AI_DISABLED" : required("APPF2_MODEL_API_KEY"));
 // Agent uses an independent signed paid-operation permission even if an
@@ -137,6 +140,7 @@ const config = {
     // when real staging DB bindings exist. All paid capabilities stay separate.
     APPF2_AGENT_CANDIDATE_ENABLED: agentEnabled ? "1" : "0",
     APPF2_AGENT_FREE_ONLY: "1",
+    APPF2_FREE_AI_GENERATION_ENABLED:approvedFreeAi?"1":"0",
     // Do not bill the new multi-file Agent before isolated build/QA
     // services are configured. Legacy single-file model flow unchanged.
     APPF2_AGENT_MODEL_EXECUTION_ENABLED: "0",
@@ -167,6 +171,7 @@ try {
     // bundled SPA/Worker var. The branch workflow can dispatch ONLY when set.
     ...(process.env.APPF2_FREE_CI_GITHUB_TOKEN?.trim() ?
       {APPF2_FREE_CI_GITHUB_TOKEN:process.env.APPF2_FREE_CI_GITHUB_TOKEN.trim()} : {}),
+    ...(approvedFreeAi?{APPF2_FREE_AI_KEY:freeAiSecret}:{}),
     APPF2_IDENTITY_COOKIE_SECRET: cookieSecret
   }), { flag: "wx", mode: 0o600 });
   const r = spawnSync(
@@ -181,6 +186,7 @@ try {
     .replaceAll(process.env.APPF2_FREE_CI_GITHUB_TOKEN?.trim()||"[NO_FREE_CI_TOKEN]", "[REDACTED]")
     .replaceAll(modelSecret || "[NO_MODEL_SECRET]", "[REDACTED]")
     .replaceAll(agentKey || "[NO_AGENT_KEY]", "[REDACTED]")
+    .replaceAll(freeAiSecret || "[NO_FREE_AI_KEY]", "[REDACTED]")
     .replaceAll(agentPrivateToken || "[NO_AGENT_BROKER_TOKEN]", "[REDACTED]")
     .replaceAll(agentQaToken || "[NO_AGENT_QA_TOKEN]", "[REDACTED]")
     .replaceAll(agentQaVerifier || "[NO_AGENT_QA_VERIFIER]", "[REDACTED]")

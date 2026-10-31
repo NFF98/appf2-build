@@ -87,6 +87,8 @@ jobs:
           # if absent, Worker returns fail-closed on creator CI dispatch.
           APPF2_FREE_CI_GITHUB_TOKEN: ${{ secrets.APPF2_FREE_CI_GITHUB_TOKEN }}
           APPF2_STAGING_FREE_ONLY_NO_AI: '1'
+          APPF2_STAGING_FREE_PAID_AI: '1'
+          APPF2_FREE_AI_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY || secrets.APPF2_MODEL_API_KEY || secrets.OPENAI_API_KEY }}
           APPF2_STAGING_AGENT_MODEL_ENABLED: '0'
           APPF2_STAGING_AGENT_REUSE_OPENAI_KEY: '0'
           APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED: '0'

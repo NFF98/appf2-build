@@ -19,7 +19,7 @@ export type ModelCallRow={
 };
 export type ModelReservation={
  readonly call_key:string;readonly request_hash:string;
- readonly model:"gpt-6.1-sol";readonly max_charge_cents:number;
+ readonly model:"gpt-6.1-sol"|"gpt-4.1-mini";readonly max_charge_cents:number;
 };
 const GET=`SELECT job_id::text,owner_anonymous_id::text,call_key,job_revision,
  checkpoint_hash,request_hash,model,max_charge_cents,status,response_json,
@@ -50,7 +50,7 @@ const UNCERTAIN=`UPDATE public.appf2_agent_model_call
  AND status='IN_FLIGHT' RETURNING call_key`;
 export function validReservation(input:ModelReservation):boolean{
  return KEY.test(input.call_key)&&HASH.test(input.request_hash)&&
-  input.model==="gpt-6.1-sol"&&
+  (input.model==="gpt-6.1-sol"||input.model==="gpt-4.1-mini")&&
   Number.isSafeInteger(input.max_charge_cents)&&input.max_charge_cents>0&&
   input.max_charge_cents<=1000000;
 }

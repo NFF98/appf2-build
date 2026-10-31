@@ -33,6 +33,9 @@ export function agentReadiness(env:Appf2WorkerEnv){
   return {status:connected?"CONFIGURED_NOT_VERIFIED":"BLOCKED",
    execution_mode:connected?"FREE_CI_READY":"FREE_CI_NOT_CONNECTED",
    can_start_paid_generation:false,
+   free_ci_paid_ai_available:connected&&
+    env.APPF2_FREE_AI_GENERATION_ENABLED==="1"&&
+    has(env.APPF2_FREE_AI_KEY,16),
    missing:connected?[]:["FREE_CI_SECURE_JOB_TRANSPORT_NOT_CONNECTED"]};
  }
  const candidate=env.APPF2_AGENT_CANDIDATE_ENABLED==="1";
