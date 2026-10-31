@@ -51,6 +51,14 @@ export type SavedFreeCiSmoke={readonly status:"BUILD_BROWSER_SMOKE"|"BUILD_FAILE
  readonly qa_checks?:readonly {criterion_id:string;verdict:"PASS"|"FAIL"|"UNTESTED";evidence_hash:string|null}[];
  readonly original_requirements_qa:false;
  readonly app_published:false};
+/** UI must never treat a subset of Browser QA receipts as complete original-request acceptance. */
+export function allFrozenFreeCiChecksPassed(plan:Pick<QaPlan,"criteria">|null|undefined,
+ checks:readonly {readonly criterion_id:string;readonly verdict:string}[]|null|undefined):boolean{
+ if(!plan||!checks||plan.criteria.length===0||
+  checks.length!==plan.criteria.length)return false;
+ return plan.criteria.every((criterion,i)=>criterion.automatable&&
+  checks[i]?.criterion_id===criterion.id&&checks[i]?.verdict==="PASS");
+}
 export type CandidateJob={readonly job_id:string;readonly revision:number;
  readonly free_ci?:SavedFreeCiSmoke|null;
  readonly project_hash:string;readonly status:string;
