@@ -212,14 +212,37 @@
 - **不是五核產品全面 PASS**：本次模型由受控 GitHub workflow 呼叫，再用建立者簽章匯入 Job；正式網站上輸入任意需求後全自動呼叫模型、持續自行修復、後端/資料庫生成、Blueprint v2 F02 admission／公開卡片、他人分享 **均未在同一鏈驗證**。現有 `APPF2_AGENT_FREE_ONLY=1` 的網站正式付費 Agent 按鈕仍被安全鎖住，不應說已解鎖。
 - **成本及授權保護**：本次限單個 gpt-4.1-mini Responses 請求，每次最多 3200 output tokens，無額外 Cloudflare Containers／Browser Run 訂閱，未合併或部署 Production。完成後 workflow 另加嚴格 commit-message opt-in marker；一般 Push 無法再觸發付費測試，避免重複扣款。原本工程安全／CodeQL Gate FAIL 與本次專項模型 E2E SUCCESS 應分開呈報。
 
+## F.13 2026-10-31 GPT-6 模型、付費保留 RLS 與真正網站 E2E 斷點（同一既有 SSOT 原位續記）
+
+> **此節優先於 F.6–F.12 的歷史「下一阻斷」敘述，但不重寫它們的已通過證據。**
+> 唯一開發位置仍是 Build PR #419；未合併、未發布 Production，不開新 Sprint 或新 SSOT。
+
+- **模型真實設定**：新付費 QA／CODE／REPAIR 已在 `src/edge/free-ci-ai-code.ts` 統一使用 OpenAI Responses `gpt-6.1-sol`（Build `c11bad73`）；Staging 的新請求資料庫模型白名單也已套用 GPT-6.1 Sol-only SQL（`bcee4add`），**不是** `gpt-4.1-mini`。原歷史 F.12 的 4.1-mini 是當時真實完成的模型，不可事後改稱 GPT-6。
+- **免費產品鏈已有實測 PASS**：[Staging Worker／簽章 Postgres 建立讀回／免費 Runner 派發 #41196371312](https://github.com/NFF98/appf2-build/actions/runs/41196371312)、[無額外付費 Docker＋Chromium＋原首頁 Agent API Mock #41196844121](https://github.com/NFF98/appf2-build/actions/runs/41196844121)、[真 Staging 舊已發布 App 雙瀏覽器開啟操作重載 #41196844123](https://github.com/NFF98/appf2-build/actions/runs/41196844123)，皆 SUCCESS。免費 fixture、舊 App 重用不冒充「新 GPT-6 生成任意 App 後正式發布」。
+- **第一次真網站付費 E2E FAIL（已定位）**：[run #41195413739](https://github.com/NFF98/appf2-build/actions/runs/41195413739) 在原網站建立 Creator Job 成功，`/free-ai-stage` HTTP503；Postgres `reserve_agent_model_call` 拒絕模型白名單，當次 Job 無 `appf2_agent_model_call` 紀錄，沒證據顯示 API 已發送或扣費。依原計畫加上 GPT-6 來源碼與模型 SQL。
+- **第二次真網站付費 E2E FAIL（已定位）**：[run #41196540308](https://github.com/NFF98/appf2-build/actions/runs/41196540308) 原網站再次建立 44 美分上限的 Creator Job，但 `/free-ai-stage` HTTP503；Supabase `postgres_logs` 同時間 SQLSTATE `42501`，根因 `appf2_agent_model_call` 缺 `FOR INSERT` 的原建立者 RLS Policy；該 Job revision0 / CREATED、model call rows=0。這不是 GPT-6 已呼叫或生成 App 的證據。
+- **已完成的最低權限修復**：Build [`9368faaa`](https://github.com/NFF98/appf2-build/commit/9368faaa532a8a12e1487c4446a0a61e92c55bf3) 在既有 Supabase Staging 專案實際 `apply_migration SUCCESS`，只允許 `appf2_worker` 的 owner-bound `INSERT`，保留資料表 RLS、owner `app.anonymous_id`、Job 外鍵、單次呼叫防重／預算限制。讀回 `pg_policies` 已驗證此 Rule 存在。Build `425e9f31` 在**原測試檔** `tests/api/sp35-paid-model-journal.api.test.ts` 新增 RLS/模型一致性回歸測試，避免再只修 SQL 而忘記安全權限。
+- **修後真網站驗收進行中（不預宣稱 PASS）**：[單次核准 Staging GPT-6 原網頁 E2E #41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) 按原有 `sp35-real-customer-website-once.yml` 在原分支啟動。此流程由真 Chromium 輸入需求，單一明確同意操作與原 Job ≤44 美分預算、QA／CODE／最多一次 REPAIR、原 PG 保存、免費 Actions Docker、原需求逐項 Chromium QA，再經原建立者同意 Publish。**只有完成且同一 Job 證據驗證才可更新 PASS；沒有自動重試付費請求。**
+- **實際覆蓋與五核分母**：目前有的「3/5（60%）」說法只代表部分獨立**基礎通道**有 PASS 證據，不代表下列五個完整原始產品驗收 Gate 之中的 3 項已合格。按本文件 A/D 節嚴格標準，**C1–C5 全鏈完整通過 = 0/5（NOT_VERIFIED）**，不能因既有 Docker SUCCESS 直接報成產品 100%。
+
+| 五核 Gate | 2026-10-31 本節最新可證實狀態 | 尚缺真產品證據 |
+| --- | --- | --- |
+| C1 通用多檔案／Full-stack | **PARTIAL**：已有多檔案保存與單一真模型小互動作品（F.12），非 GPT-6 網站完整驗收 | 兩種自然語言作品，至少一種受控 generated backend＋DB CRUD／刷新保留 |
+| C2 同 Job 保存／接續 | **PARTIAL**：真 PG 建立讀回、私人 App 零 AI 重開、CAS/Journal 已有測試 | GPT-6 網站原 Job 失敗復原、不中斷另付費，公開新 App 重開 |
+| C3 免費隔離 Sandbox | **PARTIAL**：真 AI 生成源碼→Docker＋Chromium 的歷史 F.12 成功；最新免費 Runner PASS | 本輪 GPT-6 網站產物同 Job→Docker/QA 的證據 |
+| C4 原需求 QA／自動修復 | **PARTIAL / NOT_VERIFIED**：凍結 QA 與免費 Runner fixture 有 PASS，AI 修復程式存在 | 真 GPT-6 QA FAIL→修復→重建→完整獨立 QA PASS |
+| C5 有限重試／策略／費用 | **PARTIAL / NOT_VERIFIED**：原 Job 預算、不可重送、權限約束有程式和 API Test | 失敗根因改方案、同 Job 續作及越權拒絕、完整真網站反向測試 |
+
+**下一個唯一行動**：讀 #41197580604 的實際 GitHub / PostgreSQL 模型日誌；若已成功才繼續查同 Job 後續 Docker/QA/Share；若失敗只修該最早 Hop。不得改寫歷史 PASS，也不可因 legacy 治理工作流 FAIL 直接報產品失敗；治理問題另列。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
 | --- | --- | --- |
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 已更新免費路線於 `a9651594baf79753a05b1f608466cbc93a316c51`；Build PR #419 本檔 |
 | D0 | **DONE — 真 Staging 第一雲端阻斷已定位** | F.2 / run #41167547686：Health UP，Agent Readiness HTTP 404，private Sandbox / Browser QA Workers NOT_LISTED，Cloudflare plan 403 UNKNOWN；不重做已成功的原程式 |
-| D1 | **IN_PROGRESS — ProjectSnapshot→免費 Docker→Chromium 專項 CI PASS；新 Agent 真線上 E2E 尚未端到端** | F.6 / #41169846578 同 SHA PASS（可信 fixture）。下一個實際 BLOCK：保密私有 Job 的安全派發／QA receipt 回寫；未完成前維持 FREE_CI_NOT_CONNECTED、不得開啟付費路線 |
-| D2 | **舊單檔卡片 LIVE GET-ONLY E2E PASS；新多檔案完整鏈 NOT_VERIFIED** | [#41168625022](https://github.com/NFF98/appf2-build/actions/runs/41168625022)：2 context click/reload 0 AI；新 Agent QA→v2 admission→卡片、受控後端 DB Profile 尚未接通 |
-| D3 | NOT_RUN | 五核產品 REAL E2E = **NOT_VERIFIED** |
+| D1 | **PARTIAL — 新 Agent Staging + 保密 Job→免費 Runner→PG 收據已實際 PASS** | F.11–F.13 / #41196371312、#41196844121；舊 `FREE_CI_NOT_CONNECTED`／未部署說法已過期；仍須 GPT-6 真站鏈驗證 |
+| D2 | **IN_PROGRESS — 兩個真網站 pre-provider BLOCK 已定位，模型+RLS Staging 修復已套用** | F.13 / #41195413739、#41196540308；Build `9368faaa` 的原建立者 RLS 已驗證；新 GPT-6 v2 分享與受控後端 DB Profile 仍未完整驗收 |
+| D3 | **RUNNING / NOT_PASSED** | F.13 / [#41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) 真 GPT-6 網站單次驗收已派發；完整 C1–C5 仍 **0/5 full-gate PASS**，不得冒稱 100% |
 
 **跨對話唯一口令：**「繼續 `SP35-FIVE-CORE-PRODUCT-CLOSEOUT` 的下一個未完成 D 關卡；先讀此檔 F/G 節與 PR #419 HEAD，只修首個真實 BLOCK，每次結尾報 C1–C5 的產品狀態與證據。」
