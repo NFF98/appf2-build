@@ -42,7 +42,7 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
      "User-Agent":"appf2-sp35-gpt6-paid-runner",
      "Content-Type":"application/json"},
     body:JSON.stringify({ref:"product/sprint-3.5-complex-intent-recovery-20261026",
-     inputs:{ai_ticket:ticket}}),
+     inputs:{ticket:"ai_runner_v1_"+ticket}}),
     signal:AbortSignal.timeout(12000),redirect:"error"});
   dispatched=response.status===204;
  }catch{ /* GitHub dispatch may have occurred: fail closed. */ }
