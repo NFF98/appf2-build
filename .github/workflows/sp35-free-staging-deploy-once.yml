@@ -71,6 +71,28 @@ jobs:
             throw Error("SP35 FREE CI ACTIONS: WRITE_NOT_VERIFIED_HTTP_"+response.status);
           console.log("SP35 FREE CI ACTIONS: DISPATCH_AUTHORIZATION_REACHED_REF_VALIDATION; nonexistent ref rejected, NO RUN STARTED");
           JS
+      - name: Check GPT-6.1 Sol API model access without generating or charging tokens
+        env:
+          APPF2_GPT6_PREFLIGHT_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY || secrets.APPF2_MODEL_API_KEY || secrets.OPENAI_API_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          const token=process.env.APPF2_GPT6_PREFLIGHT_KEY??"";
+          if(token.length<20)throw Error("SP35_GPT6_MODEL_LOOKUP_KEY_MISSING");
+          let response;
+          try{
+            response=await fetch("https://api.openai.com/v1/models/gpt-6.1-sol",{
+              method:"GET",headers:{"Authorization":"Bearer "+token},
+              redirect:"error",signal:AbortSignal.timeout(20000)
+            });
+          }catch{throw Error("SP35_GPT6_MODEL_LOOKUP_NETWORK_UNREACHABLE");}
+          // No POST, no model generation or provider response body in Actions logs.
+          if(response.status!==200)
+            throw Error("SP35_GPT6_MODEL_LOOKUP_NOT_AUTHORIZED_HTTP_"+response.status);
+          const body=await response.json().catch(()=>null);
+          if(body?.id!=="gpt-6.1-sol")
+            throw Error("SP35_GPT6_MODEL_LOOKUP_ID_MISMATCH");
+          console.log("SP35_GPT6_MODEL_ACCESS: GET /v1/models/gpt-6.1-sol HTTP200, no AI generation, no usage tokens");
+          JS
       - name: Deploy FREE-ONLY Worker + Agent read/create/restore + SPA to Staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -162,3 +184,5 @@ jobs:
 # SP35 2026-10-31 GPT-6.1 Sol deployment: Worker model/API QA and browser UI only; explicitly no model invocation by this workflow.
 
 # SP35 2026-10-31: [SP35-FREE-STAGING-DEPLOY-ONCE] deploy safe non-sensitive GPT-6 phase diagnostics to existing staging; no model call, Containers or Production.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] recheck GPT-6.1 Sol provider model GET entitlement, never make a billed Responses POST.
