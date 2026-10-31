@@ -71,7 +71,7 @@ export async function getModelBackgroundId(db:AgentJobExecutor,
 }
 export async function saveModelBackgroundId(db:AgentJobExecutor,row:ModelCallRow,
  responseId:string):Promise<void>{
- if(row.status!=="RESERVED"||
+ if((row.status!=="RESERVED"&&row.status!=="IN_FLIGHT")||
   !/^resp_[A-Za-z0-9_-]{6,160}$/u.test(responseId))
   throw Error("MODEL_BACKGROUND_RESERVATION_INVALID");
  await db.query(BACKGROUND_INSERT,[row.job_id,row.owner_anonymous_id,
