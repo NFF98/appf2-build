@@ -14,6 +14,7 @@ const key=(process.env.APPF2_PAID_AI_E2E_KEY??"").trim();
 if(!/^sk-[A-Za-z0-9_-]{16,}$/u.test(key))
  throw Error("SP35_REAL_AI_KEY_MISSING_IN_GITHUB_ACTIONS_SECRET");
 const MAX_OUTPUT_TOKENS=3200;
+// eslint-disable-next-line complexity -- One-shot paid model output has strict independent schema/safety validation.
 async function callRealOpenAi(){
  const system=[
   "You are an application coding agent. Return ONLY a valid JSON object, no markdown.",
