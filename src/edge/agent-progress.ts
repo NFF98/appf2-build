@@ -17,6 +17,7 @@ type ProgressState="CURRENT_MODEL_READY"|"INDEPENDENT_QA_REQUIRED"|
  "MODEL_MISSING"|"INVALID_MODEL_RESPONSE";
 type CallProgress={readonly model_call_key:string;readonly state:ProgressState;
  readonly job_revision:number|null;readonly tool:string|null;
+ readonly call_id:string|null;
  readonly requires_container_consent:boolean;readonly response_id:string|null;
  readonly last_completed_tool:boolean};
 export type AgentProgress={
@@ -125,8 +126,10 @@ export function savedBrowserQaAttemptState(row:SavedBrowserQaAttempt|undefined):
  return "RESULT_RECORDED";
 }
 function state(key:string,kind:ProgressState,rev:number|null=null,
- tool:string|null=null,responseId:string|null=null):CallProgress{
+ tool:string|null=null,responseId:string|null=null,
+ callId:string|null=null):CallProgress{
  return {model_call_key:key,state:kind,job_revision:rev,tool,
+  call_id:callId,
   requires_container_consent:tool==="run_build"||tool==="run_test",
   response_id:responseId,last_completed_tool:false};
 }
@@ -160,11 +163,11 @@ function examine(current:RecoveredAgentJob,row:ModelCallRow|null,
   if(!["read_file","inspect_project","write_file","write_files","delete_file",
    "run_build","run_test"].includes(tool??""))
    return state(key,"INVALID_MODEL_RESPONSE",row.job_revision);
-  return state(key,"CURRENT_MODEL_READY",row.job_revision,tool,row.response_id);
+  return state(key,"CURRENT_MODEL_READY",row.job_revision,tool,row.response_id,callId);
  }
  if(row.job_revision<job.revision&&callId!==undefined&&
   job.checkpoint.completed_call_ids.includes(callId))
-  return {...state(key,"ALREADY_APPLIED",row.job_revision,tool,row.response_id),
+  return {...state(key,"ALREADY_APPLIED",row.job_revision,tool,row.response_id,callId),
    last_completed_tool:callId===job.checkpoint.completed_call_ids.at(-1)&&
     row.job_revision>=job.revision-2};
  return state(key,"STALE_MODEL",row.job_revision);
