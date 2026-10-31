@@ -1,5 +1,6 @@
 import {describe,it,expect,afterEach,vi} from "vitest";
-import {mayResumeSavedModel} from "../../src/edge/agent-progress.js";
+import {mayResumeSavedModel,savedBrowserQaAttemptState}
+ from "../../src/edge/agent-progress.js";
 import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget}
  from "../../src/app/code-builder/agent-browser-client.js";
 const SLOT="appf2.agent.candidate.job.v1";
@@ -126,5 +127,28 @@ describe("Sprint 3.5 Agent recovery must not spend through ambiguous model calls
   expect(mayResumeSavedModel(["CURRENT_MODEL_READY","CURRENT_MODEL_READY"],
    5,false,"CODING")).toBe(false);
   expect(mayResumeSavedModel(["CURRENT_MODEL_READY"],5,false,"READY")).toBe(false);
+ });
+});
+
+describe("Sprint 3.5 saved Browser QA recovery without repeat charges",()=>{
+ it("reports no prior QA when the journal has no row",()=>{
+  expect(savedBrowserQaAttemptState(undefined)).toBe("NOT_RUN");
+ });
+ it("distinguishes ambiguous in-flight QA from a completed saved receipt",()=>{
+  expect(savedBrowserQaAttemptState({status:"IN_FLIGHT",receipt_json:null}))
+   .toBe("IN_FLIGHT");
+  expect(savedBrowserQaAttemptState({status:"BLOCKED_UNCERTAIN",receipt_json:null}))
+   .toBe("BLOCKED_UNCERTAIN");
+  expect(savedBrowserQaAttemptState({status:"SUCCEEDED",receipt_json:{
+   ready_for_review:true,packet:{sealed:"evidence"}}})).toBe("RESULT_RECORDED");
+  expect(savedBrowserQaAttemptState({status:"SUCCEEDED",receipt_json:{
+   ready_for_review:false,packet:null}})).toBe("RESULT_RECORDED");
+ });
+ it("never treats forged, incomplete or contradictory browser receipts as recorded",()=>{
+  for(const receipt_json of [null,{},[],{ready_for_review:true,packet:null},
+   {ready_for_review:false,packet:{}},{ready_for_review:"PASS",packet:{}},
+   {ready_for_review:true,packet:[]}])
+   expect(savedBrowserQaAttemptState({status:"SUCCEEDED",receipt_json}))
+    .toBe("BLOCKED_UNCERTAIN");
  });
 });
