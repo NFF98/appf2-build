@@ -246,6 +246,17 @@ jobs:
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
           APPF2_MODEL_PROVIDER: ${{ vars.APPF2_MODEL_PROVIDER }}
+          # Dedicated Agent key; never implicit permission to spend F01 funds.
+          # All paid model turns still require creator P-256 and bounded consent.
+          APPF2_OPENAI_AGENT_API_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY }}
+          APPF2_STAGING_AGENT_MODEL_ENABLED: '1'
+          # Private Workers are optional until explicitly provisioned, with no
+          # public fallback. Both service binding names must exist before opt-in.
+          APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED: ${{ vars.APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED }}
+          APPF2_SANDBOX_ALLOWED_JOB_ID: ${{ vars.APPF2_SANDBOX_ALLOWED_JOB_ID }}
+          APPF2_SANDBOX_BROKER_TOKEN: ${{ secrets.APPF2_SANDBOX_BROKER_TOKEN }}
+          APPF2_QA_PRIVATE_TOKEN: ${{ secrets.APPF2_QA_PRIVATE_TOKEN }}
+          APPF2_AGENT_QA_VERIFIER_SECRET: ${{ secrets.APPF2_AGENT_QA_VERIFIER_SECRET }}
           # Isolated staging only: the owner explicitly requested Grok alongside OpenAI.
           # Use it on OpenAI 429 only if BOTH server-side key and model are configured.
           # Production remains controlled by its separate deployment configuration.
@@ -260,6 +271,9 @@ jobs:
         run: node deploy/scripts/sp35-staging-only.mjs
       - name: Real Worker first-hop smoke (not full Creation)
         run: node deploy/scripts/sp35-staging-smoke.mjs
+      - name: REAL staging signed Agent CREATE and PostgreSQL source REOPEN (NO AI)
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
+        run: node deploy/scripts/sp35-live-agent-db-smoke.mjs
       - name: Free saved-App card browser smoke (NO AI / no F01 CREATE)
         run: |
           npx playwright install chromium
