@@ -238,6 +238,20 @@
 
 **下一個唯一行動**：先確認 #41198077865 全流程收據與免費 CI 的最終 PASS/FAIL；Worker/SPA 與 PG route 已經真實部署測通。對 GPT-6 不明模型呼叫先用 OpenAI Billing／可回收 Provider Response ID 或之後獨立明確核准的測試分類調查，不可重送已 `BLOCKED_UNCERTAIN` 的 Job；新 AI App 的修復/QA/v2 分享與受控 generated backend/DB CRUD 仍未完成。
 
+## F.14 GPT-6 背景回應保存／同 Job 無重複付費接續（2026-10-31，PR #419 原位續記）
+
+**本節最新於 2026-10-31 實際施工；F.12、F.13 已有證據保留且不竄改。**
+
+- **真根因對策**：此前 [GPT-6 原網站 E2E #41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) 產生 `BLOCKED_UNCERTAIN`，不能確定供應商是否已扣款。原同步 Responses 呼叫無法可靠處理較長的推理過程；**不能**因此替同 Job 重新 POST 或聲稱成功。Build `969ff511` 改成官方 Responses `background:true,store:true`，不把暫時的 `queued/in_progress` 當模型輸出錯誤，且縮短第一個等待 HTTP；此模式有供應商端暫存資料的隱私／保存期限界線，並不是 APPf2 公開分享。
+- **真正的 PostgreSQL 續查錨點**：[Build `3d0ef0c`](https://github.com/NFF98/appf2-build/commit/3d0ef0c428601149903b6954491c18e88f6af616) 在既有 **Supabase Staging** `apply_migration` 成功，新增只記 `(job_id,owner,call_key,provider_response_id)` 的內部關聯表 `appf2_agent_model_background_ref`；保留既有模型費用 Ledger。另以 SQL 查證 **RLS enabled、worker SELECT/INSERT=true、anon SELECT=false、owner policy 兩條**。不存 Prompt、API Key 或模型內容到新表。
+- **Server 真正實作**：Build `37d491ba` 增加原建立者的 response ID immutable GET/INSERT，`418771e8` 保留已經 `IN_FLIGHT` 的原付費呼叫並允許完成記帳；`969ff511` 改為**只發一次** Responses POST 並先保存回應 ID，後續對同一 ID 呼叫 `GET /v1/responses/{id}`。中斷／暫時 GET 失敗保留 IN_FLIGHT，不補送新的付費 POST；沒有已保存 response ID 時仍 fail closed。結果完整且有 token usage 才寫 `SUCCEEDED`。
+- **網站產品接線**：Build `f9181e10` 將已持久化的背景處理回報為 owner-signed `202 AI_BACKGROUND_PENDING`（非 503／非假 PASS），`43e1adf9` 以原建立者簽章持續查詢同一 Job/phase；`4a74202c` 在**既有 AgentBuilderPanel** 加上「接續已保存的 GPT-6 工作」按鈕，禁止另建 Job 冒充接續，也禁止在 `BLOCKED_UNCERTAIN` 的舊工作自動重新呼叫模型。
+- **免費驗證**：Build `4050793f` 已在原 `tests/api/sp35-paid-model-journal.api.test.ts` 新增背景 ID 不可竄改、已 IN_FLIGHT 可回填、不重複保留和 GET-only 源碼契約測試。`12c8148d` 修正一個被 CI 識別的 Lint complexity error。最新 [免費 Foundation #41207031946](https://github.com/NFF98/appf2-build/actions/runs/41207031946) 至少 **Typecheck/Lint、平台編譯、API、Runtime PASS**（之後被新 Push 取消，不能把整個 Workflow 誤稱 SUCCESS）；本節後續 CI 要看更新 HEAD 的最終結果。
+- **Staging 部署與權限檢查**：[Free staging deploy #41207138781](https://github.com/NFF98/appf2-build/actions/runs/41207138781) 的 **GPT-6 API 模型 GET**、**既有 Cloudflare Worker/SPA 上傳**、Staging Worker 同源 API／安全拒絕、P-256 PostgreSQL Job CREATE/Read 步驟已 PASS，最終免費 Docker/Chromium 同 Job 收據正在跑；整個 workflow 必須等結算才可寫 PASS。無額外付費 Cloudflare Containers/Browser Run。
+- **真 GPT-6 網站 E2E 再驗**：[單次核准 Runner #41207255564](https://github.com/NFF98/appf2-build/actions/runs/41207255564) 已啟動，使用同一 Staging、單一網站觸發與原 `44 cents` Job 預算防護；**此節寫入時仍未看到新 GPT-6 QA/CODE/Runner／分享全成功**，待 GitHub Workflow、模型 Journal、原 QA 收據及新公開卡片實測再確認。不得推定實際 provider invoice 等於 reservation cents。
+
+**五核狀態／分母不變**：先前 3/5（60%）指基礎通道之部分驗證，不等於 C1–C5 整個「任何自然語言→生成 full-stack→DB CRUD→失敗修復→重新 QA→v2 admission→公開分享」的完整 Gate PASS。嚴格 C1–C5 full-product 全鏈驗收仍 **0/5 完整 PASS**；舊可信基礎／真 Staging 舊卡片 SUCCESS 繼續保全。C1 真 generated backend＋DB CRUD、C4 自動修復重測、C5 跨失敗改策略、v2 full admission 仍要另有真證據。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
@@ -245,7 +259,7 @@
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 已更新免費路線於 `a9651594baf79753a05b1f608466cbc93a316c51`；Build PR #419 本檔 |
 | D0 | **DONE — 真 Staging 第一雲端阻斷已定位** | F.2 / run #41167547686：Health UP，Agent Readiness HTTP 404，private Sandbox / Browser QA Workers NOT_LISTED，Cloudflare plan 403 UNKNOWN；不重做已成功的原程式 |
 | D1 | **PARTIAL — 新 Agent Staging + 保密 Job→免費 Runner→PG 收據已實際 PASS** | F.11–F.13 / #41196371312、#41196844121；舊 `FREE_CI_NOT_CONNECTED`／未部署說法已過期；仍須 GPT-6 真站鏈驗證 |
-| D2 | **IN_PROGRESS — pre-provider SQL/RLS 已解除，第三次 GPT-6 QA 呼叫結果不明** | F.13 / #41197580604：模型保留成功，最終 `BLOCKED_UNCERTAIN`，尚無已保存回應；只改安全分類診斷，不重試收費 |
-| D3 | **FAIL_CLOSED / NOT_PASSED** | [#41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) HTTP503、GPT-6 QA outcome UNKNOWN，未產生新 App 分享；C1–C5 完整產品 Gate **0/5 PASS**，保留先前免費測試的 PASS 證據 |
+| D2 | **IN_PROGRESS — GPT-6 background response durable GET-only recovery 已開發／Staging 已部署，產品完整閉環尚缺真測** | F.14 / Build `969ff511`、`37d491ba`、`43e1adf9`，Supabase 新回應 ID 內部表 RLS 驗證 PASS；前次 BLOCKED_UNCERTAIN 不重扣 |
+| D3 | **RUNNING / NOT_PASSED** | F.14 / [#41207255564](https://github.com/NFF98/appf2-build/actions/runs/41207255564) 真實 GPT-6 網站 E2E 已啟動未結算；C1–C5 全產品 Gate **0/5 full PASS**，不能以免費 fixture／模型 GET 200 冒稱 100% |
 
 **跨對話唯一口令：**「繼續 `SP35-FIVE-CORE-PRODUCT-CLOSEOUT` 的下一個未完成 D 關卡；先讀此檔 F/G 節與 PR #419 HEAD，只修首個真實 BLOCK，每次結尾報 C1–C5 的產品狀態與證據。」
