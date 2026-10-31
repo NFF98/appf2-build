@@ -93,8 +93,15 @@ try{
  };
  await fresh();
  await fresh();
- if(mutations.filter(p=>p.endsWith("/free-ai-stage")&&p.includes("/api/v1/agent-jobs/")).length>3)
-  throw Error("LIVE_WEBSITE_MORE_THAN_THREE_PAID_PHASES");
+ // /free-ai-stage replies HTTP202 while polling the SAME provider response;
+ // each signed poll is NOT another charged model POST. Count only completed
+ // phases (QA, CODE, optional REPAIR). The PostgreSQL journal independently
+ // enforces at-most-once billing for each immutable phase.
+ const completions=paidPhaseResponses.filter(item=>item.http===200).length;
+ if(completions<2||completions>3)
+  throw Error("LIVE_WEBSITE_PAID_COMPLETIONS_OUT_OF_BOUNDS");
+ if(paidPhaseResponses.some(item=>item.http!==200&&item.http!==202))
+  throw Error("LIVE_WEBSITE_UNEXPECTED_PAID_PHASE_HTTP");
  console.log("SP35 REAL CUSTOMER WEBSITE E2E PASS: natural language → owner signed paid QA+CODE → independent free Docker Chromium original QA → PostgreSQL private saved App → explicit PUBLIC share → two clean browsers clicked App, ID="+id);
  console.log("SP35 PAID TEST CONTROL: one generation click, no model retry, <=44c approved job budget (actual provider invoice NOT verified), no Production deploy");
 }catch(e){
