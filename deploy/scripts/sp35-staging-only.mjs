@@ -178,6 +178,7 @@ try {
   );
   const redact = value => String(value || "")
     .replaceAll(token, "[REDACTED]").replaceAll(cookieSecret, "[REDACTED]")
+    .replaceAll(process.env.APPF2_FREE_CI_GITHUB_TOKEN?.trim()||"[NO_FREE_CI_TOKEN]", "[REDACTED]")
     .replaceAll(modelSecret || "[NO_MODEL_SECRET]", "[REDACTED]")
     .replaceAll(agentKey || "[NO_AGENT_KEY]", "[REDACTED]")
     .replaceAll(agentPrivateToken || "[NO_AGENT_BROKER_TOKEN]", "[REDACTED]")
