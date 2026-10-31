@@ -1,4 +1,5 @@
 import {describe,it,expect} from "vitest";
+import {readFileSync} from "node:fs";
 import {sealFreeCiTicket,openFreeCiTicket}
  from "../../src/platform/agent/free-ci-ticket.js";
 import {verifyFreeCiOidc,FREE_CI_AUDIENCE}
@@ -14,6 +15,19 @@ const b64=(bytes:Uint8Array)=>btoa(String.fromCharCode(...bytes))
  .replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
 const packed=(value:unknown)=>b64(new TextEncoder().encode(JSON.stringify(value)));
 describe("SP35 free runner confidential source transport",()=>{
+ it("dispatch uses the workflow already present on main, with no deploy if ticket supplied",()=>{
+  const path=readFileSync(".github/workflows/sp35-staging-only.yml","utf8");
+  const dispatch=readFileSync("src/edge/free-ci-dispatch.ts","utf8");
+  const verifier=readFileSync("src/edge/free-ci-oidc.ts","utf8");
+  expect(dispatch).toContain('"sp35-staging-only.yml/dispatches"');
+  expect(path).toContain("inputs.ticket == '' &&");
+  expect(path).toContain("inputs.ticket != '' &&");
+  expect(path).toContain("id-token: write");
+  expect(path).toContain("sp35-free-ci-dispatched-build.mjs");
+  expect(verifier).toContain("sp35-staging-only.yml@");
+  expect(dispatch).not.toContain("inputs:{source");
+ });
+
  it("AES-GCM ticket hides private owner/source, expires and rejects tampering",async()=>{
   const ticket=await sealFreeCiTicket(input,secret,now);
   expect(ticket).not.toContain(input.owner);
@@ -40,7 +54,7 @@ describe("SP35 free runner confidential source transport",()=>{
   const claims={iss:"https://token.actions.githubusercontent.com",
    aud:FREE_CI_AUDIENCE,repository:"NFF98/appf2-build",
    ref:"refs/heads/product/sprint-3.5-complex-intent-recovery-20261026",
-   workflow_ref:"NFF98/appf2-build/.github/workflows/sp35-free-ci-job.yml@"+
+   workflow_ref:"NFF98/appf2-build/.github/workflows/sp35-staging-only.yml@"+
     "refs/heads/product/sprint-3.5-complex-intent-recovery-20261026",
    event_name:"workflow_dispatch",runner_environment:"github-hosted",
    repository_visibility:"public",run_id:"41170526299",

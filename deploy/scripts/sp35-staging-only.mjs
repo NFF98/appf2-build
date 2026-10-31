@@ -163,6 +163,10 @@ try {
       APPF2_AGENT_QA_VERIFIER_SECRET:agentQaVerifier} : {}),
     ...(xaiKey ? {APPF2_XAI_API_KEY: xaiKey} : {}),
     ...(deepseekKey ? {APPF2_DEEPSEEK_API_KEY: deepseekKey} : {}),
+    // Free CI GitHub Actions token is optional, private and never part of a
+    // bundled SPA/Worker var. The branch workflow can dispatch ONLY when set.
+    ...(process.env.APPF2_FREE_CI_GITHUB_TOKEN?.trim() ?
+      {APPF2_FREE_CI_GITHUB_TOKEN:process.env.APPF2_FREE_CI_GITHUB_TOKEN.trim()} : {}),
     APPF2_IDENTITY_COOKIE_SECRET: cookieSecret
   }), { flag: "wx", mode: 0o600 });
   const r = spawnSync(
@@ -190,6 +194,9 @@ try {
   if (!url) throw new Error("STAGING DEPLOY: Wrangler reported success but no verifiable workers.dev URL");
   if (process.env.GITHUB_ENV)
     fs.appendFileSync(process.env.GITHUB_ENV, "APPF2_STAGING_URL=" + url.origin + "\n");
+  console.log("STAGING FREE CI DISPATCH: "+(
+    process.env.APPF2_FREE_CI_GITHUB_TOKEN?.trim()?
+      "GITHUB_CREDENTIAL_CONFIGURED_NOT_TESTED":"GITHUB_CREDENTIAL_NOT_CONFIGURED"));
   console.log("STAGING URL: " + url.origin);
   console.log(bootstrapOnly
     ? "STAGING FIRST-HOP ONLY: real Worker + SPA; AI/Postgres/Creation NOT CONFIGURED"
