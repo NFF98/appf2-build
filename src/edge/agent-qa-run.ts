@@ -87,6 +87,49 @@ type Dependencies={
  readonly ownerThumb:string;readonly service:SandboxServiceBinding;
  readonly privateToken:string;readonly verifierSecret:string;
 };
+/** Complete only an independently observed and journaled QA result.
+ * This is safe to call after an interrupted DB state transition: no Browser
+ * Run or model transport is contacted, and CAS rejects concurrent changes.
+ */
+async function finishSavedQa(current:NonNullable<Awaited<ReturnType<typeof recoverAgentJob>>>,
+ input:BrowserQaRunInput,response:QaResponse,deps:Dependencies){
+ if(!response.ready_for_review){
+  const next={...current.job.checkpoint,state:"REPAIRING" as const,
+   previous_checkpoint_id:current.job.checkpoint_hash};
+  const repaired=await advanceDurableAgentJob(deps.db,current.job,deps.owner,next);
+  return {status:"BROWSER_QA_FAILED_REPAIR_READY" as const,
+   checks:response.checks,ready_for_review:false,
+   revision:repaired.job.revision,job_state:repaired.job.job_state,
+   project_hash:repaired.project.project_hash,
+   next_action:"OWNER_APPROVED_QA_REPAIR_MODEL" as const,
+   app_published:false,publication_authorized:false};
+ }
+ const result=await reviewAgentQa({
+  anonymous_id:deps.owner,packet:response.packet as never
+ },{db:deps.db,jobId:deps.jobId,owner:deps.owner,
+  ownerThumb:deps.ownerThumb,verifierSecret:deps.verifierSecret});
+ return {...result,checks:response.checks};
+}
+/** A duplicate QA reservation is NOT a permission to dispatch again.
+ * Only a fully journaled SUCCEEDED result for the same immutable attempt
+ * may be applied to a not-yet-transitioned TESTING snapshot.
+ */
+async function recoverSavedQaResult(input:BrowserQaRunInput,deps:Dependencies):
+ Promise<QaResponse>{
+ const stored=(await deps.db.query<{status:string;job_revision:number;
+  build_call_id:string;test_call_id:string;receipt_json:unknown}>(
+  "SELECT status,job_revision,build_call_id,test_call_id,receipt_json "+
+  "FROM public.appf2_agent_browser_qa_attempt WHERE job_id=$1::uuid "+
+  "AND owner_anonymous_id=$2::uuid AND project_hash=$3::text LIMIT 1",
+  [deps.jobId,deps.owner,input.project_hash])).rows[0];
+ if(!stored||stored.status!=="SUCCEEDED"||
+  stored.job_revision!==input.expected_revision||
+  stored.build_call_id!==input.build_call_id||
+  stored.test_call_id!==input.test_call_id||
+  !consistentBrowserQaResult(input.original_plan,stored.receipt_json))
+  throw Error("QA_ALREADY_DISPATCHED_NO_RETRY");
+ return stored.receipt_json as QaResponse;
+}
 /** CAS reserve before Browser Run, and never dispatch on rerun/uncertainty. */
 // eslint-disable-next-line complexity -- Signed creator, saved run, immutable project and one-shot paid QA gates.
 export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
@@ -143,7 +186,10 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
   "ON CONFLICT (job_id,project_hash) DO NOTHING RETURNING job_id::text",
   [deps.jobId,deps.owner,input.project_hash,input.expected_revision,
    input.build_call_id,input.test_call_id]);
- if(inserted.rows.length!==1)throw Error("QA_ALREADY_DISPATCHED_NO_RETRY");
+ if(inserted.rows.length!==1){
+  const recorded=await recoverSavedQaResult(input,deps);
+  return finishSavedQa(current,input,recorded,deps);
+ }
  const {anonymous_id,expected_revision,...task}=input;
  void anonymous_id;void expected_revision;
  let response:QaResponse;
@@ -166,24 +212,5 @@ export async function runSignedIndependentBrowserQa(input:BrowserQaRunInput,
    [deps.jobId,deps.owner,input.project_hash]).catch(()=>undefined);
   throw Error("QA_UNKNOWN_RESULT_NO_RETRY");
  }
- if(!response.ready_for_review){
-  // A failed independently observed requirement re-opens the exact saved
-  // project for an owner-consented model repair; no model spend happens here.
-  const next={...current.job.checkpoint,state:"REPAIRING" as const,
-   previous_checkpoint_id:current.job.checkpoint_hash};
-  const repaired=await advanceDurableAgentJob(deps.db,current.job,deps.owner,next);
-  return {status:"BROWSER_QA_FAILED_REPAIR_READY" as const,
-   checks:response.checks,ready_for_review:false,
-   revision:repaired.job.revision,job_state:repaired.job.job_state,
-   project_hash:repaired.project.project_hash,
-   next_action:"OWNER_APPROVED_QA_REPAIR_MODEL" as const,
-   app_published:false,publication_authorized:false};
- }
- // Packet from the separate verifier is still independently rechecked under
- // creator, current revision, original prompt, and saved Sandbox evidence.
- const result=await reviewAgentQa({
-  anonymous_id:deps.owner,packet:response.packet as never
- },{db:deps.db,jobId:deps.jobId,owner:deps.owner,
-  ownerThumb:deps.ownerThumb,verifierSecret:deps.verifierSecret});
- return {...result,checks:response.checks};
+ return finishSavedQa(current,input,response,deps);
 }
