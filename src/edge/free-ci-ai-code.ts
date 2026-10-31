@@ -15,6 +15,9 @@ import {dispatchFreeCiJob} from "./free-ci-dispatch.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 const SHA=/^sha256:[a-f0-9]{64}$/u;
 const AMOUNTS={QA:8,CODE:20,REPAIR:16} as const;
+// Sprint 3.5 official GPT-6 coding model. One immutable value for the API
+// request and its pre-send PostgreSQL journal; never claim another model.
+const MODEL="gpt-6.1-sol" as const;
 type Phase=keyof typeof AMOUNTS;
 type Input={readonly anonymous_id:string;readonly original_prompt:string;
  readonly expected_project_hash:string;readonly stage:Phase;
@@ -128,7 +131,7 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  if(existing&&existing.status!=="RESERVED")
   throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
  const row=await reserveModelCall(db,job.job,owner,{
-  call_key:modelKey,request_hash:digest,model:"gpt-4.1-mini",
+  call_key:modelKey,request_hash:digest,model:MODEL,
   max_charge_cents:AMOUNTS[phase]});
  if(row.status!=="RESERVED")throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
  await claimModelCall(db,row);
@@ -190,9 +193,9 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
    throw Error("SP35_QA_MUST_PRECEDE_CODE");
   if(plan)return {status:"QA_ALREADY_FROZEN" as const,
    original_plan:plan,app_published:false as const};
-  const req={model:"gpt-4.1-mini",
+  const req={model:MODEL,reasoning:{effort:"low" as const},
    input:modelPrompt("QA",input.original_prompt,null,[],""),
-   max_output_tokens:1400,store:false,text:{format:{type:"json_schema",
+   max_output_tokens:3500,store:false,text:{format:{type:"json_schema",
     name:"appf2_precode_qa",strict:true,schema:qaSchema}}};
   const data=await paidModelTurn(ctx.db,job,input.anonymous_id,"QA",req,ctx.modelKey);
   const parsed=parsePlan(parsedOutput(data.response),input.original_prompt);
@@ -224,10 +227,15 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
    String(receipt.diagnostic_excerpt??"").slice(0,1200):
   receipt?.status==="BUILD_BROWSER_SMOKE"?
    receipt.qa_checks?.map(c=>c.criterion_id+":"+c.verdict).join(",")??"":"";
- const req={model:"gpt-4.1-mini",input:modelPrompt(input.stage,
-  input.original_prompt,plan,repairing?job.project.files:[],failure),
-  max_output_tokens:3200,store:false,text:{format:{type:"json_schema",
+ const req={model:MODEL,reasoning:{effort:"medium" as const},
+  input:modelPrompt(input.stage,
+   input.original_prompt,plan,repairing?job.project.files:[],failure),
+  max_output_tokens:repairing?9000:12000,store:false,text:{format:{type:"json_schema",
    name:"appf2_free_ci_source",strict:true,schema:codeSchema}}};
+ // Prevent a large saved project from exceeding the per-repair model cap
+ // before reserving money or sending any request to OpenAI.
+ if(repairing&&req.input.length>24000)
+  throw Error("SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET");
  const turn=await paidModelTurn(ctx.db,job,input.anonymous_id,
   input.stage,req,ctx.modelKey);
  const files=parseFiles(parsedOutput(turn.response));
