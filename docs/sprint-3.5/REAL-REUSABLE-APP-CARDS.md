@@ -1,5 +1,7 @@
 # APPf2 Sprint 3.5 — Real Reusable App Cards (historical implementation notes, 2026-10-28)
 
+> **2026-10-31 最新 Sprint 3.5 範圍／交接**：執行唯一計畫 [Sprint 3.5 五核產品閉環收尾計畫](./SP35-FIVE-CORE-PRODUCT-CLOSEOUT.md)（`SP35-FIVE-CORE-PRODUCT-CLOSEOUT`）；其 Product Design authority 只在 Design PR #45 H-001 §0（commit `6ed57015d340b1863da5ecb5d586b28263b012d0`）。使用者要求**五核＋基本 v2 可操作、保存、重開、分享、0 新生成**屬 Sprint 3.5；Phase 2 帳號級永久收藏／完整歷史／所有權／語意重用仍 deferred。以下原 10/28 文本僅作歷史或子功能證據，與最新 §0 衝突時不得據此縮成私人 Demo 或擴成未授權 Phase 2 功能。
+
 > **2026-10-31 SCOPE CORRECTION — NOT SPRINT 3.5 DELIVERY AUTHORITY**
 > 本檔為 10/28 的既有功能實驗、驗收紀錄和候選提案，不是 Product Design SSOT，也不是新功能授權；不得以本檔 B／Public Gallery／永久保存要求擴張 Sprint 3.5。當前唯一 Design 範圍判準：
 > `NFF98/appf2-design/working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md (Design PR #45, commit ee5f58fd672386f0b8542bda2066d5af471a9352, §0)`。
