@@ -135,27 +135,36 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
   max_charge_cents:AMOUNTS[phase]});
  if(row.status!=="RESERVED")throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
  await claimModelCall(db,row);
- let data:unknown;
+ // Never reveal provider body, tokens, key or database diagnostics.
+ // A fixed, non-sensitive failure class can identify the earliest broken hop
+ // without allowing a second charge after any provider request was attempted.
+ let failureClass="TRANSPORT_OR_TIMEOUT";
  try{
   const response=await fetch("https://api.openai.com/v1/responses",{
    method:"POST",headers:{"Authorization":"Bearer "+key,
     "Content-Type":"application/json"},body:json,
    signal:AbortSignal.timeout(85000),redirect:"error"});
-  data=await response.json().catch(()=>null);
+  failureClass=response.status===429?"PROVIDER_RATE_LIMIT":
+   response.status>=500?"PROVIDER_SERVER":
+   response.status!==200?"PROVIDER_REJECTED":"PROVIDER_RESPONSE";
+  const data:unknown=await response.json().catch(()=>null);
   const r=data as {status?:unknown;id?:unknown;usage?:{
    input_tokens?:unknown;output_tokens?:unknown}}|null;
-  if(response.status!==200||r?.status!=="completed"||
-   typeof r.id!=="string"||
+  if(response.status!==200)throw Error("SP35_MODEL_HTTP_NOT_ACCEPTED");
+  failureClass=r?.status==="incomplete"?"PROVIDER_INCOMPLETE":
+   r?.status==="failed"?"PROVIDER_FAILED":"RESPONSE_SHAPE";
+  if(r?.status!=="completed"||typeof r.id!=="string"||
    !Number.isSafeInteger(r.usage?.input_tokens)||
    !Number.isSafeInteger(r.usage?.output_tokens))
-   throw Error("SP35_MODEL_HTTP_OR_RESPONSE_NOT_PROVEN");
+   throw Error("SP35_MODEL_RESPONSE_NOT_PROVEN");
+  failureClass="DURABLE_RESPONSE_SAVE";
   await completeModelCall(db,row,data,r.id,
    Number(r.usage?.input_tokens),Number(r.usage?.output_tokens));
   return {response:data,inputTokens:Number(r.usage?.input_tokens),
    outputTokens:Number(r.usage?.output_tokens)};
  }catch{
   await markModelCallUncertain(db,row).catch(()=>undefined);
-  throw Error("SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE");
+  throw Error("SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE_"+failureClass);
  }
 }
 type Context={db:AgentJobExecutor;jobId:string;ownerThumb:string;
