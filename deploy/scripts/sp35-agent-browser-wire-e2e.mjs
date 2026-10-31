@@ -194,6 +194,7 @@ async function api(req,res,url){
     job.checkpoint.budget.max_steps-job.checkpoint.step,
     can_resume:false,resume_model_call_key:null,
     next_action:"VERIFY_INDEPENDENT_QA",
+    proven_preview_pair:{build_call_id:build,test_call_id:test},
     qa_attempt_state:qaAttemptHashes.has(job.project_hash)?"RESULT_RECORDED":"NOT_RUN",
     qa_observed_checks:qaAttemptHashes.has(job.project_hash)?savedQaChecks:[],
     calls:[{model_call_key:"agent_fixture_build_12345678",state:"ALREADY_APPLIED",
