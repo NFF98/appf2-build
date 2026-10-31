@@ -158,3 +158,5 @@ jobs:
 # No paid model invocation, no Cloudflare Containers, no Production deployment.
 
 # SP35 2026-10-31 redeploy latest verified frozen-QA UI gating and saved-preview flow; no paid AI calls, no Production.
+
+# SP35 2026-10-31 GPT-6.1 Sol deployment: Worker model/API QA and browser UI only; explicitly no model invocation by this workflow.
