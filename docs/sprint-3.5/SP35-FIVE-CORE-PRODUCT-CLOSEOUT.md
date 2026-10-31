@@ -172,6 +172,15 @@
 - **下一個唯一環境 blocker，已有 runner 日誌確認**：`STAGING FREE CI DISPATCH: GITHUB_CREDENTIAL_NOT_CONFIGURED`。既有 GitHub Secret `APPF2_FREE_CI_GITHUB_TOKEN` **未設定**（該次 Runner 取得空值），故 Worker 無 Actions-write 權限去 POST GitHub `/dispatches`。這不是 AI 產生原始碼不可建置；不可偷偷用 Cloudflare token 或任何公開 API 取代 GitHub Credential。需要在 Repo Actions Secret 安全配置**只具備目標 Repo Actions:write 的 GitHub token**並重跑免費 Staging deploy（已預留 optional Secret 轉入 Worker，值不印出），才能做實際派發測試。
 - **E2E 不造假**：最新證明是「私有安全端點部署／PG Job 保存／免費 Docker 工程鏈 PASS」。**尚無**「真 AI 已生成的專案透過 Github workflow_dispatch 在 Runner 收到原始碼、建置、QA、收據回寫、生成可操作 v2 卡片」同一 Job 的證據，C1–C5 五項完整通過維持 **0/5**。本輪不合併、不發布 Production、不新增付費 Cloudflare／AI 呼叫。
 
+## F.9 免費 Docker 自動派發接線修復（2026-10-31，仍需真產品驗收）
+
+- **PR #419 原位程式修補**：Build `131d2fd74a22e7e2977a63ba30f9e8afb7f64faf` 修復 GitHub-hosted Runner 的區域性 `pipelinesghub*` OIDC 取票網址被錯誤拒絕，同時保留 HTTPS／官方完整 host 防 SSRF 檢查；增加 `ghs_` 安裝 Token 格式支援（**只在 Token 仍有效時**，不是可持續免配置的 GitHub App 授權）。
+- **部署 Secret 遺漏已定位並修補**：Build `a9088f82d9b98026a82fcf0d6927a7a4fd15d94a` 在既有 `sp35-staging-only.yml` 的部署步驟明確加入 `APPF2_FREE_CI_GITHUB_TOKEN: ${{ secrets.APPF2_FREE_CI_GITHUB_TOKEN }}`；之前即使 Repo Secret 日後新增，部署腳本也讀不到。GitHub `GITHUB_TOKEN` 只在本次 Action 生命週期有效，**不可**假裝為 Worker 持續派發憑證。
+- **Workers 取票網路相容性**：Build `2eaee96805eae6961ad9cc6f13a4ccd2897b0bbe` 保留 `globalThis.fetch` receiver，避免重演 F01 曾出現的 Worker native fetch 失敗；API test 加上 receiver 驗證。
+- **CI 證據**：[Foundation #41175900436](https://github.com/NFF98/appf2-build/actions/runs/41175900436) 在第一個修補 SHA 上 **SUCCESS**（Types、Lint、API、Runtime、免費 Docker/Chromium 舊可信 fixture、真 Staging signed PG source→Docker）；此 SUCCESS **不**代表最新 Secret 接線已部署、更不代表真 AI 生成後自動 dispatch。
+- **目前已知唯一外部設定硬擋**：之前真 Staging 發布日志確證 `GITHUB_CREDENTIAL_NOT_CONFIGURED`。GitHub Actions Repo Secret `APPF2_FREE_CI_GITHUB_TOKEN` 仍沒有「已配置」證據；本次 GitHub 連線不能設定／讀取 Secret 值，不將 Token 寫入原始碼。需僅授權目標 Repo 的 Actions:write 憑證，重新部署 Sprint 3.5 Staging，才可進行真 Job → `workflow_dispatch` → OIDC → PG source → 無網路 Docker → Chromium 的首次完整傳輸驗收。
+- **驗收誠實口徑**：沒有新 AI 生成、沒有真 `workflow_dispatch`、沒有同 Job QA receipt 回寫與 v2 admission，也未完成受控 generated backend CRUD；新 C1–C5 端到端 **0/5**。無 Cloudflare Containers／Browser Run 訂閱、新付費模型請求；只改 PR #419，未合併或部署正式產品。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
