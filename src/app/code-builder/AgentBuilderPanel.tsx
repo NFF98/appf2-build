@@ -469,6 +469,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      <h4>免費 Docker／Chromium 建置收據（已儲存 PostgreSQL）</h4>
      <p>來源版本：{snapshot.job.project_hash.slice(0,19)}… ·
       建置產物：{snapshot.job.free_ci.artifact_hash.slice(0,19)}…</p>
+     {snapshot.job.free_ci.qa_checks?.length?
+      <ul>{snapshot.job.free_ci.qa_checks.map(c=>
+       <li key={c.criterion_id}>{c.criterion_id}：{c.verdict}</li>)}</ul>:null}
      <p>已完成禁網路 Docker 建置及基本 Chromium 頁面檢查；
       <strong>不是原始需求 QA 通過，也不是正式 App 卡片或分享</strong>。</p>
      {/^[0-9]{6,20}$/u.test(snapshot.job.free_ci.run_id)?

@@ -12,12 +12,12 @@ const report={version:"APPF2_FREE_CI_SMOKE_V1" as const,
  project_hash:hash,artifact_hash:artifact,
  checks:{locked_build:true as const,chromium_render:true as const}};
 class Db implements AgentJobExecutor{
- saved:{run_id:string;built_artifact_hash:string}|null=null;
+ saved:{run_id:string;built_artifact_hash:string;receipt_json:unknown}|null=null;
  active=true;
  async query<T>(sql:string,args:readonly unknown[]):Promise<{rows:readonly T[]}>{
   if(sql.includes("INSERT INTO public.appf2_agent_free_ci_receipt")){
    if(!this.active||this.saved)return {rows:[]};
-   this.saved={run_id:String(args[3]),built_artifact_hash:String(args[4])};
+   this.saved={run_id:String(args[3]),built_artifact_hash:String(args[4]),receipt_json:JSON.parse(String(args[5])) as unknown};
    return {rows:[{job_id:args[0]} as T]};
   }
   if(sql.includes("SELECT run_id,built_artifact_hash")){

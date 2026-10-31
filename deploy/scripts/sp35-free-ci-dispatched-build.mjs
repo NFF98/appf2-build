@@ -66,6 +66,9 @@ const data=await source.json().catch(()=>null);
 if(source.status!==200||!data?.data?.project)
  throw Error("FREE_CI_SECURE_SOURCE_UNAVAILABLE_HTTP_"+source.status);
 const project=data.data.project;
+const plan=data.data.original_plan??null;
+const originalPlanHash=data.data.qa_plan_hash??null;
+if((plan===null)!==(originalPlanHash===null))throw Error("FREE_CI_QA_PLAN_INVALID");
 if(!await verifyProjectSnapshot(project))throw Error("FREE_CI_SOURCE_HASH_INVALID");
 const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"sp35-oidc-free-ci-"));
 let browser,server;
@@ -115,10 +118,54 @@ try{
  await page.locator("body").waitFor({state:"visible",timeout:12000});
  if(!(await page.locator("body").innerText()).trim()||errors.length)
   throw Error("FREE_CI_CHROMIUM_RENDER_FAILED");
+ const qaChecks=[];
+ if(plan){
+  if(!Array.isArray(plan.criteria)||plan.criteria.length<1||
+   plan.criteria.length>20)throw Error("FREE_CI_QA_PLAN_INVALID");
+  for(const criterion of plan.criteria){
+   let verdict="UNTESTED",evidence_hash=null;
+   if(criterion.automatable&&Array.isArray(criterion.steps)&&
+      Array.isArray(criterion.assertions)&&criterion.assertions.length){
+    const target=await ctx.newPage();
+    try{
+     await target.goto(origin,{waitUntil:"load",timeout:15000});
+     const before=await target.locator("body").innerText();
+     for(const step of criterion.steps){
+      const loc=target.getByRole(step.role,{name:step.name,exact:true});
+      if(await loc.count()!==1)throw Error("QA_TARGET_MISSING_OR_AMBIGUOUS");
+      if(step.action==="click")await loc.click({timeout:2500});
+      else if(step.action==="fill")await loc.fill(step.value,{timeout:2500});
+      else throw Error("QA_STEP_UNSUPPORTED");
+     }
+     const after=await target.locator("body").innerText();
+     let ok=true;
+     for(const assertion of criterion.assertions){
+      if(assertion.kind==="text_includes")ok&&=after.includes(assertion.text);
+      else if(assertion.kind==="text_appears")
+       ok&&=!before.includes(assertion.text)&&after.includes(assertion.text);
+      else if(assertion.kind==="text_changes"){
+       const prior=before;
+       ok&&=prior!==after;
+      }else if(assertion.kind==="element_count")
+       ok&&=(await target.locator(assertion.selector).count())===assertion.count;
+      else if(assertion.kind==="visible")
+       ok&&=await target.getByRole(assertion.role,{name:assertion.name,exact:true}).isVisible();
+      else ok=false;
+     }
+     verdict=ok?"PASS":"FAIL";
+     if(ok)evidence_hash="sha256:"+createHash("sha256").update(
+       JSON.stringify([project.project_hash,criterion.id,before,after,
+         criterion.steps,criterion.assertions])).digest("hex");
+    }catch{verdict="FAIL";}finally{await target.close();}
+   }
+   qaChecks.push({criterion_id:criterion.id,verdict,evidence_hash});
+  }
+ }
  const receipt={version:"APPF2_FREE_CI_SMOKE_V1",
   project_hash:project.project_hash,
   artifact_hash:await artifactHash(path.join(tmp,"dist")),
-  checks:{locked_build:true,chromium_render:true}};
+  checks:{locked_build:true,chromium_render:true},
+  ...(plan?{qa_plan_hash:originalPlanHash,qa_checks:qaChecks}:{})};
  const saved=await fetch(host+"/api/v1/internal/free-ci/result",{
   method:"POST",headers:{"Authorization":"Bearer "+await newOidc(),
    "Content-Type":"application/json"},body:JSON.stringify({ticket,result:receipt}),
