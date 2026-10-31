@@ -8,7 +8,8 @@ import {applyProjectEdits} from "../platform/agent/project-workspace.js";
 import {freezeAgentQaPlan} from "./agent-qa-plan.js";
 import {parseQaPlan,type QaPlan} from "../platform/qa/requirement-contract.js";
 import {getModelCall,reserveModelCall,claimModelCall,completeModelCall,
- markModelCallUncertain} from "../platform/agent/postgres-model-calls.js";
+ markModelCallUncertain,getModelBackgroundId,saveModelBackgroundId,
+ type ModelCallRow} from "../platform/agent/postgres-model-calls.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {readFreeCiSmoke} from "./free-ci-result.js";
 import {dispatchFreeCiJob} from "./free-ci-dispatch.js";
@@ -115,7 +116,43 @@ function parseFiles(raw:unknown):readonly {path:string;content:string}[]|null{
   return null;
  return files;
 }
-// eslint-disable-next-line complexity, max-params -- Journal/reservation/reconciliation fences must remain fail-closed.
+/** A recovered response is fetched only by GET. No second Responses POST.
+ * A temporary GET failure preserves IN_FLIGHT and the owner-scoped response ID.
+ */
+async function recoverBackgroundTurn(db:AgentJobExecutor,row:ModelCallRow,
+ key:string,id:string,first?:unknown):Promise<ModelResult>{
+ let data=first;
+ if(data===undefined){
+  let fetched:Response;
+  try{
+   fetched=await fetch("https://api.openai.com/v1/responses/"+
+    encodeURIComponent(id),{method:"GET",
+     headers:{"Authorization":"Bearer "+key},redirect:"error",
+     signal:AbortSignal.timeout(18000)});
+   if(fetched.status!==200)throw Error("BACKGROUND_GET_HTTP");
+   data=await fetched.json();
+  }catch{throw Error("SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST");}
+ }
+ const response=data as {id?:unknown;status?:unknown;usage?:{
+  input_tokens?:unknown;output_tokens?:unknown}}|null;
+ if(response?.id!==id)
+  throw Error("SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST");
+ if(response.status==="queued"||response.status==="in_progress")
+  throw Error("SP35_BACKGROUND_MODEL_PENDING_NO_POST");
+ if(response.status!=="completed"||
+  !Number.isSafeInteger(response.usage?.input_tokens)||
+  !Number.isSafeInteger(response.usage?.output_tokens)){
+  await markModelCallUncertain(db,row).catch(()=>undefined);
+  throw Error("SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE_RESPONSE_SHAPE");
+ }
+ try{
+  await completeModelCall(db,row,data,id,
+   Number(response.usage?.input_tokens),Number(response.usage?.output_tokens));
+ }catch{throw Error("SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST");}
+ return {response:data,inputTokens:Number(response.usage?.input_tokens),
+  outputTokens:Number(response.usage?.output_tokens)};
+}
+// eslint-disable-next-line complexity, max-params -- Idempotency fences protect billable HTTP.
 async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  typeof recoverAgentJob>> & {},owner:string,phase:Phase,request:unknown,
  key:string):Promise<ModelResult>{
@@ -124,10 +161,16 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  const digest=await sha256CodeBytes(new TextEncoder().encode(
   "APPF2_SP35_FREE_AI_REQUEST_V1\u0000"+json));
  const existing=await getModelCall(db,job.job.job_id,owner,modelKey);
- if(existing?.status==="SUCCEEDED"&&existing.request_hash===digest&&
-  existing.response_json!==null)
+ if(existing&&existing.request_hash!==digest)
+  throw Error("SP35_PAID_AI_REQUEST_HASH_MISMATCH_NO_RECHARGE");
+ if(existing?.status==="SUCCEEDED"&&existing.response_json!==null)
   return {response:existing.response_json,
    inputTokens:existing.input_tokens??0,outputTokens:existing.output_tokens??0};
+ if(existing?.status==="IN_FLIGHT"){
+  const id=await getModelBackgroundId(db,job.job.job_id,owner,modelKey);
+  if(!id)throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
+  return recoverBackgroundTurn(db,existing,key,id);
+ }
  if(existing&&existing.status!=="RESERVED")
   throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
  const row=await reserveModelCall(db,job.job,owner,{
@@ -135,34 +178,34 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
   max_charge_cents:AMOUNTS[phase]});
  if(row.status!=="RESERVED")throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
  await claimModelCall(db,row);
- // Never reveal provider body, tokens, key or database diagnostics.
- // A fixed, non-sensitive failure class can identify the earliest broken hop
- // without allowing a second charge after any provider request was attempted.
  let failureClass="TRANSPORT_OR_TIMEOUT";
  try{
   const response=await fetch("https://api.openai.com/v1/responses",{
    method:"POST",headers:{"Authorization":"Bearer "+key,
     "Content-Type":"application/json"},body:json,
-   signal:AbortSignal.timeout(85000),redirect:"error"});
+   signal:AbortSignal.timeout(18000),redirect:"error"});
   failureClass=response.status===429?"PROVIDER_RATE_LIMIT":
    response.status>=500?"PROVIDER_SERVER":
    response.status!==200?"PROVIDER_REJECTED":"PROVIDER_RESPONSE";
   const data:unknown=await response.json().catch(()=>null);
-  const r=data as {status?:unknown;id?:unknown;usage?:{
-   input_tokens?:unknown;output_tokens?:unknown}}|null;
-  if(response.status!==200)throw Error("SP35_MODEL_HTTP_NOT_ACCEPTED");
-  failureClass=r?.status==="incomplete"?"PROVIDER_INCOMPLETE":
-   r?.status==="failed"?"PROVIDER_FAILED":"RESPONSE_SHAPE";
-  if(r?.status!=="completed"||typeof r.id!=="string"||
-   !Number.isSafeInteger(r.usage?.input_tokens)||
-   !Number.isSafeInteger(r.usage?.output_tokens))
-   throw Error("SP35_MODEL_RESPONSE_NOT_PROVEN");
+  const remote=data as {id?:unknown}|null;
+  if(response.status!==200||typeof remote?.id!=="string"||
+   !/^resp_[A-Za-z0-9_-]{6,160}$/u.test(remote.id))
+   throw Error("SP35_BACKGROUND_FIRST_RESPONSE_INVALID");
   failureClass="DURABLE_RESPONSE_SAVE";
-  await completeModelCall(db,row,data,r.id,
-   Number(r.usage?.input_tokens),Number(r.usage?.output_tokens));
-  return {response:data,inputTokens:Number(r.usage?.input_tokens),
-   outputTokens:Number(r.usage?.output_tokens)};
- }catch{
+  await saveModelBackgroundId(db,row,remote.id);
+  return await recoverBackgroundTurn(db,row,key,remote.id,data);
+ }catch(e){
+  if(e instanceof Error&&(
+   e.message==="SP35_BACKGROUND_MODEL_PENDING_NO_POST"||
+   e.message==="SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST"||
+   e.message.startsWith("SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE_")))
+   throw e;
+  // If POST produced a journaled response ID, NEVER send another POST;
+  // keep querying it by GET on a later creator-signed request.
+  const persisted=await getModelBackgroundId(db,job.job.job_id,
+   owner,modelKey).catch(()=>null);
+  if(persisted)throw Error("SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST");
   await markModelCallUncertain(db,row).catch(()=>undefined);
   throw Error("SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE_"+failureClass);
  }
@@ -204,7 +247,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
    original_plan:plan,app_published:false as const};
   const req={model:MODEL,reasoning:{effort:"low" as const},
    input:modelPrompt("QA",input.original_prompt,null,[],""),
-   max_output_tokens:3500,store:false,text:{format:{type:"json_schema",
+   max_output_tokens:3500,background:true,store:true,text:{format:{type:"json_schema",
     name:"appf2_precode_qa",strict:true,schema:qaSchema}}};
   const data=await paidModelTurn(ctx.db,job,input.anonymous_id,"QA",req,ctx.modelKey);
   const parsed=parsePlan(parsedOutput(data.response),input.original_prompt);
@@ -239,7 +282,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  const req={model:MODEL,reasoning:{effort:"medium" as const},
   input:modelPrompt(input.stage,
    input.original_prompt,plan,repairing?job.project.files:[],failure),
-  max_output_tokens:repairing?9000:12000,store:false,text:{format:{type:"json_schema",
+  max_output_tokens:repairing?9000:12000,background:true,store:true,text:{format:{type:"json_schema",
    name:"appf2_free_ci_source",strict:true,schema:codeSchema}}};
  // Prevent a large saved project from exceeding the per-repair model cap
  // before reserving money or sending any request to OpenAI.
