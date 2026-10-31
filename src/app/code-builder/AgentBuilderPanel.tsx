@@ -304,7 +304,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     setQaChecks(checks);
     // Build failure can have a signed QA receipt but no runnable preview.
     // Evaluate its failure BEFORE requiring preview_ready, or repair never runs.
-    if(checks.some(c=>c.verdict==="FAIL")){
+    if(current.free_ci.status==="BUILD_FAILED"||
+       checks.some(c=>c.verdict==="FAIL")){
      if(autoRepairConsent&&!repaired){
       repaired=true;receiptSeen=false;
       setQaOutcome("Docker／Browser QA 找到 FAIL；依已核准上限修復一次，保存原 Job。");
