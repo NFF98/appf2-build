@@ -240,3 +240,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 fix GitHub model dispatch redirect/fetch mismatch after actual 503 NETWORK_ERROR, no paid model POST during deploy.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 close Hyperdrive before native Worker GitHub model dispatch, keep at-most-once, free Staging validation.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 repair real Chrome FAIL despite unrelated UNTESTED; improve frozen passive/multiclick QA, no model POST on deploy.
