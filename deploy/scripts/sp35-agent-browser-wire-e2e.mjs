@@ -294,7 +294,7 @@ try{
  const prompt="建立四人十八啦骰子遊戲，有計分和排行榜";
  await page.getByRole("textbox",{name:"用一句話描述要做的 App"}).fill(prompt);
  // No QA JSON authored or pasted: the product must auto-plan from one sentence.
- await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我同意付費 AI/u).check();
  await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  await page.getByLabel(/我另行核准免費 Chromium 做獨立 Browser QA/u).check();
  if(!(await primary.isEnabled()))throw Error("AGENT_CONSENT_UI_BROKEN");
@@ -323,7 +323,7 @@ try{
  // new key that would steal or fail the existing Job.
  await page.waitForTimeout(400);
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
- await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我同意付費 AI/u).check();
  await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
@@ -337,7 +337,7 @@ try{
   job.checkpoint.budget.max_cost_cents!==60||stepCount!==1||planCount!==1)
   throw Error("AGENT_BUDGET_RENEWAL_VIOLATED_CAS_OR_REPLAY");
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
- await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我同意付費 AI/u).check();
  await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
@@ -350,7 +350,7 @@ try{
  job.checkpoint.completed_call_ids=["call_browser_build_123456",
   "call_browser_inspect_123456","call_browser_test_123456"];
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
- await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我同意付費 AI/u).check();
  await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
@@ -418,7 +418,7 @@ try{
   autoPlanCount!==paidBefore.autoPlanCount)
   throw Error("SAVED_QA_PROGRESS_READ_DISPATCHED_PAID_OPERATION");
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
- await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我同意付費 AI/u).check();
  await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
@@ -434,7 +434,7 @@ try{
  job.project_hash="sha256:"+"c".repeat(64);
  job.status="REPAIRING";job.revision++;autoQaPending=true;
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
- await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我同意付費 AI/u).check();
  await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  await page.getByLabel(/我另行核准免費 Chromium 做獨立 Browser QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
