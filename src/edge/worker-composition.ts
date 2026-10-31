@@ -48,6 +48,8 @@ export interface Appf2WorkerEnv {
   readonly APPF2_AGENT_CANDIDATE_ENABLED?: string;
   /** User selected no-extra-cost Sprint 3.5; never permit paid Agent dispatch. */
   readonly APPF2_AGENT_FREE_ONLY?: string;
+  /** OPTIONAL limited GitHub Actions dispatch token; absent => no auto CI, no source leak. */
+  readonly APPF2_FREE_CI_GITHUB_TOKEN?: string;
   /** Signed single-step orchestration; OFF by default, independent of paid-model/container flags. */
   readonly APPF2_AGENT_AUTOSTEP_ENABLED?: string;
   /** Independent verifier secret, never sent to the browser; OFF by default. */
