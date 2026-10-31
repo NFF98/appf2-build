@@ -57,6 +57,8 @@ type Progress={readonly revision:number;readonly remaining_steps:number;
  readonly can_continue_saved_tool_result?:boolean;
  readonly resume_previous_model_call_key?:string|null;
  readonly qa_attempt_state?:"NOT_RUN"|"IN_FLIGHT"|"BLOCKED_UNCERTAIN"|"RESULT_RECORDED";
+ readonly qa_observed_checks?:readonly {criterion_id:string;
+  verdict:"PASS"|"FAIL"|"UNTESTED";evidence_hash:string|null}[];
  readonly calls:readonly {model_call_key:string;state:string;
   tool:string|null;requires_container_consent:boolean}[]};
 /** Progress exposes normalized MODEL_UNCERTAIN / MODEL_PENDING, not the
