@@ -24,6 +24,7 @@ describe("SP35 free runner confidential source transport",()=>{
   expect(path).toContain("inputs.ticket != '' &&");
   expect(path).toContain("id-token: write");
   expect(path).toContain("sp35-free-ci-dispatched-build.mjs");
+  expect(path).toContain("APPF2_FREE_CI_GITHUB_TOKEN: ${{ secrets.APPF2_FREE_CI_GITHUB_TOKEN }}");
   expect(verifier).toContain("sp35-staging-only.yml@");
   expect(dispatch).not.toContain("inputs:{source");
  });
