@@ -11,7 +11,7 @@ const browser=await chromium.launch({headless:true});
 let forbidden=0;
 try{
  const request=await fetch(origin+"/api/v1/code-apps-public",{
-  method:"GET",signal:AbortSignal.timeout(10000)});
+  method:"GET"});
  if(!request.ok)throw Error("FREE_CARD_CATALOG_HTTP_"+request.status);
  const data=await request.json();
  const apps=data?.data?.apps;

@@ -2,7 +2,7 @@
 
 > **版本**：2026-10-31（使用者指定的交接識別，持續更新此檔，不開重複計畫）
 > **狀態**：執行計畫已建立；產品 **NOT_DONE / LIVE E2E NOT_VERIFIED**；不代表已完成修復、雲端部署或付費 E2E。
-> **產品語意唯一來源**：Design PR #45 `working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md` §0（Design commit `6ed57015d340b1863da5ecb5d586b28263b012d0`），以及各現行 Phase 1 Fxx Working owner。**本檔只管 HOW／執行次數／證據，絕不取代 Design SSOT。**
+> **產品語意唯一來源**：Design PR #45 `working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md` §0（Design commit `a9651594baf79753a05b1f608466cbc93a316c51`），以及各現行 Phase 1 Fxx Working owner。**本檔只管 HOW／執行次數／證據，絕不取代 Design SSOT。**
 > **唯一產品開發 PR**：[Build #419](https://github.com/NFF98/appf2-build/pull/419)；Design 只沿用 [#45](https://github.com/NFF98/appf2-design/pull/45)。不開 Sprint 4，不建立平行的 Product Spec 或其他開發 PR。
 
 ## 0. 2026-10-31 Free-only 執行決議（Human 最新指示）
@@ -114,14 +114,23 @@
 
 **下一個硬阻斷**：須驗證 Cloudflare Sandbox／Browser QA 私有 Worker 實際部署與 Service Binding、受控付費權限，及新版 Staging API；沒有明確授權不自動執行可能付費的 Container/Browser/AI 測試，也不合併／正式發布。
 
+## F.3 免費方案真實產品與 CI 證據（本輪）
+
+- **免費入口已實作於 PR #419**：`src/app/discover/DiscoverScreen.tsx` 提供「免費試用：已公開 App（不使用 AI）」直接導向既有公開 App 卡片，不產生新 AI 呼叫。此新版首頁目前只在未合併 PR，**未部署 Staging**。
+- **真實 Staging 舊單檔 App 免生成重用 PASS**：[GitHub Actions #41168625022](https://github.com/NFF98/appf2-build/actions/runs/41168625022)（2026-10-31）在兩個全新 Chromium context 開啟實際已發布 Code App `32205d58-b07f-4e8d-9d0c-4881178b02d4`，實際按鈕操作＋刷新；GET-only；0 模型／0 DB 寫入。這**只證明舊 Code Builder 分享重用，不是 C1–C5 新版全鏈 PASS**。
+- **隔離免費建置替代已切換**：`.github/workflows/sp35-agent-foundation.yml` 的 **標準 Linux GitHub Actions + network-denied Docker + Chromium** 路線保留，Cloudflare 付費 Sandbox/Browsers 的選配打包步驟已從該路線移除；不用 Cloudflare Workers Paid、Container 訂閱或任何新雲端付費服務。官方 Repo `NFF98/appf2-build` 經 GitHub API 確認 `public`。GitHub 公開 Repo 標準託管 Runner 依平台政策免費；不用 larger runners。
+- **兩個回歸逐項修正**：原 `run #41167865524` 因多了一次同意要求而 disable 續作按鈕；`run #41168471420` 因重新進站直接勾選 QA 同意，使 Worker 自動提前進入 QA。現改為**新 App 三項獨立同意、已保存 Job 續作只需 AI＋容器同意、不自動啟動 QA**，QA 另行核准；安全阻擋不關閉。最後的 `run #41168708630` 停在新 GET-only 腳本 ESLint `AbortSignal no-undef`，已更正；**最新 CI 結果須另查，未完成前不可標 PASS**。
+- **產品五核 C1–C5 仍為 0/5**：缺「真 AI 生成多檔案 → 既有 PG checkpoint → 安全傳到無秘密 Runner Docker → 真獨立 Browser QA → 回傳同 hash 受控 admission → v2 卡片與後端 CRUD」的單一 Job 真實整鏈；目前免費路線 Runner 的多檔案 Docker＋Chromium 仍為**可信 fixture**。Cloudflare Container/Browsers 不再是本期阻斷；須補的是**免費 Runner／產品 Job 安全接線和 v2 發布**。
+- **費用總結**：本輪沒有部署 Cloudflare Containers/Browser Run，沒有呼叫付費模型 API，沒有合併 PR 或正式部署；僅使用公開 Repo 的標準 GitHub-hosted Actions 免費運算與對既有 Staging 的唯讀 GET。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
 | --- | --- | --- |
-| SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 更新於 `6ed57015d340b1863da5ecb5d586b28263b012d0`；Build PR #419 本檔 |
+| SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 已更新免費路線於 `a9651594baf79753a05b1f608466cbc93a316c51`；Build PR #419 本檔 |
 | D0 | **DONE — 真 Staging 第一雲端阻斷已定位** | F.2 / run #41167547686：Health UP，Agent Readiness HTTP 404，private Sandbox / Browser QA Workers NOT_LISTED，Cloudflare plan 403 UNKNOWN；不重做已成功的原程式 |
-| D1 | **IN_PROGRESS — 補雲端 Readiness 及付費前阻擋，仍未部署新版 Agent** | 本輪源碼已提交待 CI；下一步依授權驗證 Cloudflare 私有部署與真 Browser QA，不把免付費配置查核算 E2E |
-| D2 | **舊單檔卡片 STAGING PASS；新多檔案完整鏈 NOT_VERIFIED** | 沿用既有公開卡片／F05，接新 Agent QA→v2 admission→卡片；生成後端 DB Profile 尚缺 |
+| D1 | **IN_PROGRESS — 免費 Docker/Chromium 驗證路線與原卡片真 E2E 已實作；新 Agent 仍未端到端** | Free-only §0、F.3；不得再走 Cloudflare Containers Paid。下一步只補真實生成專案→受控 Runner→QA→v2 成品與 Full-stack DB 授權接線 |
+| D2 | **舊單檔卡片 LIVE GET-ONLY E2E PASS；新多檔案完整鏈 NOT_VERIFIED** | [#41168625022](https://github.com/NFF98/appf2-build/actions/runs/41168625022)：2 context click/reload 0 AI；新 Agent QA→v2 admission→卡片、受控後端 DB Profile 尚未接通 |
 | D3 | NOT_RUN | 五核產品 REAL E2E = **NOT_VERIFIED** |
 
 **跨對話唯一口令：**「繼續 `SP35-FIVE-CORE-PRODUCT-CLOSEOUT` 的下一個未完成 D 關卡；先讀此檔 F/G 節與 PR #419 HEAD，只修首個真實 BLOCK，每次結尾報 C1–C5 的產品狀態與證據。」
