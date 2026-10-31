@@ -59,6 +59,16 @@ type Progress={readonly revision:number;readonly remaining_steps:number;
  readonly qa_attempt_state?:"NOT_RUN"|"IN_FLIGHT"|"BLOCKED_UNCERTAIN"|"RESULT_RECORDED";
  readonly calls:readonly {model_call_key:string;state:string;
   tool:string|null;requires_container_consent:boolean}[]};
+/** Progress exposes normalized MODEL_UNCERTAIN / MODEL_PENDING, not the
+ * raw DB journal status BLOCKED_UNCERTAIN. Never start paid planning from an
+ * unresolved prior call after a reload or an interrupted request.
+ */
+export function paidAgentReconciliationRequired(progress:Pick<Progress,
+ "next_action"|"calls">):boolean{
+ return progress.next_action==="AWAIT_MODEL_RECONCILIATION"||
+  progress.calls.some(call=>
+   call.state==="MODEL_UNCERTAIN"||call.state==="MODEL_PENDING");
+}
 type Step={readonly status:string;readonly action:string;readonly revision:number};
 export type CandidateSnapshot={readonly job:CandidateJob;readonly progress:Progress|null;
  readonly message:string;readonly completed_steps:number};
