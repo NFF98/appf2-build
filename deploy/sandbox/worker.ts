@@ -6,6 +6,7 @@
 import {DurableObject,WorkflowEntrypoint} from "cloudflare:workers";
 import {sandboxJobAllowed} from "../../src/platform/agent/private-sandbox-authorization.js";
 import {validBuiltAssetRequest,builtAssetContentType,MAX_BUILT_ASSET_BYTES,
+ viteCompiledAssetPaths,splitBuiltAsset,assembleBuiltAsset,
  type BuiltAssetRequest} from "../../src/platform/agent/private-built-artifact.js";
 import type {WorkflowStep,WorkflowEvent} from "cloudflare:workers";
 import {Files} from "@cloudflare/sandbox";
@@ -24,6 +25,12 @@ const MAX_RUNTIME_MS=30000;
 const MAX_JOB_CALLS=512;
 const MAX_WORKFLOW_BODY=64*1024;
 const PAID_APPROVAL="OWNER_APPROVED_ONE_SHOT";
+const BUILT_CACHE_MANIFEST="verified_compiled_assets_v1";
+const builtCacheKey=(path:string,i:number)=>"compiled_v1:"+path+":"+i;
+type BuiltCacheManifest={
+ readonly project_hash:string;readonly build_call_id:string;
+ readonly segments:Readonly<Record<string,number>>;
+};
 type Env={APPF2_SANDBOX_TOKEN:string;APPF2_SANDBOX_ALLOWED_JOB_ID:string;
  APPF2_PAID_CONTAINER_CONSENT?:string;APPF2_SP35_WORKFLOW_ENABLED?:string;
  APPF2_CONTAINER:DurableObjectNamespace<SandboxJob>;
@@ -73,22 +80,61 @@ export class SandboxJob extends DurableObject<Env>{
    await c.setInactivityTimeout(120000);
   }
  }
- /** Read-only: never starts or retries a container, never runs source.
-  * Exactly the most recently proved successful build in this job. */
+ /** Store only Vite-compiled public assets, never source or secrets.
+  * One atomic storage.put commits chunks with the matching build identity.
+  */
+ private async saveCompiledAssets(task:Task,dir:string):Promise<void>{
+  const index=new Uint8Array(await (await this.files.readFile(
+   dir+"/dist/index.html")).arrayBuffer());
+  const paths=viteCompiledAssetPaths(new TextDecoder("utf-8",{fatal:true}).decode(index));
+  const entries:Record<string,Uint8Array|BuiltCacheManifest|string>={};
+  const segments:Record<string,number>={};
+  for(const path of paths){
+   const bytes=path==="index.html"?index:
+    new Uint8Array(await (await this.files.readFile(dir+"/dist/"+path)).arrayBuffer());
+   const pieces=splitBuiltAsset(bytes);
+   segments[path]=pieces.length;
+   for(let i=0;i<pieces.length;i++)entries[builtCacheKey(path,i)]=pieces[i]!;
+  }
+  entries[BUILT_CACHE_MANIFEST]={
+   project_hash:task.project.project_hash,build_call_id:task.call.call_id,segments
+  };
+  entries.verified_build_project_hash=task.project.project_hash;
+  entries.verified_build_call_id=task.call.call_id;
+  await this.ctx.storage.put(entries);
+ }
+ /** Read-only: never wakes a paid container, even after idle eviction.
+  * Only exact verified latest build assets are returned.
+  */
  async readBuiltAsset(query:BuiltAssetRequest):Promise<Response>{
   if(!validBuiltAssetRequest(query))
    return new Response("Not Found",{status:404});
-  const [project,callId]=await Promise.all([
+  const [project,callId,manifest]=await Promise.all([
    this.ctx.storage.get<string>("verified_build_project_hash"),
-   this.ctx.storage.get<string>("verified_build_call_id")]);
-  if(project!==query.project_hash||callId!==query.build_call_id||
-   !this.ctx.container?.running)
+   this.ctx.storage.get<string>("verified_build_call_id"),
+   this.ctx.storage.get<BuiltCacheManifest>(BUILT_CACHE_MANIFEST)]);
+  if(project!==query.project_hash||callId!==query.build_call_id)
    return new Response("Not Found",{status:404});
-  const dir=sandboxWorkspaceRoot(query.job_id,{
-   project_hash:query.project_hash
-  } as ProjectSnapshot);
-  const file=await this.files.readFile(dir+"/dist/"+query.path);
-  const bytes=new Uint8Array(await file.arrayBuffer());
+  let bytes:Uint8Array;
+  if(manifest?.project_hash===project&&manifest.build_call_id===callId){
+   const count=manifest.segments?.[query.path];
+   if(!Number.isSafeInteger(count)||count<1||count>32)
+    return new Response("Not Found",{status:404});
+   const chunks=await Promise.all(Array.from({length:count},(_,i)=>
+    this.ctx.storage.get<Uint8Array>(builtCacheKey(query.path,i))));
+   if(chunks.some(c=>!(c instanceof Uint8Array)))
+    return new Response("Not Found",{status:404});
+   try{bytes=assembleBuiltAsset(chunks as Uint8Array[]);}
+   catch{return new Response("Not Found",{status:404});}
+  }else{
+   // Legacy pre-cache builds can be inspected only while their container runs.
+   if(!this.ctx.container?.running)return new Response("Not Found",{status:404});
+   const dir=sandboxWorkspaceRoot(query.job_id,{
+    project_hash:query.project_hash
+   } as ProjectSnapshot);
+   const file=await this.files.readFile(dir+"/dist/"+query.path);
+   bytes=new Uint8Array(await file.arrayBuffer());
+  }
   if(bytes.byteLength===0||bytes.byteLength>MAX_BUILT_ASSET_BYTES)
    return new Response("Too Large",{status:413});
   return new Response(bytes,{
@@ -167,12 +213,19 @@ export class SandboxJob extends DurableObject<Env>{
    await proc.kill(9).catch(()=>undefined);
    result=await receipt(task,null,true,"SANDBOX_TIMEOUT_OR_CRASH");
   }
-  await this.ctx.storage.put(key,{hash,status:"DONE",receipt:result});
-  if(task.call.name==="run_build"&&result.exit_code===0&&!result.timed_out)
-   await this.ctx.storage.put({
+  if(task.call.name==="run_build"&&result.exit_code===0&&!result.timed_out){
+   if(task.project.profile==="VITE_WEB"){
+    try{await this.saveCompiledAssets(task,dir);}
+    catch{
+     // No durable compiled output means no reusable App or Browser QA PASS.
+     result=await receipt(task,1,false,"BUILT_ASSET_PERSIST_FAILED");
+    }
+   }else await this.ctx.storage.put({
     verified_build_project_hash:task.project.project_hash,
     verified_build_call_id:task.call.call_id
    });
+  }
+  await this.ctx.storage.put(key,{hash,status:"DONE",receipt:result});
   return result;
  }
 }

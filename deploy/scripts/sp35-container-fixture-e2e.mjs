@@ -18,6 +18,8 @@ import {runBuiltAppQa} from "./sp35-built-app-independent-qa.mjs";
 import {sealAgentQaPacket,verifyAgentQaPacket}
  from "../../dist/src/platform/agent/qa-packet.js";
 import {sha256CodeBytes} from "../../dist/src/platform/blueprint/code-artifact-v2.js";
+import {viteCompiledAssetPaths,splitBuiltAsset,assembleBuiltAsset}
+ from "../../dist/src/platform/agent/private-built-artifact.js";
 
 
 const image="appf2-sp35-sandbox:ci";
@@ -46,6 +48,14 @@ try{
  run("docker",[...isolation,"node","/opt/appf2/web-smoke.mjs"],2);
  const compiled=await fs.readFile(path.join(tmp,"dist","index.html"),"utf8");
  if(!compiled.includes("/assets/"))throw Error("APPF2_CONTAINER_VITE_OUTPUT_MISSING");
+ const cachedAssetPaths=viteCompiledAssetPaths(compiled);
+ for(const asset of cachedAssetPaths){
+  const bytes=await fs.readFile(path.join(tmp,"dist",asset));
+  const stored=assembleBuiltAsset(splitBuiltAsset(new Uint8Array(bytes)));
+  if(Buffer.compare(Buffer.from(stored),bytes)!==0)
+   throw Error("APPF2_COMPILED_ASSET_DURABILITY_MISMATCH:"+asset);
+ }
+ console.log("SP35 REAL VITE OUTPUT -> BOUNDED DURABLE-ASSET SNAPSHOT: PASS");
  // Independent Chromium QA consumes only the image-built trusted fixture.
  server=http.createServer(async(req,res)=>{
   const target=decodeURIComponent(new URL(req.url??"/","http://127.0.0.1").pathname);
