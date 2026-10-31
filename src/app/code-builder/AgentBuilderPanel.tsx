@@ -113,9 +113,24 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    if(job.job_id!==jobId)throw Error("已保存專案身分不一致。");
    setPrompt(target.prompt);setQaJson("");setSaved(true);
    setSnapshot({job,progress:await worker.progress(),
-    message:"已恢復保存的專案，不重新執行 AI 或雲端建置。",
+    message:job.free_ci?.preview_ready?
+     "已載入保存的私人 App 卡片；同一份建置成果不用重新生成。":
+     "已恢復保存的專案，不重新執行 AI 或雲端建置。",
     completed_steps:0});
    setCatalog([...readSavedCandidateLibrary()]);
+   // Opening a saved app card must use the DB-verified exact existing
+   // Vite bundle; never regenerate, rebuild, expose, or publish source.
+   if(job.free_ci?.preview_ready){
+    try{
+     const asset=await worker.freeCiPreview();
+     const frame=await createPrivatePreviewFrame(asset,document);
+     previewHost.current?.replaceChildren(frame);
+     setPreviewReady(true);
+    }catch(e){
+     // The private Job remains recoverable even if preview fails closed.
+     setError("私人 App 建置成果無法安全重開："+failureMessage(e));
+    }
+   }
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
@@ -317,14 +332,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    可操作的私人 App 要以該 Job 的「已保存 App」按鈕及真實測試為準；
    <strong>尚未完成真 AI 自主生成、自動修復或正式公開分享</strong>。</p>
   {catalog.length>0?<section aria-label="已保存的 Agent 專案">
-   <h3>已保存的多檔案 App 專案（此瀏覽器）</h3>
+   <h3>我的私人 App 卡片／多檔案專案（此瀏覽器）</h3>
    <p className="saved-apps-note">選擇原專案繼續開發或下載程式，
     不會重新生成或支付 AI 費用。新版 Agent 原始簽章金鑰最長有效 30 天；
     舊專案仍以建立時的原金鑰期限為準。這是私人候選清單，並非已發布 App。</p>
    <ul>{catalog.map(item=><li key={item.jobId}>
     <button className="btn btn-secondary" type="button" disabled={busy}
      onClick={()=>{void openSavedCandidate(item.jobId);}}>
-     開啟：{item.prompt.slice(0,65)}
+     開啟／重用：{item.prompt.slice(0,65)}
     </button>
    </li>)}</ul>
   </section>:null}
