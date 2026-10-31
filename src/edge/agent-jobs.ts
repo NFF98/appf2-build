@@ -409,6 +409,14 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   }
   return await read(db,info.anonymous_id,ownerThumb,match?.[1]??"");
  }catch(e){
+  // Creator PoP already verified. Return ONLY one fixed failure category;
+  // never reveal OpenAI response bodies, internal SQL, credentials or tokens.
+  // A paid phase with uncertain outcome is NEVER safe to auto-retry.
+  if(freeAiMatch&&e instanceof Error){
+   const classification=/^SP35_PAID_AI_OUTCOME_UNCERTAIN_NO_RECHARGE_(TRANSPORT_OR_TIMEOUT|PROVIDER_RATE_LIMIT|PROVIDER_SERVER|PROVIDER_REJECTED|PROVIDER_RESPONSE|PROVIDER_INCOMPLETE|PROVIDER_FAILED|RESPONSE_SHAPE|DURABLE_RESPONSE_SAVE)$/u.exec(e.message);
+   if(classification)return json(503,{
+    error:"SP35_PAID_MODEL_"+classification[1]+"_UNCERTAIN"});
+  }
   // Expose ONLY a constant GitHub HTTP status class for this private
   // creator-signed route. Never serialize tokens, tickets, errors or URLs.
   if(freeCiMatch&&e instanceof Error&&
