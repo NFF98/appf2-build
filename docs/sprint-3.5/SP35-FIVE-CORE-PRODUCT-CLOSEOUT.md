@@ -163,6 +163,15 @@
 - **前次失敗與修正**：[run #41170526299](https://github.com/NFF98/appf2-build/actions/runs/41170526299) 首次部署因缺少現有 `@cloudflare/puppeteer@1.1.0` 打包依賴，在 Wrangler 上傳前 FAIL；於同一 PR workflow 增加固定版依賴後 [#41170638897](https://github.com/NFF98/appf2-build/actions/runs/41170638897) 完整 SUCCESS。
 - **E2E 口徑**：**Staging 部署 + Agent/API + 真 PG Job CREATE/REOPEN 已 PASS**；新五核完整生成／安全免費 CI Docker／QA receipt／v2 發布、分享、真 generated backend DB CRUD 尚未同一 Job 驗收，因此 C1–C5 full acceptance **仍 0/5**。下一個 blocker 已從舊 `404/未部署` 轉為**`FREE_CI_SECURE_JOB_TRANSPORT_NOT_CONNECTED`**。不要再重查「Staging 是否部署」；直接補安全 Runner 派發與獨立 QA／immutable card 寫回。
 
+## F.8 私有 AI 原始碼→免費 Docker 自動派發（2026-10-31，本輪實證）
+
+- **已提交至同一 PR #419（未合併）**：既有 Worker 新增 `POST /api/v1/agent-jobs/:job/free-ci-dispatch`，需要建立者 P-256 簽章、額外同意、真 PG Job 已至少 revision 2；只把帶有 Job/owner/project_hash 的 **AES-GCM 加密短效 ticket** 送 GitHub Actions，不傳私有程式碼、prompt 或 API Key。
+- **安全 Runner**：`src/edge/free-ci-source.ts` 只接受相同短效 ticket ＋已驗 RSA/JWKS 的 GitHub OIDC（指定 GitHub-hosted、公開 Repo、Branch、Workflow、事件、audience）；GitHub-hosted Linux Runner 先以 OIDC 向 Worker 私下取得 PG 原始碼及核對 project hash，才由禁網路 Docker 固定建置，再在隔離 Chromium 測試。**尚未實際見到真 AI 生成專案自動派發成功／QA 驗收與回寫／Blueprint v2 發布。**
+- **實際 GitHub 派發路由修正**：新 `sp35-free-ci-job.yml` 不在 default branch，無法直接當 REST workflow_dispatch target；現改走 **main 已存在**的 `sp35-staging-only.yml`，PR 分支額外 `private-free-ci` job 接 encrypted `inputs.ticket`，`staging` job 要求 **ticket 為空**，避免私人 CI Job 重新部署或啟動 AI；OIDC workflow_ref 和測試契約同步更新。
+- **真實免費 Staging 更新 PASS**：[Actions #41172385488](https://github.com/NFF98/appf2-build/actions/runs/41172385488) 在同一 Staging 真正重部署，`GET /api/v1/agent-readiness` **HTTP200**（FREE_CI_NOT_CONNECTED／付費仍鎖住）、`POST /api/v1/internal/free-ci/source` 無授權 **HTTP404 PASS**、真 PG signed CREATE/REOPEN **PASS**；未用 AI、Cloudflare Containers／Browser Run／新訂閱。
+- **下一個唯一環境 blocker，已有 runner 日誌確認**：`STAGING FREE CI DISPATCH: GITHUB_CREDENTIAL_NOT_CONFIGURED`。既有 GitHub Secret `APPF2_FREE_CI_GITHUB_TOKEN` **未設定**（該次 Runner 取得空值），故 Worker 無 Actions-write 權限去 POST GitHub `/dispatches`。這不是 AI 產生原始碼不可建置；不可偷偷用 Cloudflare token 或任何公開 API 取代 GitHub Credential。需要在 Repo Actions Secret 安全配置**只具備目標 Repo Actions:write 的 GitHub token**並重跑免費 Staging deploy（已預留 optional Secret 轉入 Worker，值不印出），才能做實際派發測試。
+- **E2E 不造假**：最新證明是「私有安全端點部署／PG Job 保存／免費 Docker 工程鏈 PASS」。**尚無**「真 AI 已生成的專案透過 Github workflow_dispatch 在 Runner 收到原始碼、建置、QA、收據回寫、生成可操作 v2 卡片」同一 Job 的證據，C1–C5 五項完整通過維持 **0/5**。本輪不合併、不發布 Production、不新增付費 Cloudflare／AI 呼叫。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
