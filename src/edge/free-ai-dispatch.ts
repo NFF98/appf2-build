@@ -43,14 +43,20 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
      Authorization:"Bearer "+token,
      Accept:"application/vnd.github+json",
      "X-GitHub-Api-Version":"2022-11-28",
-     "User-Agent":"appf2-sp35-gpt6-paid-runner",
+     "User-Agent":"appf2-sp35-free-ci-dispatch",
      "Content-Type":"application/json"},
     body:JSON.stringify({ref:"product/sprint-3.5-complex-intent-recovery-20261026",
      inputs:{ticket:"ai_runner_v1_"+ticket}}),
-    signal:AbortSignal.timeout(12000),redirect:"error"});
+    signal:globalThis.AbortSignal.timeout(12000)});
   if(response.status===204)return;
   classification=String([400,401,403,404,409,422,429,500,502,503].includes(
    response.status)?response.status:"OTHER_HTTP");
- }catch{ /* Dispatch may have occurred; NEVER send it again automatically. */ }
+ }catch(e){
+  // Do NOT include message/stack/URL/ticket. A fixed classification is safe
+  // even when GitHub's response was lost after accepting the dispatch.
+  classification=e instanceof Error&&(
+   e.name==="TimeoutError"||e.name==="AbortError")?
+   "TIMEOUT":e instanceof TypeError?"FETCH_TYPE_ERROR":"FETCH_OTHER_ERROR";
+ }
  throw Error("SP35_AI_RUNNER_DISPATCH_UNCONFIRMED_"+classification);
 }
