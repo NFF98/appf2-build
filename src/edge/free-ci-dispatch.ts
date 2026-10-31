@@ -50,6 +50,7 @@ export async function dispatchFreeCiJob(input:FreeCiDispatchInput,ctx:{
  const response=await send(url,{method:"POST",headers:{
   Authorization:"Bearer "+ctx.token,Accept:"application/vnd.github+json",
   "X-GitHub-Api-Version":"2022-11-28",
+  "User-Agent":"appf2-sp35-free-ci-dispatch",
   "Content-Type":"application/json"},
   body:JSON.stringify({ref:"product/sprint-3.5-complex-intent-recovery-20261026",
    inputs:{ticket}}),signal:globalThis.AbortSignal.timeout(12000)});
