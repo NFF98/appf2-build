@@ -96,7 +96,7 @@ async function freeBuiltPreview(root,projectHash,digest){
   fs.readFile(path.join(root,match[1]),"utf8")))).join("\n");
  const preview={project_hash:projectHash,artifact_hash:digest,
   index_html:index,javascript:js,css};
- if(new TextEncoder().encode(JSON.stringify(preview)).length>400000)
+ if(new globalThis.TextEncoder().encode(JSON.stringify(preview)).length>400000)
   throw Error("FREE_CI_PREVIEW_BOUND_EXCEEDED");
  return preview;
 }
