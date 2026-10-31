@@ -262,7 +262,7 @@ try{
  server=http.createServer((req,res)=>{
   const url=new URL(req.url??"/","http://"+req.headers.host);
   if(url.pathname==="/api/v1/agent-readiness"&&req.method==="GET"){
-   json(res,200,{status:"CONFIGURED_NOT_VERIFIED",can_start_paid_generation:true,missing:[]});
+   json(res,200,{status:"CONFIGURED_NOT_VERIFIED",execution_mode:"FREE_CI_READY",can_start_paid_generation:true,missing:[]});
    return;
   }
   const action=url.pathname.startsWith("/api/v1/")?api(req,res,url):
@@ -295,8 +295,8 @@ try{
  await page.getByRole("textbox",{name:"用一句話描述要做的 App"}).fill(prompt);
  // No QA JSON authored or pasted: the product must auto-plan from one sentence.
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
+ await page.getByLabel(/我另行核准免費 Chromium 做獨立 Browser QA/u).check();
  if(!(await primary.isEnabled()))throw Error("AGENT_CONSENT_UI_BROKEN");
  await primary.click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
@@ -324,7 +324,7 @@ try{
  await page.waitForTimeout(400);
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
@@ -338,7 +338,7 @@ try{
   throw Error("AGENT_BUDGET_RENEWAL_VIOLATED_CAS_OR_REPLAY");
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
@@ -351,15 +351,15 @@ try{
   "call_browser_inspect_123456","call_browser_test_123456"];
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · TESTING").waitFor({timeout:15000});
  const preview=page.getByRole("button",{
   name:"開啟已建置 App 互動預覽（需雲端存取授權）"});
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).uncheck();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).uncheck();
  if(await preview.isEnabled())throw Error("PRIVATE_PREVIEW_NO_SEPARATE_CONSENT");
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  await preview.click();
  const frame=page.frameLocator('iframe[title="私人候選 App 互動預覽（尚未通過發布驗收）"]');
  await frame.getByRole("button",{name:"Demo Add"}).click();
@@ -390,9 +390,9 @@ try{
   throw Error("PRIVATE_BUILD_PREVIEW_CAUSED_PAID_OR_UNSAFE_EFFECTS");
  const qaButton=page.getByRole("button",{
   name:"開始獨立瀏覽器 QA（需另行授權）"});
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).uncheck();
+ await page.getByLabel(/我另行核准免費 Chromium 做獨立 Browser QA/u).uncheck();
  if(await qaButton.isEnabled())throw Error("BROWSER_QA_SPENT_WITHOUT_SEPARATE_CONSENT");
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ await page.getByLabel(/我另行核准免費 Chromium 做獨立 Browser QA/u).check();
  await qaButton.click();
  await page.getByText("已保存專案 · REPAIRING").waitFor({timeout:15000});
  await page.getByText("使用者操作後計分改變：FAIL").waitFor({timeout:15000});
@@ -419,7 +419,7 @@ try{
   throw Error("SAVED_QA_PROGRESS_READ_DISPATCHED_PAID_OPERATION");
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
  // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · REPAIRING").waitFor({timeout:15000});
@@ -435,8 +435,8 @@ try{
  job.status="REPAIRING";job.revision++;autoQaPending=true;
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ await page.getByLabel(/我同意僅用 GitHub Actions 免費 Docker 建置/u).check();
+ await page.getByLabel(/我另行核准免費 Chromium 做獨立 Browser QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("獨立 QA 失敗，已依本次授權修復一次",{
   exact:false}).waitFor({timeout:15000});

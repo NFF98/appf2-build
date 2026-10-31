@@ -13,7 +13,9 @@ export async function requireAgentBuildReadiness():Promise<void>{
  if(!body||typeof body!=="object"||!("data" in body)||
   !body.data||typeof body.data!=="object"||
   !("status" in body.data)||body.data.status!=="CONFIGURED_NOT_VERIFIED"||
+  !("execution_mode" in body.data)||
+  body.data.execution_mode!=="FREE_CI_READY"||
   !("can_start_paid_generation" in body.data)||
   body.data.can_start_paid_generation!==true)
-  throw Error("AI／Sandbox／Browser QA 尚未全部配置；不會先付費生成不能驗收的 App。");
+  throw Error("免費 Docker／Chromium 的安全 Job 傳輸尚未接通；不會呼叫付費 Cloudflare 容器或先扣 AI 費。");
 }

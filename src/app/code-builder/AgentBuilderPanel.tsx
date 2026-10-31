@@ -328,18 +328,18 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   </label>
   <label className="code-builder-consent"><input type="checkbox" checked={containerConsent}
    disabled={busy} onChange={e=>setContainerConsent(e.target.checked)}/>
-   我另外授權 Cloudflare 隔離建置／測試（單次上限 5 美分）；若雲端尚未啟用則安全停止。
+   我同意僅用 GitHub Actions 免費 Docker 建置；不授權 Cloudflare Containers 或新費用。
   </label>
   <label className="code-builder-consent"><input type="checkbox" checked={browserQaConsent}
    disabled={busy} onChange={e=>setBrowserQaConsent(e.target.checked)}/>
-   我另行核准本次獨立雲端瀏覽器 QA；建置測試完成後自動驗收，若失敗且仍有步數，依本次 AI 授權修復一次。不重試、不自動發布。
+   我另行核准免費 Chromium 做獨立 Browser QA；不會使用付費 Cloudflare Browser Run，不自動發布。
   </label>
   <label htmlFor="agent-max-cost">整個專案核准的 AI 費用上限（美分，自動 QA 最低 16；最多 100）</label>
   <input id="agent-max-cost" type="number" min={8} max={100} step={1}
    value={approvedCents} disabled={busy}
    onChange={e=>setApprovedCents(Number(e.target.value))}/>
   <p className="saved-apps-note">每按一次開發加修復總計最多六個 Agent 步驟，另可依授權做一次獨立 QA；費用仍受伺服器總預算限制。
-   建立前先唯讀檢查 AI／Sandbox／Browser QA 是否配置，缺服務不先扣 AI 費；
+   免費 Runner 的安全 Job 傳輸還沒接到新版 Agent；沒有真實 FREE_CI_READY 不啟動付費生成，
    不會自動部署、不會把模擬測試標成真實 QA PASS。</p>
   <button type="button" className="btn btn-primary"
    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||

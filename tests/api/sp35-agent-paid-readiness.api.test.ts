@@ -17,14 +17,35 @@ const env={APPF2_AGENT_CANDIDATE_ENABLED:"1",
  APPF2_QA_PRIVATE_TOKEN:"q".repeat(32),
  APPF2_AGENT_QA_VERIFIER_SECRET:"v".repeat(32)} as unknown as Appf2WorkerEnv;
 afterEach(()=>vi.unstubAllGlobals());
-describe("SP35 real product paid-step readiness preflight",()=>{
+describe("SP35 free-only product step readiness",()=>{
+ it("free-only Worker denies Agent paid steps even when cloud bindings exist",async()=>{
+  const free={...env,APPF2_AGENT_FREE_ONLY:"1"};
+  expect(agentReadiness(free)).toEqual({status:"BLOCKED",
+   execution_mode:"FREE_CI_NOT_CONNECTED",can_start_paid_generation:false,
+   missing:["FREE_CI_SECURE_JOB_TRANSPORT_NOT_CONNECTED"]});
+  const response=await createWorkerFetch()(new Request(url),free);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({data:agentReadiness(free)});
+  const blocked=await createWorkerFetch()(new Request(
+   "https://app.example/api/v1/agent-jobs/ba45436c-c3f1-44f1-adc6-bdd0fb1592e7/model-plan",
+   {method:"POST"}),free);
+  expect(blocked.status).toBe(404);
+ });
+ it("client refuses an active paid Cloudflare mode even when all its bindings exist",async()=>{
+  const paid=vi.fn(async()=>new Response(JSON.stringify({data:{
+   status:"CONFIGURED_NOT_VERIFIED",execution_mode:"PAID_CLOUDFLARE",
+   can_start_paid_generation:true,missing:[]}}),{status:200}));
+  vi.stubGlobal("fetch",paid);
+  await expect(requireAgentBuildReadiness()).rejects.toThrow("不會呼叫付費 Cloudflare");
+ });
+
  it("GET is DB/AI/Container-free; reports CONFIGURED, never a live PASS",async()=>{
   const fetch=createWorkerFetch({intent:()=>{throw Error("DB_must_not_run");}});
   const response=await fetch(new Request(url),env);
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toContain("no-store");
   expect(await response.json()).toEqual({data:{
-   status:"CONFIGURED_NOT_VERIFIED",can_start_paid_generation:true,missing:[]}});
+   status:"CONFIGURED_NOT_VERIFIED",execution_mode:"PAID_CLOUDFLARE",can_start_paid_generation:true,missing:[]}});
  });
  it("fail closed when browser QA or Sandbox binding is absent",async()=>{
   const noQa={...env,APPF2_QA_BROWSER_SERVICE:undefined};
@@ -46,14 +67,14 @@ describe("SP35 real product paid-step readiness preflight",()=>{
   await expect(requireAgentBuildReadiness()).rejects.toThrow("沒有呼叫付費 AI");
   expect(request).toHaveBeenCalledOnce();
   const incomplete=vi.fn(async()=>new Response(JSON.stringify({data:{
-   status:"BLOCKED",can_start_paid_generation:false,missing:["SANDBOX"]}}),
+   status:"BLOCKED",execution_mode:"PAID_CLOUDFLARE",can_start_paid_generation:false,missing:["SANDBOX"]}}),
    {status:200,headers:{"Content-Type":"application/json"}}));
   vi.stubGlobal("fetch",incomplete);
-  await expect(requireAgentBuildReadiness()).rejects.toThrow("不會先付費");
+  await expect(requireAgentBuildReadiness()).rejects.toThrow("不會呼叫付費 Cloudflare");
  });
  it("browser proceeds only with complete configured flags, no model called",async()=>{
   const request=vi.fn(async()=>new Response(JSON.stringify({data:{
-   status:"CONFIGURED_NOT_VERIFIED",can_start_paid_generation:true,missing:[]}}),
+   status:"CONFIGURED_NOT_VERIFIED",execution_mode:"FREE_CI_READY",can_start_paid_generation:true,missing:[]}}),
    {status:200,headers:{"Content-Type":"application/json"}}));
   vi.stubGlobal("fetch",request);
   await expect(requireAgentBuildReadiness()).resolves.toBeUndefined();
