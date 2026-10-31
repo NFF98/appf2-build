@@ -315,7 +315,13 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      break;
     }
     if(!current.free_ci.preview_ready){
-     setQaOutcome("已收到建置收據，但沒有可驗證的預覽；不發布 App。");
+     // The immutable QA receipt can precede the separate saved bundle.
+     // Do not stop while PASS has been proven but preview upload is pending.
+     if(checks.length>0&&checks.every(c=>c.verdict==="PASS")){
+      setQaOutcome("Docker／Browser QA 已 PASS，等待私人 App 預覽寫入資料庫；尚未公開。");
+      continue;
+     }
+     setQaOutcome("已收到建置收據，但沒有完整 PASS 或可驗證預覽；不發布 App。");
      break;
     }
     if(checks.length>0&&checks.every(c=>c.verdict==="PASS")){
