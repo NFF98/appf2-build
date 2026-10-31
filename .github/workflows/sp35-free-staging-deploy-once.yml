@@ -194,3 +194,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] check Cloudflare global_fetch_strictly_public egress to fixed OpenAI model GET, no paid POST.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] deploy fail-closed no-charge Worker model egress guard after both signed GET tests failed. Preserve prior free Docker evidence.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] final free-only verification: original Agent job and Docker must PASS independently; Worker GPT-6 egress remains fail-closed and never billed.
