@@ -46,6 +46,7 @@ export async function saveFreeCiBuiltPreview(db:AgentJobExecutor,
  WHERE r.job_id=$1::uuid AND r.owner_anonymous_id=$2::uuid
  AND r.project_hash=$3::text AND r.run_id=$4::text
  AND r.built_artifact_hash=$5::text
+ AND r.receipt_json->>'version'='APPF2_FREE_CI_SMOKE_V1'
  ON CONFLICT(job_id,project_hash) DO NOTHING RETURNING job_id::text`,
  [scope.jobId,scope.owner,scope.projectHash,scope.runId,
   value.artifact_hash,json]);
