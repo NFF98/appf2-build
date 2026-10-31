@@ -7,8 +7,8 @@ import {recoverAgentJob,advanceDurableAgentJob}
 import {applyProjectEdits} from "../platform/agent/project-workspace.js";
 import {freezeAgentQaPlan} from "./agent-qa-plan.js";
 import {parseQaPlan,type QaPlan} from "../platform/qa/requirement-contract.js";
-import {getModelCall,reserveModelCall,claimModelCall,completeModelCall,
- markModelCallUncertain,getModelBackgroundId,saveModelBackgroundId,
+import {getModelCall,reserveModelCall,completeModelCall,
+ markModelCallUncertain,getModelBackgroundId,
  type ModelCallRow} from "../platform/agent/postgres-model-calls.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {readFreeCiSmoke} from "./free-ci-result.js";
