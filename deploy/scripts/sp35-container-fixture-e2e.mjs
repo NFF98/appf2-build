@@ -10,7 +10,8 @@ import path from "node:path";
 import http from "node:http";
 import {chromium} from "@playwright/test";
 import {createInitialAgentProject} from "../../dist/src/edge/agent-jobs.js";
-import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-workspace.js";
+import {verifyProjectSnapshot,createProjectSnapshot} from "../../dist/src/platform/agent/project-workspace.js";
+import {stageVerifiedFreeCiProject} from "./sp35-free-ci-stage-project.mjs";
 import {sealCandidateQaReceipt,verifySignedCandidateQa,
  admitsPublicationFromCandidateReceipt} from "../../dist/src/platform/agent/qa-receipt.js";
 import {createHash,randomBytes} from "node:crypto";
@@ -31,10 +32,29 @@ function run(command,args,maxMinutes=8){
  if(result.status!==0)throw Error("APPF2_CONTAINER_STEP_FAILED:"+command+":"+result.status);
 }
 try{
- await fs.cp(path.resolve("tests/fixtures/sp35-multifile"),tmp,{recursive:true});
+ // Stage actual versioned ProjectSnapshot, not an ad-hoc directory copy.
+ const fixture=path.resolve("tests/fixtures/sp35-multifile");
+ const sources=await Promise.all(["index.html","src/main.ts","src/math.ts"]
+  .map(async name=>({path:name,content:await fs.readFile(path.join(fixture,name),"utf8")})));
+ const verifiedSource=await createProjectSnapshot("VITE_WEB","index.html",sources);
+ const staged=await stageVerifiedFreeCiProject(verifiedSource,tmp);
+ if(staged.project_hash!==verifiedSource.project_hash)
+  throw Error("FREE_CI_SNAPSHOT_HASH_MISMATCH");
+ // A fully hash-valid malicious source config must still fail closed.
+ for(const injected of ["vite.config.ts","package.json"]){
+  const poisoned=await createProjectSnapshot("VITE_WEB","index.html",
+   [...sources,{path:injected,content:"export default {}"}]);
+  await stageVerifiedFreeCiProject(poisoned,path.join(tmp,"rejected-"+injected))
+   .then(()=>{throw Error("FREE_CI_UNTRUSTED_CONFIG_ADMITTED");},
+    err=>{if(!String(err).includes("FREE_CI_SOURCE_CONFIG_DENIED"))throw err;});
+ }
+ const corrupted={...verifiedSource,project_hash:"sha256:"+"0".repeat(64)};
+ await stageVerifiedFreeCiProject(corrupted,path.join(tmp,"tampered"))
+  .then(()=>{throw Error("FREE_CI_PROJECT_HASH_NOT_VERIFIED");},
+   err=>{if(!String(err).includes("FREE_CI_SNAPSHOT_INVALID"))throw err;});
  await fs.symlink("/opt/appf2/node_modules",path.join(tmp,"node_modules"),"dir");
  // Container image and commands are fixed; this repo fixture is trusted code.
- run("docker",["build","-t",image,"-f","deploy/free-ci/Dockerfile","deploy/sandbox"]);
+ run("docker",["build","-t",image,"-f","deploy/free-ci/Dockerfile","."]);
  const uid=process.getuid?.()??1000,gid=process.getgid?.()??1000;
  const isolation=[
   "run","--rm","--network","none","--cap-drop","ALL",
@@ -43,8 +63,7 @@ try{
   "--tmpfs","/tmp:rw,nosuid,size=64m",
   "-v",tmp+":/workspace/trusted:rw","-w","/workspace/trusted",image
  ];
- run("docker",[...isolation,"node","/opt/appf2/node_modules/vite/bin/vite.js",
-  "build",".","--outDir","dist","--emptyOutDir"],3);
+ run("docker",[...isolation,"node","/opt/appf2/build-locked.mjs"],3);
  run("docker",[...isolation,"node","/opt/appf2/web-smoke.mjs"],2);
  const compiled=await fs.readFile(path.join(tmp,"dist","index.html"),"utf8");
  if(!compiled.includes("/assets/"))throw Error("APPF2_CONTAINER_VITE_OUTPUT_MISSING");
@@ -55,6 +74,7 @@ try{
   if(Buffer.compare(Buffer.from(stored),bytes)!==0)
    throw Error("APPF2_COMPILED_ASSET_DURABILITY_MISMATCH:"+asset);
  }
+ console.log("SP35 VERIFIED PROJECT SNAPSHOT → FREE LOCKED DOCKER VITE: PASS; source_hash="+verifiedSource.project_hash);
  console.log("SP35 REAL VITE OUTPUT -> BOUNDED DURABLE-ASSET SNAPSHOT: PASS");
  // Independent Chromium QA consumes only the image-built trusted fixture.
  server=http.createServer(async(req,res)=>{
