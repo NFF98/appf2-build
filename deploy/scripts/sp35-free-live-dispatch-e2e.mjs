@@ -31,7 +31,10 @@ async function signed(path,body,expected){
   body:bytes,signal:globalThis.AbortSignal.timeout(25000)});
  const reply=await response.json().catch(()=>null);
  if(response.status!==expected||!reply?.data)
-  throw Error("FREE_LIVE_DISPATCH_UNEXPECTED_HTTP_"+response.status+"_PATH_"+path);
+  throw Error("FREE_LIVE_DISPATCH_UNEXPECTED_HTTP_"+response.status+"_PATH_"+path+
+   (Number.isSafeInteger(reply?.github_http_status)?
+     "_GITHUB_HTTP_"+reply.github_http_status:"")+
+   (reply?.error==="AGENT_JOB_UNAVAILABLE"?"_WORKER_INTERNAL":""));
  return reply.data;
 }
 const initial=await signed("/api/v1/agent-jobs",{anonymous_id:owner,prompt},201);
