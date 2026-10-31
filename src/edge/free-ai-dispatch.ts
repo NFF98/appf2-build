@@ -28,10 +28,12 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
   .rows[0];
  if(stored?.call_key!==row.call_key)
   throw Error("SP35_AI_RUNNER_ALREADY_DISPATCHED_NO_RETRY");
- await claimModelCall(db,row);
+ // Ticket encryption precedes IN_FLIGHT. A local AES error must not consume
+ // the one-shot paid dispatch fence before any network request is sent.
  const ticket=await sealAiRunnerTicket({job_id:row.job_id,
   owner:row.owner_anonymous_id,project_hash:projectHash,
   call_key:row.call_key,request_hash:row.request_hash},ticketSecret,nowMs);
+ await claimModelCall(db,row);
  let classification="NETWORK_ERROR";
  try{
   const response=await sendFreeCiGithubDispatch(
