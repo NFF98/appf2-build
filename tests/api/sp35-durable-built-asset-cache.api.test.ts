@@ -1,4 +1,5 @@
 import {describe,it,expect} from "vitest";
+import {Buffer} from "node:buffer";
 import {viteCompiledAssetPaths,splitBuiltAsset,assembleBuiltAsset,
  MAX_BUILT_ASSET_BYTES,BUILT_CACHE_CHUNK_BYTES}
  from "../../src/platform/agent/private-built-artifact.js";
@@ -22,7 +23,9 @@ describe("Sprint 3.5 durable compiled App assets after sleeping Sandbox",()=>{
   const chunks=splitBuiltAsset(bytes);
   expect(chunks.length).toBe(Math.ceil(MAX_BUILT_ASSET_BYTES/BUILT_CACHE_CHUNK_BYTES));
   expect(chunks.every(x=>x.length<=BUILT_CACHE_CHUNK_BYTES)).toBe(true);
-  expect(assembleBuiltAsset(chunks)).toEqual(bytes);
+  // Native full-byte comparison avoids Vitest's extremely slow 2 MiB typed-array
+  // deep diff on crowded CI runners. Still compares EVERY byte, not a sample.
+  expect(Buffer.from(assembleBuiltAsset(chunks)).equals(Buffer.from(bytes))).toBe(true);
  });
  it("fails closed for missing, oversized or manipulated compiled bytes",()=>{
   expect(()=>splitBuiltAsset(new Uint8Array())).toThrow("BUILT_CACHE_ASSET_TOO_LARGE");
