@@ -66,6 +66,21 @@ type SavedBrowserQaAttempt={readonly status:string;readonly receipt_json:unknown
 export type SavedQaCheck={readonly criterion_id:string;
  readonly verdict:"PASS"|"FAIL"|"UNTESTED";
  readonly evidence_hash:string|null};
+/** Validate one immutable browser observation without accepting fabricated PASS. */
+function recoverSavedQaCheck(raw:unknown):SavedQaCheck|null{
+ if(typeof raw!=="object"||raw===null||Array.isArray(raw))return null;
+ const x=raw as Record<string,unknown>;
+ if(Object.keys(x).sort().join(",")!==
+  "category,criterion_id,evidence_hash,verdict"||
+  x.category!=="BROWSER"||typeof x.criterion_id!=="string"||
+  !/^[a-z][a-z0-9_]{0,39}$/u.test(x.criterion_id)||
+  !["PASS","FAIL","UNTESTED"].includes(String(x.verdict))||
+  (x.verdict==="PASS"?
+   !/^sha256:[a-f0-9]{64}$/u.test(String(x.evidence_hash)):
+   x.evidence_hash!==null))return null;
+ return {criterion_id:x.criterion_id,verdict:x.verdict as SavedQaCheck["verdict"],
+  evidence_hash:x.evidence_hash as string|null};
+}
 /** Only owner-scoped, already-journaled Chromium observations are shown.
  * The broker validated the original frozen criteria at the time of dispatch;
  * this read-only projection checks structure again and grants no PASS.
@@ -80,22 +95,11 @@ export function savedQaObservedChecks(row:SavedBrowserQaAttempt|undefined):
  if(!Array.isArray(raw)||raw.length<1||raw.length>10)return [];
  const observed:SavedQaCheck[]=[];
  const seen=new Set<string>();
- for(const check of raw){
-  if(typeof check!=="object"||check===null||Array.isArray(check))
-   return [];
-  const x=check as Record<string,unknown>;
-  const id=x.criterion_id;
-  if(Object.keys(x).sort().join(",")!==
-   "category,criterion_id,evidence_hash,verdict"||
-   x.category!=="BROWSER"||typeof id!=="string"||
-   !/^[A-Za-z0-9_-]{1,80}$/u.test(id)||seen.has(id)||
-   !["PASS","FAIL","UNTESTED"].includes(String(x.verdict))||
-   (x.verdict==="PASS"?
-    !/^sha256:[a-f0-9]{64}$/u.test(String(x.evidence_hash)):
-    x.evidence_hash!==null))return [];
-  seen.add(id);
-  observed.push({criterion_id:id,verdict:x.verdict as SavedQaCheck["verdict"],
-   evidence_hash:x.evidence_hash as string|null});
+ for(const rawCheck of raw){
+  const check=recoverSavedQaCheck(rawCheck);
+  if(check===null||seen.has(check.criterion_id))return [];
+  seen.add(check.criterion_id);
+  observed.push(check);
  }
  return observed;
 }
