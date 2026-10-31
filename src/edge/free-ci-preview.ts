@@ -60,6 +60,12 @@ export async function saveFreeCiBuiltPreview(db:AgentJobExecutor,
 }
 export type FreeCiPrivateSource={readonly project_hash:string;readonly index_html:string;
  readonly javascript:string;readonly css:string;readonly app_published:false};
+export function validFreeCiOwnerPreviewInput(raw:unknown):raw is {
+ readonly anonymous_id:string;readonly expected_project_hash:string}{
+ return exact(raw,["anonymous_id","expected_project_hash"])&&
+  typeof raw.anonymous_id==="string"&&UUID.test(raw.anonymous_id)&&
+  typeof raw.expected_project_hash==="string"&&SHA.test(raw.expected_project_hash);
+}
 export async function readSignedFreeCiBuiltPreview(db:AgentJobExecutor,input:{
  readonly anonymous_id:string;readonly expected_project_hash:string;
 },scope:{jobId:string;ownerThumb:string}):Promise<FreeCiPrivateSource>{

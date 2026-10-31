@@ -83,6 +83,23 @@ async function artifactHash(root){
  if(!files.some(x=>x[0]==="index.html"))throw Error("FREE_CI_ARTIFACT_NO_INDEX");
  return "sha256:"+createHash("sha256").update(JSON.stringify(files)).digest("hex");
 }
+async function freeBuiltPreview(root,projectHash,digest){
+ const index=await fs.readFile(path.join(root,"index.html"),"utf8");
+ const scripts=[...index.matchAll(
+  /<script\\b[^>]*\\bsrc="\\/(assets\\/[A-Za-z0-9_.-]+\\.js)"[^>]*><\\/script>/gu)];
+ const styles=[...index.matchAll(
+  /<link\\b[^>]*\\bhref="\\/(assets\\/[A-Za-z0-9_.-]+\\.css)"[^>]*>/gu)];
+ if(scripts.length!==1||styles.length>3)
+  throw Error("FREE_CI_PREVIEW_UNSUPPORTED_VITE_ASSETS");
+ const js=await fs.readFile(path.join(root,scripts[0][1]),"utf8");
+ const css=(await Promise.all(styles.map(match=>
+  fs.readFile(path.join(root,match[1]),"utf8")))).join("\\n");
+ const preview={project_hash:projectHash,artifact_hash:digest,
+  index_html:index,javascript:js,css};
+ if(new TextEncoder().encode(JSON.stringify(preview)).length>400000)
+  throw Error("FREE_CI_PREVIEW_BOUND_EXCEEDED");
+ return preview;
+}
 const source=await fetch(host+"/api/v1/internal/free-ci/source",{
  method:"POST",headers:{"Authorization":"Bearer "+await newOidc(),
   "Content-Type":"application/json"},body:JSON.stringify({ticket}),
@@ -210,6 +227,19 @@ try{
   stored.data.original_requirements_qa!==false||
   stored.data.app_published!==false)
   throw Error("FREE_CI_SMOKE_RECEIPT_NOT_DURABLE_HTTP_"+saved.status);
+ const assets=await freeBuiltPreview(path.join(tmp,"dist"),
+  project.project_hash,receipt.artifact_hash);
+ const previewSaved=await fetch(host+"/api/v1/internal/free-ci/preview",{
+  method:"POST",headers:{"Authorization":"Bearer "+await newOidc(),
+   "Content-Type":"application/json"},body:JSON.stringify({ticket,preview:assets}),
+  signal:globalThis.AbortSignal.timeout(30000),redirect:"error"});
+ const previewResult=await previewSaved.json().catch(()=>null);
+ if(previewSaved.status!==200||
+  !["RECORDED","REPLAYED"].includes(previewResult?.data?.status)||
+  previewResult.data.project_hash!==project.project_hash||
+  previewResult.data.app_published!==false)
+  throw Error("FREE_CI_PRIVATE_PREVIEW_NOT_DURABLE_HTTP_"+previewSaved.status);
+ console.log("SP35 FREE PRIVATE V2 PREVIEW: immutable built bytes saved privately for zero-AI re-open");
  console.log("SP35 PRIVATE FREE CI: GitHub OIDC verified, locked Docker build + Chromium render PASS");
  console.log("SP35 FREE CI RECEIPT: same Job/hash persisted in PostgreSQL "+stored.data.status);
  console.log("SP35 LIMIT: browser smoke only, original acceptance QA and publication NOT VERIFIED");
