@@ -350,7 +350,7 @@ export class BrowserCodingAgent {
  /** Independently execute browser acceptance only after a proven build/test.
   * Caller consent is per click, and repeated requests never retry a paid run.
   */
- async independentQa(explicitConsent:boolean){
+ async independentQa(explicitConsent:boolean,reconcileOnly=false){
   const target=this.target;
   if(!explicitConsent||!target?.qaPlan)
    throw Error("需要開發前凍結的 QA 計畫與獨立瀏覽器費用授權。");
@@ -364,7 +364,8 @@ export class BrowserCodingAgent {
    expected_revision:job.revision,project_hash:job.project_hash,
    build_call_id:completed.at(-2),test_call_id:completed.at(-1),
    original_prompt:target.prompt,original_plan:target.qaPlan,
-   explicit_browser_qa_consent:true
+   explicit_browser_qa_consent:true,
+   ...(reconcileOnly?{reconcile_only:true}: {})
   });
  }
  /** AI repair is a separate P-256 signed, explicitly paid action.
