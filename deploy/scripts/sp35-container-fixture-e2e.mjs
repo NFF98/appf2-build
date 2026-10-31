@@ -1,7 +1,7 @@
 /**
- * Build the private Sandbox image and compile ONLY a trusted committed fixture
+ * Build the dedicated NO-CLOUDFLARE, no-fee Docker image and compile ONLY a trusted committed fixture
  * in a real Docker container with --network none. Never runs AI-generated code.
- * This validates the Vite binary/image build that Wrangler dry-run does not test.
+ * No Cloudflare Sandbox image, shim, subscription, Worker binding or Browser Run.
  */
 import {spawnSync} from "node:child_process";
 import fs from "node:fs/promises";
@@ -22,7 +22,7 @@ import {viteCompiledAssetPaths,splitBuiltAsset,assembleBuiltAsset}
  from "../../dist/src/platform/agent/private-built-artifact.js";
 
 
-const image="appf2-sp35-sandbox:ci";
+const image="appf2-sp35-free-ci:ci";
 const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"appf2-sp35-container-"));
 let server,candidateServer,browser;
 function run(command,args,maxMinutes=8){
@@ -34,7 +34,7 @@ try{
  await fs.cp(path.resolve("tests/fixtures/sp35-multifile"),tmp,{recursive:true});
  await fs.symlink("/opt/appf2/node_modules",path.join(tmp,"node_modules"),"dir");
  // Container image and commands are fixed; this repo fixture is trusted code.
- run("docker",["build","-t",image,"-f","deploy/sandbox/Dockerfile","deploy/sandbox"]);
+ run("docker",["build","-t",image,"-f","deploy/free-ci/Dockerfile","deploy/sandbox"]);
  const uid=process.getuid?.()??1000,gid=process.getgid?.()??1000;
  const isolation=[
   "run","--rm","--network","none","--cap-drop","ALL",

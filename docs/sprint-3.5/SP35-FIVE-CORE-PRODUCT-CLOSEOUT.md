@@ -123,6 +123,13 @@
 - **產品五核 C1–C5 仍為 0/5**：缺「真 AI 生成多檔案 → 既有 PG checkpoint → 安全傳到無秘密 Runner Docker → 真獨立 Browser QA → 回傳同 hash 受控 admission → v2 卡片與後端 CRUD」的單一 Job 真實整鏈；目前免費路線 Runner 的多檔案 Docker＋Chromium 仍為**可信 fixture**。Cloudflare Container/Browsers 不再是本期阻斷；須補的是**免費 Runner／產品 Job 安全接線和 v2 發布**。
 - **費用總結**：本輪沒有部署 Cloudflare Containers/Browser Run，沒有呼叫付費模型 API，沒有合併 PR 或正式部署；僅使用公開 Repo 的標準 GitHub-hosted Actions 免費運算與對既有 Staging 的唯讀 GET。
 
+## F.4 Free-only Docker image / 最新 SUCCESS（2026-10-31）
+
+- [run 41168878799](https://github.com/NFF98/appf2-build/actions/runs/41168878799) 在 Build `ddbb0f4` **SUCCESS**：TypeScript、Lint、API／Runtime、原 UI signed Agent mock、Docker Vite＋真 Chromium QA 全 PASS；不等於真人 AI 原始碼的完整五核 E2E。
+- 免費 Runner 已新增 `deploy/free-ci/Dockerfile`，**以 node:24-trixie-slim 直接建立，不引用 cloudflare/sandbox image 或 shim**，原 Docker 隔離、網路禁止、cap-drop、CPU／RAM 限制保留；`sp35-container-fixture-e2e.mjs` 已改使用這個免費專用 image。
+- 不會重做已 PASS 的 Agent/Candidate/DB checkpoint。尚未解決的是**將真 AI 多檔案 Job 安全交給 Actions CI、從可信 Runner 將原始需求 QA/成果回寫到相同 Job／v2 卡片**，並實現受控生成後端 CRUD；不可因換 Docker image 便宣稱 C1–C5 已完成。
+- 所有變更仍僅在 PR #419，沒有 Staging 新 Agent 正式部署、Cloudflare Containers 訂閱、付費 Browser Run 或新 AI 成本。要查本輪新 Docker image 的 Action SUCCESS 後才能標本次 IMAGE PASS。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
