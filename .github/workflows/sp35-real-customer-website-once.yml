@@ -43,3 +43,5 @@ jobs:
 # [SP35-PAID-WEBSITE-ONCE] 2026-11-01 ONE Staging true customer GPT-6 run after signed Worker GitHub GET+AES pass; original 44c cap, no automatic retry or Production.
 
 # [SP35-PAID-WEBSITE-ONCE] 2026-11-01 single signed Staging GPT-6 Runner E2E after native POST and closing Hyperdrive; max approved job cap 44 cents, no second POST for any phase.
+
+# [SP35-PAID-WEBSITE-ONCE] 2026-11-01 post-QA-repair-gate real website 44-cent capped job: passive initial, click_count, true Docker→Chromium→repair→share; no old paid phase retransmission.
