@@ -181,6 +181,14 @@
 - **目前已知唯一外部設定硬擋**：之前真 Staging 發布日志確證 `GITHUB_CREDENTIAL_NOT_CONFIGURED`。GitHub Actions Repo Secret `APPF2_FREE_CI_GITHUB_TOKEN` 仍沒有「已配置」證據；本次 GitHub 連線不能設定／讀取 Secret 值，不將 Token 寫入原始碼。需僅授權目標 Repo 的 Actions:write 憑證，重新部署 Sprint 3.5 Staging，才可進行真 Job → `workflow_dispatch` → OIDC → PG source → 無網路 Docker → Chromium 的首次完整傳輸驗收。
 - **驗收誠實口徑**：沒有新 AI 生成、沒有真 `workflow_dispatch`、沒有同 Job QA receipt 回寫與 v2 admission，也未完成受控 generated backend CRUD；新 C1–C5 端到端 **0/5**。無 Cloudflare Containers／Browser Run 訂閱、新付費模型請求；只改 PR #419，未合併或部署正式產品。
 
+## F.10 第 2 項免費 Docker 派發 — 最新真 Staging 部署及授權阻斷（2026-10-31）
+
+- **部署已實際完成**：PR #419 Build `6c5bbd24bbe65722db813b9aed02015e62350077` 觸發既有 `.github/workflows/sp35-free-staging-deploy-once.yml`，GitHub [run #41176651218](https://github.com/NFF98/appf2-build/actions/runs/41176651218) **SUCCESS**。保留 3 個現有 Cloudflare Hyperdrives、部署同一 Staging Worker/SPA，無新 Cloudflare Container／Browser Run／付費 AI。
+- **真實 API**：同一 Runner 驗證 Agent readiness HTTP200、匿名 private source HTTP404、P-256 signed Agent 建立 HTTP201 和同 Job source/hash 重開 HTTP200，日誌 `SP35_PRODUCT_REAL_DB_PASS`。已部署 10/31 免費 CI token 接線、OIDC 區域 host 相容性及 Worker fetch 修補，不代表完整自動派發。
+- **憑證實況已確證**：安全 CI preflight 日誌在 run #41176651218 明確輸出 `SP35 FREE CI CREDENTIAL: MISSING; Worker will deny autonomous GitHub Actions dispatch`；Wrangler 部署也輸出 `STAGING FREE CI DISPATCH: GITHUB_CREDENTIAL_NOT_CONFIGURED`。故 Repo Actions Secret `APPF2_FREE_CI_GITHUB_TOKEN` **仍不存在或對該 workflow 不可用**；不是 GitHub Runner 的 Docker build 錯誤。
+- **下一個必須外部授權的動作**：在 `NFF98/appf2-build` Repo Actions Secrets 配置僅針對該 Repo、具 Actions:write 權限的有效 fine-grained PAT（不要在聊天或程式碼提供值）。現有 GitHub 應用連接不支援建立 Repo Secret，不能替使用者虛構、竊取或暴露憑證。配置後用已存在的 Staging deploy workflow 重新部署，再用真正已保存且 revision ≥ 2 的創作者 P-256 Job 驗證 `/free-ci-dispatch` → `workflow_dispatch` → GitHub OIDC → PG 原始碼 → network-denied Docker → Chromium。同一條鏈未見真成功前第 2 項仍 **NOT_VERIFIED**。
+- **產品範圍**：現時 Staging Free-only 仍阻擋付費新 Agent AI 生成，沒有啟用新模型呼叫；C1–C5 完整自然語言產品端到端維持 **0/5**。本輪未合併、未發布 Production。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
