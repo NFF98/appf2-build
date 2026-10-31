@@ -234,3 +234,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 signed Worker GitHub GET egress + AES ticket health first, no AI charges.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 creator-signed GitHub egress PASS; deploy pre-IN_FLIGHT ticket-seal guard before single real GPT-6 E2E.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 fix GitHub model dispatch redirect/fetch mismatch after actual 503 NETWORK_ERROR, no paid model POST during deploy.
