@@ -250,6 +250,10 @@ jobs:
           # All paid model turns still require creator P-256 and bounded consent.
           APPF2_OPENAI_AGENT_API_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY }}
           APPF2_STAGING_AGENT_MODEL_ENABLED: '1'
+          # Staging-only: reuse already-configured OPENAI key if dedicated Agent
+          # secret is absent; ONLY after a creator-signed bounded paid consent.
+          # Never applies when F01 is xAI/DeepSeek or in production.
+          APPF2_STAGING_AGENT_REUSE_OPENAI_KEY: '1'
           # Private Workers are optional until explicitly provisioned, with no
           # public fallback. Both service binding names must exist before opt-in.
           APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED: ${{ vars.APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED }}
