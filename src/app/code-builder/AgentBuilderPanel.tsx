@@ -23,6 +23,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [browserQaConsent,setBrowserQaConsent]=useState(false);
  const [freeCiConsent,setFreeCiConsent]=useState(false);
  const [freeCiStatus,setFreeCiStatus]=useState("");
+ const [publicShareConsent,setPublicShareConsent]=useState(false);
+ const [publishedUrl,setPublishedUrl]=useState("");
  const [qaJson,setQaJson]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
  const [qaChecks,setQaChecks]=useState<readonly {criterion_id:string;verdict:string}[]>([]);
@@ -254,6 +256,20 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){previewHost.current?.replaceChildren();setError(failureMessage(e));}
   finally{setBusy(false);}
  };
+ const publishFreeApp=async()=>{
+  if(busy||!publicShareConsent)return;
+  setBusy(true);setError("");setPublishedUrl("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())
+    throw Error("找不到原專案建立者的簽章金鑰。");
+   const title=prompt.trim().slice(0,75)||"我的 App";
+   const published=await worker.publishFreeCiApp(title,true);
+   setPublishedUrl(published.url);
+  }catch(e){setError("公開發布已停止："+failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const openFreeCiPreview=async()=>{
   if(busy)return;
   setBusy(true);setError("");setPreviewReady(false);
@@ -450,6 +466,26 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     ：{c.verdict}
    </li>)}</ul>
   </section>:null}
+  {snapshot?.job.free_ci?.preview_ready?
+   <section aria-label="通過 QA 的 App 正式分享">
+    <h3>正式 App 卡片與分享（需建立者明確同意）</h3>
+    <p className="saved-apps-note">僅當開發前凍結的每條 Browser QA 均為 PASS，
+     原 Job、專案雜湊及已保存建置資產完全一致，伺服器才會建立公開卡片。
+     FAIL 或 UNTESTED 不可公開。</p>
+    <label className="code-builder-consent">
+     <input type="checkbox" checked={publicShareConsent} disabled={busy}
+      onChange={e=>setPublicShareConsent(e.target.checked)}/>
+     我同意將目前這份經過完整 QA 的 App 公開發布，允許他人使用與分享。
+    </label>
+    <button type="button" className="btn btn-secondary"
+     disabled={busy||!publicShareConsent} onClick={()=>{void publishFreeApp();}}>
+     驗證原始 QA 並正式發布可分享 App 卡片
+    </button>
+    {publishedUrl?<p role="status">
+     App 已建立：<a href={publishedUrl} target="_blank"
+      rel="noopener noreferrer">開啟／分享已發布 App</a>
+    </p>:null}
+   </section>:null}
   {snapshot&&(["TESTING","REPAIRING"].includes(snapshot.job.status)||
    Boolean(snapshot.job.free_ci))?
    <section aria-label="私人多檔案 App 互動預覽">

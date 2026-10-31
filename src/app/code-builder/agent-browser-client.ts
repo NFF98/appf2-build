@@ -380,6 +380,29 @@ export class BrowserCodingAgent {
   saveTarget(this.target);
   return plan;
  }
+ /** Explicit, separately signed PUBLIC release of a fully QA-passing saved App.
+  * The server refuses missing plans, FAIL, UNTESTED and stale hashes.
+  * Only an owner-signed click may make the resulting /code/ card shareable.
+  */
+ async publishFreeCiApp(title:string,consent:boolean):Promise<{
+  share_id:string;url:string;blueprint_hash:string;status:"ACTIVE"}>{
+  if(!consent||title.trim().length<1||title.length>80)
+   throw Error("需要建立者明確同意公開分享此 App。");
+  const target=this.target;
+  if(!target)throw Error("NO_AGENT_JOB");
+  const job=await this.read();
+  if(!job.free_ci?.preview_ready)
+   throw Error("未完成免費 Docker 與 Browser QA，禁止公開。");
+  const share=await this.post<{share_id:string;url:string;
+   blueprint_hash:string;status:"ACTIVE"}>("/publish-code-app",{
+    anonymous_id:this.owner,expected_project_hash:job.project_hash,
+    original_prompt:target.prompt,title:title.trim(),
+    explicit_public_share_consent:true});
+  if(share.status!=="ACTIVE"||!ID.test(share.share_id)||
+   share.url!=="/code/"+share.share_id)
+   throw Error("正式分享的資料庫紀錄尚未驗證，停止。");
+  return share;
+ }
  /** Reopen the exact free-Runner-built private Vite bundle stored in DB.
   * This fetches immutable bytes only, with fresh original-owner P-256 PoP.
   * No model call, Docker rebuild, Containers charge or public grant.

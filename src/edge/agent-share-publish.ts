@@ -6,7 +6,7 @@ import {parseQaPlan} from "../platform/qa/requirement-contract.js";
 import {makePrototypeCodeArtifact,verifyPrototypeCodeArtifact,sha256CodeBytes}
  from "../platform/blueprint/code-artifact-v2.js";
 import {validFreeCiBuiltPreview} from "./free-ci-preview.js";
-import {validQaChecks} from "./free-ci-result.js";
+import {validQaChecks,frozenFreeCiPlanHash} from "./free-ci-result.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 const HASH=/^sha256:[a-f0-9]{64}$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -71,6 +71,7 @@ export async function publishVerifiedPrivateApp(input:PublishOwnerAppBody,ctx:{
  const evidence=receipt?.receipt_json as {qa_checks?:unknown;qa_plan_hash?:unknown;
   original_requirements_qa?:unknown;app_published?:unknown}|null;
  if(!receipt||!plan||!evidence||!validQaChecks(evidence.qa_checks)||
+  evidence.qa_plan_hash!==await frozenFreeCiPlanHash(plan)||
   !plan.criteria.every((c,i)=>c.automatable&&
    evidence.qa_checks?.[i]?.criterion_id===c.id&&
    evidence.qa_checks?.[i]?.verdict==="PASS"&&

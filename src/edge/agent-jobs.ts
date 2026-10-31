@@ -11,6 +11,8 @@ import {routePrivateFreeCiPreview,FREE_CI_OWNER_PREVIEW,
  validFreeCiOwnerPreviewInput,readSignedFreeCiBuiltPreview} from "./free-ci-preview.js";
 import {importOwnerFreeSource,validFreeImportInput} from "./agent-import-files.js";
 import {dispatchFreeCiJob,validFreeCiDispatchInput} from "./free-ci-dispatch.js";
+import {publishVerifiedPrivateApp,validPublishOwnerAppBody}
+ from "./agent-share-publish.js";
 import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
 import {applyStoredModelEdit,validApplyModelEditBody} from "./agent-model-apply.js";
 import {executeAgentModelContinuation,validModelContinueBody} from "./agent-model-continue.js";
@@ -55,6 +57,7 @@ const QA_PLAN_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-plan$/u;
 const PREVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/preview-asset$/u;
 const FREE_CI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ci-dispatch$/u;
 const FREE_IMPORT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-files$/u;
+const FREE_SHARE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/publish-code-app$/u;
 const QA_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-generate$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -161,7 +164,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname);
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname);
  const privateSource=await routeFreeCiSource(request,url,env,nowMs);
  if(privateSource!==undefined)return privateSource;
  const privateResult=await routeFreeCiResult(request,url,env,nowMs);
@@ -174,7 +177,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(env.APPF2_AGENT_FREE_ONLY==="1"&&
   (modelMatch||continueMatch||qaRepairMatch||qaGenerateMatch||
    sandboxMatch||autoMatch||seqMatch||qaRunMatch))return denied();
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeCiPreviewMatch)return undefined;
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeCiPreviewMatch&&!freeShareMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -201,7 +204,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(qaMatch&&(env.APPF2_AGENT_QA_REVIEW_ENABLED!=="1"||
   !env.APPF2_AGENT_QA_VERIFIER_SECRET))return denied();
  if((autoMatch||seqMatch)&&env.APPF2_AGENT_AUTOSTEP_ENABLED!=="1")return denied();
- const info=freeCiPreviewMatch?(validFreeCiOwnerPreviewInput(parsed)?parsed:null):
+ const info=freeShareMatch?(validPublishOwnerAppBody(parsed)?parsed:null):
+  freeCiPreviewMatch?(validFreeCiOwnerPreviewInput(parsed)?parsed:null):
   freeImportMatch?(validFreeImportInput(parsed)?parsed:null):
   freeCiMatch?(validFreeCiDispatchInput(parsed)?parsed:null):
   qaGenerateMatch?(validGenerateQaBody(parsed)?parsed:null):
@@ -226,6 +230,14 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,
    {anonymousId:info.anonymous_id,intentId:null});
  try{
+  if(freeShareMatch){
+   if(env.APPF2_AGENT_FREE_ONLY!=="1"||!validPublishOwnerAppBody(info))
+    return denied();
+   const saved=await publishVerifiedPrivateApp(info,{db,
+    jobId:freeShareMatch[1]??"",ownerThumb,
+    creatorKeyThumbprint:proof.keyThumbprint});
+   return json(201,{data:saved});
+  }
   if(freeCiPreviewMatch){
    if(env.APPF2_AGENT_FREE_ONLY!=="1"||
     !validFreeCiOwnerPreviewInput(info))return denied();

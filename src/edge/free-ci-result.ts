@@ -23,7 +23,7 @@ export type FreeCiSmoke={
 };
 export type FreeCiQaCheck={readonly criterion_id:string;
  readonly verdict:"PASS"|"FAIL"|"UNTESTED";readonly evidence_hash:string|null};
-function validQaChecks(raw:unknown):raw is readonly FreeCiQaCheck[]{
+export function validQaChecks(raw:unknown):raw is readonly FreeCiQaCheck[]{
  if(!Array.isArray(raw)||raw.length<1||raw.length>20)return false;
  return raw.every(x=>exact(x,["criterion_id","verdict","evidence_hash"])&&
   typeof x.criterion_id==="string"&&/^[a-z][a-z0-9_]{0,39}$/u.test(x.criterion_id)&&
