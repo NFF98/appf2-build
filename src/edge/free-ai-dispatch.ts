@@ -34,6 +34,12 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
   owner:row.owner_anonymous_id,project_hash:projectHash,
   call_key:row.call_key,request_hash:row.request_hash},ticketSecret,nowMs);
  await claimModelCall(db,row);
+ // All immutable request writes are COMMITTED before network dispatch.
+ // Release the Hyperdrive TCP connection before an independent GitHub fetch:
+ // the paid job remains IN_FLIGHT and cannot be dispatched a second time.
+ // The original creator route's finally.close() is safely idempotent.
+ if("close" in db&&typeof db.close==="function")
+  await db.close();
  let classification="NETWORK_ERROR";
  try{
   const response=await sendFreeCiGithubDispatch(
