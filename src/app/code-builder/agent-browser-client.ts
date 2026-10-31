@@ -6,7 +6,7 @@
 import {createBrowserIdentityDependencies,ensureAnonymousId}
  from "../../platform/identity/browser-identity.js";
 import {mutationProofTranscript} from "../../edge/create-proof.js";
-import {PopKeyring,type PopKey} from "../create/pop-keyring.js";
+import {PopKeyring,AGENT_OWNER_PROOF_LIFETIME_MS,type PopKey} from "../create/pop-keyring.js";
 import {createBrowserPopKeyPersistence} from "../shell/tab-app-recovery.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {qaRepairCallKey} from "../../platform/agent/qa-repair-key.js";
@@ -135,9 +135,9 @@ function validatedTarget(v:unknown):AgentStoredTarget|null{
  return {jobId:String(x.jobId),prompt:x.prompt,firstModelKey:x.firstModelKey,
   ...(qaPlan?{qaPlan}:{})};
 }
-const CANDIDATE_RECOVERY_MS=24*60*60*1000;
+const CANDIDATE_RECOVERY_MS=AGENT_OWNER_PROOF_LIFETIME_MS;
 const LIBRARY_SLOT="appf2.agent.candidate.library.v1";
-const MAX_RECENT_CANDIDATES=8;
+const MAX_RECENT_CANDIDATES=32;
 export type SavedCandidate=AgentStoredTarget&{readonly savedAt:number};
 /** A small local browser index of persisted jobs, NOT an access grant.
  * Every restore still requires the matching nonextractable IndexedDB key and
@@ -181,7 +181,7 @@ export function chooseSavedCandidate(jobId:string):boolean{
 }
 /** Persist only the target and frozen requirements in this browser profile.
  * The P-256 private signing key stays nonextractable in IndexedDB; an ID or
- * localStorage record alone never grants creator access. Expire both at 24h.
+ * localStorage record alone never grants creator access. Expire Agent records and keys after 30 days.
  */
 export function savedCandidateTarget():AgentStoredTarget|null{
  try{
@@ -224,7 +224,8 @@ export function saveTarget(value:AgentStoredTarget):void{
 }
 function ring():PopKeyring{
  return new PopKeyring({subtle:crypto.subtle,now:Date.now,
-  persistence:createBrowserPopKeyPersistence()});
+  persistence:createBrowserPopKeyPersistence(AGENT_OWNER_PROOF_LIFETIME_MS),
+  keyLifetimeMs:AGENT_OWNER_PROOF_LIFETIME_MS});
 }
 type Envelope<T>={data:T};
 export class AgentHttpFailure extends Error{

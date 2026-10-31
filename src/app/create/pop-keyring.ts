@@ -27,7 +27,12 @@ export interface PopKeyringDependencies {
   readonly subtle: SubtleCrypto;
   readonly now: () => number;
   readonly persistence?: PopKeyPersistence;
+  /** Only Agent Jobs opt in to long recovery; F01 stays at 24h. */
+  readonly keyLifetimeMs?:number;
 }
+
+export const AGENT_OWNER_PROOF_LIFETIME_MS=30*24*60*60*1000;
+const DEFAULT_PROOF_LIFETIME_MS=24*60*60*1000;
 
 const P256 = { name: "ECDSA", namedCurve: "P-256" } as const;
 const ECDSA_SHA256 = { name: "ECDSA", hash: "SHA-256" } as const;
@@ -55,7 +60,7 @@ async function generatePopKey(dependencies:PopKeyringDependencies):
   const spki=new Uint8Array(await dependencies.subtle.exportKey("spki",pair.publicKey));
   const material:StoredPopMaterial={
     privateKey:pair.privateKey,spki,thumbprint:await keyThumbprint(spki),
-    expiresAt:dependencies.now()+24*60*60*1000
+    expiresAt:dependencies.now()+(dependencies.keyLifetimeMs??DEFAULT_PROOF_LIFETIME_MS)
   };
   return {key:wrapPopKey(material,dependencies),material};
 }

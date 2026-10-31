@@ -23,10 +23,15 @@ describe("Durable signed Agent target across browser tabs",()=>{
   expect(savedCandidateTarget()).toEqual(target);
   expect(tab.getItem(SLOT)).toBeNull();
  });
- it("expires saved target after signing-key 24-hour horizon",()=>{
+ it("retains Agent targets 25 hours, but expires after 30 days",()=>{
   const local=memory();
   local.setItem(SLOT,JSON.stringify({...target,
-   savedAt:Date.now()-24*60*60*1000-1000}));
+   savedAt:Date.now()-25*60*60*1000}));
+   vi.stubGlobal("localStorage",local);
+   vi.stubGlobal("sessionStorage",memory());
+   expect(savedCandidateTarget()).toEqual(target);
+   local.setItem(SLOT,JSON.stringify({...target,
+    savedAt:Date.now()-30*24*60*60*1000-1000}));
   vi.stubGlobal("localStorage",local);
   vi.stubGlobal("sessionStorage",memory());
   expect(savedCandidateTarget()).toBeNull();
@@ -82,7 +87,7 @@ describe("Sprint 3.5 multi-project reusable saved Agent cards",()=>{
   vi.stubGlobal("sessionStorage",tab);
   const now=Date.now();
   const list=[
-   {...target,savedAt:now-25*60*60*1000},
+   {...target,savedAt:now-31*24*60*60*1000},
    {...target,savedAt:now},
    {...target,savedAt:now},
    {...target,jobId:"not-a-uuid",savedAt:now},
@@ -94,17 +99,17 @@ describe("Sprint 3.5 multi-project reusable saved Agent cards",()=>{
   expect(chooseSavedCandidate("da4d1bd2-2cce-4c96-a197-637b5e71a3bd")).toBe(false);
   expect(tab.getItem(SLOT)).toBeNull();
  });
- it("limits project cards to eight recent saved jobs",()=>{
+ it("retains 32 distinct resumable Agent project cards",()=>{
   const persistent=memory(),tab=memory();
   vi.stubGlobal("localStorage",persistent);
   vi.stubGlobal("sessionStorage",tab);
-  for(let i=1;i<=10;i++){
+  for(let i=1;i<=34;i++){
    saveTarget({...target,jobId:
     i.toString(16).padStart(8,"0")+"-0000-4000-8000-000000000000"});
   }
   const cards=readSavedCandidateLibrary();
-  expect(cards).toHaveLength(8);
-  expect(cards[0]?.jobId).toContain("0000000a");
+  expect(cards).toHaveLength(32);
+  expect(cards[0]?.jobId).toContain("00000022");
   expect(cards.some(x=>x.jobId.startsWith("00000001"))).toBe(false);
  });
 });

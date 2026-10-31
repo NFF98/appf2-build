@@ -141,7 +141,7 @@ async function loadKey(factory:IDBFactory,key:string):Promise<StoredPopMaterial|
  * No public key/hash/nonce is ever authorization; server PoP, scoped cookie and fresh
  * F02 execution admission still verify each open. Old tab keys remain readable. */
 // eslint-disable-next-line complexity -- Nonextractable key migration and browser storage fallbacks cannot share unsafe paths.
-export function createBrowserPopKeyPersistence():PopKeyPersistence|undefined {
+export function createBrowserPopKeyPersistence(maxKeyAgeMs=MAX_AGE):PopKeyPersistence|undefined {
   try {
     const tab=storage(), persistent=browserStorage(), db=globalThis.indexedDB;
     if(db===undefined || (tab===undefined && persistent===undefined)) return undefined;
@@ -167,7 +167,7 @@ export function createBrowserPopKeyPersistence():PopKeyPersistence|undefined {
           if(material!==undefined) await saveKey(db,keyPrefix+intentId,material);
         }
         if(material===undefined || !Number.isFinite(material.expiresAt) ||
-          material.expiresAt<Date.now() || material.expiresAt>Date.now()+MAX_AGE+60000)
+          material.expiresAt<Date.now() || material.expiresAt>Date.now()+maxKeyAgeMs+60000)
           return undefined;
         return material;
       }

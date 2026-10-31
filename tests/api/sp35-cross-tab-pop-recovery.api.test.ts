@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { keyThumbprint, POP_SIGNATURE_HEADER } from "../../src/edge/create-proof.js";
 import type { StoredPopMaterial } from "../../src/app/create/pop-keyring.js";
-import { PopKeyring } from "../../src/app/create/pop-keyring.js";
+import { PopKeyring, AGENT_OWNER_PROOF_LIFETIME_MS } from "../../src/app/create/pop-keyring.js";
 import { createBrowserPopKeyPersistence } from "../../src/app/shell/tab-app-recovery.js";
 
 const ID="0199f5d0-53e8-7505-adf6-bc4c744fe0c7";
@@ -107,6 +107,30 @@ describe("Sprint 3.5 real nonextractable owner proof across browser tabs",()=>{
     expect(await crypto.subtle.verify({name:"ECDSA",hash:"SHA-256"},verify,signature,message)).toBe(true);
     expect(await holder.recoverForIntent("0199f5d0-53e8-7505-adf6-bc4c744fe0c8")).toBeUndefined();
     expect(browserStorage.getItem("appf2.browser.pop.nonce.v1")).toBeTruthy();
+  });
+  it("recovers Agent keys after 25h while F01 retains 24h key limits",async()=>{
+    const now=Date.now();
+    vi.stubGlobal("localStorage",memoryStorage());
+    vi.stubGlobal("sessionStorage",memoryStorage());
+    vi.stubGlobal("indexedDB",fakeIndexedDb());
+    const pair=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},false,["sign","verify"]);
+    const spki=new Uint8Array(await crypto.subtle.exportKey("spki",pair.publicKey));
+    const material:StoredPopMaterial={privateKey:pair.privateKey,spki,
+      thumbprint:await keyThumbprint(spki),expiresAt:now+AGENT_OWNER_PROOF_LIFETIME_MS};
+    const agentStore=createBrowserPopKeyPersistence(AGENT_OWNER_PROOF_LIFETIME_MS)!;
+    await agentStore.save(ID,material);
+    expect((await agentStore.load(ID))?.thumbprint).toBe(material.thumbprint);
+    expect(await createBrowserPopKeyPersistence()!.load(ID)).toBeUndefined();
+    let written:StoredPopMaterial|undefined;
+    const ring=new PopKeyring({subtle:crypto.subtle,now:()=>now,
+      keyLifetimeMs:AGENT_OWNER_PROOF_LIFETIME_MS,
+      persistence:{save:async(_,item)=>{written=item;},load:async()=>written}});
+    const key=await ring.keyForCreate("new-agent");
+    ring.bindIntent("new-agent",ID,key);
+    expect(written?.expiresAt).toBe(now+AGENT_OWNER_PROOF_LIFETIME_MS);
+    const reopened=new PopKeyring({subtle:crypto.subtle,now:()=>now+25*60*60*1000,
+      persistence:{save:async()=>undefined,load:async()=>written}});
+    expect((await reopened.recoverForIntent(ID))?.thumbprint).toBe(key.thumbprint);
   });
   it("cannot access the same App key from another browser storage profile",async()=>{
     vi.stubGlobal("localStorage",memoryStorage());
