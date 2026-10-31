@@ -14,7 +14,7 @@ export type FreeImportInput={
  readonly expected_project_hash:string;readonly files:readonly {
   readonly path:string;readonly content:string}[];
 };
-export function validFreeImportInput(raw:unknown):raw is FreeImportInput{
+// eslint-disable-next-line complexity -- Defensive exact body, bounded paths and byte checks are all mandatory.\nexport function validFreeImportInput(raw:unknown):raw is FreeImportInput{
  if(typeof raw!=="object"||raw===null||Array.isArray(raw))return false;
  const x=raw as Record<string,unknown>;
  if(Object.keys(x).sort().join(",")!==
@@ -42,7 +42,7 @@ export function validFreeImportInput(raw:unknown):raw is FreeImportInput{
  }
  return true;
 }
-export async function importOwnerFreeSource(input:FreeImportInput,ctx:{
+// eslint-disable-next-line complexity -- Creator, zero-cost, CAS and hash lineage must all fail closed.\nexport async function importOwnerFreeSource(input:FreeImportInput,ctx:{
  readonly db:AgentJobExecutor;readonly jobId:string;readonly ownerThumb:string;
 }):Promise<{status:"IMPORTED_NO_AI"|"ALREADY_IMPORTED_NO_AI";
  project_hash:string;revision:number;app_published:false}>{
