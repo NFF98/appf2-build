@@ -281,9 +281,25 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
     ticketStatus=opened?.job_id===freeAiProbeMatch[1]?
      "CRYPTO_READY":"CRYPTO_ERROR";
    }catch{ /* Confidential ticket failure has no user-visible contents. */ }
+   // The free GitHub GET uses the same Worker egress and credential as
+   // GitHub paid-runner dispatch, without triggering Actions or AI usage.
+   let githubStatus="NETWORK_ERROR";
+   try{
+    const gh=await globalThis.fetch(
+     "https://api.github.com/repos/NFF98/appf2-build/actions/workflows/"+
+     "sp35-staging-only.yml",{
+      method:"GET",headers:{
+       Authorization:"Bearer "+(env.APPF2_FREE_CI_GITHUB_TOKEN??""),
+       Accept:"application/vnd.github+json",
+       "User-Agent":"appf2-sp35-signed-worker-readonly",
+       "X-GitHub-Api-Version":"2022-11-28"},
+      signal:globalThis.AbortSignal.timeout(9000)});
+    githubStatus=gh.status===200?"GITHUB_GET_200":
+     "GITHUB_GET_HTTP_"+String(gh.status);
+   }catch{ /* Report only fixed categories, never secrets. */ }
    return json(200,{data:{status:result,
-    ticket_crypto_status:ticketStatus,model:"gpt-6.1-sol",
-    paid_model_posts:0}});
+    ticket_crypto_status:ticketStatus,github_get_status:githubStatus,
+    model:"gpt-6.1-sol",paid_model_posts:0}});
   }
   if(freeAiMatch){
    if(env.APPF2_AGENT_FREE_ONLY!=="1"||
