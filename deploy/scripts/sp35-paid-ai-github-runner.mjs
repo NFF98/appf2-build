@@ -59,6 +59,21 @@ if(source?.model!=="gpt-6.1-sol"||
  request.background!==true||request.store!==true||
  typeof request.input!=="string"||request.input.length>45000)
  throw Error("AI_RUNNER_PRIVATE_REQUEST_INVALID_NO_POST");
+// Pre-POST conservative GPT-6.1 Sol Standard-price ceiling (2026-11):
+// input $2/1M, output $10/1M tokens. A UTF-8 byte is an upper bound
+// on input token count; max_output_tokens bounds reasoning + visible output.
+// This estimate is NOT a provider invoice or a blanket billing guarantee.
+const caps={sp35_free_ai_qa_v1:8,sp35_free_ai_code_v1:20,
+ sp35_free_ai_repair_v1:16};
+const cap=caps[source.call_key];
+const maxOutput=request.max_output_tokens;
+if(!Number.isSafeInteger(maxOutput)||maxOutput<1||maxOutput>12000||
+ !Number.isSafeInteger(cap))
+ throw Error("AI_RUNNER_UNBOUNDED_MODEL_REQUEST_NO_POST");
+const upperCents=Math.ceil((Buffer.byteLength(request.input,"utf8")*2+
+ maxOutput*10)*100/1_000_000);
+if(upperCents>cap)
+ throw Error("AI_RUNNER_PRICE_CEILING_EXCEEDS_SIGNED_RESERVATION_NO_POST");
 console.log("SP35 PAID AI RUNNER: owner/OIDC/immutable phase claim PASS; one model POST permitted");
 // Exactly one HTTPS model POST. Never retry, even on timeout/5xx or re-run.
 let first;
