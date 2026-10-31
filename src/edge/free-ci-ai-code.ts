@@ -21,6 +21,7 @@ type Input={readonly anonymous_id:string;readonly original_prompt:string;
  readonly explicit_ai_consent:true;readonly explicit_free_ci_consent:true};
 type ModelResult={readonly response:unknown;readonly inputTokens:number;
  readonly outputTokens:number};
+// eslint-disable-next-line complexity -- Exact owner, cost-consent, phase and hash shape are security checks.
 export function validFreeAiCodeInput(x:unknown):x is Input{
  if(typeof x!=="object"||x===null||Array.isArray(x))return false;
  const v=x as Record<string,unknown>;
@@ -111,6 +112,7 @@ function parseFiles(raw:unknown):readonly {path:string;content:string}[]|null{
   return null;
  return files;
 }
+// eslint-disable-next-line complexity, max-params -- Journal/reservation/reconciliation fences must remain fail-closed.
 async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  typeof recoverAgentJob>> & {},owner:string,phase:Phase,request:unknown,
  key:string):Promise<ModelResult>{
