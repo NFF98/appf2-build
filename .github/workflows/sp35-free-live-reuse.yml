@@ -1,0 +1,26 @@
+name: Sprint 3.5 free real Staging published-App reuse (GET only)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: appf2-sp35-free-live-reuse-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  existing-app-reuse:
+    if: github.repository == 'NFF98/appf2-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Real Staging published App open/click/reload in two browsers, no AI
+        run: node deploy/scripts/sp35-free-live-reuse-e2e.mjs
