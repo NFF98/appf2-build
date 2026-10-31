@@ -12,6 +12,17 @@ const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({serviceWorkers:"block"});
 const page=await context.newPage();
 const mutations=[];
+const paidPhaseResponses=[];
+page.on("response",async response=>{
+ const path=new URL(response.url()).pathname;
+ if(!path.endsWith("/free-ai-stage")||!path.includes("/api/v1/agent-jobs/"))return;
+ const body=await response.json().catch(()=>null);
+ const code=typeof body?.error==="string"?
+  body.error.slice(0,90):"NO_ERROR_CODE";
+ paidPhaseResponses.push({http:response.status(),code});
+ console.log("SP35 LIVE WEBSITE PAID PHASE: HTTP "+response.status()+
+  " safe_error_code="+code+" (never logs key or prompt)");
+});
 page.on("request",request=>{
  if(request.method()!=="GET"&&request.url().startsWith(origin+"/api/"))
   mutations.push(new URL(request.url()).pathname);
@@ -20,7 +31,8 @@ async function failReason(){
  const error=await page.getByRole("alert").allTextContents().catch(()=>[]);
  const status=await page.getByRole("status").allTextContents().catch(()=>[]);
  return JSON.stringify({error:error.map(s=>s.slice(0,200)),
-  status:status.map(s=>s.slice(0,180)),mutations:mutations.slice(-20)});
+  status:status.map(s=>s.slice(0,180)),mutations:mutations.slice(-20),
+  paidPhases:paidPhaseResponses.slice(-3)});
 }
 try{
  const ready=await page.request.get(origin+"/api/v1/agent-readiness",{timeout:20000});
