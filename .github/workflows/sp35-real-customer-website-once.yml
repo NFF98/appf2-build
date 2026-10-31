@@ -1,0 +1,33 @@
+name: Sprint 3.5 ONE real paid customer WEBSITE E2E (44c max job cap)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+    paths:
+      - .github/workflows/sp35-real-customer-website-once.yml
+permissions:
+  contents: read
+concurrency:
+  group: sp35-once-paid-customer-website-e2e
+  cancel-in-progress: false
+jobs:
+  real-customer-website-once:
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-PAID-WEBSITE-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: ONE real customer natural-language website → free Docker → independent QA → public share (no retry)
+        run: node deploy/scripts/sp35-real-customer-website-once.mjs
+
+# This workflow NEVER automatically retries or calls provider directly. Its one
+# Staging browser click may approve at most one 8c QA, 20c CODE and 16c REPAIR.
+# Production, Cloudflare paid Containers and paid Browser Run are disallowed.
