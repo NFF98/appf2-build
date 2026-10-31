@@ -14,12 +14,12 @@ const spki=Buffer.from(await crypto.subtle.exportKey("spki",keys.publicKey))
  .toString("base64url");
 const sha=async raw=>Buffer.from(await crypto.subtle.digest("SHA-256",raw)).toString("base64url");
 async function signed(path,body,expected){
- const bytes=new TextEncoder().encode(JSON.stringify(body));
+ const bytes=new globalThis.TextEncoder().encode(JSON.stringify(body));
  const nonce="sp35FreeReal_"+randomUUID().replaceAll("-","");
  const now=Date.now();
  const signature=Buffer.from(await crypto.subtle.sign(
   {name:"ECDSA",hash:"SHA-256"},keys.privateKey,
-  new TextEncoder().encode(JSON.stringify([
+  new globalThis.TextEncoder().encode(JSON.stringify([
    "APPF2_MUTATION_PoP_V1","POST",path,await sha(bytes),nonce,now]))))
   .toString("base64url");
  const response=await fetch(origin+path,{
@@ -28,7 +28,7 @@ async function signed(path,body,expected){
    "Sec-Fetch-Site":"same-origin","Idempotency-Key":nonce,
    "X-Appf2-PoP-Key":spki,"X-Appf2-PoP-Signature":signature,
    "X-Appf2-PoP-Timestamp":String(now)},
-  body:bytes,signal:AbortSignal.timeout(25000)});
+  body:bytes,signal:globalThis.AbortSignal.timeout(25000)});
  const reply=await response.json().catch(()=>null);
  if(response.status!==expected||!reply?.data)
   throw Error("FREE_LIVE_DISPATCH_UNEXPECTED_HTTP_"+response.status+"_PATH_"+path);
