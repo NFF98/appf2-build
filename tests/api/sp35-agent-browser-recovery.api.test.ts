@@ -1,4 +1,5 @@
 import {describe,it,expect,afterEach,vi} from "vitest";
+import {mayResumeSavedModel} from "../../src/edge/agent-progress.js";
 import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget}
  from "../../src/app/code-builder/agent-browser-client.js";
 const SLOT="appf2.agent.candidate.job.v1";
@@ -103,5 +104,27 @@ describe("Sprint 3.5 multi-project reusable saved Agent cards",()=>{
   expect(cards).toHaveLength(8);
   expect(cards[0]?.jobId).toContain("0000000a");
   expect(cards.some(x=>x.jobId.startsWith("00000001"))).toBe(false);
+ });
+});
+
+
+describe("Sprint 3.5 Agent recovery must not spend through ambiguous model calls",()=>{
+ it("can resume exactly one ready saved model call when nothing is pending",()=>{
+  expect(mayResumeSavedModel(["CURRENT_MODEL_READY"],2,false,"CODING")).toBe(true);
+ });
+ it("blocks ready response when a newer or older paid call remains unresolved",()=>{
+  for(const unresolved of ["MODEL_PENDING","MODEL_UNCERTAIN"] as const){
+   expect(mayResumeSavedModel(["CURRENT_MODEL_READY",unresolved],
+    2,false,"CODING")).toBe(false);
+   expect(mayResumeSavedModel([unresolved,"CURRENT_MODEL_READY"],
+    2,false,"REPAIRING")).toBe(false);
+  }
+ });
+ it("requires real step budget, exclusive ready call and nonterminal job state",()=>{
+  expect(mayResumeSavedModel(["CURRENT_MODEL_READY"],0,false,"CODING")).toBe(false);
+  expect(mayResumeSavedModel(["CURRENT_MODEL_READY"],5,true,"TESTING")).toBe(false);
+  expect(mayResumeSavedModel(["CURRENT_MODEL_READY","CURRENT_MODEL_READY"],
+   5,false,"CODING")).toBe(false);
+  expect(mayResumeSavedModel(["CURRENT_MODEL_READY"],5,false,"READY")).toBe(false);
  });
 });
