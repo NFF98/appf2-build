@@ -34,6 +34,8 @@ let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCoun
 let qaFreezeCount=0,autoPlanCount=0,frozenPlan=null,createdPrompt=null;
 let qaRunCount=0,qaRepairCount=0,lastRepairKey=null,autoQaPending=false;
 const qaAttemptHashes=new Set();
+const savedQaChecks=[{criterion_id:"req_1",category:"BROWSER",
+ verdict:"FAIL",evidence_hash:null}];
 let privatePreviewFetches=0;
 let server=null,browser=null;
 function json(res,status,data){
@@ -175,6 +177,7 @@ async function api(req,res,url){
     can_resume:true,resume_model_call_key:"agent_autotest_12345678",
     next_action:"SIGN_NEXT_SEQUENCE",
     qa_attempt_state:qaAttemptHashes.has(job.project_hash)?"RESULT_RECORDED":"NOT_RUN",
+    qa_observed_checks:qaAttemptHashes.has(job.project_hash)?savedQaChecks:[],
     calls:[{model_call_key:"agent_autotest_12345678",
      state:"CURRENT_MODEL_READY",tool:"run_test",requires_container_consent:true}]});
    return;
@@ -184,6 +187,7 @@ async function api(req,res,url){
    resume_model_call_key:planDone&&!toolDone?firstKey:null,
    next_action:toolDone?"NO_PROVEN_PENDING_MODEL":"SIGN_NEXT_SEQUENCE",
    qa_attempt_state:qaAttemptHashes.has(job.project_hash)?"RESULT_RECORDED":"NOT_RUN",
+   qa_observed_checks:qaAttemptHashes.has(job.project_hash)?savedQaChecks:[],
    calls:planDone?[{model_call_key:firstKey,state:toolDone?"ALREADY_APPLIED":"CURRENT_MODEL_READY",
     tool:"write_files",requires_container_consent:false}]:[]});return;
  }
@@ -342,6 +346,8 @@ try{
   name:"查詢已保存的產品進度與 QA 紀錄（不扣費）"}).click();
  await page.getByText("已從資料庫讀取最新工作與獨立 QA 紀錄",{
   exact:false}).waitFor({timeout:15000});
+ await page.getByRole("region",{name:"QA 逐項結果"})
+  .getByText("使用者操作後計分改變：FAIL").waitFor({timeout:15000});
  if(qaRunCount!==paidBefore.qaRunCount||
   qaRepairCount!==paidBefore.qaRepairCount||
   stepCount!==paidBefore.stepCount||planCount!==paidBefore.planCount||
