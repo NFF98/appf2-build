@@ -468,7 +468,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   </details>
   <label className="code-builder-consent"><input type="checkbox" checked={aiConsent}
    disabled={busy} onChange={e=>setAiConsent(e.target.checked)}/>
-   我同意本次使用付費 AI，單次模型請求上限 8 美分；停止或網路出錯不自動重試。
+   我同意付費 AI：免費 Docker 路徑的 QA 規劃最多 8 美分、編碼最多 20 美分；修復另行授權最多 16 美分，全部受下方總預算限制。
   </label>
   <label className="code-builder-consent"><input type="checkbox" checked={containerConsent}
    disabled={busy} onChange={e=>setContainerConsent(e.target.checked)}/>
@@ -509,8 +509,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    value={approvedCents} disabled={busy}
    onChange={e=>setApprovedCents(Number(e.target.value))}/>
   <p className="saved-apps-note">每按一次開發加修復總計最多六個 Agent 步驟，另可依授權做一次獨立 QA；費用仍受伺服器總預算限制。
-   免費 Runner 已用原始建立者簽章測通 Docker、Chromium、QA 收據及私人 App 保存／重開；
-   但測試程式不是 AI 生成作品。Staging 仍禁止付費 AI／容器，並禁止未經完整 QA 的正式發布。</p>
+   已測通建立者簽章、免費 Docker、Chromium QA 收據及私人 App 重開；
+   另有獨立真 AI 生成測試，但網站自主閉環仍需驗收。Staging 僅開放明確核准的付費 AI → 免費 Docker 路徑，
+   Cloudflare 付費容器維持關閉，未通過全部 QA 不會發布。</p>
   <label className="code-builder-consent">
    <input type="checkbox" checked={autoRepairConsent} disabled={busy}
     onChange={e=>setAutoRepairConsent(e.target.checked)}/>
