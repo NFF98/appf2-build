@@ -403,21 +403,33 @@ export class BrowserCodingAgent {
  }>{
   const target=this.target;
   if(!target)throw Error("NO_AGENT_JOB");
-  const job=await this.read();
-  const result=await this.post<{status:string;original_plan?:QaPlan;
-   project_hash?:string;revision?:number;app_published:false}>(
-   "/free-ai-stage",{anonymous_id:this.owner,
-    original_prompt:target.prompt,expected_project_hash:job.project_hash,
-    stage,explicit_ai_consent:true,explicit_free_ci_consent:true});
-  if(result.app_published!==false)
-   throw Error("付費 AI 處理不得直接發布 App。");
-  if(result.original_plan){
-   const parsed=parseQaPlan(result.original_plan,target.prompt);
-   if(!parsed)throw Error("原始需求驗收計畫不可驗證。");
-   this.target={...target,qaPlan:parsed};
-   saveTarget(this.target);
+  // POST is the owner's authenticated *continuation* endpoint. Server
+  // journal permits exactly one paid provider POST per Job+phase; once its
+  // response ID exists, every subsequent call is GET-only at the provider.
+  for(let attempt=0;attempt<75;attempt++){
+   const job=await this.read();
+   const result=await this.post<{status:string;original_plan?:QaPlan;
+    project_hash?:string;revision?:number;app_published:false}>(
+    "/free-ai-stage",{anonymous_id:this.owner,
+     original_prompt:target.prompt,expected_project_hash:job.project_hash,
+     stage,explicit_ai_consent:true,explicit_free_ci_consent:true});
+   if(result.app_published!==false)
+    throw Error("付費 AI 處理不得直接發布 App。");
+   if(result.status==="AI_BACKGROUND_PENDING"){
+    if(attempt===74)
+     throw Error("同一筆 GPT-6 模型工作仍在執行；可稍後由已保存卡片接續查詢，不會重新付費生成。");
+    await new Promise<void>(resolve=>window.setTimeout(resolve,6500));
+    continue;
+   }
+   if(result.original_plan){
+    const parsed=parseQaPlan(result.original_plan,target.prompt);
+    if(!parsed)throw Error("原始需求驗收計畫不可驗證。");
+    this.target={...target,qaPlan:parsed};
+    saveTarget(this.target);
+   }
+   return result;
   }
-  return result;
+  throw Error("GPT-6 回應超時，原 Job 已保存，未重新呼叫模型。");
  }
  /** Explicit, separately signed PUBLIC release of a fully QA-passing saved App.
   * The server refuses missing plans, FAIL, UNTESTED and stale hashes.
