@@ -29,7 +29,20 @@ async function newOidc(){
  const endpoint=trustedFreeCiOidcRequestUrl(
   process.env.ACTIONS_ID_TOKEN_REQUEST_URL??"");
  const secret=process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN??"";
- if(!endpoint||secret.length<20)throw Error("FREE_CI_OIDC_NOT_PROVIDED");
+ if(!endpoint||secret.length<20){
+  // Diagnostics reveal presence/allowlisting ONLY. Never log token or full URL.
+  let host="INVALID_OR_MISSING";
+  try{
+   const h=new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL??"").hostname;
+   host=h.endsWith(".actions.githubusercontent.com")?
+    h:"UNRECOGNIZED_HOST";
+  }catch{ /* missing URL */ }
+  console.log("SP35 OIDC SAFE PREFLIGHT: url_present="+
+   Boolean(process.env.ACTIONS_ID_TOKEN_REQUEST_URL)+
+   " token_present="+Boolean(secret)+" url_allowed="+Boolean(endpoint)+
+   " host="+host);
+  throw Error("FREE_CI_OIDC_NOT_PROVIDED");
+ }
  endpoint.searchParams.set("audience",audience);
  const response=await fetch(endpoint,{headers:{"Authorization":"Bearer "+secret},
   signal:globalThis.AbortSignal.timeout(12000)});
