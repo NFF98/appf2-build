@@ -153,3 +153,6 @@ jobs:
 # Recheck privately saved Vite bundle: owned, DB-persisted and opened twice without AI.
 
 # Reconcile FREE_CI_READY configured-but-no-paid-generation status and owner one-click private card reopening.
+
+# SP35 2026-10-31 free-only Staging redeploy of c683acc-verified signed build-failure repair path.
+# No paid model invocation, no Cloudflare Containers, no Production deployment.
