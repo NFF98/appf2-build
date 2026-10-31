@@ -5,7 +5,9 @@ import {runJournaledPaidModelTurn,type PaidModelTurn}
 import {checkpointHash,type AgentJobExecutor,type AgentJobRow}
  from "../../src/platform/agent/postgres-agent-jobs.js";
 import type {AgentCheckpoint} from "../../src/platform/agent/agent-contract.js";
-import type {ModelCallRow} from "../../src/platform/agent/postgres-model-calls.js";
+import {getModelBackgroundId,saveModelBackgroundId,
+ completeModelCall,type ModelCallRow}
+ from "../../src/platform/agent/postgres-model-calls.js";
 const jobId="52edb124-974c-4e0b-82fc-48ed6c9a0242";
 const owner="a501ed0f-f0ab-46dc-b880-c0acb35291a0";
 const sha="sha256:"+"a".repeat(64);
@@ -101,6 +103,64 @@ describe("SP35 Staging owner reservation migration regression (NO model calls)",
   expect(builder).toContain("request_hash:digest,model:MODEL");
   expect(builder).toContain("const req={model:MODEL");
   expect(sql).toContain("p_model<>'gpt-6.1-sol'");
+ });
+});
+
+describe("Sprint 3.5 durable GPT-6 background reference (NO model requests)",()=>{
+ it("persists one immutable creator-bound response ID, rejects a changed ID",async()=>{
+  const responses=new Map<string,string>();
+  const db={query:async <T>(sql:string,args:readonly unknown[])=>{
+   const key=String(args[2]);
+   if(sql.startsWith("INSERT INTO public.appf2_agent_model_background_ref")){
+    if(!responses.has(key))responses.set(key,String(args[3]));
+    return {rows:[] as T[]};
+   }
+   if(sql.startsWith("SELECT response_id FROM public.appf2_agent_model_background_ref")){
+    const id=responses.get(key);
+    return {rows:id?[{response_id:id} as T]:[]};
+   }
+   throw Error("NO_OTHER_SQL");
+  }} as AgentJobExecutor;
+  const original:ModelCallRow={job_id:jobId,owner_anonymous_id:owner,
+   call_key:"sp35_free_ai_qa_v1",job_revision:0,checkpoint_hash:sha,
+   request_hash:sha,model:"gpt-6.1-sol",max_charge_cents:8,
+   status:"RESERVED",response_json:null,response_id:null,
+   input_tokens:null,output_tokens:null};
+  const id="resp_backgroundABC123456789";
+  expect(await getModelBackgroundId(db,jobId,owner,original.call_key))
+   .toBeNull();
+  await saveModelBackgroundId(db,original,id);
+  await saveModelBackgroundId(db,original,id);
+  expect(await getModelBackgroundId(db,jobId,owner,original.call_key))
+   .toBe(id);
+  await expect(saveModelBackgroundId(db,original,"resp_DIFFERENT99999"))
+   .rejects.toThrow("MODEL_BACKGROUND_REPLAY_MISMATCH");
+  expect(responses.size).toBe(1);
+ });
+ it("completes exactly an already-IN_FLIGHT response without new reservation",async()=>{
+  const calls:string[]=[];
+  const db={query:async <T>(sql:string,args:readonly unknown[])=>{
+   calls.push(sql);
+   if(!sql.startsWith("UPDATE public.appf2_agent_model_call"))
+    throw Error("NO_RESERVE_OR_POST");
+   expect(args[4]).toBe("resp_backgroundABC123456789");
+   return {rows:[{call_key:"sp35_free_ai_qa_v1"} as T]};
+  }} as AgentJobExecutor;
+  const row:ModelCallRow={job_id:jobId,owner_anonymous_id:owner,
+   call_key:"sp35_free_ai_qa_v1",job_revision:0,checkpoint_hash:sha,
+   request_hash:sha,model:"gpt-6.1-sol",max_charge_cents:8,
+   status:"IN_FLIGHT",response_json:null,response_id:null,
+   input_tokens:null,output_tokens:null};
+  await completeModelCall(db,row,response,"resp_backgroundABC123456789",10,20);
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toContain("SET status='SUCCEEDED'");
+ });
+ it("requires background=true and retained provider response for GET-only recovery",()=>{
+  const code=readFileSync("src/edge/free-ci-ai-code.ts","utf8");
+  expect(code).toContain("background:true,store:true");
+  expect(code).toContain("getModelBackgroundId(db,job.job.job_id,owner,modelKey)");
+  expect(code).toContain('method:"GET"');
+  expect(code).toContain("SP35_BACKGROUND_MODEL_PENDING_NO_POST");
  });
 });
 
