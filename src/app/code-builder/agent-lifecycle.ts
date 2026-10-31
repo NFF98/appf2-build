@@ -39,6 +39,16 @@ export async function advanceWithApprovedQaRepair(agent:LifecycleAgent,
  if(shouldStop()||!options.allowAi||!browserQaConsent||
   first.job.status!=="TESTING")
   return {snapshot:first,qa:null,repairStarted:false};
+ // An approved click does not mean an old paid QA can be sent again.
+ // Only a separately verified NOT_RUN on the current signed DB head
+ // permits a new private Browser run; unknown/recorded is fail-closed.
+ if(first.progress?.qa_attempt_state!=="NOT_RUN"){
+  const state=first.progress?.qa_attempt_state;
+  const message=state==="RESULT_RECORDED"?
+   "此版本已保存獨立 QA 回應；請查閱證據，不重新付費測試。":
+   "此版本 QA 狀態尚未確認；請免費查詢進度，不重試雲端 QA。";
+  return {snapshot:{...first,message},qa:null,repairStarted:false};
+ }
  const qa=await agent.independentQa(true);
  const inspected=await agent.read();
  const snapshot:CandidateSnapshot={
