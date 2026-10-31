@@ -33,6 +33,15 @@ jobs:
         run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
       - name: Build actual Staging SPA assets
         run: npm run web:build
+      - name: Verify free Actions dispatch credential presence (never print credential)
+        env:
+          APPF2_FREE_CI_GITHUB_TOKEN: ${{ secrets.APPF2_FREE_CI_GITHUB_TOKEN }}
+        run: |
+          if [ -n "$APPF2_FREE_CI_GITHUB_TOKEN" ]; then
+            echo "SP35 FREE CI CREDENTIAL: PRESENT_NOT_YET_DISPATCH_VERIFIED"
+          else
+            echo "SP35 FREE CI CREDENTIAL: MISSING; Worker will deny autonomous GitHub Actions dispatch"
+          fi
       - name: Deploy FREE-ONLY Worker + Agent read/create/restore + SPA to Staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
