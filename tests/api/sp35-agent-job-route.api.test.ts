@@ -91,7 +91,7 @@ class Database {
      build_call_id:row.build_call_id,test_call_id:row.test_call_id});
     return {rows:[{job_id:args[0]} as T]};
    }
-   if(sql.startsWith("SELECT run_id,built_artifact_hash FROM public.appf2_agent_free_ci_receipt")){
+   if(sql.startsWith("SELECT run_id,built_artifact_hash,receipt_json FROM public.appf2_agent_free_ci_receipt")){
     return {rows:[]}; // No real GitHub-hosted OIDC receipt in isolated fake DB.
    }
    if(sql.startsWith("SELECT project_hash,status,receipt_json FROM public.appf2_agent_browser_qa_attempt")){
