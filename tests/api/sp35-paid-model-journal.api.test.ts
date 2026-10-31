@@ -3,7 +3,7 @@ import {readFileSync} from "node:fs";
 import {sealAiRunnerTicket,openAiRunnerTicket,aiTicketScopeHash}
  from "../../src/platform/agent/free-ai-runner-ticket.js";
 import {openFreeCiTicket} from "../../src/platform/agent/free-ci-ticket.js";
-import {hasRecordedBrowserQaFailure}
+import {hasRecordedBrowserQaFailure,parseFreeAiPrecodePlan}
  from "../../src/edge/free-ci-ai-code.js";
 import {runJournaledPaidModelTurn,type PaidModelTurn}
  from "../../src/platform/agent/journaled-model-gateway.js";
@@ -111,6 +111,42 @@ describe("SP35 Staging owner reservation migration regression (NO model calls)",
  });
 });
 
+describe("Sprint 3.5 AI pre-code independent browser acceptance",()=>{
+ const prompt="畫面起初顯示「計數：0」，點按「加一」後必須顯示「計數：1」，每次按按鈕都會增加一。";
+ const initial={id:"initial_count",
+  source_quote:"畫面起初顯示「計數：0」",
+  description:"初始畫面可看見 0",
+  automatable:true,action:"none",role:"none",name:"none",
+  click_count:0,expected_text:"計數：0"};
+ const twice={id:"increment_twice",
+  source_quote:"每次按按鈕都會增加一",
+  description:"全新頁面連按兩次應為 2",
+  automatable:true,action:"click",role:"button",name:"加一",
+  click_count:2,expected_text:"計數：2"};
+ it("makes passive initial text independently testable, not UNTESTED",()=>{
+  const plan=parseFreeAiPrecodePlan({criteria:[initial]},prompt);
+  expect(plan?.criteria[0]?.automatable).toBe(true);
+  expect(plan?.criteria[0]?.steps).toEqual([]);
+  expect(plan?.criteria[0]?.assertions).toEqual([
+   {kind:"text_includes",text:"計數：0"}]);
+ });
+ it("runs both clicks from a fresh page rather than assuming previous QA state",()=>{
+  const plan=parseFreeAiPrecodePlan({criteria:[twice]},prompt);
+  expect(plan?.criteria[0]?.steps).toEqual([
+   {action:"click",role:"button",name:"加一"},
+   {action:"click",role:"button",name:"加一"}]);
+  expect(plan?.criteria[0]?.assertions).toEqual([
+   {kind:"text_appears",text:"計數：2"}]);
+ });
+ it("never turns impossible steps or incomplete assertions into QA PASS",()=>{
+  expect(parseFreeAiPrecodePlan({criteria:[
+   {...twice,click_count:7}]},prompt)).toBeNull();
+  expect(parseFreeAiPrecodePlan({criteria:[
+   {...initial,expected_text:"none"}]},prompt)).toBeNull();
+  expect(parseFreeAiPrecodePlan({criteria:[
+   {...initial,source_quote:"a claim not in original prompt"}]},prompt)).toBeNull();
+ });
+});
 describe("Sprint 3.5 receipt-bound auto repair without false publication",()=>{
  it("allows one bounded repair when signed QA receipt contains FAIL and unrelated UNTESTED",()=>{
   expect(hasRecordedBrowserQaFailure({status:"BUILD_BROWSER_SMOKE",
