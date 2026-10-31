@@ -27,3 +27,5 @@ jobs:
           APPF2_PAID_AI_E2E_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY || secrets.APPF2_MODEL_API_KEY || secrets.OPENAI_API_KEY }}
           APPF2_STAGING_URL: https://appf2-sp35-417-staging.juiyuang69.workers.dev
         run: node deploy/scripts/sp35-one-paid-ai-real-e2e.mjs
+
+# Authorized single-call AI E2E rerun after pre-request syntax repair.
