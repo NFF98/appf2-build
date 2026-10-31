@@ -56,6 +56,7 @@ type Progress={readonly revision:number;readonly remaining_steps:number;
  readonly resume_model_call_key:string|null;readonly next_action:string;
  readonly can_continue_saved_tool_result?:boolean;
  readonly resume_previous_model_call_key?:string|null;
+ readonly qa_attempt_state?:"NOT_RUN"|"IN_FLIGHT"|"BLOCKED_UNCERTAIN"|"RESULT_RECORDED";
  readonly calls:readonly {model_call_key:string;state:string;
   tool:string|null;requires_container_consent:boolean}[]};
 type Step={readonly status:string;readonly action:string;readonly revision:number};
