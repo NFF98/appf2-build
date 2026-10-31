@@ -8,6 +8,8 @@ import {recoverAgentJob,type RecoveredAgentJob}
 import {getModelCall,listRecentAgentModelCalls,type ModelCallRow}
  from "../platform/agent/postgres-model-calls.js";
 import {parseAgentResponsesBatch} from "../platform/agent/responses-api.js";
+import {inspectProvenPreviewPair,type ProvenPreviewPair}
+ from "./agent-proven-preview.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 
 export type AgentProgressInput={readonly anonymous_id:string;
@@ -38,6 +40,8 @@ export type AgentProgress={
  readonly qa_attempt_state:"NOT_RUN"|"IN_FLIGHT"|"BLOCKED_UNCERTAIN"|"RESULT_RECORDED";
  /** Observed browser outcomes only; NEVER a release or independent-review PASS. */
  readonly qa_observed_checks:readonly SavedQaCheck[];
+ /** Full-checkpoint DB provenance; null means NOT VERIFIED, not permission. */
+ readonly proven_preview_pair:ProvenPreviewPair|null;
  readonly app_published:false;
 };
 const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
@@ -223,6 +227,9 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
    }
   }
  }
+ const provenPair=["TESTING","REPAIRING"].includes(current.job.job_state)?
+  await inspectProvenPreviewPair(deps.db,deps.jobId,deps.owner,
+   current.project.project_hash,current.job.checkpoint.completed_call_ids):null;
  const active=rows.filter(x=>x.state==="CURRENT_MODEL_READY");
  const uncertain=rows.some(x=>x.state==="MODEL_UNCERTAIN");
  const pending=rows.some(x=>x.state==="MODEL_PENDING");
@@ -260,5 +267,5 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
   next_action,scope:input.model_call_keys===undefined?
    "RECENT_EIGHT_STORED_CALLS":"SUBMITTED_KEYS_ONLY",
   qa_attempt_state:qaAttemptState,qa_observed_checks:qaObservedChecks,
-  app_published:false};
+  proven_preview_pair:provenPair,app_published:false};
 }
