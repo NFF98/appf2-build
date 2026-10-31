@@ -306,6 +306,17 @@ export class BrowserCodingAgent {
   await this.signer();
   return saved;
  }
+ /** PRIVATE source is dispatched by the Worker, never from this browser.
+  * The signed POST contains owner identity + consent only; public GitHub Actions
+  * gets a short encrypted ticket, not source code or the user's prompt.
+  */
+ async dispatchFreeCiBuild(explicitConsent:boolean):Promise<void>{
+  if(!explicitConsent)throw Error("未核准免費 GitHub Actions 隔離建置。");
+  const result=await this.post<{status:string;app_published:false}>(
+   "/free-ci-dispatch",{anonymous_id:this.owner,explicit_free_ci_consent:true});
+  if(result.status!=="FREE_CI_QUEUED"||result.app_published!==false)
+   throw Error("免費 Runner 工作尚未成功排程；進度仍然保留。");
+ }
  async read():Promise<CandidateJob>{
   return this.post("",{anonymous_id:this.owner});
  }

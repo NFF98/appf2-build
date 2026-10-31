@@ -21,6 +21,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [aiConsent,setAiConsent]=useState(false);
  const [containerConsent,setContainerConsent]=useState(false);
  const [browserQaConsent,setBrowserQaConsent]=useState(false);
+ const [freeCiConsent,setFreeCiConsent]=useState(false);
+ const [freeCiStatus,setFreeCiStatus]=useState("");
  const [qaJson,setQaJson]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
  const [qaChecks,setQaChecks]=useState<readonly {criterion_id:string;verdict:string}[]>([]);
@@ -334,6 +336,28 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    disabled={busy} onChange={e=>setBrowserQaConsent(e.target.checked)}/>
    我另行核准免費 Chromium 做獨立 Browser QA；不會使用付費 Cloudflare Browser Run，不自動發布。
   </label>
+  <label className="code-builder-consent"><input type="checkbox"
+   checked={freeCiConsent} disabled={busy}
+   onChange={e=>setFreeCiConsent(e.target.checked)}/>
+   我核准將目前已保存的專案送到既有 GitHub Actions 免費隔離 Docker；
+   不公開原始碼、不呼叫模型、不自動發布。
+  </label>
+  {saved&&snapshot?.job&&snapshot.job.revision>0?
+   <button type="button" className="btn btn-secondary"
+    disabled={busy||!freeCiConsent} onClick={()=>{void (async()=>{
+     setBusy(true);setError("");setFreeCiStatus("");
+     try{
+      const worker=agent.current??new BrowserCodingAgent();
+      agent.current=worker;
+      await worker.restore();
+      await worker.dispatchFreeCiBuild(freeCiConsent);
+      setFreeCiStatus("已要求免費 Runner 接收保存的專案；完成證據須以真實 Actions 日誌確認。");
+     }catch(e){setError(failureMessage(e));}
+     finally{setBusy(false);}
+    })();}}>
+    將已保存多檔案專案送至免費 Docker 建置
+   </button>:null}
+  {freeCiStatus?<p className="saved-apps-note">{freeCiStatus}</p>:null}
   <label htmlFor="agent-max-cost">整個專案核准的 AI 費用上限（美分，自動 QA 最低 16；最多 100）</label>
   <input id="agent-max-cost" type="number" min={8} max={100} step={1}
    value={approvedCents} disabled={busy}
