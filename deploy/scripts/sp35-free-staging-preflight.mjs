@@ -9,7 +9,7 @@ if(token.length<20||!/^[0-9a-f]{32}$/iu.test(account))
  throw Error("FREE_DEPLOY_MISSING_EXISTING_CLOUDFLARE_CREDENTIALS");
 const headers={Authorization:"Bearer "+token,Accept:"application/json"};
 const verify=await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify",{
- headers,signal:AbortSignal.timeout(15000)});
+ headers,signal:globalThis.AbortSignal.timeout(15000)});
 const auth=await verify.json().catch(()=>null);
 if(!verify.ok||!auth?.success||auth?.result?.status!=="active")
  throw Error("FREE_DEPLOY_TOKEN_NOT_ACTIVE_HTTP_"+verify.status);
@@ -20,7 +20,7 @@ const names={
  "appf2-sp35-417-staging-f07":"APPF2_HYPERDRIVE_F07_EVENTS_ID"
 };
 const endpoint="https://api.cloudflare.com/client/v4/accounts/"+account+"/hyperdrive/configs";
-const response=await fetch(endpoint,{headers,signal:AbortSignal.timeout(15000)});
+const response=await fetch(endpoint,{headers,signal:globalThis.AbortSignal.timeout(15000)});
 const data=await response.json().catch(()=>null);
 if(!response.ok||data?.success!==true||!Array.isArray(data.result))
  throw Error("FREE_DEPLOY_CANNOT_READ_EXISTING_HYPERDRIVES_HTTP_"+response.status);
