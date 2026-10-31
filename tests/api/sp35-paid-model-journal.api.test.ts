@@ -1,4 +1,5 @@
 import {describe,it,expect} from "vitest";
+import {readFileSync} from "node:fs";
 import {runJournaledPaidModelTurn,type PaidModelTurn}
  from "../../src/platform/agent/journaled-model-gateway.js";
 import {checkpointHash,type AgentJobExecutor,type AgentJobRow}
@@ -80,6 +81,29 @@ function input(job:AgentJobRow,call_key="model_12345678"):PaidModelTurn{
   previous_response_id:null,max_output_tokens:2048,
   max_charge_cents:5,paid_consent:true,api_key:"unit-test-placeholder-key"};
 }
+describe("SP35 Staging owner reservation migration regression (NO model calls)",()=>{
+ it("retains RLS and permits only owner-bound journal inserts",()=>{
+  const sql=readFileSync(
+   "supabase/migrations/20261031235959_sp35_owner_model_reservation_rls.sql",
+   "utf8");
+  expect(sql).toContain("FOR INSERT TO appf2_worker");
+  expect(sql).toContain("WITH CHECK");
+  expect(sql).toContain("owner_anonymous_id=nullif(current_setting('app.anonymous_id',true),'')::uuid");
+  expect(sql).toContain("j.owner_anonymous_id=appf2_agent_model_call.owner_anonymous_id");
+  expect(sql).not.toMatch(/FOR INSERT TO (?:PUBLIC|anon|authenticated)/u);
+ });
+ it("uses the same authorized GPT-6.1 Sol model in request and SQL journal",()=>{
+  const builder=readFileSync("src/edge/free-ci-ai-code.ts","utf8");
+  const sql=readFileSync(
+   "supabase/migrations/20261031235950_sp35_gpt6_sol_only_model_reservation.sql",
+   "utf8");
+  expect(builder).toContain('const MODEL="gpt-6.1-sol"');
+  expect(builder).toContain("request_hash:digest,model:MODEL");
+  expect(builder).toContain("const req={model:MODEL");
+  expect(sql).toContain("p_model<>'gpt-6.1-sol'");
+ });
+});
+
 describe("Sprint 3.5 private at-most-once paid Responses journal (NO provider calls)",()=>{
  it("blocks all non-consented and zero-budget executions before dispatch",async()=>{
   const job=await fixture(),db=new Ledger(job);
