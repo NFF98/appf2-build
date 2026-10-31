@@ -31,7 +31,7 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
  const ticket=await sealAiRunnerTicket({job_id:row.job_id,
   owner:row.owner_anonymous_id,project_hash:projectHash,
   call_key:row.call_key,request_hash:row.request_hash},ticketSecret,nowMs);
- let dispatched=false;
+ let classification="NETWORK_ERROR";
  try{
   const response=await fetch(
    "https://api.github.com/repos/NFF98/appf2-build/actions/workflows/"+
@@ -45,8 +45,9 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
     body:JSON.stringify({ref:"product/sprint-3.5-complex-intent-recovery-20261026",
      inputs:{ticket:"ai_runner_v1_"+ticket}}),
     signal:AbortSignal.timeout(12000),redirect:"error"});
-  dispatched=response.status===204;
- }catch{ /* GitHub dispatch may have occurred: fail closed. */ }
- if(!dispatched)
-  throw Error("SP35_AI_RUNNER_DISPATCH_UNKNOWN_NO_RETRY");
+  if(response.status===204)return;
+  classification=String([400,401,403,404,409,422,429,500,502,503].includes(
+   response.status)?response.status:"OTHER_HTTP");
+ }catch{ /* Dispatch may have occurred; NEVER send it again automatically. */ }
+ throw Error("SP35_AI_RUNNER_DISPATCH_UNCONFIRMED_"+classification);
 }
