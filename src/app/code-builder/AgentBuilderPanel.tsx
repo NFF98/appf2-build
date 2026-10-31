@@ -526,7 +526,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     "一鍵真 AI 生成 App → 免費 Docker → QA → 保存／分享"}
   </button>
   <p className="saved-apps-note">
-   新版免費 Runner AI 模式：最多 8 美分原始 QA 規劃、20 美分編碼，
+   新版免費 Runner AI 模式使用 GPT-6.1 Sol（不是 gpt-4.1-mini）：最多 8 美分原始 QA 規劃、20 美分編碼，
    另可明確核准一次最多 16 美分修復；全程沿用同一原 Job。
    預留費用是上限，不是實際帳單。網路出錯後須先查已保存狀態，
    不會自動重複扣費。公開分享仍需另外勾選明確同意。
