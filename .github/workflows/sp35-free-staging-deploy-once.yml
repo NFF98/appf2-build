@@ -230,3 +230,5 @@ jobs:
 # SP35 2026-11-01: verify true Worker AES Runner ticket roundtrip and corrected GitHub private-paid-ai build with deliberately invalid ticket; zero model use.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 deploy same proven native Worker GitHub model ticket transport and verify no-cost OIDC/Docker; no paid provider POST.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 signed Worker GitHub GET egress + AES ticket health first, no AI charges.
