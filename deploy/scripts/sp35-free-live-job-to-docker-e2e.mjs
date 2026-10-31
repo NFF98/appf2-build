@@ -22,11 +22,11 @@ const spki=b64(await crypto.subtle.exportKey("spki",key.publicKey));
 const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"sp35-live-db-free-docker-"));
 let browser,server;
 async function signed(pathname,payload){
- const raw=new TextEncoder().encode(JSON.stringify(payload));
+ const raw=new globalThis.TextEncoder().encode(JSON.stringify(payload));
  const hash=b64(await crypto.subtle.digest("SHA-256",raw));
  const nonce="sp35LiveFreeCi_"+randomUUID().replaceAll("-","");
  const now=Date.now();
- const message=new TextEncoder().encode(JSON.stringify([
+ const message=new globalThis.TextEncoder().encode(JSON.stringify([
   "APPF2_MUTATION_PoP_V1","POST",pathname,hash,nonce,now]));
  const sig=b64(await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},
   key.privateKey,message));
@@ -36,7 +36,7 @@ async function signed(pathname,payload){
    "Sec-Fetch-Site":"same-origin","Idempotency-Key":nonce,
    "X-Appf2-PoP-Key":spki,"X-Appf2-PoP-Signature":sig,
    "X-Appf2-PoP-Timestamp":String(now)},
-  body:raw,signal:AbortSignal.timeout(25000)});
+  body:raw,signal:globalThis.AbortSignal.timeout(25000)});
  const result=await response.json().catch(()=>null);
  if(!response.ok||!result?.data)
   throw Error("FREE_CI_LIVE_WORKER_HTTP_"+response.status);
