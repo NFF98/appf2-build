@@ -33,6 +33,7 @@ let owner=null,thumb=null,firstKey=null;
 let planDone=false,toolDone=false,proofCount=0,planCount=0,stepCount=0,renewCount=0;
 let qaFreezeCount=0,autoPlanCount=0,frozenPlan=null,createdPrompt=null;
 let qaRunCount=0,qaRepairCount=0,lastRepairKey=null,autoQaPending=false;
+const qaAttemptHashes=new Set();
 let privatePreviewFetches=0;
 let server=null,browser=null;
 function json(res,status,data){
@@ -122,6 +123,10 @@ async function api(req,res,url){
    body.build_call_id!==completed.at(-2)||body.test_call_id!==completed.at(-1)){
    json(res,503,"QA_NOT_PROVEN");return;
   }
+  if(qaAttemptHashes.has(job.project_hash)){
+   json(res,503,"QA_ALREADY_DISPATCHED_NO_RETRY");return;
+  }
+  qaAttemptHashes.add(job.project_hash);
   qaRunCount++;job.status="REPAIRING";job.revision++;
   json(res,200,{status:"BROWSER_QA_FAILED_REPAIR_READY",
    ready_for_review:false,app_published:false,
@@ -169,6 +174,7 @@ async function api(req,res,url){
     remaining_steps:job.checkpoint.budget.max_steps-job.checkpoint.step,
     can_resume:true,resume_model_call_key:"agent_autotest_12345678",
     next_action:"SIGN_NEXT_SEQUENCE",
+    qa_attempt_state:qaAttemptHashes.has(job.project_hash)?"RESULT_RECORDED":"NOT_RUN",
     calls:[{model_call_key:"agent_autotest_12345678",
      state:"CURRENT_MODEL_READY",tool:"run_test",requires_container_consent:true}]});
    return;
@@ -177,6 +183,7 @@ async function api(req,res,url){
    can_resume:planDone&&!toolDone,
    resume_model_call_key:planDone&&!toolDone?firstKey:null,
    next_action:toolDone?"NO_PROVEN_PENDING_MODEL":"SIGN_NEXT_SEQUENCE",
+   qa_attempt_state:qaAttemptHashes.has(job.project_hash)?"RESULT_RECORDED":"NOT_RUN",
    calls:planDone?[{model_call_key:firstKey,state:toolDone?"ALREADY_APPLIED":"CURRENT_MODEL_READY",
     tool:"write_files",requires_container_consent:false}]:[]});return;
  }
