@@ -30,6 +30,7 @@ export type FreeCiBuildFailure={
  readonly diagnostic_excerpt:string;readonly qa_plan_hash:string;
 };
 export type FreeCiReceipt=FreeCiSmoke|FreeCiBuildFailure;
+// eslint-disable-next-line complexity -- Exact signed diagnostic shape must not imply build or QA success.
 export function validFreeCiBuildFailure(x:unknown):x is FreeCiBuildFailure{
  if(!exact(x,["version","project_hash","artifact_hash","failure_stage",
   "diagnostic_code","diagnostic_excerpt","qa_plan_hash"]))return false;
