@@ -131,13 +131,14 @@ const config = {
     // Candidate creation and signed Postgres read are free and only available
     // when real staging DB bindings exist. All paid capabilities stay separate.
     APPF2_AGENT_CANDIDATE_ENABLED: agentEnabled ? "1" : "0",
+    APPF2_AGENT_FREE_ONLY: "1",
     // Do not bill the new multi-file Agent before isolated build/QA
     // services are configured. Legacy single-file model flow unchanged.
-    APPF2_AGENT_MODEL_EXECUTION_ENABLED: sandboxEnabled ? "1" : "0",
-    APPF2_AGENT_SANDBOX_EXECUTION_ENABLED: sandboxEnabled ? "1" : "0",
-    APPF2_AGENT_AUTOSTEP_ENABLED: sandboxEnabled ? "1" : "0",
-    APPF2_AGENT_QA_BROWSER_ENABLED: qaEnabled ? "1" : "0",
-    APPF2_AGENT_QA_REVIEW_ENABLED: qaEnabled ? "1" : "0",
+    APPF2_AGENT_MODEL_EXECUTION_ENABLED: "0",
+    APPF2_AGENT_SANDBOX_EXECUTION_ENABLED: "0",
+    APPF2_AGENT_AUTOSTEP_ENABLED: "0",
+    APPF2_AGENT_QA_BROWSER_ENABLED: "0",
+    APPF2_AGENT_QA_REVIEW_ENABLED: "0",
     ...(privateServices ? {APPF2_SANDBOX_ALLOWED_JOB_ID:agentJobScope} : {}),
     // Cost guard for staging only. Production keeps its own unchanged settings.
     APPF2_MODEL_OUTPUT_CAP_ANALYSIS: "6000",

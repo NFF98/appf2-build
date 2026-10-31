@@ -27,6 +27,10 @@ function qaConfigured(env:Appf2WorkerEnv,candidate:boolean):boolean{
   has(env.APPF2_AGENT_QA_VERIFIER_SECRET,32);
 }
 export function agentReadiness(env:Appf2WorkerEnv){
+ if(env.APPF2_AGENT_FREE_ONLY==="1")return {
+  status:"BLOCKED",execution_mode:"FREE_CI_NOT_CONNECTED",
+  can_start_paid_generation:false,
+  missing:["FREE_CI_SECURE_JOB_TRANSPORT_NOT_CONNECTED"]};
  const candidate=env.APPF2_AGENT_CANDIDATE_ENABLED==="1";
  const model=modelConfigured(env,candidate);
  const sandbox=sandboxConfigured(env,candidate);
@@ -36,6 +40,7 @@ export function agentReadiness(env:Appf2WorkerEnv){
   ...(!sandbox?["SANDBOX"]:[]),...(!browserQa?["BROWSER_QA"]:[])
  ];
  return {status:missing.length===0?"CONFIGURED_NOT_VERIFIED":"BLOCKED",
+  execution_mode:"PAID_CLOUDFLARE",
   can_start_paid_generation:missing.length===0,missing};
 }
 export function routeAgentReadiness(request:Request,url:URL,env:Appf2WorkerEnv):

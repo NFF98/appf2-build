@@ -46,6 +46,8 @@ export interface Appf2WorkerEnv {
   readonly APPF2_QA_BROWSER?: unknown;
   /** Candidate multi-file Job API: disabled unless explicitly enabled in a protected staging Worker. */
   readonly APPF2_AGENT_CANDIDATE_ENABLED?: string;
+  /** User selected no-extra-cost Sprint 3.5; never permit paid Agent dispatch. */
+  readonly APPF2_AGENT_FREE_ONLY?: string;
   /** Signed single-step orchestration; OFF by default, independent of paid-model/container flags. */
   readonly APPF2_AGENT_AUTOSTEP_ENABLED?: string;
   /** Independent verifier secret, never sent to the browser; OFF by default. */
