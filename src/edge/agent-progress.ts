@@ -35,6 +35,8 @@ export type AgentProgress={
  readonly scope:"SUBMITTED_KEYS_ONLY"|"RECENT_EIGHT_STORED_CALLS";
  /** Read-only receipt state, NOT a pass certificate or permission to publish. */
  readonly qa_attempt_state:"NOT_RUN"|"IN_FLIGHT"|"BLOCKED_UNCERTAIN"|"RESULT_RECORDED";
+ /** Observed browser outcomes only; NEVER a release or independent-review PASS. */
+ readonly qa_observed_checks:readonly SavedQaCheck[];
  readonly app_published:false;
 };
 const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
@@ -61,6 +63,43 @@ export function mayResumeSavedModel(states:readonly ProgressState[],
   !["READY","FAILED","AWAITING_CONSENT"].includes(jobState);
 }
 type SavedBrowserQaAttempt={readonly status:string;readonly receipt_json:unknown};
+export type SavedQaCheck={readonly criterion_id:string;
+ readonly verdict:"PASS"|"FAIL"|"UNTESTED";
+ readonly evidence_hash:string|null};
+/** Only owner-scoped, already-journaled Chromium observations are shown.
+ * The broker validated the original frozen criteria at the time of dispatch;
+ * this read-only projection checks structure again and grants no PASS.
+ */
+export function savedQaObservedChecks(row:SavedBrowserQaAttempt|undefined):
+ readonly SavedQaCheck[]{
+ if(row?.status!=="SUCCEEDED")return [];
+ const receipt=row.receipt_json;
+ if(typeof receipt!=="object"||receipt===null||Array.isArray(receipt))
+  return [];
+ const raw=(receipt as Record<string,unknown>).checks;
+ if(!Array.isArray(raw)||raw.length<1||raw.length>10)return [];
+ const observed:SavedQaCheck[]=[];
+ const seen=new Set<string>();
+ for(const check of raw){
+  if(typeof check!=="object"||check===null||Array.isArray(check))
+   return [];
+  const x=check as Record<string,unknown>;
+  const id=x.criterion_id;
+  if(Object.keys(x).sort().join(",")!==
+   "category,criterion_id,evidence_hash,verdict"||
+   x.category!=="BROWSER"||typeof id!=="string"||
+   !/^[A-Za-z0-9_-]{1,80}$/u.test(id)||seen.has(id)||
+   !["PASS","FAIL","UNTESTED"].includes(String(x.verdict))||
+   (x.verdict==="PASS"?
+    !/^sha256:[a-f0-9]{64}$/u.test(String(x.evidence_hash)):
+    x.evidence_hash!==null))return [];
+  seen.add(id);
+  observed.push({criterion_id:id,verdict:x.verdict as SavedQaCheck["verdict"],
+   evidence_hash:x.evidence_hash as string|null});
+ }
+ return observed;
+}
+
 /** A saved receipt is only evidence of a completed QA dispatch, not a
  * cryptographically reviewed PASS. Never authorize publication from it.
  */
@@ -153,6 +192,7 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  // owner-scoped QA receipt; no user-supplied verdict is trusted.
  let failedIndependentQa=false;
  let qaAttemptState:AgentProgress["qa_attempt_state"]="NOT_RUN";
+ let qaObservedChecks:readonly SavedQaCheck[]=[];
  if(["TESTING","REPAIRING"].includes(current.job.job_state)){
   const receipts=(await deps.db.query<SavedBrowserQaAttempt>(
    "SELECT status,receipt_json FROM public.appf2_agent_browser_qa_attempt "+
@@ -162,6 +202,7 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
   if(receipts.length>1)throw Error("AGENT_QA_PROGRESS_AMBIGUOUS");
   const qaReceipt=receipts[0];
   qaAttemptState=savedBrowserQaAttemptState(qaReceipt);
+  qaObservedChecks=savedQaObservedChecks(qaReceipt);
   if(current.job.job_state==="REPAIRING"){
    if(qaAttemptState==="IN_FLIGHT"||
     qaAttemptState==="BLOCKED_UNCERTAIN")
@@ -211,5 +252,6 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
   resume_previous_model_call_key:eligible?last[0].model_call_key:null,
   next_action,scope:input.model_call_keys===undefined?
    "RECENT_EIGHT_STORED_CALLS":"SUBMITTED_KEYS_ONLY",
-  qa_attempt_state:qaAttemptState,app_published:false};
+  qa_attempt_state:qaAttemptState,qa_observed_checks:qaObservedChecks,
+  app_published:false};
 }
