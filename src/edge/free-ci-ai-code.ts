@@ -95,7 +95,7 @@ function parsedOutput(raw:unknown):unknown{
  if(text.length<10||text.length>100000)return null;
  try{return JSON.parse(text) as unknown;}catch{return null;}
 }
-function parsePlan(raw:unknown,prompt:string):QaPlan|null{
+export function parseFreeAiPrecodePlan(raw:unknown,prompt:string):QaPlan|null{
  if(typeof raw!=="object"||raw===null||Array.isArray(raw))return null;
  const values=(raw as {criteria?:unknown}).criteria;
  if(!Array.isArray(values)||values.length<1||values.length>6)return null;
@@ -263,7 +263,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
     name:"appf2_precode_qa",strict:true,schema:qaSchema}}};
   const data=await paidModelTurn(ctx.db,job,input.anonymous_id,"QA",req,
    ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs);
-  const parsed=parsePlan(parsedOutput(data.response),input.original_prompt);
+  const parsed=parseFreeAiPrecodePlan(parsedOutput(data.response),input.original_prompt);
   if(!parsed)throw Error("SP35_PAID_QA_SCHEMA_FAILED_NO_RECHARGE");
   await freezeAgentQaPlan({anonymous_id:input.anonymous_id,expected_revision:0,
    original_prompt:input.original_prompt,original_plan:parsed},{
