@@ -370,7 +370,13 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    return json(200,{data:applied});
   }
   return await read(db,info.anonymous_id,ownerThumb,match?.[1]??"");
- }catch{
+ }catch(e){
+  // Expose ONLY a constant GitHub HTTP status class for this private
+  // creator-signed route. Never serialize tokens, tickets, errors or URLs.
+  if(freeCiMatch&&e instanceof Error&&
+    /^FREE_CI_DISPATCH_HTTP_(400|401|403|404|409|422|429|500|502|503)$/u.test(e.message))
+   return json(503,{error:"FREE_CI_DISPATCH_REJECTED",
+    github_http_status:Number(e.message.slice("FREE_CI_DISPATCH_HTTP_".length))});
   return json(503,{error:"AGENT_JOB_UNAVAILABLE"});
  }finally{await db.close().catch(()=>undefined);}
 }
