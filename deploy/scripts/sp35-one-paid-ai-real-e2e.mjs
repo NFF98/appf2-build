@@ -50,7 +50,7 @@ async function callRealOpenAi(){
  if(paths.size!==2||!paths.has("src/main.ts")||!paths.has("src/style.css")||
   files.some(x=>Object.keys(x).sort().join(",")!=="content,path"||
   typeof x.content!=="string"||x.content.length<80||x.content.length>20000||
-  /https?:\\/\\/|from\\s+['\"]https?:|import\\s*\\(['\"]https?:/u.test(x.content)))
+  /https?:\/\/|from\s+['"]https?:|import\s*\(['"]https?:/u.test(x.content)))
   throw Error("SP35_REAL_AI_OUTPUT_UNSAFE_OR_INCOMPLETE");
  console.log("SP35 REAL PAID AI: OpenAI Responses status=completed, model=gpt-4.1-mini, output_tokens="+
   Number(obj.usage?.output_tokens??0)+", no output or key logged, one call only");
