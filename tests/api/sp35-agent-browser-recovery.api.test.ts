@@ -1,7 +1,8 @@
 import {describe,it,expect,afterEach,vi} from "vitest";
 import {mayResumeSavedModel,savedBrowserQaAttemptState}
  from "../../src/edge/agent-progress.js";
-import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget}
+import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget,
+ paidAgentReconciliationRequired}
  from "../../src/app/code-builder/agent-browser-client.js";
 const SLOT="appf2.agent.candidate.job.v1";
 const target={jobId:"ba45436c-c3f1-44f1-adc6-bdd0fb1592e7",
@@ -150,5 +151,25 @@ describe("Sprint 3.5 saved Browser QA recovery without repeat charges",()=>{
    {ready_for_review:true,packet:[]}])
    expect(savedBrowserQaAttemptState({status:"SUCCEEDED",receipt_json}))
     .toBe("BLOCKED_UNCERTAIN");
+ });
+});
+
+describe("Sprint 3.5 real browser paid model reconciliation after interrupted job",()=>{
+ const call=(state:string)=>({model_call_key:"agent_first_12345678",state,
+  tool:null,requires_container_consent:false});
+ it("stops first paid planning when DB reports normalized uncertain/pending model",()=>{
+  expect(paidAgentReconciliationRequired({
+   next_action:"AWAIT_MODEL_RECONCILIATION",calls:[]})).toBe(true);
+  expect(paidAgentReconciliationRequired({
+   next_action:"SIGN_NEXT_SEQUENCE",calls:[call("MODEL_UNCERTAIN")]})).toBe(true);
+  expect(paidAgentReconciliationRequired({
+   next_action:"SIGN_NEXT_SEQUENCE",calls:[call("MODEL_PENDING")]})).toBe(true);
+ });
+ it("does not block a clean first plan or already proven saved result",()=>{
+  expect(paidAgentReconciliationRequired({
+   next_action:"NO_PROVEN_PENDING_MODEL",calls:[]})).toBe(false);
+  expect(paidAgentReconciliationRequired({
+   next_action:"SIGN_NEXT_SEQUENCE",calls:[call("CURRENT_MODEL_READY")]}))
+   .toBe(false);
  });
 });
