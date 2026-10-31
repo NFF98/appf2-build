@@ -37,6 +37,30 @@ const model = bootstrapOnly ? null : required("APPF2_MODEL_NAME");
 const token = required("CLOUDFLARE_API_TOKEN");
 const account = required("CLOUDFLARE_ACCOUNT_ID");
 const modelSecret = bootstrapOnly ? null : required("APPF2_MODEL_API_KEY");
+// The multi-file Agent uses a SEPARATE provider credential and cost budget,
+// never inherits the legacy F01 model permission.
+const agentKey = bootstrapOnly ? "" : (process.env.APPF2_OPENAI_AGENT_API_KEY?.trim() || "");
+const agentEnabled = !bootstrapOnly;
+const agentModelEnabled = agentEnabled && agentKey.length >= 16 &&
+  process.env.APPF2_STAGING_AGENT_MODEL_ENABLED === "1";
+const agentPrivateToken = process.env.APPF2_SANDBOX_BROKER_TOKEN?.trim() || "";
+const agentJobScope = process.env.APPF2_SANDBOX_ALLOWED_JOB_ID?.trim() || "";
+const agentQaToken = process.env.APPF2_QA_PRIVATE_TOKEN?.trim() || "";
+const agentQaVerifier = process.env.APPF2_AGENT_QA_VERIFIER_SECRET?.trim() || "";
+// Never deploy a binding to a nonexistent Worker just because an API key exists.
+// Both private Workers must first be provisioned through a separately approved
+// cloud deployment. These are staging-only, explicit protected opt-ins.
+const privateServices = agentEnabled &&
+  process.env.APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED === "1";
+if(privateServices && (agentPrivateToken.length < 32 ||
+  !/^(?:OWNER_SCOPED_JOBS|[0-9a-f-]{36})$/i.test(agentJobScope) ||
+  agentQaToken.length < 32 || agentQaVerifier.length < 32))
+  throw Error("STAGING AGENT: incomplete private Sandbox / Browser QA binding secrets");
+const sandboxEnabled = privateServices && agentModelEnabled;
+const qaEnabled = privateServices && agentModelEnabled;
+console.log("STAGING AGENT: candidate="+(agentEnabled?"ENABLED":"DISABLED")+
+  " model="+(agentModelEnabled?"CONSENT_REQUIRED":"DISABLED")+
+  " private_services="+(privateServices?"CONFIGURED":"NOT_DEPLOYED"));
 const provider = process.env.APPF2_MODEL_PROVIDER?.trim().toLowerCase() || "openai";
 if (!["openai", "xai", "deepseek"].includes(provider)) {
   throw new Error("STAGING PRECHECK: invalid APPF2_MODEL_PROVIDER");
@@ -90,10 +114,23 @@ const config = {
     run_worker_first: ["/api/v1/*", "/b/*"]
   },
   ...(bootstrapOnly ? {} : {hyperdrive,browser:{binding:"APPF2_QA_BROWSER"}}),
+  ...(privateServices ? {services:[
+    {binding:"APPF2_SANDBOX_BROKER_SERVICE",service:"appf2-sp35-private-sandbox"},
+    {binding:"APPF2_QA_BROWSER_SERVICE",service:"appf2-sp35-private-browser-qa"}
+  ]} : {}),
   ...(bootstrapOnly ? {} : {vars: {
     APPF2_MODEL_BASE_URL: modelBase.toString(),
     APPF2_MODEL_NAME: model,
     APPF2_MODEL_PROVIDER: provider,
+    // Candidate creation and signed Postgres read are free and only available
+    // when real staging DB bindings exist. All paid capabilities stay separate.
+    APPF2_AGENT_CANDIDATE_ENABLED: agentEnabled ? "1" : "0",
+    APPF2_AGENT_MODEL_EXECUTION_ENABLED: agentModelEnabled ? "1" : "0",
+    APPF2_AGENT_SANDBOX_EXECUTION_ENABLED: sandboxEnabled ? "1" : "0",
+    APPF2_AGENT_AUTOSTEP_ENABLED: sandboxEnabled ? "1" : "0",
+    APPF2_AGENT_QA_BROWSER_ENABLED: qaEnabled ? "1" : "0",
+    APPF2_AGENT_QA_REVIEW_ENABLED: qaEnabled ? "1" : "0",
+    ...(privateServices ? {APPF2_SANDBOX_ALLOWED_JOB_ID:agentJobScope} : {}),
     // Cost guard for staging only. Production keeps its own unchanged settings.
     APPF2_MODEL_OUTPUT_CAP_ANALYSIS: "6000",
     APPF2_MODEL_OUTPUT_CAP_BLUEPRINT: "16000",
@@ -106,6 +143,10 @@ try {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", { flag: "wx", mode: 0o600 });
   fs.writeFileSync(secretsPath, JSON.stringify({
     ...(bootstrapOnly ? {} : {APPF2_MODEL_API_KEY: modelSecret}),
+    ...(agentModelEnabled ? {APPF2_OPENAI_AGENT_API_KEY:agentKey} : {}),
+    ...(privateServices ? {APPF2_SANDBOX_BROKER_TOKEN:agentPrivateToken,
+      APPF2_QA_PRIVATE_TOKEN:agentQaToken,
+      APPF2_AGENT_QA_VERIFIER_SECRET:agentQaVerifier} : {}),
     ...(xaiKey ? {APPF2_XAI_API_KEY: xaiKey} : {}),
     ...(deepseekKey ? {APPF2_DEEPSEEK_API_KEY: deepseekKey} : {}),
     APPF2_IDENTITY_COOKIE_SECRET: cookieSecret
@@ -120,6 +161,10 @@ try {
   const redact = value => String(value || "")
     .replaceAll(token, "[REDACTED]").replaceAll(cookieSecret, "[REDACTED]")
     .replaceAll(modelSecret || "[NO_MODEL_SECRET]", "[REDACTED]")
+    .replaceAll(agentKey || "[NO_AGENT_KEY]", "[REDACTED]")
+    .replaceAll(agentPrivateToken || "[NO_AGENT_BROKER_TOKEN]", "[REDACTED]")
+    .replaceAll(agentQaToken || "[NO_AGENT_QA_TOKEN]", "[REDACTED]")
+    .replaceAll(agentQaVerifier || "[NO_AGENT_QA_VERIFIER]", "[REDACTED]")
     .replaceAll(xaiKey || "[NO_XAI_SECRET]", "[REDACTED]")
     .replaceAll(deepseekKey || "[NO_DEEPSEEK_SECRET]", "[REDACTED]");
   process.stdout.write(redact(r.stdout));
