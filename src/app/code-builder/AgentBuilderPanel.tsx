@@ -32,7 +32,51 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const agent=useRef<BrowserCodingAgent|null>(null);
  const stop=useRef(false);
  const previewHost=useRef<HTMLDivElement>(null);
+ const previewShell=useRef<HTMLDivElement>(null);
+ const nativeFullscreen=useRef(false);
  const [previewReady,setPreviewReady]=useState(false);
+ const [previewExpanded,setPreviewExpanded]=useState(false);
+ const [previewFullscreenError,setPreviewFullscreenError]=useState("");
+ useEffect(()=>{
+  const onChange=()=>{
+   if(document.fullscreenElement===previewShell.current){
+    nativeFullscreen.current=true;setPreviewExpanded(true);
+   }else if(nativeFullscreen.current){
+    nativeFullscreen.current=false;setPreviewExpanded(false);
+   }
+  };
+  document.addEventListener("fullscreenchange",onChange);
+  return ()=>document.removeEventListener("fullscreenchange",onChange);
+ },[]);
+ useEffect(()=>{
+  if(!previewExpanded)return;
+  const previous=document.body.style.overflow;
+  document.body.style.overflow="hidden";
+  const onEscape=(event:KeyboardEvent)=>{
+   if(event.key==="Escape"&&document.fullscreenElement!==previewShell.current)
+    setPreviewExpanded(false);
+  };
+  document.addEventListener("keydown",onEscape);
+  return ()=>{
+   document.body.style.overflow=previous;
+   document.removeEventListener("keydown",onEscape);
+  };
+ },[previewExpanded]);
+ const togglePreviewFullscreen=()=>{
+  if(!previewReady||!previewShell.current)return;
+  setPreviewFullscreenError("");
+  if(previewExpanded){
+   setPreviewExpanded(false);
+   if(document.fullscreenElement===previewShell.current)
+    void document.exitFullscreen().catch(()=>undefined);
+   return;
+  }
+  setPreviewExpanded(true);
+  if(typeof previewShell.current.requestFullscreen==="function")
+   void previewShell.current.requestFullscreen().catch(()=>{
+    setPreviewFullscreenError("瀏覽器不支援原生全螢幕；已使用視窗填滿模式。");
+   });
+ };
  useEffect(()=>{
   if(suggestedPrompt!==null&&suggestedPrompt!==undefined)setPrompt(suggestedPrompt.text);
  },[suggestedPrompt]);
@@ -253,8 +297,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   {catalog.length>0?<section aria-label="已保存的 Agent 專案">
    <h3>已保存的多檔案 App 專案（此瀏覽器）</h3>
    <p className="saved-apps-note">選擇原專案繼續開發或下載程式，
-    不會重新生成或支付 AI 費用。原始簽章金鑰有效期為 24 小時；
-    這是私人候選工作清單，不是已發布 App。</p>
+    不會重新生成或支付 AI 費用。新版 Agent 原始簽章金鑰最長有效 30 天；
+    舊專案仍以建立時的原金鑰期限為準。這是私人候選清單，並非已發布 App。</p>
    <ul>{catalog.map(item=><li key={item.jobId}>
     <button className="btn btn-secondary" type="button" disabled={busy}
      onClick={()=>{void openSavedCandidate(item.jobId);}}>
@@ -352,7 +396,22 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      瀏覽器以隔離、禁止網路的 iframe 執行，不能讀取 APPf2 帳戶。
      此預覽不代表獨立 QA PASS。</p>
     {previewReady?<p role="status">正在顯示已保存建置成果；尚未正式發布。</p>:null}
-    <div ref={previewHost} className="code-app-frame" />
+    <div ref={previewShell}
+     className={"code-app-viewer"+(previewExpanded?" code-app-viewer-expanded":"")}
+     aria-label="私人候選 App 全螢幕檢視">
+     <div className="code-app-viewer-toolbar">
+      <span>私人候選 App · 操作測試不代表正式驗收通過</span>
+      <button type="button" className="btn btn-secondary"
+       disabled={!previewReady} aria-pressed={previewExpanded}
+       onClick={togglePreviewFullscreen}>
+       {previewExpanded?"退出全螢幕":"全螢幕顯示"}
+      </button>
+     </div>
+     {previewFullscreenError?<p className="code-app-display-note" role="status">
+      {previewFullscreenError}
+     </p>:null}
+     <div ref={previewHost} className="code-app-frame" />
+    </div>
    </section>:null}
   {snapshot&&snapshot.job.files.length>0?
    <button type="button" className="btn btn-secondary"

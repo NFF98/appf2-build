@@ -344,6 +344,22 @@ try{
  const frame=page.frameLocator('iframe[title="私人候選 App 互動預覽（尚未通過發布驗收）"]');
  await frame.getByRole("button",{name:"Demo Add"}).click();
  await frame.getByText("PREVIEW_CLICKED_42").waitFor({timeout:15000});
+ // The real generated candidate must be usable at full viewport size; a
+ // 560px clipped iframe is not acceptable even when all buttons are clickable.
+ const expand=page.getByRole("button",{name:"全螢幕顯示"});
+ if(!(await expand.isEnabled()))throw Error("PRIVATE_PREVIEW_FULLSCREEN_NOT_AVAILABLE");
+ await expand.click();
+ const viewer=page.locator('[aria-label="私人候選 App 全螢幕檢視"]');
+ await page.getByRole("button",{name:"退出全螢幕"}).waitFor({timeout:15000});
+ const size=await viewer.boundingBox();
+ const viewport=page.viewportSize();
+ if(!size||!viewport||size.height<viewport.height-8||
+  size.width<viewport.width-8)
+  throw Error("PRIVATE_PREVIEW_FULLSCREEN_CLIPPED");
+ await frame.getByRole("button",{name:"Demo Add"}).click();
+ await frame.getByText("PREVIEW_CLICKED_42").waitFor({timeout:15000});
+ await page.getByRole("button",{name:"退出全螢幕"}).click();
+ await page.getByRole("button",{name:"全螢幕顯示"}).waitFor({timeout:15000});
  if(privatePreviewFetches!==2||qaRunCount!==0||qaRepairCount!==0)
   throw Error("PRIVATE_BUILD_PREVIEW_CAUSED_PAID_OR_UNSAFE_EFFECTS");
  const qaButton=page.getByRole("button",{
