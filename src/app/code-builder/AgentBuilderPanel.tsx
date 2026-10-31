@@ -141,6 +141,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   try{
    const worker=agent.current??new BrowserCodingAgent();
    agent.current=worker;
+   // Recheck current live service config for initial AND resumed paid steps.
+   await requireAgentBuildReadiness();
    if(resume){
     if(!await worker.restore())throw Error("找不到已保存的 Agent 工作。");
     const job=await worker.read();
@@ -157,8 +159,6 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      await worker.plan();
     }
    }else{
-    // Verifies flags/bindings BEFORE signed Job creation or any paid model call.
-    await requireAgentBuildReadiness();
     await worker.create(prompt,options(),acceptancePlan());
     setSaved(true);setCatalog([...readSavedCandidateLibrary()]);
     const initial=await worker.read();
@@ -349,7 +349,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    {busy?"正在執行並保存 Agent 工作…":"建立新多檔案 App 專案"}
   </button>
   {saved?<button type="button" className="btn btn-secondary"
-    disabled={busy||!aiConsent} onClick={()=>{void execute(true);}}>繼續上次保存的 Agent 工作</button>:null}
+    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent}
+    onClick={()=>{void execute(true);}}>繼續上次保存的 Agent 工作</button>:null}
   {saved?<button type="button" className="btn btn-secondary"
     disabled={busy} onClick={()=>{void refreshSavedProgress();}}>
     查詢已保存的產品進度與 QA 紀錄（不扣費）
