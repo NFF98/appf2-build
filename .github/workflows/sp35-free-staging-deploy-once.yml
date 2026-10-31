@@ -116,10 +116,10 @@ jobs:
           const response=await fetch(base+"/api/v1/agent-readiness",{
             method:"GET",signal:AbortSignal.timeout(15000)});
           const json=await response.json().catch(()=>null);
-          if(response.status!==200||json?.data?.execution_mode!=="FREE_CI_NOT_CONNECTED"||
+          if(response.status!==200||json?.data?.execution_mode!=="FREE_CI_READY"||
              json.data.can_start_paid_generation!==false)
             throw Error("FREE_DEPLOY_AGENT_ROUTE_MISSING_OR_PAID_NOT_BLOCKED_HTTP_"+response.status);
-          console.log("SP35 LIVE NEW AGENT ROUTE PASS: GET readiness HTTP200, FREE_CI_NOT_CONNECTED; all paid Agent execution disabled");
+          console.log("SP35 LIVE NEW AGENT ROUTE PASS: FREE_CI_READY configuration only; all paid Agent execution disabled");
           JS
       - name: LIVE private Free CI endpoint rejects unsigned requests (no AI)
         run: |

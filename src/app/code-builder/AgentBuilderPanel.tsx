@@ -313,8 +313,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
   <p className="saved-apps-note">真正的多檔案程式專案；AI 可以編寫、保存、要求隔離建置與修復。
-   Staging 已接通免費 GitHub Actions Docker＋Chromium 安全派發程式與結果儲存；
-   尚未接通之前，不會假裝已產生可操作 App。功能是否能操作需獨立驗證；目前生成的是私人候選原始碼，<strong>尚未自動發布成可用 App</strong>。</p>
+   Staging 已實測免費 GitHub Actions Docker＋Chromium、逐項 QA 收據、私人建置資產保存和零 AI 重開。
+   可操作的私人 App 要以該 Job 的「已保存 App」按鈕及真實測試為準；
+   <strong>尚未完成真 AI 自主生成、自動修復或正式公開分享</strong>。</p>
   {catalog.length>0?<section aria-label="已保存的 Agent 專案">
    <h3>已保存的多檔案 App 專案（此瀏覽器）</h3>
    <p className="saved-apps-note">選擇原專案繼續開發或下載程式，
@@ -382,8 +383,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    value={approvedCents} disabled={busy}
    onChange={e=>setApprovedCents(Number(e.target.value))}/>
   <p className="saved-apps-note">每按一次開發加修復總計最多六個 Agent 步驟，另可依授權做一次獨立 QA；費用仍受伺服器總預算限制。
-   免費 Runner 已具備 GitHub 授權與程式接線，但真 AI 成果的自動派發仍待端到端證據。
-   Staging 不啟動付費生成、不自動部署、不會把基本 Chromium 畫面檢查標成 QA PASS。</p>
+   免費 Runner 已用原始建立者簽章測通 Docker、Chromium、QA 收據及私人 App 保存／重開；
+   但測試程式不是 AI 生成作品。Staging 仍禁止付費 AI／容器，並禁止未經完整 QA 的正式發布。</p>
   <button type="button" className="btn btn-primary"
    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
     prompt.trim().length<5||

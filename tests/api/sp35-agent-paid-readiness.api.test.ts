@@ -23,6 +23,9 @@ describe("SP35 free-only product step readiness",()=>{
   expect(agentReadiness(free)).toEqual({status:"BLOCKED",
    execution_mode:"FREE_CI_NOT_CONNECTED",can_start_paid_generation:false,
    missing:["FREE_CI_SECURE_JOB_TRANSPORT_NOT_CONNECTED"]});
+  const live={...free,APPF2_FREE_CI_GITHUB_TOKEN:"github_pat_"+"x".repeat(50)};
+  expect(agentReadiness(live)).toEqual({status:"CONFIGURED_NOT_VERIFIED",
+   execution_mode:"FREE_CI_READY",can_start_paid_generation:false,missing:[]});
   const response=await createWorkerFetch()(new Request(url),free);
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({data:agentReadiness(free)});
@@ -72,12 +75,13 @@ describe("SP35 free-only product step readiness",()=>{
   vi.stubGlobal("fetch",incomplete);
   await expect(requireAgentBuildReadiness()).rejects.toThrow("不會呼叫付費 Cloudflare");
  });
- it("browser proceeds only with complete configured flags, no model called",async()=>{
+ it("browser refuses paid AI even when the free Runner is configured",async()=>{
   const request=vi.fn(async()=>new Response(JSON.stringify({data:{
-   status:"CONFIGURED_NOT_VERIFIED",execution_mode:"FREE_CI_READY",can_start_paid_generation:true,missing:[]}}),
+   status:"CONFIGURED_NOT_VERIFIED",execution_mode:"FREE_CI_READY",
+   can_start_paid_generation:false,missing:[]}}),
    {status:200,headers:{"Content-Type":"application/json"}}));
   vi.stubGlobal("fetch",request);
-  await expect(requireAgentBuildReadiness()).resolves.toBeUndefined();
+  await expect(requireAgentBuildReadiness()).rejects.toThrow("免費 Docker 已接通");
   expect(request).toHaveBeenCalledOnce();
  });
 });
