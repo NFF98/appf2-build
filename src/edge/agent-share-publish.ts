@@ -13,6 +13,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
 export type PublishOwnerAppBody={readonly anonymous_id:string;
  readonly expected_project_hash:string;readonly original_prompt:string;
  readonly title:string;readonly explicit_public_share_consent:true};
+// eslint-disable-next-line complexity -- Public sharing requires all owner, intent and title guards.
 export function validPublishOwnerAppBody(x:unknown):x is PublishOwnerAppBody{
  if(typeof x!=="object"||x===null||Array.isArray(x))return false;
  const v=x as Record<string,unknown>;
@@ -39,6 +40,7 @@ const INSERT="INSERT INTO public.appf2_code_app "+
 const FINISH="UPDATE public.appf2_code_app SET status='ACTIVE',title=$2,blueprint_hash=$3,artifact=$4::jsonb "+
  "WHERE share_id=$1::uuid AND status='BUILDING' AND creator_anonymous_id=$5::uuid "+
  "RETURNING share_id::text";
+// eslint-disable-next-line complexity -- Independent frozen-plan, artifact, owner and idempotency admission.
 export async function publishVerifiedPrivateApp(input:PublishOwnerAppBody,ctx:{
  readonly db:AgentJobExecutor;readonly jobId:string;
  readonly ownerThumb:string;readonly creatorKeyThumbprint:string;
