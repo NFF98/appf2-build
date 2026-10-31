@@ -81,12 +81,19 @@ export function provenPreviewBuildAndTest(completed:readonly string[],
  {build:string;test:string}|null{
  const test=completed.at(-1);
  if(!test)return null;
+ // Known signed model provenance must never contradict the claimed last test.
+ const knownTest=calls.find(c=>c.call_id===test);
+ if(knownTest&&(knownTest.state!=="ALREADY_APPLIED"||
+  knownTest.tool!=="run_test"))return null;
  const buildCandidates=calls.filter(c=>c.state==="ALREADY_APPLIED"&&
   c.tool==="run_build"&&typeof c.call_id==="string").map(c=>c.call_id!);
  const known=buildCandidates.filter(id=>completed.indexOf(id)>=0&&
   completed.indexOf(id)<completed.lastIndexOf(test));
  known.sort((a,b)=>completed.lastIndexOf(b)-completed.lastIndexOf(a));
  const build=known[0]??completed.at(-2);
+ const inspectedBuild=calls.find(c=>c.call_id===build);
+ if(inspectedBuild&&(inspectedBuild.state!=="ALREADY_APPLIED"||
+  inspectedBuild.tool!=="run_build"))return null;
  return build&&build!==test&&completed.indexOf(build)>=0&&
   completed.indexOf(build)<completed.lastIndexOf(test)?
   {build,test}:null;
