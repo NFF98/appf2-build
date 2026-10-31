@@ -174,6 +174,18 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  }
  if(existing&&existing.status!=="RESERVED")
   throw Error("SP35_PAID_AI_UNCERTAIN_NO_RECHARGE");
+ // A real signed Worker-to-provider GET was proven unreachable even when the
+ // same model GET succeeded from GitHub Actions. Check the actual egress hop
+ // BEFORE journal reservation or any potentially billed Responses POST.
+ let reachable=false;
+ try{
+  const probe=await fetch("https://api.openai.com/v1/models/gpt-6.1-sol",{
+   method:"GET",headers:{"Authorization":"Bearer "+key},
+   redirect:"error",signal:AbortSignal.timeout(10000)});
+  reachable=probe.status===200;
+ }catch{ /* No model call, no new reservation and no automatic retry. */ }
+ if(!reachable)
+  throw Error("SP35_PAID_AI_WORKER_EGRESS_UNAVAILABLE_NO_POST");
  const row=await reserveModelCall(db,job.job,owner,{
   call_key:modelKey,request_hash:digest,model:MODEL,
   max_charge_cents:AMOUNTS[phase]});
