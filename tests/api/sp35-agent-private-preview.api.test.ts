@@ -2,10 +2,12 @@ import {describe,it,expect,vi,afterEach} from "vitest";
 import {readSignedPreviewAsset,validPreviewAssetBody}
  from "../../src/edge/agent-preview-asset.js";
 import type {AgentJobExecutor} from "../../src/platform/agent/postgres-agent-jobs.js";
+const mockState=vi.hoisted(()=>({completed:[
+ "call_build_1234","call_test_1234"]}));
 vi.mock("../../src/platform/agent/durable-agent-service.js",()=>({
  recoverAgentJob:vi.fn(async()=>({
   job:{revision:5,job_state:"TESTING",
-   checkpoint:{completed_call_ids:["call_build_1234","call_test_1234"]}},
+   checkpoint:{completed_call_ids:mockState.completed}},
   project:{project_hash:"sha256:"+"a".repeat(64)}
  }))
 }));
@@ -45,7 +47,10 @@ const deps=(f:ReturnType<typeof fixture>)=>({
  brokerToken:"x".repeat(32),brokerService:f.service,
  allowedJobId:jobId
 });
-afterEach(()=>vi.restoreAllMocks());
+afterEach(()=>{
+ mockState.completed=["call_build_1234","call_test_1234"];
+ vi.restoreAllMocks();
+});
 describe("Sprint 3.5 private executable App preview gate",()=>{
  it("requires explicit consent and strictly shaped build + test IDs",()=>{
   expect(validPreviewAssetBody(input)).toBe(true);
@@ -65,6 +70,24 @@ describe("Sprint 3.5 private executable App preview gate",()=>{
   expect(f.fetchCount).toBe(1);
   expect(f.calls.some(c=>c.sql.includes("owner_key_thumbprint"))).toBe(true);
   expect(f.calls.some(c=>c.sql.includes("appf2_agent_sandbox_call"))).toBe(true);
+ });
+ it("previews a real build followed by read-only tools then the latest test",async()=>{
+  mockState.completed=[
+   "call_build_1234","call_inspect_5678","call_test_1234"];
+  const f=fixture();
+  const value=await readSignedPreviewAsset(input,deps(f));
+  expect(value.project_hash).toBe(hash);
+  expect(f.fetchCount).toBe(1);
+ });
+ it("denies a build after the test, or a non-latest tested head",async()=>{
+  const f=fixture();
+  mockState.completed=["call_test_1234","call_build_1234"];
+  await expect(readSignedPreviewAsset(input,deps(f)))
+   .rejects.toThrow("PREVIEW_NOT_LAST_PROVEN_BUILD_AND_TEST");
+  mockState.completed=["call_build_1234","call_test_1234","call_read_9999"];
+  await expect(readSignedPreviewAsset(input,deps(f)))
+   .rejects.toThrow("PREVIEW_NOT_LAST_PROVEN_BUILD_AND_TEST");
+  expect(f.fetchCount).toBe(0);
  });
  it("never contacts the broker when build/test receipt is not proven",async()=>{
   const f=fixture();
