@@ -60,6 +60,7 @@ const FREE_CI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ci-dispatch$/u
 const FREE_IMPORT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-files$/u;
 const FREE_SHARE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/publish-code-app$/u;
 const FREE_AI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-stage$/u;
+const FREE_AI_PROBE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-probe$/u;
 const QA_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-generate$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -166,7 +167,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname);
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname);
  const privateSource=await routeFreeCiSource(request,url,env,nowMs);
  if(privateSource!==undefined)return privateSource;
  const privateResult=await routeFreeCiResult(request,url,env,nowMs);
@@ -179,7 +180,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(env.APPF2_AGENT_FREE_ONLY==="1"&&
   (modelMatch||continueMatch||qaRepairMatch||qaGenerateMatch||
    sandboxMatch||autoMatch||seqMatch||qaRunMatch))return denied();
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch)return undefined;
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -206,7 +207,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(qaMatch&&(env.APPF2_AGENT_QA_REVIEW_ENABLED!=="1"||
   !env.APPF2_AGENT_QA_VERIFIER_SECRET))return denied();
  if((autoMatch||seqMatch)&&env.APPF2_AGENT_AUTOSTEP_ENABLED!=="1")return denied();
- const info=freeAiMatch?(validFreeAiCodeInput(parsed)?parsed:null):
+ const info=freeAiProbeMatch?verifiedBody(parsed,false):
+  freeAiMatch?(validFreeAiCodeInput(parsed)?parsed:null):
   freeShareMatch?(validPublishOwnerAppBody(parsed)?parsed:null):
   freeCiPreviewMatch?(validFreeCiOwnerPreviewInput(parsed)?parsed:null):
   freeImportMatch?(validFreeImportInput(parsed)?parsed:null):
@@ -233,6 +235,34 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,
    {anonymousId:info.anonymous_id,intentId:null});
  try{
+  // Zero-cost creator-signed Worker -> OpenAI network probe. No model
+  // generation, no budget reservation, no Job state change. A GitHub-hosted
+  // model GET success does NOT prove the deployed Worker can reach OpenAI.
+  if(freeAiProbeMatch){
+   if(env.APPF2_AGENT_FREE_ONLY!=="1"||
+    env.APPF2_FREE_AI_GENERATION_ENABLED!=="1"||
+    !env.APPF2_FREE_AI_KEY)return denied();
+   const owns=(await db.query<{job_id:string}>(`SELECT job_id::text
+    FROM public.appf2_agent_job WHERE job_id=$1::uuid
+    AND owner_anonymous_id=$2::uuid AND owner_key_thumbprint=$3::text
+    LIMIT 1`,[freeAiProbeMatch[1],info.anonymous_id,ownerThumb])).rows[0];
+   if(owns?.job_id!==freeAiProbeMatch[1])return denied();
+   let result="NETWORK_FAILURE";
+   try{
+    const response=await fetch("https://api.openai.com/v1/models/gpt-6.1-sol",{
+     method:"GET",headers:{"Authorization":"Bearer "+env.APPF2_FREE_AI_KEY},
+     redirect:"error",signal:AbortSignal.timeout(10000)});
+    result=response.status===200?"WORKER_MODEL_GET_200":
+     response.status===401||response.status===403?"WORKER_MODEL_ACCESS_DENIED":
+     "WORKER_MODEL_GET_HTTP_ERROR";
+   }catch(e){
+    result=e instanceof Error&&(
+     e.name==="TimeoutError"||e.name==="AbortError")?
+     "WORKER_MODEL_GET_TIMEOUT":"WORKER_MODEL_GET_NETWORK_ERROR";
+   }
+   return json(200,{data:{status:result,model:"gpt-6.1-sol",
+    paid_model_posts:0}});
+  }
   if(freeAiMatch){
    if(env.APPF2_AGENT_FREE_ONLY!=="1"||
     env.APPF2_FREE_AI_GENERATION_ENABLED!=="1"||
