@@ -4,6 +4,7 @@
  * An anonymous_id alone is never an authentication credential.
  */
 import {verifyMutationProof} from "./create-proof.js";
+import {routeAgentReadiness} from "./agent-readiness.js";
 import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
 import {applyStoredModelEdit,validApplyModelEditBody} from "./agent-model-apply.js";
 import {executeAgentModelContinuation,validModelContinueBody} from "./agent-model-continue.js";
@@ -152,6 +153,8 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
  const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname);
+ const readiness=routeAgentReadiness(request,url,env);
+ if(readiness!==undefined)return readiness;
  if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
