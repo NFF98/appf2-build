@@ -56,8 +56,11 @@ const agentQaVerifier = process.env.APPF2_AGENT_QA_VERIFIER_SECRET?.trim() || ""
 // Never deploy a binding to a nonexistent Worker just because an API key exists.
 // Both private Workers must first be provisioned through a separately approved
 // cloud deployment. These are staging-only, explicit protected opt-ins.
-const privateServices = agentEnabled &&
-  process.env.APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED === "1";
+// Human cost decision 2026-10-31: never provision paid private Workers
+// even if an old repository secret/variable still requests that opt-in.
+if(process.env.APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED==="1")
+ throw Error("SP35_FREE_ONLY_PAID_PRIVATE_SERVICES_FORBIDDEN");
+const privateServices = false;
 if(privateServices && (agentPrivateToken.length < 32 ||
   !/^(?:OWNER_SCOPED_JOBS|[0-9a-f-]{36})$/i.test(agentJobScope) ||
   agentQaToken.length < 32 || agentQaVerifier.length < 32))
@@ -65,7 +68,7 @@ if(privateServices && (agentPrivateToken.length < 32 ||
 const sandboxEnabled = privateServices && agentModelEnabled;
 const qaEnabled = privateServices && agentModelEnabled;
 console.log("STAGING AGENT: candidate="+(agentEnabled?"ENABLED":"DISABLED")+
-  " model="+(agentModelEnabled?"CONSENT_REQUIRED":"DISABLED")+
+  " model="+(agentModelEnabled?"KEY_PRESENT_BUT_DISABLED_FREE_ONLY":"DISABLED")+
   " private_services="+(privateServices?"CONFIGURED":"NOT_DEPLOYED"));
 const provider = process.env.APPF2_MODEL_PROVIDER?.trim().toLowerCase() || "openai";
 if (!["openai", "xai", "deepseek"].includes(provider)) {
