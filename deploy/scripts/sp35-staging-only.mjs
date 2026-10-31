@@ -36,18 +36,22 @@ if (modelBase && modelBase.protocol !== "https:")
 const model = bootstrapOnly ? null : required("APPF2_MODEL_NAME");
 const token = required("CLOUDFLARE_API_TOKEN");
 const account = required("CLOUDFLARE_ACCOUNT_ID");
-const modelSecret = bootstrapOnly ? null : required("APPF2_MODEL_API_KEY");
+// Authorized FREE-ONLY staging deployment keeps DB/Agent routes without
+// enabling billable AI credentials or any Cloudflare Browser Run entitlement.
+const noNewAi=process.env.APPF2_STAGING_FREE_ONLY_NO_AI==="1";
+const modelSecret = bootstrapOnly ? null :
+ (noNewAi ? "APPF2_SP35_FREE_ONLY_AI_DISABLED" : required("APPF2_MODEL_API_KEY"));
 // Agent uses an independent signed paid-operation permission even if an
 // operator explicitly selects an existing OpenAI staging credential.
 const dedicatedAgentKey = bootstrapOnly ? "" :
  (process.env.APPF2_OPENAI_AGENT_API_KEY?.trim() || "");
-const sharedStagingOpenai = !bootstrapOnly &&
+const sharedStagingOpenai = !bootstrapOnly && !noNewAi &&
  process.env.APPF2_STAGING_AGENT_REUSE_OPENAI_KEY === "1" &&
  (process.env.APPF2_MODEL_PROVIDER?.trim().toLowerCase() || "openai") === "openai";
 const agentKey = dedicatedAgentKey ||
  (sharedStagingOpenai ? modelSecret : "");
 const agentEnabled = !bootstrapOnly;
-const agentModelEnabled = agentEnabled && agentKey.length >= 16 &&
+const agentModelEnabled = !noNewAi && agentEnabled && agentKey.length >= 16 &&
   process.env.APPF2_STAGING_AGENT_MODEL_ENABLED === "1";
 const agentPrivateToken = process.env.APPF2_SANDBOX_BROKER_TOKEN?.trim() || "";
 const agentJobScope = process.env.APPF2_SANDBOX_ALLOWED_JOB_ID?.trim() || "";
@@ -120,7 +124,7 @@ const config = {
     not_found_handling: "single-page-application",
     run_worker_first: ["/api/v1/*", "/b/*"]
   },
-  ...(bootstrapOnly ? {} : {hyperdrive,browser:{binding:"APPF2_QA_BROWSER"}}),
+  ...(bootstrapOnly ? {} : {hyperdrive,...(noNewAi?{}:{browser:{binding:"APPF2_QA_BROWSER"}})}),
   ...(privateServices ? {services:[
     {binding:"APPF2_SANDBOX_BROKER_SERVICE",service:"appf2-sp35-private-sandbox"},
     {binding:"APPF2_QA_BROWSER_SERVICE",service:"appf2-sp35-private-browser-qa"}

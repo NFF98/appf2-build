@@ -1,0 +1,75 @@
+name: Sprint 3.5 one-shot free Staging deploy (NO Containers/AI)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+    paths:
+      - .github/workflows/sp35-free-staging-deploy-once.yml
+permissions:
+  contents: read
+concurrency:
+  group: appf2-sp35-staging-only
+  cancel-in-progress: false
+jobs:
+  deploy-free-staging:
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-FREE-STAGING-DEPLOY-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Reuse existing Staging Hyperdrives, NEVER create billed resources
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_IDENTITY_COOKIE_SECRET: ${{ secrets.APPF2_IDENTITY_COOKIE_SECRET }}
+        run: node deploy/scripts/sp35-free-staging-preflight.mjs
+      - name: Install locked app dependencies
+        run: npm ci
+      - name: Build actual Staging SPA assets
+        run: npm run web:build
+      - name: Deploy FREE-ONLY Worker + Agent read/create/restore + SPA to Staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          APPF2_STAGING_WORKER_NAME: ${{ env.APPF2_STAGING_WORKER_NAME }}
+          APPF2_HYPERDRIVE_FRESH_ID: ${{ env.APPF2_HYPERDRIVE_FRESH_ID }}
+          APPF2_HYPERDRIVE_F02_ADMISSION_ID: ${{ env.APPF2_HYPERDRIVE_F02_ADMISSION_ID }}
+          APPF2_HYPERDRIVE_F07_EVENTS_ID: ${{ env.APPF2_HYPERDRIVE_F07_EVENTS_ID }}
+          APPF2_IDENTITY_COOKIE_SECRET: ${{ env.APPF2_IDENTITY_COOKIE_SECRET }}
+          APPF2_MODEL_PROVIDER: openai
+          APPF2_MODEL_BASE_URL: https://api.openai.com/v1
+          APPF2_MODEL_NAME: gpt-4.1
+          APPF2_STAGING_FREE_ONLY_NO_AI: '1'
+          APPF2_STAGING_AGENT_MODEL_ENABLED: '0'
+          APPF2_STAGING_AGENT_REUSE_OPENAI_KEY: '0'
+          APPF2_STAGING_AGENT_PRIVATE_SERVICES_ENABLED: '0'
+          APPF2_STAGING_XAI_ON_429: '0'
+          APPF2_MODEL_FALLBACK_PROVIDER: ''
+          APPF2_STAGING_BOOTSTRAP_ONLY: '0'
+        run: node deploy/scripts/sp35-staging-only.mjs
+      - name: LIVE Staging SPA + Worker first-hop (no model)
+        run: node deploy/scripts/sp35-staging-smoke.mjs
+      - name: LIVE Staging new Agent route, free-only cost guard
+        run: |
+          node --input-type=module <<'JS'
+          const base=process.env.APPF2_STAGING_URL;
+          if(!/^https:\/\/appf2-sp35-417-staging\.[a-z0-9-]+\.workers\.dev$/iu.test(base||""))
+            throw Error("FREE_DEPLOY_UNSAFE_ORIGIN");
+          const response=await fetch(base+"/api/v1/agent-readiness",{
+            method:"GET",signal:AbortSignal.timeout(15000)});
+          const json=await response.json().catch(()=>null);
+          if(response.status!==200||json?.data?.execution_mode!=="FREE_CI_NOT_CONNECTED"||
+             json.data.can_start_paid_generation!==false)
+            throw Error("FREE_DEPLOY_AGENT_ROUTE_MISSING_OR_PAID_NOT_BLOCKED_HTTP_"+response.status);
+          console.log("SP35 LIVE NEW AGENT ROUTE PASS: GET readiness HTTP200, FREE_CI_NOT_CONNECTED; all paid Agent execution disabled");
+          JS
+      - name: LIVE PostgreSQL signed Agent Create + Read (no AI)
+        run: node deploy/scripts/sp35-live-agent-db-smoke.mjs
+      - name: Final status, zero new AI/Container/Browser usage
+        run: |
+          echo "SP35 FREE STAGING DEPLOY: Worker+SPA+Agent+PG route checked; NO paid AI, Browser Run, Cloudflare Containers or Production deploy"
+          echo "SP35 FIVE-CORE PRODUCT REAL E2E: NOT_COMPLETE"
