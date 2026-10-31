@@ -12,7 +12,9 @@ function snapshot(status:string,completed_steps:number):CandidateSnapshot{
   checkpoint:{step:3,completed_call_ids:[],
    budget:{max_steps:16,max_cost_cents:60,max_tokens:8000}}
  };
- return {job,progress:null,message:"Persisted",completed_steps};
+ return {job,progress:{revision:job.revision,remaining_steps:10,
+  can_resume:false,resume_model_call_key:null,next_action:"VERIFY_INDEPENDENT_QA",
+  qa_attempt_state:"NOT_RUN",calls:[]},message:"Persisted",completed_steps};
 }
 function fixture(firstSteps:number,passed:boolean,afterQa="REPAIRING"){
  const calls={advances:0,qa:0,repairs:0,limits:[] as number[]};
@@ -47,6 +49,28 @@ describe("Sprint 3.5 single-click authorized Agent → real QA → one repair",(
   const x=await advanceWithApprovedQaRepair(agent,options,false,()=>{},()=>false);
   expect(x.qa).toBeNull();
   expect(calls).toMatchObject({advances:1,qa:0,repairs:0});
+ });
+ it("never dispatches a second paid QA after a saved receipt or uncertain call",async()=>{
+  for(const state of ["RESULT_RECORDED","IN_FLIGHT","BLOCKED_UNCERTAIN"] as const){
+   const {agent,calls}=fixture(0,true,"TESTING");
+   const original=agent.advance;
+   agent.advance=async(o,progress,stop,limit)=>{
+    const first=await original(o,progress,stop,limit);
+    return {...first,progress:{...first.progress!,qa_attempt_state:state}};
+   };
+   const result=await advanceWithApprovedQaRepair(agent,options,true,()=>{},()=>false);
+   expect(result.qa).toBeNull();
+   expect(result.repairStarted).toBe(false);
+   expect(calls).toMatchObject({advances:1,qa:0,repairs:0});
+   expect(result.snapshot.message).toMatch(/QA/u);
+  }
+ });
+ it("does not invent not-run when recovery metadata is unavailable",async()=>{
+  const {agent,calls}=fixture(0,true,"TESTING");
+  agent.advance=async()=>({...snapshot("TESTING",0),progress:null});
+  const result=await advanceWithApprovedQaRepair(agent,options,true,()=>{},()=>false);
+  expect(result.qa).toBeNull();
+  expect(calls.qa).toBe(0);
  });
  it("passes through QA once without AI repair when the requirements pass",async()=>{
   const {agent,calls}=fixture(4,true,"TESTING");
