@@ -8,6 +8,7 @@ import {claimModelCall,type ModelCallRow} from
  "../platform/agent/postgres-model-calls.js";
 import {validFreeCiGitHubToken} from "./free-ci-dispatch.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
+// eslint-disable-next-line max-params -- immutable DB, owner and one-shot Github trust boundaries.
 export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
  projectHash:string,request:unknown,token:string,ticketSecret:string,
  nowMs:number):Promise<void>{
