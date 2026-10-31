@@ -29,3 +29,5 @@ jobs:
         run: node deploy/scripts/sp35-one-paid-ai-real-e2e.mjs
 
 # Authorized single-call AI E2E rerun after pre-request syntax repair.
+
+# Bounded one-call recheck using official strict OpenAI Responses JSON schema; no automatic retry.
