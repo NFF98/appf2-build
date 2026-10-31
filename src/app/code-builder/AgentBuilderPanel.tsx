@@ -236,6 +236,10 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  };
  const frozenPlan=savedCandidateTarget()?.qaPlan;
  const qaAttemptState=snapshot?.progress?.qa_attempt_state;
+ // Prefer evidence bound to the current signed DB project over in-tab results.
+ // Neither a saved PASS check nor its digest grants publication authority.
+ const visibleQaChecks=snapshot?.progress?.qa_observed_checks?.length?
+  snapshot.progress.qa_observed_checks:qaChecks;
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
   <p className="saved-apps-note">真正的多檔案程式專案；AI 可以編寫、保存、要求隔離建置與修復。
@@ -317,9 +321,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   {snapshot?.job.status==="TESTING"&&!frozenPlan?
    <p className="saved-apps-note">此專案未在開發前鎖定 QA 驗收計畫；不能事後補測試並宣稱已通過獨立 QA。</p>:null}
   {qaOutcome?<p role="status">{qaOutcome}</p>:null}
-  {qaChecks.length>0?<section aria-label="QA 逐項結果">
-   <h3>QA 逐項結果</h3>
-   <ul>{qaChecks.map(c=><li key={c.criterion_id}>
+  {visibleQaChecks.length>0?<section aria-label="QA 逐項結果">
+   <h3>已保存的 QA 逐項操作結果</h3>
+   <p className="saved-apps-note">以下為目前專案的瀏覽器操作觀察，
+    不是最終產品發布 PASS。FAIL／UNTESTED 必須修復後再次驗收。</p>
+   <ul>{visibleQaChecks.map(c=><li key={c.criterion_id}>
     {frozenPlan?.criteria.find(x=>x.id===c.criterion_id)?.description??c.criterion_id}
     ：{c.verdict}
    </li>)}</ul>
