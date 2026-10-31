@@ -1,5 +1,5 @@
 import {describe,it,expect,afterEach,vi} from "vitest";
-import {mayResumeSavedModel,savedBrowserQaAttemptState}
+import {mayResumeSavedModel,savedBrowserQaAttemptState,savedQaObservedChecks}
  from "../../src/edge/agent-progress.js";
 import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget,
  paidAgentReconciliationRequired}
@@ -171,5 +171,34 @@ describe("Sprint 3.5 real browser paid model reconciliation after interrupted jo
   expect(paidAgentReconciliationRequired({
    next_action:"SIGN_NEXT_SEQUENCE",calls:[call("CURRENT_MODEL_READY")]}))
    .toBe(false);
+ });
+});
+
+describe("Sprint 3.5 saved Browser QA checks are real read-only progress",()=>{
+ const good={status:"SUCCEEDED",receipt_json:{
+  ready_for_review:false,packet:null,checks:[{
+   criterion_id:"score_changes",category:"BROWSER",verdict:"FAIL",evidence_hash:null},{
+   criterion_id:"button_click",category:"BROWSER",verdict:"PASS",
+   evidence_hash:"sha256:"+"a".repeat(64)}]}};
+ it("rehydrates failed and passed browser observations without another QA",()=>{
+  expect(savedQaObservedChecks(good)).toEqual([
+   {criterion_id:"score_changes",verdict:"FAIL",evidence_hash:null},
+   {criterion_id:"button_click",verdict:"PASS",evidence_hash:"sha256:"+"a".repeat(64)}
+  ]);
+ });
+ it("refuses unverifiable observations, malformed hashes or invented result IDs",()=>{
+  expect(savedQaObservedChecks(undefined)).toEqual([]);
+  expect(savedQaObservedChecks({...good,status:"IN_FLIGHT"})).toEqual([]);
+  expect(savedQaObservedChecks({...good,receipt_json:{
+   ...good.receipt_json,checks:[{criterion_id:"score_changes",
+    category:"BROWSER",verdict:"PASS",evidence_hash:null}]}})).toEqual([]);
+  expect(savedQaObservedChecks({...good,receipt_json:{
+   ...good.receipt_json,checks:[{criterion_id:"score_changes",
+    category:"BROWSER",verdict:"FAIL",evidence_hash:null},{
+    criterion_id:"score_changes",category:"BROWSER",verdict:"FAIL",evidence_hash:null}]}}))
+   .toEqual([]);
+  expect(savedQaObservedChecks({...good,receipt_json:{
+   ...good.receipt_json,checks:[{criterion_id:"<img>",
+    category:"BROWSER",verdict:"FAIL",evidence_hash:null}]}})).toEqual([]);
  });
 });
