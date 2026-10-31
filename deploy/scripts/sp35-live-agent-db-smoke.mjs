@@ -69,8 +69,13 @@ if(saved.status!==200||job?.job_id!==jobId||job.status!=="CREATED"||
 const probe=await stamp("/api/v1/agent-jobs/"+jobId+"/free-ai-probe",
  {anonymous_id:owner});
 const classification=probe.data?.data?.status;
+const cryptoStatus=probe.data?.data?.ticket_crypto_status;
 if(probe.status!==200||typeof classification!=="string")
  throw Error("SP35_GPT6_WORKER_EGRESS_PROBE_HTTP_"+probe.status);
+if(cryptoStatus!=="CRYPTO_READY")
+ throw Error("SP35_AI_RUNNER_TICKET_WORKER_CRYPTO_NOT_PROVEN");
+console.log("SP35 GPT6 WORKER TICKET CRYPTO: "+cryptoStatus+
+ " (owner-scoped AES-GCM, NO model or Github dispatch)");
 console.log("SP35 GPT6 WORKER EGRESS: "+classification+
  " (signed original creator, fixed GET model info, NO Responses POST)");
 if(classification!=="WORKER_MODEL_GET_200"){
