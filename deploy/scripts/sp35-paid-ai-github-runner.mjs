@@ -35,7 +35,7 @@ async function oidc(){
  if(!endpoint||grant.length<20)throw Error("AI_RUNNER_OIDC_NOT_AVAILABLE");
  endpoint.searchParams.set("audience",audience);
  const r=await fetch(endpoint,{headers:{"Authorization":"Bearer "+grant},
-  signal:AbortSignal.timeout(15000)});
+  signal:globalThis.AbortSignal.timeout(15000)});
  const data=await r.json().catch(()=>null);
  if(r.status!==200||typeof data?.value!=="string")
   throw Error("AI_RUNNER_OIDC_ISSUE_FAILED");
@@ -45,7 +45,7 @@ async function worker(path,body,limit=25000){
  const r=await fetch(origin+path,{method:"POST",redirect:"error",
   headers:{"Authorization":"Bearer "+await oidc(),
    "Content-Type":"application/json"},
-  body:JSON.stringify({...body,ticket}),signal:AbortSignal.timeout(limit)});
+  body:JSON.stringify({...body,ticket}),signal:globalThis.AbortSignal.timeout(limit)});
  const data=await r.json().catch(()=>null);
  if(r.status!==200||!data?.data)
   throw Error("AI_RUNNER_PRIVATE_ACK_FAILED_HTTP_"+r.status);
@@ -82,7 +82,7 @@ try{
   method:"POST",headers:{"Authorization":"Bearer "+apiKey,
    "Content-Type":"application/json"},
   body:JSON.stringify(request),redirect:"error",
-  signal:AbortSignal.timeout(28000)});
+  signal:globalThis.AbortSignal.timeout(28000)});
  if(r.status!==200)throw Error("AI_RUNNER_PROVIDER_HTTP_"+r.status);
  first=await r.json().catch(()=>null);
 }catch(e){
@@ -107,7 +107,7 @@ for(let attempt=0;attempt<85;attempt++){
  const r=await fetch("https://api.openai.com/v1/responses/"+
   encodeURIComponent(id),{method:"GET",redirect:"error",
   headers:{"Authorization":"Bearer "+apiKey},
-  signal:AbortSignal.timeout(18000)});
+  signal:globalThis.AbortSignal.timeout(18000)});
  if(r.status!==200)throw Error("AI_RUNNER_PROVIDER_GET_HTTP_"+r.status);
  response=await r.json().catch(()=>null);
 }
