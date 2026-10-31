@@ -261,6 +261,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   * Chromium frozen-case observations → immutable private App; one optional
   * explicitly authorized repair, then optional owner-approved publication.
   */
+ // eslint-disable-next-line complexity, max-depth -- Durable CI receipt polling, bounded repair, and fail-closed publishing require explicit branches.
  const startFreeAi=async()=>{
   if(busy||!aiConsent||!containerConsent||!browserQaConsent||!freeCiConsent||
    approvedCents<44)return;
