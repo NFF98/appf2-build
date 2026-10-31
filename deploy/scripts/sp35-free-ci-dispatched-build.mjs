@@ -86,14 +86,14 @@ async function artifactHash(root){
 async function freeBuiltPreview(root,projectHash,digest){
  const index=await fs.readFile(path.join(root,"index.html"),"utf8");
  const scripts=[...index.matchAll(
-  /<script\\b[^>]*\\bsrc="\\/(assets\\/[A-Za-z0-9_.-]+\\.js)"[^>]*><\\/script>/gu)];
+  /<script\b[^>]*\bsrc="\/(assets\/[A-Za-z0-9_.-]+\.js)"[^>]*><\/script>/gu)];
  const styles=[...index.matchAll(
-  /<link\\b[^>]*\\bhref="\\/(assets\\/[A-Za-z0-9_.-]+\\.css)"[^>]*>/gu)];
+  /<link\b[^>]*\bhref="\/(assets\/[A-Za-z0-9_.-]+\.css)"[^>]*>/gu)];
  if(scripts.length!==1||styles.length>3)
   throw Error("FREE_CI_PREVIEW_UNSUPPORTED_VITE_ASSETS");
  const js=await fs.readFile(path.join(root,scripts[0][1]),"utf8");
  const css=(await Promise.all(styles.map(match=>
-  fs.readFile(path.join(root,match[1]),"utf8")))).join("\\n");
+  fs.readFile(path.join(root,match[1]),"utf8")))).join("\n");
  const preview={project_hash:projectHash,artifact_hash:digest,
   index_html:index,javascript:js,css};
  if(new TextEncoder().encode(JSON.stringify(preview)).length>400000)

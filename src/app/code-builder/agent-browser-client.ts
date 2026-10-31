@@ -380,6 +380,22 @@ export class BrowserCodingAgent {
   saveTarget(this.target);
   return plan;
  }
+ /** Reopen the exact free-Runner-built private Vite bundle stored in DB.
+  * This fetches immutable bytes only, with fresh original-owner P-256 PoP.
+  * No model call, Docker rebuild, Containers charge or public grant.
+  */
+ async freeCiPreview():Promise<PreviewSource>{
+  const job=await this.read();
+  if(!job.free_ci||job.free_ci.app_published!==false)
+   throw Error("此版本尚無免費 Docker 可操作建置成果。");
+  const result=await this.post<PreviewSource&{app_published:false}>(
+   "/free-ci-preview",{anonymous_id:this.owner,
+    expected_project_hash:job.project_hash});
+  if(result.project_hash!==job.project_hash||
+   result.app_published!==false)
+   throw Error("免費 Docker 私人預覽版本不符，停止讀取。");
+  return result;
+ }
  /** Read already built assets using the original creator PoP. This may wake
   * the private container, so it requires a fresh explicit click consent.
   * No AI, build, test, or publication occurs here.

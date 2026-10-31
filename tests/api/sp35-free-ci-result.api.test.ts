@@ -54,5 +54,7 @@ describe("SP35 free GitHub OIDC result returns to original private Job",()=>{
   expect(script).toContain('process.env.GITHUB_EVENT_PATH');
   expect(script).not.toContain('process.env.APPF2_FREE_CI_TICKET');
   expect(script).toContain('const ticket=event.inputs.ticket');
+  expect(script).toContain('"/api/v1/internal/free-ci/preview"');
+  expect(script).toContain('FREE_CI_PRIVATE_PREVIEW_NOT_DURABLE');
  });
 });

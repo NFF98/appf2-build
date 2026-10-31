@@ -239,6 +239,21 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){previewHost.current?.replaceChildren();setError(failureMessage(e));}
   finally{setBusy(false);}
  };
+ const openFreeCiPreview=async()=>{
+  if(busy)return;
+  setBusy(true);setError("");setPreviewReady(false);
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())
+    throw Error("找不到原專案建立者的簽章金鑰。");
+   const source=await worker.freeCiPreview();
+   const frame=await createPrivatePreviewFrame(source,document);
+   previewHost.current?.replaceChildren(frame);
+   setPreviewReady(true);
+  }catch(e){previewHost.current?.replaceChildren();setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const downloadSource=async()=>{
   if(busy||!saved)return;
   setBusy(true);setError("");
@@ -419,15 +434,23 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     ：{c.verdict}
    </li>)}</ul>
   </section>:null}
-  {snapshot&&["TESTING","REPAIRING"].includes(snapshot.job.status)?
+  {snapshot&&(["TESTING","REPAIRING"].includes(snapshot.job.status)||
+   Boolean(snapshot.job.free_ci))?
    <section aria-label="私人多檔案 App 互動預覽">
+    {snapshot.job.free_ci?
+     <button type="button" className="btn btn-primary" disabled={busy}
+      onClick={()=>{void openFreeCiPreview();}}>
+      開啟已保存的免費 Docker App（私人、零 AI、可操作）
+     </button>:null}
+    {["TESTING","REPAIRING"].includes(snapshot.job.status)?
     <button type="button" className="btn btn-secondary"
      disabled={busy||!containerConsent}
      onClick={()=>{void openPrivatePreview();}}>
      開啟已建置 App 互動預覽（需雲端存取授權）
-    </button>
+    </button>:null}
     <p className="saved-apps-note">只顯示已通過隔離建置與測試的私人候選 App；
-     預覽可能喚醒 Cloudflare 容器，但不會重新呼叫 AI、編譯或發布。
+     免費 Docker 已保存的建置產物可直接從 PostgreSQL 開啟，不需容器；
+     另一個舊版雲端建置預覽可能喚醒 Cloudflare 容器，但不會重新呼叫 AI、編譯或發布。
      瀏覽器以隔離、禁止網路的 iframe 執行，不能讀取 APPf2 帳戶。
      此預覽不代表獨立 QA PASS。</p>
     {previewReady?<p role="status">正在顯示已保存建置成果；尚未正式發布。</p>:null}
