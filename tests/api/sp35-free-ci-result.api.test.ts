@@ -1,7 +1,9 @@
 import {describe,it,expect} from "vitest";
 import {readFileSync} from "node:fs";
-import {persistFreeCiSmoke,validFreeCiSmoke,readFreeCiSmoke}
+import {persistFreeCiSmoke,validFreeCiSmoke,validFreeCiBuildFailure,
+ readFreeCiSmoke,frozenFreeCiPlanHash}
  from "../../src/edge/free-ci-result.js";
+import {parseQaPlan} from "../../src/platform/qa/requirement-contract.js";
 import type {AgentJobExecutor} from "../../src/platform/agent/postgres-agent-jobs.js";
 const hash="sha256:"+"a".repeat(64);
 const artifact="sha256:"+"b".repeat(64);
@@ -47,6 +49,37 @@ describe("SP35 free GitHub OIDC result returns to original private Job",()=>{
   await expect(persistFreeCiSmoke(db,{...scope,projectHash:artifact},
    report)).rejects.toThrow("INVALID");
   await expect(persistFreeCiSmoke(db,scope,report)).rejects.toThrow("CONFLICT");
+ });
+ it("durably records authenticated build failures WITHOUT a fake QA PASS or preview",async()=>{
+  const prompt="請做一個有按鈕可以按開始並顯示完成文字的 App";
+  const plan=parseQaPlan({version:"1",criteria:[{
+   id:"start",source_quote:"按鈕",description:"按開始後顯示完成",
+   steps:[{action:"click",role:"button",name:"開始"}],
+   assertions:[{kind:"text_appears",text:"完成"}],automatable:true
+  }]},prompt);
+  expect(plan).not.toBeNull();
+  if(!plan)throw Error("TEST_FROZEN_PLAN_INVALID");
+  const failure={version:"APPF2_FREE_CI_BUILD_FAILURE_V1" as const,
+   project_hash:hash,artifact_hash:artifact,
+   failure_stage:"BUILD" as const,diagnostic_code:"FREE_CI_BUILD_FAILED" as const,
+   diagnostic_excerpt:"src/main.ts:17: missing closing brace",
+   qa_plan_hash:await frozenFreeCiPlanHash(plan)};
+  expect(validFreeCiBuildFailure(failure)).toBe(true);
+  expect(validFreeCiSmoke(failure)).toBe(false);
+  expect(validFreeCiBuildFailure({...failure,qa_checks:[{verdict:"PASS"}]})).toBe(false);
+  expect(validFreeCiBuildFailure({...failure,
+   diagnostic_code:"FREE_CI_CHROMIUM_RENDER_FAILED"})).toBe(false);
+  const db=new Db();
+  expect(await persistFreeCiSmoke(db,scope,failure,plan)).toBe("RECORDED");
+  expect(await persistFreeCiSmoke(db,scope,failure,plan)).toBe("REPLAYED");
+  const saved=await readFreeCiSmoke(db,job,owner,hash);
+  expect(saved).toMatchObject({status:"BUILD_FAILED",preview_ready:false,
+   diagnostic_excerpt:failure.diagnostic_excerpt,app_published:false});
+  expect(saved).not.toHaveProperty("qa_checks");
+  await expect(persistFreeCiSmoke(new Db(),scope,{...failure,
+   qa_plan_hash:artifact},plan)).rejects.toThrow("INVALID");
+  const previewCode=readFileSync("src/edge/free-ci-preview.ts","utf8");
+  expect(previewCode).toContain("r.receipt_json->>'version'='APPF2_FREE_CI_SMOKE_V1'");
  });
  it("runner performs independent OIDC callback, not just a console PASS",()=>{
   const script=readFileSync("deploy/scripts/sp35-free-ci-dispatched-build.mjs","utf8");
