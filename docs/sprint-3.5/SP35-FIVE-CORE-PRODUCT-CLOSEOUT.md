@@ -189,6 +189,19 @@
 - **下一個必須外部授權的動作**：在 `NFF98/appf2-build` Repo Actions Secrets 配置僅針對該 Repo、具 Actions:write 權限的有效 fine-grained PAT（不要在聊天或程式碼提供值）。現有 GitHub 應用連接不支援建立 Repo Secret，不能替使用者虛構、竊取或暴露憑證。配置後用已存在的 Staging deploy workflow 重新部署，再用真正已保存且 revision ≥ 2 的創作者 P-256 Job 驗證 `/free-ci-dispatch` → `workflow_dispatch` → GitHub OIDC → PG 原始碼 → network-denied Docker → Chromium。同一條鏈未見真成功前第 2 項仍 **NOT_VERIFIED**。
 - **產品範圍**：現時 Staging Free-only 仍阻擋付費新 Agent AI 生成，沒有啟用新模型呼叫；C1–C5 完整自然語言產品端到端維持 **0/5**。本輪未合併、未發布 Production。
 
+## F.11 2026-10-31 最新產品證據 — 先前 F.6–F.10 障礙已有解除（優先閱讀本節）
+
+**注意：F.6–F.10 為當時歷史截面，其中「GitHub Token 未設定」、「FREE_CI_NOT_CONNECTED 才安全」、「免費 Docker 尚未派發」均已過期，禁止重當目前阻斷。**
+
+- **實際 Staging Agent + 真 PG Job：PASS**。免費部署 [#41184306043](https://github.com/NFF98/appf2-build/actions/runs/41184306043) SUCCESS，原始建立者 P-256 簽章保存／重開 Job，無付費 AI／Cloudflare Containers。
+- **第 2 項免費派發：PASS（測試建立者手動提供的多檔案程式，不是 AI 產出）**。GitHub Actions Token 已由 Human 安全設定，實際 Worker `workflow_dispatch` HTTP204，GitHub-hosted OIDC 精確驗證，再以禁網路 Docker 建置、Chromium 操作；私人 [Runner #41182117441](https://github.com/NFF98/appf2-build/actions/runs/41182117441) 與 [#41183983219](https://github.com/NFF98/appf2-build/actions/runs/41183983219) SUCCESS。
+- **第 3 項同 Job/版本 QA：PASS（測試程式）**。Runner 依開發前凍結的計畫點擊 `dice_button`，觀察 PASS／證據 SHA，透過 OIDC + AES 票券回寫原 PostgreSQL Job。未知／未測需求不能聲稱通過正式 QA；不會自動發布。
+- **第 4 項私人建置成果保存／零 AI 重開：PASS**。Staging [#41184306043](https://github.com/NFF98/appf2-build/actions/runs/41184306043) SUCCESS，原 Job 以 P-256 連續讀回兩次相同已建置資產；資料庫查驗已保存 2 份私人 App bundle。這**不是** Blueprint v2 正式公開發布／分享，亦不是 AI 生成通過。私人 asset 表有 RLS；匿名角色無直接 SELECT。
+- **本輪產品 UX 修復**：PR #419 提交 `def8412d5bbc3b30c384df68ad9c62560e29c22b`，將真有 GitHub 派發憑證的免費模式從誤報 `FREE_CI_NOT_CONNECTED` 改成 `FREE_CI_READY / CONFIGURED_NOT_VERIFIED`，**同時** `can_start_paid_generation=false`；`c74fc7d1e8f097e597f7ee5040f5c8568f30a403` 讓原建立者點擊私人 App 卡片直接零 AI 開啟已保存的 verified bundle。這些新 UX 改動需以後續完成的新版 Staging CI 作最終確認。
+- **真實產品尚未解決的功能**：Staging `APPF2_AGENT_FREE_ONLY=1`，故模型生成和修復**刻意不執行**。缺「原始自然語言→真 AI 多檔案程式→原需求完整 QA 自動修復→Blueprint v2 F02 admission→正式公開卡片與分享」，亦缺生成的真 backend/DB CRUD。不能聲稱 5 項產品驗收全面 100%，但不能把已通過的免費派發／收據／私人保存當作 0%。
+- **誠實計分**：四項基礎通道：部署 PASS；免費 CI 派發 PASS（固定輸入）；私有 QA receipt PASS（固定輸入）；私人重開 PASS。完整 AI 自主端到端單一鏈 **0/1（NOT_VERIFIED）**，不是「所有四項工程 0/4」。只在真 AI 生成、完整 QA、正式分享皆通過**同一真 Job**後改為 PASS。
+- **硬限制不變**：僅 PR #419，不合併／Production，不新增費用或付費 Cloudflare Containers/Browser Run，不編造 AI 成果；若要真 AI 實測，須有明確的既有零新增費用供應或 Human 新授權，不能自行呼叫付費 API。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
