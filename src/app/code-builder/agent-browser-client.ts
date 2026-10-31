@@ -248,6 +248,8 @@ type Envelope<T>={data:T};
 export class AgentHttpFailure extends Error{
  constructor(readonly status:number,readonly code:string){
   super(status===404?"多檔案 Agent 服務尚未在這個網站啟用。":
+   status===503&&code.startsWith("SP35_PAID_MODEL_")?
+    "GPT-6 執行結果尚不確定；已停止以避免重複計費。診斷代碼："+code:
    status===503?"服務暫時無法處理；已停止，不會重複付費。":
     "Agent API "+status+"："+code);
  }
