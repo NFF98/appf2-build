@@ -286,7 +286,10 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      "真 AI 多檔案已保存並派發免費 Docker，正在等候真實 Browser QA。":
      "AI 程式已保存，但 GitHub 派發尚未證實；可手動重新派發。",
     completed_steps:0});
+   if(created.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
+    throw Error("免費 Docker 派發未獲確認；已保存程式，停止等待，不會重送付費 AI。");
    let repaired=false;
+   let receiptSeen=false;
    for(let i=0;i<45&&!stop.current;i++){
     await new Promise<void>(resolve=>window.setTimeout(resolve,8000));
     current=await worker.read();
@@ -294,9 +297,27 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      message:"正在讀取原 Job 的真正 Docker／Chromium 收據，不重新呼叫模型。",
      completed_steps:0});
     if(!current.free_ci)continue;
+    receiptSeen=true;
     const checks=current.free_ci.qa_checks??[];
-    if(!current.free_ci.preview_ready)continue;
     setQaChecks(checks);
+    // Build failure can have a signed QA receipt but no runnable preview.
+    // Evaluate its failure BEFORE requiring preview_ready, or repair never runs.
+    if(checks.some(c=>c.verdict==="FAIL")){
+     if(autoRepairConsent&&!repaired){
+      repaired=true;receiptSeen=false;
+      setQaOutcome("Docker／Browser QA 找到 FAIL；依已核准上限修復一次，保存原 Job。");
+      const repair=await worker.freeAiStage("REPAIR");
+      if(repair.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
+       throw Error("修復原始碼已保存，但免費 Docker 再派發未確認；停止等待。");
+      continue;
+     }
+     setQaOutcome("建置或瀏覽器 QA 失敗；已保留證據，不發布 App。");
+     break;
+    }
+    if(!current.free_ci.preview_ready){
+     setQaOutcome("已收到建置收據，但沒有可驗證的預覽；不發布 App。");
+     break;
+    }
     if(checks.length>0&&checks.every(c=>c.verdict==="PASS")){
      setQaOutcome("原需求逐條 Browser QA PASS；App 已保存，可零 AI 重用。");
      if(publicShareConsent){
@@ -305,15 +326,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      }
      break;
     }
-    if(autoRepairConsent&&!repaired&&checks.some(c=>c.verdict==="FAIL")){
-     repaired=true;
-     setQaOutcome("Browser QA 找到 FAIL；依本次 16 美分上限授權修復一次，原 Job 仍保留。");
-     await worker.freeAiStage("REPAIR");
-     continue;
-    }
-    setQaOutcome("瀏覽器 QA 有 FAIL／UNTESTED；未發布，原 Job 保留可接續修復。");
+    setQaOutcome("瀏覽器 QA 有 UNTESTED／缺漏；未發布，原 Job 保留。");
     break;
    }
+   if(!stop.current&&!receiptSeen)
+    setQaOutcome("尚未收到可驗證的 Docker／Browser QA 收據；工作保留，不自動重送 AI。");
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
