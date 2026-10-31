@@ -6,7 +6,7 @@
 import {DurableObject,WorkflowEntrypoint} from "cloudflare:workers";
 import {sandboxJobAllowed} from "../../src/platform/agent/private-sandbox-authorization.js";
 import {validBuiltAssetRequest,builtAssetContentType,MAX_BUILT_ASSET_BYTES,
- viteCompiledAssetPaths,splitBuiltAsset,assembleBuiltAsset,
+ viteCompiledAssetPaths,splitBuiltAsset,assembleBuiltAsset,MAX_BUILT_CACHE_FILES,
  type BuiltAssetRequest} from "../../src/platform/agent/private-built-artifact.js";
 import type {WorkflowStep,WorkflowEvent} from "cloudflare:workers";
 import {Files} from "@cloudflare/sandbox";
@@ -118,7 +118,7 @@ export class SandboxJob extends DurableObject<Env>{
   let bytes:Uint8Array;
   if(manifest?.project_hash===project&&manifest.build_call_id===callId){
    const count=manifest.segments?.[query.path];
-   if(!Number.isSafeInteger(count)||count<1||count>32)
+   if(typeof count!=="number"||!Number.isSafeInteger(count)||count<1||count>32)
     return new Response("Not Found",{status:404});
    const chunks=await Promise.all(Array.from({length:count},(_,i)=>
     this.ctx.storage.get<Uint8Array>(builtCacheKey(query.path,i))));
@@ -141,6 +141,33 @@ export class SandboxJob extends DurableObject<Env>{
    headers:{"Content-Type":builtAssetContentType(query.path),
     "Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}
   });
+ }
+ /** A saved run_build may precede run_test by hours/days. A restarted
+  * container has no dist directory: restore the exact hashed compiled bytes
+  * from SQLite, never rebuild or trust model-supplied test fixtures.
+  */
+ private async restoreCompiledAssets(task:Task,dir:string,
+  containerWasRunning:boolean):Promise<void>{
+  const manifest=await this.ctx.storage.get<BuiltCacheManifest>(BUILT_CACHE_MANIFEST);
+  if(!manifest||manifest.project_hash!==task.project.project_hash){
+   if(containerWasRunning)return; // Pre-cache legacy build, still in memory.
+   throw Error("SANDBOX_SAVED_BUILD_NOT_AVAILABLE");
+  }
+  const paths=Object.keys(manifest.segments);
+  if(paths.length<2||paths.length>MAX_BUILT_CACHE_FILES||
+   !paths.includes("index.html"))throw Error("SANDBOX_SAVED_BUILD_INVALID");
+  await this.files.mkdir(dir+"/dist",{recursive:true});
+  for(const path of paths){
+   const response=await this.readBuiltAsset({
+    job_id:task.job_id,project_hash:task.project.project_hash,
+    build_call_id:manifest.build_call_id,path
+   });
+   if(response.status!==200)throw Error("SANDBOX_SAVED_BUILD_ASSET_MISSING");
+   if(path.startsWith("assets/"))
+    await this.files.mkdir(dir+"/dist/assets",{recursive:true});
+   await this.files.writeFile(dir+"/dist/"+path,
+    new Uint8Array(await response.arrayBuffer()));
+  }
  }
  // eslint-disable-next-line complexity -- Strict checkpoint + immutable file checks before execution.
  async runTask(task:Task):Promise<Receipt>{
@@ -170,6 +197,7 @@ export class SandboxJob extends DurableObject<Env>{
    await this.ctx.storage.delete("verified_build_project_hash");
    await this.ctx.storage.delete("verified_build_call_id");
   }
+  const containerWasRunning=Boolean(this.ctx.container?.running);
   await this.ready();
   const dir=sandboxWorkspaceRoot(task.job_id,task.project);
   if(task.call.name==="run_build"){
@@ -202,6 +230,8 @@ export class SandboxJob extends DurableObject<Env>{
    if(linking.exitCode!==0||linking.timedOut)
     throw Error("SANDBOX_PINNED_DEPENDENCIES_MISSING");
   }
+  if(task.call.name==="run_test"&&task.project.profile==="VITE_WEB")
+   await this.restoreCompiledAssets(task,dir,containerWasRunning);
   const proc=await container.exec(command,{cwd:dir,timeout:MAX_RUNTIME_MS});
   let result:Receipt;
   try{
