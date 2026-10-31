@@ -49,6 +49,46 @@ try{
  await first.context.close();
  const second=await fresh();
  await second.context.close();
+ // New AI-generated, owner-signed, fully QA-passing public card from
+ // the actual 2026-11-01 GPT-6→GitHub→Docker→Chromium customer Job.
+ // Explicit publication already created this ID. GET-only proof MUST NOT
+ // regenerate, republish, replay model phases or use any customer key.
+ const generatedId="1f19887e-7029-40f1-b445-660cd3aff40f";
+ const published=await fetch(origin+"/api/v1/code-apps/"+generatedId,{
+  method:"GET"});
+ const card=await published.json().catch(()=>null);
+ if(published.status!==200||card?.data?.share_id!==generatedId)
+  throw Error("SP35_NEW_AI_PUBLIC_CARD_NOT_READABLE");
+ const newCardFresh=async()=>{
+  const clean=await browser.newContext({serviceWorkers:"block",
+   acceptDownloads:false});
+  await clean.route("**/*",route=>{
+   const req=route.request();
+   if(req.method()!=="GET"||!req.url().startsWith(origin+"/")){
+    forbidden++;return route.abort();
+   }
+   return route.continue();
+  });
+  try{
+   const view=await clean.newPage();
+   await view.goto(origin+"/code/"+generatedId,{
+    waitUntil:"domcontentloaded",timeout:25000});
+   const frame=view.frameLocator('iframe[sandbox="allow-scripts"]');
+   const button=frame.getByRole("button",{name:"加一",exact:true});
+   await button.waitFor({state:"visible",timeout:20000});
+   await frame.getByText("計數：0",{exact:false}).waitFor({
+    state:"visible",timeout:10000});
+   await button.click();
+   await frame.getByText("計數：1",{exact:false}).waitFor({
+    state:"visible",timeout:10000});
+  }finally{await clean.close();}
+ };
+ await newCardFresh();
+ await newCardFresh();
+ console.log("SP35 LIVE AI-GENERATED NEW PUBLIC APP PASS: "+
+  "original GPT-6 QA+CODE, original 3/3 Chromium QA, "+
+  "public PostgreSQL card GET, 2 new independent browsers click, "+
+  "ZERO model POST/retry, ID="+generatedId);
  if(forbidden>0)throw Error("FREE_REUSE_ATTEMPTED_MUTATION:"+forbidden);
  console.log("SP35 FREE LIVE STAGING LEGACY CODE CARD PASS: "+
   "2 FRESH CHROMIUM CONTEXTS, CLICK+RELOAD, NO MODEL/DB WRITE, ID="+chosen.share_id);
