@@ -226,3 +226,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] final free-only verification: original Agent job and Docker must PASS independently; Worker GPT-6 egress remains fail-closed and never billed.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] verify OIDC-only GPT-6 GitHub Runner request/result routes, RLS and existing free Docker (no paid model POST).
+
+# SP35 2026-11-01: verify true Worker AES Runner ticket roundtrip and corrected GitHub private-paid-ai build with deliberately invalid ticket; zero model use.
