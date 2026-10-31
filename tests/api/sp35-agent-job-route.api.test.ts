@@ -1737,8 +1737,14 @@ describe("Sprint 3.5 owner-signed one-shot private Cloudflare Browser QA",()=>{
   });
   expect(dispatches).toBe(1);
   expect(db.qaAttempts.get(JOB_ID+":"+original.project_hash)?.status).toBe("SUCCEEDED");
-  expect((await worker(await signed(creator,path,body,
-   "qa_run_repeat123456"),qaEnv)).status).toBe(503);
+  // A verified persisted PASS can be read again without a second browser
+  // dispatch or granting publication. The independent receipt is unchanged.
+  const savedReplay=await worker(await signed(creator,path,body,
+   "qa_run_repeat123456"),qaEnv);
+  expect(savedReplay.status).toBe(200);
+  expect(await savedReplay.json()).toMatchObject({data:{
+   ready_for_review:true,publication_authorized:false,app_published:false,
+   failures:[]}});
   expect(dispatches).toBe(1);
   expect(db.jobs.get(JOB_ID)?.job_state).toBe("TESTING");
  });
