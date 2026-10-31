@@ -297,8 +297,6 @@ try{
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
  await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  if(!(await primary.isEnabled()))throw Error("AGENT_CONSENT_UI_BROKEN");
  await primary.click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
@@ -327,7 +325,7 @@ try{
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
  if(qaFreezeCount!==1||autoPlanCount!==1||planCount!==1||stepCount!==1||proofCount<9)
@@ -341,7 +339,7 @@ try{
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
  if(renewCount!==1||qaFreezeCount!==1||autoPlanCount!==1||planCount!==1||stepCount!==1)
@@ -354,7 +352,7 @@ try{
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · TESTING").waitFor({timeout:15000});
  const preview=page.getByRole("button",{
@@ -422,7 +420,7 @@ try{
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
+ // Resuming signed work must not auto-start QA without fresh separate consent.
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · REPAIRING").waitFor({timeout:15000});
  await page.getByRole("button",{
@@ -437,8 +435,6 @@ try{
  job.status="REPAIRING";job.revision++;autoQaPending=true;
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
- await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
- await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
  await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();

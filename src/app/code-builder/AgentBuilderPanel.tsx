@@ -133,7 +133,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  };
  // eslint-disable-next-line complexity -- Explicit one-click AI, browser QA and repair require separate consent gates.
  const execute=async(resume:boolean)=>{
-  if(busy||!aiConsent||!containerConsent||!browserQaConsent)return;
+  if(busy||!aiConsent||!containerConsent||(!resume&&!browserQaConsent))return;
   // Never carry one project's QA or preview into a new immutable snapshot.
   setQaChecks([]);setQaOutcome("");setPreviewReady(false);
   previewHost.current?.replaceChildren();
@@ -350,7 +350,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    {busy?"正在執行並保存 Agent 工作…":"建立新多檔案 App 專案"}
   </button>
   {saved?<button type="button" className="btn btn-secondary"
-    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent}
+    disabled={busy||!aiConsent||!containerConsent}
     onClick={()=>{void execute(true);}}>繼續上次保存的 Agent 工作</button>:null}
   {saved?<button type="button" className="btn btn-secondary"
     disabled={busy} onClick={()=>{void refreshSavedProgress();}}>
