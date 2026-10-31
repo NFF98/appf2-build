@@ -222,7 +222,9 @@
 - **第一次真網站付費 E2E FAIL（已定位）**：[run #41195413739](https://github.com/NFF98/appf2-build/actions/runs/41195413739) 在原網站建立 Creator Job 成功，`/free-ai-stage` HTTP503；Postgres `reserve_agent_model_call` 拒絕模型白名單，當次 Job 無 `appf2_agent_model_call` 紀錄，沒證據顯示 API 已發送或扣費。依原計畫加上 GPT-6 來源碼與模型 SQL。
 - **第二次真網站付費 E2E FAIL（已定位）**：[run #41196540308](https://github.com/NFF98/appf2-build/actions/runs/41196540308) 原網站再次建立 44 美分上限的 Creator Job，但 `/free-ai-stage` HTTP503；Supabase `postgres_logs` 同時間 SQLSTATE `42501`，根因 `appf2_agent_model_call` 缺 `FOR INSERT` 的原建立者 RLS Policy；該 Job revision0 / CREATED、model call rows=0。這不是 GPT-6 已呼叫或生成 App 的證據。
 - **已完成的最低權限修復**：Build [`9368faaa`](https://github.com/NFF98/appf2-build/commit/9368faaa532a8a12e1487c4446a0a61e92c55bf3) 在既有 Supabase Staging 專案實際 `apply_migration SUCCESS`，只允許 `appf2_worker` 的 owner-bound `INSERT`，保留資料表 RLS、owner `app.anonymous_id`、Job 外鍵、單次呼叫防重／預算限制。讀回 `pg_policies` 已驗證此 Rule 存在。Build `425e9f31` 在**原測試檔** `tests/api/sp35-paid-model-journal.api.test.ts` 新增 RLS/模型一致性回歸測試，避免再只修 SQL 而忘記安全權限。
-- **修後真網站驗收進行中（不預宣稱 PASS）**：[單次核准 Staging GPT-6 原網頁 E2E #41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) 按原有 `sp35-real-customer-website-once.yml` 在原分支啟動。此流程由真 Chromium 輸入需求，單一明確同意操作與原 Job ≤44 美分預算、QA／CODE／最多一次 REPAIR、原 PG 保存、免費 Actions Docker、原需求逐項 Chromium QA，再經原建立者同意 Publish。**只有完成且同一 Job 證據驗證才可更新 PASS；沒有自動重試付費請求。**
+- **第三次 GPT-6 真網站 E2E — FAIL_CLOSED（禁止同 Job 重試）**：[run #41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) 真 Staging Chromium 建立 44 美分上限 Job 成功；Supabase 模型 Journal 首次以 `gpt-6.1-sol` 成功保留 `sp35_free_ai_qa_v1`，證明前次 SQLSTATE 42501 已解除。但最終 `/free-ai-stage` HTTP503，Journal `BLOCKED_UNCERTAIN`、`response_json=NULL`、`output_tokens=NULL`，Job 仍 revision0/CREATED，GitHub Action **FAILURE**。這不是 GPT-6 已成功生成，也不能聲稱本次沒有計費；未知結果不得重試原 Job。
+- **下一個已實作產品修復（尚未部署驗證）**：`0958b6eb` 在 `free-ci-ai-code.ts` 區分固定無敏感資料的 provider rate limit/rejected/server/incomplete/failed、網路／逾時、回應格式、資料庫成果保存等失敗類別；`ab71ba2c` 在建立者已簽章 API 安全回傳代碼、`baf20673` 讓網站保留「不重複扣費」警告並顯示可追查的類別。不暴露模型回覆、提示詞、Token、SQL 明細，且 `BLOCKED_UNCERTAIN` 繼續 fail closed。**此修復只是診斷可見化，不冒稱真正 AI 發布 PASS。**
+- **費用保護**：第三次 Provider 請求結果不明，實際是否收費只能依 OpenAI Billing 核對。此後沒有再觸發付費模型測試。
 - **實際覆蓋與五核分母**：目前有的「3/5（60%）」說法只代表部分獨立**基礎通道**有 PASS 證據，不代表下列五個完整原始產品驗收 Gate 之中的 3 項已合格。按本文件 A/D 節嚴格標準，**C1–C5 全鏈完整通過 = 0/5（NOT_VERIFIED）**，不能因既有 Docker SUCCESS 直接報成產品 100%。
 
 | 五核 Gate | 2026-10-31 本節最新可證實狀態 | 尚缺真產品證據 |
@@ -233,7 +235,7 @@
 | C4 原需求 QA／自動修復 | **PARTIAL / NOT_VERIFIED**：凍結 QA 與免費 Runner fixture 有 PASS，AI 修復程式存在 | 真 GPT-6 QA FAIL→修復→重建→完整獨立 QA PASS |
 | C5 有限重試／策略／費用 | **PARTIAL / NOT_VERIFIED**：原 Job 預算、不可重送、權限約束有程式和 API Test | 失敗根因改方案、同 Job 續作及越權拒絕、完整真網站反向測試 |
 
-**下一個唯一行動**：讀 #41197580604 的實際 GitHub / PostgreSQL 模型日誌；若已成功才繼續查同 Job 後續 Docker/QA/Share；若失敗只修該最早 Hop。不得改寫歷史 PASS，也不可因 legacy 治理工作流 FAIL 直接報產品失敗；治理問題另列。
+**下一個唯一行動**：先驗證新診斷分類補丁免費 CI、部署至既有 Staging，根據安全結果分類或帳務／可回收的 Provider Response ID 找第一個失敗 Hop；不可重送已 `BLOCKED_UNCERTAIN` 的 Job。之後才依證據繼續同 Job Docker/QA/v2 分享和受控 generated backend/DB CRUD。
 
 ## G. 執行交接（只寫已證實事實）
 
@@ -242,7 +244,7 @@
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 已更新免費路線於 `a9651594baf79753a05b1f608466cbc93a316c51`；Build PR #419 本檔 |
 | D0 | **DONE — 真 Staging 第一雲端阻斷已定位** | F.2 / run #41167547686：Health UP，Agent Readiness HTTP 404，private Sandbox / Browser QA Workers NOT_LISTED，Cloudflare plan 403 UNKNOWN；不重做已成功的原程式 |
 | D1 | **PARTIAL — 新 Agent Staging + 保密 Job→免費 Runner→PG 收據已實際 PASS** | F.11–F.13 / #41196371312、#41196844121；舊 `FREE_CI_NOT_CONNECTED`／未部署說法已過期；仍須 GPT-6 真站鏈驗證 |
-| D2 | **IN_PROGRESS — 兩個真網站 pre-provider BLOCK 已定位，模型+RLS Staging 修復已套用** | F.13 / #41195413739、#41196540308；Build `9368faaa` 的原建立者 RLS 已驗證；新 GPT-6 v2 分享與受控後端 DB Profile 仍未完整驗收 |
-| D3 | **RUNNING / NOT_PASSED** | F.13 / [#41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) 真 GPT-6 網站單次驗收已派發；完整 C1–C5 仍 **0/5 full-gate PASS**，不得冒稱 100% |
+| D2 | **IN_PROGRESS — pre-provider SQL/RLS 已解除，第三次 GPT-6 QA 呼叫結果不明** | F.13 / #41197580604：模型保留成功，最終 `BLOCKED_UNCERTAIN`，尚無已保存回應；只改安全分類診斷，不重試收費 |
+| D3 | **FAIL_CLOSED / NOT_PASSED** | [#41197580604](https://github.com/NFF98/appf2-build/actions/runs/41197580604) HTTP503、GPT-6 QA outcome UNKNOWN，未產生新 App 分享；C1–C5 完整產品 Gate **0/5 PASS**，保留先前免費測試的 PASS 證據 |
 
 **跨對話唯一口令：**「繼續 `SP35-FIVE-CORE-PRODUCT-CLOSEOUT` 的下一個未完成 D 關卡；先讀此檔 F/G 節與 PR #419 HEAD，只修首個真實 BLOCK，每次結尾報 C1–C5 的產品狀態與證據。」
