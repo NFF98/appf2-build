@@ -30,8 +30,11 @@ export type AgentProgress={
  readonly next_action:"SIGN_NEXT_SEQUENCE"|"AWAIT_MODEL_RECONCILIATION"|
   "VERIFY_INDEPENDENT_QA"|"BUDGET_RENEWAL_REQUIRED"|"CONTINUE_SAVED_TOOL_RESULT"|
   "NO_PROVEN_PENDING_MODEL"|
-  "RECONCILE_AMBIGUOUS_HEAD"|"OWNER_APPROVED_QA_REPAIR_REQUIRED";
+  "RECONCILE_AMBIGUOUS_HEAD"|"OWNER_APPROVED_QA_REPAIR_REQUIRED"|
+  "REVIEW_SAVED_QA_EVIDENCE"|"AWAIT_QA_RECONCILIATION";
  readonly scope:"SUBMITTED_KEYS_ONLY"|"RECENT_EIGHT_STORED_CALLS";
+ /** Read-only receipt state, NOT a pass certificate or permission to publish. */
+ readonly qa_attempt_state:"NOT_RUN"|"IN_FLIGHT"|"BLOCKED_UNCERTAIN"|"RESULT_RECORDED";
  readonly app_published:false;
 };
 const KEY=/^[A-Za-z0-9_-]{8,80}$/u;
@@ -56,6 +59,27 @@ export function mayResumeSavedModel(states:readonly ProgressState[],
   !states.some(x=>x==="MODEL_PENDING"||x==="MODEL_UNCERTAIN")&&
   states.filter(x=>x==="CURRENT_MODEL_READY").length===1&&
   !["READY","FAILED","AWAITING_CONSENT"].includes(jobState);
+}
+type SavedBrowserQaAttempt={readonly status:string;readonly receipt_json:unknown};
+/** A saved receipt is only evidence of a completed QA dispatch, not a
+ * cryptographically reviewed PASS. Never authorize publication from it.
+ */
+export function savedBrowserQaAttemptState(row:SavedBrowserQaAttempt|undefined):
+ AgentProgress["qa_attempt_state"]{
+ if(!row)return "NOT_RUN";
+ if(row.status==="IN_FLIGHT")return "IN_FLIGHT";
+ if(row.status!=="SUCCEEDED")return "BLOCKED_UNCERTAIN";
+ const data=row.receipt_json;
+ if(typeof data!=="object"||data===null||Array.isArray(data))
+  return "BLOCKED_UNCERTAIN";
+ const value=data as Record<string,unknown>;
+ if(typeof value.ready_for_review!=="boolean"||
+  (value.ready_for_review&&
+   (typeof value.packet!=="object"||value.packet===null||
+    Array.isArray(value.packet)))||
+  (!value.ready_for_review&&value.packet!==null))
+  return "BLOCKED_UNCERTAIN";
+ return "RESULT_RECORDED";
 }
 function state(key:string,kind:ProgressState,rev:number|null=null,
  tool:string|null=null,responseId:string|null=null):CallProgress{
@@ -128,24 +152,27 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  // the separate, journaled QA-repair model call. Query only the immutable
  // owner-scoped QA receipt; no user-supplied verdict is trusted.
  let failedIndependentQa=false;
- if(current.job.job_state==="REPAIRING"){
-  const receipts=(await deps.db.query<{status:string;receipt_json:unknown}>(
+ let qaAttemptState:AgentProgress["qa_attempt_state"]="NOT_RUN";
+ if(["TESTING","REPAIRING"].includes(current.job.job_state)){
+  const receipts=(await deps.db.query<SavedBrowserQaAttempt>(
    "SELECT status,receipt_json FROM public.appf2_agent_browser_qa_attempt "+
    "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
    "AND project_hash=$3::text LIMIT 1",
    [deps.jobId,deps.owner,current.project.project_hash])).rows;
   if(receipts.length>1)throw Error("AGENT_QA_PROGRESS_AMBIGUOUS");
   const qaReceipt=receipts[0];
-  if(qaReceipt?.status==="BLOCKED_UNCERTAIN"||
-   qaReceipt?.status==="IN_FLIGHT")
-   throw Error("AGENT_QA_PROGRESS_UNCERTAIN");
-  if(qaReceipt?.status==="SUCCEEDED"){
-   const data=qaReceipt.receipt_json;
-   if(typeof data!=="object"||data===null||Array.isArray(data)||
-    (data as Record<string,unknown>).ready_for_review!==false||
-    (data as Record<string,unknown>).packet!==null)
-    throw Error("AGENT_QA_PROGRESS_RECEIPT_INVALID");
-   failedIndependentQa=true;
+  qaAttemptState=savedBrowserQaAttemptState(qaReceipt);
+  if(current.job.job_state==="REPAIRING"){
+   if(qaAttemptState==="IN_FLIGHT"||
+    qaAttemptState==="BLOCKED_UNCERTAIN")
+    throw Error("AGENT_QA_PROGRESS_UNCERTAIN");
+   if(qaReceipt?.status==="SUCCEEDED"){
+    const data=qaReceipt.receipt_json as Record<string,unknown>;
+    if(qaAttemptState!=="RESULT_RECORDED"||
+     data.ready_for_review!==false||data.packet!==null)
+     throw Error("AGENT_QA_PROGRESS_RECEIPT_INVALID");
+    failedIndependentQa=true;
+   }
   }
  }
  const active=rows.filter(x=>x.state==="CURRENT_MODEL_READY");
@@ -166,7 +193,11 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
  const next_action:AgentProgress["next_action"]=uncertain||pending?
   "AWAIT_MODEL_RECONCILIATION":active.length>1||last.length>1?
    "RECONCILE_AMBIGUOUS_HEAD":failedIndependentQa&&active.length===0?
-   "OWNER_APPROVED_QA_REPAIR_REQUIRED":qa?
+   "OWNER_APPROVED_QA_REPAIR_REQUIRED":
+   current.job.job_state==="TESTING"&&qaAttemptState==="RESULT_RECORDED"?
+    "REVIEW_SAVED_QA_EVIDENCE":
+   current.job.job_state==="TESTING"&&qaAttemptState!=="NOT_RUN"?
+    "AWAIT_QA_RECONCILIATION":qa?
     "VERIFY_INDEPENDENT_QA":remaining===0&&(active.length===1||last.length===1)?
      "BUDGET_RENEWAL_REQUIRED":can_resume?
       "SIGN_NEXT_SEQUENCE":eligible?
@@ -179,5 +210,6 @@ export async function inspectAgentProgress(input:AgentProgressInput,deps:{
   can_continue_saved_tool_result:eligible,
   resume_previous_model_call_key:eligible?last[0].model_call_key:null,
   next_action,scope:input.model_call_keys===undefined?
-   "RECENT_EIGHT_STORED_CALLS":"SUBMITTED_KEYS_ONLY",app_published:false};
+   "RECENT_EIGHT_STORED_CALLS":"SUBMITTED_KEYS_ONLY",
+  qa_attempt_state:qaAttemptState,app_published:false};
 }
