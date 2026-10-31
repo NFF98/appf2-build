@@ -73,7 +73,9 @@ export async function publishVerifiedPrivateApp(input:PublishOwnerAppBody,ctx:{
  const evidence=receipt?.receipt_json as {qa_checks?:unknown;qa_plan_hash?:unknown;
   original_requirements_qa?:unknown;app_published?:unknown}|null;
  const checks=evidence?.qa_checks;
- if(!receipt||!plan||!evidence||!validQaChecks(checks)||
+ if(!receipt||!plan||!evidence||
+  (evidence as {version?:unknown}).version!=="APPF2_FREE_CI_SMOKE_V1"||
+  !validQaChecks(checks)||
   evidence.qa_plan_hash!==await frozenFreeCiPlanHash(plan)||
   checks.length!==plan.criteria.length||
   !plan.criteria.every((c,i)=>c.automatable&&
