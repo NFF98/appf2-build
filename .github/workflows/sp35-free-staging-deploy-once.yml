@@ -29,6 +29,8 @@ jobs:
         run: node deploy/scripts/sp35-free-staging-preflight.mjs
       - name: Install locked app dependencies
         run: npm ci
+      - name: Install existing pinned Worker dependency for bundle ONLY (no Browser Run)
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
       - name: Build actual Staging SPA assets
         run: npm run web:build
       - name: Deploy FREE-ONLY Worker + Agent read/create/restore + SPA to Staging
