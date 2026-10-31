@@ -298,7 +298,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
   <p className="saved-apps-note">真正的多檔案程式專案；AI 可以編寫、保存、要求隔離建置與修復。
-   免費替代方案使用 GitHub Actions 隔離 Docker＋Chromium 驗收（需把新作品流程接入）；
+   Staging 已接通免費 GitHub Actions Docker＋Chromium 安全派發程式與結果儲存；
    尚未接通之前，不會假裝已產生可操作 App。功能是否能操作需獨立驗證；目前生成的是私人候選原始碼，<strong>尚未自動發布成可用 App</strong>。</p>
   {catalog.length>0?<section aria-label="已保存的 Agent 專案">
    <h3>已保存的多檔案 App 專案（此瀏覽器）</h3>
@@ -351,7 +351,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
       agent.current=worker;
       await worker.restore();
       await worker.dispatchFreeCiBuild(freeCiConsent);
-      setFreeCiStatus("已要求免費 Runner 接收保存的專案；完成證據須以真實 Actions 日誌確認。");
+      const job=await worker.read();
+      setSnapshot({job,progress:null,
+       message:"免費 Docker 已請求排程；重新查詢會從 PostgreSQL 讀取真實建置收據。",
+       completed_steps:0});
+      setFreeCiStatus("已提交安全免費 Runner 排程；尚未收到真實結果，請用「查詢已保存的產品進度」更新。");
      }catch(e){setError(failureMessage(e));}
      finally{setBusy(false);}
     })();}}>
@@ -363,8 +367,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    value={approvedCents} disabled={busy}
    onChange={e=>setApprovedCents(Number(e.target.value))}/>
   <p className="saved-apps-note">每按一次開發加修復總計最多六個 Agent 步驟，另可依授權做一次獨立 QA；費用仍受伺服器總預算限制。
-   免費 Runner 的安全 Job 傳輸還沒接到新版 Agent；沒有真實 FREE_CI_READY 不啟動付費生成，
-   不會自動部署、不會把模擬測試標成真實 QA PASS。</p>
+   免費 Runner 已具備 GitHub 授權與程式接線，但真 AI 成果的自動派發仍待端到端證據。
+   Staging 不啟動付費生成、不自動部署、不會把基本 Chromium 畫面檢查標成 QA PASS。</p>
   <button type="button" className="btn btn-primary"
    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
     prompt.trim().length<5||
@@ -460,6 +464,21 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    <p>{snapshot.message}</p>
    <p>版本 {snapshot.job.revision} · 本次處理 {snapshot.completed_steps} 步
     · {snapshot.job.files.length} 個檔案 · 尚未發布</p>
+   {snapshot.job.free_ci?
+    <section aria-label="原工作免費 Docker 建置收據" role="status">
+     <h4>免費 Docker／Chromium 建置收據（已儲存 PostgreSQL）</h4>
+     <p>來源版本：{snapshot.job.project_hash.slice(0,19)}… ·
+      建置產物：{snapshot.job.free_ci.artifact_hash.slice(0,19)}…</p>
+     <p>已完成禁網路 Docker 建置及基本 Chromium 頁面檢查；
+      <strong>不是原始需求 QA 通過，也不是正式 App 卡片或分享</strong>。</p>
+     {/^[0-9]{6,20}$/u.test(snapshot.job.free_ci.run_id)?
+      <a href={"https://github.com/NFF98/appf2-build/actions/runs/"+
+       snapshot.job.free_ci.run_id} target="_blank" rel="noopener noreferrer">
+       查看 GitHub Actions #{snapshot.job.free_ci.run_id} 真實執行紀錄
+      </a>:null}
+    </section>:
+    <p className="saved-apps-note">此版本尚無已保存的免費 Docker／Chromium 收據；
+     可能未派發、仍在執行，或建置失敗。不要把排程當作完成。</p>}
    {snapshot.job.checkpoint?
     <p>累計步數 {snapshot.job.checkpoint.step}/
      {snapshot.job.checkpoint.budget.max_steps}

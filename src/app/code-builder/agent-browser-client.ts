@@ -43,7 +43,11 @@ export function enoughAgentStepsForContinuation(remaining:number):boolean{
 }
 export type CandidateFile={readonly path:string;readonly content:string;
  readonly hash?:string;readonly bytes?:number};
+export type SavedFreeCiSmoke={readonly status:"BUILD_BROWSER_SMOKE";readonly run_id:string;
+ readonly artifact_hash:string;readonly original_requirements_qa:false;
+ readonly app_published:false};
 export type CandidateJob={readonly job_id:string;readonly revision:number;
+ readonly free_ci?:SavedFreeCiSmoke|null;
  readonly project_hash:string;readonly status:string;
  readonly files:readonly CandidateFile[];
  readonly checkpoint:{readonly step:number;
