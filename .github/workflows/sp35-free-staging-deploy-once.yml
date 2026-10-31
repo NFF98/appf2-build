@@ -156,3 +156,5 @@ jobs:
 
 # SP35 2026-10-31 free-only Staging redeploy of c683acc-verified signed build-failure repair path.
 # No paid model invocation, no Cloudflare Containers, no Production deployment.
+
+# SP35 2026-10-31 redeploy latest verified frozen-QA UI gating and saved-preview flow; no paid AI calls, no Production.
