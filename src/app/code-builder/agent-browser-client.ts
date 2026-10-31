@@ -59,6 +59,7 @@ type Progress={readonly revision:number;readonly remaining_steps:number;
  readonly qa_attempt_state?:"NOT_RUN"|"IN_FLIGHT"|"BLOCKED_UNCERTAIN"|"RESULT_RECORDED";
  readonly qa_observed_checks?:readonly {criterion_id:string;
   verdict:"PASS"|"FAIL"|"UNTESTED";evidence_hash:string|null}[];
+ readonly proven_preview_pair?:{build_call_id:string;test_call_id:string}|null;
  readonly calls:readonly {model_call_key:string;state:string;
   tool:string|null;call_id?:string|null;requires_container_consent:boolean}[]};
 /** Progress exposes normalized MODEL_UNCERTAIN / MODEL_PENDING, not the
@@ -97,6 +98,23 @@ export function provenPreviewBuildAndTest(completed:readonly string[],
  return build&&build!==test&&completed.indexOf(build)>=0&&
   completed.indexOf(build)<completed.lastIndexOf(test)?
   {build,test}:null;
+}
+/** Modern Worker returns full-checkpoint signed provenance, so never fall
+ * back to guessed neighboring IDs when that authoritative field is null.
+ * Older fixture/API schemas may still derive IDs, which the Worker rejects
+ * unless its own Sandbox build/test receipts are independently proven.
+ */
+export function savedPreviewPair(progress:Progress,
+ completed:readonly string[]):{build:string;test:string}|null{
+ const pair=progress.proven_preview_pair;
+ if(pair!==undefined){
+  if(!pair||completed.at(-1)!==pair.test_call_id||
+   completed.indexOf(pair.build_call_id)<0||
+   completed.indexOf(pair.build_call_id)>=completed.lastIndexOf(pair.test_call_id))
+   return null;
+  return {build:pair.build_call_id,test:pair.test_call_id};
+ }
+ return provenPreviewBuildAndTest(completed,progress.calls);
 }
 type Step={readonly status:string;readonly action:string;readonly revision:number};
 export type CandidateSnapshot={readonly job:CandidateJob;readonly progress:Progress|null;
@@ -353,7 +371,7 @@ export class BrowserCodingAgent {
   if(!["TESTING","REPAIRING"].includes(job.status)||ids.length<2)
    throw Error("目前沒有通過隔離建置與測試的 App 可預覽。");
   const recorded=await this.progress();
-  const pair=provenPreviewBuildAndTest(ids,recorded.calls);
+  const pair=savedPreviewPair(recorded,ids);
   if(!pair)throw Error("找不到已證明的建置與測試結果。");
   const {build,test}=pair;
   const get=async(path:string)=>{
@@ -388,7 +406,7 @@ export class BrowserCodingAgent {
   if(job.status!=="TESTING"||!Array.isArray(completed)||completed.length<2)
    throw Error("必須先有已保存的隔離建置與測試，才能啟動獨立 QA。");
   const recorded=await this.progress();
-  const pair=provenPreviewBuildAndTest(completed,recorded.calls);
+  const pair=savedPreviewPair(recorded,completed);
   if(!pair)throw Error("找不到已保存且順序正確的建置與測試證據。");
   return this.post<{status:string;ready_for_review:boolean;checks:readonly {
    criterion_id:string;verdict:string}[];app_published:false}>("/qa-run",{
