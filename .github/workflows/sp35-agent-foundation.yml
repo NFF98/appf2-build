@@ -27,6 +27,10 @@ jobs:
         run: |
           npm run check:types
           npm run check:lint
+      - name: Verify real staging Agent deployment and signed DB smoke scripts (NO deploy)
+        run: |
+          node --check deploy/scripts/sp35-staging-only.mjs
+          node --check deploy/scripts/sp35-live-agent-db-smoke.mjs
       - name: Compile platform
         run: npm run build
       - name: API tests (no paid AI)
