@@ -248,6 +248,8 @@ type Envelope<T>={data:T};
 export class AgentHttpFailure extends Error{
  constructor(readonly status:number,readonly code:string){
   super(status===404?"多檔案 Agent 服務尚未在這個網站啟用。":
+   status===503&&code.startsWith("SP35_AI_RUNNER_DISPATCH_UNCONFIRMED_")?
+    "GitHub GPT-6 模型工作派發結果尚未確認。原 Job 已保存，禁止重複派發或付費。診斷："+code:
    status===503&&code==="SP35_WORKER_MODEL_EGRESS_BLOCKED_NO_CHARGE"?
     "Staging Worker 尚無法連至 GPT-6；已在新付費模型呼叫前停止，沒有重送原工作。":
    status===503&&code.startsWith("SP35_PAID_MODEL_")?
