@@ -67,14 +67,29 @@
 - 計畫每輪原位更新本檔 **F. 執行交接紀錄**，寫入真實 GitHub SHA、測試 URL／request、成本和唯一首要 BLOCK；不把假定進度當證據，不重問人類已提供的需求。
 - 原 user 指示「五項改造完成到產品」優先於舊 16P 治理繞圈；但安全隔離、資料權限、顯式付費同意與真實驗收不可省。
 
-## F. 執行交接紀錄（只寫已證實事實）
+## F. 三日成果保全基線（2026-10-28～31，**不得歸零或重寫**）
+
+本節是已提交程式與實際測試的「已做工作清單」，**不是 C1–C5 全部產品驗收 PASS**。跨對話／下一輪必須先讀這裡與現行 GitHub HEAD，再只補未接上的產品能力，不能重新造五項引擎。
+
+| 日期／已做成果 | 現存程式／驗證（保留利用） | 真實產品邊界 |
+| --- | --- | --- |
+| **10/28 舊單檔 Code Builder 真 Staging** | [run 40661201647 SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/40661201647)，Staging Worker + PostgreSQL + Browser；logs 確認 `CODE BUILDER REAL STAGING PASS`、公開 LifePilot／Moving 卡片開啟互動／刷新／直連無重生；一個 notes 線上模型生成 QA／公開驗證通過。這條舊單檔產品鏈不能拆掉。 | 這不是「多檔案 AI → Cloud Container → 完整後端／DB → 新 v2 卡片」整鏈成功。 |
+| **10/29 多檔案 AI Agent 基礎** | PR #419 已有 `src/platform/agent/project-workspace.ts`、`durable-agent-service.ts`、`postgres-project-snapshots.ts`、`journaled-model-gateway.ts`、`src/edge/agent-model-*.ts`、`agent-sandbox-run.ts` 等。含 PoP 簽名、檔案雜湊／CAS、工具調用、付費 at-most-once 收據、預算接續、編譯錯誤續作。[run 40874813214 SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/40874813214)。 | 此為已開發程式和 free/offline 反覆驗證，**當時付費 Cloud E2E 跳過**。 |
+| **10/30–31 真實測試／QA 基礎** | PR #419 已有 Cloudflare private Sandbox/Browser Worker 定義、獨立 QA plan／review／run、QA 失敗後模型修復、progress／preview、`src/app/code-builder/AgentBuilderPanel.tsx`。 [run 41163976209 SUCCESS](https://github.com/NFF98/appf2-build/actions/runs/41163976209) 的實際日志包括 network-denied Docker Vite + Chromium、signed independent QA，以及 Agent Browser-wire mock E2E。 | 官方日志明示 `NO AI, NO CLOUD SANDBOX` 或 `MOCK QA/MODEL`；不得稱五核 Cloud E2E PASS。 |
+| **仍未接完** | 新 Agent `src/edge/agent-qa-review.ts` 回 `app_published:false`，多檔案候選與舊 `/code/:id` 的分享／重開鏈分離；受控生成後端／DB 尚缺；Cloudflare subscription readonly 查詢 403／部署可用性未證實。 | 這是**在保留全部前三天成果的前提下**要處理的 B01–B07，不是從零重做。 |
+
+**實際下一步**：先查「哪一段已能在真 Staging 使用」，沿用 10/28 成功的單檔 F05／卡片、10/29–31 新 Agent Journal／Sandbox／QA 程式，**只接新多檔案→可信建置/QA→v2 分享卡片與受控後端**。未找到第一個 live 故障 Hop 前，不修改五項核心的正常部分。
+
+**口徑更正**：以前交接把 D0–D2 全標 `NOT_RUN` 造成「三天歸零」誤解。D0–D3 只指**這份收尾計畫尚未完成的專項驗收**，不代表 10/28–31 的功能、Git commit、Staging 真實歷史、測試都沒有完成。另需在每次交接同時報「已存在的工程資產」及「剩餘產品驗收」。
+
+## G. 執行交接紀錄（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
 | --- | --- | --- |
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 更新於 `6ed57015d340b1863da5ecb5d586b28263b012d0`；Build PR #419 本檔 |
-| D0 | NOT_RUN（待 live read-only Root Cause Sheet） | 先定位 Staging 最早故障；已知 Cloudflare subscriptions READ HTTP 403／能力未知 |
-| D1 | NOT_RUN | 不能把 foundation CI / cloud dry-run 當作 real Sandbox |
-| D2 | NOT_RUN | Agent QA→v2 admission→F05 卡片仍未實測完整；後端 DB Profile 尚缺 |
+| D0 | **PARTIAL**（已盤點 GitHub/10-28～31 程式與測試；live First-Hop 仍待查） | **不重做已 PASS 的單檔 Staging 與 offline foundation**；下一步只確認新 Agent 的真 Cloud first failing hop，已知 Cloudflare subscription READ HTTP 403 |
+| D1 | **FOUNDATION CODE IMPLEMENTED；CLOUD E2E NOT_VERIFIED** | 沿用既有 Agent/Journal/Sandbox/QA；只補真實部署連線／必要錯誤；已 PASS 的 offline foundation 不再重做 |
+| D2 | **舊單檔卡片 STAGING PASS；新多檔案完整鏈 NOT_VERIFIED** | 沿用既有公開卡片／F05，接新 Agent QA→v2 admission→卡片；生成後端 DB Profile 尚缺 |
 | D3 | NOT_RUN | 五核產品 REAL E2E = **NOT_VERIFIED** |
 
-**跨對話唯一口令：**「繼續 `SP35-FIVE-CORE-PRODUCT-CLOSEOUT` 的下一個未完成 D 關卡；先讀此檔 F 節與 PR #419 HEAD，只修首個真實 BLOCK，每次結尾報 C1–C5 的產品狀態與證據。」
+**跨對話唯一口令：**「繼續 `SP35-FIVE-CORE-PRODUCT-CLOSEOUT` 的下一個未完成 D 關卡；先讀此檔 F/G 節與 PR #419 HEAD，只修首個真實 BLOCK，每次結尾報 C1–C5 的產品狀態與證據。」
