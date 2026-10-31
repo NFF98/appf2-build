@@ -135,7 +135,7 @@ describe("Sprint 3.5 private GPT-6 GitHub Runner scope, never a provider call",(
   expect(workflow).toContain("id-token: write");
   expect(script).toContain("AI_RUNNER_TRUST_BOUNDARY");
   expect(script).toContain("AI_RUNNER_RESPONSE_ID_NOT_DURABLE");
-  expect(script).toContain("ONE paid model POST");
+  expect(script).toContain("Exactly one HTTPS model POST");
   expect(script).not.toContain("console.log(request");
   expect(script).not.toContain("console.log(response");
  });
