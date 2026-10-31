@@ -142,8 +142,17 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    if(agent.current!==null){
     try{
      const job=await agent.current.read();
-     setSnapshot({job,progress:null,
-      message:"已保留資料庫專案。若呼叫結果不明，請先查詢再繼續。",completed_steps:0});
+     // A read-only signed progress lookup can recover the durable head,
+     // but NEVER retries an uncertain paid AI, container or QA request.
+     const progress=await agent.current.progress().catch(()=>null);
+     const needsReconciliation=progress!==null&&
+      (paidAgentReconciliationRequired(progress)||
+       progress.qa_attempt_state==="BLOCKED_UNCERTAIN"||
+       progress.qa_attempt_state==="IN_FLIGHT");
+     setSnapshot({job,progress,completed_steps:0,
+      message:needsReconciliation?
+       "已保存工作，付費執行結果仍不明；停止重試，等待查核。":
+       "已保留資料庫專案；只讀取實際進度，沒有再次呼叫付費服務。"});
     }catch{ /* Creator proof or service may be unavailable. */ }
    }
   }finally{setBusy(false);}
