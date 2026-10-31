@@ -131,6 +131,14 @@ try{
     try{
      await target.goto(origin,{waitUntil:"load",timeout:15000});
      const before=await target.locator("body").innerText();
+     const selectorBefore=new Map();
+     for(const assertion of criterion.assertions){
+      if(assertion.kind==="text_changes"){
+       const loc=target.locator(assertion.selector);
+       if(await loc.count()!==1)throw Error("QA_PREVIOUS_SELECTOR_AMBIGUOUS");
+       selectorBefore.set(assertion.selector,await loc.innerText());
+      }
+     }
      for(const step of criterion.steps){
       const loc=target.getByRole(step.role,{name:step.name,exact:true});
       if(await loc.count()!==1)throw Error("QA_TARGET_MISSING_OR_AMBIGUOUS");
@@ -145,8 +153,9 @@ try{
       else if(assertion.kind==="text_appears")
        ok&&=!before.includes(assertion.text)&&after.includes(assertion.text);
       else if(assertion.kind==="text_changes"){
-       const prior=before;
-       ok&&=prior!==after;
+       const loc=target.locator(assertion.selector);
+       ok&&=await loc.count()===1&&
+        selectorBefore.get(assertion.selector)!==await loc.innerText();
       }else if(assertion.kind==="element_count")
        ok&&=(await target.locator(assertion.selector).count())===assertion.count;
       else if(assertion.kind==="visible")
