@@ -6,7 +6,8 @@
 import {sealAiRunnerTicket} from "../platform/agent/free-ai-runner-ticket.js";
 import {claimModelCall,type ModelCallRow} from
  "../platform/agent/postgres-model-calls.js";
-import {validFreeCiGitHubToken} from "./free-ci-dispatch.js";
+import {validFreeCiGitHubToken,sendFreeCiGithubDispatch}
+ from "./free-ci-dispatch.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 // eslint-disable-next-line max-params -- immutable DB, owner and one-shot Github trust boundaries.
 export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
@@ -33,7 +34,7 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
   call_key:row.call_key,request_hash:row.request_hash},ticketSecret,nowMs);
  let classification="NETWORK_ERROR";
  try{
-  const response=await fetch(
+  const response=await sendFreeCiGithubDispatch(
    "https://api.github.com/repos/NFF98/appf2-build/actions/workflows/"+
    "sp35-staging-only.yml/dispatches",{
     method:"POST",headers:{
