@@ -32,9 +32,12 @@ export async function advanceWithApprovedQaRepair(agent:LifecycleAgent,
  onProgress:(snapshot:CandidateSnapshot)=>void,
  shouldStop:()=>boolean):Promise<LifecycleOutcome>{
  const first=await agent.advance(options,onProgress,shouldStop);
- // Consent is for this click only. Never silently spend Browser QA on reopen.
+ // This click explicitly grants a fresh Browser QA consent, including when
+ // a recovered Job is ALREADY TESTING from a previously paid build/test.
+ // The server binds admission to the latest saved test and one-shot QA journal;
+ // an interrupted session must not force another build/model turn.
  if(shouldStop()||!options.allowAi||!browserQaConsent||
-  first.job.status!=="TESTING"||first.completed_steps<1)
+  first.job.status!=="TESTING")
   return {snapshot:first,qa:null,repairStarted:false};
  const qa=await agent.independentQa(true);
  const inspected=await agent.read();
