@@ -133,6 +133,8 @@ jobs:
           JS
       - name: LIVE PostgreSQL signed Agent Create + Read (no AI)
         run: node deploy/scripts/sp35-live-agent-db-smoke.mjs
+      - name: REAL owner-signed source → Worker GitHub dispatch → free Docker Chromium → original Job receipt
+        run: node deploy/scripts/sp35-free-live-dispatch-e2e.mjs
       - name: Final status, zero new AI/Container/Browser usage
         run: |
           echo "SP35 FREE STAGING DEPLOY: Worker+SPA+Agent+PG route checked; NO paid AI, Browser Run, Cloudflare Containers or Production deploy"
