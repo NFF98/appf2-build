@@ -36,6 +36,8 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - name: Install pinned build-only Cloudflare typings; NOT Browser Run
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - name: OIDC private source → locked network-denied Docker → Chromium smoke (NO AI)
