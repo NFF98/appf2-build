@@ -70,9 +70,23 @@ describe("Sprint 3.5 single-click authorized Agent → real QA → one repair",(
   expect(x.repairStarted).toBe(false);
   expect(calls).toMatchObject({advances:1,qa:1,repairs:0});
  });
- it("does not re-run paid QA on idle resume or after stop",async()=>{
+ it("runs newly consented independent QA for a persisted TESTING job without redoing build",async()=>{
+  const {agent,calls}=fixture(0,true,"TESTING");
+  const result=await advanceWithApprovedQaRepair(agent,options,true,()=>{},()=>false);
+  expect(result.qa?.ready_for_review).toBe(true);
+  expect(result.repairStarted).toBe(false);
+  expect(calls).toMatchObject({advances:1,qa:1,repairs:0,limits:[6]});
+ });
+ it("can repair a resumed QA failure within the same newly authorized click",async()=>{
+  const {agent,calls}=fixture(0,false);
+  const result=await advanceWithApprovedQaRepair(agent,options,true,()=>{},()=>false);
+  expect(result.qa?.ready_for_review).toBe(false);
+  expect(result.repairStarted).toBe(true);
+  expect(calls).toMatchObject({advances:2,qa:1,repairs:1,limits:[6,6]});
+ });
+ it("does not spend Browser QA without explicit consent or after stop",async()=>{
   const idle=fixture(0,false);
-  await advanceWithApprovedQaRepair(idle.agent,options,true,()=>{},()=>false);
+  await advanceWithApprovedQaRepair(idle.agent,options,false,()=>{},()=>false);
   expect(idle.calls.qa).toBe(0);
   const stopped=fixture(4,false);
   await advanceWithApprovedQaRepair(stopped.agent,options,true,()=>{},()=>true);
