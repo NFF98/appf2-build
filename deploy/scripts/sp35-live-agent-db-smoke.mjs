@@ -63,6 +63,18 @@ if(saved.status!==200||job?.job_id!==jobId||job.status!=="CREATED"||
  job.ai_started!==false||job.app_published!==false||
  job.free_ci!==null)
  throw Error("SP35_AGENT_LIVE_DB: SIGNED_POSTGRES_REOPEN_FAILED_HTTP_"+saved.status);
+// The provider/model GET ran earlier on GitHub, but GPT-6 POST from the
+// Cloudflare Worker failed before returning an ID. Verify the exact same
+// Worker egress path using a no-charge GET and creator-signed Job first.
+const probe=await stamp("/api/v1/agent-jobs/"+jobId+"/free-ai-probe",
+ {anonymous_id:owner});
+const classification=probe.data?.data?.status;
+if(probe.status!==200||typeof classification!=="string")
+ throw Error("SP35_GPT6_WORKER_EGRESS_PROBE_HTTP_"+probe.status);
+console.log("SP35 GPT6 WORKER EGRESS: "+classification+
+ " (signed original creator, fixed GET model info, NO Responses POST)");
+if(classification!=="WORKER_MODEL_GET_200")
+ throw Error("SP35_GPT6_WORKER_EGRESS_BLOCKED_"+classification);
 console.log("SP35_PRODUCT_REAL_DB_PASS: signed CREATE HTTP201, "+
  "saved four-file source, signed REOPEN HTTP200, same hash, no AI or Sandbox. "+
  "Full five-core cloud E2E still NOT RUN.");
