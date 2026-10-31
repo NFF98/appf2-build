@@ -92,13 +92,23 @@
 
 **最早尚未排除的產品 BLOCK**：目前 Staging 是否跑到新的 Agent API、是否具備私有 Sandbox/QA Worker binding，與真 AI/PG 可用證據。待上述只讀結果排除後才啟動任何需授權的雲端測試／集中產品程式修復。
 
+## F.2 D0 真實 Cloudflare Read-only 結論，D1 付費前保護
+
+- 真實 GitHub runner [run #41167547686](https://github.com/NFF98/appf2-build/actions/runs/41167547686)：`SP35 STAGING LIVE HEALTH: PASS_JSON_UP`；`SP35 STAGING AGENT CODE: NOT_VERIFIED_HTTP_404`；`SP35 WORKER appf2-sp35-private-sandbox: NOT_LISTED`；`SP35 WORKER appf2-sp35-private-browser-qa: NOT_LISTED`。兩個私有服務**並未出現在可讀的 Workers script 清單**；未證明帳號無法部署，Cloudflare plan read `403` 仍是 UNKNOWN。
+- D0 已確認目前**舊 Staging Worker 正常，新多檔案 Agent 版尚未有部署證據**。不要再重做前三天原有 Agent/Journal/Sandbox/QA 程式。
+- D1 第一道產品修補已在 PR #419：新增 `GET /api/v1/agent-readiness`（不呼叫模型／DB／容器）；`AgentBuilderPanel` 新建前要求 AI、Sandbox、Browser QA 三種分開核准，並驗證完整服務設定；不存在新版 API、缺授權或缺私有服務時**先停止，不建立付費 App Job**。現有候選／續作相關權限仍依原 PoP 與 Budget。
+- Staging 專用部署腳本將新的 `APPF2_AGENT_MODEL_EXECUTION_ENABLED` 與私有服務條件一起鎖住：未配置 Cloud Sandbox／QA 不會先啟用付費多檔案模型。此改動不影響舊單檔 F01/Code Builder。
+- 這些是**程式與真實 Read-only 證據**，不是新 Agent cloud AI／Container／Browser QA 通過；完整五核產品 E2E 仍 **0/5**。
+
+**下一個硬阻斷**：須驗證 Cloudflare Sandbox／Browser QA 私有 Worker 實際部署與 Service Binding、受控付費權限，及新版 Staging API；沒有明確授權不自動執行可能付費的 Container/Browser/AI 測試，也不合併／正式發布。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
 | --- | --- | --- |
 | SPEC / 命名 | **完成計畫文件提交**；非產品完成 | Design PR #45 H-001 §0 更新於 `6ed57015d340b1863da5ecb5d586b28263b012d0`；Build PR #419 本檔 |
-| D0 | **FIRST CLOUD BLOCK IDENTIFIED — REAL GET VERIFIED** | 本檔 F.2 / run #41166865747：Staging Health JSON UP，但所需 private Sandbox / Browser QA Worker **NOT_LISTED**；方案 403 UNKNOWN。下一步確認部署/權限/實際 Agent route，不再重做已成功的產品程式 |
-| D1 | **FOUNDATION CODE IMPLEMENTED；CLOUD E2E NOT_VERIFIED** | 沿用既有 Agent/Journal/Sandbox/QA；只補真實部署連線／必要錯誤；已 PASS 的 offline foundation 不再重做 |
+| D0 | **DONE — 真 Staging 第一雲端阻斷已定位** | F.2 / run #41167547686：Health UP，Agent Readiness HTTP 404，private Sandbox / Browser QA Workers NOT_LISTED，Cloudflare plan 403 UNKNOWN；不重做已成功的原程式 |
+| D1 | **IN_PROGRESS — 補雲端 Readiness 及付費前阻擋，仍未部署新版 Agent** | 本輪源碼已提交待 CI；下一步依授權驗證 Cloudflare 私有部署與真 Browser QA，不把免付費配置查核算 E2E |
 | D2 | **舊單檔卡片 STAGING PASS；新多檔案完整鏈 NOT_VERIFIED** | 沿用既有公開卡片／F05，接新 Agent QA→v2 admission→卡片；生成後端 DB Profile 尚缺 |
 | D3 | NOT_RUN | 五核產品 REAL E2E = **NOT_VERIFIED** |
 
