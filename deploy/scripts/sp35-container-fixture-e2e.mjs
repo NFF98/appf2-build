@@ -54,7 +54,7 @@ try{
    err=>{if(!String(err).includes("FREE_CI_SNAPSHOT_INVALID"))throw err;});
  await fs.symlink("/opt/appf2/node_modules",path.join(tmp,"node_modules"),"dir");
  // Container image and commands are fixed; this repo fixture is trusted code.
- run("docker",["build","-t",image,"-f","deploy/free-ci/Dockerfile","."]);
+ run("docker",["build","-t",image,"-f","deploy/free-ci/Dockerfile","deploy"]);
  const uid=process.getuid?.()??1000,gid=process.getgid?.()??1000;
  const isolation=[
   "run","--rm","--network","none","--cap-drop","ALL",
