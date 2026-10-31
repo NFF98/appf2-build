@@ -293,7 +293,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     throw Error("免費 Docker 派發未獲確認；已保存程式，停止等待，不會重送付費 AI。");
    let repaired=false;
    let receiptSeen=false;
-   for(let i=0;i<45&&!stop.current;i++){
+   for(let i=0;i<90&&!stop.current;i++){
     await new Promise<void>(resolve=>window.setTimeout(resolve,8000));
     current=await worker.read();
     setSnapshot({job:current,progress:null,
@@ -329,7 +329,13 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      break;
     }
     if(allFrozenFreeCiChecksPassed(savedCandidateTarget()?.qaPlan,checks)){
-     setQaOutcome("原需求逐條 Browser QA PASS；App 已保存，可零 AI 重用。");
+     setQaOutcome("原需求全部 Browser QA PASS；正在開啟已保存的可操作 App。");
+     // A successful one-click generation should show the actual persisted
+     // browser artifact, not require a second manual preview button.
+     const asset=await worker.freeCiPreview();
+     const frame=await createPrivatePreviewFrame(asset,document);
+     previewHost.current?.replaceChildren(frame);
+     if(previewHost.current)setPreviewReady(true);
      if(publicShareConsent){
       const shared=await worker.publishFreeCiApp(prompt.trim().slice(0,75),true);
       setPublishedUrl(shared.url);
