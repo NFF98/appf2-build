@@ -147,3 +147,5 @@ jobs:
 # GitHub REST: Worker dispatch uses explicit User-Agent, rerun real signed product path.
 
 # Staging-only deployment for owner-private built Vite assets, without public publication.
+
+# Recheck privately saved Vite bundle: owned, DB-persisted and opened twice without AI.
