@@ -1,5 +1,8 @@
 import {describe,it,expect} from "vitest";
 import {readFileSync} from "node:fs";
+import {sealAiRunnerTicket,openAiRunnerTicket,aiTicketScopeHash}
+ from "../../src/platform/agent/free-ai-runner-ticket.js";
+import {openFreeCiTicket} from "../../src/platform/agent/free-ci-ticket.js";
 import {runJournaledPaidModelTurn,type PaidModelTurn}
  from "../../src/platform/agent/journaled-model-gateway.js";
 import {checkpointHash,type AgentJobExecutor,type AgentJobRow}
@@ -103,6 +106,48 @@ describe("SP35 Staging owner reservation migration regression (NO model calls)",
   expect(builder).toContain("request_hash:digest,model:MODEL");
   expect(builder).toContain("const req={model:MODEL");
   expect(sql).toContain("p_model<>'gpt-6.1-sol'");
+ });
+});
+
+describe("Sprint 3.5 private GPT-6 GitHub Runner scope, never a provider call",()=>{
+ it("encrypts the exact phase+request scope, not the original free Docker ticket",async()=>{
+  const secret="s".repeat(64), now=Date.now();
+  const base={job_id:jobId,owner,project_hash:sha,
+   call_key:"sp35_free_ai_qa_v1",request_hash:sha};
+  const ticket=await sealAiRunnerTicket(base,secret,now);
+  expect(ticket).toMatch(/^[A-Za-z0-9_-]{80,3000}$/u);
+  expect(ticket).not.toContain(jobId);
+  expect(await openFreeCiTicket(ticket,secret,now)).toBeNull();
+  const opened=await openAiRunnerTicket(ticket,secret,now);
+  expect(opened?.job_id).toBe(jobId);
+  expect(opened?.project_hash).toBe(await aiTicketScopeHash(base));
+  expect(await openAiRunnerTicket(ticket,secret,now+31*60_000)).toBeNull();
+  expect(await aiTicketScopeHash({...base,call_key:"sp35_free_ai_code_v1"}))
+   .not.toBe(opened?.project_hash);
+  expect(await aiTicketScopeHash({...base,request_hash:"sha256:"+"b".repeat(64)}))
+   .not.toBe(opened?.project_hash);
+ });
+ it("separates private paid AI from existing free Docker and staging jobs",()=>{
+  const workflow=readFileSync(".github/workflows/sp35-staging-only.yml","utf8");
+  const script=readFileSync("deploy/scripts/sp35-paid-ai-github-runner.mjs","utf8");
+  expect(workflow).toContain("startsWith(inputs.ticket, 'ai_runner_v1_')");
+  expect(workflow).toContain("private-paid-ai:");
+  expect(workflow).toContain("id-token: write");
+  expect(script).toContain("AI_RUNNER_TRUST_BOUNDARY");
+  expect(script).toContain("AI_RUNNER_RESPONSE_ID_NOT_DURABLE");
+  expect(script).toContain("ONE paid model POST");
+  expect(script).not.toContain("console.log(request");
+  expect(script).not.toContain("console.log(response");
+ });
+ it("keeps new runner request owner-private, immutable, RLS-enabled",()=>{
+  const sql=readFileSync(
+   "supabase/migrations/20261031235970_sp35_git_runner_ai_immutable_request.sql",
+   "utf8");
+  expect(sql).toContain("ENABLE ROW LEVEL SECURITY");
+  expect(sql).toContain("REVOKE ALL");
+  expect(sql).toContain("sp35_ai_runner_request_owner_insert");
+  expect(sql).toContain("runner_run_id IS NOT NULL");
+  expect(sql).not.toContain("GRANT SELECT ON public.appf2_agent_model_runner_request TO anon");
  });
 });
 
