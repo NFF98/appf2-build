@@ -55,7 +55,7 @@ export async function verifyFreeCiOidc(token:string,nowMs:number,
 export async function verifyLiveFreeCiOidc(token:string,nowMs:number):
  Promise<boolean>{
  return verifyFreeCiOidc(token,nowMs,async()=>{
-  const r=await fetch(ISSUER+"/.well-known/jwks",{
+  const r=await globalThis.fetch(ISSUER+"/.well-known/jwks",{
    method:"GET",signal:globalThis.AbortSignal.timeout(7000)});
   if(!r.ok)throw Error("FREE_CI_JWKS_UNAVAILABLE");
   return r.json();

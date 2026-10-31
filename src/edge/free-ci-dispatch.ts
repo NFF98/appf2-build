@@ -19,6 +19,10 @@ export function validFreeCiDispatchInput(x:unknown):x is FreeCiDispatchInput{
 export function validFreeCiGitHubToken(token:string):boolean{
  return token.length>=24&&/^(?:github_pat_|ghp_|ghs_)[A-Za-z0-9_]+$/u.test(token);
 }
+/** Preserve the native Cloudflare Workers fetch receiver, also when sent as a callback. */
+export function sendFreeCiGithubDispatch(url:string,init:RequestInit):Promise<Response>{
+ return globalThis.fetch(url,init);
+}
 export async function dispatchFreeCiJob(input:FreeCiDispatchInput,ctx:{
  db:AgentJobExecutor;jobId:string;ownerThumb:string;nowMs:number;
  token:string;ticketSecret:string;
@@ -42,7 +46,7 @@ export async function dispatchFreeCiJob(input:FreeCiDispatchInput,ctx:{
   project_hash:project.project.project_hash},ctx.ticketSecret,ctx.nowMs);
  const url="https://api.github.com/repos/NFF98/appf2-build/actions/workflows/"+
   "sp35-staging-only.yml/dispatches";
- const send=ctx.send??fetch;
+ const send=ctx.send??sendFreeCiGithubDispatch;
  const response=await send(url,{method:"POST",headers:{
   Authorization:"Bearer "+ctx.token,Accept:"application/vnd.github+json",
   "X-GitHub-Api-Version":"2022-11-28",

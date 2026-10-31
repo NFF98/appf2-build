@@ -1,7 +1,7 @@
 import {describe,it,expect} from "vitest";
 import {trustedFreeCiOidcRequestUrl}
  from "../../src/edge/free-ci-oidc-request-url.js";
-import {validFreeCiGitHubToken}
+import {validFreeCiGitHubToken,sendFreeCiGithubDispatch}
  from "../../src/edge/free-ci-dispatch.js";
 describe("SP35 actual GitHub-hosted OIDC source access",()=>{
  it("accepts GitHub classic and regional OIDC endpoints without exposing tokens",()=>{
@@ -25,6 +25,19 @@ describe("SP35 actual GitHub-hosted OIDC source access",()=>{
    "https://pipelinesghubeus6.actions.githubusercontent.com/runner#fragment",
    "https://user:password@pipelines.actions.githubusercontent.com/runner"
   ])expect(trustedFreeCiOidcRequestUrl(url)).toBeNull();
+ });
+ it("preserves native fetch receiver in the Cloudflare Worker dispatch",async()=>{
+  const original=globalThis.fetch;
+  let correct=false;
+  try{
+   globalThis.fetch=function(this:typeof globalThis){
+    correct=this===globalThis;
+    return Promise.resolve(new Response(null,{status:204}));
+   } as typeof fetch;
+   const response=await sendFreeCiGithubDispatch("https://api.github.com/",{});
+   expect(response.status).toBe(204);
+   expect(correct).toBe(true);
+  }finally{globalThis.fetch=original;}
  });
  it("accepts only scoped GitHub PAT or App installation token shapes",()=>{
   expect(validFreeCiGitHubToken("github_pat_"+"x".repeat(40))).toBe(true);
