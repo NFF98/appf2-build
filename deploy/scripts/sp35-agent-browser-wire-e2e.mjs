@@ -336,6 +336,17 @@ try{
  if(qaRepairCount!==1||!lastRepairKey||
   lastRepairKey!==qaRepairCallKey(job.project_hash))
   throw Error("BROWSER_QA_REPAIR_UNSTABLE_OR_NOT_SIGNED");
+ // Real UI recovery is read-only: no second model/QA/container dispatch.
+ const paidBefore={qaRunCount,qaRepairCount,stepCount,planCount,autoPlanCount};
+ await page.getByRole("button",{
+  name:"查詢已保存的產品進度與 QA 紀錄（不扣費）"}).click();
+ await page.getByText("已從資料庫讀取最新工作與獨立 QA 紀錄",{
+  exact:false}).waitFor({timeout:15000});
+ if(qaRunCount!==paidBefore.qaRunCount||
+  qaRepairCount!==paidBefore.qaRepairCount||
+  stepCount!==paidBefore.stepCount||planCount!==paidBefore.planCount||
+  autoPlanCount!==paidBefore.autoPlanCount)
+  throw Error("SAVED_QA_PROGRESS_READ_DISPATCHED_PAID_OPERATION");
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
