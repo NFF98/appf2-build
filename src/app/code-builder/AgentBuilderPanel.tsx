@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from "react";
 import {BrowserCodingAgent,savedCandidateTarget,readSavedCandidateLibrary,
- chooseSavedCandidate,type AgentBrowserOptions,
+ chooseSavedCandidate,paidAgentReconciliationRequired,type AgentBrowserOptions,
  type CandidateSnapshot} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
@@ -104,8 +104,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      await worker.generateOriginalQaPlan();
      // Do not silently replan coding when a previous model call is uncertain.
      const renewed=await worker.progress();
-     if(renewed.calls.some(c=>c.state==="BLOCKED_UNCERTAIN"))
-      throw Error("已有模型結果不確定，已停止，不會重新付費。");
+     if(paidAgentReconciliationRequired(renewed))
+      throw Error("已有模型付費結果未確認，已停止，不會重新付費。");
      await worker.plan();
     }
    }else{
