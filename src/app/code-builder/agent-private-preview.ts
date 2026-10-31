@@ -66,7 +66,7 @@ export async function createPrivatePreviewFrame(source:PreviewSource,
  frame.setAttribute("sandbox","allow-scripts");
  frame.setAttribute("referrerpolicy","no-referrer");
  frame.setAttribute("allow","");
- frame.style.width="100%";frame.style.height="560px";frame.style.border="0";
+ frame.style.width="100%";frame.style.height="100%";frame.style.border="0";
  frame.srcdoc='<!doctype html><html><head><meta charset="utf-8">'+
   '<meta http-equiv="Content-Security-Policy" content="'+escaped(csp)+'">'+
   '<meta name="viewport" content="width=device-width, initial-scale=1">'+

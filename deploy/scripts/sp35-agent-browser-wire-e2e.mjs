@@ -356,6 +356,12 @@ try{
  if(!size||!viewport||size.height<viewport.height-8||
   size.width<viewport.width-8)
   throw Error("PRIVATE_PREVIEW_FULLSCREEN_CLIPPED");
+ const iframeSize=await page.locator(
+  'iframe[title="私人候選 App 互動預覽（尚未通過發布驗收）"]'
+ ).boundingBox();
+ if(!iframeSize||iframeSize.height<viewport.height-80||
+  iframeSize.width<viewport.width-12)
+  throw Error("PRIVATE_PREVIEW_APP_IFRAME_STILL_CLIPPED");
  await frame.getByRole("button",{name:"Demo Add"}).click();
  await frame.getByText("PREVIEW_CLICKED_42").waitFor({timeout:15000});
  await page.getByRole("button",{name:"退出全螢幕"}).click();
