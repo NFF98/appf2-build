@@ -74,6 +74,15 @@ export function DiscoverScreen({ draft, onDraftChange, onCreate, savedApps, onOp
             意圖就是 <span className="s01-hero-accent">App</span>
           </h1>
         </section>
+        <section className="code-builder-panel" aria-labelledby="free-app-reuse-title">
+          <h2 id="free-app-reuse-title">零新費用：使用已發布 App</h2>
+          <p className="saved-apps-note">直接開啟既有公開 App，不重新呼叫生成 AI、
+            不使用 Cloudflare Containers。這不是新 App 的 AI 生成／雲端建置驗收。</p>
+          <button className="btn btn-secondary" type="button" onClick={() => {
+            document.getElementById("published-apps-title")
+              ?.scrollIntoView({block:"start",behavior:"smooth"});
+          }}>免費試用：已公開 App（不使用 AI）</button>
+        </section>
         <AgentBuilderPanel suggestedPrompt={suggestedPrompt}/>
         <details className="legacy-composer">
           <summary>舊版單檔 Code Builder（只供相容）</summary>

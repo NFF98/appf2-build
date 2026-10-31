@@ -5,6 +5,18 @@
 > **產品語意唯一來源**：Design PR #45 `working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md` §0（Design commit `6ed57015d340b1863da5ecb5d586b28263b012d0`），以及各現行 Phase 1 Fxx Working owner。**本檔只管 HOW／執行次數／證據，絕不取代 Design SSOT。**
 > **唯一產品開發 PR**：[Build #419](https://github.com/NFF98/appf2-build/pull/419)；Design 只沿用 [#45](https://github.com/NFF98/appf2-design/pull/45)。不開 Sprint 4，不建立平行的 Product Spec 或其他開發 PR。
 
+## 0. 2026-10-31 Free-only 執行決議（Human 最新指示）
+
+**只改成本／隔離執行方式，不降低五核產品 Gate，不開 Sprint 4，不建立新 Product SSOT。**
+- **不購買／不部署 Cloudflare Containers 或 Cloudflare Sandbox SDK 雲端私有 Worker**，也不以 Cloudflare 付費 Browser Run 作為本期新作品的必須前提。既有 Workers Free、既有 PostgreSQL/Hyperdrive **在現有免額外付費配額內**可繼續使用，但須先驗證能正常工作，不能推定。
+- 使用目前**公開**的 `NFF98/appf2-build` Repository 的**標準 Linux GitHub Actions runner**，Docker `--network none`／cap-drop／no-new-privileges／memory/cpu 限額做隔離建置，另一個可信 Chromium 程序根據原始需求逐項驗收；**只在 CI 受限環境處理不含秘密的程式原始碼**，不能把不受信任的 AI code 在 GitHub 主 Runner 或 Cloudflare Worker 同權限執行。
+- 既有 `sp35-agent-foundation.yml` 免費測試是**可信 fixture**，不是任意新 AI 生成專案的雲端驗收。把生成專案交給隔離 CI runner、取得來源 digest／QA packet、回寫既有 PostgreSQL→v2 發布／卡片**目前仍未接通**；在真正部署且證明同一 Job 之前，C1–C5 full-chain E2E 仍為 **0/5**。
+- 已發布的既有 App 直接開啟／使用**不需 AI 再生成**；產品首頁增設可見的免費重用入口。不能把現有單檔卡片當成新多檔案 v2 全端能力。
+- 新 AI 呼叫仍可能耗用 **原有 API 額度**；在「不新增費用」要求下，未核對可用預算與每次明確同意前，**不觸發新的付費模型請求**。公開 Repo 的標準 GitHub-hosted Actions 已含免費額度；不使用 larger runner、外部付費 runner、雲端容器或新訂閱。
+- 此 Free-only 決議覆蓋本檔早期對「必須是 Cloudflare Container」「D1 要新建 Cloudflare 私有 Sandbox」的敘述，其他受控 Full-stack/DB、獨立 QA、失敗修復、v2 卡片與 0 再生成的產品要求**完整保留**。GitHub CI 通過只是建置階段，不是網站五核 E2E PASS。
+
+**已知本輪根因**：前次 [Foundation run #41167865524](https://github.com/NFF98/appf2-build/actions/runs/41167865524) 在 Chromium reload 後的「繼續已保存工作」按鈕被新增的三項獨立授權正確禁用，測試沒有補齊授權便按下造成 timeout。已在原 E2E fixture 補齊三種授權與明確取消再驗的反向用例，**保留產品端防扣費安全檢查**。
+
 ## A. 唯一產品終點：五核閉環與 App 卡片
 
 使用者輸入自然語言，不需要會程式；一套**通用、沒有 App 類型特例**的 AI Code Builder 自主生成真實多檔案前端／互動邏輯及需求所需的受控後端／資料庫；Blueprint v2 綁定不可變的建置產物、版本身分、權限、資料參照和分享身分；Cloudflare 隔離 Sandbox 實際建置，獨立 Browser QA 對原始需求逐項操作，失敗保存診斷→AI 修復→重建→再測；成功才在產品內建立可操作 App 卡片。建立者可保存／重開／明確同意分享，接收者可重開同一個核准版本，**不再次付生成 AI 費用**。
@@ -15,7 +27,7 @@
 | --- | --- | --- |
 | C1 多檔案／Full-stack | 真模型從兩種非模板的自然語言生成多檔案；至少一個含**實際受控後端＋DB**，經 Browser CREATE/READ/UPDATE/DELETE、刷新後資料仍存在；前端功能真能互動 | 靜態 HTML、只有 API 路由文字、平台自己的 Job PostgreSQL |
 | C2 保存／接續 | PostgreSQL 保存 Job 原文、版本化來源檔、checkpoint、已付呼叫／工具收據；關站後恢復**同一 Job** 並接續；完成作品以卡片重開、同 hash 0 再生成 | 本機暫存、下載 ZIP、登入後的 Phase 2 永久資產庫 |
-| C3 Sandbox | Cloudflare 上部署的隔離容器對**AI 寫的原始碼**真實 build/test，留 exit code、hash、診斷和限權證據 | Docker fixture／Wrangler dry-run／HTTP 200 |
+| C3 Sandbox | **免費路線 GitHub Actions 隔離 Docker** 對**實際 AI 寫的原始碼**真實 build/test，留下 exit、hash、診斷、限權與產物證據 | 可信 Docker fixture／Wrangler dry-run／HTTP 200 |
 | C4 QA／自動修復 | 獨立 Chromium 根據原需求在實際 App 做操作與資料驗證、截證；失敗→模型修復→重編→整套 QA 重測；必備 FAIL／UNTESTED 不能宣稱通過／發布 | 模型自評、只看字串改變、F02 hash PASS |
 | C5 有限重試／換策略 | 失敗資料保留且可讀；重複失敗辨認無進展並改修復方法、經核准加步數／預算後接續，未知付費結果不重送；狀態如實回報 | 無限 Retry、自動換未授權模型、假「100%」 |
 
@@ -44,7 +56,7 @@
 | 關卡 | 工作範圍／允許的變更 | 交付必備可觀察證據 |
 | --- | --- | --- |
 | **D0 / 1 次：真實阻斷定位（唯讀）** | 查 Design/Build 精確 HEAD、Staging 實際 URL、Worker route、Cloudflare private Broker/Browser binding、AI／PG／費用權限；依 Browser→Worker→AI→PG→Sandbox→QA→Card 排出**第一個**失敗 Hop。既有 evidence 可用就不付費重跑 | Root Cause Sheet：首個失敗點、URL/status／脫敏 Request ID、證據、最多修復兩輪清單和初始 C1–C5 NOT_DONE |
-| **D1 / 第 1 輪集中產品修復** | **只**對 B01/B02/B03 的第一個真實失敗 Hop 施工；將單一 Agent 的 AI 多檔案、PG checkpoint、真 Sandbox、獨立 QA／修復跑通，不重寫原引擎；對 B06 提交受限後端／DB Profile 實作所需完整安全契約 | 同一 Staging Job 真的 source→PG→Sandbox→Browser QA→預覽可操作，保留 source SHA 和 before/after；若後端 Profile 尚未通過，C1 仍 NOT_DONE |
+| **D1 / 第 1 輪集中產品修復** | **只**對 B01/B02/B03 的第一個真實失敗 Hop 施工；**用隔離 GitHub Actions Docker＋Chromium 取代需付費的 Cloud Containers**，接新 AI 多檔案、PG checkpoint、QA／修復證據，不重寫原引擎；對 B06 提交受限後端／DB Profile 實作所需安全契約 | 同一 Staging Job 真的 source→PG→隔離 CI Docker→獨立 Chromium QA→預覽可操作，保留 source SHA 和 before/after；若後端 Profile 尚未通過，C1 仍 NOT_DONE |
 | **D2 / 第 2 輪集中產品修復** | 在 D1 證據上**只補實際未完成**的 B04/B05/B06/B07：完成受控後端＋DB；v2 build artifact/admission→卡片／基本分享／重開；Job 中斷續作／失敗策略；不做 Phase 2 資產帳號或新引擎 | 一個新多檔案 full-stack App 真 CRUD；已核准 Share 能另瀏覽器操作且重開 0 AI；故意不合格的候選不發布；同源及 hash／權限比對 |
 | **D3 / 1 次：正式 REAL E2E 驗收（不修功能）** | 同一 Build HEAD、Staging 主網址跑 2 個自然語言 Prompt、1 個負面越權場景、1 個中斷復原及 1 個分享重開；保留獨立截圖／logs／收據。必要時跑相關完整 CI、安全測試，不把治理 PASS 當產品 E2E | 真實產品 C1–C5、v2 卡片每項 PASS/FAIL/UNTESTED，受控費用、可核查來源 hash、部署版本；全部 PASS 才標 **SP35 FIVE-CORE PRODUCT REAL E2E PASS** |
 

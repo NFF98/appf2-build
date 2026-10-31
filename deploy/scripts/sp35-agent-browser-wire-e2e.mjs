@@ -281,6 +281,13 @@ try{
  if(!homepage.ok||(await homepage.text()).indexOf("root")===-1)
   throw Error("AGENT_HOMEPAGE_HTTP_BOOT_FAILURE");
  await page.goto(origin+"/",{waitUntil:"domcontentloaded",timeout:15000});
+ // Free reuse path has no model/container call; must remain visible even
+ // when the new multi-file Agent cloud service cannot deploy.
+ const free=page.getByRole("button",{name:"免費試用：已公開 App（不使用 AI）"});
+ if(await free.count()!==1)throw Error("FREE_REUSE_ENTRY_MISSING");
+ await free.click();
+ if(!(await page.getByRole("heading",{name:"公開現成 App"}).isVisible()))
+  throw Error("FREE_REUSE_DID_NOT_REACH_PUBLISHED_CARDS");
  const primary=page.getByRole("button",{name:"建立新多檔案 App 專案"});
  if(await primary.count()!==1)throw Error("AGENT_HOMEPAGE_WIRING_MISSING");
  if(await primary.isEnabled())throw Error("AI_SPEND_NO_CONSENT");
@@ -288,6 +295,8 @@ try{
  await page.getByRole("textbox",{name:"用一句話描述要做的 App"}).fill(prompt);
  // No QA JSON authored or pasted: the product must auto-plan from one sentence.
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
  await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  if(!(await primary.isEnabled()))throw Error("AGENT_CONSENT_UI_BROKEN");
@@ -317,6 +326,8 @@ try{
  await page.waitForTimeout(400);
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
  if(qaFreezeCount!==1||autoPlanCount!==1||planCount!==1||stepCount!==1||proofCount<9)
@@ -329,6 +340,8 @@ try{
   throw Error("AGENT_BUDGET_RENEWAL_VIOLATED_CAS_OR_REPLAY");
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · CODING").waitFor({timeout:15000});
  if(renewCount!==1||qaFreezeCount!==1||autoPlanCount!==1||planCount!==1||stepCount!==1)
@@ -340,10 +353,13 @@ try{
   "call_browser_inspect_123456","call_browser_test_123456"];
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · TESTING").waitFor({timeout:15000});
  const preview=page.getByRole("button",{
   name:"開啟已建置 App 互動預覽（需雲端存取授權）"});
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).uncheck();
  if(await preview.isEnabled())throw Error("PRIVATE_PREVIEW_NO_SEPARATE_CONSENT");
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
  await preview.click();
@@ -376,6 +392,7 @@ try{
   throw Error("PRIVATE_BUILD_PREVIEW_CAUSED_PAID_OR_UNSAFE_EFFECTS");
  const qaButton=page.getByRole("button",{
   name:"開始獨立瀏覽器 QA（需另行授權）"});
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).uncheck();
  if(await qaButton.isEnabled())throw Error("BROWSER_QA_SPENT_WITHOUT_SEPARATE_CONSENT");
  await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await qaButton.click();
@@ -404,6 +421,8 @@ try{
   throw Error("SAVED_QA_PROGRESS_READ_DISPATCHED_PAID_OPERATION");
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();
  await page.getByText("已保存專案 · REPAIRING").waitFor({timeout:15000});
  await page.getByRole("button",{
@@ -418,6 +437,8 @@ try{
  job.status="REPAIRING";job.revision++;autoQaPending=true;
  await page.reload({waitUntil:"domcontentloaded",timeout:15000});
  await page.getByLabel(/我同意本次使用付費 AI/u).check();
+ await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
+ await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByLabel(/我另外授權 Cloudflare 隔離建置/u).check();
  await page.getByLabel(/我另行核准本次獨立雲端瀏覽器 QA/u).check();
  await page.getByRole("button",{name:"繼續上次保存的 Agent 工作"}).click();

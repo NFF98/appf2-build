@@ -1,4 +1,4 @@
-name: Sprint 3.5 multi-file foundation (free, no staging)
+name: Sprint 3.5 included-quota Docker + Chromium QA (no paid cloud)
 on:
   push:
     branches:
@@ -45,13 +45,5 @@ jobs:
         run: node deploy/scripts/sp35-agent-browser-wire-e2e.mjs
       - name: Compile real Agent API candidate scaffold and inspect in Chromium (no model)
         run: node deploy/scripts/sp35-agent-scaffold-browser-e2e.mjs
-      - name: Bundle isolated Cloudflare Sandbox Worker (dry run, NO deploy, NO containers)
-        run: |
-          npm install --prefix deploy/sandbox --ignore-scripts --no-audit --no-fund
-          npm run check --prefix deploy/sandbox
-      - name: Bundle private Browser Run independent QA Worker (dry run, NO browser session)
-        run: |
-          npm install --prefix deploy/qa-browser --ignore-scripts --no-audit --no-fund
-          npm run check --prefix deploy/qa-browser
-      - name: Real network-denied Docker sandbox Vite build (trusted fixture only)
+      - name: Free-path isolated Docker Vite + Chromium independent QA (trusted fixture only)
         run: node deploy/scripts/sp35-container-fixture-e2e.mjs

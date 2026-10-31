@@ -296,7 +296,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
   <p className="saved-apps-note">真正的多檔案程式專案；AI 可以編寫、保存、要求隔離建置與修復。
-   功能是否能操作需獨立驗證；目前生成的是私人候選原始碼，<strong>尚未自動發布成可用 App</strong>。</p>
+   免費替代方案使用 GitHub Actions 隔離 Docker＋Chromium 驗收（需把新作品流程接入）；
+   尚未接通之前，不會假裝已產生可操作 App。功能是否能操作需獨立驗證；目前生成的是私人候選原始碼，<strong>尚未自動發布成可用 App</strong>。</p>
   {catalog.length>0?<section aria-label="已保存的 Agent 專案">
    <h3>已保存的多檔案 App 專案（此瀏覽器）</h3>
    <p className="saved-apps-note">選擇原專案繼續開發或下載程式，
