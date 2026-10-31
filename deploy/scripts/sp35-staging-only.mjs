@@ -37,9 +37,15 @@ const model = bootstrapOnly ? null : required("APPF2_MODEL_NAME");
 const token = required("CLOUDFLARE_API_TOKEN");
 const account = required("CLOUDFLARE_ACCOUNT_ID");
 const modelSecret = bootstrapOnly ? null : required("APPF2_MODEL_API_KEY");
-// The multi-file Agent uses a SEPARATE provider credential and cost budget,
-// never inherits the legacy F01 model permission.
-const agentKey = bootstrapOnly ? "" : (process.env.APPF2_OPENAI_AGENT_API_KEY?.trim() || "");
+// Agent uses an independent signed paid-operation permission even if an
+// operator explicitly selects an existing OpenAI staging credential.
+const dedicatedAgentKey = bootstrapOnly ? "" :
+ (process.env.APPF2_OPENAI_AGENT_API_KEY?.trim() || "");
+const sharedStagingOpenai = !bootstrapOnly &&
+ process.env.APPF2_STAGING_AGENT_REUSE_OPENAI_KEY === "1" &&
+ (process.env.APPF2_MODEL_PROVIDER?.trim().toLowerCase() || "openai") === "openai";
+const agentKey = dedicatedAgentKey ||
+ (sharedStagingOpenai ? modelSecret : "");
 const agentEnabled = !bootstrapOnly;
 const agentModelEnabled = agentEnabled && agentKey.length >= 16 &&
   process.env.APPF2_STAGING_AGENT_MODEL_ENABLED === "1";
