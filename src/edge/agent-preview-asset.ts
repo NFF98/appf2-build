@@ -79,7 +79,8 @@ export async function readSignedPreviewAsset(input:PreviewAssetInput,deps:{
   [deps.jobId,deps.owner,input.build_call_id,input.test_call_id]);
  const build=rows.rows.find(r=>r.call_id===input.build_call_id);
  const test=rows.rows.find(r=>r.call_id===input.test_call_id);
- if(!passed(build,input.build_call_id,input.project_hash)||
+ if(!build||!test||
+  !passed(build,input.build_call_id,input.project_hash)||
   !passed(test,input.test_call_id,input.project_hash)||
   !Number.isSafeInteger(build.job_revision)||
   !Number.isSafeInteger(test.job_revision)||
