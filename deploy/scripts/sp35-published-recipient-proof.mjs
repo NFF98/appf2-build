@@ -1,10 +1,11 @@
 /* eslint-disable complexity, max-depth -- trusted frozen UI acceptance only; never generated App logic */
 import {scenarios} from "./sp35-remaining-scenarios.mjs";
 const meal=[{"action":"fill","args":["餐費","1000"]},{"action":"fill","args":["用餐人數","4"]},{"action":"fill","args":["服務費百分比","10"]},{"action":"click","args":["計算"]},{"action":"expect","args":["總額：1100.00"]},{"action":"expect","args":["每人：275.00"]},{"action":"fill","args":["餐費","600"]},{"action":"fill","args":["用餐人數","3"]},{"action":"fill","args":["服務費百分比","0"]},{"action":"click","args":["計算"]},{"action":"expect","args":["每人：200.00"]},{"action":"fill","args":["用餐人數","0"]},{"action":"click","args":["計算"]},{"action":"expect","args":["請輸入正整數人數"]},{"action":"absent","args":["Infinity"]},{"action":"absent","args":["NaN"]},{"action":"absent","args":["每人：200.00"]},{"action":"click","args":["重設"]},{"action":"expect","args":["尚未計算"]},{"action":"fill","args":["餐費","100"]},{"action":"fill","args":["用餐人數","3"]},{"action":"fill","args":["服務費百分比","5"]},{"action":"click","args":["計算"]},{"action":"expect","args":["每人：35.00"]},{"action":"reload","args":[]},{"action":"fill","args":["餐費","600"]},{"action":"fill","args":["用餐人數","3"]},{"action":"fill","args":["服務費百分比","0"]},{"action":"click","args":["計算"]},{"action":"expect","args":["每人：200.00"]}];
+const connectHoldouts=[{"action":"click","args":["重新開始"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第2欄"]},{"action":"click","args":["第2欄"]},{"action":"click","args":["第3欄"]},{"action":"click","args":["第3欄"]},{"action":"click","args":["第4欄"]},{"action":"expect","args":["勝者：紅"]},{"action":"blocked","args":[["第1欄","第2欄","第3欄","第4欄"]]},{"action":"click","args":["重新開始"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第2欄"]},{"action":"click","args":["第2欄"]},{"action":"click","args":["第3欄"]},{"action":"click","args":["第4欄"]},{"action":"click","args":["第3欄"]},{"action":"click","args":["第3欄"]},{"action":"click","args":["第4欄"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第4欄"]},{"action":"click","args":["第4欄"]},{"action":"expect","args":["勝者：紅"]},{"action":"blocked","args":[["第1欄","第2欄","第3欄","第4欄"]]},{"action":"click","args":["重新開始"]},{"action":"click","args":["第4欄"]},{"action":"click","args":["第3欄"]},{"action":"click","args":["第3欄"]},{"action":"click","args":["第2欄"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第2欄"]},{"action":"click","args":["第2欄"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第4欄"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第1欄"]},{"action":"expect","args":["勝者：紅"]},{"action":"blocked","args":[["第1欄","第2欄","第3欄","第4欄"]]},{"action":"click","args":["重新開始"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第1欄"]},{"action":"click","args":["第1欄"]},{"action":"expect","args":["第1列第1格：藍"]},{"action":"expect","args":["輪到：紅"]},{"action":"try_click","args":["第1欄"]},{"action":"expect","args":["輪到：紅"]},{"action":"click","args":["第2欄"]},{"action":"expect","args":["第4列第2格：紅"]}];
 const sample=process.env.APPF2_SP35_SAMPLE;
-const candidate=sample==="g5-meal"?{id:sample,category:"tool",guest:meal}:scenarios[sample];
+const candidate=sample==="g5-meal"?{id:sample,category:"tool",guest:meal}:scenarios[sample]?{...scenarios[sample],guest:[...scenarios[sample].guest,...(sample==="g9-connect"?connectHoldouts:[])]}:undefined;
 if(process.argv.includes("--preflight-only")){
- if(Object.keys(scenarios).length!==9||meal.length<20)throw Error("FROZEN_GUESTS_MISSING");
+ if(Object.keys(scenarios).length!==9||meal.length<20||connectHoldouts.length<40)throw Error("FROZEN_GUESTS_MISSING");
  console.log("TEN_FROZEN_PUBLISHED_GUEST_FLOWS_READY_ZERO_MODEL");
  process.exit(0);
 }
@@ -64,6 +65,12 @@ try{
   const [a,b]=step.args;
   switch(step.action){
    case "fill":await view.frame.getByLabel(a,{exact:true}).fill(b);break;
+   case "try_click": {
+    const button=view.frame.getByRole("button",{name:a,exact:true});
+    if(await button.count()!==1||!await button.isVisible())throw Error("REAL_NAMED_BUTTON_REQUIRED");
+    if(!await button.isDisabled())await button.click({timeout:15000});
+    break;
+   }
    case "click":await view.frame.getByRole("button",{name:a,exact:true}).click({timeout:15000});break;
    case "expect":await waitText(view,a);break;
    case "absent":await waitText(view,a,true);break;
