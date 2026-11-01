@@ -288,6 +288,13 @@
 - Existing PR #419 updated via `2092e87` and `e7d60f8`: extracted bounded GitHub dispatch error classification and independent QA-criterion guards while preserving at-most-once dispatch and frozen QA semantics. These are code changes; **new CI outcome pending verification**. No new paid model test, no Cloudflare Containers, no Production deploy, no PR merge.
 - Next evidence target: successful CI on `e7d60f8`; then a deliberately failing real GPT-6 App requiring one budget-bound REPAIR -> new free Docker/Chromium all-PASS receipt; and genuine non-fixture backend PostgreSQL CRUD + persisted cross-strategy continuation. Until those live proofs exist, **strict full-product C1–C5: 0/5 full PASS**. The narrower previously successful 1–3: 3/3 PASS remains unchanged.
 
+
+### 2026-11-01 — C4 repair admission safety patch (CI / product E2E separate)
+
+- Original PR #419 commit `fbfc52e` changes signed QA repair admission to require at least one independent browser `FAIL`; `UNTESTED`-only observations may not start a paid model call. `3e6435a` exposes the predicate without weakening source, owner, revision, consent, or frozen-QA checks. `0173a43` adds two regression assertions: unknown-only denied, mixed FAIL+UNTESTED admitted. New free CI outcome must be verified separately.
+- Reconfirmed earlier free foundation #41255530731 and existing published-card reuse #41255530451 SUCCESS. Those confirm earlier counter E2E has not regressed, **not** an AI-generated real DB CRUD App or an observed automatic AI repair.
+- **C4 remains PARTIAL until a real failed generated App is repaired using a paid, owner-consented GPT-6 response and re-tested with all frozen browser requirements PASS.** C1 generated backend+PostgreSQL CRUD and C5 actual changed-strategy continuation remain NOT_PROVEN. Strict five complete cores still 0/5; three earlier focused dispatch/writeback/publish E2E checks remain 3/3.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
