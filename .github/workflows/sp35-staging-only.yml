@@ -525,3 +525,5 @@ jobs:
 # 2026-11-01 second and final free Staging verification after precise F05 test selector repair; no paid model dispatch.
 
 # 2026-11-01 Human $1 batch: ONE free Staging UI compatibility and no-hidden-spend verification; the paid QA flow remains separate.
+
+# SP35 2026-11-01 free Staging verification: repair-context bound & typed cost guard; no new paid model calls.
