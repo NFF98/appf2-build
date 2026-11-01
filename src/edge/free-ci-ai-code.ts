@@ -54,8 +54,9 @@ const codeSchema={type:"object",additionalProperties:false,
  required:["main_ts","style_css"],
  properties:{main_ts:{type:"string"},style_css:{type:"string"}}} as const;
 function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
- files:readonly {path:string;content:string}[],failed:string,
- strategy:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE"="FIX_FAILED_CHECKS"):string{
+ files:readonly {path:string;content:string}[],evidence:{failed:string;
+ strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE"}):string{
+ const {failed,strategy="FIX_FAILED_CHECKS"}=evidence;
  if(phase==="QA")return [
   "You are an independent PRE-CODE acceptance planner. You have NOT seen any generated code.",
   "Reply ONLY with JSON matching the schema, 1-6 criteria. No markdown.",
@@ -259,8 +260,7 @@ export function hasRecordedBrowserQaFailure(receipt:{
 /** Paid consent is per phase; at most 8c plan, 20c code, 16c repair.
  * All model charges are journaled BEFORE network access.
  */
-// eslint-disable-next-line complexity -- Independent budget, PoP, journal, QA and revision fences.
-// eslint-disable-next-line max-lines-per-function -- Owner, frozen QA, budget and original Job CAS must stay together.
+// eslint-disable-next-line complexity, max-lines-per-function -- Owner, frozen QA, budget, and immutable Job CAS admission.
 export async function runFreeCiAiStage(input:Input,ctx:Context){
  if(!validFreeAiCodeInput(input)||ctx.modelKey.length<16||
   ctx.githubToken.length<20)throw Error("SP35_PAID_AI_NOT_CONFIGURED");
@@ -284,7 +284,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   if(plan)return {status:"QA_ALREADY_FROZEN" as const,
    original_plan:plan,app_published:false as const};
   const req={model:MODEL,reasoning:{effort:"low" as const},
-   input:modelPrompt("QA",input.original_prompt,null,[],""),
+   input:modelPrompt("QA",input.original_prompt,null,[],{failed:""}),
    max_output_tokens:3500,background:true,store:true,text:{format:{type:"json_schema",
     name:"appf2_precode_qa",strict:true,schema:qaSchema}}};
   const data=await paidModelTurn(ctx.db,job,input.anonymous_id,"QA",req,
@@ -330,8 +330,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
    receipt.qa_checks?.map(c=>c.criterion_id+":"+c.verdict).join(",")??"":"";
  const req={model:MODEL,reasoning:{effort:"medium" as const},
   input:modelPrompt(input.stage,
-   input.original_prompt,plan,repairing?job.project.files:[],failure,
-   strategy?.mode),
+   input.original_prompt,plan,repairing?job.project.files:[],
+   {failed:failure,strategy:strategy?.mode}),
   max_output_tokens:repairing?9000:12000,background:true,store:true,text:{format:{type:"json_schema",
    name:"appf2_free_ci_source",strict:true,schema:codeSchema}}};
  // Prevent a large saved project from exceeding the per-repair model cap
