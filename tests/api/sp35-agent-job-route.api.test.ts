@@ -54,6 +54,18 @@ class Database {
   close:async()=>undefined,
   // eslint-disable-next-line complexity, max-lines-per-function -- Test-only scoped SQL fake.
   query:async<T>(sql:string,args:readonly unknown[]):Promise<{rows:readonly T[]}>=>{
+   if(sql.includes("WITH RECURSIVE allowed AS")){
+    const id=String(args[0]),job=this.jobs.get(id),identity=this.identities.get(id);
+    if(!job||job.owner_anonymous_id!==args[1]||identity?.thumb!==args[2])
+     return {rows:[]};
+    return {rows:[{job_id:id,revision:job.revision,job_state:job.job_state,
+     job_saved_ms:TIME-10000,qa_frozen_ms:null,first_model_reserved_ms:null,
+     first_model_completed_ms:null,first_code_source_saved_ms:null,
+     current_source_saved_ms:TIME-9000,first_qa_receipt_ms:null,
+     last_qa_receipt_ms:null,first_verified_preview_ms:null,
+     current_private_preview_ms:null,model_calls_count:0,
+     qa_receipts_count:0} as T]};
+   }
    if(sql.startsWith("UPDATE public.appf2_agent_job")){
     const row=this.jobs.get(String(args[0]));
     if(!row||row.revision!==args[2]||row.checkpoint_hash!==args[7])
@@ -285,6 +297,33 @@ describe("Sprint 3.5 live Worker candidate Agent Job API (cryptographic signed r
    {anonymous_id:OWNER},"attacker_read_12345"),env);
   expect(stolen.status).toBe(404);
   expect(await stolen.text()).not.toContain("src/main.ts");
+ });
+ it("G0 timeline is signed, owner-scoped and zero-charge without a fabricated QA PASS",async()=>{
+  const person=await client(),attacker=await client(),database=new Database();
+  const fetch=createWorkerFetch({}, {now:()=>TIME,agent:database.makeDeps()});
+  expect((await fetch(await signed(person,"/api/v1/agent-jobs",{
+   anonymous_id:OWNER,prompt:"建立需要保留進度的骰子遊戲"
+  },"timeline_create_123456"),env)).status).toBe(201);
+  const path="/api/v1/agent-jobs/"+JOB_ID+"/job-timeline";
+  const ok=await fetch(await signed(person,path,{anonymous_id:OWNER},
+   "timeline_read_123456"),env);
+  expect(ok.status).toBe(200);
+  expect(await ok.json()).toMatchObject({data:{
+   status:"SP35_REAL_TIMELINE_READ_ONLY",job_revision:0,
+   time_to_first_source_ms:null,time_to_first_qa_pass_preview_ms:null,
+   model_calls_recorded:0,qa_receipts_recorded:0,
+   new_paid_model_calls_by_inspection:0,real_user_first_interaction_ms:null
+  }});
+  const foreign=await fetch(await signed(attacker,path,{anonymous_id:OWNER},
+   "timeline_attacker_123456"),env);
+  expect(foreign.status).toBe(404);
+  const unsigned=await fetch(new Request(ORIGIN+path,{method:"POST",
+   headers:{"Content-Type":"application/json","Origin":ORIGIN,
+    "Idempotency-Key":"timeline_unsigned_1234"},
+   body:JSON.stringify({anonymous_id:OWNER})}),env);
+  expect(unsigned.status).toBe(404);
+  expect(database.modelCalls.size).toBe(0);
+  expect(database.jobs.get(JOB_ID)?.revision).toBe(0);
  });
  it("rejects unsigned, cross-origin and disabled requests before any DB connection",async()=>{
   const person=await client(),database=new Database();
