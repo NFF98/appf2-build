@@ -24,6 +24,15 @@
 
 **本輪待續執行：**優先使用零額外付費的真網站 E2E 修正版驗收器；補強測試時序證據、資料橋、owner Job 續作/分享狀態的誠實顯示；所有新增 PASS 僅在 GitHub/PG/Chrome 可交叉核對時紀錄。保留全部歷史 FAIL 不覆寫。
 
+### 0.R.1 先記錄再繼續：真正關 Chromium ×2、原身分／PostgreSQL 不遺失網站 E2E PASS
+
+1. **Design SPEC 先更新**：同一 Design PR #45 的 H-001 §0.7，commit [f7ee914](https://github.com/NFF98/appf2-design/commit/f7ee914e59e109711c56bb81ead2d8ce7d503320)，禁止把同頁 refresh 冒充關閉整個瀏覽器。驗收必須使用兩個獨立乾淨 persistent browser profiles、同一 profile 關閉 Chromium 進程後重啟 **兩次**，以原不匯出 P-256 signer 真實呼叫 Worker/PG、另一 profile 不得讀取原使用者資料；zero AI.
+2. **實作**：Build PR #419 `deploy/scripts/sp35-cold-reopen-record-e2e.mjs` commit [82fc874](https://github.com/NFF98/appf2-build/commit/82fc8743d257070a48c06f91fa3608c131c0a360)，並由 `c7f8c506` 接入現有免費 Staging 工作流。測試使用預先公開、既有 Code App `1f19887e-7029-40f1-b445-660cd3aff40f` 的 iframe；透過真 `appf2Records` bridge 和 PostgreSQL 新增、讀取、修改、刪除，同一使用者跨**兩次完全關 Chrome**仍持有原 viewer identity 與私有資料；第二人另啟 Chromium profile，list/read 原使用者行為拒絕，反向隔離亦 PASS。以原 viewer 權限清理測試資料，**未使用 SQL 管理員代簽**。
+3. **真實網站證據**：[Staging Run #41299714487](https://github.com/NFF98/appf2-build/actions/runs/41299714487) **SUCCESS**，2026-11-01 11:03:00 UTC 原 runner log：
+   `SP35 COLD BROWSER REOPEN REAL STAGING PG: PASS; browser process closed and restarted twice, P-256 viewer identity retained, PG create/read/update/delete/list, 2 viewer isolation, no model POST`。同次原產品 PostgreSQL bridge CRUD／二 viewer 回歸 PASS，簽章原 Job 存取 `SP35_G0_REAL_TIMELINE_PASS`，公開既有 Code App 兩新瀏覽器重開 `generation-on-reuse=0`；[免費 Foundation #41299714429](https://github.com/NFF98/appf2-build/actions/runs/41299714429) **SUCCESS**。本次 Worker/PG/Chromium 皆真服務，付費模型 runner **SKIPPED**。
+4. **費用與可宣告能力**：新增 GPT-6 provider POST **0**、已保存兩筆模型呼叫紀錄的先前逐筆上限 20c×2=40c（非已扣款帳單）。本輪免模型測試及部署未新增 AI 付費；仍受 Human **US$1 整批硬上限**。真正可以宣稱「已公開 App 的平台資料橋＋signed P-256 viewer 在 Chrome 關閉後可跨工作階段繼續、不同 viewer 隔離」PASS；但這是**公開既有 App + browser-injected test harness 的 bridge 端操作**，不是「GPT-6 自己產生的 PG CRUD UI 6/6／9 個新的完整網站 Job E2E」，不得冒充模型生成自主性或真 AI 自動修復全鏈路。
+5. **完成度照實**：既有工程能力更多 PASS；**五項產品目標完整真網站 0/5、9 個新生成 full E2E 0/9**。真正首次可互動延遲/P50/P95 未測，不能拿整個 GitHub Run 的分鐘數當使用者感受。原 GPT-6 Memo App `4c29b61a-0042-45f1-a198-228330d9a7cb` 原 QA 5/6 FAIL 收據照舊 immutable，無原 owner private key 不可替代重跑。剩餘阻斷是**AI-authored PG CRUD UI→真正網站驗收→可靠自修→原 Job 持久身份／分享**，以及 3×3 真新生成與速度測量。PR #419/Design #45 均仍開啟未合併、Staging only、不 Production、不 Sprint 4。
+
 ## 0.Q Human US$1 全批硬上限 + 九次新生成網站 E2E（2026-11-01 最新指令，SPEC 已先更新）
 
 - **Design 唯一 SSOT FIRST**：[Design PR #45 H-001 §0.5 / commit 88d6d38](https://github.com/NFF98/appf2-design/commit/88d6d389268e5f35269de7ffd0b1d5af4c45de6d) 已先定義。Human 新授權 **最多 US$1.00，針對完成全部九次真網站 E2E 的整批費用**，覆蓋舊 US$6.84 估算。已發生的舊 G1 付費樣本保留且與新批次分開記；不能假稱舊帳單為 0。模型預留上限≠實際帳單。**不得因「沒達到不要停」突破美元上限、秘密更換低價模型、重扣未知呼叫或假 PASS。**
