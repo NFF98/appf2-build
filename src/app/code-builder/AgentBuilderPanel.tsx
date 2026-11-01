@@ -55,7 +55,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   const update=()=>setFreeAiElapsedSec(Math.max(0,
    Math.floor((Date.now()-freeAiStartedAt)/1000)));
   update();
-  const timer=window.setInterval(update,1000);
+  // A five-second refresh avoids re-rendering the whole App Builder each
+  // second or flooding assistive technology with timer announcements.
+  const timer=window.setInterval(update,5000);
   return ()=>window.clearInterval(timer);
  },[freeAiStartedAt]);
  useEffect(()=>{
@@ -534,7 +536,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
   {freeAiStartedAt!==null?
-   <p className="saved-apps-note" role="status">
+   <p className="saved-apps-note" aria-live="off">
     本次畫面已等待 {Math.floor(freeAiElapsedSec/60)} 分
     {freeAiElapsedSec%60} 秒；目前在使用既有 GPT-6／免費 Runner 流程。
     可停止畫面等待並稍後接續同一 Job，不必守在頁面前。
