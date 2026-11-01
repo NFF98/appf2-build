@@ -18,6 +18,7 @@ export type FreeCiRepairDecision={
  readonly evidence_snapshots:number;
 };
 type Failure={hash:string;signature:string};
+// eslint-disable-next-line complexity -- Immutable attested QA evidence admission is deliberately fail-closed.
 async function attestedFailure(planHash:string,plan:QaPlan,
  row:FreeCiRepairHistory):Promise<Failure|null>{
  if(!HASH.test(row.project_hash)||typeof row.receipt_json!=="object"||
@@ -49,6 +50,7 @@ async function attestedFailure(planHash:string,plan:QaPlan,
  * result in source revision 5 / eight durable build+repair steps.
  * A new charge is forbidden without owner-signed total cost approval.
  */
+// eslint-disable-next-line complexity, max-params -- Frozen plan, saved history, current head and cost limits are separate guards.
 export async function decideFreeCiRepair(plan:QaPlan,
  history:readonly FreeCiRepairHistory[],currentHash:string,
  projectRevision:number,usedSteps:number,approvedCents:number,
