@@ -320,6 +320,14 @@
 - Database hard blocker found and removed only on Staging: `appf2_agent_model_runner_request_call_key_check` previously accepted *only* `repair_v1`. Migration `20261101040000_sp35_free_ci_repair_round_keys.sql` **applied successfully to actual Staging PostgreSQL**; independent schema query confirmed exact allowed values QA/CODE v1 and REPAIR v1-v3. RLS, immutable request trigger and GPT-6 model allowlist unchanged.
 - New deterministic API tests cover first/second/third QA failure, root-cause switching, forged or UNTESTED-only receipt, extra billing refusal and step/round exhaustion. No new paid GPT-6 repair execution is claimed by these tests. **C4 requires a genuine failing model-authored App → paid repair → free Docker/Chromium all-criteria PASS receipt. C5 requires a genuine same-Job repeated failure → distinct signed model request → strategy switch → resumed App QA with saved evidence.** Strict full 5-core E2E not yet passed.
 
+
+### 2026-11-01 — C4/C5 exact CI repair + live C5 streak-fence regression VERIFIED (no paid model call)
+
+- The real free product CI at [run #41260477317](https://github.com/NFF98/appf2-build/actions/runs/41260477317) **COMPLETED SUCCESS** at branch commit `b780142`: TypeScript, ESLint, platform compilation, 477 API tests PASS / 44 SKIPPED, 31 Runtime tests PASS, trusted Docker/Chromium fixture, owner-signed Staging PostgreSQL Job → free network-denied Docker → Chromium and website with mocked provider PASS. This is NOT paid GPT-6 failure-repair E2E.
+- Resolved two specific ESLint errors from [run #41260047593](https://github.com/NFF98/appf2-build/actions/runs/41260047593): `modelPrompt` had 6 parameters, and a separate disable directive did not attach to `runFreeCiAiStage` complexity rule. Commit `c8acd85` moved failure/strategy context into one typed object and attached the checks-preserving lint directive correctly.
+- Run #41260326816 then exposed a **genuine C5 logic bug**: an intervening UNTESTED-only QA version was omitted when counting previous repeated failures, resulting in a false second consecutive failure. Commit `b780142` now treats a missing, forged or UNTESTED-only intermediate version as a **hard streak boundary**, never counting across it. Entire new run #41260477317 passed including root-cause strategy tests.
+- Current **source checks and free staging integration PASS**; GPT-6 actually repairing a failing model-written App with independent browser PASS (C4), followed by real repeated-failure strategy switching and subsequent successful continuity (C5), still **NOT_PROVEN**. No new provider charges, production merge, production publish, or paid Cloudflare Containers in this verification.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
