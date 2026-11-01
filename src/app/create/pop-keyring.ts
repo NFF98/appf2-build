@@ -98,6 +98,41 @@ export class PopKeyring {
 
   }
 
+  /** Durable Agent admission: no paid work until the ORIGINAL owner key has
+   * been committed to persistent browser storage and independently read back.
+   * Legacy F01 bindIntent remains non-blocking; Agent must call this method.
+   * Never mint a replacement key or export private bytes.
+   */
+  public async bindDurableIntent(logicalOperationKey:string,intentId:string,
+    key:PopKey):Promise<void> {
+    const material=this.keyMaterial.get(key);
+    const persistence=this.dependencies.persistence;
+    if(!material||!persistence)
+      throw Error("AGENT_OWNER_KEY_PERSISTENCE_REQUIRED_NO_AI_CHARGE");
+    // Do not register or discard the logical key until storage is durable.
+    await persistence.save(intentId,material);
+    const saved=await persistence.load(intentId);
+    if(!saved||saved.thumbprint!==material.thumbprint||
+      saved.expiresAt!==material.expiresAt||
+      saved.privateKey.extractable!==false||
+      !saved.privateKey.usages.includes("sign")||
+      saved.thumbprint!==await keyThumbprint(saved.spki))
+      throw Error("AGENT_OWNER_KEY_DURABILITY_NOT_VERIFIED_NO_AI_CHARGE");
+    // Verify that the persisted private key signs for the expected public key:
+    // browser storage may be stale or tampered with.
+    const challenge=new TextEncoder().encode(
+      "APPF2_AGENT_OWNER_RESTORE_PROOF_V1:"+intentId);
+    const signature=await this.dependencies.subtle.sign(
+      ECDSA_SHA256,saved.privateKey,challenge);
+    const publicKey=await this.dependencies.subtle.importKey("spki",
+      saved.spki,P256,false,["verify"]);
+    if(!await this.dependencies.subtle.verify(
+      ECDSA_SHA256,publicKey,signature,challenge))
+      throw Error("AGENT_OWNER_KEY_PAIR_MISMATCH_NO_AI_CHARGE");
+    this.intents.set(intentId,wrapPopKey(saved,this.dependencies));
+    this.creates.delete(logicalOperationKey);
+  }
+
   public keyForIntent(intentId: string): PopKey | undefined {
     return this.intents.get(intentId);
   }
