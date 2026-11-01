@@ -276,3 +276,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] lint-fixed C4 signed manual repair independent FAIL→PASS, no paid generation.
 
 # 2026-11-01 C4 deploy saved-response half-CAS recovery: existing Worker & free QA only, NO paid model POST or Production.
+
+# 2026-11-01 existing Sprint3.5 Staging only: deploy read-only owner-bound C5 3-failure strategy evidence. NO provider POST, NO production. [SP35-FREE-STAGING-DEPLOY-ONCE]
