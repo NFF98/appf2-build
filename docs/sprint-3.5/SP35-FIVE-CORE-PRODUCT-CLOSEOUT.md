@@ -5,6 +5,24 @@
 > **產品語意唯一來源**：Design PR #45 `working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md` §0（Design commit `a9651594baf79753a05b1f608466cbc93a316c51`），以及各現行 Phase 1 Fxx Working owner。**本檔只管 HOW／執行次數／證據，絕不取代 Design SSOT。**
 > **唯一產品開發 PR**：[Build #419](https://github.com/NFF98/appf2-build/pull/419)；Design 只沿用 [#45](https://github.com/NFF98/appf2-design/pull/45)。不開 Sprint 4，不建立平行的 Product Spec 或其他開發 PR。
 
+
+## 0.P 2026-11-01 SPEC → Build → Implement 缺口關閉執行計畫（Human 最新方向）
+
+**先有 SPEC 才能改程式。** Design PR #45 既有 H-001 唯一 Product Design authority 新增 §0.4（[Design commit c2212ed](https://github.com/NFF98/appf2-design/commit/c2212edad1b6b64347b49ac61c57849a5963aaac)），鎖住 G0..G5、獨立 E2E、速度、權限、費用。此頁只記 HOW、實作、收據；不另建 Product Spec。原 `build-spec/CURRENT.json` 仍 BS-P1-025、`implementation_enabled=false`，**不冒充已取得 Build Freeze 或已啟動 BS-P1-026**。限定 Design PR #45、Build PR #419，僅 Sprint 3.5，不合併、不 Production、不 Sprint 4。
+
+| SPEC Gate | 目前實測事實 | 按優先序實作任務 | 唯一 PASS 條件 |
+| --- | --- | --- | --- |
+| **G0 真網站耗時與進度** | UI 有前端計時、Chromium cache hit；**缺原 Job 伺服器跨服務里程碑、分段時間及 P50/P95** | **A1** 原 owner 權限檢查下的 Job milestone read-only endpoint，PG 的 Job／source／model／Runner／QA 時戳，前端同 Job 展示真時間 | 3 類×3 真網站流程；Job-saved/first-interactive/QA-complete 分段實測，無樣本明示 NOT_MEASURED |
+| **G1 多檔／真 DB** | AI files 最多12檔、Vite 多模組、3類手寫 fixture Chromium PASS；**新 schema 真 GPT-6 多類＋使用者 CRUD 未全面 PASS** | **A2** 既有 viewer-private PostgreSQL appf2Records bridge 容量／權限 admission、無權 server/npm fail-closed；真模型3類至少1真 DB | 同一生成引擎、至少2種非模板、真資料 CRUD＋刷新與隔離、原需求 frozen QA PASS |
+| **G2 持久 Job** | P-256 original owner、paid journal、source CAS、同 Job 重開已有 PASS | **A3** 原 Job 里程碑保存、恢復零重扣及陌生 owner 拒絕 | 同 source hash、同原 owner、0 新模型 POST，外人不能接續 |
+| **G3 真 Sandbox** | 免費 Docker + 獨立 Chromium 真 source/receipt PASS、cache hit | **A4** G1 完整 source tree 維持隔離、hash、限權，不能跑在 GitHub host 信任進程 | 真 AI 原始碼在受限 Docker、獨立 QA、FAIL 不公開 |
+| **G4 AI 自修／換策略** | 真 GPT-6 首版 FAIL→修復 6/6；三次真 FAIL→免費策略 RETHINK_ROOT_CAUSE；**真付費第三輪未發生** | **B1** 依相同 QA/真正診斷、max 8 job steps、原 owner 成本上限；如自然出現第三輪需證明模型真的換方案 | 真 paid model source CAS+Chrome PASS；三輪換策略不造假或為湊 PASS 刻意造 FAIL |
+| **G5 v2 卡片／分享** | 私人重開 PASS；限定型公開單檔已驗過；**新多檔 v2 F05 真陌生 browser 尚缺** | **B2** v2 artifact/admission、明確 owner share:create、ACTIVE F05 share、陌生 recipient 操作、0 生成 | 同 hash 雙 browser；拒絕 foreign/revoked；各 viewer 私有資料不洩漏 |
+
+**執行序列：**Design SPEC §0.4 commit → 本 SSOT 計畫 commit → **Round A A1～A4** 共用引擎/真網站里程碑 → 真 E2E 查阻斷 → **Round B B1/B2** 僅修第一個實證產品 FAIL → 六 Gate 同 HEAD 收據驗收。最多兩輪集中修復；失敗要停、保留 Job 與根因，不開第三輪、不跑模板作弊。每項要寫原 Job、GitHub run、PG／Chromium receipt 或 NOT_RUN，不能以「60%」冒充真 PASS。
+
+**速度目標（尚未達標證明）**：原 Job 建立 P95 ≤5 秒、簡單 App 首可操作 P50 ≤120 秒、簡單 App 完整 QA P50 ≤300 秒；每類至少3個網站流程，3類共9次後才估 P50/P95 與失敗率，不足則 INSUFFICIENT_SAMPLES；不得隱藏真正 QA 來提速。Human 舊一次 76 美分付費實測授權已用，**本輪沒有新付費 GPT Job 授權**；現有免費 GitHub Actions、Workers、PostgreSQL，不升級 Cloudflare Containers／付費 Browser Run。只有 G0..G5 每項同 HEAD 有真實證據才宣告產品 100%。
+
 ## 0. 2026-10-31 Free-only 執行決議（Human 最新指示）
 
 **只改成本／隔離執行方式，不降低五核產品 Gate，不開 Sprint 4，不建立新 Product SSOT。**
