@@ -11,6 +11,70 @@ concurrency:
   group: sp35-one-explicit-paid-ai-e2e
   cancel-in-progress: false
 jobs:
+  g4-stones-free-frozen-plan-preflight:
+    # Distinct game from G3. Zero paid AI, no Job, no false product 3/9.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G4-STONES-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked deps, no AI
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Free syntax and seven source-bound tests
+        run: |
+          node --check deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs
+          node deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs --preflight-only
+      - name: GET-only Agent readiness, no new Job
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",{signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G4_NOT_READY_NO_AI_CALL");
+          console.log("SP35 G4 READONLY READY, zero model POST");
+          JS
+
+  g4-one-website-gpt6-stones:
+    # A different natural-language game from G3. Explicit one-time 44c cap;
+    # never use a paid marker just to replay/resume the old tic-tac-toe Job.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G4-STONES-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_G4_EXPLICIT_PAID_OK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Frozen requirements and syntax before any charge
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --check deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs
+          node deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs --preflight-only
+      - name: Prepaid staging GET safety check
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",{signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G4_PAID_NOT_READY_ZERO_AI_POST");
+          console.log("SP35 G4 FREE PAID-READINESS PASS");
+          JS
+      - name: Free Chromium
+        run: npx playwright install --with-deps chromium
+      - name: ONE distinct GPT-6 native website stones game, 7/7 QA, signed publish HTTP and stranger real game
+        run: node deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs
+
   g3-game-free-frozen-plan-preflight:
     # One FREE check only: no new owner Job or model API POST.
     # SPEC is Design PR #45 H-001 §0.12; green here is NOT product 3/9.
