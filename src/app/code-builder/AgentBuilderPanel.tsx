@@ -34,6 +34,10 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   failure_code?:string}[]>([]);
  const [approvedCents,setApprovedCents]=useState(60);
  const [busy,setBusy]=useState(false);
+ // Duration shown to the person is THIS browser session, not a provider
+ // performance promise or a complete end-to-end server-side SLA.
+ const [freeAiStartedAt,setFreeAiStartedAt]=useState<number|null>(null);
+ const [freeAiElapsedSec,setFreeAiElapsedSec]=useState(0);
  const [error,setError]=useState("");
  const [snapshot,setSnapshot]=useState<CandidateSnapshot|null>(null);
  const [saved,setSaved]=useState(()=>savedCandidateTarget()!==null);
@@ -46,6 +50,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [previewReady,setPreviewReady]=useState(false);
  const [previewExpanded,setPreviewExpanded]=useState(false);
  const [previewFullscreenError,setPreviewFullscreenError]=useState("");
+ useEffect(()=>{
+  if(freeAiStartedAt===null)return;
+  const update=()=>setFreeAiElapsedSec(Math.max(0,
+   Math.floor((Date.now()-freeAiStartedAt)/1000)));
+  update();
+  const timer=window.setInterval(update,1000);
+  return ()=>window.clearInterval(timer);
+ },[freeAiStartedAt]);
  useEffect(()=>{
   const onChange=()=>{
    if(document.fullscreenElement===previewShell.current){
@@ -271,6 +283,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    approvedCents<44)return;
   setBusy(true);setError("");setQaOutcome("");setPublishedUrl("");
   setQaChecks([]);setPreviewReady(false);stop.current=false;
+  setFreeAiElapsedSec(0);setFreeAiStartedAt(Date.now());
   try{
    const readiness=await fetch("/api/v1/agent-readiness",{cache:"no-store"});
    const status=await readiness.json() as {data?:{free_ci_paid_ai_available?:boolean}};
@@ -305,9 +318,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     if(current.revision===0){
      if(savedCandidateTarget()?.qaPlan&&!resume)
       await worker.freezeOriginalQaPlan();
-     else await worker.freeAiStage("QA");
+     else await worker.freeAiStage("QA",()=>stop.current);
     }
-    const created=await worker.freeAiStage("CODE");
+    const created=await worker.freeAiStage("CODE",()=>stop.current);
     current=await worker.read();
     setSnapshot({job:current,progress:null,
      message:created.status==="AI_SOURCE_SAVED_FREE_CI_QUEUED"?
@@ -331,6 +344,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    let receiptSeen=false;
    for(let i=0;i<90&&!stop.current;i++){
     await new Promise<void>(resolve=>window.setTimeout(resolve,8000));
+    if(stop.current)break;
     current=await worker.read();
     setSnapshot({job:current,progress:null,
      message:"正在讀取原 Job 的真正 Docker／Chromium 收據，不重新呼叫模型。",
@@ -368,7 +382,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
         " 美分，使用唯一模型工作鍵修復並重新派發免費 Docker。");
       }
       receiptSeen=false;
-      const repair=await worker.freeAiStage("REPAIR");
+      if(stop.current)break;
+      const repair=await worker.freeAiStage("REPAIR",()=>stop.current);
       if(repair.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
        throw Error("修復原始碼已保存，但免費 Docker 再派發未確認；停止等待。");
       repaired++;
@@ -409,8 +424,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    }
    if(!stop.current&&!receiptSeen)
     setQaOutcome("尚未收到可驗證的 Docker／Browser QA 收據；工作保留，不自動重送 AI。");
-  }catch(e){setError(failureMessage(e));}
-  finally{setBusy(false);}
+  }catch(e){
+   if(failureMessage(e)==="SP35_USER_PAUSED_VIEW_NO_NEW_POST"){
+    setQaOutcome("已停止此頁面的等待；原 Job 與已送出的模型工作不會取消。"+
+     "可關閉頁面，稍後回來用「接續已保存的 GPT-6 專案」從原紀錄恢復。"+
+     "不會為同一階段再建另一個付費工作。");
+   }else setError(failureMessage(e));
+  }
+  finally{setBusy(false);setFreeAiStartedAt(null);}
  };
  /* eslint-enable max-depth */
  const publishFreeApp=async()=>{
@@ -500,6 +521,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   snapshot.progress.qa_observed_checks:qaChecks;
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
+  {freeAiStartedAt!==null?
+   <p className="saved-apps-note" role="status">
+    本次畫面已等待 {Math.floor(freeAiElapsedSec/60)} 分
+    {freeAiElapsedSec%60} 秒；目前在使用既有 GPT-6／免費 Runner 流程。
+    可停止畫面等待並稍後接續同一 Job，不必守在頁面前。
+    關閉頁面後，已派發的模型或 Docker 仍會執行；
+    但後續自動修復與驗收需要回來按「接續已保存的 GPT-6 專案」。
+   </p>:null}
   <p className="saved-apps-note">真正的多檔案程式專案；AI 可以編寫、保存、要求隔離建置與修復。
    Staging 已實測免費 GitHub Actions Docker＋Chromium、逐項 QA 收據、私人建置資產保存和零 AI 重開。
    可操作的私人 App 要以該 Job 的「已保存 App」按鈕及真實測試為準；
@@ -724,7 +753,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    <button type="button" className="btn btn-secondary"
     disabled={busy} onClick={()=>{void extend();}}>延長 16 步（費用上限不變）</button>:null}
   {busy?<button type="button" className="btn btn-secondary"
-    onClick={()=>{stop.current=true;}}>完成目前步驟後停止</button>:null}
+    onClick={()=>{
+     stop.current=true;
+     if(freeAiStartedAt!==null)
+      setQaOutcome("已要求停止此頁面的等待，原 Job 已保存；"+
+       "目前已派發的 GPT-6／免費 Runner 不會因此取消或再次扣費。");
+    }}>{freeAiStartedAt!==null?
+     "停止畫面等待（保留原 Job、不重新扣費）":
+     "完成目前步驟後停止"}</button>:null}
   {error?<p role="alert">{error}</p>:null}
   {snapshot?<section aria-label="Agent 專案進度" role="status">
    <h3>已保存專案 · {snapshot.job.status}</h3>
