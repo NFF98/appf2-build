@@ -9,6 +9,15 @@ import {claimModelCall,type ModelCallRow} from
 import {validFreeCiGitHubToken,sendFreeCiGithubDispatch}
  from "./free-ci-dispatch.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
+function classifyGithubDispatchStatus(status:number):string{
+ return String([400,401,403,404,409,422,429,500,502,503].includes(status)?
+  status:"OTHER_HTTP");
+}
+function classifyGithubDispatchException(error:unknown):string{
+ if(error instanceof Error&&(error.name==="TimeoutError"||error.name==="AbortError"))
+  return "TIMEOUT";
+ return error instanceof TypeError?"FETCH_TYPE_ERROR":"FETCH_OTHER_ERROR";
+}
 // eslint-disable-next-line max-params -- immutable DB, owner and one-shot Github trust boundaries.
 export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
  projectHash:string,request:unknown,token:string,ticketSecret:string,
@@ -55,14 +64,11 @@ export async function dispatchAiRunner(db:AgentJobExecutor,row:ModelCallRow,
      inputs:{ticket:"ai_runner_v1_"+ticket}}),
     signal:globalThis.AbortSignal.timeout(12000)});
   if(response.status===204)return;
-  classification=String([400,401,403,404,409,422,429,500,502,503].includes(
-   response.status)?response.status:"OTHER_HTTP");
+  classification=classifyGithubDispatchStatus(response.status);
  }catch(e){
   // Do NOT include message/stack/URL/ticket. A fixed classification is safe
   // even when GitHub's response was lost after accepting the dispatch.
-  classification=e instanceof Error&&(
-   e.name==="TimeoutError"||e.name==="AbortError")?
-   "TIMEOUT":e instanceof TypeError?"FETCH_TYPE_ERROR":"FETCH_OTHER_ERROR";
+  classification=classifyGithubDispatchException(e);
  }
  throw Error("SP35_AI_RUNNER_DISPATCH_UNCONFIRMED_"+classification);
 }
