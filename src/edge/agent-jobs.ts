@@ -15,7 +15,7 @@ import {importOwnerFreeSource,validFreeImportInput,importOwnerFreeRepair,validFr
 import {dispatchFreeCiJob,validFreeCiDispatchInput} from "./free-ci-dispatch.js";
 import {publishVerifiedPrivateApp,validPublishOwnerAppBody}
  from "./agent-share-publish.js";
-import {runFreeCiAiStage,validFreeAiCodeInput,inspectFreeCiRepairEvidence} from "./free-ci-ai-code.js";
+import {runFreeCiAiStage,validFreeAiCodeInput,validFreeCiAiEvidenceInput,inspectFreeCiRepairEvidence} from "./free-ci-ai-code.js";
 import {sealAiRunnerTicket,openAiRunnerTicket}
  from "../platform/agent/free-ai-runner-ticket.js";
 import {executeFirstAgentModelPlan,validModelPlanBody} from "./agent-model-plan.js";
@@ -220,7 +220,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(qaMatch&&(env.APPF2_AGENT_QA_REVIEW_ENABLED!=="1"||
   !env.APPF2_AGENT_QA_VERIFIER_SECRET))return denied();
  if((autoMatch||seqMatch)&&env.APPF2_AGENT_AUTOSTEP_ENABLED!=="1")return denied();
- const info=freeAiProbeMatch?verifiedBody(parsed,false):
+ const info=freeAiEvidenceMatch?(validFreeCiAiEvidenceInput(parsed)?parsed:null):
+  freeAiProbeMatch?verifiedBody(parsed,false):
   freeAiMatch?(validFreeAiCodeInput(parsed)?parsed:null):
   freeShareMatch?(validPublishOwnerAppBody(parsed)?parsed:null):
   freeCiPreviewMatch?(validFreeCiOwnerPreviewInput(parsed)?parsed:null):
@@ -309,11 +310,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   }
   if(freeAiEvidenceMatch){
    if(env.APPF2_AGENT_FREE_ONLY!=="1"||
-    !isObject(info)||
-    Object.keys(info).sort().join(",")!=="anonymous_id,original_prompt"||
-    typeof info.original_prompt!=="string"||
-    info.original_prompt.length<5||info.original_prompt.length>800)
-    return denied();
+    !validFreeCiAiEvidenceInput(info))return denied();
    const result=await inspectFreeCiRepairEvidence({
     anonymous_id:info.anonymous_id as string,
     original_prompt:info.original_prompt},{db,
