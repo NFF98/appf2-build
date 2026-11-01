@@ -48,7 +48,7 @@ function installHelpers(){
  const encoded=bytes=>{
   let text="";
   for(const byte of bytes)text+=String.fromCharCode(byte);
-  return btoa(text).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
+  return globalThis.btoa(text).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
  };
  const send=async(material,url,body)=>{
   const bytes=new globalThis.TextEncoder().encode(JSON.stringify(body));
@@ -88,15 +88,15 @@ function installHelpers(){
     created.json.data.revision!==0)
     throw Error("C2_CREATE_NOT_PERSISTED_HTTP_"+created.status);
    const jobId=created.json.data.job_id;
-   localStorage.setItem("appf2.c2.live.checkpoint.v1",JSON.stringify({
+   globalThis.localStorage.setItem("appf2.c2.live.checkpoint.v1",JSON.stringify({
     jobId,owner,projectHash:created.json.data.project_hash}));
-   if(!localStorage.getItem("appf2.c2.live.checkpoint.v1"))
+   if(!globalThis.localStorage.getItem("appf2.c2.live.checkpoint.v1"))
     throw Error("C2_JOB_POINTER_NOT_DURABLE");
    return {jobId,sourceHash:created.json.data.project_hash};
   },
   async recover(){
    const material=await read();
-   const raw=localStorage.getItem("appf2.c2.live.checkpoint.v1");
+   const raw=globalThis.localStorage.getItem("appf2.c2.live.checkpoint.v1");
    const pointer=raw?JSON.parse(raw):null;
    if(!pointer||material?.owner!==pointer.owner||
     material.privateKey.extractable!==false)
