@@ -16,7 +16,7 @@ import {decideFreeCiRepair,type FreeCiRepairHistory}
  from "../platform/agent/free-ci-repair-policy.js";
 import {dispatchFreeCiJob} from "./free-ci-dispatch.js";
 import {dispatchAiRunner} from "./free-ai-dispatch.js";
-import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
+import type {AgentJobExecutor,AgentJobRow} from "../platform/agent/postgres-agent-jobs.js";
 const SHA=/^sha256:[a-f0-9]{64}$/u;
 const AMOUNTS={QA:8,CODE:20,REPAIR:16} as const;
 // Sprint 3.5 official GPT-6 coding model. One immutable value for the API
@@ -28,6 +28,26 @@ type Input={readonly anonymous_id:string;readonly original_prompt:string;
  readonly explicit_ai_consent:true;readonly explicit_free_ci_consent:true};
 type ModelResult={readonly response:unknown;readonly inputTokens:number;
  readonly outputTokens:number};
+/** Apply a paid response ONLY to the identical creator-bound immutable Job
+ * head it was reserved against; a later code deploy's changed prompt bytes
+ * must not force the owner to buy the same completed result again.
+ * A caller must already have authenticated the original creator's PoP key.
+ */
+export function recoveredPaidResponse(
+ existing:ModelCallRow|null,job:AgentJobRow,phase:Phase):ModelResult|null{
+ if(existing?.status!=="SUCCEEDED"||existing.response_json===null)return null;
+ if(existing.job_id!==job.job_id||
+  existing.owner_anonymous_id!==job.owner_anonymous_id||
+  existing.job_revision!==job.revision||
+  existing.checkpoint_hash!==job.checkpoint_hash||
+  existing.model!==MODEL||
+  existing.max_charge_cents!==AMOUNTS[phase])
+  throw Error("SP35_PAID_AI_SAVED_HEAD_MISMATCH_NO_RECHARGE");
+ return {response:existing.response_json,
+  inputTokens:existing.input_tokens??0,
+  outputTokens:existing.output_tokens??0};
+}
+
 // eslint-disable-next-line complexity -- Exact owner, cost-consent, phase and hash shape are security checks.
 export function validFreeAiCodeInput(x:unknown):x is Input{
  if(typeof x!=="object"||x===null||Array.isArray(x))return false;
@@ -215,16 +235,8 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  // deployment formats the diagnostic model prompt differently. Rebuilding
  // and rehashing the *new* prompt must never strand an already-paid answer.
  // For an unsent / in-flight call, retain strict request-hash equality.
- if(existing?.status==="SUCCEEDED"&&existing.response_json!==null){
-  if(existing.job_revision!==job.job.revision||
-   existing.checkpoint_hash!==job.job.checkpoint_hash||
-   existing.model!==MODEL||
-   existing.max_charge_cents!==AMOUNTS[phase])
-   throw Error("SP35_PAID_AI_SAVED_HEAD_MISMATCH_NO_RECHARGE");
-  return {response:existing.response_json,
-   inputTokens:existing.input_tokens??0,
-   outputTokens:existing.output_tokens??0};
- }
+ const completed=recoveredPaidResponse(existing,job.job,phase);
+ if(completed)return completed;
  if(existing&&existing.request_hash!==digest)
   throw Error("SP35_PAID_AI_REQUEST_HASH_MISMATCH_NO_RECHARGE");
  if(existing?.status==="IN_FLIGHT"){
