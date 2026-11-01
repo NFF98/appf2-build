@@ -12,7 +12,8 @@ import {getModelCall,reserveModelCall,completeModelCall,
  type ModelCallRow} from "../platform/agent/postgres-model-calls.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {readFreeCiSmoke} from "./free-ci-result.js";
-import {decideFreeCiRepair,type FreeCiRepairHistory}
+import {decideFreeCiRepair,analyzeFreeCiFailureStreak,
+ type FreeCiRepairHistory}
  from "../platform/agent/free-ci-repair-policy.js";
 import {dispatchFreeCiJob} from "./free-ci-dispatch.js";
 import {dispatchAiRunner} from "./free-ai-dispatch.js";
@@ -443,4 +444,46 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   ...(strategy?{repair_round:strategy.round,strategy_mode:strategy.mode,
    next_approved_cents:strategy.round<3?28+16*(strategy.round+1):null}:{}),
   app_published:false as const,paid_model_call_saved:true as const};
+}
+
+/** Read-only original-owner proof of C5 failure lineage. No AI call,
+ * reservation, budget extension, source edit or publication occurs here.
+ * The SAME analyzer is used by paid REPAIR admission.
+ */
+export async function inspectFreeCiRepairEvidence(input:{
+ readonly anonymous_id:string;readonly original_prompt:string;
+},ctx:{db:AgentJobExecutor;jobId:string;ownerThumb:string}){
+ const digest=await sha256CodeBytes(new TextEncoder().encode(
+  "APPF2_AGENT_REQUEST_V1\u0000"+input.original_prompt.trim()));
+ const owns=(await ctx.db.query<{job_id:string}>(
+  "SELECT job_id::text FROM public.appf2_agent_job "+
+  "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
+  "AND owner_key_thumbprint=$3::text LIMIT 1",
+  [ctx.jobId,input.anonymous_id,ctx.ownerThumb])).rows[0];
+ if(owns?.job_id!==ctx.jobId)
+  throw Error("SP35_REPAIR_EVIDENCE_NOT_CREATOR");
+ const saved=await recoverAgentJob(ctx.db,ctx.jobId,input.anonymous_id);
+ if(!saved||saved.job.request_hash!==digest||
+    saved.job.job_state!=="CODING"||
+    saved.project.revision<2||saved.project.revision>4)
+  throw Error("SP35_REPAIR_EVIDENCE_NOT_ELIGIBLE");
+ const plan=await frozenPlan(ctx.db,ctx.jobId,input.anonymous_id,
+  input.original_prompt);
+ if(!plan)throw Error("SP35_REPAIR_EVIDENCE_PLAN_MISSING");
+ const history=(await ctx.db.query<FreeCiRepairHistory>(
+  "SELECT r.project_hash,r.receipt_json,s.project_revision,s.parent_hash "+
+  "FROM public.appf2_agent_free_ci_receipt r "+
+  "JOIN public.appf2_agent_project_snapshot s "+
+  "ON s.owner_anonymous_id=r.owner_anonymous_id "+
+  "AND s.project_hash=r.project_hash "+
+  "WHERE r.job_id=$1::uuid AND r.owner_anonymous_id=$2::uuid "+
+  "ORDER BY s.project_revision DESC,r.project_hash DESC LIMIT 8",
+  [ctx.jobId,input.anonymous_id])).rows;
+ const result=await analyzeFreeCiFailureStreak(plan,history,
+  saved.project.project_hash,saved.project.revision);
+ return {status:"C5_EVIDENCE_ONLY" as const,project_hash:saved.project.project_hash,
+  job_revision:saved.job.revision,project_revision:saved.project.revision,
+  next_round:saved.project.revision-1,
+  ...result,paid_model_requests_issued_by_inspection:0 as const,
+  app_published:false as const};
 }
