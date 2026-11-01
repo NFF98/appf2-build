@@ -239,6 +239,27 @@ export function saveTarget(value:AgentStoredTarget):void{
   localStorage.setItem(LIBRARY_SLOT,JSON.stringify(recent));
  }catch{ /* Private browsing degrades to tab-only recovery. */ }
 }
+/** Durable owner Job index: sessionStorage fallback is insufficient for
+ * closed-tab recovery. The key was already durably verified in IndexedDB;
+ * the Job pointer and stable creator UUID must also survive in localStorage.
+ * No private material is stored here or exported to the runner.
+ */
+export function saveDurableAgentTarget(value:AgentStoredTarget):void{
+ saveTarget(value);
+ try{
+  const raw=localStorage.getItem(SLOT);
+  const owner=localStorage.getItem("appf2.anonymous_id.v1");
+  if(!raw||!owner||!ID.test(owner))throw Error("storage absent");
+  const record:unknown=JSON.parse(raw);
+  if(!record||typeof record!=="object"||
+    (record as {jobId?:unknown}).jobId!==value.jobId||
+    (record as {prompt?:unknown}).prompt!==value.prompt||
+    !validatedTarget(record))
+    throw Error("target not retained");
+ }catch{
+  throw Error("AGENT_OWNER_TARGET_DURABILITY_REQUIRED_NO_AI_CHARGE");
+ }
+}
 function ring():PopKeyring{
  return new PopKeyring({subtle:crypto.subtle,now:Date.now,
   persistence:createBrowserPopKeyPersistence(AGENT_OWNER_PROOF_LIFETIME_MS),
@@ -321,7 +342,7 @@ export class BrowserCodingAgent {
   this.target={jobId:data.job_id,prompt:prompt.trim(),
    firstModelKey:"agent_first_"+crypto.randomUUID(),
    ...(qaPlan?{qaPlan}:{})};
-  saveTarget(this.target);
+  saveDurableAgentTarget(this.target);
   if(qaPlan)await this.freezeOriginalQaPlan();
   return this.target;
  }
