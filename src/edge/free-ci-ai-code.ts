@@ -33,6 +33,7 @@ type ModelResult={readonly response:unknown;readonly inputTokens:number;
  * must not force the owner to buy the same completed result again.
  * A caller must already have authenticated the original creator's PoP key.
  */
+// eslint-disable-next-line complexity -- Original owner, paid checkpoint and half-CAS lineage must all match.
 export function recoveredPaidResponse(
  existing:ModelCallRow|null,job:AgentJobRow,phase:Phase):ModelResult|null{
  if(existing?.status!=="SUCCEEDED"||existing.response_json===null)return null;
