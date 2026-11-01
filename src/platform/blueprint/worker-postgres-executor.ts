@@ -18,6 +18,8 @@ export interface HyperdrivePostgresBinding {
 export interface WorkerRequestDbContext {
   readonly anonymousId: string | null;
   readonly intentId: string | null;
+  /** Set ONLY after the viewer P-256 signed code App records request. */
+  readonly codeRecordThumbprint?: string;
 }
 
 export const NO_REQUEST_DB_CONTEXT: WorkerRequestDbContext = Object.freeze({ anonymousId: null, intentId: null });
@@ -28,6 +30,7 @@ export const CREATE_KEY_SINGLE_HOLDER_INDEX = "idempotency_operation_create_key_
 const CONTEXT_KEYS = [
   "app.anonymous_id",
   "app.intent_id",
+  "app.code_record_thumbprint",
   "app.admitting_content_hash",
   "app.trust_transition_content_hash",
   "app.evidence_source_row_id",
@@ -66,6 +69,7 @@ export class WorkerPostgresExecutor implements PostgresExecutor {
     const values = new Map<string, string>(CONTEXT_KEYS.map((key) => [key, ""]));
     values.set("app.anonymous_id", context.anonymousId ?? "");
     values.set("app.intent_id", context.intentId ?? "");
+    values.set("app.code_record_thumbprint", context.codeRecordThumbprint ?? "");
     this.context = values;
   }
 
