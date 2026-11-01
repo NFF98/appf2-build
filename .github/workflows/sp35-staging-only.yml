@@ -307,6 +307,10 @@ jobs:
         run: npx vitest run tests/api/sp35-online-plan-diagnostic.api.test.ts
       - name: Read existing CREATE byte boundary with invalid PoP before deployment (NO AI)
         run: node deploy/scripts/sp35-staging-publish-size-readonly-smoke.mjs --before-deploy
+      - name: Prove local form events with unchanged network-denied sandbox BEFORE deployment
+        run: |
+          npx playwright install chromium
+          node deploy/scripts/sp35-no-network-form-events-e2e.mjs
       - name: Deploy ONLY isolated staging Worker with bundled SPA
         env:
           APPF2_STAGING_BOOTSTRAP_ONLY: ${{ env.APPF2_STAGING_BOOTSTRAP_ONLY }}
