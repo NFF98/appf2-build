@@ -295,6 +295,14 @@
 - Reconfirmed earlier free foundation #41255530731 and existing published-card reuse #41255530451 SUCCESS. Those confirm earlier counter E2E has not regressed, **not** an AI-generated real DB CRUD App or an observed automatic AI repair.
 - **C4 remains PARTIAL until a real failed generated App is repaired using a paid, owner-consented GPT-6 response and re-tested with all frozen browser requirements PASS.** C1 generated backend+PostgreSQL CRUD and C5 actual changed-strategy continuation remain NOT_PROVEN. Strict five complete cores still 0/5; three earlier focused dispatch/writeback/publish E2E checks remain 3/3.
 
+
+### 2026-11-01 — C1 App-scoped PostgreSQL CRUD implementation, live E2E pending
+
+- Root cause confirmed: Staging previously persisted creator Job/project/QA receipts and published card artifacts, but **had no generated App record table, per-viewer CRUD route, or iframe-to-API capability**. Previous successful counter Browser QA was frontend-only.
+- Existing PR #419 adds `supabase/migrations/20261101030000_sp35_code_app_record_crud.sql` and Worker `src/edge/code-app-records.ts`: fixed five operations (list/read/create/update/delete), published-App ACTIVE check, P-256 PoP, same-origin guard, bounded JSON payload and private per-viewer RLS using transaction-local `app.code_record_thumbprint`. Routes are OFF by default outside the existing free Staging deployment. No raw generated SQL or DB secrets are exposed to JS.
+- **Real existing Staging Supabase migration applied SUCCESS**, four explicit Worker-only RLS policies verified in catalog. Supabase admin SQL direct `SET LOCAL ROLE appf2_worker` returned 42501 permission denied; that diagnostic is a testing-identity limitation, **NOT** a verified CRUD E2E. Verify through the deployed Worker using its actual Hyperdrive role.
+- Source commits `9e502f4`, `8c13459`, `350da67`, `c0a710a`, `f8f83c8`, `aaaa996`, `6047b01`, `3fae720` add the migration/API/routes/staging toggle, fix exact SQL parameter binding and add payload contract tests. C1 remains **PARTIAL / NOT_REAL_E2E_PASS** pending free CI, fresh Staging redeploy, authenticated CREATE→READ→UPDATE→DELETE via Worker, browser-generated App bridge, multi-viewer isolation and re-open persistence checks. No Production changes or paid model calls.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
