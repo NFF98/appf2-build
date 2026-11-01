@@ -347,10 +347,27 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      const required=28+16*nextRound;
      if(autoRepairConsent&&nextRound<=3&&
         current.checkpoint.budget.max_cost_cents>=required){
+      // Third same-lineage failure triggers a REAL strategy change.
+      // Verify the original-owner signed Staging receipt evidence BEFORE
+      // authorizing paid GPT-6 REPAIR v3. An unsupported pattern is not
+      // permission to spend on another identical patch.
+      if(nextRound===3){
+       const evidence=await worker.inspectFreeAiRepairEvidence();
+       if(evidence.project_hash!==current.project_hash||
+        evidence.job_revision!==current.revision||
+        evidence.next_round!==3||
+        evidence.repeated_failure_count!==3||
+        evidence.mode!=="RETHINK_ROOT_CAUSE"||
+        evidence.paid_model_requests_issued_by_inspection!==0)
+        throw Error("三輪相同 QA 失敗尚未經獨立驗證；不會扣第三輪 GPT-6 修復費。");
+       setQaOutcome("已證實三次真實 Chromium 失敗；將切換根因分析策略，"+
+        "沿用原 Job、原驗收規格，且不得超出 76 美分總預算。");
+      }else{
+       setQaOutcome("原 Job 第 "+nextRound+
+        " 輪真實 QA FAIL；已核准累計預算 "+required+
+        " 美分，使用唯一模型工作鍵修復並重新派發免費 Docker。");
+      }
       receiptSeen=false;
-      setQaOutcome("原 Job 第 "+nextRound+
-       " 輪真實 QA FAIL；已核准累計預算 "+required+
-       " 美分，使用唯一模型工作鍵修復並重新派發免費 Docker。");
       const repair=await worker.freeAiStage("REPAIR");
       if(repair.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
        throw Error("修復原始碼已保存，但免費 Docker 再派發未確認；停止等待。");
