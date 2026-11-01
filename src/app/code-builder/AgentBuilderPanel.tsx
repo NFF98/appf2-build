@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import {BrowserCodingAgent,savedCandidateTarget,readSavedCandidateLibrary,
  chooseSavedCandidate,paidAgentReconciliationRequired,allFrozenFreeCiChecksPassed,
+ canResumeSavedFreeCiOnly,
  type AgentBrowserOptions,
  type CandidateSnapshot} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
@@ -307,6 +308,16 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      completed_steps:0});
     if(created.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
      throw Error("免費 Docker 派發未獲確認；原 Job 保存，不重送付費 AI。");
+   }
+   // The paid model may have SUCCEEDED and saved all source bytes while
+   // the initial browser/Worker HTTP response was lost. A creator-signed
+   // RESUME may explicitly requeue FREE QA for the SAME saved revision,
+   // without requesting a second paid model turn or re-creating a Job.
+   if(resume&&canResumeSavedFreeCiOnly(current)){
+    await worker.dispatchFreeCiBuild(true);
+    setSnapshot({job:current,progress:null,
+     message:"原 GPT-6 程式已保存；只重新派發免費 Docker／Chromium QA。沒有重做或再次付費生成。",
+     completed_steps:0});
    }
    let repaired=Math.max(0,Math.floor(current.checkpoint.step/2)-1);
    let receiptSeen=false;
