@@ -254,3 +254,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 C1 real viewer-scoped CRUD bridge+RLS+Chromium verification.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] C1 refactored Worker + Chromium test: original PR, no model POST.
+
+# 2026-11-01 C4/C5: deploy verified 477 API/31 runtime free CI repairs + three bounded QA repair round support. No paid AI calls.
