@@ -5,6 +5,7 @@
 import {recoverAgentJob,advanceDurableAgentJob}
  from "../platform/agent/durable-agent-service.js";
 import {applyProjectEdits} from "../platform/agent/project-workspace.js";
+import {aiProjectSchema,parseAiProjectFiles} from "./free-ai-project-files.js";
 import {freezeAgentQaPlan} from "./agent-qa-plan.js";
 import {parseQaPlan,type QaPlan} from "../platform/qa/requirement-contract.js";
 import {getModelCall,reserveModelCall,completeModelCall,
@@ -88,9 +89,6 @@ const qaSchema={type:"object",additionalProperties:false,required:["criteria"],
    description:{type:"string"},automatable:{type:"boolean"},
    action:{type:"string"},role:{type:"string"},name:{type:"string"},
    expected_text:{type:"string"},click_count:{type:"integer"}}}}}} as const;
-const codeSchema={type:"object",additionalProperties:false,
- required:["main_ts","style_css"],
- properties:{main_ts:{type:"string"},style_css:{type:"string"}}} as const;
 function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
  files:readonly {path:string;content:string}[],evidence:{failed:string;
  strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE"}):string{
@@ -121,9 +119,16 @@ function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
    "approach, preserving the original requirement and FROZEN acceptance checks.",
    "Run the independent Docker and Chromium tests again; never assert PASS."
   ]:[]),
-  "Return complete src/main.ts and src/style.css, no external dependencies or URLs.",
-  "Use native browser DOM and CSS; existing index.html has #app and imports src/main.ts.",
-  "Do not change package.json or use network. Preserve exact expected accessible button names.",
+  "Return a COMPLETE files array with {path,content} for every App source file.",
+  "Include src/main.ts and src/style.css plus optional relative imports under src/.",
+  "May split complex features into src/*.ts and src/*/*.ts modules (max 12 files).",
+  "All imports must use relative paths to other supplied source files. No npm",
+  "packages, network, external URLs, dynamic remote imports, or server processes.",
+  "Do not invent npm/backend/deployment files. Existing Vite package, index.html",
+  "with #app and src/main.ts entrypoint are already present and immutable.",
+  "Use native browser DOM, CSS and modular TypeScript; no UI templates.",
+  "Preserve exact expected accessible button names for original independent QA.",
+  "If complexity requires state, define reusable modules and true event handlers.",
   "For requested saved records / CRUD, use the trusted sandbox window.appf2Records bridge,",
   "never fetch/credentials/localStorage/SQL. Available Promise methods: list() returns",
   "{records:[{record_id,value}]}, create(value) returns {record_id,value},",
@@ -185,19 +190,6 @@ export function parseFreeAiPrecodePlan(raw:unknown,prompt:string):QaPlan|null{
     clicks?[{kind:"text_appears",text:x.expected_text}]:[]};
  });
  return parseQaPlan({version:"1",criteria},prompt);
-}
-function parseFiles(raw:unknown):readonly {path:string;content:string}[]|null{
- if(typeof raw!=="object"||raw===null||Array.isArray(raw))return null;
- const x=raw as Record<string,unknown>;
- if(Object.keys(x).sort().join(",")!=="main_ts,style_css")return null;
- if(typeof x.main_ts!=="string"||typeof x.style_css!=="string")return null;
- const files=[{path:"src/main.ts",content:x.main_ts},
-  {path:"src/style.css",content:x.style_css}];
- if(files.some(f=>f.content.length<20||f.content.length>65000||
-  /https?:\/\/|import\s*\(['"]https?:/u.test(f.content)||
-  f.content.includes("</script")||f.content.includes("\u0000")))
-  return null;
- return files;
 }
 /** A recovered response is fetched only by GET. No second Responses POST.
  * A temporary GET failure preserves IN_FLIGHT and the owner-scoped response ID.
@@ -395,7 +387,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
    input.original_prompt,plan,repairing?job.project.files:[],
    {failed:failure,strategy:strategy?.mode}),
   max_output_tokens:repairing?9000:12000,background:true,store:true,text:{format:{type:"json_schema",
-   name:"appf2_free_ci_source",strict:true,schema:codeSchema}}};
+   name:"appf2_free_ci_source_files_v2",strict:true,schema:aiProjectSchema}}};
  // Prevent a large saved project from exceeding the per-repair model cap
  // before reserving money or sending any request to OpenAI.
  if(repairing&&req.input.length>24000)
@@ -403,7 +395,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  const turn=await paidModelTurn(ctx.db,job,input.anonymous_id,
   input.stage,req,ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs,
   strategy?.round??1,resumeRepair||resumeCode);
- const files=parseFiles(parsedOutput(turn.response));
+ const files=parseAiProjectFiles(parsedOutput(turn.response));
  if(!files)throw Error("SP35_PAID_CODE_INVALID_NO_RECHARGE");
  // Validate the entire paid source and calculate immutable new bytes
  // BEFORE writing the intermediate checkpoint. Invalid model files must
