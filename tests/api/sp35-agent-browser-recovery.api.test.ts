@@ -3,7 +3,7 @@ import {mayResumeSavedModel,savedBrowserQaAttemptState,savedQaObservedChecks}
  from "../../src/edge/agent-progress.js";
 import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget,
  paidAgentReconciliationRequired,provenPreviewBuildAndTest,savedPreviewPair,
- saveDurableAgentTarget}
+ saveDurableAgentTarget,canResumeSavedFreeCiOnly}
  from "../../src/app/code-builder/agent-browser-client.js";
 const SLOT="appf2.agent.candidate.job.v1";
 const target={jobId:"ba45436c-c3f1-44f1-adc6-bdd0fb1592e7",
@@ -144,6 +144,28 @@ describe("Sprint 3.5 multi-project reusable saved Agent cards",()=>{
  });
 });
 
+
+describe("C2-C4 signed resume of saved paid project only requeues FREE QA",()=>{
+ const base={revision:2,status:"CODING",checkpoint:{step:2,
+  completed_call_ids:[],budget:{max_steps:8,max_tokens:8192,
+   max_cost_cents:44}}};
+ it("permits exactly a saved code or repaired source lacking QA evidence",()=>{
+  expect(canResumeSavedFreeCiOnly(base)).toBe(true);
+  expect(canResumeSavedFreeCiOnly({...base,revision:4,
+   checkpoint:{...base.checkpoint,step:4}})).toBe(true);
+ });
+ it("never requeues before model source is durable, after receipt, or wrong state",()=>{
+  expect(canResumeSavedFreeCiOnly({...base,revision:0,
+   checkpoint:{...base.checkpoint,step:0}})).toBe(false);
+  expect(canResumeSavedFreeCiOnly({...base,free_ci:{
+   status:"BUILD_BROWSER_SMOKE",run_id:"123456",artifact_hash:
+    "sha256:"+"a".repeat(64),preview_ready:false,
+   original_requirements_qa:false,app_published:false}})).toBe(false);
+  expect(canResumeSavedFreeCiOnly({...base,status:"REPAIRING"})).toBe(false);
+  expect(canResumeSavedFreeCiOnly({...base,checkpoint:{
+   ...base.checkpoint,step:0}})).toBe(false);
+ });
+});
 
 describe("Sprint 3.5 Agent recovery must not spend through ambiguous model calls",()=>{
  it("can resume exactly one ready saved model call when nothing is pending",()=>{
