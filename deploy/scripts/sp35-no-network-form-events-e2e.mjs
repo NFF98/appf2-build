@@ -25,6 +25,7 @@ try{
  await page.goto(origin+"/__forms__");
  for(const mode of ["without-adapter","public","private","click-prevented","invalid","malicious-top","malicious-blank"]){
   const result=await page.evaluate(async({mode,fixture})=>{
+   const doc=globalThis.document;
    const contract=await import("/src/platform/blueprint/code-artifact-v2.ts");
    const host=await import("/src/app/runtime/code-artifact-frame.ts");
    const adapter=await import("/src/app/runtime/code-dom-events.ts");
@@ -38,15 +39,15 @@ try{
     iframe=await preview.createPrivatePreviewFrame({
      project_hash:"sha256:"+"a".repeat(64),javascript,css:"",
      index_html:'<main id="app"></main><script type="module" src="/assets/form.js"></script>'
-    },document);
+    },doc);
    }else{
     const pack=await contract.makePrototypeCodeArtifact(mode,javascript);
-    const mounted=await host.createPrototypeCodeFrame(pack,document);
+    const mounted=await host.createPrototypeCodeFrame(pack,doc);
     iframe=mounted.iframe;
     if(mode==="without-adapter")iframe.srcdoc=iframe.srcdoc.replace(
      "<script>"+adapter.CODE_DOM_EVENT_SCRIPT+"</script>","");
    }
-   iframe.title=mode;document.body.appendChild(iframe);
+   iframe.title=mode;doc.body.appendChild(iframe);
    return {sandbox:iframe.getAttribute("sandbox"),html:iframe.srcdoc};
   },{mode,fixture});
   if(result.sandbox!=="allow-scripts"||
