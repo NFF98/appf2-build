@@ -240,6 +240,9 @@ try{
    if(criterion.automatable&&Array.isArray(criterion.steps)&&
       Array.isArray(criterion.assertions)&&criterion.assertions.length){
     const target=await ctx.newPage();
+    // A click that updates text but also throws must never be signed PASS.
+    const qaRuntimeErrors=[];
+    target.on("pageerror",()=>qaRuntimeErrors.push("PAGE_RUNTIME_ERROR"));
     try{
      await target.goto(origin,{waitUntil:"load",timeout:15000});
      const before=await target.locator("body").innerText();
@@ -274,8 +277,9 @@ try{
        ok&&=await target.getByRole(assertion.role,{name:assertion.name,exact:true}).isVisible();
       else ok=false;
      }
-     verdict=ok?"PASS":"FAIL";
-     if(!ok)failure_code="ASSERTION_FAILED";
+     if(qaRuntimeErrors.length)failure_code="BROWSER_ERROR";
+     else if(!ok)failure_code="ASSERTION_FAILED";
+     verdict=ok&&qaRuntimeErrors.length===0?"PASS":"FAIL";
      if(ok)evidence_hash="sha256:"+createHash("sha256").update(
        JSON.stringify([project.project_hash,criterion.id,before,after,
          criterion.steps,criterion.assertions])).digest("hex");
