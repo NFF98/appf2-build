@@ -1,5 +1,5 @@
 import {describe,it,expect} from "vitest";
-import {decideFreeCiRepair,type FreeCiRepairHistory}
+import {decideFreeCiRepair,analyzeFreeCiFailureStreak,type FreeCiRepairHistory}
  from "../../src/platform/agent/free-ci-repair-policy.js";
 import {frozenFreeCiPlanHash} from "../../src/edge/free-ci-result.js";
 import type {QaPlan} from "../../src/platform/qa/requirement-contract.js";
@@ -27,6 +27,20 @@ async function receipt(label:string,verdict:"FAIL"|"PASS"|"UNTESTED"="FAIL"):
  }};
 }
 describe("C4 + C5 active GPT-6 free-runner multi-repair policy",()=>{
+ it("offers zero-charge verified root-cause strategy preview without cost approval",async()=>{
+  const a=await receipt("a"),b=await receipt("b"),c=await receipt("c");
+  const current=await analyzeFreeCiFailureStreak(plan,[c,b,a],
+   c.project_hash,4);
+  expect(current).toEqual({mode:"RETHINK_ROOT_CAUSE",
+   repeated_failure_count:3,evidence_snapshots:3});
+  const interrupted=await analyzeFreeCiFailureStreak(plan,[c,a],
+   c.project_hash,4);
+  expect(interrupted).toMatchObject({mode:"FIX_FAILED_CHECKS",
+   repeated_failure_count:1});
+  await expect(decideFreeCiRepair(plan,[c,b,a],
+   c.project_hash,4,6,0,8)).rejects.toThrow(
+    "OWNER_COST_APPROVAL_REQUIRED_76");
+ });
  it("reserves unique signed round keys for three saved failing project versions",async()=>{
   const a=await receipt("a"),b=await receipt("b"),c=await receipt("c");
   const first=await decideFreeCiRepair(plan,[a],a.project_hash,2,2,44,8);
