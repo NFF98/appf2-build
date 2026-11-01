@@ -10,7 +10,6 @@ import os from "node:os";
 import path from "node:path";
 const origin="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
 const profile=await mkdtemp(path.join(os.tmpdir(),"sp35-real-owner-reopen-"));
-const JOB_SLOT="appf2.c2.live.checkpoint.v1";
 let browser=null;
 function installHelpers(){
  const dbName="appf2.c2.real.key.v1";
