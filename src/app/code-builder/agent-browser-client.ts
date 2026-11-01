@@ -313,7 +313,10 @@ export class BrowserCodingAgent {
    explicit_ai_consent:true,max_cost_cents:opts.approvedCents
   },key);
   if(!ID.test(data.job_id))throw Error("Agent 專案識別碼無效。");
-  this.keys.bindIntent(logical,data.job_id,key);
+  // Server created an empty, zero-cost Job. Persist and verify the same
+  // nonextractable owner key BEFORE saving the card or authorizing any AI spend.
+  // Failed IndexedDB writes must never leave a resumable-looking paid Job.
+  await this.keys.bindDurableIntent(logical,data.job_id,key);
   this.key=key;
   this.target={jobId:data.job_id,prompt:prompt.trim(),
    firstModelKey:"agent_first_"+crypto.randomUUID(),
