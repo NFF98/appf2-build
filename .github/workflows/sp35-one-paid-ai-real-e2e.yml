@@ -11,6 +11,46 @@ concurrency:
   group: ${{ contains(github.event.head_commit.message, '[SP35-G5-CANCEL-EMPTY-PREJOB]') && 'sp35-g5-cancel-empty-prejob' || 'sp35-one-explicit-paid-ai-e2e' }}
   cancel-in-progress: false
 jobs:
+  remaining-free-preflight:
+    if: contains(github.event.head_commit.message, '[SP35-REMAINING-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: All frozen original requirements, syntax and no-budget refusal (zero models)
+        run: |
+          node --check deploy/scripts/sp35-remaining-native-website-e2e.mjs
+          node deploy/scripts/sp35-remaining-native-website-e2e.mjs --preflight-all
+          if APPF2_SP35_SAMPLE=g6-length node deploy/scripts/sp35-remaining-native-website-e2e.mjs > refusal.log 2>&1; then exit 1; fi
+          node --input-type=module -e 'import fs from "node:fs";if(!fs.readFileSync("refusal.log","utf8").includes("PAUSED_BUDGET"))process.exit(1)'
+  one-remaining-native-original-request:
+    # One selected unseen request, never a generation loop. Operator verifies
+    # original journal and remaining seven-Job/308c batch limit before marker.
+    if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-REMAINING-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_REMAINING_EXPLICIT_PAID_OK: '1'
+      APPF2_SP35_SAMPLE: ${{ contains(github.event.head_commit.message, '[SP35-SAMPLE-g6-length]') && 'g6-length' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g7-memory]') && 'g7-memory' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g8-lights]') && 'g8-lights' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g9-connect]') && 'g9-connect' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g10-books]') && 'g10-books' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g11-water]') && 'g11-water' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frozen selected requirement before one charge
+        run: node deploy/scripts/sp35-remaining-native-website-e2e.mjs --preflight-only
+      - run: npx playwright install --with-deps chromium
+      - name: Exactly one 44c owner Job, Docker Chromium QA and new recipient UI
+        run: node deploy/scripts/sp35-remaining-native-website-e2e.mjs
+
   cancel-empty-g5-prejob:
     # Fixed already-inspected run: its frozen Job has no paid call or generated source; retain the Job.
     # This is cancellation only, never a rerun, model call or replacement Job.
