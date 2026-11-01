@@ -6,6 +6,14 @@
 > **唯一產品開發 PR**：[Build #419](https://github.com/NFF98/appf2-build/pull/419)；Design 只沿用 [#45](https://github.com/NFF98/appf2-design/pull/45)。不開 Sprint 4，不建立平行的 Product Spec 或其他開發 PR。
 
 
+## 0.Q Human US$1 全批硬上限 + 九次新生成網站 E2E（2026-11-01 最新指令，SPEC 已先更新）
+
+- **Design 唯一 SSOT FIRST**：[Design PR #45 H-001 §0.5 / commit 88d6d38](https://github.com/NFF98/appf2-design/commit/88d6d389268e5f35269de7ffd0b1d5af4c45de6d) 已先定義。Human 新授權 **最多 US$1.00，針對完成全部九次真網站 E2E 的整批費用**，覆蓋舊 US$6.84 估算。已發生的舊 G1 付費樣本保留且與新批次分開記；不能假稱舊帳單為 0。模型預留上限≠實際帳單。**不得因「沒達到不要停」突破美元上限、秘密更換低價模型、重扣未知呼叫或假 PASS。**
+- **驗收分母真實**：每類簡單工具／互動遊戲／真正 viewer-private Postgres CRUD，各至少 3 次*新自然語言→新 Job→程式→真 Chromium→保存/恢復/分享/重開*，總計 **9 次新生成 E2E**。另開 9 次免模型重用 Browser 測試不算新生成。現有十八啦 GPT Job 0fa5022f-5d09-42ef-b5e1-eb8ee3dac5b8 僅歷史已驗部分功能，未完整計分/分享驗收不得充當一個新 9/9 PASS。
+- **真正成本阻斷**：既有 free-ci-ai-code.ts GPT-6.1 Sol 保留上限 QA=8c/CODE=20c/REPAIR=16c，且每個 Job 至少 44c admission；9×44c=396c>100c，現有方案**無法安全承諾九個全新原 Job 的完整修復鏈只花一美元**。先消除 UI 真阻斷、對齊計費及建立整批持久原子化 100c guard，能免費做的先免費做；新模型每筆執行前若無可證明餘額則 PAUSED_BUDGET，不得再扣。不可用 3 新生成+6 重開偷換九次新生成。
+- **本輪第一免費阻斷**：Staging [#41290913790](https://github.com/NFF98/appf2-build/actions/runs/41290913790) 末段舊 Code Builder 測試等候已隱藏的「描述你想做的 App」30s timeout；新主入口 AgentBuilderPanel label 是「用一句話描述要做的 App」，舊 CodeBuilderPanel 為相容折疊頁。先修測試分辨真新主入口和舊相容，不將舊單檔引擎冒充新產品。
+- **進度紀錄規格**：本節逐筆增補 Date/HEAD/Workflow/Job/source hash/AI calls/Usage/price max/reserved/account actual NOT_VERIFIED/QA/Browser/first-interaction/P50-P95；總表分開 new_generation_pass、reuse_pass、C1..C5 full-product pass，一律未驗不得勾選。本次 SPEC/Build 更新、免費回歸沒有額外模型呼叫；PR #419 不合併、不 Production、不 Sprint 4。
+
 ## 0.P 2026-11-01 SPEC → Build → Implement 缺口關閉執行計畫（Human 最新方向）
 
 **先有 SPEC 才能改程式。** Design PR #45 既有 H-001 唯一 Product Design authority 新增 §0.4（[Design commit c2212ed](https://github.com/NFF98/appf2-design/commit/c2212edad1b6b64347b49ac61c57849a5963aaac)），鎖住 G0..G5、獨立 E2E、速度、權限、費用。此頁只記 HOW、實作、收據；不另建 Product Spec。原 `build-spec/CURRENT.json` 仍 BS-P1-025、`implementation_enabled=false`，**不冒充已取得 Build Freeze 或已啟動 BS-P1-026**。限定 Design PR #45、Build PR #419，僅 Sprint 3.5，不合併、不 Production、不 Sprint 4。
