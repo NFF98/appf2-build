@@ -47,9 +47,17 @@ export function recoveredPaidResponse(
   job.revision===existing.job_revision+1&&
   job.checkpoint.previous_checkpoint_id===existing.checkpoint_hash&&
   job.checkpoint.project_hash===job.project_hash;
+ // Initial CODE also has a two-CAS crash window: CREATED→PLANNING→CODING.
+ // If PLANNING was durably committed, consume ONLY the original SUCCEEDED
+ // paid CODE answer reserved against the exact CREATED parent; never POST.
+ const committedCodeStep=phase==="CODE"&&job.job_state==="PLANNING"&&
+  existing.job_revision===0&&job.revision===1&&
+  job.checkpoint.step===1&&job.checkpoint.state==="PLANNING"&&
+  job.checkpoint.previous_checkpoint_id===existing.checkpoint_hash&&
+  job.checkpoint.project_hash===job.project_hash;
  if(existing.job_id!==job.job_id||
   existing.owner_anonymous_id!==job.owner_anonymous_id||
-  (!exactHead&&!committedRepairStep)||
+  (!exactHead&&!committedRepairStep&&!committedCodeStep)||
   existing.model!==MODEL||
   existing.max_charge_cents!==AMOUNTS[phase])
   throw Error("SP35_PAID_AI_SAVED_HEAD_MISMATCH_NO_RECHARGE");
@@ -340,7 +348,12 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  if(!plan)throw Error("SP35_PAID_AI_REQUIRES_PRECODE_QA");
  const repairing=input.stage==="REPAIR";
  const resumeRepair=repairing&&job.job.job_state==="REPAIRING";
- if(!repairing&&(job.job.revision!==0||job.job.job_state!=="CREATED"))
+ const resumeCode=!repairing&&job.job.job_state==="PLANNING";
+ if(!repairing&&!resumeCode&&
+   (job.job.revision!==0||job.job.job_state!=="CREATED"))
+  throw Error("SP35_CODE_WRONG_STATE");
+ if(resumeCode&&(job.job.revision!==1||job.project.revision!==1||
+   job.job.checkpoint.step!==1))
   throw Error("SP35_CODE_WRONG_STATE");
  if(repairing&&((job.job.job_state!=="CODING"&&!resumeRepair)||
   job.project.revision<2||job.project.revision>4||
@@ -389,7 +402,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   throw Error("SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET");
  const turn=await paidModelTurn(ctx.db,job,input.anonymous_id,
   input.stage,req,ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs,
-  strategy?.round??1,resumeRepair);
+  strategy?.round??1,resumeRepair||resumeCode);
  const files=parseFiles(parsedOutput(turn.response));
  if(!files)throw Error("SP35_PAID_CODE_INVALID_NO_RECHARGE");
  // Validate the entire paid source and calculate immutable new bytes
@@ -413,7 +426,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  const estimatedCost=repairing?strategy!.required_approved_cents:28;
  // On restart the exact prior CODING→REPAIRING transition already exists.
  // Resume at the source CAS; don't increment the Job step a second time.
- if(!resumeRepair){
+ if(!resumeRepair&&!resumeCode){
   // These are cumulative reservation caps, NOT provider invoice charges.
   const next={...current.job.checkpoint,
    state:repairing?"REPAIRING" as const:"PLANNING" as const,
