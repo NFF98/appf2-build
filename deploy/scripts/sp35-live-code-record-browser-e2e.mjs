@@ -17,7 +17,7 @@ async function view(context){
   .waitFor({state:"visible",timeout:20000});
  const internal=page.frames().find(f=>f!==page.mainFrame()&&f.url()==="about:srcdoc");
  if(!internal)throw Error("C1_NO_OPAQUE_APP_IFRAME");
- await internal.waitForFunction(()=>typeof window.appf2Records==="object",{timeout:10000});
+ await internal.waitForFunction(()=>typeof window.appf2Records==="object",null,{timeout:10000});
  return {page,internal};
 }
 async function action(view,method,...args){
