@@ -34,6 +34,18 @@
 - **下一個證據關卡**：原 PR 新 HEAD 跑相關免費 CI；若失敗僅修實證錯誤；再在免費 Staging 做原 owner Job/PG timeline HTTP 200、外人 404、真正 Runner/QA 實測分段及刷新。G1「三種新真 GPT-6 多模組付費 AI」須新明確逐次授權，不能偷用舊一次性上限，也不能拿三種手寫 fixture 冒充。
 - **發布狀態**：本輪新付費 GPT-6 呼叫 0（本段 GitHub 程式提交本身沒有執行模型）、未合併、未部署 Production、不啟動 Sprint 4。G0 僅一部分工程收斂，不是產品速度已達標。
 
+### 0.P.2 2026-11-01 Human 新付費授權與可接續證據帳（先記錄，再啟動；唯一原 SSOT）
+
+**批准來源**：Human 在本次對話指示「繼續 批准新費用產生 但是要記錄給後面用」，不再沿用先前**已用完**的單次 US$0.76 授權。本次採保守界線：**先僅開一個新的 G1 Sprint 3.5 Staging GPT-6.1 Sol 原 Job，整個 Job 模型保留費用上限 US$0.76（76 cents），本次批次上限也只有 76 cents**。未取得下筆額度前不自動展開第二／第三個 Job、不得升級訂閱、不得動 Production。其他新模型費用預設禁止；與既有本期免費 GitHub-hosted Linux Docker/Chromium、既有 Staging PostgreSQL/Worker 的配額區分。
+
+**不允許費用假帳**：新 Job 的 `max_cost_cents=76` 是 **保留上限，不是 OpenAI 發票**。成功或失敗一律記以下收據：GitHub Workflow Run 與 commit、精確 prompt／原始凍結 QA、原 Job ID／owner 非敏感識別、模型 `gpt-6.1-sol`、各 model_call_key/response_id/狀態/input/output tokens、API 成本預約、QA Runner ID、source project hash／版次、每項 Chromium PASS/FAIL、私人預覽／分享狀態、耗時／失敗 hop。必須只從 GitHub 日誌／同 Job PostgreSQL journal 讀，未知填 `NOT_VERIFIED`，不印私鑰、API Key、票券、使用者私有資料。不聲稱保留臨時 CI P-256 私鑰或可於將來接手該暫時 owner；若測試 Job 不完整且私鑰不可恢復，**不得冒充 owner 或再扣生成費**。
+
+**本次第一個付費樣本 G1-CASE-GAME-001**：新自然語言「四骰十八啦」互動遊戲，從同一通用 `files[]` GPT-6 Code Builder 路徑生成、至少 3 個可匯入的 src/ TypeScript 模組（規則、回合狀態、畫面），原要求 frozen Chromium QA 逐項驗收回合／擲骰／規則／重設。**此樣本只能證明受測可觀察功能**；未覆蓋可重現骰子組合的正確得分規則時不標整個十八啦遊戲完整 PASS。後續 G1 真 viewer-private PostgreSQL CRUD 與第 3 種 App 必須仍列 NOT_RUN。
+
+**既有優先順序**：1. 舊已部署 Staging health／Free-AI readiness 真讀（不付費）；2. 限一次新 owner Job、模型費用最高 76 cents；3. 同 Job 的 CI 受限 Docker/真 Chromium，自修最多 3 回且總預算不超額；4. 保存 GitHub/PG 收據、問題與下一筆工作；5. 再衡量 G0 速度與 G1 DB，不偷跑第二付費 Job。無法通過 preflight 就不呼叫 provider；任何未確定 paid outcome 禁止新 Job 盲重試。**費用批准不等於產品 E2E PASS 或合併／發布許可。**
+
+**執行前狀態**：`AUTHORIZED_NOT_SPENT`；本節提交時新 AI provider POST = 0、保留上限 76 cents、累計本輪實際帳單 `NOT_VERIFIED`。後續以本節直接原位追加真實 Workflow、Job 與收據，不另開 SSOT。
+
 ## 0. 2026-10-31 Free-only 執行決議（Human 最新指示）
 
 **只改成本／隔離執行方式，不降低五核產品 Gate，不開 Sprint 4，不建立新 Product SSOT。**
