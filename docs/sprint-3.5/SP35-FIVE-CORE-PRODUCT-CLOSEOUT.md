@@ -436,6 +436,14 @@
 - **C5** no genuine same-Job three consecutive independently failed **paid-model repair** snapshots nor automatic root-cause changed approach with subsequent real browser PASS. Prior policy/lineage API tests remain proven but cannot substitute C5 product E2E. Do not merge or deploy Production. No Cloudflare Containers/Browser Paid/extra paid GPT-6 calls were used in this batch.
 
 
+### 2026-11-01 C4/C5 真實免費驗收追加（不得宣稱 GPT-6 自動修復或自動換策略 PASS）
+
+- 本輪原 PR #419 Commit `46d1e5f`：修正五核原建立者真實 E2E 驗收器對已付款修復結果 `CODING→REPAIRING` 半完成 checkpoint 直接拒絕接續的問題。接續仍須相同原 owner、原 Job、不可變 SUCCEEDED model journal 與來源前置 hash；禁止重付費。此為程式修復，尚**沒有**新付費 GPT-6 自動修復寫回後 Chromium ALL PASS 證據。
+- 既有付費修復 journal 在真實 Staging PostgreSQL 為 `sp35_free_ai_repair_v1=SUCCEEDED`，舊 Job 仍 revision=2，原測試 ephemeral P-256 私鑰已不存在，**不得**冒充 owner 或重送付費請求。已唯讀核對保存回應包含 `main_ts` 4,874 字及 `style_css` 6,836 字、恰有 2 欄，基本大小及無遠端 URL 防護檢查 PASS；不能由此推出可以繞過 owner 驗收。
+- C5 新增同 PR `e165948` 測試程式、`6968de7` 原有免費 workflow 測試入口與 `a3150d9` ESLint 修正。真實 [免費 GitHub Actions #41275097325](https://github.com/NFF98/appf2-build/actions/runs/41275097325) **SUCCESS**：同一真實 P-256 owner、Job、同一份凍結 QA，三個不同不可變專案版本 revision **2、4、6**，獨立 Docker／Chromium 回寫相同 `ASSERTION_FAILED` 三次真實 FAIL；人工修改的 revision **8** 再次獨立 Docker／Chromium PASS，私有已保存 App 成功 reopening。模型付費呼叫 **0**。這只證明策略決策所需的「三次真實失敗＋原 Job 同版系」資料管線和免費 Browser QA；**沒有證明** GPT-6 根因分析、自動切換方案、任何付費模型重試、AI 自動修復後 PASS。C5 整項仍不得標示 FULL PASS。
+- 前一輪 [Staging 真實部署 #41274139106](https://github.com/NFF98/appf2-build/actions/runs/41274139106) **SUCCESS**；[免費 CI #41274484003](https://github.com/NFF98/appf2-build/actions/runs/41274484003) **SUCCESS**。本輪新增腳本先使 #41275097224 的 lint FAIL，已用 `a3150d9` 修正，不得將舊 CI 當成目前最新提交的 PASS。
+- 結論：C4 保存＋真 Chromium 管線已由**人工修復**證實，C5 三失敗歷程已由**人工修復**證實；C4 新付費 GPT-6 自動修復、C5 GPT-6 真的根因換策略仍欠實際同 Job E2E。舊一次授權支付不可當作可無限開新付費 Job；不重收舊費、不假報百分比、不合併、不部署 Production、不開新 PR。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
