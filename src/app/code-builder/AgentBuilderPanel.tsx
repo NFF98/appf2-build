@@ -296,10 +296,17 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      "已保存原始需求；獨立 QA 計畫必須在編碼前凍結。",
     completed_steps:0});
    let current=await worker.read();
-   if(current.revision===0){
-    if(savedCandidateTarget()?.qaPlan&&!resume)
-     await worker.freezeOriginalQaPlan();
-    else await worker.freeAiStage("QA");
+   // A paid CODE result may have committed only CREATED→PLANNING before
+   // the original browser response was lost. Same original owner and saved
+   // journal answer must finish PLANNING→CODING, never start another model.
+   const resumeHalfCode=resume&&current.revision===1&&
+    current.status==="PLANNING"&&current.checkpoint.step===1;
+   if(current.revision===0||resumeHalfCode){
+    if(current.revision===0){
+     if(savedCandidateTarget()?.qaPlan&&!resume)
+      await worker.freezeOriginalQaPlan();
+     else await worker.freeAiStage("QA");
+    }
     const created=await worker.freeAiStage("CODE");
     current=await worker.read();
     setSnapshot({job:current,progress:null,
