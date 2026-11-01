@@ -1,3 +1,15 @@
+
+## 2026-11-02 JST 真產品里程碑：3/9（33.3%）— G5完整成功，不是工程測試補分
+
+- 原生持續owner實際填入新餐費需求，原Job `8880979c-d09d-44ef-aaa7-bd114a31a967`，原prompt/7 QA先凍結，Job44¢ cap。真GPT-6.1 Sol [model #41328942825](https://github.com/NFF98/appf2-build/actions/runs/41328942825) SUCCEEDED 1889/5042 tokens，唯一CODE ceiling20¢、REPAIR呼叫0，invoice NOT_VERIFIED。
+- 六檔含calculator/main/ui三TS模組，source `sha256:4ed7629c245c14fa76e68a145b38de5091fc26bb932ed6360445a296872fcf0d`，所有程式保留。免費network-denied Docker/獨立Chromium [#41329192200](https://github.com/NFF98/appf2-build/actions/runs/41329192200) 7/7。
+- 原owner UI另一次明確公開同意，PG真ACTIVE/public_opt_in/同原owner，share `760b46d4-19b7-4092-b53a-d5276eaf9068`，blueprint `sha256:1e8806cb43f40f6ddc7e1ee0fab35d76199fe6a1a3b3141ee4a8f7ac1c842be1`。[真公開卡片](https://appf2-sp35-417-staging.juiyuang69.workers.dev/code/760b46d4-19b7-4092-b53a-d5276eaf9068)。
+- **原公開失敗完整保留**：[#41329592905 attempt1](https://github.com/NFF98/appf2-build/actions/runs/41329592905) 實際無submit結果，不計分。依Design §0.21根因分析，opaque sandbox提前擋原生submit事件；新增受信任、精確hash-pinned通用DOM事件adapter，仍**allow-scripts only/no same-origin/no allow-forms/CSP form-action/connect-src none**，不改原AI source或artifact。私人/公開共用，可信免費因果與安全fixtures核對無adapter負例、正常事件/驗證/重設、已preventDefault不雙執行、惡意表單不能網路/開窗。
+- **真正全鏈PASS**：同run **attempt2**之全新Chromium訪客完整計算1100/275、600/3=200、零人錯誤、Infinity/NaN及舊結果拒絕、重設、未提供模型的100/3/5=35 holdout、reload後再算、0 model/Job POST。結束log `REAL_PUBLISHED_RECIPIENT_FULL_PASS ... new_Chromium_processes=1 model_or_job_POST=0`，job124920698547 SUCCESS。Cua另在真公開卡片直接確認同樣1100/275。PG重核blueprint/source hash全不變、model_calls=1、ceiling20¢。
+- **計數更新**：原已驗2/9 + 此獨立新G5=**3/9（33.3%）**。沒有拿舊重開、fixture或單純ACTIVE加分。此受信任runtime策略部署的整體Staging #41330733503與Foundation #41330733610另行查最終結論，不把進行中當成功；G5訪客產品證據本身已完整PASS。
+- Human「批准繼續做完全部」已記Design§0.17，7新paid Job各≤44¢、308¢累計硬上限。至此1/7已使用Job上限44¢、模型ceiling20¢（非invoice），剩6名額264¢；舊10/31四筆未決32¢保留、不重送。
+- 下一件僅 `g6-length`：原自然需求/7 frozen QA在§0.19及manifest；等本策略完整免費回歸後，先只讀核帳，再由原持續owner網站建1個新Job。之後g7-memory/g8-lights/g9-connect/g10-books/g11-water逐件，全部同樣嚴格ACTIVE/新browser/reload/0再生成；DB需真PG CRUD/刷新/第三viewer隔離。原owner tab1與已完成public tab3保留，已完成卡片不重生。只原PR #419/#45，不merge/Production/Sprint4。
+
 # SP35-FIVE-CORE-PRODUCT-CLOSEOUT — Sprint 3.5 五核產品閉環收尾計畫
 
 > **版本**：2026-10-31（使用者指定的交接識別，持續更新此檔，不開重複計畫）
