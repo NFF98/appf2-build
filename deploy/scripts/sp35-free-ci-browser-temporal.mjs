@@ -38,7 +38,7 @@ export async function executeFrozenQaSteps(target,criterion,initial){
     if(observed.some(t=>!t.includes(assertion.text)))continue;
     try{
      await target.waitForFunction(expected=>
-      !document.body?.innerText.includes(expected),assertion.text,
+      !globalThis.document.body?.innerText.includes(expected),assertion.text,
      {timeout:2500});
     }catch{ /* No observed transition: final check stays FAIL-closed. */ }
    }
@@ -51,7 +51,7 @@ export async function executeFrozenQaSteps(target,criterion,initial){
   if(assertion.kind==="text_appears"){
    try{
     await target.waitForFunction(expected=>
-     document.body?.innerText.includes(expected),assertion.text,
+     globalThis.document.body?.innerText.includes(expected),assertion.text,
     {timeout:4000});
    }catch{ /* final predicate below is the source of truth */ }
   }
