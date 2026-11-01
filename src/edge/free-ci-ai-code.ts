@@ -446,6 +446,18 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   app_published:false as const,paid_model_call_saved:true as const};
 }
 
+export function validFreeCiAiEvidenceInput(x:unknown):x is {
+ readonly anonymous_id:string;readonly original_prompt:string;
+}{
+ if(typeof x!=="object"||x===null||Array.isArray(x))return false;
+ const v=x as Record<string,unknown>;
+ return Object.keys(v).sort().join(",")==="anonymous_id,original_prompt"&&
+  typeof v.anonymous_id==="string"&&
+  /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/iu.test(v.anonymous_id)&&
+  typeof v.original_prompt==="string"&&v.original_prompt.length>=5&&
+  v.original_prompt.length<=800;
+}
+
 /** Read-only original-owner proof of C5 failure lineage. No AI call,
  * reservation, budget extension, source edit or publication occurs here.
  * The SAME analyzer is used by paid REPAIR admission.
