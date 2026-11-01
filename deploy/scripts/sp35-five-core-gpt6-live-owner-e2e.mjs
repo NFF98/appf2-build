@@ -68,10 +68,32 @@ for(const stage of stages){
  // Same immutable phase+owner+Job, repeated POST is GET-only recovery.
  for(let attempt=0;attempt<100&&Date.now()<deadline;attempt++){
   const before=await signed(base,{anonymous_id:owner});
-  const result=await signed(base+"/free-ai-stage",{
-   anonymous_id:owner,original_prompt:prompt,
-   expected_project_hash:before.project_hash,stage,
-   explicit_ai_consent:true,explicit_free_ci_consent:true},[200,202]);
+  const requiredSteps=stage==="CODE"?2:2*(repaired+2);
+  // A timed-out HTTP response never erases an already committed source.
+  // Do not POST the same model phase once its immutable source is saved.
+  if(before.revision>=requiredSteps&&
+     before.checkpoint?.step>=requiredSteps){
+   stageFinished=true;
+   console.log("C4 SOURCE RESTORED: original saved Job, NO additional model POST");
+   break;
+  }
+  if(before.checkpoint?.step%2!==0)
+   throw Error("C2_INCOMPLETE_CHECKPOINT_STOP_NO_NEW_MODEL_CALL");
+  let result;
+  try{
+   result=await signed(base+"/free-ai-stage",{
+    anonymous_id:owner,original_prompt:prompt,
+    expected_project_hash:before.project_hash,stage,
+    explicit_ai_consent:true,explicit_free_ci_consent:true},[200,202]);
+  }catch(error){
+   // A lost response cannot authorize a fresh paid call. Next iteration
+   // recovers the original Job and immutable model journal on the server.
+   if(error?.name!=="TimeoutError"&&error?.name!=="AbortError")
+    throw error;
+   console.log("C2 OWNER REQUEST TIMEOUT: read same Job and existing call journal");
+   await sleep(7000);
+   continue;
+  }
   if(result?.status==="AI_SOURCE_SAVED_FREE_CI_QUEUED"){
    stageFinished=true;break;
   }
