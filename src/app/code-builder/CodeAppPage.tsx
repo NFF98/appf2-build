@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from "react";
 import {createPrototypeCodeFrame} from "../runtime/code-artifact-frame.js";
 import type {PrototypeCodeFrame} from "../runtime/code-artifact-frame.js";
+import {attachCodeRecordBridge} from "../runtime/code-record-bridge.js";
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 export function CodeAppPage({shareId,onHome}:{shareId:string;onHome:()=>void}){
  const mount=useRef<HTMLDivElement>(null);
@@ -41,6 +42,7 @@ export function CodeAppPage({shareId,onHome}:{shareId:string;onHome:()=>void}){
  };
  useEffect(()=>{
   const abort=new AbortController();let frame:PrototypeCodeFrame|null=null;
+  let detachRecords:()=>void=()=>undefined;
   const open=async()=>{
    try{
     if(!ID.test(shareId))throw Error("INVALID_ID");
@@ -53,13 +55,14 @@ export function CodeAppPage({shareId,onHome}:{shareId:string;onHome:()=>void}){
     const obj=data as {artifact?:unknown;title?:unknown;blueprint_hash?:unknown};
     frame=await createPrototypeCodeFrame(obj.artifact,document);
     if(frame.blueprintHash!==obj.blueprint_hash||abort.signal.aborted)throw Error("INVALID_HASH");
+    detachRecords=attachCodeRecordBridge(frame.iframe,shareId);
     mount.current?.append(frame.iframe);
     if(typeof obj.title==="string")setTitle(obj.title);
     setStatus("READY");
    }catch{if(!abort.signal.aborted)setStatus("FAILED");}
   };
   void open();
-  return ()=>{abort.abort();frame?.destroy();};
+  return ()=>{abort.abort();detachRecords();frame?.destroy();};
  },[shareId]);
  return <main className="code-app-page">
   <header className="code-app-header"><button type="button" className="btn btn-secondary" onClick={onHome}>返回 APPf2</button>
