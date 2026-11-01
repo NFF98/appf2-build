@@ -5,6 +5,7 @@ import type {Appf2WorkerEnv} from "../../src/edge/worker-composition.js";
 const ORIGIN="https://app.example";
 const ID="7045a009-6bfc-4889-8f1b-df03ba93c406";
 const SHARE="/api/v1/agent-jobs/"+ID+"/publish-code-app";
+const CREATE="/api/v1/agent-jobs";
 const OTHER="/api/v1/agent-jobs/"+ID+"/free-ai-stage";
 const env={APPF2_AGENT_CANDIDATE_ENABLED:"1"} as Appf2WorkerEnv;
 
@@ -42,6 +43,16 @@ describe("Sprint 3.5 owner-only publication size gate, zero model / DB",()=>{
   expect(bytes(huge)).toBeGreaterThan(4096);
   expect((await probe(SHARE,huge)).status).toBe(413);
   expect((await probe(SHARE,"{}",4097)).status).toBe(413);
+ });
+ it("admits long valid CREATE requirement only to signature denial; 4097 still rejected",async()=>{
+  const payload=JSON.stringify({anonymous_id:ID,
+   prompt:"請做完整可操作的多檔中文互動應用。".repeat(36),
+   explicit_ai_consent:true,max_cost_cents:44});
+  expect(bytes(payload)).toBeGreaterThan(1400);
+  expect(bytes(payload)).toBeLessThanOrEqual(4096);
+  expect((await probe(CREATE,payload)).status).toBe(404);
+  expect((await probe(CREATE,"{}",4097)).status).toBe(413);
+  expect((await probe(CREATE,JSON.stringify({prompt:"中文".repeat(760)}))).status).toBe(413);
  });
  it("keeps unrelated Agent routes at 1400 raw bytes, cannot widen model endpoints",async()=>{
   const oversized=JSON.stringify({text:"中文".repeat(265)});
