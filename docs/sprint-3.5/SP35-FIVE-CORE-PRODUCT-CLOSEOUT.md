@@ -30,6 +30,7 @@
 - **安全與語意**：只輸出時間戳／安全數量／可推導時間，不輸出原文、來源、私鑰、模型輸入、付費回應。只有相同原 owner 簽章和原 Job thumbprint 可讀；未知／跨 owner 404。資料庫無事件時 `null`／畫面 `NOT_MEASURED`，絕不將伺服器私人預覽時間冒充使用者第一次操作時間；真網站速度 P50/P95 仍缺 3 類 × 3 份樣本。
 - **原始 QA 限制**：只把來源 hash、GitHub Runner、artifact hash 與原先凍結的每個 criterion **恰好一次 PASS** 的同一份真 PostgreSQL receipt + preview 計作 `first_verified_preview`；任何失敗、缺少、重複或不匹配不作 QA PASS。
 - **本輪變更證據**：`b19d89b`（Worker Route）、`3401bad`（簽章 client）、`9319e5a`（真網站 UI）、`d6a4b4b`（QA timestamp 收緊）、`097fed9`（timeline 單元/安全測試）、`491f1a8`（真 Worker route 簽章/越權/零模型 fake DB 測試）。目前為**已提交程式和新增測試，尚未取得此精確 HEAD 的 CI/Staging Live 結論**；不標 G0 PASS、不更動 C1–C5 原始歷史成績。
+- **增補真 Staging 驗收器**：`f4f0290` 在原本 `deploy/scripts/sp35-live-agent-db-smoke.mjs` 加入 G0 `job-timeline` 相同原建立者簽章、真 PostgreSQL timestamp、未發生 QA 對應 `NOT_MEASURED`、陌生 owner HTTP 404 的檢查；只會於既有明確 Staging workflow_dispatch 時執行，**目前腳本提交不等於已部署執行或 Live PASS**。
 - **下一個證據關卡**：原 PR 新 HEAD 跑相關免費 CI；若失敗僅修實證錯誤；再在免費 Staging 做原 owner Job/PG timeline HTTP 200、外人 404、真正 Runner/QA 實測分段及刷新。G1「三種新真 GPT-6 多模組付費 AI」須新明確逐次授權，不能偷用舊一次性上限，也不能拿三種手寫 fixture 冒充。
 - **發布狀態**：本輪新付費 GPT-6 呼叫 0（本段 GitHub 程式提交本身沒有執行模型）、未合併、未部署 Production、不啟動 Sprint 4。G0 僅一部分工程收斂，不是產品速度已達標。
 
