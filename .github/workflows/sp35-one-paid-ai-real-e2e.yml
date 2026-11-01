@@ -440,3 +440,5 @@ jobs:
 # 2026-11-01 Human approved one additional different-game 44c cap after G3 first original game 7/7 QA but publish link FAIL. One G4 stone Job only, never regeneration of G3. [SP35-G4-STONES-PAID-ONE-SHOT]
 
 # 2026-11-02 JST Human approved the requested ONE G5 meal-tool Job, max 44 cents; PG ledger reconciled, historical 32c uncertainty preserved. Never rerun paid phase.
+
+# 2026-11-02 JST G5 same approved 44c admission after exact CREATE 413 correction; prior run cancelled before any matching Job/model. Free Staging 41326481475 SUCCESS, old waiter never rerun.
