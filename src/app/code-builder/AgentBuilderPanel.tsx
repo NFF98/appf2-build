@@ -30,7 +30,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [publishedUrl,setPublishedUrl]=useState("");
  const [qaJson,setQaJson]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
- const [qaChecks,setQaChecks]=useState<readonly {criterion_id:string;verdict:string}[]>([]);
+ const [qaChecks,setQaChecks]=useState<readonly {criterion_id:string;verdict:string;
+  failure_code?:string}[]>([]);
  const [approvedCents,setApprovedCents]=useState(60);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
@@ -624,6 +625,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    <ul>{visibleQaChecks.map(c=><li key={c.criterion_id}>
     {frozenPlan?.criteria.find(x=>x.id===c.criterion_id)?.description??c.criterion_id}
     ：{c.verdict}
+    {"failure_code" in c&&c.failure_code?
+     "（"+({TARGET_MISSING_OR_AMBIGUOUS:"找不到指定按鈕或操作目標",
+       STEP_FAILED:"操作無法完成",ASSERTION_FAILED:"操作後畫面未符合需求",
+       BROWSER_ERROR:"瀏覽器操作發生錯誤"} as Record<string,string>)[
+      String(c.failure_code)]+"）":null}
    </li>)}</ul>
   </section>:null}
   {snapshot?.job.free_ci?.preview_ready&&
