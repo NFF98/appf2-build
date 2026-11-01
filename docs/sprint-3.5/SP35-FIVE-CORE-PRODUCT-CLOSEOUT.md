@@ -1,3 +1,16 @@
+## 最新核實：仍3/9（33.3%），G8第二次QA失敗；G9全新需求序列執行
+
+- G5完整成功關閉；G6原owner環境消失而暫停，原已付CODE保存；G7原不成立reset QA造成兩次6/7，未公開。詳細原Job/hash/runner在最新handoff，全部保留。
+- G8原Job55ae5d78-e986-401a-91bb-70949f46c7da：CODE41333627739與REPAIR41334081101均SUCCEEDED，20+16=36¢ max-charge。兩輪QA [41333867328](https://github.com/NFF98/appf2-build/actions/runs/41333867328) 及 [41334297332](https://github.com/NFF98/appf2-build/actions/runs/41334297332) 都6/7（win FAIL）；原網站owner全鏈 [41333481856](https://github.com/NFF98/appf2-build/actions/runs/41333481856) 最終FAILURE，share=null，**不是success**。兩版source84ca11ff.../8391aff5...和QA入庫。原src/view.ts玩法靜態含「就能解謎成功」，全頁text_appears無absent過渡；勝利計算並無已證實錯誤。不得改凍結QA/receipt宣稱PASS，不再無效付修復，根因轉策略前置審查。
+- 已核6筆新model journal全部SUCCEEDED，總max_charge112¢（NOT_VERIFIED invoice）。保守liability依Design§0.24為G5閉20+G6暫44+G7失44+G8失44=152¢，**新G9保留44後196<=308¢**；舊32¢未決另列、絕不重送。取消的是本工作自設七次次數限制，不增加任何美元上限。未完成/失敗都保留44，完整PASS關閉才釋放UNSENT餘額。
+- 新G9四乘四連線棋已先確認相同request_hash無Job/無模型才提交唯一paidmarker，commit2254644c，原網站全鏈 [41334608554](https://github.com/NFF98/appf2-build/actions/runs/41334608554) 執行中；不能rerun整個paidworkflow。七條原文QA全部先凍結，reset確有紅→藍→紅過渡；與G8不同需求。依序等待全QA/另同意發布/全新獨立Chrome原操作/reload，再PG核對才可計分。
+- 八份原文56條QA免費preflight [41334186688](https://github.com/NFF98/appf2-build/actions/runs/41334186688) remaining-free-preflight SUCCESS，zero模型，只證明資料/拒絕無授權，不是產品+分。新g12/g13已Design§0.24先凍結，Build準備完成，必須原g8/g9/g10/g11執行後且風險+44<=308才可選。
+- 最近完整runtime策略Foundation41330733610/Staging41330733503 SUCCESS；原HTTP413修正最終Foundation41328297159/Staging41328297162 SUCCESS。最近doc/config push的Foundation另查最終結論，不把取消/進行中當pass。舊CI Gate四項路徑/governance限制仍FAIL（例如41333487240報PR419 changed-path scope），不是本Sprint產品suite PASS；依Human/Design不啟動舊16P、不合併。
+- 產品進度是成功獨立作品/目標9，**不是所有付費嘗試成功率**：本輪至G8 paid_jobs4、complete_new_products1、blocked_or_failed3；G9是第5個付費候選，尚不能加分。最終仍須3工具/3遊戲/3真DB類別目標及原需求全驗收。
+- 下一步G9→G10書單→G11喝水；DB必做額外免費真HTTP PGCRUD/refresh等待list/第三Chrome viewer隔離/read-only PG。完成里程碑持續更新原PR，不用假成功補數。
+
+---
+
 
 ## 2026-11-02 JST 真產品里程碑：3/9（33.3%）— G5完整成功，不是工程測試補分
 
