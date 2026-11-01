@@ -59,6 +59,40 @@ jobs:
       - name: ONE GPT-6.1 source Job max 76c -> saved model journal -> free Docker/Chromium
         run: node deploy/scripts/sp35-g1-paid-real-dice-e2e.mjs
 
+  g1-one-real-postgres-db-app:
+    # Human $1 aggregate cap; one new Job max 44c, previous G1 GPT-6
+    # model call upper reserve 20c: conservative combined <=64c.
+    # This job is opt-in by ONE exact commit marker only; no ordinary push cost.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-DB-PAID-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: No-fee syntax verification, before AI
+        run: node --check deploy/scripts/sp35-g1-one-real-db-app-e2e.mjs
+      - name: No-fee Staging readiness, before AI
+        run: |
+          node --input-type=module <<'JS'
+          const url="https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness";
+          const response=await fetch(url,{signal:AbortSignal.timeout(20000)});
+          const data=await response.json();
+          console.log("SP35_DB_PREPAID_READY="+String(response.status===200&&data?.data?.free_ci_paid_ai_available===true));
+          if(response.status!==200||data?.data?.free_ci_paid_ai_available!==true)
+           throw Error("SP35_DB_PREPAID_READINESS_FAIL_ZERO_MODEL_CALLS");
+          JS
+      - name: Reuse free included GitHub Actions and pinned Chromium for REAL browser proof
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: ONE GPT-6.1 Postgres-records App max 44c; independent QA and true 2-browser RLS CRUD
+        run: node deploy/scripts/sp35-g1-one-real-db-app-e2e.mjs
+
   five-core-real-owner-chain:
     # One explicit existing-PR human-authorized test; NO periodic paid calls.
     # No direct model key in this runner; Staging Worker journals spend FIRST,
