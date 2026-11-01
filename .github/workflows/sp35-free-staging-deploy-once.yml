@@ -193,6 +193,8 @@ jobs:
         run: node deploy/scripts/sp35-live-agent-db-smoke.mjs
       - name: Install Chromium for actual C1 persisted-App CRUD browser E2E
         run: npx playwright install --with-deps chromium
+      - name: LIVE creator website natural-language input and no-consent guard (GET-only Chromium)
+        run: node deploy/scripts/sp35-free-agent-ui-staging-smoke.mjs
       - name: LIVE C1 signed App iframe CRUD and two-viewer PostgreSQL isolation
         run: node deploy/scripts/sp35-live-code-record-browser-e2e.mjs
       - name: LIVE C2 close Chromium completely, reopen same owner signer and PostgreSQL Job
@@ -280,3 +282,5 @@ jobs:
 # 2026-11-01 existing Sprint3.5 Staging only: deploy read-only owner-bound C5 3-failure strategy evidence. NO provider POST, NO production. [SP35-FREE-STAGING-DEPLOY-ONCE]
 
 # Sprint3.5 C4/C5 staging-only already-paid CODE/REPAIR mid-CAS recovery and signed strategy UI rollout; NO paid AI POST, NO production. [SP35-FREE-STAGING-DEPLOY-ONCE]
+
+# 2026-11-01 [SP35-FREE-STAGING-DEPLOY-ONCE] actual creator UX progress/pause controls and Chromium cache release; GET-only browser entry, C1/C2/free-CI regressions, NO paid AI or production.
