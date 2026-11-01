@@ -62,7 +62,8 @@ const QA_PLAN_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-plan$/u;
 const PREVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/preview-asset$/u;
 const FREE_CI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ci-dispatch$/u;
 const FREE_IMPORT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-files$/u;
-const FREE_SHARE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/publish-code-app$/u;
+const FREE_SH
+const FREE_REPAIR_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-repair$/u;ARE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/publish-code-app$/u;
 const FREE_AI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-stage$/u;
 const FREE_AI_PROBE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-probe$/u;
 const QA_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-generate$/u;
@@ -171,7 +172,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname);
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeRepairMatch=FREE_REPAIR_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname);
  const paidRunnerSource=await routeFreeAiRunnerSource(request,url,env,nowMs);
  if(paidRunnerSource!==undefined)return paidRunnerSource;
  const paidRunnerResult=await routeFreeAiRunnerResult(request,url,env,nowMs);
