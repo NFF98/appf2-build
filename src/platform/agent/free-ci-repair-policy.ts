@@ -49,25 +49,18 @@ async function attestedFailure(planHash:string,plan:QaPlan,
  return failures.length>0?{hash:row.project_hash,
   signature:JSON.stringify(failures)}:null;
 }
-/** Deterministic, no-write decision; never invents failure evidence.
- * First failed source is project revision 2; three MAX repair attempts
- * result in source revision 5 / eight durable build+repair steps.
- * A new charge is forbidden without owner-signed total cost approval.
+/** Creator-scoped real receipt analysis with NO model reservation or assumed
+ * consent. This is the exact same streak logic used for paid admission.
+ * It can report a recommendation even when budget=0, NEVER execute it.
  */
-// eslint-disable-next-line complexity, max-params -- Frozen plan, saved history, current head and cost limits are separate guards.
-export async function decideFreeCiRepair(plan:QaPlan,
+// eslint-disable-next-line complexity -- Independent snapshot hash and frozen QA evidence integrity.
+export async function analyzeFreeCiFailureStreak(plan:QaPlan,
  history:readonly FreeCiRepairHistory[],currentHash:string,
- projectRevision:number,usedSteps:number,approvedCents:number,
- maxSteps:number):Promise<FreeCiRepairDecision>{
+ projectRevision:number):Promise<Pick<FreeCiRepairDecision,
+ "mode"|"repeated_failure_count"|"evidence_snapshots">>{
  if(!HASH.test(currentHash)||!Number.isSafeInteger(projectRevision)||
-  projectRevision<2||projectRevision>4)throw Error("SP35_REPAIR_ROUNDS_EXHAUSTED");
- const round=projectRevision-1 as 1|2|3;
- if(!Number.isSafeInteger(usedSteps)||usedSteps+2>maxSteps||
-  usedSteps<2||usedSteps!==projectRevision*2-2)
-  throw Error("SP35_REPAIR_STEP_BUDGET_OR_HISTORY_INVALID");
- const required=28+16*round;
- if(!Number.isSafeInteger(approvedCents)||approvedCents<required)
-  throw Error("SP35_REPAIR_NEW_OWNER_COST_APPROVAL_REQUIRED_"+required);
+  projectRevision<2||projectRevision>4)
+  throw Error("SP35_REPAIR_ROUNDS_EXHAUSTED");
  const hash=await frozenFreeCiPlanHash(plan);
  const seen=new Set<string>(),failures:Failure[]=[];
  let expectedHash=currentHash,expectedRevision=projectRevision;
@@ -94,8 +87,30 @@ export async function decideFreeCiRepair(plan:QaPlan,
   if(fail.signature!==failures[0].signature)break;
   repeated++;
  }
- return {round,model_call_key:"sp35_free_ai_repair_v"+round,
-  required_approved_cents:required,
-  mode:repeated>=3?"RETHINK_ROOT_CAUSE":"FIX_FAILED_CHECKS",
+ return {mode:repeated>=3?"RETHINK_ROOT_CAUSE":"FIX_FAILED_CHECKS",
   repeated_failure_count:repeated,evidence_snapshots:failures.length};
+}
+
+/** Deterministic, no-write decision; never invents failure evidence.
+ * First failed source is project revision 2; three MAX repair attempts
+ * result in source revision 5 / eight durable build+repair steps.
+ * A new charge is forbidden without owner-signed total cost approval.
+ */
+// eslint-disable-next-line complexity, max-params -- Frozen plan, saved history, current head and cost limits are separate guards.
+export async function decideFreeCiRepair(plan:QaPlan,
+ history:readonly FreeCiRepairHistory[],currentHash:string,
+ projectRevision:number,usedSteps:number,approvedCents:number,
+ maxSteps:number):Promise<FreeCiRepairDecision>{
+ if(!HASH.test(currentHash)||!Number.isSafeInteger(projectRevision)||
+  projectRevision<2||projectRevision>4)throw Error("SP35_REPAIR_ROUNDS_EXHAUSTED");
+ const round=projectRevision-1 as 1|2|3;
+ if(!Number.isSafeInteger(usedSteps)||usedSteps+2>maxSteps||
+  usedSteps<2||usedSteps!==projectRevision*2-2)
+  throw Error("SP35_REPAIR_STEP_BUDGET_OR_HISTORY_INVALID");
+ const required=28+16*round;
+ if(!Number.isSafeInteger(approvedCents)||approvedCents<required)
+  throw Error("SP35_REPAIR_NEW_OWNER_COST_APPROVAL_REQUIRED_"+required);
+ const analysis=await analyzeFreeCiFailureStreak(plan,history,currentHash,projectRevision);
+ return {round,model_call_key:"sp35_free_ai_repair_v"+round,
+  required_approved_cents:required,...analysis};
 }
