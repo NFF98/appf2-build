@@ -49,6 +49,7 @@ if(process.env.APPF2_SP35_G3_EXPLICIT_PAID_OK!=="1"||
  process.env.GITHUB_ACTIONS!=="true")
  throw Error("SP35_G3_PAUSED_BUDGET_NO_EXPLICIT_SAFE_ONE_SHOT");
 let newJobId=null,shareId=null,created=0,published=0;
+const publishResponses=[];
 let startedAt,qaReadyAt;
 const browser=await chromium.launch({headless:true});
 const contexts=[];
@@ -64,7 +65,15 @@ try{
    const data=await response.json().catch(()=>null);
    if(typeof data?.data?.job_id==="string")newJobId=data.data.job_id;
   }
-  if(route.endsWith("/publish-code-app"))published++;
+  if(route.endsWith("/publish-code-app")){
+   published++;
+   const body=await response.json().catch(()=>null);
+   const code=typeof body?.error?.code==="string"?body.error.code:
+    typeof body?.error==="string"?body.error:"UNKNOWN";
+   const evidence={http:response.status(),code:code.slice(0,85)};
+   publishResponses.push(evidence);
+   console.log("SP35 G3 PUBLISH HTTP: "+JSON.stringify(evidence));
+  }
  });
  await page.goto(origin,{waitUntil:"domcontentloaded",timeout:60000});
  const input=page.getByRole("textbox",{name:"用一句話描述要做的 App"});
@@ -117,14 +126,48 @@ try{
    throw Error("SP35_G3_QA_NOT_PASS_"+i);
  }
  await consent("我同意將目前這份經過完整 QA 的 App 公開發布");
- await page.getByRole("button",{
-  name:"驗證原始 QA 並正式發布可分享 App 卡片"}).click();
+ const publishButton=page.getByRole("button",{
+  name:"驗證原始 QA 並正式發布可分享 App 卡片"});
+ if(!await publishButton.isEnabled())
+  throw Error("SP35_G3_PUBLICATION_BUTTON_DISABLED");
  const publishedLink=page.getByRole("link",{name:"開啟／分享已發布 App"});
- await publishedLink.waitFor({state:"visible",timeout:45000});
+ await publishButton.click();
+ // No new paid model or creator identity: one existing P-256 owner only.
+ let retriedFiveHundred=false;
+ for(let poll=0;poll<160;poll++){
+  if(await publishedLink.isVisible())break;
+  const latest=publishResponses.at(-1);
+  if(latest&&latest.http>=400){
+   const visibleError=(await page.getByRole("alert").allTextContents())
+    .filter(Boolean).join(" ").slice(0,180);
+   if(latest.http>=500&&latest.http<600&&!retriedFiveHundred){
+    retriedFiveHundred=true;
+    await publishButton.waitFor({state:"visible",timeout:12000});
+    if(!await publishButton.isEnabled())
+     throw Error("SP35_G3_PUBLICATION_5XX_BUTTON_DISABLED "+
+      JSON.stringify(latest)+" "+visibleError);
+    console.log("SP35 G3 ONE SAME-OWNER ZERO-MODEL PUBLICATION RETRY "+
+     JSON.stringify(latest));
+    publishResponses.length=0;
+    await publishButton.click();
+    continue;
+   }
+   throw Error("SP35_G3_PUBLICATION_HTTP_FAILURE "+
+    JSON.stringify(latest)+" UI="+visibleError);
+  }
+  await page.waitForTimeout(250);
+ }
+ if(!await publishedLink.isVisible()){
+  const visibleError=(await page.getByRole("alert").allTextContents())
+   .filter(Boolean).join(" ").slice(0,230);
+  throw Error("SP35_G3_PUBLICATION_NO_LINK POST="+published+
+   " HTTP="+JSON.stringify(publishResponses)+" UI="+visibleError);
+ }
  const href=await publishedLink.getAttribute("href");
  const match=/^\/code\/([0-9a-f-]{36})$/iu.exec(href??"");
- if(!match||published!==1)
-  throw Error("SP35_G3_PUBLICATION_NOT_EXACTLY_ONCE");
+ if(!match||published<1||published>2||
+    publishResponses.filter(x=>x.http===200).length!==1)
+  throw Error("SP35_G3_PUBLICATION_NOT_SINGLE_VERIFIED_ACTIVE");
  shareId=match[1];
  const guestCtx=await browser.newContext({serviceWorkers:"block"});
  contexts.push(guestCtx);
