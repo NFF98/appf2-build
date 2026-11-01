@@ -18,6 +18,15 @@
 - **變更控制**：仍只 Design #45 / Build #419，Sprint 3.5，兩 PR **OPEN / NOT_MERGED**，Staging only，無 Production、無 Sprint 4。本次只寫 SPEC 結算與本原 SSOT，沒有重新測付費 GPT、不改已公開 App 原碼、不建第二計畫。
 - **下一個首要缺口**：先按 Design §0.4/§0.5 核對剩餘 7 個不同新自然語言 Job 的類別分配與每 Job budget admission，找出可免費驗證的真網站／持久身份／QA 根因及交付效能瓶頸；**新付費前**必須能證明逐筆額度和跨 Job 硬上限，再在原網站啟動第三個新 Job；若費用資料不可證明就保持 `PAUSED_BUDGET`，不可偷換模型/拿人工 fixture 冒充 3/9。
 
+## 0.U 2026-11-01 第三個互動遊戲 G3 — SPEC→Build 備戰、**2/9 不變**
+
+**先 Design 再 Build**：原 [Design PR #45 H-001 §0.12 commit 62a902c](https://github.com/NFF98/appf2-design/commit/62a902c47fd56aa9551d87359eec9397072f2319) 凍結第三個不同新類別的真網站「雙人井字棋」：X/O 九格交替、已填不覆寫、X 三連線、勝後禁止再落子、重開。這不是建立 App 的 PASS，不能冒稱 3/9。
+
+- **Build 單 PR #419 新腳本**：deploy/scripts/sp35-third-native-website-game-e2e.mjs，固定真自然語言 prompt 和 7 條新模型前 frozen QA（標題、初始 X、X 首落子、輪到 O、O 首落子、X 勝、重開時序）。真正 paid path 需原使用者 Chrome P-256 signed 新 Job、GPT-6.1 Sol 原始多檔程式、免費隔離 Docker/Chromium QA 7/7、建立者網站同意公開、第二乾淨 Chrome 用 AI 自寫 UI 真走 5 手/勝利/禁續下/重新開始/reload 並 0 重新生成。若任何條件 FAIL，保留原 Job，**不得計數**；--preflight-only 只驗證來源文字凍結計畫，不會建立 Job 或調 GPT。
+- **Workflow 已隔離**：.github/workflows/sp35-one-paid-ai-real-e2e.yml 新增 [SP35-G3-GAME-FREE-PREFLIGHT] 的免費預檢與另一個**完全不同** [SP35-G3-GAME-PAID-ONE-SHOT] 付費單次 marker，普通 push 或免費 marker **不會啟動 paid job**。本節只啟動免費標記，付費標記保持 NOT_RUN。
+- **成本與第一阻斷**：Supabase appf2_agent_model_call（2026-11-01 UTC）七個 Job 10 次 SUCCEEDED model calls 合計逐筆 ceiling **188c**，不是 provider bill；另 2026-10-31 起 2 筆 IN_FLIGHT+2 筆 BLOCKED_UNCERTAIN 各 8c，共 **32c 未決風險**。原先指定四個 Job 授權上限 US$1.28，不能將其餘 Job 省略或差額用於 G3。要增加一個新 Job 的完整 44c 安全預留，需先核實 provider 實扣/未決 journal 與跨 Job budget admission，並取得第三筆明確最高授權；否則 **PAUSED_BUDGET**，不能只因使用者要求「突破」就重複付費。
+- **下一個證據**：免費預檢完成後讀 GitHub 新 Run 的具體 SUCCESS/FAIL；若 FAIL 最多兩輪定位真正根因；若 PASS 也只標 G3_PREPARED，產品 2/9。無 Product 上線、無 merge、無 Sprint 4，其他五核全域產品尚未 5/5。
+
 ### 0.S.1 2026-11-01 下一輪「繼續突破」：拆分可見文字 QA **根因與免費 10/10 真 Chromium PASS**
 
 - **症狀**：新真 GPT-6 計數工具首輪 Chromium QA 1/5，正常分離 UI `<span>計數：</span><span>1</span>` 被錯判；新版一般性 QA 修法第一輪 [免費 #41303551140](https://github.com/NFF98/appf2-build/actions/runs/41303551140) 仍 FAIL。臨時安全診斷 [免費 #41303778353](https://github.com/NFF98/appf2-build/actions/runs/41303778353) 顯示 `before="紀錄數：\\n0...VISIBLE_COMPONENT 紀錄數：0"`、`stepBodies=["紀錄數：\\n1...VISIBLE_COMPONENT 紀錄數：0",...]`，即畫面實際 1 時 QA 仍插入「0」錯誤標記，不能只改 DOM 比對規則就當修好。
