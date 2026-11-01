@@ -232,31 +232,36 @@ try{
  const creatorCtx=await browser.newContext({serviceWorkers:"block"});
  contexts.push(creatorCtx);
  const page=await creatorCtx.newPage();
- page.on("response",async response=>{
-  if(response.request().method()!=="POST")return;
-  const route=new URL(response.url()).pathname;
-  if(route==="/api/v1/agent-jobs"&&response.status()>=400){
+ async function recordCreateResponse(response,route){
+  if(route!=="/api/v1/agent-jobs")return;
+  if(response.status()>=400){
    createRejected=response.status();
    console.log("SP35 G5 CREATE HTTP FAILURE: "+createRejected+"; no Job admitted");
   }
-  if(route==="/api/v1/agent-jobs"&&response.status()===201){
-   created++;
-   const data=await response.json().catch(()=>null);
-   if(typeof data?.data?.job_id==="string")newJobId=data.data.job_id;
-  }
+  if(response.status()!==201)return;
+  created++;
+  const data=await response.json().catch(()=>null);
+  if(typeof data?.data?.job_id==="string")newJobId=data.data.job_id;
+ }
+ async function recordPublicationResponse(response){
+  published++;
+  const body=await response.json().catch(()=>null);
+  const code=typeof body?.error?.code==="string"?body.error.code:
+   typeof body?.error==="string"?body.error:"UNKNOWN";
+  const evidence={http:response.status(),code:code.slice(0,85)};
+  publishResponses.push(evidence);
+  console.log("SP35 G5 PUBLISH HTTP: "+JSON.stringify(evidence));
+ }
+ page.on("response",async response=>{
+  if(response.request().method()!=="POST")return;
+  const route=new URL(response.url()).pathname;
+  await recordCreateResponse(response,route);
   if(route.endsWith("/free-ai-stage")&&response.status()>=400){
    const body=await response.json().catch(()=>null);
-   console.log("SP35 G5 CODING HTTP FAILURE: "+response.status()+" "+String(body?.error??"UNKNOWN").slice(0,100));
+   console.log("SP35 G5 CODING HTTP FAILURE: "+response.status()+" "+
+    String(body?.error??"UNKNOWN").slice(0,100));
   }
-  if(route.endsWith("/publish-code-app")){
-   published++;
-   const body=await response.json().catch(()=>null);
-   const code=typeof body?.error?.code==="string"?body.error.code:
-    typeof body?.error==="string"?body.error:"UNKNOWN";
-   const evidence={http:response.status(),code:code.slice(0,85)};
-   publishResponses.push(evidence);
-   console.log("SP35 G5 PUBLISH HTTP: "+JSON.stringify(evidence));
-  }
+  if(route.endsWith("/publish-code-app"))await recordPublicationResponse(response);
  });
  await page.goto(origin,{waitUntil:"domcontentloaded",timeout:60000});
  const input=page.getByRole("textbox",{name:"用一句話描述要做的 App"});
