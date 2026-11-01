@@ -39,6 +39,14 @@ jobs:
       - name: Install pinned build-only Cloudflare typings; NOT Browser Run
         run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
       - run: npm run build
+      # Reuse the exact Playwright Chromium pinned by package-lock across
+      # separate CODE / REPAIR QA jobs. This only caches a public browser
+      # binary; never source code, encrypted tickets, identities or secrets.
+      - name: Reuse pinned Playwright Chromium download (free Actions cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: sp35-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npx playwright install --with-deps chromium
       - name: OIDC private source → locked network-denied Docker → Chromium smoke (NO AI)
         # A workflow input is an encrypted scoped token: GitHub prints step env
