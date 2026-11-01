@@ -24,6 +24,15 @@
 - **硬成本帳**：本次兩個不同新 GPT-6 已成功 CODE 模型呼叫（遊戲 1,007 / 6,775、資料庫 1,041 / 6,606），每筆 `max_charge_cents=20`，**模型呼叫保留上限合計 40 cents；全 Job 保留上限 76c + 44c 是 *兩個各別核准上限*，不可直接稱發票 120c，也不得將第一個舊核准當作可重新授權**。本次新的 1 美元整批上限後續仍要先做真正跨 Job 原子化 ledger，未建立/未證明其原子成本 Fence 前禁止因測試故障不停產生新付費 Job。其餘先用免費 Github / PG read-only 查修／驗收。
 - **下一個根因工作**：針對已保存 5/6 失敗 receipt 和安全 503，在不啟動 provider 的情況下證明 REPAIR admission 是資料完整、策略/預算不合或 Worker/PG 連線；再由真正瀏覽器 owner 身分與有剩餘的整批費用控制進行一次修復與重新驗收。**不允許 SQL 管理員偽造 owner 簽章或直接改來源來湊 PASS**。
 
+### 0.Q.2 同日通用 AI REPAIR 長上下文修復 + 真 Staging 免費部署結算
+
+- **根因分離（未動原失敗 Job）**：新資料庫 AI 原碼 immutable snapshot 含約 20,057 字元（src 19,679；其中 src/style.css **9,691 字元**、邏輯 source 9,988），Chromium 六項 **5 PASS / delete ASSERTION_FAILED**。舊 REPAIR 把全部 CSS/邏輯連同原 QA 送入模型 input，可能超過安全 **24,000** 字元 guard；Worker 當時把已知 `SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET` 隱成不明確 `AGENT_JOB_UNAVAILABLE` 503，原有 E2E 不斷做相同簽章 retry，但**無新的付費 REPAIR journal**。此成因已由原始 source 大小、舊 guard 與 [commit b3f9864](https://github.com/NFF98/appf2-build/commit/b3f98645b1) 的具體變更交叉佐證；**沒有原 owner PoP 的重跑，不宣稱該次 503 已在原 Job 動態重新驗證**。
+- **共用引擎修復不是單一 App patch**：Build commits [93b9a6b](https://github.com/NFF98/appf2-build/commit/93b9a6b504) 與 [d9b4185](https://github.com/NFF98/appf2-build/commit/d9b4185168c9720440cbe36f96439602ad031c0e)：只有受獨立 QA 證明的 `ASSERTION_FAILED` 會在**修復模型輸入**省略巨大 CSS；原 PostgreSQL immutable 原始碼含 CSS 仍完整保存，真正 build/render 失敗仍把 CSS 送進診斷；守不住 24k 會固定回安全 **409**、不扣費、不偽裝成可自動重試 503。只在已批准的修復流程才允許模型，沒有擴權或繞過 Job 身分。
+- **免費 Foundation 真驗收**：[GitHub Actions #41295271658](https://github.com/NFF98/appf2-build/actions/runs/41295271658) **SUCCESS**，TypeScript/lint/API/runtime/Vite 及免費 Docker+Chromium，含修復上下文保持 source immutable 的回歸。此為工程 PASS、不是原失敗資料庫 App 的 GPT-6 REPAIR PASS。
+- **真 Staging 更新已成功**：[GitHub Actions #41295271638](https://github.com/NFF98/appf2-build/actions/runs/41295271638) **SUCCESS**，部署原 Build HEAD `20c0d8215219d4109f32921c13db95d2390b1c53` 至既有隔離 Staging；簽章建立者與 PostgreSQL source CREATE/REOPEN、`SP35_G0_REAL_TIMELINE_PASS`、跨瀏覽器公開既有 Code App 重開互動 `generation-on-reuse=0`、F05 scripted browser 隔離/撤銷、舊 App 相容等回歸成功。Model paid runner 全部 `SKIPPED`；本 Staging 並未驗證新 GPT App 6/6、真 viewer-private PostgreSQL CRUD、付費修復或 9/9。
+- **本輪總費用事實**：實際模型 journal 仍僅兩筆 `gpt-6.1-sol` CODE `SUCCEEDED`：遊戲 input/output=1007/6775、資料庫=1041/6606；每筆模型呼叫保留上限 20c，**合計 40c 上限，不是供應商已收款數字**。真正平台發票未查，維持 `NOT_VERIFIED`；此新免費部署模型 POST 0。為保護 Human 新整批 `US$1.00` 上限，**不能用未知實扣費用作自動開下一付費 Job 的依據**。
+- **剩餘**：原資料庫 App 5/6 FAIL、原 ephemeral CI owner 私鑰不可重建；真 PostgreSQL viewer-private CRUD 多瀏覽器、全 v2 公開卡、9 個新自然語言網站 Jobs 各自的真正 E2E、P50/P95 仍 `NOT_DONE`。Staging workflow **SUCCESS ≠ 五核通用產品 5/5 PASS**。未新增 PR／Sprint 4，未合併／Production。
+
 ## 0.P 2026-11-01 SPEC → Build → Implement 缺口關閉執行計畫（Human 最新方向）
 
 **先有 SPEC 才能改程式。** Design PR #45 既有 H-001 唯一 Product Design authority 新增 §0.4（[Design commit c2212ed](https://github.com/NFF98/appf2-design/commit/c2212edad1b6b64347b49ac61c57849a5963aaac)），鎖住 G0..G5、獨立 E2E、速度、權限、費用。此頁只記 HOW、實作、收據；不另建 Product Spec。原 `build-spec/CURRENT.json` 仍 BS-P1-025、`implementation_enabled=false`，**不冒充已取得 Build Freeze 或已啟動 BS-P1-026**。限定 Design PR #45、Build PR #419，僅 Sprint 3.5，不合併、不 Production、不 Sprint 4。
