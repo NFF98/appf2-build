@@ -1,3 +1,13 @@
+# 2026-11-02 JST 接管核實：4/9（44.4%）；下一件 G10 尚未啟動
+
+- G9 原 Job `9b5b9dce-142d-417a-9ca1-77113d7642ae` 全網站 [41334608554](https://github.com/NFF98/appf2-build/actions/runs/41334608554) SUCCESS：原 frozen QA 7/7、HTTP201、ACTIVE `a451295e-49e0-401e-855f-923152dbc65f`、獨立 Chromium/reload/零生成。額外 [41335358726](https://github.com/NFF98/appf2-build/actions/runs/41335358726) SUCCESS：水平、兩方向斜線、滿欄拒絕、勝後鎖定及重玩。PG 已核 public_opt_in=true，blueprint `sha256:f6c011bac6535597b1343a7604a44678d105a0052ffff89ba83a9291aa612509`。G9 唯一 CODE20¢ SUCCEEDED，1372/5747 tokens；本工作明確關閉其付費命令，後續只零生成重用。
+- 因此 baseline2+G5+G9=4/9；2工具/1遊戲/1資料庫。G6暫停、G7/G8失敗，全部保留不計分。G8 repair 已 SUCCEEDED；第二 QA41334297332 仍6/7，全鏈41333481856 FAILURE，不能再標 in_progress。
+- 最新免費 Foundation41335358675、公開重用41335358616 SUCCESS；指定舊41316476210 staging實際執行步驟SUCCESS，paid skipped。歷史負面骰子稽核與舊四治理Gate FAIL仍保留，不宣稱全庫通過。
+- 既有308¢新增授權之保守風險：G5閉20+G6暫44+G7失44+G8失44+G9閉20=172¢；下一G10最多44→216¢<=308。已發出七calls上界132¢，不是發票；舊32¢未決另外保留，不重送。接管本輪尚無新增付費呼叫。
+- 下一步只啟動先凍結G10閱讀書單一次原生網站鏈，保留Job/來源；QA/ACTIVE後另跑免費真PG HTTP CRUD/reload/第三Chrome隔離並讀PG核對才加分。不得重跑任何paid全鏈；只原#419/#45、不merge/Production/Sprint4。
+
+---
+
 # 最新接續：3/9（33.3%）；G8原Job修復中；瀏覽器環境已不可用
 
 本段覆蓋下方舊「G6正在Cua操作／七次即停止」的即時狀態，歷史保留。Human已批准繼續全部，僅原Build#419/Design#45，無merge/Production/Sprint4。
