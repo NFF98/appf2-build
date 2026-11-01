@@ -12,6 +12,8 @@ import {getModelCall,reserveModelCall,completeModelCall,
  type ModelCallRow} from "../platform/agent/postgres-model-calls.js";
 import {sha256CodeBytes} from "../platform/blueprint/code-artifact-v2.js";
 import {readFreeCiSmoke} from "./free-ci-result.js";
+import {decideFreeCiRepair,type FreeCiRepairHistory}
+ from "../platform/agent/free-ci-repair-policy.js";
 import {dispatchFreeCiJob} from "./free-ci-dispatch.js";
 import {dispatchAiRunner} from "./free-ai-dispatch.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
@@ -52,7 +54,8 @@ const codeSchema={type:"object",additionalProperties:false,
  required:["main_ts","style_css"],
  properties:{main_ts:{type:"string"},style_css:{type:"string"}}} as const;
 function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
- files:readonly {path:string;content:string}[],failed:string):string{
+ files:readonly {path:string;content:string}[],failed:string,
+ strategy:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE"="FIX_FAILED_CHECKS"):string{
  if(phase==="QA")return [
   "You are an independent PRE-CODE acceptance planner. You have NOT seen any generated code.",
   "Reply ONLY with JSON matching the schema, 1-6 criteria. No markdown.",
@@ -73,6 +76,12 @@ function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
   phase==="REPAIR"?"Repair the CURRENT real project based on the frozen failure evidence.":
    "Create a working interactive App from the natural-language prompt.",
   "Implement the user's entire requirements, do not hardcode a template.",
+  ...(phase==="REPAIR"&&strategy==="RETHINK_ROOT_CAUSE"?[
+   "Three independently observed project snapshots failed the SAME requirements.",
+   "Stop repeating previous patches: analyze root cause and change implementation",
+   "approach, preserving the original requirement and FROZEN acceptance checks.",
+   "Run the independent Docker and Chromium tests again; never assert PASS."
+  ]:[]),
   "Return complete src/main.ts and src/style.css, no external dependencies or URLs.",
   "Use native browser DOM and CSS; existing index.html has #app and imports src/main.ts.",
   "Do not change package.json or use network. Preserve exact expected accessible button names.",
@@ -188,9 +197,11 @@ async function recoverBackgroundTurn(db:AgentJobExecutor,row:ModelCallRow,
 // eslint-disable-next-line complexity, max-params -- Creator-bound immutable dispatch, no repeat POST.
 async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  typeof recoverAgentJob>> & {},owner:string,phase:Phase,request:unknown,
- key:string,runnerToken:string,ticketSecret:string,nowMs:number
+ key:string,runnerToken:string,ticketSecret:string,nowMs:number,
+ repairRound:1|2|3=1
 ):Promise<ModelResult>{
- const modelKey="sp35_free_ai_"+phase.toLowerCase()+"_v1";
+ const modelKey="sp35_free_ai_"+phase.toLowerCase()+"_v"+
+  (phase==="REPAIR"?repairRound:1);
  const json=JSON.stringify(request);
  const digest=await sha256CodeBytes(new TextEncoder().encode(
   "APPF2_SP35_FREE_AI_REQUEST_V1\u0000"+json));
@@ -290,7 +301,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  if(!repairing&&(job.job.revision!==0||job.job.job_state!=="CREATED"))
   throw Error("SP35_CODE_WRONG_STATE");
  if(repairing&&(job.job.job_state!=="CODING"||job.project.revision<2||
-  job.job.checkpoint.step>4))throw Error("SP35_REPAIR_NOT_ELIGIBLE");
+  job.job.checkpoint.step>6))throw Error("SP35_REPAIR_NOT_ELIGIBLE");
  const receipt=repairing?await readFreeCiSmoke(ctx.db,ctx.jobId,
   input.anonymous_id,job.project.project_hash):null;
  const provenBuildFailure=receipt?.status==="BUILD_FAILED"&&
@@ -301,6 +312,15 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  const provenQaFailure=hasRecordedBrowserQaFailure(receipt);
  if(repairing&&!provenBuildFailure&&!provenQaFailure)
   throw Error("SP35_REPAIR_NO_PROVEN_AUTOMATABLE_FAILURE");
+ const history=repairing?(await ctx.db.query<FreeCiRepairHistory>(
+  "SELECT project_hash,receipt_json FROM public.appf2_agent_free_ci_receipt "+
+  "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
+  "ORDER BY created_at DESC,project_hash DESC LIMIT 8",
+  [ctx.jobId,input.anonymous_id])).rows:[];
+ const strategy=repairing?await decideFreeCiRepair(plan,history,
+  job.project.project_hash,job.project.revision,job.job.checkpoint.step,
+  job.job.checkpoint.budget.max_cost_cents,
+  job.job.checkpoint.budget.max_steps):null;
  // Failure excerpt is untrusted compiler output, not instructions.
  const failure=receipt?.status==="BUILD_FAILED"?
   String(receipt.diagnostic_code??"BUILD_FAILED")+": "+
@@ -309,7 +329,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
    receipt.qa_checks?.map(c=>c.criterion_id+":"+c.verdict).join(",")??"":"";
  const req={model:MODEL,reasoning:{effort:"medium" as const},
   input:modelPrompt(input.stage,
-   input.original_prompt,plan,repairing?job.project.files:[],failure),
+   input.original_prompt,plan,repairing?job.project.files:[],failure,
+   strategy?.mode),
   max_output_tokens:repairing?9000:12000,background:true,store:true,text:{format:{type:"json_schema",
    name:"appf2_free_ci_source",strict:true,schema:codeSchema}}};
  // Prevent a large saved project from exceeding the per-repair model cap
@@ -317,7 +338,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  if(repairing&&req.input.length>24000)
   throw Error("SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET");
  const turn=await paidModelTurn(ctx.db,job,input.anonymous_id,
-  input.stage,req,ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs);
+  input.stage,req,ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs,
+  strategy?.round??1);
  const files=parseFiles(parsedOutput(turn.response));
  if(!files)throw Error("SP35_PAID_CODE_INVALID_NO_RECHARGE");
  let current=job;
@@ -326,7 +348,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  const usedTokens=Math.min(job.job.checkpoint.budget.max_tokens,
   (qaCall?.input_tokens??0)+(qaCall?.output_tokens??0)+
   turn.inputTokens+turn.outputTokens);
- const estimatedCost=repairing?44:28; // Reservation caps, NOT provider invoice.
+ const estimatedCost=repairing?strategy!.required_approved_cents:28;
+ // These are cumulative reservation caps, NOT provider invoice charges.
  const next={...current.job.checkpoint,
   state:repairing?"REPAIRING" as const:"PLANNING" as const,
   step:current.job.checkpoint.step+1,
@@ -361,5 +384,7 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  return {status:queued?"AI_SOURCE_SAVED_FREE_CI_QUEUED" as const:
   "AI_SOURCE_SAVED_CI_DISPATCH_UNCONFIRMED" as const,
   project_hash:saved.project.project_hash,revision:saved.job.revision,
+  ...(strategy?{repair_round:strategy.round,strategy_mode:strategy.mode,
+   next_approved_cents:strategy.round<3?28+16*(strategy.round+1):null}:{}),
   app_published:false as const,paid_model_call_saved:true as const};
 }
