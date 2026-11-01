@@ -187,6 +187,36 @@ try{
  const origin="http://127.0.0.1:"+server.address().port;
  browser=await chromium.launch({headless:true});
  const ctx=await browser.newContext({serviceWorkers:"block"});
+ // The independent QA browser may exercise generated UI storage logic without
+ // network/database credentials. This is an IN-MEMORY test double ONLY:
+ // live PostgreSQL persistence and RLS require a separate Staging browser proof.
+ await ctx.addInitScript(()=>{
+  const rows=new Map();
+  const clone=value=>JSON.parse(JSON.stringify(value));
+  Object.defineProperty(globalThis,"appf2Records",{writable:false,configurable:false,
+   value:Object.freeze({
+    list:async()=>({records:Array.from(rows.entries()).map(([record_id,value])=>({
+     record_id,value:clone(value)}))}),
+    create:async value=>{
+     const record_id=globalThis.crypto.randomUUID();
+     rows.set(record_id,clone(value));
+     return {record_id,value:clone(value)};
+    },
+    read:async id=>{
+     if(!rows.has(id))throw Error("CODE_RECORD_NOT_FOUND");
+     return {record_id:id,value:clone(rows.get(id))};
+    },
+    update:async(id,value)=>{
+     if(!rows.has(id))throw Error("CODE_RECORD_NOT_FOUND");
+     rows.set(id,clone(value));return {record_id:id,value:clone(value)};
+    },
+    delete:async id=>{
+     if(!rows.delete(id))throw Error("CODE_RECORD_NOT_FOUND");
+     return {record_id:id};
+    }
+   })});
+ });
+ console.log("SP35 FREE CI QA RECORDS: IN-MEMORY TEST DOUBLE ONLY; NOT POSTGRES PASS");
  await ctx.route("**/*",route=>route.request().url().startsWith(origin+"/")?
   route.continue():route.abort());
  const page=await ctx.newPage();
