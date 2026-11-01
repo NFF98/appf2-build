@@ -30,7 +30,7 @@ async function signed(path,body,expected=200){
  const bytes=new globalThis.TextEncoder().encode(JSON.stringify(body));
  const nonce="sp35FiveCore_"+randomUUID().replaceAll("-","");
  const now=Date.now();
- const transcript=new TextEncoder().encode(JSON.stringify([
+ const transcript=new globalThis.TextEncoder().encode(JSON.stringify([
   "APPF2_MUTATION_PoP_V1","POST",path,await sha(bytes),nonce,now]));
  const signature=Buffer.from(await crypto.subtle.sign(
   {name:"ECDSA",hash:"SHA-256"},keys.privateKey,transcript)).toString("base64url");
