@@ -111,6 +111,7 @@ function installHelpers(){
     throw Error("C2_JOB_POINTER_NOT_DURABLE");
    return {jobId,sourceHash:created.json.data.project_hash};
   },
+  // eslint-disable-next-line complexity -- Signed proof, original Job hash and stranger-key 404 are independent hard checks.
   async recover(){
    const material=await read();
    const raw=globalThis.localStorage.getItem("appf2.c2.live.checkpoint.v1");
