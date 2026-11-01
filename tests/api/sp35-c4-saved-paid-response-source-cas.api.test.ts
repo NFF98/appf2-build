@@ -152,13 +152,19 @@ describe("C4 initial CODE saved response after half checkpoint",()=>{
   };
   const goodMain="import './style.css'; const root=document.querySelector('#app'); if (root) root.textContent='分數：1';";
   const goodCss="body { font-size: 16px; }";
+  const extraPath="src/domain/score.ts";
+  const extraCode="export const increment = (n:number):number => n+1;";
   const saved:ModelCallRow={job_id:id,owner_anonymous_id:owner,
    call_key:"sp35_free_ai_code_v1",job_revision:0,
    checkpoint_hash:oldHash,request_hash:oldHash,
    model:"gpt-6.1-sol",max_charge_cents:20,status:"SUCCEEDED",
    response_json:{status:"completed",output:[{type:"message",
     content:[{type:"output_text",
-     text:JSON.stringify({main_ts:goodMain,style_css:goodCss})}]}]},
+     text:JSON.stringify({files:[
+      {path:"src/main.ts",content:goodMain},
+      {path:"src/style.css",content:goodCss},
+      {path:extraPath,content:extraCode}
+     ]})}]}]},
    response_id:"resp_paid_saved_code",input_tokens:200,output_tokens:300
   };
   const db={query:vi.fn(async(sql:string,params:readonly unknown[]=[])=>{
@@ -198,6 +204,10 @@ describe("C4 initial CODE saved response after half checkpoint",()=>{
    expect(call[4].revision).toBe(2);
    expect(call[4].files.find((v:{path:string})=>
     v.path==="src/main.ts").content).toBe(goodMain);
+   expect(call[4].files.find((v:{path:string})=>
+    v.path===extraPath).content).toBe(extraCode);
+   expect(call[4].files.find((v:{path:string})=>
+    v.path==="src/style.css").content).toBe(goodCss);
    expect(modelFetch).not.toHaveBeenCalled();
    expect(db.query).not.toHaveBeenCalledWith(
     expect.stringContaining("reserve_agent_model_call"),expect.anything());
