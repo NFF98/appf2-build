@@ -18,8 +18,8 @@ jobs:
     timeout-minutes: 12
     env:
       APPF2_RECIPIENT_FREE_OK: '1'
-      APPF2_SP35_SAMPLE: 'g9-connect'
-      APPF2_EXISTING_SHARE_ID: 'a451295e-49e0-401e-855f-923152dbc65f'
+      APPF2_SP35_SAMPLE: 'g10-books'
+      APPF2_EXISTING_SHARE_ID: '4c07f75f-1f4b-43d2-9a66-dab6761b8414'
     steps:
       - uses: actions/checkout@v4
         with:
