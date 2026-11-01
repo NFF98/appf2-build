@@ -260,3 +260,5 @@ jobs:
 # 2026-11-01 C4/C5: deploy verified 477 API/31 runtime free CI repairs + three bounded QA repair round support. No paid AI calls.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] C2 durable original browser signer, new Chromium process and same real Staging PostgreSQL Job; zero paid AI.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] retry fixed C2 real closed-Chromium profile to unchanged Staging PostgreSQL owner proof; NEVER send paid model.
