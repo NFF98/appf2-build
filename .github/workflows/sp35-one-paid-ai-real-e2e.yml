@@ -19,7 +19,7 @@ jobs:
     env:
       APPF2_RECIPIENT_FREE_OK: '1'
       APPF2_SP35_SAMPLE: 'g5-meal'
-      APPF2_EXISTING_SHARE_ID: '00000000-0000-4000-8000-000000000000'
+      APPF2_EXISTING_SHARE_ID: '760b46d4-19b7-4092-b53a-d5276eaf9068'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -511,3 +511,5 @@ jobs:
 # 2026-11-02 JST Human approved the requested ONE G5 meal-tool Job, max 44 cents; PG ledger reconciled, historical 32c uncertainty preserved. Never rerun paid phase.
 
 # 2026-11-02 JST G5 same approved 44c admission after exact CREATE 413 correction; prior run cancelled before any matching Job/model. Free Staging 41326481475 SUCCESS, old waiter never rerun.
+
+# G5 original native owner published 760b46d4-19b7-4092-b53a-d5276eaf9068; existing artifact recipient proof only, zero generation.
