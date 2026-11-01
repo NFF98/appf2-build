@@ -16,6 +16,7 @@ import {chromium} from "@playwright/test";
 import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-workspace.js";
 import {stageVerifiedFreeCiProject} from "./sp35-free-ci-stage-project.mjs";
 import {trustedFreeCiOidcRequestUrl} from "../../dist/src/edge/free-ci-oidc-request-url.js";
+import {executeFrozenQaSteps,observedTextAppears} from "./sp35-free-ci-browser-temporal.mjs";
 const host="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
 // The workflow_dispatch ticket must be read from the protected runner event
 // file, NEVER from a step-level environment value printed in Actions logs.
@@ -254,19 +255,13 @@ try{
        selectorBefore.set(assertion.selector,await loc.innerText());
       }
      }
-     for(const step of criterion.steps){
-      const loc=target.getByRole(step.role,{name:step.name,exact:true});
-      if(await loc.count()!==1)throw Error("QA_TARGET_MISSING_OR_AMBIGUOUS");
-      if(step.action==="click")await loc.click({timeout:2500});
-      else if(step.action==="fill")await loc.fill(step.value,{timeout:2500});
-      else throw Error("QA_STEP_UNSUPPORTED");
-     }
-     const after=await target.locator("body").innerText();
+     const {stepBodies,after}=await executeFrozenQaSteps(target,criterion,before);
      let ok=true;
      for(const assertion of criterion.assertions){
       if(assertion.kind==="text_includes")ok&&=after.includes(assertion.text);
       else if(assertion.kind==="text_appears")
-       ok&&=!before.includes(assertion.text)&&after.includes(assertion.text);
+       ok&&=observedTextAppears(before,stepBodies.slice(0,-1),
+        after,assertion.text);
       else if(assertion.kind==="text_changes"){
        const loc=target.locator(assertion.selector);
        ok&&=await loc.count()===1&&
