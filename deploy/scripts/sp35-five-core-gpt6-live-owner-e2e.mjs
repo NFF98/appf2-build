@@ -6,17 +6,29 @@
  */
 import {randomUUID,webcrypto} from "node:crypto";
 const origin="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
-const prompt="請建立一個可操作的任務計分 App。起始必須顯示「分數：0」。按「加一」後顯示「分數：1」，再按一次顯示「分數：2」。按「歸零」後顯示「分數：0」。需要漂亮的介面且功能真的可操作。";
+const prompt="請建立漂亮可操作的四人計分板 App。初始畫面要顯示「小明：0」和「小華：0」。按「小明 +1」顯示「小明：1」，連按兩次顯示「小明：2」。按「小華 +1」顯示「小華：1」，不影響小明。按「小明 -1」顯示「小明：-1」。按「全部歸零」時顯示「已重設所有分數」，且分數清零。手機上也能操作。";
 const plan={version:"1",criteria:[
- {id:"initial_count",source_quote:"分數：0",description:"開啟顯示分數零",
-  automatable:true,steps:[],assertions:[{kind:"text_includes",text:"分數：0"}]},
- {id:"increment_once",source_quote:"按「加一」後顯示「分數：1」",description:"真實點一下加一",
-  automatable:true,steps:[{action:"click",role:"button",name:"加一"}],
-  assertions:[{kind:"text_appears",text:"分數：1"}]},
- {id:"increment_twice",source_quote:"再按一次顯示「分數：2」",description:"真實點兩下",
-  automatable:true,steps:[{action:"click",role:"button",name:"加一"},
-   {action:"click",role:"button",name:"加一"}],
-  assertions:[{kind:"text_appears",text:"分數：2"}]}
+ {id:"initial_zero",source_quote:"初始畫面要顯示「小明：0」",description:"初始分數為零",
+  automatable:true,steps:[],assertions:[{kind:"text_includes",text:"小明：0"}]},
+ {id:"add_once",source_quote:"按「小明 +1」顯示「小明：1」",description:"第一位玩家加一",
+  automatable:true,steps:[{action:"click",role:"button",name:"小明 +1"}],
+  assertions:[{kind:"text_appears",text:"小明：1"}]},
+ {id:"add_twice",source_quote:"連按兩次顯示「小明：2」",description:"連續加分正確",
+  automatable:true,steps:[{action:"click",role:"button",name:"小明 +1"},
+   {action:"click",role:"button",name:"小明 +1"}],
+  assertions:[{kind:"text_appears",text:"小明：2"}]},
+ {id:"other_player",source_quote:"按「小華 +1」顯示「小華：1」",
+  description:"其他玩家獨立計分",
+  automatable:true,steps:[{action:"click",role:"button",name:"小華 +1"}],
+  assertions:[{kind:"text_appears",text:"小華：1"}]},
+ {id:"negative_score",source_quote:"按「小明 -1」顯示「小明：-1」",
+  description:"負分與減分互動",
+  automatable:true,steps:[{action:"click",role:"button",name:"小明 -1"}],
+  assertions:[{kind:"text_appears",text:"小明：-1"}]},
+ {id:"reset_feedback",source_quote:"按「全部歸零」時顯示「已重設所有分數」",
+  description:"重置後有完成提示",
+  automatable:true,steps:[{action:"click",role:"button",name:"全部歸零"}],
+  assertions:[{kind:"text_appears",text:"已重設所有分數"}]}
 ]};
 const crypto=webcrypto,owner=randomUUID();
 const keys=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},
@@ -97,8 +109,11 @@ for(const stage of stages){
   if(result?.status==="AI_SOURCE_SAVED_FREE_CI_QUEUED"){
    stageFinished=true;break;
   }
-  if(result?.status==="AI_SOURCE_SAVED_CI_DISPATCH_UNCONFIRMED")
-   throw Error("C4_PAID_RESULT_SAVED_CI_DISPATCH_UNCONFIRMED_NO_RETRY");
+  if(result?.status==="AI_SOURCE_SAVED_CI_DISPATCH_UNCONFIRMED"){
+   stageFinished=true;
+   console.log("C4 SOURCE SAVED; free CI dispatch unconfirmed; recover via free-only endpoint");
+   break;
+  }
   if(result!==null&&result?.status!=="AI_BACKGROUND_PENDING")
    throw Error("C4_C5_MODEL_STAGE_UNEXPECTED_"+String(result?.status));
   await sleep(7000);
@@ -106,10 +121,20 @@ for(const stage of stages){
  if(!stageFinished)throw Error("C4_MODEL_RESULT_NOT_CONFIRMED_NO_SECOND_PAID_POST");
  console.log("C4 GPT-6.1 Sol stage "+stage+" #"+phase+
   " saved; exact new source revision and free Docker dispatch verified");
- let next=null;
+ let next=null,freeDispatched=false;
  for(let poll=0;poll<75&&Date.now()<deadline;poll++){
   await sleep(9000);
   const j=await signed(base,{anonymous_id:owner});
+  // Retry a FREE Docker dispatch only if no receipt after four polls.
+  // Same creator, immutable source, no second paid model call.
+  if(poll===4&&!j.free_ci&&!freeDispatched){
+   const restarted=await signed(base+"/free-ci-dispatch",{
+    anonymous_id:owner,explicit_free_ci_consent:true},202);
+   if(restarted.status!=="FREE_CI_QUEUED")
+    throw Error("C4_FREE_QA_RECOVERY_NOT_ACCEPTED");
+   freeDispatched=true;
+   console.log("C4 FREE-ONLY Docker redispatch from original source; no AI fee");
+  }
   if(j.free_ci&&j.free_ci.original_requirements_qa===false){
    next=j;break;
   }
