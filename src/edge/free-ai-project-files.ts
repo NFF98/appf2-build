@@ -29,6 +29,7 @@ function validOne(value:unknown):value is AiSourceFile{
  * Return null before any source CAS if a model response is unsafe/incomplete.
  * Do not auto-fill missing entrypoints or fake an App out of partial output.
  */
+// eslint-disable-next-line complexity -- Independently enforce path, legacy replay, bounded bytes and required entrypoint integrity.
 export function parseAiProjectFiles(raw:unknown):readonly AiSourceFile[]|null{
  if(typeof raw!=="object"||raw===null||Array.isArray(raw))return null;
  const value=raw as Record<string,unknown>,keys=Object.keys(value).sort().join(",");
