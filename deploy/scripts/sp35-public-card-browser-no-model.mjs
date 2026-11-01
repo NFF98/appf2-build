@@ -23,7 +23,10 @@ try{
   const owner=await ownerContext.newPage();
   await host.attach(owner);
   await owner.goto(origin);
-  await owner.locator("details.legacy-composer summary").click();
+  // Two legacy accordions now exist; select the Blueprint composer, not the
+  // older single-file Code Builder. A broad summary locator is ambiguous.
+  await owner.locator("details.legacy-composer")
+   .filter({hasText:"舊版 Blueprint Composer"}).locator("summary").click();
   await owner.getByRole("textbox",{name:"說出你想做的 App"}).fill("幫我做一個可以調整人數的聚餐分帳工具");
   await owner.getByRole("button",{name:"建立 App",exact:true}).click();
   await expect(owner.locator(".s03")).toBeVisible({timeout:30000});
