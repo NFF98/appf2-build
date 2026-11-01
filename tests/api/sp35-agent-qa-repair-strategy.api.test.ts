@@ -1,4 +1,5 @@
 import {describe,it,expect} from "vitest";
+import {hasAttestedQaFail} from "../../src/edge/agent-qa-repair.js";
 import {determineQaRepairStrategy,type SavedQaHistory}
  from "../../src/platform/agent/qa-repair-strategy.js";
 import type {QaPlan} from "../../src/platform/qa/requirement-contract.js";
@@ -58,5 +59,14 @@ describe("Durable multi-file Agent changes strategy after three stalled independ
   expect(r.verified_failure_count).toBe(8);
   expect(r.stalled_failure_count).toBe(8);
   expect(r.mode).toBe("RETHINK_ROOT_CAUSE");
+ });
+});
+
+describe("QA failure eligibility",()=>{
+ it("rejects unknown-only receipts",()=>{
+  expect(hasAttestedQaFail([{verdict:"UNTESTED"}])).toBe(false);
+ });
+ it("accepts a confirmed failure",()=>{
+  expect(hasAttestedQaFail([{verdict:"FAIL"},{verdict:"UNTESTED"}])).toBe(true);
  });
 });
