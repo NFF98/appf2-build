@@ -4,6 +4,7 @@
  */
 import {recoverAgentJob,advanceDurableAgentJob}
  from "../platform/agent/durable-agent-service.js";
+import {readFreeCiSmoke} from "./free-ci-result.js";
 import {applyProjectEdits,assertWorkspacePath}
  from "../platform/agent/project-workspace.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
@@ -95,4 +96,76 @@ export async function importOwnerFreeSource(input:FreeImportInput,ctx:{
   throw Error("FREE_IMPORT_NOT_DURABLE");
  return {status:"IMPORTED_NO_AI",project_hash:saved.project.project_hash,
   revision:saved.job.revision,app_published:false};
+}
+
+/** Creator-signed ZERO-COST recovery drill: replace ONLY the current owner's
+ * saved failing source, after independently signed GitHub OIDC QA FAIL.
+ * This is a manual/editable-source path, NEVER evidence of AI autorepair.
+ * It neither fetches another owner's code nor authorizes publication.
+ */
+export type FreeManualRepairInput={
+ readonly anonymous_id:string;readonly expected_revision:number;
+ readonly expected_project_hash:string;readonly files:readonly{
+  readonly path:string;readonly content:string}[];
+};
+export function validFreeManualRepairInput(raw:unknown):raw is FreeManualRepairInput{
+ if(!validFreeImportInput({...raw as object,expected_revision:0}))return false;
+ const x=raw as Record<string,unknown>;
+ return Number.isSafeInteger(x.expected_revision)&&
+  Number(x.expected_revision)>=2&&Number(x.expected_revision)<=6;
+}
+export async function importOwnerFreeRepair(input:FreeManualRepairInput,ctx:{
+ readonly db:AgentJobExecutor;readonly jobId:string;readonly ownerThumb:string;
+}):Promise<{status:"MANUAL_REPAIR_SAVED_NO_AI";project_hash:string;
+ revision:number;app_published:false;ai_started:false}>{
+ if(!validFreeManualRepairInput(input))throw Error("FREE_REPAIR_INVALID");
+ const owner=(await ctx.db.query<{job_id:string}>(
+  "SELECT job_id::text FROM public.appf2_agent_job "+
+  "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
+  "AND owner_key_thumbprint=$3::text LIMIT 1",
+  [ctx.jobId,input.anonymous_id,ctx.ownerThumb])).rows[0];
+ if(owner?.job_id!==ctx.jobId)throw Error("FREE_REPAIR_NOT_CREATOR");
+ const current=await recoverAgentJob(ctx.db,ctx.jobId,input.anonymous_id);
+ if(!current||current.job.revision!==input.expected_revision||
+  current.job.job_state!=="CODING"||
+  current.project.project_hash!==input.expected_project_hash||
+  current.project.revision<2||
+  current.job.checkpoint.budget.max_cost_cents!==0||
+  current.job.checkpoint.cost_cents!==0||
+  current.job.checkpoint.tokens_used!==0||
+  current.job.checkpoint.step+2>current.job.checkpoint.budget.max_steps)
+  throw Error("FREE_REPAIR_NOT_ELIGIBLE_OR_STALE");
+ const receipt=await readFreeCiSmoke(ctx.db,ctx.jobId,input.anonymous_id,
+  input.expected_project_hash);
+ if(!receipt||(receipt.status!=="BUILD_FAILED"&&
+  (receipt.status!=="BUILD_BROWSER_SMOKE"||
+   receipt.qa_checks?.some(check=>check.verdict==="FAIL")!==true)))
+  throw Error("FREE_REPAIR_REQUIRES_REAL_QA_FAILURE");
+ const existing=new Map(current.project.files.map(f=>[f.path,f]));
+ const edits=input.files.map(f=>{
+  const before=existing.get(f.path);
+  return before?{operation:"replace" as const,path:f.path,
+   content:f.content,previous_hash:before.hash}:
+   {operation:"add" as const,path:f.path,content:f.content};
+ });
+ if(edits.every(e=>existing.get(e.path)?.content===e.content))
+  throw Error("FREE_REPAIR_NO_CODE_CHANGE");
+ // Validate the complete candidate BEFORE advancing checkpoint.
+ const edited=await applyProjectEdits(current.project,current.project.project_hash,edits);
+ const repairing={...current.job.checkpoint,state:"REPAIRING" as const,
+  step:current.job.checkpoint.step+1,
+  previous_checkpoint_id:current.job.checkpoint_hash};
+ const started=await advanceDurableAgentJob(ctx.db,current.job,
+  input.anonymous_id,repairing);
+ const coding={...started.job.checkpoint,state:"CODING" as const,
+  step:started.job.checkpoint.step+1,
+  project_hash:edited.project_hash,
+  previous_checkpoint_id:started.job.checkpoint_hash};
+ const saved=await advanceDurableAgentJob(ctx.db,started.job,
+  input.anonymous_id,coding,edited);
+ if(saved.job.revision!==input.expected_revision+2||
+  saved.project.project_hash!==edited.project_hash)
+  throw Error("FREE_REPAIR_NOT_DURABLE");
+ return {status:"MANUAL_REPAIR_SAVED_NO_AI",revision:saved.job.revision,
+  project_hash:saved.project.project_hash,app_published:false,ai_started:false};
 }
