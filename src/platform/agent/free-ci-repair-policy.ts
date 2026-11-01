@@ -68,9 +68,11 @@ export async function decideFreeCiRepair(plan:QaPlan,
  const seen=new Set<string>(),failures:Failure[]=[];
  for(const row of history.slice(0,8)){
   if(seen.has(row.project_hash))continue;
+  seen.add(row.project_hash);
   const valid=await attestedFailure(hash,plan,row);
-  if(!valid)continue;
-  seen.add(valid.hash);
+  // A missing, forged or UNTESTED-only intermediate revision interrupts
+  // a consecutive failure streak. Never skip it to count older FAILs.
+  if(!valid)break;
   failures.push(valid);
  }
  if(failures[0]?.hash!==currentHash)
