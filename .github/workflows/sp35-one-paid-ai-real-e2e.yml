@@ -11,6 +11,33 @@ concurrency:
   group: sp35-one-explicit-paid-ai-e2e
   cancel-in-progress: false
 jobs:
+  g5-one-website-gpt6-meal:
+    # Prepared only. The unique paid marker may be committed ONLY after
+    # explicit new 44c approval and fresh read-only journal reconciliation.
+    # Never re-run this job if a paid model response is uncertain.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G5-MEAL-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_G5_EXPLICIT_PAID_OK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked dependencies and frozen plan before any new Job
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --check deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs
+          node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs --preflight-only
+      - name: Free Chromium install
+        run: npx playwright install --with-deps chromium
+      - name: Exactly one newly authorized owner Job, maximum 44c
+        run: node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs
+
   g5-meal-free-preflight:
     # PREPARED only: no creator Job, no model POST, no paid consent.
     if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-G5-MEAL-FREE-PREFLIGHT]')
