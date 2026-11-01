@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "delta_id": "BD-026",
+  "type": "DESIGN_DELTA",
+  "status": "APPROVED",
+  "source_finding_ids": [
+    "BF-055"
+  ],
+  "source_case_ids": [
+    "GOV-T006-F06-PHASED-001"
+  ],
+  "source_issue_refs": [
+    "NFF98/appf2-design#42",
+    "NFF98/appf2-build#374",
+    "NFF98/appf2-build#377"
+  ],
+  "affected_build_spec": "BS-P1-025",
+  "affected_tasks": [
+    "T006"
+  ],
+  "affected_contracts": [
+    "working/detailed-design/functions/F00-EXPERIENCE-SHELL.md F00-AC-039/TEST-F00-039",
+    "working/detailed-design/functions/F06-REMIX-REFINE.md Stage C preservation",
+    "working/detailed-design/registries/acceptance-test-registry.json v2.6.0 + new AC039"
+  ],
+  "affected_acceptance": [
+    "F00-AC-039"
+  ],
+  "changes_contract_semantics": true,
+  "owner": "HUMAN_GOVERNANCE",
+  "user_decision_required": true,
+  "user_decision": {
+    "status": "APPROVED",
+    "decision_ref": "Human 2026-10-13 direct ChatGPT messages 『execute 1 ,2』 and 『re send execute 1 ,2』 explicitly directing BS026 Build Freeze / #377 Merge (step 1) and BS026 Activation + T006 rebind (step 2). Scope limited to BS026 Composer-only F00-AC-039 split, not full F00-AC-037 Preview proof, Cursor execution or T008."
+  },
+  "replacement_build_spec_required": true,
+  "replacement_build_spec": "BS-P1-026",
+  "verification": [
+    "Design #42 merged f844914b7afb738f903d4041f09a1d6c8f82711e.",
+    "Scope-clean derived Design source 7129e16a7110b40d009b963d9937e41c83cadb02 pins ONLY three Design approved changes from BS025 source fda9045d0fc1b2b718d56ed49fa09abdce343a5c.",
+    "BS026 projection 64/64 Design blobs and 52/52 inventory entries structurally matched; Product 9th Test NOT yet re-run.",
+    "Full original F00-AC-037 and F06-AC-025 preserved, no Preview-origin PASS claim.",
+    "Human 2026-10-13 expressly directed actual step 1 BS026 Freeze / #377 Merge and step 2 Activation + T006 Rebind; separate Gate and independent BCE required before Merge, no claim of ninth product PASS."
+  ],
+  "upstream_working_commit": "f844914b7afb738f903d4041f09a1d6c8f82711e",
+  "freeze_source": {
+    "type": "SCOPE_CLEAN_DERIVED",
+    "commit": "7129e16a7110b40d009b963d9937e41c83cadb02",
+    "base_commit": "fda9045d0fc1b2b718d56ed49fa09abdce343a5c",
+    "provenance_audit": "delivery/audits/SP-P1-003-BD-026-FREEZE-CANDIDATE.md"
+  },
+  "implementation_activation_authorized": false,
+  "cursor_lease_authorized_by_this_delta": false,
+  "no_change_to": [
+    "build-spec/baselines/BS-P1-025",
+    "T001–T005/T007 CLOSED history",
+    "F00-AC-037 original full contract",
+    "F06-AC-025 original contract"
+  ]
+}
