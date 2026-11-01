@@ -68,6 +68,17 @@ function installHelpers(){
    body:bytes});
   return {status:response.status,json:await response.json().catch(()=>null)};
  };
+ const wrongOwnerCannotRead=async (owner,jobId)=>{
+  const outsider=await globalThis.crypto.subtle.generateKey(
+   {name:"ECDSA",namedCurve:"P-256"},false,["sign","verify"]);
+  const outsiderMaterial={
+   privateKey:outsider.privateKey,
+   spki:new Uint8Array(await globalThis.crypto.subtle.exportKey(
+    "spki",outsider.publicKey))};
+  const denied=await send(outsiderMaterial,
+   "/api/v1/agent-jobs/"+jobId,{anonymous_id:owner});
+  return denied.status===404;
+ };
  globalThis.appf2C2OwnerTest={
   async create(){
    if(!globalThis.isSecureContext)throw Error("C2_NOT_SECURE_ORIGIN");
@@ -109,15 +120,8 @@ function installHelpers(){
     reopened.json.data.checkpoint?.step!==0||
     reopened.json.data.ai_started!==false)
     throw Error("C2_REOPENED_POSTGRES_JOB_MISMATCH_HTTP_"+reopened.status);
-   const outsider=await globalThis.crypto.subtle.generateKey(
-    {name:"ECDSA",namedCurve:"P-256"},false,["sign","verify"]);
-   const outsiderMaterial={
-    privateKey:outsider.privateKey,
-    spki:new Uint8Array(await globalThis.crypto.subtle.exportKey(
-     "spki",outsider.publicKey))};
-   const denied=await send(outsiderMaterial,
-    "/api/v1/agent-jobs/"+pointer.jobId,{anonymous_id:pointer.owner});
-   if(denied.status!==404)throw Error("C2_OTHER_KEY_READ_WAS_NOT_DENIED");
+   if(!await wrongOwnerCannotRead(pointer.owner,pointer.jobId))
+    throw Error("C2_OTHER_KEY_READ_WAS_NOT_DENIED");
    return {jobId:pointer.jobId,confirmed:true};
   }
  };
