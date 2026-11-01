@@ -16,7 +16,7 @@ import {chromium} from "@playwright/test";
 import {verifyProjectSnapshot} from "../../dist/src/platform/agent/project-workspace.js";
 import {stageVerifiedFreeCiProject} from "./sp35-free-ci-stage-project.mjs";
 import {trustedFreeCiOidcRequestUrl} from "../../dist/src/edge/free-ci-oidc-request-url.js";
-import {executeFrozenQaSteps,observedTextAppears} from "./sp35-free-ci-browser-temporal.mjs";
+import {executeFrozenQaSteps,observedTextAppears,observedQaBody} from "./sp35-free-ci-browser-temporal.mjs";
 const host="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
 // The workflow_dispatch ticket must be read from the protected runner event
 // file, NEVER from a step-level environment value printed in Actions logs.
@@ -246,7 +246,7 @@ try{
     target.on("pageerror",()=>qaRuntimeErrors.push("PAGE_RUNTIME_ERROR"));
     try{
      await target.goto(origin,{waitUntil:"load",timeout:15000});
-     const before=await target.locator("body").innerText();
+     const before=await observedQaBody(target,criterion.assertions);
      const selectorBefore=new Map();
      for(const assertion of criterion.assertions){
       if(assertion.kind==="text_changes"){
