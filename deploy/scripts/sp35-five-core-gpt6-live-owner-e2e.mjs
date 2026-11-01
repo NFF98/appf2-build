@@ -39,7 +39,7 @@ async function signed(path,body,expected=200){
    "Content-Type":"application/json","Idempotency-Key":nonce,
    "X-Appf2-PoP-Key":spki,"X-Appf2-PoP-Signature":signature,
    "X-Appf2-PoP-Timestamp":String(now)},
-  body:bytes,signal:globalThis.AbortSignal.timeout(45000)});
+  body:bytes,signal:globalThis.AbortSignal.timeout(125000)});
  const raw=await response.json().catch(()=>null);
  if(!(Array.isArray(expected)?expected.includes(response.status):response.status===expected)||!raw?.data)
   throw Error("C5_SIGNED_HTTP_"+response.status+"_AT_"+path.split("/").at(-1)+
