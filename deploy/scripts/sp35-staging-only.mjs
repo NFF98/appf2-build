@@ -139,6 +139,7 @@ const config = {
     // Candidate creation and signed Postgres read are free and only available
     // when real staging DB bindings exist. All paid capabilities stay separate.
     APPF2_AGENT_CANDIDATE_ENABLED: agentEnabled ? "1" : "0",
+    APPF2_CODE_RECORDS_ENABLED: "1",
     APPF2_AGENT_FREE_ONLY: "1",
     APPF2_FREE_AI_GENERATION_ENABLED:approvedFreeAi?"1":"0",
     // Do not bill the new multi-file Agent before isolated build/QA
