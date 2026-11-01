@@ -1,7 +1,7 @@
 import {describe,it,expect} from "vitest";
 import {readFileSync} from "node:fs";
 import {persistFreeCiSmoke,validFreeCiSmoke,validFreeCiBuildFailure,
- readFreeCiSmoke,frozenFreeCiPlanHash}
+ validQaChecks,readFreeCiSmoke,frozenFreeCiPlanHash}
  from "../../src/edge/free-ci-result.js";
 import {parseQaPlan} from "../../src/platform/qa/requirement-contract.js";
 import type {AgentJobExecutor} from "../../src/platform/agent/postgres-agent-jobs.js";
@@ -80,6 +80,26 @@ describe("SP35 free GitHub OIDC result returns to original private Job",()=>{
    qa_plan_hash:artifact},plan)).rejects.toThrow("INVALID");
   const previewCode=readFileSync("src/edge/free-ci-preview.ts","utf8");
   expect(previewCode).toContain("r.receipt_json->>'version'='APPF2_FREE_CI_SMOKE_V1'");
+ });
+ it("accepts independently observed bounded browser diagnostics, never arbitrary HTML",()=>{
+  const failed={criterion_id:"increment_once",verdict:"FAIL" as const,
+   evidence_hash:null,failure_code:"TARGET_MISSING_OR_AMBIGUOUS"};
+  expect(validQaChecks([failed])).toBe(true);
+  expect(validFreeCiSmoke({...report,qa_plan_hash:hash,
+   qa_checks:[failed]})).toBe(true);
+  expect(validQaChecks([{...failed,
+   failure_code:"<script>steal()</script>"}])).toBe(false);
+  expect(validQaChecks([{...failed,verdict:"PASS",
+   evidence_hash:hash}])).toBe(false);
+  expect(validQaChecks([{...failed,extra:"raw DOM must not enter model"}]))
+   .toBe(false);
+  expect(validQaChecks([{criterion_id:"increment_once",
+   verdict:"FAIL",evidence_hash:null}])).toBe(true);
+  expect(validQaChecks([{criterion_id:"increment_once",verdict:"UNTESTED",
+   evidence_hash:null,failure_code:"BROWSER_ERROR"}])).toBe(false);
+  const source=readFileSync("deploy/scripts/sp35-free-ci-dispatched-build.mjs","utf8");
+  expect(source).toContain('failure_code="ASSERTION_FAILED"');
+  expect(source).toContain('failure_code?{failure_code}');
  });
  it("runner performs independent OIDC callback, not just a console PASS",()=>{
   const script=readFileSync("deploy/scripts/sp35-free-ci-dispatched-build.mjs","utf8");
