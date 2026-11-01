@@ -236,7 +236,7 @@ try{
   if(!Array.isArray(plan.criteria)||plan.criteria.length<1||
    plan.criteria.length>20)throw Error("FREE_CI_QA_PLAN_INVALID");
   for(const criterion of plan.criteria){
-   let verdict="UNTESTED",evidence_hash=null;
+   let verdict="UNTESTED",evidence_hash=null,failure_code=null;
    if(criterion.automatable&&Array.isArray(criterion.steps)&&
       Array.isArray(criterion.assertions)&&criterion.assertions.length){
     const target=await ctx.newPage();
@@ -275,12 +275,20 @@ try{
       else ok=false;
      }
      verdict=ok?"PASS":"FAIL";
+     if(!ok)failure_code="ASSERTION_FAILED";
      if(ok)evidence_hash="sha256:"+createHash("sha256").update(
        JSON.stringify([project.project_hash,criterion.id,before,after,
          criterion.steps,criterion.assertions])).digest("hex");
-    }catch{verdict="FAIL";}finally{await target.close();}
+    }catch(error){
+     verdict="FAIL";
+     const reason=error instanceof Error?error.message:"";
+     failure_code=reason.includes("QA_TARGET_MISSING_OR_AMBIGUOUS")?
+      "TARGET_MISSING_OR_AMBIGUOUS":
+      reason.includes("QA_STEP_UNSUPPORTED")?"STEP_FAILED":"BROWSER_ERROR";
+    }finally{await target.close();}
    }
-   qaChecks.push({criterion_id:criterion.id,verdict,evidence_hash});
+   qaChecks.push({criterion_id:criterion.id,verdict,evidence_hash,
+    ...(failure_code?{failure_code}:{})});
   }
  }
  const receipt={version:"APPF2_FREE_CI_SMOKE_V1",
