@@ -5,6 +5,7 @@ import { NO_REQUEST_DB_CONTEXT, type WorkerRequestDbContext } from "../platform/
 import { routeBlueprintDelivery, type BlueprintDeliveryFactory, type BlueprintDeliveryComposition } from "./blueprint-delivery.js";
 import { routePublishedApps } from "./published-apps.js";
 import {routeCodeBuilder} from "./code-builder-v2.js";
+import {routeCodeAppRecords} from "./code-app-records.js";
 import {routeAgentJobs,type AgentJobRouteDeps} from "./agent-jobs.js";
 import { claimsMutationProof, reservedCreateIdempotencyKey, verifyMutationProof } from "./create-proof.js";
 import { EVENTS_BATCH_ROUTE } from "./events-batch.js";
@@ -212,6 +213,8 @@ export function createWorkerFetch(factories: Partial<WorkerCompositionFactories>
     if(published!==undefined)return published;
     const agentJob=await routeAgentJobs({request,url,env,nowMs,deps:options.agent});
     if(agentJob!==undefined)return agentJob;
+    const codeRecords=await routeCodeAppRecords({request,url,env,nowMs});
+    if(codeRecords!==undefined)return codeRecords;
     const codeApp=await routeCodeBuilder({request,url,env});
     if(codeApp!==undefined)return codeApp;
     if (!url.pathname.startsWith(API_PREFIX)) return json({ error: { code: "API-NOT-FOUND" } }, 404);
