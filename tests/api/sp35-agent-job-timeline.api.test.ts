@@ -54,7 +54,7 @@ describe("SP35 G0 original-Job server timeline (free/no model dispatch)",()=>{
    first_code_source_saved_ms:null as unknown as number,
    first_verified_preview_ms:null as unknown as number,
    first_qa_receipt_ms:null as unknown as number,
-   model_calls_count:0,qa_receipts_count:0});
+   model_calls_count:"0",qa_receipts_count:"0"});
   const result=await readOwnerJobTimeline(db,{jobId,owner,ownerThumb:thumb});
   expect(result?.time_to_first_source_ms).toBeNull();
   expect(result?.time_to_first_qa_pass_preview_ms).toBeNull();
