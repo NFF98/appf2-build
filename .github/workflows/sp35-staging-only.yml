@@ -378,6 +378,9 @@ jobs:
         run: node deploy/scripts/sp35-result-adjustment-no-ai-e2e.mjs
       - name: Existing published Code App reuse; NO new generation/model charge on this staging run
         run: node deploy/scripts/sp35-real-code-builder-staging-e2e.mjs
+      - name: LIVE published Code App -> signed Worker -> PostgreSQL CRUD/reload and 2 viewer isolation (NO AI)
+        if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
+        run: node deploy/scripts/sp35-live-code-record-browser-e2e.mjs
       - name: Universal acceptance against real published artifact (NO AI)
         run: node deploy/scripts/sp35-universal-real-acceptance.mjs
       - name: Real corrected public Blueprint v2 from PostgreSQL browser acceptance (NO AI)
@@ -527,3 +530,5 @@ jobs:
 # 2026-11-01 Human $1 batch: ONE free Staging UI compatibility and no-hidden-spend verification; the paid QA flow remains separate.
 
 # SP35 2026-11-01 free Staging verification: repair-context bound & typed cost guard; no new paid model calls.
+
+# SP35 live record bridge: real Staging PostgreSQL CRUD browser isolation, no paid generation; run once only.
