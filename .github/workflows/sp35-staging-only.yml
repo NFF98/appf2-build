@@ -521,3 +521,5 @@ jobs:
           path: ${{ runner.temp }}/appf2-sp35-browser.png
           retention-days: 3
           if-no-files-found: error
+
+# 2026-11-01 second and final free Staging verification after precise F05 test selector repair; no paid model dispatch.
