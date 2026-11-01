@@ -345,6 +345,16 @@
 - **修改範圍**：`src/app/create/pop-keyring.ts`、`src/app/code-builder/agent-browser-client.ts`；增添無付費的 key write/readback、簽章匹配與關頁後復原、儲存失敗停止測試。**完整 C2 E2E 仍要求關閉真實瀏覽器再重開原 Job、檢查原付費 journal 不增費與同 Job 後續 QA**；單元測試或 CI 成功不得冒充。
 - **待另外處理**：GitHub Actions 一次性人工測試 runner 若已退出，無法靠瀏覽器 IndexedDB 恢復臨時私鑰；這類已成功付費而遺失 runner 私鑰的測試 Job 應封存、不重扣。要跨 runner 自動接續需獨立設計受信任、期限及權限受限的工作執行身分，禁止直接把原私鑰放在公開 Actions artifact 或日誌。
 
+
+### 2026-11-01 — C2 修復：原身分真落盤、關閉整個瀏覽器後接續、已付 CODE 只恢復免費 QA
+
+- **原 SSOT 已要求 C2 Job／程式／checkpoint／收據、關站接續；本次修復的是漏驗的執行條件**：原始非匯出 P-256 私鑰必須寫入 IndexedDB、讀回、以 challenge 驗證公私鑰相符，且同一建立者 UUID＋原 Job 索引確實存入 localStorage，**才能允許後續付費 AI**。失敗就停，不能建立替代鑰匙或默默開始新工作。已在同一 Build PR #419 實作。
+- **完整關閉 Chromium 程序後重開的真瀏覽器 E2E 已 PASS**：免費 [run #41262716623](https://github.com/NFF98/appf2-build/actions/runs/41262716623) 使用真產品首頁與真 P-256／IndexedDB，瀏覽器全部退出再啟動同一 profile，重新簽章讀取原 Job、原狀態與 QA 進度；mock Agent API／mock model，斷言沒有額外模型、QA、工具呼叫。該 Run 的 TypeScript、ESLint、API、Runtime、免費 Docker／Chromium 與 Staging Job→免費 Docker 均 SUCCESS。**此項是實際瀏覽器儲存流程＋mock Agent 服務，不能冒稱實際 PostgreSQL 重開。**
+- **修正已付模型結果成功、Worker 回覆丟失時無人執行 QA 的死循環**：同一原建立者手動按「接續」且原 Job 已儲存 project revision≥2／checkpoint step≥2、CODING、當前版本無 QA 收據時，網站僅允許重新派發**免費 Docker／Chromium**；不得重送任何付費模型 POST、重新生成 source、換 Job 或改凍結計畫。有 QA 收據／尚未生成時不重派。相關 client guard 與 API 負向測試已提交；真正 Staging 中斷再接續仍待驗。
+- **更正一項重要實際證據**：前次一次性 [真 GPT-6 工作 #41261297016](https://github.com/NFF98/appf2-build/actions/runs/41261297016) 的測試控制程序因 45 秒 HTTP timeout 結束 FAIL；但 PostgreSQL 後來已保存**原 Job `sp35_free_ai_code_v1=SUCCEEDED`、revision 2、完整 `APPF2_FREE_CI_SMOKE_V1` QA 三項 `initial_count`、`increment_once`、`increment_twice` 均 PASS 且各有證據 SHA，以及該 project hash 對應的一份不可變私人 built preview**。因此不能再寫「這筆付費生成沒有 QA」；正確狀態是模型生成與獨立 Chromium 測試後來成功，**控制 Runner 的臨時私鑰丟失，無法完成該次 Job 的作者授權發布／續跑**。沒有再次付費呼叫 AI。
+- **下一項實際測試**：`deploy/scripts/sp35-live-owner-browser-reopen-e2e.mjs`（建立費用上限 0 的實際 Staging PostgreSQL Job、真 P-256、完全關閉瀏覽器、同 profile 新程序讀原 Job，再用不同鑰匙讀取要 404）。已加入原免費 Staging 部署工作流；首次 run #41263035031 被新測試腳本單一 ESLint complexity 警告攔住，未部署；已於 `44ea392` 拆出反向檢查，下一輪須確認真正 live PASS。
+- **本期仍不能宣稱全部五核 PASS**：此單一案例證明了 GPT-6 生成與原需求三項瀏覽器操作 PASS，但 C1 任意後端、C4 模型收到 FAIL 後真付費修復至 PASS、C5 真實三次失敗換策略接續並經瀏覽器 PASS，仍缺獨立完整收據。GitHub Actions 臨時私鑰不應寫入公開 artifact／log；改用產品瀏覽器已持久保存的原建立者簽章，並為多次獨立 Runner 設計另行核准的受限授權，不得冒充同一人。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
