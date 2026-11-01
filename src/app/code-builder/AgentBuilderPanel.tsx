@@ -3,7 +3,7 @@ import {BrowserCodingAgent,savedCandidateTarget,readSavedCandidateLibrary,
  chooseSavedCandidate,paidAgentReconciliationRequired,allFrozenFreeCiChecksPassed,
  canResumeSavedFreeCiOnly,
  type AgentBrowserOptions,
- type CandidateSnapshot} from "./agent-browser-client.js";
+ type CandidateSnapshot,type AgentJobTimeline} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
 import {savedAgentProjectZip} from "./agent-project-zip.js";
@@ -40,6 +40,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [freeAiElapsedSec,setFreeAiElapsedSec]=useState(0);
  const [error,setError]=useState("");
  const [snapshot,setSnapshot]=useState<CandidateSnapshot|null>(null);
+ const [timeline,setTimeline]=useState<AgentJobTimeline|null>(null);
  const [saved,setSaved]=useState(()=>savedCandidateTarget()!==null);
  const [catalog,setCatalog]=useState(()=>readSavedCandidateLibrary());
  const agent=useRef<BrowserCodingAgent|null>(null);
@@ -85,6 +86,18 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    document.removeEventListener("keydown",onEscape);
   };
  },[previewExpanded]);
+ useEffect(()=>{
+  if(!snapshot?.job){setTimeline(null);return;}
+  let cancelled=false;
+  const worker=agent.current;
+  if(!worker)return;
+  // Every fresh saved snapshot may include a new Runner receipt at the same
+  // revision. This read is signed and zero-charge, never a model retry.
+  void worker.timeline().then(result=>{
+   if(!cancelled)setTimeline(result);
+  }).catch(()=>{if(!cancelled)setTimeline(null);});
+  return ()=>{cancelled=true;};
+ },[snapshot]);
  const togglePreviewFullscreen=()=>{
   if(!previewReady||!previewShell.current)return;
   setPreviewFullscreenError("");
@@ -535,6 +548,27 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   snapshot.progress.qa_observed_checks:qaChecks;
  return <section className="code-builder-panel" aria-labelledby="agent-builder-title">
   <h2 id="agent-builder-title">AI App Builder · 多檔案 Agent</h2>
+  {snapshot?.job?<section aria-label="原 Job 真實伺服器進度">
+   <h3>原 Job 伺服器時間線（唯讀、不扣 AI 費用）</h3>
+   <p className="saved-apps-note">
+    資料庫保存原始 Job：
+    {timeline?.job_saved_at_ms!==null&&timeline?.job_saved_at_ms!==undefined?
+     new Date(timeline.job_saved_at_ms).toLocaleString():"NOT_MEASURED"}；
+    首次程式寫回：
+    {timeline?.time_to_first_source_ms!==null&&timeline?.time_to_first_source_ms!==undefined?
+     Math.round(timeline.time_to_first_source_ms/1000)+" 秒":"NOT_MEASURED"}；
+    首份通過 QA 的私人預覽：
+    {timeline?.time_to_first_qa_pass_preview_ms!==null&&
+     timeline?.time_to_first_qa_pass_preview_ms!==undefined?
+     Math.round(timeline.time_to_first_qa_pass_preview_ms/1000)+" 秒":"NOT_MEASURED"}。
+    原 Job 真模型記錄 {timeline?.model_calls_recorded??"NOT_MEASURED"} 次，
+    免費 QA 收據 {timeline?.qa_receipts_recorded??"NOT_MEASURED"} 份。
+    真正使用者首次操作耗時：NOT_MEASURED。
+   </p>
+   <p className="saved-apps-note">此處只顯示原 Job 已保存的 PostgreSQL 里程碑；
+    並非一般使用者速度 P50/P95 或產品已通過驗收。
+    可用下方「查詢已保存的產品進度」讀取最新時間。</p>
+  </section>:null}
   {freeAiStartedAt!==null?
    <p className="saved-apps-note" aria-live="off">
     本次畫面已等待 {Math.floor(freeAiElapsedSec/60)} 分
