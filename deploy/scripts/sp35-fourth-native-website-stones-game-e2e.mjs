@@ -1,3 +1,4 @@
+/* eslint-disable max-depth -- bounded original-owner publish HTTP diagnostics under one existing Job */
 /**
  * New DISTINCT website-native AI App: two-player take-stones game, not G3 tic-tac-toe.
  * Design PR #45 H-001 §0.13 is frozen before this Build implementation.
