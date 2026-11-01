@@ -2,6 +2,8 @@
  * Zero code runs in the parent document. No imports, packages or services
  * are fetched by generated code: CSP plus iframe sandbox deny all network.
  */
+import {CODE_DOM_EVENT_SCRIPT} from "../runtime/code-dom-events.js";
+import {sha256CodeBytes} from "../../platform/blueprint/code-artifact-v2.js";
 export type PrivatePreviewAsset={readonly path:string;readonly text:string;
  readonly project_hash:string;readonly content_type:string};
 export type PreviewSource={readonly project_hash:string;
@@ -51,6 +53,8 @@ export async function createPrivatePreviewFrame(source:PreviewSource,
  const bytes=new TextEncoder().encode(safeJs);
  const hex=new Uint8Array(await crypto.subtle.digest("SHA-256",bytes));
  const hash=base64Sha256(Array.from(hex,x=>x.toString(16).padStart(2,"0")).join(""));
+ const eventHash=base64Sha256((await sha256CodeBytes(
+  new TextEncoder().encode(CODE_DOM_EVENT_SCRIPT))).slice(7));
  const csp=[
   "default-src 'none'",
   "script-src 'sha256-"+hash+"'",
@@ -71,6 +75,6 @@ export async function createPrivatePreviewFrame(source:PreviewSource,
   '<meta http-equiv="Content-Security-Policy" content="'+escaped(csp)+'">'+
   '<meta name="viewport" content="width=device-width, initial-scale=1">'+
   '<style>'+safeCss+'</style></head><body>'+body+
-  '<script type="module">'+safeJs+'</script></body></html>';
+  '<script>'+CODE_DOM_EVENT_SCRIPT+'</script><script type="module">'+safeJs+'</script></body></html>';
  return frame;
 }
