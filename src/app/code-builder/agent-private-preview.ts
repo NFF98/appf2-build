@@ -57,7 +57,7 @@ export async function createPrivatePreviewFrame(source:PreviewSource,
   new TextEncoder().encode(CODE_DOM_EVENT_SCRIPT))).slice(7));
  const csp=[
   "default-src 'none'",
-  "script-src 'sha256-"+hash+"'",
+  "script-src 'sha256-"+hash+"' 'sha256-"+eventHash+"'",
   "script-src-attr 'none'",
   "style-src 'unsafe-inline'",
   "img-src data: blob:",
