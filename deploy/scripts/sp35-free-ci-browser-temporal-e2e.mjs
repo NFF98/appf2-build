@@ -32,8 +32,12 @@ try{
     encodeURIComponent(html),{waitUntil:"load"});
    const before=await observedQaBody(page,criterion.assertions);
    const {stepBodies,after}=await executeFrozenQaSteps(page,criterion,before);
-   return observedTextAppears(before,stepBodies.slice(0,-1),
+   const pass=observedTextAppears(before,stepBodies.slice(0,-1),
     after,criterion.assertions[0].text);
+   if(html.includes("display:flex")&&!pass)
+    console.log("SP35 CHROMIUM FLEX TEST SAFE DIAGNOSTIC "+
+     JSON.stringify({before,stepBodies,after}).slice(0,950));
+   return pass;
   }finally{await context.close();}
  }
  const returnToZero={steps:[
