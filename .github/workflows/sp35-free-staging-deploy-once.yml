@@ -195,6 +195,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: LIVE C1 signed App iframe CRUD and two-viewer PostgreSQL isolation
         run: node deploy/scripts/sp35-live-code-record-browser-e2e.mjs
+      - name: LIVE C2 close Chromium completely, reopen same owner signer and PostgreSQL Job
+        run: node deploy/scripts/sp35-live-owner-browser-reopen-e2e.mjs
       - name: REAL owner-signed source → Worker GitHub dispatch → free Docker Chromium → original Job receipt
         run: node deploy/scripts/sp35-free-live-dispatch-e2e.mjs
       - name: Final status, zero new AI/Container/Browser usage
@@ -256,3 +258,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] C1 refactored Worker + Chromium test: original PR, no model POST.
 
 # 2026-11-01 C4/C5: deploy verified 477 API/31 runtime free CI repairs + three bounded QA repair round support. No paid AI calls.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] C2 durable original browser signer, new Chromium process and same real Staging PostgreSQL Job; zero paid AI.
