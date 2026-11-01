@@ -404,6 +404,13 @@
 - 已實作 `recoveredPaidResponse`：若 model call 是 SUCCEEDED 且原建立者 PoP 已驗、`job_id`／`owner_anonymous_id`／`job_revision`／`checkpoint_hash`／模型／單次付費上限全部與原 Job 相符，直接取回同一筆已付款回應，無須重做模型 POST；新部署後 prompt 格式即使有改動，也不再先因重新計算的 request digest 不符就攔截**已完成**回應。對未完成的模型預約仍維持嚴格 request digest 比對。附上正常、異主、異 Job、版本或 checkpoint 不符、尚未完成等 fail-closed 測試。
 - Commit `84b8830` 為實作；`b0904c0` 為新測試。此項尚未通過完整 CI／新實際 signed runner 重演時，**僅能稱修正已提交，不可稱 C4 PASS**。C5 真實 3 次連續失敗後策略切換與 Chromium PASS 仍未驗證；不要再把單一 App 六項功能當成五核完成比例。
 
+
+### 2026-11-01 — C4 503 actual root cause confirmed and live PostgreSQL guard corrected
+
+- **Confirmed from live `pg_get_functiondef('appf2_internal.agent_job_guard()')`**: original PostgreSQL BEFORE UPDATE guard omitted `CODING -> REPAIRING`, while `src/platform/agent/agent-contract.ts` explicitly permits it. GPT-6 initial CODE persisted Job revision 2; first paid REPAIR response SUCCEEDED in original owner-bound model call, but attempted `CODING -> REPAIRING` was rejected at the Postgres trigger, exposing HTTP 503 and preventing repair snapshot and re-QA. This is the precise blocking transition; not missing GPT-6 result or guessed network issue.
+- **Applied actual DB correction via owner existing Supabase project**: added only `REPAIRING` to `CODING` transition allowance in `appf2_internal.agent_job_guard()`; preserved all identity/owner, revision +1, terminal-state, monotonic cost/tokens/steps, RLS and least-privilege restrictions. A subsequent live read of `pg_get_functiondef` confirms the previously missing transition is now allowed.
+- **Committed migration** `supabase/migrations/20261101130000_sp35_agent_coding_repair_guard.sql` and matching checkpoint contract regression `tests/api/sp35-agent-db-repair-guard.api.test.ts`, in the original PR #419 only. Free CI pending at commit; the old test runner's ephemeral signing key is gone, so its already paid Job cannot be impersonated to retry. **C4 must still demonstrate a new owner-signed REPAIR response -> saved new source -> independent Chromium QA PASS to count complete; C5 still not proven.** No new paid AI calls, Production deploy, or new PR.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
