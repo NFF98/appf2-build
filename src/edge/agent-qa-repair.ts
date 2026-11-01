@@ -36,6 +36,10 @@ export function validQaRepairBody(raw:unknown):raw is QaRepairInput{
   Number.isSafeInteger(x.max_output_tokens)&&
   Number(x.max_output_tokens)>=512&&Number(x.max_output_tokens)<=4096;
 }
+/** UNTESTED is not a proven failure and cannot authorize paid repair. */
+export function hasAttestedQaFail(checks:readonly {verdict:string}[]):boolean{
+ return checks.some(check=>check.verdict==="FAIL");
+}
 type SavedQa={readonly job_revision:number;readonly status:string;
  readonly receipt_json:unknown};
 function failedChecks(record:SavedQa|undefined,revision:number,
@@ -46,7 +50,7 @@ function failedChecks(record:SavedQa|undefined,revision:number,
  const x=record.receipt_json as Record<string,unknown>;
  if(x.ready_for_review!==false||x.packet!==null||
   !validQaObservedChecks(plan,x.checks)||
-  !x.checks.some(v=>v.verdict==="FAIL"))return null;
+  !hasAttestedQaFail(x.checks))return null;
  return x.checks;
 }
 /** No historical/bogus QA result may trigger a fresh paid model call. */
