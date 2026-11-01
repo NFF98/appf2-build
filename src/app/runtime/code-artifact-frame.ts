@@ -1,8 +1,9 @@
 import { sha256CodeBytes, verifyPrototypeCodeArtifact } from "../../platform/blueprint/code-artifact-v2.js";
+import {CODE_RECORD_IFRAME_SCRIPT} from "./code-record-bridge.js";
 
 const CODE_FRAME_CSP=[
   "default-src 'none'",
-  // A single verified inline bundle (the precise hash), never unsafe-inline or arbitrary CDN script.
+  // Verified artifact and separate fixed trusted record bridge hashes only.
   "script-src '__SCRIPT_HASH__'",
   "script-src-attr 'none'",
   "style-src 'unsafe-inline'",
@@ -38,7 +39,7 @@ function encodeHexBase64(hex:string):string{
  * 
  * Frame is opaque-origin, sandbox ONLY allow-scripts (no same-origin, forms,
  * top-navigation, popups). CSP denies all network, worker and form effects.
- * No postMessage bridge, storage, privileges or platform bindings.
+ * Only a fixed, allowlisted records message bridge is permitted; no direct network.
  */
 export async function createPrototypeCodeFrame(
   input:unknown,doc:Document
@@ -47,8 +48,11 @@ export async function createPrototypeCodeFrame(
   if(!checked.ok)throw Error("CODE_ARTIFACT_NOT_ADMITTED:"+checked.reason);
   const {javascript,envelope}=checked.artifact;
   const scriptHash=(await sha256CodeBytes(new TextEncoder().encode(javascript))).slice(7);
+  const bridgeHash=(await sha256CodeBytes(new TextEncoder().encode(
+    CODE_RECORD_IFRAME_SCRIPT))).slice(7);
   const csp=CODE_FRAME_CSP.replace("__SCRIPT_HASH__",
-    "sha256-"+encodeHexBase64(scriptHash));
+    "sha256-"+encodeHexBase64(scriptHash)+"' 'sha256-"+
+    encodeHexBase64(bridgeHash));
   const iframe=doc.createElement("iframe");
   iframe.setAttribute("title",envelope.meta.title);
   iframe.setAttribute("sandbox","allow-scripts");
@@ -60,6 +64,6 @@ export async function createPrototypeCodeFrame(
   iframe.style.border="0";
   // Strict CSP is the FIRST head content; all generated JS stays inside an
   // opaque-origin document where it cannot access parent cookies/DOM.
-  iframe.srcdoc=`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${htmlEscape(csp)}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${htmlEscape(envelope.meta.title)}</title><style>html,body{margin:0;min-height:100%;}html{overflow-y:auto;}body{box-sizing:border-box;}#app{width:100%;min-height:100vh;box-sizing:border-box;}</style></head><body><main id="app"></main><script>${javascript}</script></body></html>`;
+  iframe.srcdoc=`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${htmlEscape(csp)}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${htmlEscape(envelope.meta.title)}</title><style>html,body{margin:0;min-height:100%;}html{overflow-y:auto;}body{box-sizing:border-box;}#app{width:100%;min-height:100vh;box-sizing:border-box;}</style></head><body><main id="app"></main><script>${CODE_RECORD_IFRAME_SCRIPT}</script><script>${javascript}</script></body></html>`;
   return {blueprintHash:checked.blueprint_hash,iframe,destroy:()=>iframe.remove()};
 }
