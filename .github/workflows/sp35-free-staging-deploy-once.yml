@@ -284,3 +284,5 @@ jobs:
 # Sprint3.5 C4/C5 staging-only already-paid CODE/REPAIR mid-CAS recovery and signed strategy UI rollout; NO paid AI POST, NO production. [SP35-FREE-STAGING-DEPLOY-ONCE]
 
 # 2026-11-01 [SP35-FREE-STAGING-DEPLOY-ONCE] actual creator UX progress/pause controls and Chromium cache release; GET-only browser entry, C1/C2/free-CI regressions, NO paid AI or production.
+
+# 2026-11-01 [SP35-FREE-STAGING-DEPLOY-ONCE] deploy shared AI multi-file JSON schema and safe full-source CAS, run real no-cost website C1/C2/Chrome E2E; NEVER make new Responses POST, publish production or create billed cloud.
