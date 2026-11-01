@@ -1,3 +1,20 @@
+# 最新接續：3/9（33.3%）；G8原Job修復中；瀏覽器環境已不可用
+
+本段覆蓋下方舊「G6正在Cua操作／七次即停止」的即時狀態，歷史保留。Human已批准繼續全部，僅原Build#419/Design#45，無merge/Production/Sprint4。
+
+- G5完整PASS關閉，原Job8880979c-d09d-44ef-aaa7-bd114a31a967；QA41329192200 7/7；ACTIVE760b46d4-19b7-4092-b53a-d5276eaf9068；公開新Chromium41329592905 attempt2全原需求/reload/holdout/0新模型。因此原2+G5=3。
+- **G6暫停未計分**：3d494f27-6fdc-4037-b607-831e0f881620，CODE41331408357 SUCCEEDED20¢，但原Cua環境移除前未套用源碼/QA，Job CREATED/rev0。不得重建需求、重送CODE、SQL替換owner或匯出私鑰。只有原profile可用時取已保存模型結果續跑0新增模型。現工具未提供cua_repl，不可呼叫消失工具。
+- **G7失敗未計分**：3f46af99-25f9-487d-bac7-e0ecfec5e0fc；原網站全鏈41331845180 FAILURE；CODE20¢＋REPAIR16¢均SUCCEEDED；QA41332322885與41332829113均6/7 reset FAIL，未ACTIVE。根因是本工作凍結QA的前置條件錯誤：翻一張牌不改配對數0，text_appears要求先消失，故reset一直0無過渡。原程式有正確reset；不能改原QA/receipt冒PASS，不再付修復。Design§0.23已明記。
+- **G8唯一活動Job**55ae5d78-e986-401a-91bb-70949f46c7da；原網站owner全鏈 [41333481856](https://github.com/NFF98/appf2-build/actions/runs/41333481856) in_progress。CODE41333627739 SUCCEEDED20¢/1267in4352out，source84ca11ff...；QA41333867328為6/7 win FAIL；同Job REPAIR16¢ runner41334081101 IN_FLIGHT。先讀最終journal與第二QA/發布/訪客，不再啟動其他paid。初查原source邏輯正確但玩法靜態文案亦含「解謎成功」，可能導致text_appears沒有absent過渡；須據第二結果根因分析，不假稱模型遊戲邏輯錯誤。
+- **費用規範以Design§0.24最新為準**：不增加新增總308¢/每Job44¢。完整驗收且明確關閉的Job僅釋放尚未發送保留額，仍保留全部實際發出模型max_charge總上界；暫停/失敗/未知維持44¢。G5閉20+G6暫44+G7失44+G8活動44=152¢保守風險；已發出6calls上限112¢（G8repair未知，絕非invoice）。舊10/31四筆32¢另列不重送。每新Job前read-only逐筆重查帳本，risk+44<=308才可序列一次新需求。失敗/blocked全部保留，完成9/9不是生成嘗試100%成功率。
+- 為補足3tool/3game/3DB，§0.24已先凍結全新g12-reading/g13-order（不是重生G6/G7）。原六樣本不變，新增兩組已寫manifest；free preflight commit2d1b9e4，只做56 source quotes/拒絕無授權，不付費。須先完成g8/g9/g10/g11再考慮兩替代且核預算。
+- CI fallback是實際Chrome原網站UI：deploy/scripts/sp35-remaining-native-website-e2e.mjs，每paid marker只一個新owner Job、原文7QA/44c/同意、QA後另明確發布、另chromium.launch訪客原操作/reload。**禁止重跑paid全鏈**，失敗保留原Job。下一件g9-connect由原workflow加唯一新commit marker啟動；之後g10-books/g11-water。
+- postgres額外必須用sp35-published-recipient-proof.mjs現成免費job：實際UI→簽章records HTTP list/create/update/delete全部2xx、refresh等待真list、另Chrome viewer隔離、read-only PG確認payload；單純memory QA/ACTIVE不計分。
+- published-recipient-free-only僅改sample/share再commit [SP35-RECIPIENT-FREE-ONCE]，不含paid marker；新paid每次只 [SP35-REMAINING-PAID-ONE-SHOT]＋[SP35-SAMPLE-指定未見sample]，先核帳，前一模型已終結才啟動。workflow已有8個sample選項，無自動loop。
+- 必須持續到真9/9或不可越過的實際外部/額度阻斷。每里程碑繁中約100字，成功證據/費用/阻斷/下一步；結束再更新此檔與closeout，不叫Human操作本機。
+
+---
+
 # 最新 2026-11-02 JST：真產品已 3/9（33.3%），G6正在原owner網站執行
 
 **覆蓋下方舊2/9/公開FAIL checkpoint。G5最終全鏈已真PASS，不重生不再付費。**
