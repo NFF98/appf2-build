@@ -36,7 +36,7 @@ describe("Sprint 3.5 GPT-6 one-sentence App multi-module source contract",()=>{
    {files:[...good,{path:"package.json",content:view}]},
    {files:[...good,{path:"src/server.js",content:view}]},
    {files:[...good,{path:"src/external.ts",content:"fetch('https://example.com')"}]},
-   {files:[...good,{path:"src/null.ts",content:"export const x='\\u0000';"}]},
+   {files:[...good,{path:"src/null.ts",content:"export const x='"+String.fromCharCode(0)+"';"}]},
    {files:[...good,{path:"src/no.ts",content:"</script>"}]},
    {files:[...good,{path:"src/secret.env",content:view}]},
    {files:Array.from({length:13},(_,i)=>({path:"src/mod"+i+".ts",content:view}))},
