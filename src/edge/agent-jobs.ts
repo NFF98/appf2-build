@@ -28,6 +28,7 @@ import {executeSignedSandboxTool,validSandboxRunBody,
 import {runSignedAgentStep,validAutoStepBody} from "./agent-auto-step.js";
 import {runSignedAgentSequence,validAgentSequenceBody} from "./agent-sequence.js";
 import {inspectAgentProgress,validAgentProgressBody} from "./agent-progress.js";
+import {readOwnerJobTimeline} from "./agent-job-timeline.js";
 import {reviewAgentQa,validQaReviewBody} from "./agent-qa-review.js";
 import {runSignedIndependentBrowserQa,validBrowserQaRunBody} from "./agent-qa-run.js";
 import {executeSignedQaRepair,validQaRepairBody} from "./agent-qa-repair.js";
@@ -54,6 +55,7 @@ const SANDBOX_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/sandbox-run$/u;
 const AUTOSTEP_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/auto-step$/u;
 const SEQUENCE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/agent-sequence$/u;
 const PROGRESS_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/agent-progress$/u;
+const TIMELINE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/job-timeline$/u;
 const BUDGET_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/extend-budget$/u;
 const QA_REVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-review$/u;
 const QA_RUN_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-run$/u;
@@ -176,7 +178,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeRepairMatch=FREE_REPAIR_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname),freeAiEvidenceMatch=FREE_AI_EVIDENCE_ITEM.exec(url.pathname);
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),timelineMatch=TIMELINE_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeRepairMatch=FREE_REPAIR_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname),freeAiEvidenceMatch=FREE_AI_EVIDENCE_ITEM.exec(url.pathname);
  const paidRunnerSource=await routeFreeAiRunnerSource(request,url,env,nowMs);
  if(paidRunnerSource!==undefined)return paidRunnerSource;
  const paidRunnerResult=await routeFreeAiRunnerResult(request,url,env,nowMs);
@@ -193,7 +195,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(env.APPF2_AGENT_FREE_ONLY==="1"&&
   (modelMatch||continueMatch||qaRepairMatch||qaGenerateMatch||
    sandboxMatch||autoMatch||seqMatch||qaRunMatch))return denied();
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeRepairMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch&&!freeAiEvidenceMatch)return undefined;
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!timelineMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeRepairMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch&&!freeAiEvidenceMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -235,6 +237,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   previewMatch?(validPreviewAssetBody(parsed)?parsed:null):
   qaMatch?(validQaReviewBody(parsed)?parsed:null):
   progressMatch?(validAgentProgressBody(parsed)?parsed:null):
+   timelineMatch?verifiedBody(parsed,false):
   seqMatch?(validAgentSequenceBody(parsed)?parsed:null):
   autoMatch?(validAutoStepBody(parsed)?parsed:null):
   budgetMatch?(validExtendBudgetBody(parsed)?parsed:null):
@@ -418,7 +421,13 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
     verifierSecret:env.APPF2_AGENT_QA_VERIFIER_SECRET??""});
    return json(200,{data:result});
   }
-  if(progressMatch){
+  if(timelineMatch){
+    const timeline=await readOwnerJobTimeline(db,{
+     jobId:timelineMatch[1]??"",owner:info.anonymous_id,ownerThumb});
+    if(!timeline)return denied();
+    return json(200,{data:timeline});
+   }
+   if(progressMatch){
    if(!validAgentProgressBody(info))return denied();
    const result=await inspectAgentProgress(info,{db,
     jobId:progressMatch[1]??"",owner:info.anonymous_id,ownerThumb});
