@@ -305,6 +305,8 @@ jobs:
           APPF2_MODEL_API_KEY: ${{ secrets.APPF2_MODEL_API_KEY }}
           APPF2_MODEL_NAME: ${{ vars.APPF2_MODEL_NAME || 'gpt-4.1' }}
         run: npx vitest run tests/api/sp35-online-plan-diagnostic.api.test.ts
+      - name: Read existing CREATE byte boundary with invalid PoP before deployment (NO AI)
+        run: node deploy/scripts/sp35-staging-publish-size-readonly-smoke.mjs --before-deploy
       - name: Deploy ONLY isolated staging Worker with bundled SPA
         env:
           APPF2_STAGING_BOOTSTRAP_ONLY: ${{ env.APPF2_STAGING_BOOTSTRAP_ONLY }}
