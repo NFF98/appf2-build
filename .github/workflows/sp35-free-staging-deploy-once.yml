@@ -270,3 +270,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] C4 bounded OIDC Chromium FAIL diagnostics, C5 symptom-change progress, paid call-safe owner E2E recovery; staging-only/no AI POST.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] deploy validated C4 already-paid same-Job response recovery, no new GPT call, no production.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] C4 signed same-Job manual FAIL→saved repair→retest path; zero paid AI or production.
