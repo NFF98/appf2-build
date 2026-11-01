@@ -265,7 +265,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   * explicitly authorized repair, then optional owner-approved publication.
   */
  /* eslint-disable max-depth -- bounded receipt polling only; original requirements still fail closed. */
- // eslint-disable-next-line complexity -- Signed CI polling and optional repair are bounded.
+ // eslint-disable-next-line complexity, max-lines-per-function -- Third-round original QA provenance and cost fences cannot be elided.
  const startFreeAi=async(resume=false)=>{
   if(busy||!aiConsent||!containerConsent||!browserQaConsent||!freeCiConsent||
    approvedCents<44)return;
