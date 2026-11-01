@@ -24,6 +24,19 @@ const AMOUNTS={QA:8,CODE:20,REPAIR:16} as const;
 // Sprint 3.5 official GPT-6 coding model. One immutable value for the API
 // request and its pre-send PostgreSQL journal; never claim another model.
 const MODEL="gpt-6.1-sol" as const;
+/** Only an attested behavioural-assertion failure may omit the irrelevant
+ * giant stylesheet from the MODEL INPUT. Immutable saved source is untouched.
+ * Other failure types retain CSS for diagnosis; scaffold is always immutable.
+ */
+export function selectBoundedRepairContext(
+ files:readonly {readonly path:string;readonly content:string}[],
+ failureCodes:readonly string[]):{files:readonly {path:string;content:string}[];
+ readonly omittedStyle:boolean}{
+ const omittedStyle=failureCodes.length>0&&
+  failureCodes.every(c=>c==="ASSERTION_FAILED");
+ return {files:files.filter(f=>f.path.startsWith("src/")&&
+  (!omittedStyle||f.path!=="src/style.css")),omittedStyle};
+}
 type Phase=keyof typeof AMOUNTS;
 type Input={readonly anonymous_id:string;readonly original_prompt:string;
  readonly expected_project_hash:string;readonly stage:Phase;
@@ -91,8 +104,8 @@ const qaSchema={type:"object",additionalProperties:false,required:["criteria"],
    expected_text:{type:"string"},click_count:{type:"integer"}}}}}} as const;
 function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
  files:readonly {path:string;content:string}[],evidence:{failed:string;
- strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE"}):string{
- const {failed,strategy="FIX_FAILED_CHECKS"}=evidence;
+ strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE";omittedStyle?:boolean}):string{
+ const {failed,strategy="FIX_FAILED_CHECKS",omittedStyle=false}=evidence;
  if(phase==="QA")return [
   "You are an independent PRE-CODE acceptance planner. You have NOT seen any generated code.",
   "Reply ONLY with JSON matching the schema, 1-6 criteria. No markdown.",
@@ -129,6 +142,13 @@ function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
   "Use native browser DOM, CSS and modular TypeScript; no UI templates.",
   "Preserve exact expected accessible button names for original independent QA.",
   "If complexity requires state, define reusable modules and true event handlers.",
+  ...(omittedStyle?[
+   "Previous large CSS is OMITTED from this logic-only QA repair model context",
+   "to stay within the explicitly approved token cap. It remains saved in",
+   "the immutable original Job; do not claim it vanished or changed.",
+   "Return a COMPLETE source tree including a functional src/style.css.",
+   "Prefer compatible UI selectors/labels and preserve visible functionality."
+  ]:[]),
   "For requested saved records / CRUD, use the trusted sandbox window.appf2Records bridge,",
   "never fetch/credentials/localStorage/SQL. Available Promise methods: list() returns",
   "{records:[{record_id,value}]}, create(value) returns {record_id,value},",
@@ -382,10 +402,15 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   receipt?.status==="BUILD_BROWSER_SMOKE"?
    receipt.qa_checks?.map(c=>c.criterion_id+":"+c.verdict+
     (c.verdict==="FAIL"&&c.failure_code?"("+c.failure_code+")":"")).join(",")??"":"";
+ const failureCodes=repairing&&receipt?.status==="BUILD_BROWSER_SMOKE"?
+  receipt.qa_checks?.filter(c=>c.verdict==="FAIL")
+   .map(c=>c.failure_code??"UNKNOWN")??[]:[];
+ const repairContext=selectBoundedRepairContext(job.project.files,failureCodes);
  const req={model:MODEL,reasoning:{effort:"medium" as const},
   input:modelPrompt(input.stage,
-   input.original_prompt,plan,repairing?job.project.files:[],
-   {failed:failure,strategy:strategy?.mode}),
+   input.original_prompt,plan,repairing?repairContext.files:[],
+   {failed:failure,strategy:strategy?.mode,
+    omittedStyle:repairing&&repairContext.omittedStyle}),
   max_output_tokens:repairing?9000:12000,background:true,store:true,text:{format:{type:"json_schema",
    name:"appf2_free_ci_source_files_v2",strict:true,schema:aiProjectSchema}}};
  // Prevent a large saved project from exceeding the per-repair model cap
