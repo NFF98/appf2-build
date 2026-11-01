@@ -223,6 +223,7 @@ if(process.env.APPF2_SP35_G5_EXPLICIT_PAID_OK!=="1"||
 let newJobId=null,shareId=null,created=0,published=0;
 const publishResponses=[];
 let startedAt,qaReadyAt;
+let createRejected=null;
 const {chromium}=await import("@playwright/test");
 const browser=await chromium.launch({headless:true});
 const contexts=[];
@@ -234,6 +235,10 @@ try{
  page.on("response",async response=>{
   if(response.request().method()!=="POST")return;
   const route=new URL(response.url()).pathname;
+  if(route==="/api/v1/agent-jobs"&&response.status()>=400){
+   createRejected=response.status();
+   console.log("SP35 G5 CREATE HTTP FAILURE: "+createRejected+"; no Job admitted");
+  }
   if(route==="/api/v1/agent-jobs"&&response.status()===201){
    created++;
    const data=await response.json().catch(()=>null);
@@ -280,6 +285,9 @@ try{
  const region=page.locator('section[aria-label="通過 QA 的 App 正式分享"]');
  let lastFailure="";
  for(let poll=0;poll<170;poll++){
+  if(createRejected)throw Error("SP35_G5_CREATE_HTTP_"+createRejected+"_NO_JOB");
+  const alerts=(await page.getByRole("alert").allTextContents()).filter(Boolean);
+  if(!newJobId&&alerts.length)throw Error("SP35_G5_PRE_JOB_REFUSED "+alerts.join(" ").slice(0,180));
   if(await region.isVisible())break;
   const text=await page.locator("body").innerText();
   if(/PAUSED_BUDGET|原 Job QA 失敗已保存|已達三輪修復上限|SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET|原 Job 保存，不重送付費 AI/u.test(text)){
