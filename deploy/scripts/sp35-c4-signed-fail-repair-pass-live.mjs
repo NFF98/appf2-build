@@ -14,10 +14,10 @@ const digest=async b=>Buffer.from(await crypto.subtle.digest("SHA-256",b))
  .toString("base64url");
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function signed(path,body,status=200){
- const bytes=new TextEncoder().encode(JSON.stringify(body));
+ const bytes=new globalThis.TextEncoder().encode(JSON.stringify(body));
  const nonce="sp35C4Free_"+randomUUID().replaceAll("-","");
  const now=Date.now();
- const transcript=new TextEncoder().encode(JSON.stringify([
+ const transcript=new globalThis.TextEncoder().encode(JSON.stringify([
   "APPF2_MUTATION_PoP_V1","POST",path,await digest(bytes),nonce,now]));
  const sig=Buffer.from(await crypto.subtle.sign(
   {name:"ECDSA",hash:"SHA-256"},keys.privateKey,transcript))
@@ -26,7 +26,7 @@ async function signed(path,body,status=200){
   "Content-Type":"application/json","Origin":origin,"Sec-Fetch-Site":"same-origin",
   "Idempotency-Key":nonce,"X-Appf2-PoP-Key":spki,
   "X-Appf2-PoP-Signature":sig,"X-Appf2-PoP-Timestamp":String(now)},
-  body:bytes,signal:AbortSignal.timeout(125000)});
+  body:bytes,signal:globalThis.AbortSignal.timeout(125000)});
  const json=await response.json().catch(()=>null);
  if(response.status!==status||!json?.data)
   throw Error("C4_SIGNED_HTTP_"+response.status+"_ROUTE_"+path.split("/").at(-1)+
@@ -69,6 +69,7 @@ async function dispatch(){
  if(v.status!=="FREE_CI_QUEUED")throw Error("C4_GITHUB_DISPATCH_FAILED");
 }
 async function read(){return signed(base,{anonymous_id:owner});}
+// eslint-disable-next-line complexity -- Each independent live QA, owner and spend fence fails closed.
 async function awaitReceipt(hash,expectedVerdict){
  const deadline=Date.now()+9*60*1000;
  while(Date.now()<deadline){
