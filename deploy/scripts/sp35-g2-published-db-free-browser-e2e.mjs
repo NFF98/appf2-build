@@ -54,7 +54,7 @@ function verifyNetwork(which,actions){
 try{
  const contextA=await browser.newContext({serviceWorkers:"block"});
  sessions.push(contextA);
- let A=await open(contextA,"A");
+ const A=await open(contextA,"A");
  await visible(A,/紀錄數：\s*0/u,"A_EMPTY");
  await click(A,"新增紀錄");
  await visible(A,/紀錄數：\s*1/u,"A_CREATE_COUNT");
@@ -97,6 +97,13 @@ try{
  console.log("SP35 G2 STRICT PG HTTP RECEIPT A="+JSON.stringify(proofA)+
   " B="+JSON.stringify(proofB)+
   " share_id="+share+" actual_provider_invoice=NOT_VERIFIED");
+}catch(err){
+ console.error("SP35 G2 FREE REAL PG BROWSER FAIL: "+
+  String(err instanceof Error?err.message:err).slice(0,320));
+ console.error("SP35 G2 FREE HTTP VERB DIAGNOSTIC: "+
+  JSON.stringify({A:requestProof.A.map(x=>x.action+":"+x.status),
+   B:requestProof.B.map(x=>x.action+":"+x.status)}).slice(0,900));
+ throw err;
 }finally{
  for(const context of sessions)await context.close().catch(()=>{});
  await browser.close();
