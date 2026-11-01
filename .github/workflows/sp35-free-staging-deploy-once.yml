@@ -274,3 +274,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] C4 signed same-Job manual FAIL→saved repair→retest path; zero paid AI or production.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] lint-fixed C4 signed manual repair independent FAIL→PASS, no paid generation.
+
+# 2026-11-01 C4 deploy saved-response half-CAS recovery: existing Worker & free QA only, NO paid model POST or Production.
