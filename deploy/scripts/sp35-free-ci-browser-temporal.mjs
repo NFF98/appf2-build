@@ -18,6 +18,7 @@ export async function observedQaBody(target,assertions=[]){
   typeof x.text==="string"&&x.text.length>0).map(x=>x.text))];
  for(const expected of expectations){
   if(body.includes(expected))continue;
+  // eslint-disable-next-line complexity -- Exact single-component visibility needs all ancestor and layout checks.
   const observed=await target.evaluate(value=>{
    const normalized=text=>String(text??"").replace(/[\\s\\u200b\\u200c\\u200d]/gu,"");
    const want=normalized(value);
