@@ -213,9 +213,8 @@ export function createWorkerFetch(factories: Partial<WorkerCompositionFactories>
     if(published!==undefined)return published;
     const agentJob=await routeAgentJobs({request,url,env,nowMs,deps:options.agent});
     if(agentJob!==undefined)return agentJob;
-    const codeRecords=await routeCodeAppRecords({request,url,env,nowMs});
-    if(codeRecords!==undefined)return codeRecords;
-    const codeApp=await routeCodeBuilder({request,url,env});
+    const codeApp=await routeCodeAppRecords({request,url,env,nowMs})??
+      await routeCodeBuilder({request,url,env});
     if(codeApp!==undefined)return codeApp;
     if (!url.pathname.startsWith(API_PREFIX)) return json({ error: { code: "API-NOT-FOUND" } }, 404);
     if (url.pathname === HEALTH_ROUTE) return json({ data: { status: "UP" } }, 200);
