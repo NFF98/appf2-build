@@ -62,8 +62,8 @@ const QA_PLAN_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-plan$/u;
 const PREVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/preview-asset$/u;
 const FREE_CI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ci-dispatch$/u;
 const FREE_IMPORT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-files$/u;
-const FREE_SH
-const FREE_REPAIR_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-repair$/u;ARE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/publish-code-app$/u;
+const FREE_REPAIR_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-repair$/u;
+const FREE_SHARE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/publish-code-app$/u;
 const FREE_AI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-stage$/u;
 const FREE_AI_PROBE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-probe$/u;
 const QA_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-generate$/u;
