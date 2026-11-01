@@ -260,6 +260,7 @@ export function hasRecordedBrowserQaFailure(receipt:{
  * All model charges are journaled BEFORE network access.
  */
 // eslint-disable-next-line complexity -- Independent budget, PoP, journal, QA and revision fences.
+// eslint-disable-next-line max-lines-per-function -- Owner, frozen QA, budget and original Job CAS must stay together.
 export async function runFreeCiAiStage(input:Input,ctx:Context){
  if(!validFreeAiCodeInput(input)||ctx.modelKey.length<16||
   ctx.githubToken.length<20)throw Error("SP35_PAID_AI_NOT_CONFIGURED");
