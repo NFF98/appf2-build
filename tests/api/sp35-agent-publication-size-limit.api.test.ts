@@ -6,7 +6,8 @@ const ORIGIN="https://app.example";
 const ID="7045a009-6bfc-4889-8f1b-df03ba93c406";
 const SHARE="/api/v1/agent-jobs/"+ID+"/publish-code-app";
 const CREATE="/api/v1/agent-jobs";
-const OTHER="/api/v1/agent-jobs/"+ID+"/free-ai-stage";
+const OTHER="/api/v1/agent-jobs/"+ID+"/agent-progress";
+const INTENT_ROUTES=["free-ai-stage","free-ai-repair-evidence","qa-generate"].map(x=>"/api/v1/agent-jobs/"+ID+"/"+x);
 const env={APPF2_AGENT_CANDIDATE_ENABLED:"1"} as Appf2WorkerEnv;
 
 /** Deliberately invalid PoP: after size admission, 404 must result BEFORE
@@ -53,6 +54,16 @@ describe("Sprint 3.5 owner-only publication size gate, zero model / DB",()=>{
   expect((await probe(CREATE,payload)).status).toBe(404);
   expect((await probe(CREATE,"{}",4097)).status).toBe(413);
   expect((await probe(CREATE,JSON.stringify({prompt:"中文".repeat(760)}))).status).toBe(413);
+ });
+ it("all exact original-intent model paths preserve PoP denial and the 4096 byte cap",async()=>{
+  const payload=JSON.stringify({original_prompt:"完整中文需求。".repeat(90)});
+  expect(bytes(payload)).toBeGreaterThan(1400);
+  expect(bytes(payload)).toBeLessThanOrEqual(4096);
+  for(const path of INTENT_ROUTES){
+   expect((await probe(path,payload)).status).toBe(404);
+   expect((await probe(path,"{}",4097)).status).toBe(413);
+   expect((await probe(path," ".repeat(4097))).status).toBe(413);
+  }
  });
  it("keeps unrelated Agent routes at 1400 raw bytes, cannot widen model endpoints",async()=>{
   const oversized=JSON.stringify({text:"中文".repeat(265)});
