@@ -6,6 +6,24 @@
 > **唯一產品開發 PR**：[Build #419](https://github.com/NFF98/appf2-build/pull/419)；Design 只沿用 [#45](https://github.com/NFF98/appf2-design/pull/45)。不開 Sprint 4，不建立平行的 Product Spec 或其他開發 PR。
 
 
+## 0.R 2026-11-01 Human「先記錄目前進度，然後繼續」進度凍結點（延續原 SSOT）
+
+**截至 Build HEAD `9372cde99d214843e152414ca571d1603c6d0e0b` / Design H-001 HEAD `cfe8bee6b416e4d51805143b46f71f95f3580345`。這是本輪「先紀錄」基線，後續工程驗收在本節追加，不重建 SSOT。**
+
+| 五大產品目標 | 產品現況（不能只算單元測試） | 最小剩餘驗收 |
+| --- | --- | --- |
+| 多樣性 | 遊戲 GPT-6 七檔部分 Chromium 6/6、真資料庫 App GPT-6 五檔原 QA 5/6（現查證有驗收器時序誤判）；**不等於不同類型 3×3 新完整網站流程 PASS** | 由一般人網站端新生成工具/遊戲/真 PG App 各 3 個；9/9 正式全閉環 |
+| 可靠性 | 原 GPT-6 App 存了原碼/QA收據；已修通用時序 `0→1→0` 驗收，真 Chrome 正反各種情況 6/6；**原失敗 Job 不得擅改 5/6 歷史** | 真網站下自修、正確失敗保存/告警、復測後原 Job 自動更新 |
+| 速度 | 原付費 Job 建立到首次保存原始碼約 235秒、到 private preview 約 359秒；**尚缺真使用者首次可互動、三類 P50/P95** | 9 個獨立網站 Job、真 timestamp、關頁/重開續跑 |
+| 交付 | 真公開既有 App 同／異瀏覽器重開、免重生；[Staging #41298158131](https://github.com/NFF98/appf2-build/actions/runs/41298158131) PG CRUD/重開/二 viewer 隔離 PASS（**existing counter App + injected CRUD harness**） | GPT-6 自己寫的 PG UI 全流程真分享、陌生人重用、撤銷 |
+| 自主性 | signed Worker/PG/免費 Docker/Chrome 都已證實是可運作組件，且 [Foundation #41298158153](https://github.com/NFF98/appf2-build/actions/runs/41298158153) SUCCESS | 一般人只在網站操作就能完成五項，不用人手動用 GitHub/Docker/貼 source |
+
+**真實獨立產品完成分母：5/5=0/5、九個新 Job 全鏈路=0/9；這不否定前述工程子能力 PASS。** 原 2026-11-01 多次 Staging 免費回歸為成功，不冒充付費 QA/新產品 PASS。當前開發只在 [Build PR #419](https://github.com/NFF98/appf2-build/pull/419)；Design [#45](https://github.com/NFF98/appf2-design/pull/45)；兩者未合併，無 Production、無 Sprint 4。
+
+**模型／費用凍結**：目前查得兩個 `gpt-6.1-sol` 已成功 CODE original Job：遊戲 `0fa5022f-5d09-42ef-b5e1-eb8ee3dac5b8` 用量 1007/6775、資料庫 `4c29b61a-0042-45f1-a198-228330d9a7cb` 用量 1041/6606。兩次 CODE `max_charge_cents=20` 各一筆，合計**模型單次保留 40 cents（不是發票）**；資料庫原 Job 有 `cost_cents=28` 虛擬 QA reservation；**供應商實扣 `NOT_VERIFIED`**。新 Human 核准全批 **US$1**；在持久跨 Job 硬成本 Fence 真正上線之前，不再建立新的付費 Job，也不重付一次性模型輸出。
+
+**本輪待續執行：**優先使用零額外付費的真網站 E2E 修正版驗收器；補強測試時序證據、資料橋、owner Job 續作/分享狀態的誠實顯示；所有新增 PASS 僅在 GitHub/PG/Chrome 可交叉核對時紀錄。保留全部歷史 FAIL 不覆寫。
+
 ## 0.Q Human US$1 全批硬上限 + 九次新生成網站 E2E（2026-11-01 最新指令，SPEC 已先更新）
 
 - **Design 唯一 SSOT FIRST**：[Design PR #45 H-001 §0.5 / commit 88d6d38](https://github.com/NFF98/appf2-design/commit/88d6d389268e5f35269de7ffd0b1d5af4c45de6d) 已先定義。Human 新授權 **最多 US$1.00，針對完成全部九次真網站 E2E 的整批費用**，覆蓋舊 US$6.84 估算。已發生的舊 G1 付費樣本保留且與新批次分開記；不能假稱舊帳單為 0。模型預留上限≠實際帳單。**不得因「沒達到不要停」突破美元上限、秘密更換低價模型、重扣未知呼叫或假 PASS。**
