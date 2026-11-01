@@ -401,12 +401,19 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  // BEFORE writing the intermediate checkpoint. Invalid model files must
  // never strand the Job halfway through a two-CAS repair.
  const prior=new Map(job.project.files.map(f=>[f.path,f]));
- const edits=files.map(f=>{
+ // The AI response is a COMPLETE bounded src/ source tree. A repair can
+ // retire an obsolete helper module, without touching immutable scaffold,
+ // package.json, deployment settings, secrets or the owner data bridge.
+ const listed=new Set(files.map(f=>f.path));
+ const retired=job.project.files.filter(f=>f.path.startsWith("src/")&&
+  !listed.has(f.path)).map(f=>({operation:"delete" as const,path:f.path,
+   previous_hash:f.hash}));
+ const edits=[...files.map(f=>{
   const before=prior.get(f.path);
   return before?{operation:"replace" as const,path:f.path,
    previous_hash:before.hash,content:f.content}:
    {operation:"add" as const,path:f.path,content:f.content};
- });
+ }),...retired];
  const updated=await applyProjectEdits(job.project,
   job.project.project_hash,edits);
  let current=job;
