@@ -49,47 +49,56 @@ const UPDATE=`UPDATE public.appf2_code_app_record SET payload=$4::jsonb,
 const DELETE=`DELETE FROM public.appf2_code_app_record WHERE share_id=$1::uuid
  AND viewer_key_thumbprint=$2::text AND record_id=$3::uuid
  RETURNING record_id::text`;
+function validRequest(request:Request,url:URL):boolean{
+ return request.method==="POST"&&url.search===""&&
+  request.headers.get("Origin")===url.origin&&
+  [null,"same-origin"].includes(request.headers.get("Sec-Fetch-Site"))&&
+  request.headers.get("Content-Type")?.split(";",1)[0]?.trim().toLowerCase()==="application/json";
+}
+async function parseSignedBody(request:Request,url:URL,nowMs:number):Promise<{
+ input:Input;thumbprint:string}|null>{
+ const key=request.headers.get("Idempotency-Key");
+ if(!key||!KEY.test(key))return null;
+ const raw=new Uint8Array(await request.arrayBuffer());
+ if(raw.byteLength<10||raw.byteLength>5500)return null;
+ let input:unknown;
+ try{input=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(raw));}
+ catch{return null;}
+ if(!validCodeRecordInput(input))return null;
+ const proof=await verifyMutationProof({method:"POST",path:url.pathname,
+  body:raw,idempotencyKey:key,headers:request.headers},nowMs);
+ return proof?{input,thumbprint:proof.keyThumbprint}:null;
+}
+async function operate(client:RecordDb,share:string,thumbprint:string,
+ data:Input):Promise<Response>{
+ const exists=(await client.query<{share_id:string}>(ACTIVE,[share])).rows[0];
+ if(!exists)return denied();
+ const args=[share,thumbprint,data.record_id??null,
+  data.value===undefined?null:JSON.stringify(data.value)];
+ if(data.action==="list"){
+  const rows=(await client.query<Row>(LIST,args.slice(0,2))).rows;
+  return reply(200,{data:{records:rows}});
+ }
+ const statement=data.action==="read"?READ:data.action==="create"?CREATE:
+  data.action==="update"?UPDATE:DELETE;
+ const values=data.action==="create"||data.action==="update"?args:args.slice(0,3);
+ const row=(await client.query<Row>(statement,values)).rows[0];
+ return row?reply(data.action==="create"?201:200,{data:row}):denied();
+}
 export async function routeCodeAppRecords(ctx:{request:Request;url:URL;
  env:Appf2WorkerEnv;nowMs:number;deps?:CodeAppRecordDeps}):Promise<Response|undefined>{
  const found=ROUTE.exec(ctx.url.pathname);
  if(!found)return undefined;
- if(ctx.env.APPF2_CODE_RECORDS_ENABLED!=="1")return denied();
- const {request,url,env}=ctx;
- if(request.method!=="POST"||url.search!==""||
-  request.headers.get("Origin")!==url.origin||
-  ![null,"same-origin"].includes(request.headers.get("Sec-Fetch-Site"))||
-  request.headers.get("Content-Type")?.split(";",1)[0]?.trim().toLowerCase()!=="application/json")
-  return denied();
- const key=request.headers.get("Idempotency-Key");
- if(!key||!KEY.test(key))return denied();
- const raw=new Uint8Array(await request.arrayBuffer());
- if(raw.byteLength<10||raw.byteLength>5500)return reply(413,{error:"CODE_RECORD_BODY_LIMIT"});
- let data:unknown;
- try{data=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(raw));}
- catch{return reply(400,{error:"CODE_RECORD_INVALID_BODY"});}
- if(!validCodeRecordInput(data))return reply(400,{error:"CODE_RECORD_INVALID_BODY"});
- const proof=await verifyMutationProof({method:"POST",path:url.pathname,
-  body:raw,idempotencyKey:key,headers:request.headers},ctx.nowMs);
- if(!proof)return denied();
+ if(ctx.env.APPF2_CODE_RECORDS_ENABLED!=="1"||
+  !validRequest(ctx.request,ctx.url))return denied();
  const share=found[1]??"";
  if(!UUID.test(share))return denied();
- const client=ctx.deps?.db?.(env,proof.keyThumbprint)??
-  new WorkerPostgresExecutor(env.HYPERDRIVE_FRESH,{
-   anonymousId:null,intentId:null,codeRecordThumbprint:proof.keyThumbprint});
- try{
-  const exists=(await client.query<{share_id:string}>(ACTIVE,[share])).rows[0];
-  if(!exists)return denied();
-  const args=[share,proof.keyThumbprint,data.record_id??null,
-   data.value===undefined?null:JSON.stringify(data.value)];
-  if(data.action==="list"){
-   const rows=(await client.query<Row>(LIST,args.slice(0,2))).rows;
-   return reply(200,{data:{records:rows}});
-  }
-  const statement=data.action==="read"?READ:data.action==="create"?CREATE:
-   data.action==="update"?UPDATE:DELETE;
-  const values=data.action==="create"||data.action==="update"?args:args.slice(0,3);
-  const row=(await client.query<Row>(statement,values)).rows[0];
-  return row?reply(data.action==="create"?201:200,{data:row}):denied();
- }catch{return reply(503,{error:"CODE_RECORD_DB_UNAVAILABLE"});}
+ const signed=await parseSignedBody(ctx.request,ctx.url,ctx.nowMs);
+ if(!signed)return denied();
+ const client=ctx.deps?.db?.(ctx.env,signed.thumbprint)??
+  new WorkerPostgresExecutor(ctx.env.HYPERDRIVE_FRESH,{
+   anonymousId:null,intentId:null,codeRecordThumbprint:signed.thumbprint});
+ try{return await operate(client,share,signed.thumbprint,signed.input);}
+ catch{return reply(503,{error:"CODE_RECORD_DB_UNAVAILABLE"});}
  finally{await client.close().catch(()=>undefined);}
 }
