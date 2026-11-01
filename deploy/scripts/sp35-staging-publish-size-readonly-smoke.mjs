@@ -1,3 +1,4 @@
+/* global TextEncoder, AbortSignal -- available in GitHub Actions Node.js 22 runtime */
 /** 
  * Staging-only, zero-AI, zero-publication ingress proof for the G3/G4
  * HTTP 413 root-cause fix. Invalid PoP MUST remain 404 for an otherwise
