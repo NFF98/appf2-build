@@ -528,6 +528,12 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   if(freeAiMatch&&e instanceof Error&&
    e.message==="SP35_PAID_AI_WORKER_EGRESS_UNAVAILABLE_NO_POST")
    return json(503,{error:"SP35_WORKER_MODEL_EGRESS_BLOCKED_NO_CHARGE"});
+  // Verified budget-safe REPAIR context guard: an overlong saved project
+  // must not masquerade as a transient DB/Worker 503 and waste retries.
+  // No provider POST has occurred when this guard fires; do NOT auto-rebill.
+  if(freeAiMatch&&e instanceof Error&&
+   e.message==="SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET")
+   return json(409,{error:"SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET"});
   // Creator-signed paid repair may already be journaled SUCCEEDED, but a
   // checkpoint or request fingerprint mismatch must NEVER trigger new spend.
   // Constant diagnostic codes are safe to surface; no SQL/model/source leak.
