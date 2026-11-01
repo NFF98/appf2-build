@@ -1,4 +1,5 @@
 import { sha256CodeBytes, verifyPrototypeCodeArtifact } from "../../platform/blueprint/code-artifact-v2.js";
+import {CODE_DOM_EVENT_SCRIPT} from "./code-dom-events.js";
 import {CODE_RECORD_IFRAME_SCRIPT} from "./code-record-bridge.js";
 
 const CODE_FRAME_CSP=[
@@ -50,9 +51,11 @@ export async function createPrototypeCodeFrame(
   const scriptHash=(await sha256CodeBytes(new TextEncoder().encode(javascript))).slice(7);
   const bridgeHash=(await sha256CodeBytes(new TextEncoder().encode(
     CODE_RECORD_IFRAME_SCRIPT))).slice(7);
+  const eventHash=(await sha256CodeBytes(new TextEncoder().encode(
+    CODE_DOM_EVENT_SCRIPT))).slice(7);
   const csp=CODE_FRAME_CSP.replace("__SCRIPT_HASH__",
     "sha256-"+encodeHexBase64(scriptHash)+"' 'sha256-"+
-    encodeHexBase64(bridgeHash));
+    encodeHexBase64(bridgeHash)+"\' \'sha256-"+encodeHexBase64(eventHash));
   const iframe=doc.createElement("iframe");
   iframe.setAttribute("title",envelope.meta.title);
   iframe.setAttribute("sandbox","allow-scripts");
@@ -64,6 +67,6 @@ export async function createPrototypeCodeFrame(
   iframe.style.border="0";
   // Strict CSP is the FIRST head content; all generated JS stays inside an
   // opaque-origin document where it cannot access parent cookies/DOM.
-  iframe.srcdoc=`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${htmlEscape(csp)}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${htmlEscape(envelope.meta.title)}</title><style>html,body{margin:0;min-height:100%;}html{overflow-y:auto;}body{box-sizing:border-box;}#app{width:100%;min-height:100vh;box-sizing:border-box;}</style></head><body><main id="app"></main><script>${CODE_RECORD_IFRAME_SCRIPT}</script><script>${javascript}</script></body></html>`;
+  iframe.srcdoc=`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${htmlEscape(csp)}"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${htmlEscape(envelope.meta.title)}</title><style>html,body{margin:0;min-height:100%;}html{overflow-y:auto;}body{box-sizing:border-box;}#app{width:100%;min-height:100vh;box-sizing:border-box;}</style></head><body><main id="app"></main><script>${CODE_RECORD_IFRAME_SCRIPT}</script><script>${CODE_DOM_EVENT_SCRIPT}</script><script>${javascript}</script></body></html>`;
   return {blueprintHash:checked.blueprint_hash,iframe,destroy:()=>iframe.remove()};
 }
