@@ -476,6 +476,18 @@
 - [舊版本一次重複免費 Runner #41283526398](https://github.com/NFF98/appf2-build/actions/runs/41283526398) 因不可變 QA 收據已存在而 HTTP404 FAIL，對已保存有效首輪收據及 GPT-6 paid model 無影響；不得把這次 free duplicate 的 red workflow 隱藏或當作產品 QA 6/6 fail。正確 C4 驗收以原 Job source hash、兩份有效 QA 收據、[#41283160768](https://github.com/NFF98/appf2-build/actions/runs/41283160768) 的成功閉環為 SSOT。
 - **結論：C4 GPT-6 真實自主修復 E2E 已完整 PASS**；C5 3-fail 路徑和根因策略判斷免費真實 PASS，付費三輪改策略尚未 RUN，不准把五核產品全域驗收報 100%，不可繼續重複模型費用或開新付費 Job。
 
+### 2026-11-01 Sprint 3.5 真網站速度／使用者體驗修復（零新增 AI 模型費用）
+
+**為何上一個 C4 付費測試很慢：**原真 GPT-6.1 Sol 原 owner Job 從 07:02:47 UTC 確立原 QA 到 07:14:31 UTC 私有 App 完全驗收，約 **11 分 44 秒**，其中 CODE、首次免費 Docker/Chromium 1/6 FAIL、REPAIR、新版免費 Docker/Chromium 6/6 PASS 各是獨立 Actions Runner，需排隊／重裝 Node、Worker build 與 Chromium。這是工程測試總耗時，不是已證實一般使用者等待時間；不能把單次 6/6 算為五核 5/5 或聲稱一般人已快速拿到 App。
+
+- 原 PR #419（未開新 PR）新增 `4803698`：在既有 `.github/workflows/sp35-staging-only.yml` **private-free-ci 免費 OIDC Docker/Chromium** job 中加入 `actions/cache@v4`，快取**僅公開 Playwright Chromium 二進位** `~/.cache/ms-playwright`，以 OS + `package-lock.json` hash 做版本鍵；絕不快取私有程式、Job、模型 prompt、金鑰、票券。**第一個真 Runner [#41285163822](https://github.com/NFF98/appf2-build/actions/runs/41285163822) SUCCESS**：log 07:32:56 UTC **cache miss**，於 07:33:58 UTC **cache saved**。這證明快取配置可用，**不能證明 cache hit 或減少多少秒**；必須同一 lockfile 下一輪免費 Runner 命中後才可量化提速。
+- `1dd3398`：原建立者 browser client 的 `freeAiStage(QA/CODE/REPAIR)` 加入選用安全 **shouldPause** gate：每次重讀已保存 Job 前後都能停止前端等待、**不得再發新的 signed paid phase POST**，不會取消之前合法已派發的 OpenAI/GitHub Runner；從保存卡片恢復後仍受相同 owner PoP、不可變 Job、唯一模型工作鍵和費用閘限制。
+- `cd2aa71`、`a0eccde`、`a4945e6`：真網站 `AgentBuilderPanel` 顯示**本次畫面等待時間**、GPT-6 編碼／QA 修復／修復來源保存之實際階段，提供「**停止畫面等待（保留原 Job、不重新扣費）**」；停止只中斷瀏覽器前端輪詢，不冒稱 server-side 自動完成。離開頁面後**已派發的 Runner 會繼續**，但後續未派發的修復／驗收**需要建立者回來明確點「接續已保存的 GPT-6 專案」**。時間每 5 秒刷新，避免每秒重新渲染完整 Builder／對讀屏工具廣播大量訊息。
+- `2d652f1` 新增**兩個免費 unit regression**：在準備讀原 Job 前暫停、及原 Job 只讀後但模型 POST 前暫停，均須 `SP35_USER_PAUSED_VIEW_NO_NEW_POST`、不再發送付費 POST；[最新全部免費 Foundation CI #41284807240](https://github.com/NFF98/appf2-build/actions/runs/41284807240) **SUCCESS**：typecheck、lint、88 API files passed（含 `sp35-free-ci-ui-acceptance.api.test.ts` **5 tests PASS**）、12 runtime files passed，以及首頁／隔離 Docker／Chromium／簽章 PostgreSQL 既有測試 PASS。這不是「五核 5/5」。
+- `e7498ed` 在**既有免費 Staging one-shot** 增加真正 GET-only Chromium 網站入口測試，完全不發付費 POST；[Staging deploy #41284807251](https://github.com/NFF98/appf2-build/actions/runs/41284807251) **整條 SUCCESS**：07:29:07 UTC 真站自然語言輸入＋無付費同意不准生成 PASS；07:30:23 UTC C1 真 iframe CRUD、2 viewers RLS PASS；07:30:54 UTC C2 完全關閉 Chromium 後原 P-256 owner、同一 Job/source hash PASS；07:34:26 UTC 原 owner-signed Job → Worker → [免費 OIDC Docker／Chromium #41285163822](https://github.com/NFF98/appf2-build/actions/runs/41285163822) 真骰子點擊 PASS、獨立 QA 收據回原 PostgreSQL，已保存私人 App 重開相同 bytes PASS。此次 Runner **使用人工測試程式、模型費 0**，**不等於使用者從網站輸入任意需求、付費 GPT-6 生成並自主修復的全套 UI UX E2E 已完成**。
+- **產品五核嚴格事實**：C1 指定真前後端／PostgreSQL CRUD PASS，任意生成 App 全端擴充仍未全面驗；C2 原 owner 持久恢復 PASS；C3 免費 Runner/Chromium PASS；C4 一個真 GPT-6 自主生成 1/6 FAIL→自動修復 6/6 PASS（前段付費測試 #41283160768），但未量測一般人網站付費按鈕從輸入到完成的 UX SLA；C5 三真 FAIL→正式 `RETHINK_ROOT_CAUSE` 判斷在**免費人工來源測試** PASS，付費 GPT-6 第三輪真正換策略後修好**尚未發生**。**絕不宣告全產品 5/5、100%、<5 分鐘或已實測 cache-hit 提速**。
+- 無新付費模型 Job、無 Cloudflare Containers／付費 Browser Run、無 Production 發布／main merge、無 Sprint 4。下一驗收需對**真網站使用者操作**量測「輸入→Job 保存」「開始 AI→首次可操作 App」「完整 QA+修復完成」，並區分 runner 啟動與 provider 推論時間；只有取得第二次快取命中與真正網站端自然語言生成 E2E，才能聲稱速度改善和產品 5 核收斂。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
