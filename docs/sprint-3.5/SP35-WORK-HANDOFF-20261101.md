@@ -1,3 +1,36 @@
+# 2026-11-02 JST — 正在執行，最新狀態優先於下方舊交接
+
+Human已回覆「批准繼續做完全部」。已在Design #45 H-001 §0.17記錄有限上限：**剩餘7個新paid Job，每個≤44¢，合計≤308¢**，一次一個，不限額重問、不批次並發；舊32¢未決風險另列、不重送。原產品仍**2/9（22.2%）**，到真ACTIVE＋獨立新browser通過才加分。
+
+## 活動中的原生owner與真模型（不可重建或再付CODE）
+
+- **持續cloud Browser tab 1**，handle `ownerTab`，URL `https://appf2-sp35-417-staging.juiyuang69.workers.dev/`，已markHandoff。原需求「餐費分攤工具」及原始7條QA已從網站UI填入，5項同意已勾、Job cap44¢。只透過UI操作，不讀取/匯出私鑰。保持tab/profile，不要關閉或初始化另一個代替owner；在後續turn先按cua文檔恢復既有tab1、重新markHandoff。
+- **新G5原Job `8880979c-d09d-44ef-aaa7-bd114a31a967`**，原prompt request_hash `sha256:cbfb7a6ec51fc4d0ad55156b4d063f42fe9afb2225b46e644985164ff5229714`，原始7條QA已入庫。Model `sp35_free_ai_code_v1` **IN_FLIGHT，20¢ max_charge**，實扣NOT_VERIFIED，整Job44¢。**禁止另建同prompt付費Job或重跑CODE**。
+- [真模型 Runner #41328942825](https://github.com/NFF98/appf2-build/actions/runs/41328942825) private-paid-ai正執行唯一一次model POST。下一步只讀journal/Runner/原tab狀態；等源碼保存及免費Docker/獨立QA結果。未知結果不POST重送。
+- 0/7後續真正PASS尚未增加；本輪paid Job額度占用1×44¢（後續6個名額264¢），單次CODE上限20¢只是保留，不冒充invoice。
+
+## 已完成兩輪集中修復及換策略（不要第三輪盲修）
+
+- 第一根因：CREATE1400拒絕1950 bytes合法中文；§0.16最小4096修正、[Staging #41326481475](https://github.com/NFF98/appf2-build/actions/runs/41326481475) SUCCESS。
+- 第二根因：free-ai-stage等完整800字原文路由仍1400。§0.18修為精確CREATE/publish/free-ai-stage/free-ai-repair-evidence/qa-generate4096，其餘1400/24000/200000不變，所有PoP/owner/QA/budget保留。FREE_ONLY停用的舊qa-generate仍提前均勻404（不開啟它、不為測試調安全順序）；正規啟用環境仍4096單元驗證。
+- **最終完整免費** [Staging #41328297162](https://github.com/NFF98/appf2-build/actions/runs/41328297162) **SUCCESS**：所有實際啟用原文路由>1400<=4096錯PoP404，>4096拒絕413、agent-progress>1400仍413，停用legacy QA保持404，全部其餘免費回歸已核對。
+- [Foundation #41328297159](https://github.com/NFF98/appf2-build/actions/runs/41328297159) SUCCESS；新測試腳本候選d3eeec9之 [Foundation #41328802733](https://github.com/NFF98/appf2-build/actions/runs/41328802733) 也SUCCESS。舊四Gate Human Task前檢實際FAIL，不報PASS、不阻本產品。
+- 正式publish合約為**201 Created**（正確），接受200/201但必須ACTIVE真row+URL+新browser實際操作，不能只等200而誤報失敗。原QA7條不變。
+- 前兩個UI入口嘗試無model POST：#41326123312取消前無matching Job；#41327212659之空Job `b439ed54-4a9a-4f2d-8a32-14c06df42d53` 有7 QA但model_call/runner_request=0，已取消原ephemeral waiter，Job/QA保留；不可冒充舊owner復原。它們沒有AI原始碼、不占paid名額，不許把它們當產品PASS。
+- §0.20策略改為持續owner cloudtab保存原身份＋獨立免費CI訪客驗證，不再丟棄已付費owner。不要再盲目迴圈重新生成。
+
+## 成功後及後續六件
+
+1. 原owner tab1等同Job免費Docker收據**七項全部PASS**與實際預覽，再勾「我同意將目前這份經過完整QA的App公開發布」，點正式發布。讀UI錯誤，保持owner。4xx失敗閉鎖；5xx最多同owner/idempotency免費一次，不重做模型。
+2. 獨立讀PG `appf2_code_app` 真ACTIVE/public_opt_in、source/QA/preview/blueprint hashes一致。取得**原tab真share link**，不要編造URL。
+3. 已準備 `deploy/scripts/sp35-published-recipient-proof.mjs`，僅接受既有share UUID、白名單sample，完全0 generation；它在**新的Chromium process**實際操作公開原App/reload/reuse，DB類再第三個browser比隔離並觀察真records HTTP CRUD。原workflow `.github/workflows/sp35-one-paid-ai-real-e2e.yml` 之 `published-recipient-free-only` job等待固定share，目前env placeholder不是可用卡。
+4. 將該原workflow此job兩個env設定真 `APPF2_SP35_SAMPLE: g5-meal` / `APPF2_EXISTING_SHARE_ID: 真UUID`，提交唯一 `[SP35-RECIPIENT-FREE-ONCE]` marker；**不包含任何PAID marker**。免費訪客全PASS+PG核帳後才3/9。
+5. 其餘原自然需求/42 QA先凍於Design §0.19（commit48933e9），Build已有 `sp35-remaining-scenarios.mjs`，順序g6-length（工具）、g7-memory/g8-lights/g9-connect（遊戲）、g10-books/g11-water（真PG）。已用實際parseQaPlan免費驗6份/42條schema，原自然文<=800、各7 QA<=8steps。一次一個、各44¢、保留同原Job與所有source。每筆新Job前重核journal+7名額/308¢餘額，任何已付不重生。
+6. 可用持續owner UI填下一原prompt+frozen plan（資料全在manifest），原Job keys保留；或已備妥逐一CI驗收腳本 `sp35-remaining-native-website-e2e.mjs`，但不可在owner尚IN_FLIGHT時並發新paid Job。優先保持owner可恢復的策略。原workflow之 `one-remaining-native-original-request` **只有**同次message含 `[SP35-REMAINING-PAID-ONE-SHOT]` 和一個 `[SP35-SAMPLE-g6-length]` 等才會paid；不要隨意觸發。所有free/paid marker必須分開。
+7. 每個完成里程碑回報真x/9、evidence、max reservation vs invoice unknown、阻斷與下一步。失敗保留原Job，不改QA，不偽造PG owner，不超額、不第三輪盲修。只原#419/#45，不merge/Production/Sprint4。
+
+---
+
 # APPf2 Sprint 3.5 → ChatGPT Work execution handoff (2026-11-01)
 
 **DO WORK, not a fresh planning discussion.** User has approved continuation and wants real products operational and real costs bounded. Only existing Build PR #419 and Design PR #45. Never Sprint 4, merge, Production deploy, prompt the user for CLI/Cursor/Work re-selection, or pretend CI-only checks are products.
