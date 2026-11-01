@@ -1,3 +1,4 @@
+/* eslint-disable max-depth -- bounded original-owner publish HTTP diagnostics under one existing Job */
 /**
  * Third distinct NEW website-native AI App: interactive two-player tic-tac-toe.
  * Design PR #45 H-001 §0.12 is frozen before this Build implementation.
