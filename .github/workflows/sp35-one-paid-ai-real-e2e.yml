@@ -11,6 +11,29 @@ concurrency:
   group: sp35-one-explicit-paid-ai-e2e
   cancel-in-progress: false
 jobs:
+  g2-free-published-original-browser-retest:
+    # NO MODEL, no new Job. Already published AI-authored original DB App,
+    # one fail-closed check based on actual signed PG verbs and 2xx statuses.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G2-PUBLISHED-DB-FREE-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Zero model-charge syntax check
+        run: node --check deploy/scripts/sp35-g2-published-db-free-browser-e2e.mjs
+      - name: Included no-charge Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Exact published AI App real UI -> signed Worker -> PG verbs, 2 viewer isolation and reopen
+        run: node deploy/scripts/sp35-g2-published-db-free-browser-e2e.mjs
+
   second-native-website-gpt6-postgres:
     # Human: if more credit needed, notify and go. Already notified +$0.28.
     # One NEW App max44c, aggregate prior job ceilings84c => $1.28.
