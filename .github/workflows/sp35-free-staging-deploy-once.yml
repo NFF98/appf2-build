@@ -33,6 +33,10 @@ jobs:
         run: npm ci
       - name: Install existing pinned Worker dependency for bundle ONLY (no Browser Run)
         run: npm install --no-save --ignore-scripts --no-audit --no-fund @cloudflare/puppeteer@1.1.0
+      - name: Check new C1 bridge before Staging deployment (no model calls)
+        run: |
+          npm run check:types
+          npm run check:lint
       - name: Build actual Staging SPA assets
         run: npm run web:build
       - name: Verify free Actions dispatch credential presence (never print credential)
@@ -187,6 +191,10 @@ jobs:
           JS
       - name: LIVE PostgreSQL signed Agent Create + Read (no AI)
         run: node deploy/scripts/sp35-live-agent-db-smoke.mjs
+      - name: Install Chromium for actual C1 persisted-App CRUD browser E2E
+        run: npx playwright install --with-deps chromium
+      - name: LIVE C1 signed App iframe CRUD and two-viewer PostgreSQL isolation
+        run: node deploy/scripts/sp35-live-code-record-browser-e2e.mjs
       - name: REAL owner-signed source → Worker GitHub dispatch → free Docker Chromium → original Job receipt
         run: node deploy/scripts/sp35-free-live-dispatch-e2e.mjs
       - name: Final status, zero new AI/Container/Browser usage
@@ -242,3 +250,5 @@ jobs:
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 close Hyperdrive before native Worker GitHub model dispatch, keep at-most-once, free Staging validation.
 
 # [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 repair real Chrome FAIL despite unrelated UNTESTED; improve frozen passive/multiclick QA, no model POST on deploy.
+
+# [SP35-FREE-STAGING-DEPLOY-ONCE] 2026-11-01 C1 real viewer-scoped CRUD bridge+RLS+Chromium verification.
