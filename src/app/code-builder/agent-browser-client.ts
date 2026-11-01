@@ -68,6 +68,16 @@ export type CandidateJob={readonly job_id:string;readonly revision:number;
   readonly max_steps:number;readonly max_cost_cents:number;
   readonly max_tokens:number}};
  readonly app_published:false};
+/** A user-triggered resume may requeue FREE Docker QA ONLY for an already
+ * committed source revision with no attested receipt. It MUST NOT create
+ * another model turn, new Job, credential, or fake PASS.
+ */
+export function canResumeSavedFreeCiOnly(job:Pick<CandidateJob,
+ "revision"|"checkpoint"|"free_ci"|"status">):boolean{
+ return job.revision>=2&&job.checkpoint.step>=2&&
+  job.status==="CODING"&&
+  (job.free_ci===null||job.free_ci===undefined);
+}
 type Progress={readonly revision:number;readonly remaining_steps:number;
  readonly can_resume:boolean;
  readonly resume_model_call_key:string|null;readonly next_action:string;
