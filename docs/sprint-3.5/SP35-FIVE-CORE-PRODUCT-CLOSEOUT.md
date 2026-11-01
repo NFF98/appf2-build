@@ -364,6 +364,13 @@
 - Free-only resumed paid-source QA path: signed existing Job with saved generated source (revision>=2, step>=2, CODING, no current QA receipt) can requeue **only FREE Docker QA** from the original web UI on explicit resume; it never generates a new source or initiates a paid model call. Source guard and tests passed in #41262716623. This path is not a substitute for proving a real lost-network-response recovery scenario.
 - C2 **scoped original-browser identity + same-PostgreSQL-Job resume = verified PASS**; further full five-core signoff still requires true owner continuity after a paid interrupted model call and autonomous C4/C5 repair. Temporary one-shot GitHub Actions signer remains intentionally nonportable: never save that private key to a public artifact or claim recovery of the old abandoned 76c ephemeral-owner Job.
 
+
+### 2026-11-01 — C5 source-lineage-fenced real QA repair policy: free CI PASS
+
+- **Fixed active paid REPAIR admission**, not just a stand-alone test: `src/edge/free-ci-ai-code.ts` now joins actual owner/Job OIDC free-CI QA receipt rows to their immutable `appf2_agent_project_snapshot` records and reads `project_revision` and `parent_hash`. `src/platform/agent/free-ci-repair-policy.ts` requires every counted consecutive failure to follow the current source hash → exact previous parent hash, revision N → N−1, and exact original frozen QA plan. A missing receipt, fork, duplicate, forged snapshot revision, UNTESTED-only receipt or mismatched current source terminates the streak; these cannot trigger a paid strategy change.
+- **Tests** `tests/api/sp35-free-ci-multi-repair.api.test.ts`: three valid linked failed versions switch on round 3, while a fork, missing intermediate revision, wrong current head and malformed/UNTESTED-only evidence do not. Owner budget still requires 44/60/76 cents cumulative authorization, immutable `repair_v1/v2/v3` call keys, max eight steps. **Free Docker/Chromium CI [#41265696552](https://github.com/NFF98/appf2-build/actions/runs/41265696552) completed SUCCESS.** No model charged by this test.
+- **Live Staging DB spot-check** found a real failed AI-generated project's current OIDC receipt bound to source revision 2 and its snapshot parent (original Job already had `sp35_free_ai_qa_v1` and `sp35_free_ai_code_v1` successful). This is genuine *first-failure evidence*; do not claim a paid REPAIR or a third-failure strategy switch occurred. C4 GPT-6 paid repair and C5 multi-failure → strategy change → browser PASS still require their own real receipts. Original PR #419; no main merge, new PR or production deployment.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
