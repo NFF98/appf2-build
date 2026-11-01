@@ -488,6 +488,20 @@
 - **產品五核嚴格事實**：C1 指定真前後端／PostgreSQL CRUD PASS，任意生成 App 全端擴充仍未全面驗；C2 原 owner 持久恢復 PASS；C3 免費 Runner/Chromium PASS；C4 一個真 GPT-6 自主生成 1/6 FAIL→自動修復 6/6 PASS（前段付費測試 #41283160768），但未量測一般人網站付費按鈕從輸入到完成的 UX SLA；C5 三真 FAIL→正式 `RETHINK_ROOT_CAUSE` 判斷在**免費人工來源測試** PASS，付費 GPT-6 第三輪真正換策略後修好**尚未發生**。**絕不宣告全產品 5/5、100%、<5 分鐘或已實測 cache-hit 提速**。
 - 無新付費模型 Job、無 Cloudflare Containers／付費 Browser Run、無 Production 發布／main merge、無 Sprint 4。下一驗收需對**真網站使用者操作**量測「輸入→Job 保存」「開始 AI→首次可操作 App」「完整 QA+修復完成」，並區分 runner 啟動與 provider 推論時間；只有取得第二次快取命中與真正網站端自然語言生成 E2E，才能聲稱速度改善和產品 5 核收斂。
 
+### 2026-11-01 Sprint 3.5 「一句話→各類 App」共用引擎首輪收斂／驗收規格（只在 PR #419；仍非完整產品 100%）
+
+**目標／停止盲修規則：**先確認使用者從網站自然語言輸入、有效付費同意、原建立者身分、第一個可操作 App、獨立原需求 QA、修復、保存／重開／分享各時間點。固定原 prompt 和原 QA，不可事後改測試。最多兩輪集中修復；不能以單個計分板 6/6、免費 fixture 3/3 或 CI PASS 冒稱未見過的任意需求 100%。需要獨立記錄「建立原 Job 延遲、首次可操作版本延遲、完整自主驗收延遲」及每個 Runner 啟動／模型耗時。首次模型可用時不得以 QA 未通過冒稱完成。
+
+**本輪找到的實際通用限制：**付費 `runFreeCiAiStage` 原模型 JSON Schema 固定 `main_ts` + `style_css`，即使 Project V1／Vite Runner 原本支援多個檔案，GPT-6 實際輸出仍被鎖死在兩欄；複雜前端功能因此被塞成單檔。此問題與 prior ④來源 CAS 和⑤根因策略不同，不應針對某一種 App 再寫模板。
+
+- **共用引擎修復** `b7ada74`、`f8fc373`、`413d1af`：新增`src/edge/free-ai-project-files.ts`，正式 GPT-6 CODE／REPAIR 可回傳完整 `files:[{path,content}]`，包含必要 `src/main.ts`、`src/style.css`，加上最多 **10 個**可選相對模組（總上限 **12 檔**、85000 個源文字元；每檔<=65000）。每個路徑限受控 `src/` TypeScript/CSS/JSON；拒絕不完整入口、重複檔、`..`、套件／部署配置修改、遠端 URL、NUL 與 script 結束標記。先經安全 parse 和 `applyProjectEdits` SHA CAS 完整驗證，再做中間 checkpoint，禁止形成無法恢復的半成品；完整新來源可原子替換／新增、清除過期 `src/` helper，但不得改可信 Docker／Worker scaffold／package。原已付款 `{main_ts,style_css}` 日誌**仍相容**，不要求模型重新付款。
+- **無模型費用測試** `e167d16`、`f959655`：範例多檔案格式及舊回應相容、安全拒絕測試、真 Project V1 immutable 版本血緣，並避免對外部設定檔放行。真 Runner 程式碼仍必須遵守網路關閉的 Docker、OIDC 收據及凍結 QA，不給 AI 自行宣稱 PASS 的權力。
+- `bb785e1` + `bcaec69`：使用**人工固定測試程式（不是 GPT-6 支付生成）**，三種不同 source module graph：任務清單、計算器、習慣追蹤，都真正由 Vite bundle 並由 Chromium 點擊指定可見結果。這是跨 App 結構的免費編譯與操作 E2E，非任意 App 可靠性驗收。
+- `07dbb37`：把三檔 `files` 回應放入既有已付款 journal 的**模擬已支付、只寫了一半**原 Job 狀態，經**真正式 `runFreeCiAiStage` 程式碼路徑**寫回第三個 module、原 Job revision 2、免費 QA dispatch，並確認不做第二次付費 POST；另一個修復測試保留原 `main_ts/style_css` 既有答案可恢復。**無真新 GPT-6 model POST**。
+- 最新 [免費 Foundation CI #41286484300](https://github.com/NFF98/appf2-build/actions/runs/41286484300) **SUCCESS**：TypeScript／ESLint、API／runtime、三類多模組實際 Vite／Chromium、第一方已簽章瀏覽器 mock Worker、免費隔離 Docker／Chromium、真 Staging PostgreSQL Job→免費 Docker／Chromium 無回歸。首輪 CI [#41286152963](https://github.com/NFF98/appf2-build/actions/runs/41286152963) 曾因**兩個 Lint 規則** FAIL，`272a87a`、`bd6b095` 精準修好後，第二輪上列正式 CI SUCCESS；不得抹去中間失敗或把 fixture 當付費模型成功。
+
+**尚未完成的嚴格產品驗收：**`files` 新 schema 尚未用**新增一次真正付費 GPT-6** 在真網站自然語言測試 3 個未見過的多檔 App（其中一例需要真 PostgreSQL viewer-private CRUD）、自主失敗修復、保存重開及公開分享；已使用的舊 US$0.76 一次授權不得重用。新的 schema 仍是**Vite web 前端及已有 `appf2Records` 安全 DB bridge**，不是任意 Node/Python server 與外部 npm 部署權。GitHub Actions Runner 排隊／安裝時間與整套前後端生成速度沒有經此輪證明改善；不可報全類型 App 100%、全五核 5/5 或「已達到快速」。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
