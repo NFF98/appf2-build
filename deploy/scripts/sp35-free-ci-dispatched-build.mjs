@@ -276,7 +276,7 @@ try{
      else if(!ok)failure_code="ASSERTION_FAILED";
      verdict=ok&&qaRuntimeErrors.length===0?"PASS":"FAIL";
      if(ok)evidence_hash="sha256:"+createHash("sha256").update(
-       JSON.stringify([project.project_hash,criterion.id,before,after,
+       JSON.stringify([project.project_hash,criterion.id,before,stepBodies,after,
          criterion.steps,criterion.assertions])).digest("hex");
     }catch(error){
      verdict="FAIL";
