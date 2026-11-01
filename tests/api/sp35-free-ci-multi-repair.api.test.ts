@@ -51,6 +51,26 @@ describe("C4 + C5 active GPT-6 free-runner multi-repair policy",()=>{
   await expect(decideFreeCiRepair(plan,[a],a.project_hash,5,8,100,16))
    .rejects.toThrow("ROUNDS_EXHAUSTED");
  });
+ it("treats changed browser failure reasons as progress, not a stalled third failure",async()=>{
+  const a=await receipt("a"),b=await receipt("b"),c=await receipt("c");
+  const withReason=(row:FreeCiRepairHistory,code:string)=>({
+   ...row,receipt_json:{...(row.receipt_json as object),
+    qa_checks:[{criterion_id:"score",verdict:"FAIL",evidence_hash:null,
+     failure_code:code}]}
+  });
+  const prior=withReason(a,"TARGET_MISSING_OR_AMBIGUOUS");
+  const middle=withReason(b,"TARGET_MISSING_OR_AMBIGUOUS");
+  const progressed=withReason(c,"ASSERTION_FAILED");
+  const decision=await decideFreeCiRepair(plan,[progressed,middle,prior],
+   c.project_hash,4,6,76,8);
+  expect(decision.mode).toBe("FIX_FAILED_CHECKS");
+  expect(decision.repeated_failure_count).toBe(1);
+  const stillStalled=await decideFreeCiRepair(plan,[progressed,
+   withReason(b,"ASSERTION_FAILED"),withReason(a,"ASSERTION_FAILED")],
+   c.project_hash,4,6,76,8);
+  expect(stillStalled.mode).toBe("RETHINK_ROOT_CAUSE");
+  expect(stillStalled.repeated_failure_count).toBe(3);
+ });
  it("does not mistake pass/UNTESTED, bad plan, forged history for independent failure",async()=>{
   const a=await receipt("a"),passed=await receipt("b","PASS");
   const unknown=await receipt("c","UNTESTED");
