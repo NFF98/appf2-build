@@ -18,7 +18,7 @@ const prompt=[
  "誰拿到最後一顆就贏，勝者顯示後不能再拿石頭；重新開始需讓雙方再玩一次，手機也可用。",
  "由 AI 自由產生至少三個互相 import 的 src/ TypeScript 程式模組與 CSS，禁止假按鈕、",
  "固定勝利畫面、外部網路、外部套件和 localStorage。"
-].join("");;
+].join("");
 const cases=[
  ["title","標題顯示「雙人拿石頭」",[],{kind:"text_includes",text:"雙人拿石頭"}],
  ["initial","首次顯示「剩餘：9」",[],{kind:"text_includes",text:"剩餘：9"}],
