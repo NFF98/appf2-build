@@ -27,7 +27,7 @@ const sha=async bytes=>Buffer.from(await crypto.subtle.digest("SHA-256",bytes))
  .toString("base64url");
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function signed(path,body,expected=200){
- const bytes=new TextEncoder().encode(JSON.stringify(body));
+ const bytes=new globalThis.TextEncoder().encode(JSON.stringify(body));
  const nonce="sp35FiveCore_"+randomUUID().replaceAll("-","");
  const now=Date.now();
  const transcript=new TextEncoder().encode(JSON.stringify([
@@ -39,7 +39,7 @@ async function signed(path,body,expected=200){
    "Content-Type":"application/json","Idempotency-Key":nonce,
    "X-Appf2-PoP-Key":spki,"X-Appf2-PoP-Signature":signature,
    "X-Appf2-PoP-Timestamp":String(now)},
-  body:bytes,signal:AbortSignal.timeout(45000)});
+  body:bytes,signal:globalThis.AbortSignal.timeout(45000)});
  const raw=await response.json().catch(()=>null);
  if(!(Array.isArray(expected)?expected.includes(response.status):response.status===expected)||!raw?.data)
   throw Error("C5_SIGNED_HTTP_"+response.status+"_AT_"+path.split("/").at(-1)+
@@ -60,7 +60,7 @@ if(frozen.status!=="QA_ORIGINAL_PLAN_FROZEN")
 console.log("C2 REAL: owner signed Staging PostgreSQL Job + frozen original QA PASS; no provider calls yet");
 const deadline=Date.now()+17*60*1000;
 const stages=["CODE","REPAIR","REPAIR","REPAIR"];
-let phase=0,repaired=0,latest=null,sawQa=false,sawPass=false;
+let phase=0,repaired=0,sawQa=false,sawPass=false;
 for(const stage of stages){
  if(Date.now()>=deadline)throw Error("C4_C5_TIME_BUDGET_EXHAUSTED_KEEP_JOB");
  phase++;
@@ -93,7 +93,6 @@ for(const stage of stages){
   }
  }
  if(!next)throw Error("C3_DOCKER_RECEIPT_MISSING_NO_PASS");
- latest=next;
  const receipt=next.free_ci;
  const checks=receipt.qa_checks??[];
  sawQa||=checks.length===plan.criteria.length;
