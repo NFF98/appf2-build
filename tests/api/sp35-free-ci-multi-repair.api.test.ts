@@ -1,4 +1,5 @@
 import {describe,it,expect} from "vitest";
+import {readFileSync} from "node:fs";
 import {decideFreeCiRepair,analyzeFreeCiFailureStreak,type FreeCiRepairHistory}
  from "../../src/platform/agent/free-ci-repair-policy.js";
 import {frozenFreeCiPlanHash} from "../../src/edge/free-ci-result.js";
@@ -27,6 +28,17 @@ async function receipt(label:string,verdict:"FAIL"|"PASS"|"UNTESTED"="FAIL"):
  }};
 }
 describe("C4 + C5 active GPT-6 free-runner multi-repair policy",()=>{
+ it("paid OIDC runner accepts repair rounds v2/v3 with the same 16c signed ceiling",()=>{
+  const runner=readFileSync(
+   "deploy/scripts/sp35-paid-ai-github-runner.mjs","utf8");
+  expect(runner).toContain("qa_v1|code_v1|repair_v[123]");
+  expect(runner).toContain("sp35_free_ai_repair_v1:16");
+  expect(runner).toContain("sp35_free_ai_repair_v2:16");
+  expect(runner).toContain("sp35_free_ai_repair_v3:16");
+  expect(runner).toContain("if(upperCents>cap)");
+  expect(runner).toContain("ONE paid model POST");
+ });
+
  it("offers zero-charge verified root-cause strategy preview without cost approval",async()=>{
   const a=await receipt("a"),b=await receipt("b"),c=await receipt("c");
   const current=await analyzeFreeCiFailureStreak(plan,[c,b,a],
