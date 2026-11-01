@@ -4,7 +4,7 @@
  * private GPT-6 App nor a replacement for PostgreSQL RLS browser E2E.
  */
 import {chromium} from "@playwright/test";
-import {executeFrozenQaSteps,observedTextAppears}
+import {executeFrozenQaSteps,observedTextAppears,observedQaBody}
  from "./sp35-free-ci-browser-temporal.mjs";
 const positiveHtml=`<!doctype html><html><body>
  <h1>獨立 QA 時序驗收</h1><p id="count">紀錄數：0</p>
@@ -30,7 +30,7 @@ try{
    const page=await context.newPage();
    await page.goto("data:text/html;charset=utf-8,"+
     encodeURIComponent(html),{waitUntil:"load"});
-   const before=await page.locator("body").innerText();
+   const before=await observedQaBody(page,criterion.assertions);
    const {stepBodies,after}=await executeFrozenQaSteps(page,criterion,before);
    return observedTextAppears(before,stepBodies.slice(0,-1),
     after,criterion.assertions[0].text);
@@ -57,5 +57,36 @@ try{
  if(await run(brokenHtml,{steps:increase.steps,
   assertions:[{kind:"text_appears",text:"紀錄數：0"}]}))
   throw Error("CHROMIUM_SINGLE_NO_OP_BASELINE_FALSE_PASS");
- console.log("SP35 REAL CHROMIUM TEMPORAL QA: 6/6 PASS; 0 -> 1 -> 0 observed with async updates; no-op/missing FAIL-closed; model calls=0");
+
+ // GPT-6 can correctly render the same visible counter as two flex children.
+ // A raw body.innerText comparison would create a false FAIL and waste money.
+ const flexHtml=`<!doctype html><html><head><style>
+ .count{display:flex;align-items:baseline;gap:12px}
+ </style></head><body>
+ <div class="count"><span>紀錄數：</span><span id="value">0</span></div>
+ <button id="add">新增紀錄</button><button id="delete">刪除紀錄</button>
+ <script>const v=document.querySelector('#value');
+ document.querySelector('#add').onclick=()=>setTimeout(()=>{v.textContent='1'},70);
+ document.querySelector('#delete').onclick=()=>setTimeout(()=>{v.textContent='0'},70);
+ </script></body></html>`;
+ const noOpFlex=`<!doctype html><html><head><style>
+ .count{display:flex;gap:12px}</style></head><body>
+ <div class="count"><span>紀錄數：</span><span>0</span></div>
+ <button>新增紀錄</button><button>刪除紀錄</button></body></html>`;
+ const differentComponents=`<!doctype html><html><body>
+ <h1>紀錄數：</h1><footer>0</footer>
+ <button>新增紀錄</button><button>刪除紀錄</button></body></html>`;
+ const hiddenFake=`<!doctype html><html><body>
+ <div style="display:none"><span>紀錄數：</span><span>0</span></div>
+ <button>新增紀錄</button><button>刪除紀錄</button></body></html>`;
+ if(!await run(flexHtml,returnToZero))
+  throw Error("CHROMIUM_FLEX_SPLIT_VISIBLE_COUNTER_FALSE_NEGATIVE");
+ if(await run(noOpFlex,returnToZero))
+  throw Error("CHROMIUM_FLEX_NOOP_FALSE_PASS");
+ if(await run(differentComponents,returnToZero))
+  throw Error("CHROMIUM_UNRELATED_COMPONENT_JOIN_FALSE_PASS");
+ if(await run(hiddenFake,returnToZero))
+  throw Error("CHROMIUM_HIDDEN_COUNTER_FALSE_PASS");
+ console.log("SP35 REAL CHROMIUM VISIBLE DOM QA: 10/10 PASS; 6 temporal + split visible flex 0→1→0, no-op, unrelated-component and hidden-data FAIL-closed; no model call");
+
 }finally{await browser.close();}
