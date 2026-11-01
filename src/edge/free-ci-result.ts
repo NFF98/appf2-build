@@ -44,15 +44,28 @@ export function validFreeCiBuildFailure(x:unknown):x is FreeCiBuildFailure{
   x.diagnostic_excerpt.length<=1200&&
   !/[\u0000-\u0008\u000e-\u001f]/u.test(x.diagnostic_excerpt);
 }
+/** Only fixed enum codes cross the untrusted App→model boundary.
+ * Never send raw DOM, stack traces, private records, or network responses.
+ */
+export const FREE_CI_QA_FAILURE_CODES=[
+ "TARGET_MISSING_OR_AMBIGUOUS","STEP_FAILED","ASSERTION_FAILED","BROWSER_ERROR"
+] as const;
+export type FreeCiQaFailureCode=typeof FREE_CI_QA_FAILURE_CODES[number];
 export type FreeCiQaCheck={readonly criterion_id:string;
- readonly verdict:"PASS"|"FAIL"|"UNTESTED";readonly evidence_hash:string|null};
+ readonly verdict:"PASS"|"FAIL"|"UNTESTED";readonly evidence_hash:string|null;
+ readonly failure_code?:FreeCiQaFailureCode};
 export function validQaChecks(raw:unknown):raw is readonly FreeCiQaCheck[]{
  if(!Array.isArray(raw)||raw.length<1||raw.length>20)return false;
- return raw.every(x=>exact(x,["criterion_id","verdict","evidence_hash"])&&
+ return raw.every(x=>
+  (exact(x,["criterion_id","verdict","evidence_hash"])||
+   exact(x,["criterion_id","verdict","evidence_hash","failure_code"]))&&
   typeof x.criterion_id==="string"&&/^[a-z][a-z0-9_]{0,39}$/u.test(x.criterion_id)&&
   ["PASS","FAIL","UNTESTED"].includes(String(x.verdict))&&
   (x.verdict==="PASS"?typeof x.evidence_hash==="string"&&
-   SHA.test(x.evidence_hash):x.evidence_hash===null));
+   SHA.test(x.evidence_hash):x.evidence_hash===null)&&
+  (x.failure_code===undefined||
+   (x.verdict==="FAIL"&&FREE_CI_QA_FAILURE_CODES.includes(
+    x.failure_code as FreeCiQaFailureCode))));
 }
 export async function frozenFreeCiPlanHash(plan:QaPlan):Promise<string>{
  return sha256CodeBytes(new TextEncoder().encode(
