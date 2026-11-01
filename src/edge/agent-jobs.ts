@@ -11,7 +11,7 @@ import {routeFreeAiRunnerSource,routeFreeAiRunnerResult}
 import {routeFreeCiResult,readFreeCiSmoke} from "./free-ci-result.js";
 import {routePrivateFreeCiPreview,FREE_CI_OWNER_PREVIEW,
  validFreeCiOwnerPreviewInput,readSignedFreeCiBuiltPreview} from "./free-ci-preview.js";
-import {importOwnerFreeSource,validFreeImportInput} from "./agent-import-files.js";
+import {importOwnerFreeSource,validFreeImportInput,importOwnerFreeRepair,validFreeManualRepairInput} from "./agent-import-files.js";
 import {dispatchFreeCiJob,validFreeCiDispatchInput} from "./free-ci-dispatch.js";
 import {publishVerifiedPrivateApp,validPublishOwnerAppBody}
  from "./agent-share-publish.js";
@@ -188,7 +188,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(env.APPF2_AGENT_FREE_ONLY==="1"&&
   (modelMatch||continueMatch||qaRepairMatch||qaGenerateMatch||
    sandboxMatch||autoMatch||seqMatch||qaRunMatch))return denied();
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch)return undefined;
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeRepairMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -196,7 +196,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const key=request.headers.get("Idempotency-Key");
  if(!key||!KEY.test(key))return json(400,{error:"AGENT_JOB_KEY_INVALID"});
  // Bound request size before any database side effect.
- const maxBytes=freeImportMatch?200000:qaMatch||qaRunMatch||qaRepairMatch||qaPlanMatch?24000:1400;
+ const maxBytes=freeImportMatch||freeRepairMatch?200000:qaMatch||qaRunMatch||qaRepairMatch||qaPlanMatch?24000:1400;
  if(Number(request.headers.get("Content-Length")??0)>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
  const bytes=new Uint8Array(await request.arrayBuffer());
  if(bytes.byteLength>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
@@ -220,6 +220,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   freeShareMatch?(validPublishOwnerAppBody(parsed)?parsed:null):
   freeCiPreviewMatch?(validFreeCiOwnerPreviewInput(parsed)?parsed:null):
   freeImportMatch?(validFreeImportInput(parsed)?parsed:null):
+  freeRepairMatch?(validFreeManualRepairInput(parsed)?parsed:null):
   freeCiMatch?(validFreeCiDispatchInput(parsed)?parsed:null):
   qaGenerateMatch?(validGenerateQaBody(parsed)?parsed:null):
   qaPlanMatch?(validFreezeQaPlanBody(parsed)?parsed:null):
@@ -333,6 +334,13 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
    const imported=await importOwnerFreeSource(info,{db,
     jobId:freeImportMatch[1]??"",ownerThumb});
    return json(200,{data:imported});
+  }
+  if(freeRepairMatch){
+   if(env.APPF2_AGENT_FREE_ONLY!=="1"||
+    !validFreeManualRepairInput(info))return denied();
+   const saved=await importOwnerFreeRepair(info,{db,
+    jobId:freeRepairMatch[1]??"",ownerThumb});
+   return json(200,{data:saved});
   }
   if(freeCiMatch){
    if(env.APPF2_AGENT_FREE_ONLY!=="1"||!validFreeCiDispatchInput(info))
