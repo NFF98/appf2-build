@@ -79,6 +79,12 @@ function installHelpers(){
    "/api/v1/agent-jobs/"+jobId,{anonymous_id:owner});
   return denied.status===404;
  };
+ const originalHeadMatches=(reply,pointer)=>
+  reply.status===200&&reply.json?.data?.job_id===pointer.jobId&&
+  reply.json.data.project_hash===pointer.projectHash&&
+  reply.json.data.revision===0&&
+  reply.json.data.checkpoint?.step===0&&
+  reply.json.data.ai_started===false;
  globalThis.appf2C2OwnerTest={
   async create(){
    if(!globalThis.isSecureContext)throw Error("C2_NOT_SECURE_ORIGIN");
@@ -114,11 +120,7 @@ function installHelpers(){
     throw Error("C2_ORIGINAL_OWNER_OR_POINTER_LOST");
    const reopened=await send(material,"/api/v1/agent-jobs/"+pointer.jobId,{
     anonymous_id:pointer.owner});
-   if(reopened.status!==200||reopened.json?.data?.job_id!==pointer.jobId||
-    reopened.json.data.project_hash!==pointer.projectHash||
-    reopened.json.data.revision!==0||
-    reopened.json.data.checkpoint?.step!==0||
-    reopened.json.data.ai_started!==false)
+   if(!originalHeadMatches(reopened,pointer))
     throw Error("C2_REOPENED_POSTGRES_JOB_MISMATCH_HTTP_"+reopened.status);
    if(!await wrongOwnerCannotRead(pointer.owner,pointer.jobId))
     throw Error("C2_OTHER_KEY_READ_WAS_NOT_DENIED");
