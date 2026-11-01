@@ -1,6 +1,6 @@
 /* eslint-disable max-depth, complexity -- bounded trusted original-requirement browser acceptance, never App implementation */
 /**
- * Six SPEC-frozen distinct website-native requests; one selected Job only.
+ * Eight SPEC-frozen distinct website-native requests; one selected Job only.
  * Design PR #45 H-001 §0.19 is frozen before this Build implementation.
  * --preflight-only is ZERO AI / ZERO new Job; only an explicitly gated
  * one-shot workflow may execute the real paid path. No fixture counts as 3/9.
@@ -18,7 +18,7 @@ function validate(candidate){
 }
 if(process.argv.includes("--preflight-all")){
  for(const item of Object.values(scenarios))validate(item);
- console.log("SP35 SIX FROZEN REQUIREMENT PLANS PASS: 42 source-bound criteria; zero Job/model");
+ console.log("SP35 EIGHT FROZEN REQUIREMENT PLANS PASS: 56 source-bound criteria; zero Job/model");
  process.exit(0);
 }
 const candidate=scenarios[selected];
@@ -36,7 +36,7 @@ if(plan.criteria.length!==7||new Set(cases.map(c=>c[0])).size!==7||
 if(process.argv.includes("--preflight-only")){
  console.log("SP35 REMAINING FROZEN SELECTED PLAN FREE PREFLIGHT PASS: "+
   plan.criteria.length+"/7 source quotes matched; 0 model POST; 0 new App; "+
-  "product progress remains 2/9");
+  "this free check adds zero product points");
  process.exit(0);
 }
 if(process.env.APPF2_SP35_REMAINING_EXPLICIT_PAID_OK!=="1"||
