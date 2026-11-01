@@ -55,7 +55,7 @@ export async function createPrototypeCodeFrame(
     CODE_DOM_EVENT_SCRIPT))).slice(7);
   const csp=CODE_FRAME_CSP.replace("__SCRIPT_HASH__",
     "sha256-"+encodeHexBase64(scriptHash)+"' 'sha256-"+
-    encodeHexBase64(bridgeHash)+"\' \'sha256-"+encodeHexBase64(eventHash));
+    encodeHexBase64(bridgeHash)+"' 'sha256-"+encodeHexBase64(eventHash));
   const iframe=doc.createElement("iframe");
   iframe.setAttribute("title",envelope.meta.title);
   iframe.setAttribute("sandbox","allow-scripts");
