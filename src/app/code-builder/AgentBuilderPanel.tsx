@@ -279,8 +279,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     const target=await worker.restore();
     if(!target)throw Error("原建立者的保存工作或簽章已過期，禁止新建替代付費 Job。");
     const existing=await worker.read();
-    if(existing.revision!==0)throw Error(
-     "原 Job 已進入編碼後階段；請查詢既有 Docker／QA 收據，不重新生成。");
+    // Resume the original authenticated job after CODE/REPAIR as well.
+    // Neither the original prompt nor the model call is re-created.
+    if(existing.revision<0)throw Error("保存工作版本無效，停止接續。");
     setPrompt(target.prompt);
    }else{
     await worker.create(prompt,{allowAi:true,allowContainer:false,
@@ -292,19 +293,22 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      "正在用同一個已保存的 GPT-6 Job 繼續查詢回應；不建立新工作。":
      "已保存原始需求；獨立 QA 計畫必須在編碼前凍結。",
     completed_steps:0});
-   if(savedCandidateTarget()?.qaPlan&&!resume)
-    await worker.freezeOriginalQaPlan();
-   else await worker.freeAiStage("QA");
-   const created=await worker.freeAiStage("CODE");
    let current=await worker.read();
-   setSnapshot({job:current,progress:null,
-    message:created.status==="AI_SOURCE_SAVED_FREE_CI_QUEUED"?
-     "真 AI 多檔案已保存並派發免費 Docker，正在等候真實 Browser QA。":
-     "AI 程式已保存，但 GitHub 派發尚未證實；可手動重新派發。",
-    completed_steps:0});
-   if(created.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
-    throw Error("免費 Docker 派發未獲確認；已保存程式，停止等待，不會重送付費 AI。");
-   let repaired=false;
+   if(current.revision===0){
+    if(savedCandidateTarget()?.qaPlan&&!resume)
+     await worker.freezeOriginalQaPlan();
+    else await worker.freeAiStage("QA");
+    const created=await worker.freeAiStage("CODE");
+    current=await worker.read();
+    setSnapshot({job:current,progress:null,
+     message:created.status==="AI_SOURCE_SAVED_FREE_CI_QUEUED"?
+      "真 AI 程式已保存並派發免費 Docker；正在等待獨立 Browser QA。":
+      "AI 程式已保存，GitHub 派發未證實；不會重新付費。",
+     completed_steps:0});
+    if(created.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
+     throw Error("免費 Docker 派發未獲確認；原 Job 保存，不重送付費 AI。");
+   }
+   let repaired=Math.max(0,Math.floor(current.checkpoint.step/2)-1);
    let receiptSeen=false;
    for(let i=0;i<90&&!stop.current;i++){
     await new Promise<void>(resolve=>window.setTimeout(resolve,8000));
@@ -320,15 +324,24 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     // Evaluate its failure BEFORE requiring preview_ready, or repair never runs.
     if(current.free_ci.status==="BUILD_FAILED"||
        checks.some(c=>c.verdict==="FAIL")){
-     if(autoRepairConsent&&!repaired){
-      repaired=true;receiptSeen=false;
-      setQaOutcome("Docker／Browser QA 找到 FAIL；依已核准上限修復一次，保存原 Job。");
+     const nextRound=repaired+1;
+     const required=28+16*nextRound;
+     if(autoRepairConsent&&nextRound<=3&&
+        current.checkpoint.budget.max_cost_cents>=required){
+      receiptSeen=false;
+      setQaOutcome("原 Job 第 "+nextRound+
+       " 輪真實 QA FAIL；已核准累計預算 "+required+
+       " 美分，使用唯一模型工作鍵修復並重新派發免費 Docker。");
       const repair=await worker.freeAiStage("REPAIR");
       if(repair.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
        throw Error("修復原始碼已保存，但免費 Docker 再派發未確認；停止等待。");
+      repaired++;
       continue;
      }
-     setQaOutcome("建置或瀏覽器 QA 失敗；已保留證據，不發布 App。");
+     setQaOutcome(nextRound>3?
+      "已達三輪修復上限；程式、QA 證據與版本全部保留，未發布 App。":
+      "原 Job QA 失敗已保存；新修復需要明確核准累計 "+
+      required+" 美分，目前預算不足或未授權，不會自動扣費。");
      break;
     }
     if(!current.free_ci.preview_ready){
@@ -528,8 +541,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   <label className="code-builder-consent">
    <input type="checkbox" checked={autoRepairConsent} disabled={busy}
     onChange={e=>setAutoRepairConsent(e.target.checked)}/>
-   我授權真實 Browser QA 出現 FAIL 時，自動呼叫最多一次修復 AI（預留 16 美分）
-   並保留所有原始專案版本；網路或付款結果不明時絕不重試。
+   我授權真實 Browser QA 出現 FAIL 時，依原專案已核准總額最多修復三輪：
+   44／60／76 美分；第三輪若連續失敗則分析根因、改變方案。每輪保存完整原始碼，
+   費用不足、模型結果不明或三輪仍失敗即停止，不重複扣費。
   </label>
   <button type="button" className="btn btn-primary"
    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
@@ -542,11 +556,12 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    disabled={busy||!aiConsent||!containerConsent||!browserQaConsent||
     !freeCiConsent||approvedCents<44}
    onClick={()=>{void startFreeAi(true);}}>
-   接續已保存的 GPT-6 工作（只查同一模型回應，不新建付費 Job）
+   接續已保存的 GPT-6 專案（保留原版本與已核准預算）
   </button>:null}
   <p className="saved-apps-note">
    新版免費 Runner AI 模式使用 GPT-6.1 Sol（不是 gpt-4.1-mini）：最多 8 美分原始 QA 規劃、20 美分編碼，
-   另可明確核准一次最多 16 美分修復；全程沿用同一原 Job。
+   另可選擇最多三輪各 16 美分修復（累計核准 44／60／76 美分）；
+   每輪有獨立付費紀錄，連續失敗第三輪換策略，全程沿用同一原 Job。
    預留費用是上限，不是實際帳單。網路出錯後須先查已保存狀態，
    不會自動重複扣費。公開分享仍需另外勾選明確同意。
   </p>
