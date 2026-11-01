@@ -552,3 +552,5 @@ jobs:
 # Second/final focused correction: every exact 800-char intent route, original caps elsewhere, zero model. 201 Created remains correct publication semantics.
 
 # Recheck the same final focused fix after splitting receipt-observer lint, with no model calls.
+
+# Same focused code fix; disabled legacy QA stays uniform 404 in FREE_ONLY, never opened for test success.
