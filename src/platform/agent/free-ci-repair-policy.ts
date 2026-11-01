@@ -8,6 +8,7 @@ import type {QaPlan} from "../qa/requirement-contract.js";
 const HASH=/^sha256:[a-f0-9]{64}$/u;
 export type FreeCiRepairHistory={
  readonly project_hash:string;readonly receipt_json:unknown;
+ readonly project_revision:number;readonly parent_hash:string|null;
 };
 export type FreeCiRepairDecision={
  readonly round:1|2|3;
@@ -66,14 +67,22 @@ export async function decideFreeCiRepair(plan:QaPlan,
   throw Error("SP35_REPAIR_NEW_OWNER_COST_APPROVAL_REQUIRED_"+required);
  const hash=await frozenFreeCiPlanHash(plan);
  const seen=new Set<string>(),failures:Failure[]=[];
+ let expectedHash=currentHash,expectedRevision=projectRevision;
  for(const row of history.slice(0,8)){
-  if(seen.has(row.project_hash))continue;
+  // A timestamp is NOT a source lineage. Bind each independently verified
+  // receipt to the immutable parent pointer from PostgreSQL snapshots.
+  // A missing snapshot, fork, stale receipt, duplicate or revision gap
+  // breaks the streak. Never spend based on unrelated previous projects.
+  if(seen.has(row.project_hash)||row.project_hash!==expectedHash||
+   row.project_revision!==expectedRevision||
+   !HASH.test(row.parent_hash??""))break;
   seen.add(row.project_hash);
   const valid=await attestedFailure(hash,plan,row);
-  // A missing, forged or UNTESTED-only intermediate revision interrupts
-  // a consecutive failure streak. Never skip it to count older FAILs.
+  // A missing, forged or UNTESTED-only version interrupts the streak.
   if(!valid)break;
   failures.push(valid);
+  expectedRevision--;
+  expectedHash=row.parent_hash!;
  }
  if(failures[0]?.hash!==currentHash)
   throw Error("SP35_REPAIR_CURRENT_PROVEN_FAILURE_MISSING");
