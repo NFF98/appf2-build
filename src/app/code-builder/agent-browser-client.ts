@@ -48,7 +48,8 @@ export type SavedFreeCiSmoke={readonly status:"BUILD_BROWSER_SMOKE"|"BUILD_FAILE
  readonly diagnostic_excerpt?:unknown;
  readonly artifact_hash:string;readonly preview_ready:boolean;
  readonly qa_plan_hash?:string;
- readonly qa_checks?:readonly {criterion_id:string;verdict:"PASS"|"FAIL"|"UNTESTED";evidence_hash:string|null}[];
+ readonly qa_checks?:readonly {criterion_id:string;verdict:"PASS"|"FAIL"|"UNTESTED";
+  evidence_hash:string|null;failure_code?:string}[];
  readonly original_requirements_qa:false;
  readonly app_published:false};
 /** UI must never treat a subset of Browser QA receipts as complete original-request acceptance. */
