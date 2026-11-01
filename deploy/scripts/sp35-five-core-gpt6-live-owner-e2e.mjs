@@ -80,7 +80,7 @@ for(const stage of stages){
  // Same immutable phase+owner+Job, repeated POST is GET-only recovery.
  for(let attempt=0;attempt<100&&Date.now()<deadline;attempt++){
   const before=await signed(base,{anonymous_id:owner});
-  const requiredSteps=stage==="CODE"?2:2*(repaired+2);
+  const requiredSteps=2*(repaired+1);
   // A timed-out HTTP response never erases an already committed source.
   // Do not POST the same model phase once its immutable source is saved.
   if(before.revision>=requiredSteps&&
