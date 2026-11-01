@@ -11,6 +11,36 @@ concurrency:
   group: sp35-one-explicit-paid-ai-e2e
   cancel-in-progress: false
 jobs:
+  g5-meal-free-preflight:
+    # PREPARED only: no creator Job, no model POST, no paid consent.
+    if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-G5-MEAL-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Frozen seven-criterion plan and unpaid refusal before browser import
+        run: |
+          node --check deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs
+          node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs --preflight-only
+          if node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs > refusal.log 2>&1; then
+            echo "ERROR unpaid execution should have refused"
+            exit 1
+          fi
+          node --input-type=module -e 'import fs from "node:fs"; if(!fs.readFileSync("refusal.log","utf8").includes("SP35_G5_PAUSED_BUDGET_NO_EXPLICIT_SAFE_ONE_SHOT"))process.exit(1)'
+      - name: Staging model admission readiness GET only
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",{signal:AbortSignal.timeout(20000)});
+          const j=await r.json();
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)throw Error("G5_NOT_READY_ZERO_PAID_POST");
+          console.log("G5_READY_GET_ONLY_NO_MODEL_NO_JOB");
+          JS
+
   g4-stones-free-frozen-plan-preflight:
     # Distinct game from G3. Zero paid AI, no Job, no false product 3/9.
     if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G4-STONES-FREE-PREFLIGHT]')
