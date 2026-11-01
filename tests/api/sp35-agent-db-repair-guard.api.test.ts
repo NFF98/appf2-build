@@ -76,3 +76,39 @@ describe("Sprint 3.5 C4 already-paid response resumption after first CAS",()=>{
    .toBeNull();
  });
 });
+
+describe("Sprint 3.5 C4 initial paid CODE half-CAS identity fences",()=>{
+ const owner="645c20d3-3027-42ef-a520-c58aac31422f";
+ const parent="sha256:"+"b".repeat(64);
+ const child="sha256:"+"c".repeat(64);
+ const code:ModelCallRow={job_id:id,owner_anonymous_id:owner,
+  call_key:"sp35_free_ai_code_v1",job_revision:0,
+  checkpoint_hash:parent,request_hash:hash,model:"gpt-6.1-sol",
+  max_charge_cents:20,status:"SUCCEEDED",
+  response_json:{status:"completed"},response_id:"resp_paid_code",
+  input_tokens:20,output_tokens:30};
+ const half:AgentJobRow={job_id:id,owner_anonymous_id:owner,
+  request_hash:hash,project_hash:hash,revision:1,
+  checkpoint_hash:child,job_state:"PLANNING",
+  checkpoint:{...before,state:"PLANNING",step:1,cost_cents:8,
+   previous_checkpoint_id:parent}};
+ it("resumes only first CREATED→PLANNING CODE with original saved model output",()=>{
+  expect(recoveredPaidResponse(code,half,"CODE")?.response)
+   .toEqual(code.response_json);
+  for(const changed of [
+   {...half,revision:2},
+   {...half,owner_anonymous_id:id},
+   {...half,job_state:"REPAIRING"},
+   {...half,checkpoint:{...half.checkpoint,step:2}},
+   {...half,checkpoint:{...half.checkpoint,previous_checkpoint_id:hash}},
+   {...half,project_hash:child}
+  ])expect(()=>recoveredPaidResponse(code,changed,"CODE"))
+   .toThrow("SP35_PAID_AI_SAVED_HEAD_MISMATCH_NO_RECHARGE");
+  expect(()=>recoveredPaidResponse({...code,job_revision:1},half,"CODE"))
+   .toThrow("SP35_PAID_AI_SAVED_HEAD_MISMATCH_NO_RECHARGE");
+  expect(()=>recoveredPaidResponse({...code,status:"IN_FLIGHT"},half,"CODE"))
+   .not.toThrow();
+  expect(recoveredPaidResponse({...code,status:"IN_FLIGHT"},half,"CODE"))
+   .toBeNull();
+ });
+});
