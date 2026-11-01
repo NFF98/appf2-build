@@ -11,14 +11,25 @@ try{
  ctx.on("request",req=>{if(req.method()==="POST"&&new URL(req.url()).pathname==="/api/v1/code-apps")charged++;});
  const page=await ctx.newPage();
  await page.goto(origin,{waitUntil:"domcontentloaded"});
- // The user-facing entry must be Code Builder; the legacy F01/F02 composer is opt-in only.
- await page.getByRole("textbox",{name:"描述你想做的 App"}).waitFor({state:"visible"});
- if(await page.locator("#composer-input").isVisible())throw Error("LEGACY_F01_COMPOSER_STILL_DEFAULT");
+ // The default product is the multi-file P-256 Agent; legacy single-file
+ // Code Builder remains a separate *closed* compatibility accordion.
+ await page.getByRole("textbox",{name:"用一句話描述要做的 App"}).waitFor({state:"visible",timeout:12000});
+ if(await page.locator("#composer-input").isVisible())
+  throw Error("LEGACY_F01_COMPOSER_STILL_DEFAULT");
+ const legacy=page.locator("details.legacy-composer").filter({hasText:"舊版單檔 Code Builder"});
+ if(await legacy.count()!==1)throw Error("LEGACY_CODE_BUILDER_COMPAT_ENTRY_NOT_UNIQUE");
+ await legacy.locator("summary").click();
+ await page.getByRole("textbox",{name:"描述你想做的 App"}).waitFor({state:"visible",timeout:12000});
  const api=await page.request.get(origin+"/api/v1/code-apps-public");
  if(api.status()!==200)throw Error("CODE_APP_CATALOG_HTTP_"+api.status());
  const list=await api.json();
  let entry=list?.data?.apps?.find(a=>a.title?.includes("測試計數器"));
  if(!entry){
+  // This staging-only regression runs on ordinary deploys. Creating missing
+  // artifacts would charge a model WITHOUT the new aggregate $1 consent guard.
+  // Fail visibly; only the explicitly authorized paid E2E may create new Jobs.
+  if(process.env.APPF2_SP35_LEGACY_PAID_ONCE!=="1")
+   throw Error("NO_REUSABLE_LEGACY_CODE_APP_NO_NEW_AI_SPEND");
   const box=page.getByRole("textbox",{name:"描述你想做的 App"});
   await box.fill(prompt);
   await page.getByLabel(/我同意產生一次付費 AI 請求/).check();
