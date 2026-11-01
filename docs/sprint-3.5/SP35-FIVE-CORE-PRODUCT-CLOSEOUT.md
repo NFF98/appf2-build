@@ -50,7 +50,16 @@
 - 原 Job `revision=2`、`job_state=CODING`、`project_hash=sha256:762b9a689108da4d70d094081c178c1e42c5389c377b1a1c7bf34ffdd61bceae`；真正模型來源快照 **7 檔（4 TypeScript，其中 3 檔有相對 import）**，不是手寫 fixture。中途費用、QA、私人預覽及產品完整 18 啦規則均 **NOT_YET_VERIFIED**，不能算 G1/產品 PASS。
 - 相同 source 已派發免費 OIDC Docker／Chromium [Runner #41290104432](https://github.com/NFF98/appf2-build/actions/runs/41290104432)，啟動時 `IN_PROGRESS`；此筆需依收據後續原位補寫 PASS/FAIL 和策略判斷。此 G1 樣本的 CI P-256 owner 金鑰是本次 Runner ephemeral，不能冒稱後續可由任意新 Runner 代替該 owner 接續。
 
-**執行前狀態**：`AUTHORIZED_NOT_SPENT`；本節提交時新 AI provider POST = 0、保留上限 76 cents、累計本輪實際帳單 `NOT_VERIFIED`。後續以本節直接原位追加真實 Workflow、Job 與收據，不另開 SSOT。
+**首筆 G1 真 GPT-6 多檔案 E2E 最終結算（2026-11-01 UTC；更新前文 IN_PROGRESS）**
+- 唯一付費驗收 [Workflow #41289801351](https://github.com/NFF98/appf2-build/actions/runs/41289801351) **SUCCESS**，真模型 OIDC Runner [#41289882766](https://github.com/NFF98/appf2-build/actions/runs/41289882766) **SUCCESS**、免費網路隔離 Docker＋Chromium [#41290104432](https://github.com/NFF98/appf2-build/actions/runs/41290104432) **SUCCESS**。從凍結原 6 項 QA 直接讀回 PostgreSQL：`initial_round`、`four_dice`、`one_roll`、`two_rolls`、`rules`、`restart` **6/6 PASS**，沒有重新定義 QA，模型第一版即通過，所以付費 REPAIR **0 次**、C5 真付費 3 輪改策略 **NOT_RUN**。六項只測可視骰子／回合／規則文字／重開；**未用可控制的骰子點數證明十八啦所有實際算分規則**，不得稱十八啦完整語義已 PASS。
+- 同一原 Job `0fa5022f-5d09-42ef-b5e1-eb8ee3dac5b8`，`revision=2`、`CODING`，模型產生 **7 檔（4 個 TypeScript、3 個相對 import）**，來源 SHA `sha256:762b9a689108da4d70d094081c178c1e42c5389c377b1a1c7bf34ffdd61bceae`；相同來源的真建置預覽已存 PostgreSQL，原 P-256 owner 在本次 Runner **兩次讀回相同 bytes PASS**（私人重開，不等於跨裝置永久 owner）。
+- **本輪新付費模型只有 1 call**：`sp35_free_ai_code_v1 / gpt-6.1-sol / SUCCEEDED`，**input=1,007 / output=6,775 tokens**；模型 call `max_charge_cents=20`，Job checkpoint **`cost_cents=28`**，核准最高 **76 cents**。28c 為**系統預約記帳**，含人工在編碼前凍結 QA 的固定 8c 預留，**實際沒有第二筆付費 QA 模型呼叫**；20c 是這次 CODE 的保留上限，**兩數都不是供應商實際發票**。實際 invoice `NOT_VERIFIED`，不得稱實扣 20c、28c 或 76c。**已用的模型呼叫不可再次支付；原先 76c 一次性測試授權本次已消費，不自動開第二 Job。**
+- 真 PostgreSQL UTC 里程碑：Job 08:40:03.767、CODE reserve 08:40:48.765、模型成功 08:43:21.253、來源 CAS 08:43:59.169、獨立 QA 收據 08:46:00.944、私人預覽已存 08:46:03.221；**Job→source 235 秒，Job→可驗證私人預覽 359 秒**。原 Test Runner 最後成功 08:46:44.669。這是**單次工程 E2E 伺服器時間**，非網站用戶首次操作／P50/P95，G0 SLA 仍 `INSUFFICIENT_SAMPLES`，也不應聲稱簡單 App ≤120s。
+- G1 現為 **PARTIAL：1/3 真模型 App 類別已跑通受測互動及 3+ TS 模組**。另一個簡單工具、受控 viewer-private PostgreSQL CRUD App 尚未做新增付費 E2E；生成十八啦的所有算分語義未完整驗收。G2/C2 本 Job 同 owner 重新讀回 PASS，G3/C3 真模型來源 Docker/Chromium PASS，G4/C4 本 Job 沒自然失敗不測 AI 修復（原先已存在另一案例真修復 PASS），G5 v2 全公開分享與陌生 viewer 尚需本新版 E2E。保留先前成果，**產品五核全域不宣稱 100%**。
+- **帳務契約差異待修**：本期 manual frozen QA 未發出 QA model POST，但固定 checkpoint 28c 含 QA 8c；本次沒有超出 76c 核准，也無重扣，然而此預約記法可能讓使用者誤以為多付 8c。後續先在 SPEC/Build 修正明確的 `reserved` vs `actually provider billed` 顯示/記帳；不得改寫歷史 invoice 或無證據退款。
+- **接續限制**：此 E2E Runner 私鑰僅存於當次測試執行環境，未保存私鑰至 Repo／logs；僅存安全的 Job ID、版本、hash、QA 和模型 journal 供後續調查，**不得假裝新 CI 可接手原 Job PoP**。後續真正一般使用者需用瀏覽器長存簽章身分進行持久續作；此樣本的 ephemeral 身分不是永久重用證明。只 Sprint 3.5、PR #419，未合併、未部署 Production、不開 Sprint 4。
+
+**本節歷史執行前狀態（現已由上述結算取代）**：`AUTHORIZED_NOT_SPENT`；本節提交時新 AI provider POST = 0、保留上限 76 cents、累計本輪實際帳單 `NOT_VERIFIED`。後續以本節直接原位追加真實 Workflow、Job 與收據，不另開 SSOT。
 
 ## 0. 2026-10-31 Free-only 執行決議（Human 最新指示）
 
