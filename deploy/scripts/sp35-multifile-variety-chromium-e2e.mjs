@@ -1,3 +1,4 @@
+/* eslint-disable max-depth -- Trusted hand-authored multi-App browser fixture must close page, server and temp root independently. */
 /**
  * Three distinct trusted hand-authored source trees in the SAME GPT-6 v2
  * multi-file contract, compiled by real Vite and clicked in real Chromium.
