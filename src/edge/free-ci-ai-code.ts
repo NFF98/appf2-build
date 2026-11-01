@@ -95,6 +95,20 @@ function parsedOutput(raw:unknown):unknown{
  if(text.length<10||text.length>100000)return null;
  try{return JSON.parse(text) as unknown;}catch{return null;}
 }
+function isPassiveQaCriterion(x:Record<string,unknown>):boolean{
+ return x.automatable===true&&x.action==="none"&&
+  x.click_count===0&&x.role==="none"&&x.name==="none";
+}
+function isClickQaCriterion(x:Record<string,unknown>):boolean{
+ return x.automatable===true&&x.action==="click"&&
+  x.role==="button"&&typeof x.name==="string"&&
+  Number.isSafeInteger(x.click_count)&&
+  Number(x.click_count)>=1&&Number(x.click_count)<=6;
+}
+function isExpectedQaText(value:unknown):boolean{
+ return typeof value==="string"&&value.length>=1&&
+  value.length<=160&&value!=="none";
+}
 export function parseFreeAiPrecodePlan(raw:unknown,prompt:string):QaPlan|null{
  if(typeof raw!=="object"||raw===null||Array.isArray(raw))return null;
  const values=(raw as {criteria?:unknown}).criteria;
@@ -102,15 +116,9 @@ export function parseFreeAiPrecodePlan(raw:unknown,prompt:string):QaPlan|null{
  const criteria=values.map((entry:unknown)=>{
   if(typeof entry!=="object"||entry===null)return null;
   const x=entry as Record<string,unknown>;
-  const isPassive=x.automatable===true&&x.action==="none"&&
-   x.click_count===0&&x.role==="none"&&x.name==="none";
-  const clicks=x.automatable===true&&x.action==="click"&&
-   x.role==="button"&&typeof x.name==="string"&&
-   Number.isSafeInteger(x.click_count)&&
-   Number(x.click_count)>=1&&Number(x.click_count)<=6;
-  const validText=typeof x.expected_text==="string"&&
-   x.expected_text.length>=1&&x.expected_text.length<=160&&
-   x.expected_text!=="none";
+  const isPassive=isPassiveQaCriterion(x);
+  const clicks=isClickQaCriterion(x);
+  const validText=isExpectedQaText(x.expected_text);
   if(x.automatable===true&&(!validText||!isPassive&&!clicks))return null;
   return {id:x.id,source_quote:x.source_quote,description:x.description,
    automatable:x.automatable,
