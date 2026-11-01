@@ -36,7 +36,7 @@ describe("C4 + C5 active GPT-6 free-runner multi-repair policy",()=>{
   expect(runner).toContain("sp35_free_ai_repair_v2:16");
   expect(runner).toContain("sp35_free_ai_repair_v3:16");
   expect(runner).toContain("if(upperCents>cap)");
-  expect(runner).toContain("ONE paid model POST");
+  expect(runner).toContain("Exactly one HTTPS model POST.");
  });
 
  it("offers zero-charge verified root-cause strategy preview without cost approval",async()=>{
