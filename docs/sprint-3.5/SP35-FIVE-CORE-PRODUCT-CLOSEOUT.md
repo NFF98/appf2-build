@@ -61,6 +61,15 @@
 
 **本節歷史執行前狀態（現已由上述結算取代）**：`AUTHORIZED_NOT_SPENT`；本節提交時新 AI provider POST = 0、保留上限 76 cents、累計本輪實際帳單 `NOT_VERIFIED`。後續以本節直接原位追加真實 Workflow、Job 與收據，不另開 SSOT。
 
+### 0.P.3 2026-11-01 G0 部署與免費回歸的真實結算（兩輪定位後停止；未宣告全鏈 PASS）
+
+- **G0 真 Worker 已部署、時間線子項 LIVE PASS**：部署驗收 [#41290452536](https://github.com/NFF98/appf2-build/actions/runs/41290452536) 與 [#41290663576](https://github.com/NFF98/appf2-build/actions/runs/41290663576)、最後 [#41290913790](https://github.com/NFF98/appf2-build/actions/runs/41290913790) 均執行 `SP35_G0_REAL_TIMELINE_PASS`：新建立者 P-256 同源簽章 PostgreSQL 新 Job 的 `/job-timeline` **HTTP 200**，真 `job_saved_at_ms` 可讀，沒有模型/QA 時回 `NOT_MEASURED`，陌生 owner **404**，模型 POST=0。**這是 G0 server timeline 路由子項 LIVE PASS，不是 3 類×3 次速度 SLA PASS**。新網站原 Job 時間線已部署至 Staging；不改 Production。
+- **第一個失敗 hop**：[#41290452536](https://github.com/NFF98/appf2-build/actions/runs/41290452536) 整條 workflow `FAILURE`，時間線已 PASS，但舊 `free-ai-probe` 404。Deploy log 顯示 `APPF2_FREE_AI_GENERATION_ENABLED="0"`；原有付費模型的 Staging 特定 opt-in 旗標/Key 未隨新 workflow 傳入。精確修復 `35811cd` 只在既有 Staging 使用已受權 Secret 啟用 `APPF2_STAGING_FREE_PAID_AI=1`、`APPF2_FREE_AI_KEY`，保留原 owner P-256、逐次 AI 同意、76c Job 上限、Worker free-only、免費隔離 Docker；不開 Cloudflare Containers／Browser Paid／Production。後續的預檢 `GITHUB_GET_200`、`CRYPTO_READY` 皆通過；**Worker 自己對 OpenAI 模型資訊的 GET 仍回 `WORKER_MODEL_GET_NETWORK_ERROR`，不能標 Worker 直連 OpenAI PASS**；此前真正 GPT-6 成功來源是 GitHub OIDC 模型 Runner，須明確區分。
+- **第二個失敗 hop**：[#41290663576](https://github.com/NFF98/appf2-build/actions/runs/41290663576) `FAILURE` 是免費 F05 fixture selector `details.legacy-composer summary` 同時指向兩個合法舊版折疊頁（Code Builder／Blueprint Composer）。精確修復 `49d668e` 指定「舊版 Blueprint Composer」，不改 App 功能或 QA 要求。再驗 [#41290913790](https://github.com/NFF98/appf2-build/actions/runs/41290913790) **F05 fixture PASS**、G0 真 PG timeline PASS、既有 Staging 公開 LifePilot／Moving 操作 PASS；但是**整條 workflow 仍 FAILURE**：晚一步舊單檔 Code Builder fixture `sp35-real-code-builder-staging-e2e.mjs:15` 等待名為「描述你想做的 App」的 textbox **30s timeout**。唯讀檢查指出此欄位在 `CodeBuilderPanel.tsx` 的 `legacy-code-builder-prompt`，目前新版預設由 `AgentBuilderPanel` 使用「用一句話描述要做的 App」，舊 Code Builder 為相容用隱藏入口；**尚未證實是 fixture 未展開舊折疊頁還是實際首頁未掛載**。測試在點擊付費按鈕前已失敗，**本最後 Staging 驗收未發新 AI model POST**；不可為了綠勾更動其他未見失敗。
+- **停止規則執行**：本輪已做兩個有 before/after 的集中修補（Staging flag、F05 locator）；第三個晚期 UI fixture failure 保留為 **NEXT_FIRST_BLOCK / NOT_FIXED**，不偷偷加第三輪，不宣稱所有 Staging SUCCESS。下一輪只在新的精確 SPEC→Build 施工授權下，先判定首頁真使用者主要 `AgentBuilderPanel` 入口是否正常，再將舊相容 fixture 的正確顯示方式對齊，不要為舊測試退回雙引擎。
+- **費用總帳（截至此輪）**：唯一新增真付費 G1 GPT-6 call = **1**（`sp35_free_ai_code_v1`、1,007 input/6,775 output、model call upper reservation 20c、Job checkpoint 28c、total approved 76c，**provider invoice NOT_VERIFIED**）；G0/Deploy/F05 重驗不新增付費模型，未加購雲端服務。G1 新七檔十八啦可見互動 QA 6/6 PASS 仍保留，未測所有計分語意；其餘兩類真模型樣本、真資料 CRUD、全產品 G0 P50/P95、G4 真三輪付費換策略及 G5 新 v2 跨瀏覽器分享仍欠證據。
+- **PR/SSOT 約束**：只修改原 Build [#419](https://github.com/NFF98/appf2-build/pull/419) 和本檔；不另開 PR、Sprint 4、不合併、不部署 Production。本段記錄真實最後失敗，後續跨對話直接使用本節，禁止再從零查找。
+
 ## 0. 2026-10-31 Free-only 執行決議（Human 最新指示）
 
 **只改成本／隔離執行方式，不降低五核產品 Gate，不開 Sprint 4，不建立新 Product SSOT。**
