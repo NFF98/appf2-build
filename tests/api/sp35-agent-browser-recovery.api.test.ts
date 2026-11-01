@@ -2,7 +2,8 @@ import {describe,it,expect,afterEach,vi} from "vitest";
 import {mayResumeSavedModel,savedBrowserQaAttemptState,savedQaObservedChecks}
  from "../../src/edge/agent-progress.js";
 import {savedCandidateTarget,readSavedCandidateLibrary,chooseSavedCandidate,saveTarget,
- paidAgentReconciliationRequired,provenPreviewBuildAndTest,savedPreviewPair}
+ paidAgentReconciliationRequired,provenPreviewBuildAndTest,savedPreviewPair,
+ saveDurableAgentTarget}
  from "../../src/app/code-builder/agent-browser-client.js";
 const SLOT="appf2.agent.candidate.job.v1";
 const target={jobId:"ba45436c-c3f1-44f1-adc6-bdd0fb1592e7",
@@ -45,6 +46,35 @@ describe("Durable signed Agent target across browser tabs",()=>{
   expect(savedCandidateTarget()).toEqual(target);
   local.setItem(SLOT,"not-json");
   expect(savedCandidateTarget()).toBeNull();
+ });
+});
+
+describe("C2 owner and saved project pointer must both outlive closed browser tabs",()=>{
+ it("requires durable browser profile storage before any subsequent paid model phase",()=>{
+  const persistent=memory(),tab=memory();
+  persistent.setItem("appf2.anonymous_id.v1",
+   "f4757bd9-4fd7-4c65-aa8b-b7f121816c20");
+  vi.stubGlobal("localStorage",persistent);
+  vi.stubGlobal("sessionStorage",tab);
+  expect(()=>saveDurableAgentTarget(target)).not.toThrow();
+  expect(JSON.parse(persistent.getItem(SLOT)??"null").jobId).toBe(target.jobId);
+  vi.stubGlobal("sessionStorage",memory());
+  expect(savedCandidateTarget()).toEqual(target);
+ });
+ it("does not authorize a paid continuation with tab-only target or missing owner",()=>{
+  const tab=memory(),persistent=memory();
+  vi.stubGlobal("localStorage",persistent);
+  vi.stubGlobal("sessionStorage",tab);
+  expect(()=>saveDurableAgentTarget(target))
+   .toThrow("AGENT_OWNER_TARGET_DURABILITY_REQUIRED_NO_AI_CHARGE");
+  persistent.setItem("appf2.anonymous_id.v1",
+   "f4757bd9-4fd7-4c65-aa8b-b7f121816c20");
+  const unavailable={getItem:(_key:string)=>null,
+   setItem:(_key:string,_value:string)=>{throw Error("quota exceeded");},
+   removeItem:(_key:string)=>undefined};
+  vi.stubGlobal("localStorage",unavailable);
+  expect(()=>saveDurableAgentTarget(target))
+   .toThrow("AGENT_OWNER_TARGET_DURABILITY_REQUIRED_NO_AI_CHARGE");
  });
 });
 
