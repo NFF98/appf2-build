@@ -36,6 +36,7 @@ jobs:
           node --check deploy/scripts/sp35-g1-paid-real-dice-e2e.mjs
           node --check deploy/scripts/sp35-g1-one-real-db-app-e2e.mjs
           node --check deploy/scripts/sp35-first-native-website-paid-e2e.mjs
+          node --check deploy/scripts/sp35-second-native-website-db-e2e.mjs
           node --check deploy/scripts/sp35-real-code-builder-staging-e2e.mjs
       - name: Compile platform
         run: npm run build
