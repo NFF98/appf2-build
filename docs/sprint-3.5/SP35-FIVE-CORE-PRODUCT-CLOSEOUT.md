@@ -280,6 +280,14 @@
 
 **五核狀態／分母不變**：先前 3/5（60%）指基礎通道之部分驗證，不等於 C1–C5 整個「任何自然語言→生成 full-stack→DB CRUD→失敗修復→重新 QA→v2 admission→公開分享」的完整 Gate PASS。嚴格 C1–C5 full-product 全鏈驗收仍 **0/5 完整 PASS**；舊可信基礎／真 Staging 舊卡片 SUCCESS 繼續保全。C1 真 generated backend＋DB CRUD、C4 自動修復重測、C5 跨失敗改策略、v2 full admission 仍要另有真證據。
 
+
+### 2026-11-01 — Follow-up after f75e97c: CI lint unblock (not a product E2E PASS)
+
+- Checked original PR #419 and original SSOT F/G. Existing counter App evidence remains unchanged: GPT-6 QA/CODE OIDC receipts, real Docker/Chromium 3/3, public App plus two independent new browser contexts PASS in #41253382674. Do not repeat paid model calls for this evidence.
+- Newly observed CI failure at [#41253514379](https://github.com/NFF98/appf2-build/actions/runs/41253514379): TypeScript check passed; ESLint complexity exceeded in `src/edge/free-ai-dispatch.ts` (18>15) and the `parseFreeAiPrecodePlan` criterion callback in `src/edge/free-ci-ai-code.ts` (23>15). CI was RED; not proof of regression in the prior published counter E2E.
+- Existing PR #419 updated via `2092e87` and `e7d60f8`: extracted bounded GitHub dispatch error classification and independent QA-criterion guards while preserving at-most-once dispatch and frozen QA semantics. These are code changes; **new CI outcome pending verification**. No new paid model test, no Cloudflare Containers, no Production deploy, no PR merge.
+- Next evidence target: successful CI on `e7d60f8`; then a deliberately failing real GPT-6 App requiring one budget-bound REPAIR -> new free Docker/Chromium all-PASS receipt; and genuine non-fixture backend PostgreSQL CRUD + persisted cross-strategy continuation. Until those live proofs exist, **strict full-product C1–C5: 0/5 full PASS**. The narrower previously successful 1–3: 3/3 PASS remains unchanged.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
