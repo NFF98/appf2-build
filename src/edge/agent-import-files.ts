@@ -109,8 +109,9 @@ export type FreeManualRepairInput={
   readonly path:string;readonly content:string}[];
 };
 export function validFreeManualRepairInput(raw:unknown):raw is FreeManualRepairInput{
- if(!validFreeImportInput({...raw as object,expected_revision:0}))return false;
+ if(typeof raw!=="object"||raw===null||Array.isArray(raw))return false;
  const x=raw as Record<string,unknown>;
+ if(!validFreeImportInput({...x,expected_revision:0}))return false;
  return Number.isSafeInteger(x.expected_revision)&&
   Number(x.expected_revision)>=2&&Number(x.expected_revision)<=6;
 }
