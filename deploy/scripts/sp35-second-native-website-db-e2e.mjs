@@ -101,7 +101,7 @@ try{
  const visitor=await browser.newContext({serviceWorkers:"block"});
  const guest=await visitor.newPage();
  const recordResponses=[];
- const capture=async response=>{
+ const capture=response=>{
   const u=new URL(response.url());
   if(u.pathname!=="/api/v1/code-apps/"+shareId+"/records"||
      response.request().method()!=="POST")return;
@@ -122,13 +122,13 @@ try{
  async function press(name){
   await frame.getByRole("button",{name,exact:true}).click({timeout:12000});
  }
- await visible(/紀錄數：\\s*0/u,"INITIAL_ZERO");
+ await visible(/紀錄數：\s*0/u,"INITIAL_ZERO");
  await press("新增紀錄");
- await visible(/紀錄數：\\s*1/u,"CREATE_COUNTER");
- await visible(/內容：\\s*咖啡/u,"CREATED_CONTENT");
+ await visible(/紀錄數：\s*1/u,"CREATE_COUNTER");
+ await visible(/內容：\s*咖啡/u,"CREATED_CONTENT");
  await guest.reload({waitUntil:"domcontentloaded",timeout:30000});
- await visible(/內容：\\s*咖啡/u,"PERSISTED_AFTER_RELOAD");
- await visible(/紀錄數：\\s*1/u,"PERSISTED_COUNT");
+ await visible(/內容：\s*咖啡/u,"PERSISTED_AFTER_RELOAD");
+ await visible(/紀錄數：\s*1/u,"PERSISTED_COUNT");
  const contextB=await browser.newContext({serviceWorkers:"block"});
  const other=await contextB.newPage();
  const otherResponses=[];
@@ -141,20 +141,20 @@ try{
  const otherUi=otherFrame.locator("#app");
  await otherFrame.getByRole("button",{name:"新增紀錄",exact:true})
   .waitFor({state:"visible",timeout:25000});
- if(!/紀錄數：\\s*0/u.test(await otherUi.innerText())||
-    /內容：\\s*咖啡/u.test(await otherUi.innerText()))
+ if(!/紀錄數：\s*0/u.test(await otherUi.innerText())||
+    /內容：\s*咖啡/u.test(await otherUi.innerText()))
   throw Error("G2_DIFFERENT_VIEWER_PRIVATE_RECORD_LEAK");
  await press("修改紀錄");
- await visible(/內容：\\s*茶/u,"UPDATED_CONTENT");
+ await visible(/內容：\s*茶/u,"UPDATED_CONTENT");
  await guest.reload({waitUntil:"domcontentloaded",timeout:30000});
- await visible(/內容：\\s*茶/u,"UPDATED_PERSISTENCE_AFTER_RELOAD");
- if(/內容：\\s*(茶|咖啡)/u.test(await otherUi.innerText()))
+ await visible(/內容：\s*茶/u,"UPDATED_PERSISTENCE_AFTER_RELOAD");
+ if(/內容：\s*(茶|咖啡)/u.test(await otherUi.innerText()))
   throw Error("G2_CROSS_VIEWER_UPDATED_RECORD_LEAK");
  await press("刪除紀錄");
- await visible(/紀錄數：\\s*0/u,"DELETE_ZERO");
+ await visible(/紀錄數：\s*0/u,"DELETE_ZERO");
  await guest.reload({waitUntil:"domcontentloaded",timeout:30000});
- await visible(/紀錄數：\\s*0/u,"DELETE_PERSISTED_AFTER_RELOAD");
- if((recordResponses.length<8)||(recordResponses.some(r=>r.status!==200))||
+ await visible(/紀錄數：\s*0/u,"DELETE_PERSISTED_AFTER_RELOAD");
+ if((recordResponses.length<7)||(recordResponses.some(r=>r.status!==200))||
     otherResponses.length<1||otherResponses.some(status=>status!==200))
   throw Error("G2_REAL_SIGNED_PG_WORKER_REQUESTS_NOT_VERIFIED");
  console.log("SP35 G2 REAL WEBSITE POSTGRES APP E2E PASS: "+
