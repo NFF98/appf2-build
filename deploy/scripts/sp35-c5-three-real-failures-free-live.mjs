@@ -73,6 +73,7 @@ async function dispatch(){
  if(queued.status!=="FREE_CI_QUEUED")
   throw Error("C5_REAL_FREE_CI_NOT_DISPATCHED");
 }
+// eslint-disable-next-line complexity -- Every signed independent QA, replay and spend fence must fail closed.
 async function receiptFor(hash,verdict){
  const cutoff=Date.now()+9*60*1000;
  while(Date.now()<cutoff){
