@@ -22,7 +22,7 @@ const plan={version:"1",criteria:criteria.map(([id,source_quote,buttons,assertio
 }))};
 if(!plan.criteria.every(c=>prompt.includes(c.source_quote)))
  throw Error("G1_SITE_FROZEN_PLAN_NOT_FROM_ORIGINAL_PROMPT");
-let launchedAt=Date.now(),newJobId=null,completeAt=null,shareId=null;
+let launchedAt=Date.now(),newJobId=null,shareId=null;
 const browser=await chromium.launch({headless:true});
 try{
  const context=await browser.newContext({serviceWorkers:"block"});
@@ -84,7 +84,7 @@ try{
  if(!await region.isVisible())
   throw Error("G1_SITE_NEW_APP_QA_NOT_COMPLETE_NO_FALSE_PASS "+
    String(newJobId)+" "+failedReason.slice(0,350));
- completeAt=Date.now();
+ const completeAt=Date.now();
  if(newJobs!==1||!newJobId)throw Error("G1_SITE_NEW_JOB_COUNT_NOT_EXACTLY_ONE");
  const qaItems=page.locator('section[aria-label="QA 逐項結果"] li');
  if(await qaItems.count()!==plan.criteria.length)
