@@ -32,6 +32,16 @@
 - **最新免費 Foundation 根因修復與完整驗證（同樣非產品第 3 筆）**：新增 G3 腳本初次 [#41310699106](https://github.com/NFF98/appf2-build/actions/runs/41310699106) 因 `no-useless-assignment` 兩個 ESLint error FAIL；Build commit `ea398a7569dd4d8ad24b6b57d7d99b424694cede` 僅修時間戳未用初值，**重驗 [#41310849760](https://github.com/NFF98/appf2-build/actions/runs/41310849760) 最終 completed/SUCCESS**：typecheck、lint（0 errors，原其他檔 warning 存在）、API、runtime、真 Docker/Vite/Chromium、QA temporal 10/10、三個多模組 fixture、簽章 Staging Job→免費 Docker/Chromium 皆完成。另 [#41310849798](https://github.com/NFF98/appf2-build/actions/runs/41310849798) 免費 published App reuse **SUCCESS**；Supabase 自 G3 寫碼起 2026-11-01 13:14 UTC 後新模型呼叫 **0**。**G3 真 GPT-6 新網站 Job NOT_RUN，產品仍 2/9 = 22.2%，第三筆上限 44c 的新授權與跨 Job 費用 fence 尚缺**。不將免費回歸標 3/9。
 
 
+## 0.W 2026-11-01 HTTP 413 正式發布限定修復（SPEC first）
+
+真 G4 paid original native website [#41313398452](https://github.com/NFF98/appf2-build/actions/runs/41313398452) 雖已完成 GPT-6 CODE + 7 個多檔案 + frozen Docker/Chromium 7/7 [#41313795170](https://github.com/NFF98/appf2-build/actions/runs/41313795170)，但使用者同意之後**正式發布實測 FAIL**：`PUBLISH HTTP: {"http":413,"code":"AGENT_JOB_TOO_LARGE"}`，原 G4 Job `7045a009-6bfc-4889-8f1b-df03ba93c406` 未發佈，原 P-256 ephemeral owner 已結束，不可用 SQL 偽造發佈、更不能把它算第 3 款 PASS。成本：原井字棋 G3 CODE 最大 20c + 原新遊戲 G4 CODE 最大 20c；**單次 Job ceiling 各 44c（不是實際 provider invoice）**。真產品 **2/9** 未變。
+
+根因：`src/edge/agent-jobs.ts` 的 `freeShareMatch` 未有自己的 body limit，落到 general 1400 bytes；合法中文原始 prompt（最多 800 chars）+ hash/uuid/title 的簽名 JSON 超過 ingress，未到達 signed publication admission 就回 413。
+
+Design PR #45 在 §0.14 **先規格凍結**：僅 exact `POST /api/v1/agent-jobs/:id/publish-code-app` raw body 上限由 1400 → **4096 bytes**。原通用 1400、QA 24000、source import 200000、P-256 signing、single idempotency、owner-only、frozen seven QA、preview hash/ACTIVE/consent全部原封不動。Build PR #419 已提交最小 route patch `c810ed8`；另新增 `tests/api/sp35-agent-publication-size-limit.api.test.ts` (free local over-1400 valid Chinese invalid PoP must 404, >4096 must 413, other agent >1400 must 413)；`deploy/scripts/sp35-staging-publish-size-readonly-smoke.mjs` (real staging POST **invalid PoP**, no DB write, zero AI)；Staging-only workflow在 deploy 後驗收三個 network boundary。這是**發佈修復測試**，尚不是全新真人產品 E2E PASS。
+
+啟用現有 GitHub Actions 自動免費 CI；只可在完成本輪 code/tests後使用已授權 staging-only 工作流的 `[SP35-G0-FREE-STAGING-ONCE]` 特定標記部署隔離 Staging；禁止 Production、merge、重生 G3/G4。Staging smoke 必須在真部署後 SUCCESS，不能拿 fixture / local 路由測試代替真站。新收費模型 Job 未獲新的個別成本批准前**維持 NOT_RUN**；Work 後續承接時依每個 Job approved cap、real all-actions 9-way evidence 才可報 3/9。保持單 PR #419 / Design #45，不啟動 Sprint 4。
+
 ## 0.V 2026-11-01 G3 原始井字棋真 AI / QA 7/7，但正式分享阻斷：**2/9 不變**
 
 - Human 授權後，僅一次原生創作者網站 Run [#41311674915](https://github.com/NFF98/appf2-build/actions/runs/41311674915)，Job `31d6a1f4-df41-4c41-8f92-5800a937c7c7`，最大核准 44c。GPT-6.1 Sol 原始 CODE model [#41311851870](https://github.com/NFF98/appf2-build/actions/runs/41311851870) 已 SUCCEEDED，DB 記錄 CODE 20c per-call ceiling／4205 output tokens／實際 provider invoice **NOT_VERIFIED**，程式六檔 `index.html`、`package.json`、`src/game.ts`、`src/main.ts`、`src/view.ts`、`src/style.css`，純 AI 原創完整保存。
