@@ -550,3 +550,5 @@ jobs:
 # 2026-11-01 second and FINAL one-shot isolated staging deployment ONLY after exact lint fix, read-only invalid-PoP 413 boundary probe. Never Production, never model. [SP35-G0-FREE-STAGING-ONCE]
 
 # Second/final focused correction: every exact 800-char intent route, original caps elsewhere, zero model. 201 Created remains correct publication semantics.
+
+# Recheck the same final focused fix after splitting receipt-observer lint, with no model calls.
