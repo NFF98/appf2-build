@@ -309,6 +309,28 @@ async function signedPost<T>(path:string,body:object,key:PopKey,
   throw Error("Agent API 回傳資料格式不正確；已停止，沒有自動重試。");
  return (payload as Envelope<T>).data;
 }
+/** PostgreSQL Job chronology: read-only, creator signed, no provider calls.
+ * Missing timestamps are null: never infer user experience from a fixture.
+ */
+export type AgentJobTimeline={
+ readonly status:"SP35_REAL_TIMELINE_READ_ONLY";
+ readonly job_revision:number;readonly job_state:string;
+ readonly job_saved_at_ms:number|null;readonly qa_frozen_at_ms:number|null;
+ readonly first_model_reserved_at_ms:number|null;
+ readonly first_model_completed_at_ms:number|null;
+ readonly first_code_source_saved_at_ms:number|null;
+ readonly current_source_saved_at_ms:number|null;
+ readonly first_qa_receipt_at_ms:number|null;
+ readonly last_qa_receipt_at_ms:number|null;
+ readonly first_verified_preview_at_ms:number|null;
+ readonly current_private_preview_at_ms:number|null;
+ readonly time_to_first_source_ms:number|null;
+ readonly time_to_first_qa_pass_preview_ms:number|null;
+ readonly model_calls_recorded:number;readonly qa_receipts_recorded:number;
+ readonly real_user_first_interaction_ms:null;
+ readonly new_paid_model_calls_by_inspection:0;
+ readonly app_published_by_inspection:false;
+};
 export class BrowserCodingAgent {
  private readonly keys=ring();
  private readonly owner=ensureAnonymousId(createBrowserIdentityDependencies());
@@ -380,6 +402,10 @@ export class BrowserCodingAgent {
  }
  async progress():Promise<Progress>{
   return this.post("/agent-progress",{anonymous_id:this.owner});
+ }
+ /** No AI/Runner dispatch and no fresh cost approval: only PostgreSQL history. */
+ async timeline():Promise<AgentJobTimeline>{
+  return this.post("/job-timeline",{anonymous_id:this.owner});
  }
  /** A fresh explicit owner-signed step-only renewal. No additional money is
   * authorized, no saved tool is replayed, and this never dispatches AI/containers.
