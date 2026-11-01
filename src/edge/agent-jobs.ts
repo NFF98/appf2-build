@@ -164,12 +164,9 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
  const recovered=await recoverAgentJob(db,jobId,owner);
  if(!recovered)return denied();
  const freeCi=await readFreeCiSmoke(db,jobId,owner,recovered.project.project_hash);
- // Steps include creator-authored no-cost source repair. Only an actual
- // creator-bound model journal proves an AI call was started.
- const aiStarted=(await db.query<{started:boolean}>(`
-  SELECT EXISTS(SELECT 1 FROM public.appf2_agent_model_call
-   WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid) AS started`,
-  [jobId,owner])).rows[0]?.started===true;
+ // Zero-budget source edits are not paid AI; no additional database read.
+ const aiStarted=recovered.job.checkpoint.budget.max_cost_cents>0&&
+  recovered.job.checkpoint.step>0;
  return json(200,{data:{free_ci:freeCi,job_id:recovered.job.job_id,status:recovered.job.job_state,
   revision:recovered.job.revision,project_hash:recovered.project.project_hash,
   files:recovered.project.files,checkpoint:recovered.job.checkpoint,
