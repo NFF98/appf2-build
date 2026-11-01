@@ -36,10 +36,18 @@ type ModelResult={readonly response:unknown;readonly inputTokens:number;
 export function recoveredPaidResponse(
  existing:ModelCallRow|null,job:AgentJobRow,phase:Phase):ModelResult|null{
  if(existing?.status!=="SUCCEEDED"||existing.response_json===null)return null;
+ // A crash after the first, already-committed CODING→REPAIRING CAS
+ // must resume its exact paid response, not issue another provider POST.
+ // The checkpoint's parent hash proves which original head was charged.
+ const exactHead=existing.job_revision===job.revision&&
+  existing.checkpoint_hash===job.checkpoint_hash;
+ const committedRepairStep=phase==="REPAIR"&&job.job_state==="REPAIRING"&&
+  job.revision===existing.job_revision+1&&
+  job.checkpoint.previous_checkpoint_id===existing.checkpoint_hash&&
+  job.checkpoint.project_hash===job.project_hash;
  if(existing.job_id!==job.job_id||
   existing.owner_anonymous_id!==job.owner_anonymous_id||
-  existing.job_revision!==job.revision||
-  existing.checkpoint_hash!==job.checkpoint_hash||
+  (!exactHead&&!committedRepairStep)||
   existing.model!==MODEL||
   existing.max_charge_cents!==AMOUNTS[phase])
   throw Error("SP35_PAID_AI_SAVED_HEAD_MISMATCH_NO_RECHARGE");
@@ -222,7 +230,7 @@ async function recoverBackgroundTurn(db:AgentJobExecutor,row:ModelCallRow,
 async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  typeof recoverAgentJob>> & {},owner:string,phase:Phase,request:unknown,
  key:string,runnerToken:string,ticketSecret:string,nowMs:number,
- repairRound:1|2|3=1
+ repairRound:1|2|3=1,onlySavedResponse=false
 ):Promise<ModelResult>{
  const modelKey="sp35_free_ai_"+phase.toLowerCase()+"_v"+
   (phase==="REPAIR"?repairRound:1);
@@ -237,6 +245,10 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  // For an unsent / in-flight call, retain strict request-hash equality.
  const completed=recoveredPaidResponse(existing,job.job,phase);
  if(completed)return completed;
+ // A half-committed REPAIRING checkpoint can ONLY consume a completed
+ // original journal entry. It must never reserve a fresh paid turn.
+ if(onlySavedResponse)
+  throw Error("SP35_REPAIR_RECOVERY_REQUIRES_SAVED_RESPONSE_NO_POST");
  if(existing&&existing.request_hash!==digest)
   throw Error("SP35_PAID_AI_REQUEST_HASH_MISMATCH_NO_RECHARGE");
  if(existing?.status==="IN_FLIGHT"){
@@ -325,10 +337,13 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  }
  if(!plan)throw Error("SP35_PAID_AI_REQUIRES_PRECODE_QA");
  const repairing=input.stage==="REPAIR";
+ const resumeRepair=repairing&&job.job.job_state==="REPAIRING";
  if(!repairing&&(job.job.revision!==0||job.job.job_state!=="CREATED"))
   throw Error("SP35_CODE_WRONG_STATE");
- if(repairing&&(job.job.job_state!=="CODING"||job.project.revision<2||
-  job.job.checkpoint.step>6))throw Error("SP35_REPAIR_NOT_ELIGIBLE");
+ if(repairing&&((job.job.job_state!=="CODING"&&!resumeRepair)||
+  job.project.revision<2||job.project.revision>4||
+  job.job.checkpoint.step!==2*job.project.revision-2+
+   (resumeRepair?1:0)))throw Error("SP35_REPAIR_NOT_ELIGIBLE");
  const receipt=repairing?await readFreeCiSmoke(ctx.db,ctx.jobId,
   input.anonymous_id,job.project.project_hash):null;
  const provenBuildFailure=receipt?.status==="BUILD_FAILED"&&
@@ -349,7 +364,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   "ORDER BY s.project_revision DESC,r.project_hash DESC LIMIT 8",
   [ctx.jobId,input.anonymous_id])).rows:[];
  const strategy=repairing?await decideFreeCiRepair(plan,history,
-  job.project.project_hash,job.project.revision,job.job.checkpoint.step,
+  job.project.project_hash,job.project.revision,
+  job.job.checkpoint.step-(resumeRepair?1:0),
   job.job.checkpoint.budget.max_cost_cents,
   job.job.checkpoint.budget.max_steps):null;
  // Failure excerpt is untrusted compiler output, not instructions.
@@ -371,9 +387,21 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   throw Error("SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET");
  const turn=await paidModelTurn(ctx.db,job,input.anonymous_id,
   input.stage,req,ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs,
-  strategy?.round??1);
+  strategy?.round??1,resumeRepair);
  const files=parseFiles(parsedOutput(turn.response));
  if(!files)throw Error("SP35_PAID_CODE_INVALID_NO_RECHARGE");
+ // Validate the entire paid source and calculate immutable new bytes
+ // BEFORE writing the intermediate checkpoint. Invalid model files must
+ // never strand the Job halfway through a two-CAS repair.
+ const prior=new Map(job.project.files.map(f=>[f.path,f]));
+ const edits=files.map(f=>{
+  const before=prior.get(f.path);
+  return before?{operation:"replace" as const,path:f.path,
+   previous_hash:before.hash,content:f.content}:
+   {operation:"add" as const,path:f.path,content:f.content};
+ });
+ const updated=await applyProjectEdits(job.project,
+  job.project.project_hash,edits);
  let current=job;
  const qaCall=await getModelCall(ctx.db,ctx.jobId,input.anonymous_id,
   "sp35_free_ai_qa_v1");
@@ -381,23 +409,18 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   (qaCall?.input_tokens??0)+(qaCall?.output_tokens??0)+
   turn.inputTokens+turn.outputTokens);
  const estimatedCost=repairing?strategy!.required_approved_cents:28;
- // These are cumulative reservation caps, NOT provider invoice charges.
- const next={...current.job.checkpoint,
-  state:repairing?"REPAIRING" as const:"PLANNING" as const,
-  step:current.job.checkpoint.step+1,
-  cost_cents:repairing?current.job.checkpoint.cost_cents:
-   Math.max(current.job.checkpoint.cost_cents,8),
-  previous_checkpoint_id:current.job.checkpoint_hash};
- current=await advanceDurableAgentJob(ctx.db,current.job,input.anonymous_id,next);
- const prior=new Map(current.project.files.map(f=>[f.path,f]));
- const edits=files.map(f=>{
-  const before=prior.get(f.path);
-  return before?{operation:"replace" as const,path:f.path,
-   previous_hash:before.hash,content:f.content}:
-   {operation:"add" as const,path:f.path,content:f.content};
- });
- const updated=await applyProjectEdits(current.project,
-  current.project.project_hash,edits);
+ // On restart the exact prior CODING→REPAIRING transition already exists.
+ // Resume at the source CAS; don't increment the Job step a second time.
+ if(!resumeRepair){
+  // These are cumulative reservation caps, NOT provider invoice charges.
+  const next={...current.job.checkpoint,
+   state:repairing?"REPAIRING" as const:"PLANNING" as const,
+   step:current.job.checkpoint.step+1,
+   cost_cents:repairing?current.job.checkpoint.cost_cents:
+    Math.max(current.job.checkpoint.cost_cents,8),
+   previous_checkpoint_id:current.job.checkpoint_hash};
+  current=await advanceDurableAgentJob(ctx.db,current.job,input.anonymous_id,next);
+ }
  const changed={...current.job.checkpoint,state:"CODING" as const,
   step:current.job.checkpoint.step+1,project_hash:updated.project_hash,
   tokens_used:Math.max(current.job.checkpoint.tokens_used,usedTokens),
