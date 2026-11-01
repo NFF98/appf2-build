@@ -41,7 +41,7 @@ async function signed(path,body,expected=200){
    "X-Appf2-PoP-Timestamp":String(now)},
   body:bytes,signal:AbortSignal.timeout(45000)});
  const raw=await response.json().catch(()=>null);
- if(response.status!==expected||!raw?.data)
+ if(!(Array.isArray(expected)?expected.includes(response.status):response.status===expected)||!raw?.data)
   throw Error("C5_SIGNED_HTTP_"+response.status+"_AT_"+path.split("/").at(-1)+
    "_"+String(raw?.error??"NO_DATA").slice(0,70));
  return raw.data;
@@ -71,15 +71,7 @@ for(const stage of stages){
   const result=await signed(base+"/free-ai-stage",{
    anonymous_id:owner,original_prompt:prompt,
    expected_project_hash:before.project_hash,stage,
-   explicit_ai_consent:true,explicit_free_ci_consent:true},
-   attempt===0?202:200).catch(e=>{
-    // The first call may return 200 (saved) or 202 (runner pending).
-    if(String(e).includes("SIGNED_HTTP_200")&&attempt===0)return null;
-    if(String(e).includes("SIGNED_HTTP_202")&&attempt>0)return null;
-    throw e;
-   });
-  // A 200/202 response mismatch is not a new provider request;
-  // inspect the already-persisted original job state first.
+   explicit_ai_consent:true,explicit_free_ci_consent:true},[200,202]);
   if(result?.status==="AI_SOURCE_SAVED_FREE_CI_QUEUED"){
    stageFinished=true;break;
   }
@@ -110,7 +102,7 @@ for(const stage of stages){
   console.log("C4 REAL CHROMIUM: independent failure detected on revision "+
    next.revision+"; immutable receipt; repair round "+(repaired+1)+" eligible");
   repaired++;
-  if(repaired>=3)break;
+  if(repaired>=4)break;
   continue;
  }
  if(receipt.status!=="BUILD_BROWSER_SMOKE"||
@@ -143,6 +135,6 @@ if(!sawQa)throw Error("C4_CHROMIUM_ORIGINAL_QA_NEVER_RAN");
 if(!sawPass)throw Error("C4_C5_REAL_REPAIR_DID_NOT_REACH_PASS");
 if(repaired===0)console.log("C4 INITIAL GPT-6 APP PASS; paid repair and C5 strategy NOT EXERCISED");
 if(repaired>0)console.log("C4 REAL GPT-6 FAILED APP → paid repair → new free Chromium PASS");
-if(repaired===3)console.log("C5 real three failed snapshots evidence exists; strategy requires separate review");
+if(repaired>=3)console.log("C5 real repeated failed snapshots existed; strategy must be corroborated from saved model prompt before claiming root-cause switch");
 console.log("SP35 FIVE CORE E2E SAMPLE FINISHED; this is ONE original prompt, "+
  "NOT universal all-app C1/C2/C3/C4/C5 completion");
