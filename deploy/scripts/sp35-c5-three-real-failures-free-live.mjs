@@ -130,6 +130,21 @@ if(observed.length!==3||new Set(observed.map(x=>x.hash)).size!==3||
  throw Error("C5_THREE_CONSECUTIVE_FROZEN_FAILURES_NOT_PROVEN");
 console.log("C5 REAL HISTORY: exactly 3 distinct signed failed source versions "+
  "with one immutable QA plan, before any strategy choice; NO model call");
+const evidence=await signed(base+"/free-ai-repair-evidence",{
+ anonymous_id:owner,original_prompt:prompt});
+if(evidence.status!=="C5_EVIDENCE_ONLY"||
+ evidence.project_hash!==currentHash||
+ evidence.job_revision!==currentRevision||
+ evidence.project_revision!==4||
+ evidence.next_round!==3||
+ evidence.repeated_failure_count!==3||
+ evidence.evidence_snapshots!==3||
+ evidence.mode!=="RETHINK_ROOT_CAUSE"||
+ evidence.paid_model_requests_issued_by_inspection!==0)
+ throw Error("C5_REAL_POLICY_DID_NOT_SWITCH_AFTER_3_CHROMIUM_FAILS");
+console.log("C5 REAL STAGING STRATEGY POLICY PASS: after three independent "+
+ "frozen-QA FAILs, same production repair analyzer recommends "+
+ "RETHINK_ROOT_CAUSE; NO AI/model charges");
 const fixed=await signed(base+"/import-repair",{
  anonymous_id:owner,expected_revision:currentRevision,
  expected_project_hash:currentHash,
