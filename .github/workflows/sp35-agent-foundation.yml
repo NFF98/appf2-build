@@ -44,6 +44,8 @@ jobs:
         run: npm run test:runtime
       - name: Trusted fixture browser install
         run: npx playwright install --with-deps chromium
+      - name: Independent Chromium temporal QA 0→1→0 positive and no-op negative (NO AI)
+        run: node deploy/scripts/sp35-free-ci-browser-temporal-e2e.mjs
       - name: Actual trusted multi-file Vite build and browser click
         run: node deploy/scripts/sp35-trusted-multifile-build-e2e.mjs
       - name: Three distinct Vite multi-module App shapes and Chromium clicks (no paid model)
