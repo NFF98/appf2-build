@@ -336,6 +336,15 @@
 - Follow-up code commit `bf0ec5e` changes the **test harness only**, extending signed stage HTTP timeout to 125 seconds and checking already-applied Job revision before resending a stage. The fresh free-only CI is pending as of this note. The one-shot workflow is marker-gated; ordinary pushes **do not start another paid model call**. No second paid test launched.
 - C1 real saved published sandbox CRUD and two viewer isolation remain previously verified. C2 owner-signed real Job + pre-code frozen QA + GPT-6 project revision 2 verified. C3 real free Docker/Chromium staging integration has separate passing workflows. C4 actual failed AI source→real paid repair→all frozen browser PASS remains **NOT VERIFIED**; C5 genuinely stalled three revisions→root cause switch→successful resumed same Job remains **NOT VERIFIED**. **Strict full five-core 5/5 remains NOT PASSED**. No Production deploy or merge.
 
+
+### 2026-11-01 — C2 身分／進度恢復規格補強：先確保鑰匙真的落盤，才准付費
+
+- **原因與界線**：原 SSOT 的 C2 已要求保存同一 Job、checkpoint、原始程式、付費收據、關頁接續；缺少明確的「簽章金鑰寫入、讀回及驗證後才允許 AI」先決條件。原 `PopKeyring.bindIntent` 用 `void persistence.save(...)` 忽略失敗且不等待 IndexedDB commit，存在關頁後 Job 存在但原簽章私鑰未持久化的競態。本修正只針對真實瀏覽器建立者；GitHub 一次性測試 runner 的 ephemeral 簽章私鑰**不會**因而跨 runner 恢復。
+- **硬性執行順序**：Worker 建立空 Job（不扣 AI）→ 非匯出 P-256 原鑰匙寫入瀏覽器 IndexedDB → 從 IndexedDB 重新讀出並以新 challenge 簽章／原 SPKI 驗證 → 本機持久保存同一 Job ID、prompt 與建立者匿名 ID → **才准**執行原需求 QA／付費 AI。若 IndexedDB、localStorage 不可用、存取異常、讀回公私鑰不匹配，一律 fail closed；不得產生替代私鑰、進入付費階段、宣稱可恢復。existing `bindIntent` 留給舊 F01；新 `bindDurableIntent` 必須被 Agent await。
+- **復原**：同一瀏覽器 profile 關站重開，從原本 localStorage 工作索引＋IndexedDB 原非匯出 CryptoKey 取得簽章，對原 PostgreSQL Job 做新的 owner-PoP 驗證，讀取原 checkpoint／程式／QA 和付費模型紀錄；未知付費結果只能用原紀錄查詢，絕不重新啟動另一筆付費請求。本機 profile 被清空、換裝置、隱私模式失去儲存或 30 天過期時，**尚無帳號制跨裝置金鑰恢復**；不得假稱 C2 完整 PASS。
+- **修改範圍**：`src/app/create/pop-keyring.ts`、`src/app/code-builder/agent-browser-client.ts`；增添無付費的 key write/readback、簽章匹配與關頁後復原、儲存失敗停止測試。**完整 C2 E2E 仍要求關閉真實瀏覽器再重開原 Job、檢查原付費 journal 不增費與同 Job 後續 QA**；單元測試或 CI 成功不得冒充。
+- **待另外處理**：GitHub Actions 一次性人工測試 runner 若已退出，無法靠瀏覽器 IndexedDB 恢復臨時私鑰；這類已成功付費而遺失 runner 私鑰的測試 Job 應封存、不重扣。要跨 runner 自動接續需獨立設計受信任、期限及權限受限的工作執行身分，禁止直接把原私鑰放在公開 Actions artifact 或日誌。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
