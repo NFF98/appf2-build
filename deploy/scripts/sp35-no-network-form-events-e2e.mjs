@@ -1,3 +1,4 @@
+/* eslint-disable max-depth -- seven bounded causal/security variants share one isolated test browser */
 /** Trusted fixtures: causal sandbox-submit proof, no AI and no live mutation. */
 import {createServer} from "vite";
 import {chromium} from "@playwright/test";
