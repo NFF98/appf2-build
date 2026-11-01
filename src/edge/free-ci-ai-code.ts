@@ -210,12 +210,23 @@ async function paidModelTurn(db:AgentJobExecutor,job:Awaited<ReturnType<
  const digest=await sha256CodeBytes(new TextEncoder().encode(
   "APPF2_SP35_FREE_AI_REQUEST_V1\u0000"+json));
  const existing=await getModelCall(db,job.job.job_id,owner,modelKey);
- if(existing&&existing.request_hash!==digest)
-  throw Error("SP35_PAID_AI_REQUEST_HASH_MISMATCH_NO_RECHARGE");
- if(existing?.status==="SUCCEEDED"&&existing.response_json!==null)
+ // A completed charge is bound to the creator's ORIGINAL immutable Job
+ // revision and checkpoint. Recover its saved answer even if a later Worker
+ // deployment formats the diagnostic model prompt differently. Rebuilding
+ // and rehashing the *new* prompt must never strand an already-paid answer.
+ // For an unsent / in-flight call, retain strict request-hash equality.
+ if(existing?.status==="SUCCEEDED"&&existing.response_json!==null){
+  if(existing.job_revision!==job.job.revision||
+   existing.checkpoint_hash!==job.job.checkpoint_hash||
+   existing.model!==MODEL||
+   existing.max_charge_cents!==AMOUNTS[phase])
+   throw Error("SP35_PAID_AI_SAVED_HEAD_MISMATCH_NO_RECHARGE");
   return {response:existing.response_json,
    inputTokens:existing.input_tokens??0,
    outputTokens:existing.output_tokens??0};
+ }
+ if(existing&&existing.request_hash!==digest)
+  throw Error("SP35_PAID_AI_REQUEST_HASH_MISMATCH_NO_RECHARGE");
  if(existing?.status==="IN_FLIGHT"){
   const runner=(await db.query<{call_key:string}>(`SELECT call_key FROM
    public.appf2_agent_model_runner_request WHERE job_id=$1::uuid
