@@ -8,7 +8,7 @@ import {chromium} from "@playwright/test";
 const origin="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
 const share="1f19887e-7029-40f1-b445-660cd3aff40f";
 const browser=await chromium.launch({headless:true});
-let first,second,createdA,createdB;
+let first,second,createdA,createdB,activeA,activeB;
 async function view(context){
  const page=await context.newPage();
  await page.goto(origin+"/code/"+share,{waitUntil:"domcontentloaded",timeout:30000});
@@ -31,6 +31,7 @@ try{
  second=await browser.newContext({serviceWorkers:"block"});
  const a=await view(first);
  const b=await view(second);
+ activeA=a;activeB=b;
  const beforeA=await action(a,"list");
  const beforeB=await action(b,"list");
  if(!Array.isArray(beforeA.records)||!Array.isArray(beforeB.records))
@@ -54,6 +55,7 @@ try{
   throw Error("C1_CROSS_VIEWER_REVERSE_LEAK");
  await a.page.close();
  const reopened=await view(first);
+ activeA=reopened;
  const saved=await action(reopened,"read",createdA.record_id);
  if(saved?.value?.count!==1)throw Error("C1_BROWSER_REOPEN_LOST_DATA");
  const updated=await action(reopened,"update",createdA.record_id,
@@ -73,8 +75,10 @@ try{
   "CREATE READ UPDATE DELETE LIST, BROWSER REOPEN, 2 VIEWER RLS ISOLATION PASS");
  console.log("LIMIT: historical GPT-6 counter has a browser-injected CRUD harness; "+
   "new AI-authored persistent CRUD UI remains separately unproven");
-}finally{
- // No fake PASS if cleanup fails; leave no expensive background work.
+ }finally{
+ // Attempt bounded cleanup even on an assertion failure. No model calls.
+ if(createdA&&activeA)await action(activeA,"delete",createdA.record_id).catch(()=>{});
+ if(createdB&&activeB)await action(activeB,"delete",createdB.record_id).catch(()=>{});
  await first?.close().catch(()=>{});
  await second?.close().catch(()=>{});
  await browser.close();
