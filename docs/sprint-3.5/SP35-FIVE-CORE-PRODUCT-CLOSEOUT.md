@@ -411,6 +411,12 @@
 - **Applied actual DB correction via owner existing Supabase project**: added only `REPAIRING` to `CODING` transition allowance in `appf2_internal.agent_job_guard()`; preserved all identity/owner, revision +1, terminal-state, monotonic cost/tokens/steps, RLS and least-privilege restrictions. A subsequent live read of `pg_get_functiondef` confirms the previously missing transition is now allowed.
 - **Committed migration** `supabase/migrations/20261101130000_sp35_agent_coding_repair_guard.sql` and matching checkpoint contract regression `tests/api/sp35-agent-db-repair-guard.api.test.ts`, in the original PR #419 only. Free CI pending at commit; the old test runner's ephemeral signing key is gone, so its already paid Job cannot be impersonated to retry. **C4 must still demonstrate a new owner-signed REPAIR response -> saved new source -> independent Chromium QA PASS to count complete; C5 still not proven.** No new paid AI calls, Production deploy, or new PR.
 
+
+### 2026-11-01 — C4 database actual transition verification after 503 repair
+
+- Live Supabase `appf2_internal.agent_job_guard()` was independently exercised on an **ephemeral TEMP TABLE with the exact production trigger attached**, inside `BEGIN ... ROLLBACK` (no real Job modified): synthetic revision 2 `CODING` → revision 3 `REPAIRING` → revision 4 `CODING` with monotonic step/token/spend **PASS**. Illegal direct `CODING` → `READY` produced the expected `APPF2_AGENT_ILLEGAL_STATE` and was rejected. Read-only production constraints/RLS remain unchanged. The free Docker/Chromium CI run [#41272081679](https://github.com/NFF98/appf2-build/actions/runs/41272081679) also concluded **SUCCESS** on commit `f930d528`.
+- **Evidence boundary:** This verifies the previously missing database state transition and general free CI but does NOT prove that the old paid response (whose original owner signing key expired) was imported and saved on its exact Job. No new paid call, no fabricated owner signature, and no successful repair-after-failure Chromium receipt. **C4 still NOT FULL E2E PASS.** A new owner-signed no-charge saved-response fixture test would be needed to validate the full persistence path without another paid model call; eventual real-model C4 PASS must still use authentic owner-consented evidence.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
