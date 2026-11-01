@@ -4,6 +4,60 @@
  * because the final text was already visible before any clicks.
  * All source runs in the isolated browser; this observer uses only DOM UI.
  */
+/** Canonical *visible* DOM text for one frozen QA observation.
+ * Browser innerText introduces layout-only separators between flex children:
+ * "計數：" + "0" is one visible counter, not two unrelated page sentences.
+ * A sentinel may be added ONLY when a short, visible, single DOM component's
+ * own textContent is exactly the expected words after whitespace folding.
+ * The raw body is always retained; hidden content and whole-body joins fail.
+ */
+export async function observedQaBody(target,assertions=[]){
+ let body=await target.locator("body").innerText();
+ const expectations=[...new Set(assertions.filter(x=>
+  (x.kind==="text_includes"||x.kind==="text_appears")&&
+  typeof x.text==="string"&&x.text.length>0).map(x=>x.text))];
+ for(const expected of expectations){
+  if(body.includes(expected))continue;
+  const observed=await target.evaluate(value=>{
+   const normalized=text=>String(text??"").replace(/[\\s\\u200b\\u200c\\u200d]/gu,"");
+   const want=normalized(value);
+   if(!want||want.length>160)return false;
+   const root=globalThis.document.body;
+   if(!root)return false;
+   for(const element of root.querySelectorAll("*")){
+    if(element.children.length>6||element.textContent?.length>220||
+       normalized(element.textContent)!==want)continue;
+    if(element.closest('[hidden],[aria-hidden="true"],[inert]'))continue;
+    let visible=true,node=element;
+    while(node&&node!==root.parentElement){
+     const style=globalThis.getComputedStyle(node);
+     if(style.display==="none"||style.visibility==="hidden"||
+        style.visibility==="collapse"||style.opacity==="0"){
+      visible=false;break;
+     }
+     node=node.parentElement;
+    }
+    if(!visible)continue;
+    const rect=element.getBoundingClientRect();
+    if(rect.width<=0||rect.height<=0||
+       element.getClientRects().length===0)continue;
+    return true;
+   }
+   return false;
+  },expected);
+  if(observed)body+="\\n[APPF2_VISIBLE_COMPONENT]"+expected;
+ }
+ return body;
+}
+async function awaitObservedQaState(target,assertions,expected,present,ms){
+ const start=Date.now();
+ while(Date.now()-start<ms){
+  const state=await observedQaBody(target,assertions);
+  if(state.includes(expected)===present)return;
+  await target.waitForTimeout(80);
+ }
+}
+
 export function observedTextAppears(initial,intermediate,final,expected){
  if(typeof initial!=="string"||typeof final!=="string"||
   !Array.isArray(intermediate)||typeof expected!=="string"||
@@ -37,25 +91,23 @@ export async function executeFrozenQaSteps(target,criterion,initial){
    for(const assertion of returning){
     if(observed.some(t=>!t.includes(assertion.text)))continue;
     try{
-     await target.waitForFunction(expected=>
-      !globalThis.document.body?.innerText.includes(expected),assertion.text,
-     {timeout:2500});
+     await awaitObservedQaState(target,criterion.assertions,
+      assertion.text,false,2500);
     }catch{ /* No observed transition: final check stays FAIL-closed. */ }
    }
   }
-  observed.push(await target.locator("body").innerText());
+  observed.push(await observedQaBody(target,criterion.assertions));
  }
  // Wait for asynchronous final visible state, not a single immediate read
  // after the click. Failure is still detected by exact final text check.
  for(const assertion of criterion.assertions){
   if(assertion.kind==="text_appears"){
    try{
-    await target.waitForFunction(expected=>
-     globalThis.document.body?.innerText.includes(expected),assertion.text,
-    {timeout:4000});
+    await awaitObservedQaState(target,criterion.assertions,
+     assertion.text,true,4000);
    }catch{ /* final predicate below is the source of truth */ }
   }
  }
  return {stepBodies:observed,
-  after:await target.locator("body").innerText()};
+  after:await observedQaBody(target,criterion.assertions)};
 }
