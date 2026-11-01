@@ -18,7 +18,10 @@
 - **變更控制**：仍只 Design #45 / Build #419，Sprint 3.5，兩 PR **OPEN / NOT_MERGED**，Staging only，無 Production、無 Sprint 4。本次只寫 SPEC 結算與本原 SSOT，沒有重新測付費 GPT、不改已公開 App 原碼、不建第二計畫。
 - **下一個首要缺口**：先按 Design §0.4/§0.5 核對剩餘 7 個不同新自然語言 Job 的類別分配與每 Job budget admission，找出可免費驗證的真網站／持久身份／QA 根因及交付效能瓶頸；**新付費前**必須能證明逐筆額度和跨 Job 硬上限，再在原網站啟動第三個新 Job；若費用資料不可證明就保持 `PAUSED_BUDGET`，不可偷換模型/拿人工 fixture 冒充 3/9。
 
-## 0.U 2026-11-01 第三個互動遊戲 G3 — SPEC→Build 備戰、**2/9 不變**
+## 0.U 2026-11-01 第三個互動遊戲 G3
+
+**2026-11-01 Human 成本授權更新**：使用者在上一輪明列「第三個 GPT-6 新 Job 單次預留 US$0.44」之後明確回覆「同意繼續，可以多一點不要停！」。Design PR #45 SPEC commit [0ab71c5](https://github.com/NFF98/appf2-design/commit/0ab71c5424fcd77fe7b21e728f87138562f675e4) 已先凍結此為 **第三款互動遊戲 ONE NEW original website Job ≤44c** 授權。其餘 6/9 新 Job 以及突破 44c 仍需個別有限額授權；舊 `IN_FLIGHT/BLOCKED_UNCERTAIN` 一律不得重新 POST。現在可按獨立 marker 執行一次真付費網站 G3 E2E；PASS 前仍維持 2/9。**此是 maximum per-Job reservation，不是實際扣款、不是全日剩餘額度**。
+ — SPEC→Build 備戰、**2/9 不變**
 
 **先 Design 再 Build**：原 [Design PR #45 H-001 §0.12 commit 62a902c](https://github.com/NFF98/appf2-design/commit/62a902c47fd56aa9551d87359eec9397072f2319) 凍結第三個不同新類別的真網站「雙人井字棋」：X/O 九格交替、已填不覆寫、X 三連線、勝後禁止再落子、重開。這不是建立 App 的 PASS，不能冒稱 3/9。
 
