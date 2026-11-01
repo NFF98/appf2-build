@@ -435,7 +435,8 @@ export class BrowserCodingAgent {
   * One paid call per phase; server stores reservation BEFORE provider fetch.
   * Each phase is an explicit original-creator consent, never a blind retry.
   */
- async freeAiStage(stage:"QA"|"CODE"|"REPAIR"):Promise<{
+ async freeAiStage(stage:"QA"|"CODE"|"REPAIR",
+  shouldPause:()=>boolean=()=>false):Promise<{
   readonly status:string;readonly original_plan?:QaPlan;
   readonly project_hash?:string;readonly revision?:number;
   readonly app_published:false
@@ -446,7 +447,11 @@ export class BrowserCodingAgent {
   // journal permits exactly one paid provider POST per Job+phase; once its
   // response ID exists, every subsequent call is GET-only at the provider.
   for(let attempt=0;attempt<75;attempt++){
+   // Pausing UI polling is NOT canceling a paid model request. The immutable
+   // Job and background runner continue, and reopening reuses their journal.
+   if(shouldPause())throw Error("SP35_USER_PAUSED_VIEW_NO_NEW_POST");
    const job=await this.read();
+   if(shouldPause())throw Error("SP35_USER_PAUSED_VIEW_NO_NEW_POST");
    const result=await this.post<{status:string;original_plan?:QaPlan;
     project_hash?:string;revision?:number;app_published:false}>(
     "/free-ai-stage",{anonymous_id:this.owner,
@@ -457,6 +462,9 @@ export class BrowserCodingAgent {
    if(result.status==="AI_BACKGROUND_PENDING"){
     if(attempt===74)
      throw Error("同一筆 GPT-6 模型工作仍在執行；可稍後由已保存卡片接續查詢，不會重新付費生成。");
+    // Never silently dispatch another paid phase while the user asks to
+    // leave. At most the already-started phase can finish in the runner.
+    if(shouldPause())throw Error("SP35_USER_PAUSED_VIEW_NO_NEW_POST");
     await new Promise<void>(resolve=>window.setTimeout(resolve,6500));
     continue;
    }
