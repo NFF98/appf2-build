@@ -69,9 +69,9 @@ describe("C2 owner and saved project pointer must both outlive closed browser ta
    .toThrow("AGENT_OWNER_TARGET_DURABILITY_REQUIRED_NO_AI_CHARGE");
   persistent.setItem("appf2.anonymous_id.v1",
    "f4757bd9-4fd7-4c65-aa8b-b7f121816c20");
-  const unavailable={getItem:(_key:string)=>null,
-   setItem:(_key:string,_value:string)=>{throw Error("quota exceeded");},
-   removeItem:(_key:string)=>undefined};
+  const unavailable={getItem:()=>null,
+   setItem:()=>{throw Error("quota exceeded");},
+   removeItem:()=>undefined};
   vi.stubGlobal("localStorage",unavailable);
   expect(()=>saveDurableAgentTarget(target))
    .toThrow("AGENT_OWNER_TARGET_DURABILITY_REQUIRED_NO_AI_CHARGE");
