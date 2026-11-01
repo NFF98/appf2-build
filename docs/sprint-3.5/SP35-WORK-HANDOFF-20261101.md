@@ -32,3 +32,34 @@
 - Commit changes only in Build PR #419 / Design PR #45; always cite GitHub Actions evidence and actual Postgres rows for count decisions.
 - No merge, no Production deploy, no Sprint 4. Prioritize user-visible functional Stage A: one sentence → real interactive App card → saved, shared, reused.
 - No asking user to open Cursor, paste PowerShell, or repeat context. If budget or external permissions really block, say the exact blocker and preserve the current version.
+
+
+## Work 接管查證與下一筆費用暫停（2026-11-01，日本時間）
+
+- **產品仍 2/9（22.2%）**。本 Work 新增 paid model POST = 0；沒有新 Job/ACTIVE share，不能升到3/9。
+- 原 Staging [#41316476210](https://github.com/NFF98/appf2-build/actions/runs/41316476210) **completed/success**，已逐項核對全部 step 及完整 job logs；paid markers false、paid model jobs skipped。真 ingress：>1400且<=4096中文錯PoP為404；>4096及其他Agent>1400為413。視窗/全屏、舊卡重用、PG橋/兩次Chrome冷啟動等指定免費回歸 step成功。
+- Foundation 原 #41316476230 是 **cancelled**，不可改寫為成功；同舊程式後續 [#41316637632](https://github.com/NFF98/appf2-build/actions/runs/41316637632) **SUCCESS**，types/lint/API/runtime/Docker/Chromium全部實際執行。
+- **負面證據仍在**：Staging末段舊十八啦稽核刻意保存 TWO_PAIRS_TWELVE、TRIPLE_MUST_REROLL、結果/排行/規則缺頁；corrected live published card另外驗證成功。不能把workflow success說成所有舊App合格。既有CI Gate在 Human Task授權預檢失敗，完整舊Gate skipped；不是產品新測試PASS，不拿它阻擋本Sprint。
+- Supabase只讀重新核帳：2026-11-01 UTC **12筆SUCCEEDED GPT-6.1-sol，model_call ceiling 228¢**；10/31兩筆IN_FLIGHT+兩筆BLOCKED_UNCERTAIN，各8¢共**32¢未決風險**。供應商實扣仍NOT_VERIFIED；最後成功model journal created_at=2026-11-01T13:54:54.797822Z。本Work沒有增加模型journal。禁止重送這四筆。
+- G3/G4原44¢兩個獨立批准均已各自執行，不存在可推定的下一個44¢餘額。**下一新Job等待Human明確批准新增最高US$0.44**；舊32¢風險另列且不可當零。不要因「持續」字眼觸發paid marker。
+
+### 已完成的下一款免費準備（不是產品PASS）
+
+- SPEC first：Design #45 H-001 §0.15，commit b85cc1673012a5dae4009721930c4276d94c51a6，下一款**全新餐費分攤工具**，凍結七條原需求QA；不是重生已付井字棋/拿石頭。
+- Build #419新增 `deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs`：真原生首頁owner、44¢ Job cap、七項QA、200發布診斷、ACTIVE link、**另一個全新Chromium process**填表/計算/錯誤/重設/reload再算，guest model/Job POST必須0；尚未執行paid path。
+- 實際平台 `parseQaPlan` 本地檢查成功：7 criteria、最多6 steps、source_quote均來自原prompt；syntax與無授權拒絕檢查成功。欄位用number/spinbutton避免QA角色歧義。
+- 原既有 `.github/workflows/sp35-one-paid-ai-real-e2e.yml` 已準備G5 job；最終免費 [#41317624931](https://github.com/NFF98/appf2-build/actions/runs/41317624931) g5-meal-free-preflight SUCCESS，syntax/frozen plan/未授權拒絕/Staging readiness GET 全成功，g5 paid及所有其他paid job **SKIPPED**。
+- 最終工程候選HEAD `bd1e4b0ffe81fb260123f32038274ef982ba152f`；最終Foundation #41317625058 與live reuse #41317624981需依下面最終核對結果。文件追加commit只改交接/記錄，不啟動付費。
+
+### 下一個Work直接接續指令
+
+先讀本節、#419/#45最新HEAD與最終免費runs。若Human仍未批准**新的44¢單Job**，停在PAUSED_BUDGET，僅免費查修，**不提交paid marker、不新建付費Job**。批准後先只讀重核Supabase appf2_agent_model_call（包含原32¢風險，invoice未查仍標NOT_VERIFIED），再只於原 #419 的 `.github/workflows/sp35-one-paid-ai-real-e2e.yml` 加一行當次授權紀錄，以唯一 `[SP35-G5-MEAL-PAID-ONE-SHOT]` commit message啟動**一次**。不要rerun舊G3/G4/舊paid workflow。
+
+持續等待原G5 Job/免費Docker Chromium，最多兩輪集中修復且不超44¢、未知模型結果不得POST重送。必須核對該**新**job source/version、原凍結7/7 QA、200 ACTIVE新share、PG真ACTIVE/hash，以及新的獨立Chromium實際填表/算1100與275、600/3=200、零人拒絕、重設、reload再算、guest生成0。全部通過才+1為3/9；若失敗保留原Job/source/receipt及HTTP錯誤，在同PR分析根因。只Sprint3.5、不新PR、不merge、不Production。
+
+### 最終免費結果（本Work已核對，非新產品驗收）
+
+- [Foundation #41317625058](https://github.com/NFF98/appf2-build/actions/runs/41317625058) **completed/success**：精確工程候選 bd1e4b0 types/lint/build/API/runtime、temporal QA、多檔/browser、network-denied Docker、真Staging Job→Docker全完成。
+- [Live published reuse #41317624981](https://github.com/NFF98/appf2-build/actions/runs/41317624981) **completed/success**：既有App兩browser實際操作/reload與新Agent無同意零呼叫回歸。
+- [G5免費預檢 #41317624931](https://github.com/NFF98/appf2-build/actions/runs/41317624931) **completed/success**；所有paid jobs skipped。沒有新AI Job、沒有新published card，所以仍2/9。
+- 本輪沒有新的真產品故障需要集中修復；**阻斷是下一筆US$0.44新授權尚未取得**。原413修正已部署且免費驗證，不能拿免費PASS補分。最後ledger重核仍12筆/228¢ ceiling；invoice unknown；舊32¢ risk仍保留。
