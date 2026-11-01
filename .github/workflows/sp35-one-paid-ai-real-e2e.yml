@@ -58,13 +58,13 @@ jobs:
           node --input-type=module -e 'import fs from "node:fs";if(!fs.readFileSync("refusal.log","utf8").includes("PAUSED_BUDGET"))process.exit(1)'
   one-remaining-native-original-request:
     # One selected unseen request, never a generation loop. Operator verifies
-    # original journal and remaining seven-Job/308c batch limit before marker.
+    # original journal and remaining 308c conservative liability per SPEC 0.24 before marker.
     if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-REMAINING-PAID-ONE-SHOT]')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
       APPF2_SP35_REMAINING_EXPLICIT_PAID_OK: '1'
-      APPF2_SP35_SAMPLE: ${{ contains(github.event.head_commit.message, '[SP35-SAMPLE-g6-length]') && 'g6-length' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g7-memory]') && 'g7-memory' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g8-lights]') && 'g8-lights' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g9-connect]') && 'g9-connect' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g10-books]') && 'g10-books' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g11-water]') && 'g11-water' || '' }}
+      APPF2_SP35_SAMPLE: ${{ contains(github.event.head_commit.message, '[SP35-SAMPLE-g6-length]') && 'g6-length' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g7-memory]') && 'g7-memory' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g8-lights]') && 'g8-lights' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g9-connect]') && 'g9-connect' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g10-books]') && 'g10-books' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g11-water]') && 'g11-water' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g12-reading]') && 'g12-reading' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g13-order]') && 'g13-order' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -517,3 +517,5 @@ jobs:
 # Original G6 model already SUCCEEDED, browser environment unavailable: preserve its journal; authorize only next distinct g7-memory once under existing 7-Job/308c approval, max44c.
 
 # G7 original failed QA preserved, no further charge. Next unseen g8-lights, one native owner Job44c under existing total308c; never rerun paid G6/G7.
+
+# SPEC 0.24 preserves total308c / Job44c; eight immutable plans, zero generation in this free preflight.
