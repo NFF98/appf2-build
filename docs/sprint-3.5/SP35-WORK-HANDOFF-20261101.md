@@ -1,3 +1,11 @@
+# 活動中：G10 原 Job 已建立，禁止重送（2026-11-02 JST）
+
+接管已啟動唯一一次 G10 閱讀書單；[原網站工作流41363905501](https://github.com/NFF98/appf2-build/actions/runs/41363905501)，原 Job `9eecc831-4bb9-4af4-ac88-546fd159c22d`。模型 runner [41364070765](https://github.com/NFF98/appf2-build/actions/runs/41364070765)，CODE journal IN_FLIGHT、max20¢，整Job44¢，尚無QA/ACTIVE，不計分。不能重新跑paid workflow或同prompt；先只讀原journal/runner/QA/公開結果。
+
+真產品已核4/9，完整證據見下一節。保守新授權風險含G10為216/308¢，舊32¢另列；invoice NOT_VERIFIED。當前 Cua 有公開G9 tab1，沒有歷史G6 owner tab；不得假造owner或重送G6。
+
+---
+
 # 2026-11-02 JST 接管核實：4/9（44.4%）；下一件 G10 尚未啟動
 
 - G9 原 Job `9b5b9dce-142d-417a-9ca1-77113d7642ae` 全網站 [41334608554](https://github.com/NFF98/appf2-build/actions/runs/41334608554) SUCCESS：原 frozen QA 7/7、HTTP201、ACTIVE `a451295e-49e0-401e-855f-923152dbc65f`、獨立 Chromium/reload/零生成。額外 [41335358726](https://github.com/NFF98/appf2-build/actions/runs/41335358726) SUCCESS：水平、兩方向斜線、滿欄拒絕、勝後鎖定及重玩。PG 已核 public_opt_in=true，blueprint `sha256:f6c011bac6535597b1343a7604a44678d105a0052ffff89ba83a9291aa612509`。G9 唯一 CODE20¢ SUCCEEDED，1372/5747 tokens；本工作明確關閉其付費命令，後續只零生成重用。
