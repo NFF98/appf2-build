@@ -1,4 +1,4 @@
-/** SPEC H-001 0.19 + 0.24 frozen BEFORE model generation. Trusted acceptance data only. */
+/** SPEC H-001 0.19 / 0.24 / 0.25 frozen BEFORE model generation. Trusted acceptance data only. */
 export const scenarios={
  "g6-length": {
   "id": "g6-length",
@@ -1964,6 +1964,263 @@ export const scenarios={
     "action": "expect",
     "args": [
      "挑戰完成"
+    ]
+   }
+  ]
+ },
+ "g14-escape": {
+  "id": "g14-escape",
+  "title": "小屋逃脫",
+  "category": "game",
+  "prompt": "製作「小屋逃脫」。標題顯示「小屋逃脫」。提供名稱固定「拾取鑰匙」「打開木門」「走向出口」「重新開始」的按鈕。初始顯示「鑰匙：未持有」與「木門：關閉」。未拾鑰匙先按打開木門顯示「需要鑰匙」，門保持關閉。按拾取鑰匙顯示「鑰匙：已持有」。按拾取鑰匙再按打開木門顯示「木門：已開」。未開門不能完成。依序按拾取鑰匙、打開木門、走向出口顯示「逃脫成功」。完成後前三個按鈕不能再改變狀態。按拾取鑰匙再按重新開始顯示「鑰匙：未持有」，木門關閉、錯誤與成功訊息清除，可再完整遊玩；刷新也能重新遊玩。所有狀態、錯誤與成功文字只在對應實際狀態顯示，玩法說明不可預先印出結果文案。請由AI自由撰寫至少三個互相import的src/ TypeScript模組及CSS，不得用模板、mock、固定成功畫面、外部網路、外部套件或localStorage。按鈕與文字依以下名稱，手機也可完整操作。",
+  "cases": [
+   [
+    "title",
+    "標題顯示「小屋逃脫」",
+    [],
+    {
+     "kind": "text_includes",
+     "text": "小屋逃脫"
+    }
+   ],
+   [
+    "initial",
+    "初始顯示「鑰匙：未持有」",
+    [],
+    {
+     "kind": "text_includes",
+     "text": "鑰匙：未持有"
+    }
+   ],
+   [
+    "needs_key",
+    "未拾鑰匙先按打開木門顯示「需要鑰匙」",
+    [
+     {
+      "action": "click",
+      "role": "button",
+      "name": "打開木門"
+     }
+    ],
+    {
+     "kind": "text_appears",
+     "text": "需要鑰匙"
+    }
+   ],
+   [
+    "key",
+    "按拾取鑰匙顯示「鑰匙：已持有」",
+    [
+     {
+      "action": "click",
+      "role": "button",
+      "name": "拾取鑰匙"
+     }
+    ],
+    {
+     "kind": "text_appears",
+     "text": "鑰匙：已持有"
+    }
+   ],
+   [
+    "door",
+    "按拾取鑰匙再按打開木門顯示「木門：已開」",
+    [
+     {
+      "action": "click",
+      "role": "button",
+      "name": "拾取鑰匙"
+     },
+     {
+      "action": "click",
+      "role": "button",
+      "name": "打開木門"
+     }
+    ],
+    {
+     "kind": "text_appears",
+     "text": "木門：已開"
+    }
+   ],
+   [
+    "win",
+    "依序按拾取鑰匙、打開木門、走向出口顯示「逃脫成功」",
+    [
+     {
+      "action": "click",
+      "role": "button",
+      "name": "拾取鑰匙"
+     },
+     {
+      "action": "click",
+      "role": "button",
+      "name": "打開木門"
+     },
+     {
+      "action": "click",
+      "role": "button",
+      "name": "走向出口"
+     }
+    ],
+    {
+     "kind": "text_appears",
+     "text": "逃脫成功"
+    }
+   ],
+   [
+    "reset",
+    "按拾取鑰匙再按重新開始顯示「鑰匙：未持有」",
+    [
+     {
+      "action": "click",
+      "role": "button",
+      "name": "拾取鑰匙"
+     },
+     {
+      "action": "click",
+      "role": "button",
+      "name": "重新開始"
+     }
+    ],
+    {
+     "kind": "text_appears",
+     "text": "鑰匙：未持有"
+    }
+   ]
+  ],
+  "guest": [
+   {
+    "action": "expect",
+    "args": [
+     "鑰匙：未持有"
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "走向出口"
+    ]
+   },
+   {
+    "action": "absent",
+    "args": [
+     "逃脫成功"
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "打開木門"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "需要鑰匙"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "木門：關閉"
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "拾取鑰匙"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "鑰匙：已持有"
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "打開木門"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "木門：已開"
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "走向出口"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "逃脫成功"
+    ]
+   },
+   {
+    "action": "blocked",
+    "args": [
+     [
+      "拾取鑰匙",
+      "打開木門",
+      "走向出口"
+     ]
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "重新開始"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "鑰匙：未持有"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "木門：關閉"
+    ]
+   },
+   {
+    "action": "absent",
+    "args": [
+     "逃脫成功"
+    ]
+   },
+   {
+    "action": "reload",
+    "args": []
+   },
+   {
+    "action": "click",
+    "args": [
+     "拾取鑰匙"
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "打開木門"
+    ]
+   },
+   {
+    "action": "click",
+    "args": [
+     "走向出口"
+    ]
+   },
+   {
+    "action": "expect",
+    "args": [
+     "逃脫成功"
     ]
    }
   ]
