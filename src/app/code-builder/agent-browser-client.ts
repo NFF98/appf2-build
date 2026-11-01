@@ -470,6 +470,35 @@ export class BrowserCodingAgent {
   }
   throw Error("GPT-6 回應超時，原 Job 已保存，未重新呼叫模型。");
  }
+ /** Signed, read-only C5 strategy inspection against the SAME frozen QA and
+  * real GitHub OIDC browser-failure lineage. No model reservation or charge.
+  * A third paid repair must not silently repeat the same failed approach.
+  */
+ async inspectFreeAiRepairEvidence():Promise<{
+  readonly status:"C5_EVIDENCE_ONLY";readonly project_hash:string;
+  readonly job_revision:number;readonly project_revision:number;
+  readonly next_round:number;
+  readonly mode:"RETHINK_ROOT_CAUSE"|"FIX_FAILED_CHECKS";
+  readonly repeated_failure_count:number;readonly evidence_snapshots:number;
+  readonly paid_model_requests_issued_by_inspection:0;readonly app_published:false;
+ }>{
+  const target=this.target;
+  if(!target)throw Error("NO_AGENT_JOB");
+  const result=await this.post<{
+   status:"C5_EVIDENCE_ONLY";project_hash:string;
+   job_revision:number;project_revision:number;next_round:number;
+   mode:"RETHINK_ROOT_CAUSE"|"FIX_FAILED_CHECKS";
+   repeated_failure_count:number;evidence_snapshots:number;
+   paid_model_requests_issued_by_inspection:0;app_published:false;
+  }>("/free-ai-repair-evidence",{
+   anonymous_id:this.owner,original_prompt:target.prompt});
+  if(result.status!=="C5_EVIDENCE_ONLY"||
+   !["RETHINK_ROOT_CAUSE","FIX_FAILED_CHECKS"].includes(result.mode)||
+   result.paid_model_requests_issued_by_inspection!==0||
+   result.app_published!==false)
+   throw Error("C5 原始失敗證據驗證失敗；已停止，不會啟動付費修復。");
+  return result;
+ }
  /** Explicit, separately signed PUBLIC release of a fully QA-passing saved App.
   * The server refuses missing plans, FAIL, UNTESTED and stale hashes.
   * Only an owner-signed click may make the resulting /code/ card shareable.
