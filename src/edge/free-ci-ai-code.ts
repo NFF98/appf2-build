@@ -314,9 +314,13 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  if(repairing&&!provenBuildFailure&&!provenQaFailure)
   throw Error("SP35_REPAIR_NO_PROVEN_AUTOMATABLE_FAILURE");
  const history=repairing?(await ctx.db.query<FreeCiRepairHistory>(
-  "SELECT project_hash,receipt_json FROM public.appf2_agent_free_ci_receipt "+
-  "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid "+
-  "ORDER BY created_at DESC,project_hash DESC LIMIT 8",
+  "SELECT r.project_hash,r.receipt_json,s.project_revision,s.parent_hash "+
+  "FROM public.appf2_agent_free_ci_receipt r "+
+  "JOIN public.appf2_agent_project_snapshot s "+
+  "ON s.owner_anonymous_id=r.owner_anonymous_id "+
+  "AND s.project_hash=r.project_hash "+
+  "WHERE r.job_id=$1::uuid AND r.owner_anonymous_id=$2::uuid "+
+  "ORDER BY s.project_revision DESC,r.project_hash DESC LIMIT 8",
   [ctx.jobId,input.anonymous_id])).rows:[];
  const strategy=repairing?await decideFreeCiRepair(plan,history,
   job.project.project_hash,job.project.revision,job.job.checkpoint.step,
