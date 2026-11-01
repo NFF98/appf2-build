@@ -78,6 +78,7 @@ for(const stage of stages){
  phase++;
  let stageFinished=false;
  // Same immutable phase+owner+Job, repeated POST is GET-only recovery.
+ let transient503=0;
  for(let attempt=0;attempt<100&&Date.now()<deadline;attempt++){
   const before=await signed(base,{anonymous_id:owner});
   const requiredSteps=2*(repaired+1);
@@ -94,8 +95,10 @@ for(const stage of stages){
   // SUCCEEDED journal row tied to that parent's hash; no fresh paid POST.
   // All other odd heads remain uncertain and MUST stop, never regenerate.
   if(before.checkpoint?.step%2!==0&&
-     !(stage==="REPAIR"&&before.status==="REPAIRING"&&
-       before.revision===requiredSteps-1))
+     !((stage==="REPAIR"&&before.status==="REPAIRING"&&
+         before.revision===requiredSteps-1)||
+       (stage==="CODE"&&before.status==="PLANNING"&&
+         before.revision===1&&before.checkpoint.step===1)))
    throw Error("C2_INCOMPLETE_CHECKPOINT_STOP_NO_NEW_MODEL_CALL");
   if(before.checkpoint?.step%2!==0)
    console.log("C4 SAVED HALF-CHECKPOINT: same owner recovers prior paid result, no new model reservation");
@@ -108,9 +111,16 @@ for(const stage of stages){
   }catch(error){
    // A lost response cannot authorize a fresh paid call. Next iteration
    // recovers the original Job and immutable model journal on the server.
-   if(error?.name!=="TimeoutError"&&error?.name!=="AbortError")
-    throw error;
-   console.log("C2 OWNER REQUEST TIMEOUT: read same Job and existing call journal");
+   // A real Worker→Postgres CAS can return HTTP503 AFTER the model
+   // completed and its response was journaled. The next request is a
+   // creator-signed continuation of the SAME immutable phase/call key.
+   // Never create a new Job, change consent, or generate a new phase key.
+   const retryable=error?.name==="TimeoutError"||
+    error?.name==="AbortError"||
+    /^C5_SIGNED_HTTP_503_AT_free-ai-stage_(AGENT_JOB_UNAVAILABLE|AGENT_JOB_CONCURRENT_UPDATE|AGENT_JOB_STALE_CHECKPOINT|PROJECT_EDIT_CONFLICT)$/u.test(
+     String(error?.message??""));
+   if(!retryable||++transient503>4)throw error;
+   console.log("C4 TRANSIENT SAVE/CAS HTTP503 OR TIMEOUT: only same signed owner/Job/phase journal; no second model reservation");
    await sleep(7000);
    continue;
   }
