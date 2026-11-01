@@ -203,7 +203,12 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const key=request.headers.get("Idempotency-Key");
  if(!key||!KEY.test(key))return json(400,{error:"AGENT_JOB_KEY_INVALID"});
  // Bound request size before any database side effect.
- const maxBytes=freeImportMatch||freeRepairMatch?200000:qaMatch||qaRunMatch||qaRepairMatch||qaPlanMatch?24000:1400;
+ // Signed public share includes up to 800 UTF-8 Chinese prompt characters and
+ // bounded title/UUID/hash; 1400 bytes rejects valid intent BEFORE P-256.
+ // Do NOT widen the default 1400-byte Agent ingress or bypass proof/QA.
+ const maxBytes=freeImportMatch||freeRepairMatch?200000:
+  qaMatch||qaRunMatch||qaRepairMatch||qaPlanMatch?24000:
+  freeShareMatch?4096:1400;
  if(Number(request.headers.get("Content-Length")??0)>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
  const bytes=new Uint8Array(await request.arrayBuffer());
  if(bytes.byteLength>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
