@@ -548,3 +548,5 @@ jobs:
 # 2026-11-01 one isolated staging-only 413 share ingress correction; no paid model or Production; original P-256 signing and source QA unchanged. [SP35-G0-FREE-STAGING-ONCE]
 
 # 2026-11-01 second and FINAL one-shot isolated staging deployment ONLY after exact lint fix, read-only invalid-PoP 413 boundary probe. Never Production, never model. [SP35-G0-FREE-STAGING-ONCE]
+
+# Second/final focused correction: every exact 800-char intent route, original caps elsewhere, zero model. 201 Created remains correct publication semantics.
