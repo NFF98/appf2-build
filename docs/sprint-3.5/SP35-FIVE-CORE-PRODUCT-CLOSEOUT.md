@@ -328,6 +328,14 @@
 - Run #41260326816 then exposed a **genuine C5 logic bug**: an intervening UNTESTED-only QA version was omitted when counting previous repeated failures, resulting in a false second consecutive failure. Commit `b780142` now treats a missing, forged or UNTESTED-only intermediate version as a **hard streak boundary**, never counting across it. Entire new run #41260477317 passed including root-cause strategy tests.
 - Current **source checks and free staging integration PASS**; GPT-6 actually repairing a failing model-written App with independent browser PASS (C4), followed by real repeated-failure strategy switching and subsequent successful continuity (C5), still **NOT_PROVEN**. No new provider charges, production merge, production publish, or paid Cloudflare Containers in this verification.
 
+
+### 2026-11-01 — Five-core live final acceptance: genuine GPT-6 CODE succeeded, full closure blocked
+
+- **Real paid end-to-end attempt:** [GitHub run #41261297016](https://github.com/NFF98/appf2-build/actions/runs/41261297016), one deliberately bounded 76-cent maximum-approved Job using ephemeral P-256 creator identity, original QA plan frozen in Staging PostgreSQL, real `gpt-6.1-sol` provider CODE turn, immutable owner Job model journal (`sp35_free_ai_code_v1:SUCCEEDED`) and persisted source/project revision 2. GitHub private paid AI runner [#41261363646](https://github.com/NFF98/appf2-build/actions/runs/41261363646) was triggered from the Worker (not a fake AI response).
+- **Not full PASS:** the owner-signed `/free-ai-stage` request in the one-shot test timed out after 45 seconds at line 71, despite the paid CODE result having succeeded and source being saved; the one-shot test job ended FAIL before receiving its free Docker/Chromium QA receipt. Verified at initial failure time that the 76c test Job had `0` free CI receipts. Its ephemeral private owner signing key was intentionally not exported from the runner; **do not retry that completed model charge or impersonate the creator**.
+- Follow-up code commit `bf0ec5e` changes the **test harness only**, extending signed stage HTTP timeout to 125 seconds and checking already-applied Job revision before resending a stage. The fresh free-only CI is pending as of this note. The one-shot workflow is marker-gated; ordinary pushes **do not start another paid model call**. No second paid test launched.
+- C1 real saved published sandbox CRUD and two viewer isolation remain previously verified. C2 owner-signed real Job + pre-code frozen QA + GPT-6 project revision 2 verified. C3 real free Docker/Chromium staging integration has separate passing workflows. C4 actual failed AI source→real paid repair→all frozen browser PASS remains **NOT VERIFIED**; C5 genuinely stalled three revisions→root cause switch→successful resumed same Job remains **NOT VERIFIED**. **Strict full five-core 5/5 remains NOT PASSED**. No Production deploy or merge.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
