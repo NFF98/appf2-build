@@ -63,6 +63,28 @@ if(saved.status!==200||job?.job_id!==jobId||job.status!=="CREATED"||
  job.ai_started!==false||job.app_published!==false||
  job.free_ci!==null)
  throw Error("SP35_AGENT_LIVE_DB: SIGNED_POSTGRES_REOPEN_FAILED_HTTP_"+saved.status);
+// G0 real Staging smoke: the deployed route must read PostgreSQL chronology
+// with the SAME creator key, zero provider calls and no fake QA milestone.
+const timelinePath="/api/v1/agent-jobs/"+jobId+"/job-timeline";
+const timeline=await stamp(timelinePath,{anonymous_id:owner});
+const times=timeline.data?.data;
+if(timeline.status!==200||times?.status!=="SP35_REAL_TIMELINE_READ_ONLY"||
+ times.job_revision!==0||times.job_state!=="CREATED"||
+ typeof times.job_saved_at_ms!=="number"||
+ times.model_calls_recorded!==0||times.qa_receipts_recorded!==0||
+ times.time_to_first_source_ms!==null||
+ times.time_to_first_qa_pass_preview_ms!==null||
+ times.real_user_first_interaction_ms!==null||
+ times.new_paid_model_calls_by_inspection!==0)
+ throw Error("SP35_G0_REAL_TIMELINE_MISSING_OR_FALSE_PASS_HTTP_"+timeline.status);
+// Knowing the Job URL, a signed request with another anonymous identity
+// must never expose the original owner's timestamps or data.
+const unauthorized=await stamp(timelinePath,{anonymous_id:randomUUID()});
+if(unauthorized.status!==404)
+ throw Error("SP35_G0_FOREIGN_OWNER_TIMELINE_NOT_DENIED_"+unauthorized.status);
+console.log("SP35_G0_REAL_TIMELINE_PASS: original signed owner -> PostgreSQL "+
+ "job_saved_at_ms; no fabricated QA/first-interaction milestone, foreign owner 404, "+
+ "model POST 0.");
 // The provider/model GET ran earlier on GitHub, but GPT-6 POST from the
 // Cloudflare Worker failed before returning an ID. Verify the exact same
 // Worker egress path using a no-charge GET and creator-signed Job first.
