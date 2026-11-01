@@ -226,6 +226,7 @@ let startedAt,qaReadyAt;
 const {chromium}=await import("@playwright/test");
 const browser=await chromium.launch({headless:true});
 const contexts=[];
+let guestBrowser=null;
 try{
  const creatorCtx=await browser.newContext({serviceWorkers:"block"});
  contexts.push(creatorCtx);
@@ -342,7 +343,8 @@ try{
     publishResponses.filter(x=>x.http===200).length!==1)
   throw Error("SP35_G5_PUBLICATION_NOT_SINGLE_VERIFIED_ACTIVE");
  shareId=match[1];
- const guestCtx=await browser.newContext({serviceWorkers:"block"});
+ guestBrowser=await chromium.launch({headless:true});
+ const guestCtx=await guestBrowser.newContext({serviceWorkers:"block"});
  contexts.push(guestCtx);
  const guest=await guestCtx.newPage();
  let extraModelOrJobPosts=0;
@@ -411,5 +413,6 @@ try{
  throw error;
 }finally{
  for(const context of contexts)await context.close().catch(()=>{});
+ if(guestBrowser)await guestBrowser.close();
  await browser.close();
 }
