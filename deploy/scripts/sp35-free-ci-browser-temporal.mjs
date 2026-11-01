@@ -20,7 +20,7 @@ export async function observedQaBody(target,assertions=[]){
   if(body.includes(expected))continue;
   // eslint-disable-next-line complexity -- Exact single-component visibility needs all ancestor and layout checks.
   const observed=await target.evaluate(value=>{
-   const normalized=text=>String(text??"").replace(/[\\s\\u200b\\u200c\\u200d]/gu,"");
+   const normalized=text=>String(text??"").replace(/[\s\u200b\u200c\u200d]/gu,"");
    const want=normalized(value);
    if(!want||want.length>160)return false;
    const root=globalThis.document.body;
@@ -46,7 +46,7 @@ export async function observedQaBody(target,assertions=[]){
    }
    return false;
   },expected);
-  if(observed)body+="\\n[APPF2_VISIBLE_COMPONENT]"+expected;
+  if(observed)body+="\n[APPF2_VISIBLE_COMPONENT]"+expected;
  }
  return body;
 }
