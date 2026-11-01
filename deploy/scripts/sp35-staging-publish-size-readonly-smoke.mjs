@@ -10,7 +10,7 @@ const job="7045a009-6bfc-4889-8f1b-df03ba93c406";
 const publish="/api/v1/agent-jobs/"+job+"/publish-code-app";
 const create="/api/v1/agent-jobs";
 const other="/api/v1/agent-jobs/"+job+"/agent-progress";
-const intentRoutes=["free-ai-stage","free-ai-repair-evidence","qa-generate"]
+const intentRoutes=["free-ai-stage","free-ai-repair-evidence"]
  .map(x=>"/api/v1/agent-jobs/"+job+"/"+x);
 const encoder=new TextEncoder();
 const longChinese=JSON.stringify({
@@ -67,7 +67,15 @@ for(const path of intentRoutes){
  const admitted=await probe(path,longCreate);
  const oversized=await probe(path,tooLarge);
  if(admitted.http!==404||oversized.http!==413)
-  throw Error("SP35_EXACT_INTENT_ROUTE_BOUNDARY_NOT_FIXED "+path);
+  throw Error("SP35_EXACT_INTENT_ROUTE_BOUNDARY_NOT_FIXED "+path+" "+
+   JSON.stringify({admitted,oversized}));
+}
+// FREE_ONLY deliberately denies the disabled legacy paid QA route BEFORE
+// parsing any body. Do not enable it just to force a byte-limit response.
+const disabledQa="/api/v1/agent-jobs/"+job+"/qa-generate";
+for(const raw of [longCreate,tooLarge]){
+ const denied=await probe(disabledQa,raw);
+ if(denied.http!==404)throw Error("SP35_DISABLED_LEGACY_QA_WAS_EXPOSED");
 }
 const otherBlocked=await probe(other,generalTooLarge);
 if(otherBlocked.http!==413||otherBlocked.error!=="AGENT_JOB_TOO_LARGE")
