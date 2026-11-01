@@ -11,6 +11,75 @@ concurrency:
   group: sp35-one-explicit-paid-ai-e2e
   cancel-in-progress: false
 jobs:
+  g3-game-free-frozen-plan-preflight:
+    # One FREE check only: no new owner Job or model API POST.
+    # SPEC is Design PR #45 H-001 §0.12; green here is NOT product 3/9.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G3-GAME-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install existing locked dependencies, no model
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Syntax check game proof
+        run: node --check deploy/scripts/sp35-third-native-website-game-e2e.mjs
+      - name: Frozen requirements and seven QA source quotes; no browser, no model
+        run: node deploy/scripts/sp35-third-native-website-game-e2e.mjs --preflight-only
+      - name: Signed AI model readiness is reported separately; GET only
+        run: |
+          node --input-type=module <<'JS'
+          const url="https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness";
+          const r=await fetch(url,{signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          console.log("SP35 G3 READONLY: status="+r.status+
+            " paid_available="+String(j?.data?.free_ci_paid_ai_available===true));
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G3_STAGING_NOT_READY_NO_MODEL_CALL");
+          JS
+
+  g3-one-website-gpt6-new-game:
+    # Inert on ordinary pushes. Never activate without a NEW explicit per-Job
+    # Human model budget + cross-Job ledger reconciliation + owner consent.
+    # A free plan-preflight marker does NOT trigger this job.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G3-GAME-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_G3_EXPLICIT_PAID_OK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Free syntax, locked deps and frozen seven QA preflight FIRST
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --check deploy/scripts/sp35-third-native-website-game-e2e.mjs
+          node deploy/scripts/sp35-third-native-website-game-e2e.mjs --preflight-only
+      - name: Free staging GET readiness before any model request
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",
+            {signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G3_PREPAID_READINESS_FAIL_ZERO_MODEL_POST");
+          console.log("SP35 G3 READY, still zero model calls");
+          JS
+      - name: Install free Chromium once
+        run: npx playwright install --with-deps chromium
+      - name: ONE true website GPT-6 multi-module game, frozen QA 7/7, share and fresh guest play
+        run: node deploy/scripts/sp35-third-native-website-game-e2e.mjs
+
   g2-free-published-original-browser-retest:
     # NO MODEL, no new Job. Already published AI-authored original DB App,
     # one fail-closed check based on actual signed PG verbs and 2xx statuses.
