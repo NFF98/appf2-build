@@ -41,8 +41,11 @@ async function attestedFailure(planHash:string,plan:QaPlan,
  if(!plan.criteria.every((criterion,i)=>
   checks[i]?.criterion_id===criterion.id&&
   (criterion.automatable||checks[i]?.verdict!=="PASS")))return null;
+ // A missing button becoming a wrong post-click result is real progress.
+ // Count it as a different symptom, not three identical stalled repairs.
+ // Historical receipts with no reason remain a separate UNKNOWN signature.
  const failures=checks.filter(c=>c.verdict==="FAIL")
-  .map(c=>c.criterion_id).sort();
+  .map(c=>c.criterion_id+":"+(c.failure_code??"UNKNOWN")).sort();
  return failures.length>0?{hash:row.project_hash,
   signature:JSON.stringify(failures)}:null;
 }
