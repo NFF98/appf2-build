@@ -496,6 +496,17 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   if(freeAiMatch&&e instanceof Error&&
    e.message==="SP35_PAID_AI_WORKER_EGRESS_UNAVAILABLE_NO_POST")
    return json(503,{error:"SP35_WORKER_MODEL_EGRESS_BLOCKED_NO_CHARGE"});
+  // Creator-signed paid repair may already be journaled SUCCEEDED, but a
+  // checkpoint or request fingerprint mismatch must NEVER trigger new spend.
+  // Constant diagnostic codes are safe to surface; no SQL/model/source leak.
+  if(freeAiMatch&&e instanceof Error&&[
+   "SP35_PAID_AI_REQUEST_HASH_MISMATCH_NO_RECHARGE",
+   "AGENT_CHECKPOINT_INVALID_TRANSITION","AGENT_JOB_CONCURRENT_UPDATE",
+   "AGENT_JOB_STALE_CHECKPOINT","AGENT_PROJECT_PROOF_INVALID",
+   "AGENT_PROJECT_PARENT_MISSING","PROJECT_EDIT_CONFLICT",
+   "SP35_PAID_CODE_INVALID_NO_RECHARGE"
+  ].includes(e.message))
+   return json(503,{error:e.message});
   // Creator PoP already verified. Return ONLY one fixed failure category;
   // never reveal OpenAI response bodies, internal SQL, credentials or tokens.
   // A paid phase with uncertain outcome is NEVER safe to auto-retry.
