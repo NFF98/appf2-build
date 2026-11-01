@@ -71,6 +71,11 @@ SELECT j.job_id::text,j.revision,j.job_state,
  JOIN public.appf2_agent_qa_plan q ON q.job_id=r.job_id
  AND q.owner_anonymous_id=r.owner_anonymous_id
  WHERE r.job_id=j.job_id AND r.owner_anonymous_id=j.owner_anonymous_id
+ AND r.receipt_json->>'version'='APPF2_FREE_CI_SMOKE_V1'
+ AND r.receipt_json->'checks' @> '{"locked_build":true,"chromium_render":true}'::jsonb
+ AND r.receipt_json->>'project_hash'=r.project_hash
+ AND r.receipt_json->>'artifact_hash'=r.built_artifact_hash
+ AND p.run_id=r.run_id AND p.artifact_hash=r.built_artifact_hash
  AND jsonb_typeof(r.receipt_json->'qa_checks')='array'
  AND jsonb_typeof(q.original_plan->'criteria')='array'
  AND jsonb_array_length(r.receipt_json->'qa_checks')>0
@@ -79,6 +84,12 @@ SELECT j.job_id::text,j.revision,j.job_state,
  AND NOT EXISTS (
   SELECT 1 FROM jsonb_array_elements(r.receipt_json->'qa_checks') c
   WHERE c->>'verdict'<>'PASS' OR c->>'verdict' IS NULL
+ )
+ AND NOT EXISTS (
+  SELECT 1 FROM jsonb_array_elements(q.original_plan->'criteria') required
+  WHERE (SELECT COUNT(*) FROM jsonb_array_elements(r.receipt_json->'qa_checks') observed
+         WHERE observed->>'criterion_id'=required->>'id'
+           AND observed->>'verdict'='PASS') <> 1
  )) AS first_verified_preview_ms,
  (SELECT (extract(epoch FROM MAX(p.created_at))*1000)::double precision
  FROM public.appf2_agent_free_ci_preview p WHERE p.job_id=j.job_id
