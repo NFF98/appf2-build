@@ -6,6 +6,15 @@
 > **唯一產品開發 PR**：[Build #419](https://github.com/NFF98/appf2-build/pull/419)；Design 只沿用 [#45](https://github.com/NFF98/appf2-design/pull/45)。不開 Sprint 4，不建立平行的 Product Spec 或其他開發 PR。
 
 
+### 0.S.1 2026-11-01 下一輪「繼續突破」：拆分可見文字 QA **根因與免費 10/10 真 Chromium PASS**
+
+- **症狀**：新真 GPT-6 計數工具首輪 Chromium QA 1/5，正常分離 UI `<span>計數：</span><span>1</span>` 被錯判；新版一般性 QA 修法第一輪 [免費 #41303551140](https://github.com/NFF98/appf2-build/actions/runs/41303551140) 仍 FAIL。臨時安全診斷 [免費 #41303778353](https://github.com/NFF98/appf2-build/actions/runs/41303778353) 顯示 `before="紀錄數：\\n0...VISIBLE_COMPONENT 紀錄數：0"`、`stepBodies=["紀錄數：\\n1...VISIBLE_COMPONENT 紀錄數：0",...]`，即畫面實際 1 時 QA 仍插入「0」錯誤標記，不能只改 DOM 比對規則就當修好。
+- **已證實根因並修復**：在 `deploy/scripts/sp35-free-ci-browser-temporal.mjs` 中，DOM 正規化 regex 原為雙重跳脫的 `/[\\\\s\\\\u200b\\\\u200c\\\\u200d]/gu`，造成以字元集合移除英數 **0 與 1** 等符號，甚至把 `紀錄數：1` 比對成 `紀錄數：0`。Build PR #419 [commit 9253e65](https://github.com/NFF98/appf2-build/commit/9253e65f9497e8144f762d1a003e24e216a49b3f) 把 regex 修成真正的 whitespace/unicode zero-width normalization；保留使用者可見 DOM 同一子元件匹配、hidden/opaque/無尺寸拒絕與初始→中間→最終時序證據。**未改真 AI App 原始 source，不改歷史失敗 receipt；不透過關閉安全檢查湊 PASS**。
+- **FREE 真瀏覽器工程驗收確定成功**：[Foundation #41305714418](https://github.com/NFF98/appf2-build/actions/runs/41305714418) Workflow **SUCCESS**；原 Logs `2026-11-01T12:18:59.829Z SP35 REAL CHROMIUM VISIBLE DOM QA: 10/10 PASS; 6 temporal + split visible flex 0→1→0, no-op, unrelated-component and hidden-data FAIL-closed; no model call`。同 run TypeScript、Lint、build、API、三類多檔 Vite 真 Chromium、免費 Docker isolated E2E 皆成功。區分：這是新的**通用 QA 演算法回歸 PASS**，非又創造 9 個新 AI App。
+- **成本與使用者體驗改善意義**：此前第 1 個網站 full E2E 在原 QA 誤判後多用一次 `REPAIR 16c model-call reservation`（非實際扣款）與第二輪約 2m GPT-6 + 3m Docker；通用 fix 旨在避免往後因相同錯誤平白重付、重等。**是根據歷史耗時拆解的潛在節省，不是最新 9 次真新生成已測得的加速數字**；耗時仍需下一個全新使用者 Job 實測。自 2026-11-01 08:40 UTC 的受控模型 call 上限保留值為先前 20+20、首個全站生成 20+16，合計 76c；已使用新 Job 44c cap、歷史 40c cap，保守 Job cap 84c ≤ Human US$1。供應商發票仍 `NOT_VERIFIED`，不得花超出可證明剩餘額。
+- **最新全產品數字不變**：真正網頁新生成完整交付 **1/9**（第一個有公開卡、QA 5/5、訪客重開互動）；剩 **8/9**。五大產品跨三類通用能力尚未 5/5，**不要以此 10/10 工程測試冒充 2/9**。只在原 Build PR #419 / Design PR #45 / SSOT，不合併、不發布 Production、不啟動 Sprint 4。
+
+
 ## 0.S 2026-11-01 真網站全新 GPT-6 App 第一次 FULL E2E PASS：**0/9 → 1/9**（Human「突破」交付，最新事實）
 
 **這一節是最新驗收狀態，修正先前 §0.R 與 §0.Q 寫的當時 0/9 快照；保留歷史 0/9 記錄而不竄改。** 2026-11-01 第一次從真實 Staging 首頁新版 `AgentBuilderPanel` 輸入自然語言、勾選模型／免費 Docker／Chromium／自修授權、在網頁建立全新 Job，凍結 5 條要求、真正 GPT-6.1 Sol 多檔來源、免費 OIDC Docker+Chromium 真驗收、同一 Job 一輪自修、網站建立者 P-256 同意公開、二個獨立瀏覽器真的操作與重開，得到 **1/9 第一個完整網站 App E2E PASS**。**不代表五個產品核心目標全部 PASS**，也不代表 9/9 或速度達標。
