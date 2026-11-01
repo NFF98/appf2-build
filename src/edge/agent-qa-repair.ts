@@ -46,7 +46,7 @@ function failedChecks(record:SavedQa|undefined,revision:number,
  const x=record.receipt_json as Record<string,unknown>;
  if(x.ready_for_review!==false||x.packet!==null||
   !validQaObservedChecks(plan,x.checks)||
-  !x.checks.some(v=>v.verdict!=="PASS"))return null;
+  !x.checks.some(v=>v.verdict==="FAIL"))return null;
  return x.checks;
 }
 /** No historical/bogus QA result may trigger a fresh paid model call. */
