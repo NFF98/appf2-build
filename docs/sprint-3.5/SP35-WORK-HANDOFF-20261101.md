@@ -1,0 +1,34 @@
+# APPf2 Sprint 3.5 → ChatGPT Work execution handoff (2026-11-01)
+
+**DO WORK, not a fresh planning discussion.** User has approved continuation and wants real products operational and real costs bounded. Only existing Build PR #419 and Design PR #45. Never Sprint 4, merge, Production deploy, prompt the user for CLI/Cursor/Work re-selection, or pretend CI-only checks are products.
+
+## Single source of truth / permissions
+
+- Build: https://github.com/NFF98/appf2-build/pull/419 ; branch `product/sprint-3.5-complex-intent-recovery-20261026`.
+- Design: https://github.com/NFF98/appf2-design/pull/45 ; branch `product/blueprint-code-artifact-hybrid-20261028`; SPEC `working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md` §0.12–0.14. **Spec first** for any change in acceptance/cost/architecture.
+- Product SSOT: `docs/sprint-3.5/SP35-FIVE-CORE-PRODUCT-CLOSEOUT.md` (on Build #419).
+- Exactly **2/9 real successful independent NEW AI-created products = 22.2%**; third PASS requires new distinct signed native website owner to generate APP and save code, frozen original 7/7 independent network-denied Docker+Chromium QA, **200/ACTIVE published new share card**, and **fresh stranger Chromium actually clicking the AI-authored published App** (including reload/reuse with **0 guest model requests**). Baseline 1 tool + 1 PostgreSQL CRUD. Original desired category mix 3 simple tools, 3 interactive games, 3 real PostgreSQL apps. No fixed fixtures, old public cards or 7/7 without publication may increase numerator.
+
+## 413 incident, paid state, and current code
+
+- Real G3 new AI Tic-Tac-Toe `31d6a1f4-df41-4c41-8f92-5800a937c7c7`: GPT code succeeded, 6 source files, isolated Chromium QA 7/7, original creator publication did **NOT** result in public link, no guest; owner ephemeral P-256 private key expired. Preserve only. Source Run https://github.com/NFF98/appf2-build/actions/runs/41311674915.
+- Real G4 new AI stones game `7045a009-6bfc-4889-8f1b-df03ba93c406`: GPT code succeeded, 7 source files, original Chromium 7/7, **owner publish HTTP 413 AGENT_JOB_TOO_LARGE**, no share/guest; owner ephemeral P-256 expired. Source Run https://github.com/NFF98/appf2-build/actions/runs/41313398452 ; isolated QA https://github.com/NFF98/appf2-build/actions/runs/41313795170. No recovery with SQL/admin bypass; do not re-run model for these old jobs.
+- Confirmed root cause: `src/edge/agent-jobs.ts` generic POST max 1400 bytes erroneously applied to `/publish-code-app`. Valid Chinese 800-char prompt plus metadata exceeds it **before auth**. SPEC §0.14 freezes exact publication route max **4096 raw bytes**, keeping other 1400/24000/200000 caps, owner P-256, same-Origin, unchanged QA hash/ACTIVE gating.
+- Code patch on Build PR `c810ed8`; free unit `tests/api/sp35-agent-publication-size-limit.api.test.ts`; real staging readonly negative-PoP `deploy/scripts/sp35-staging-publish-size-readonly-smoke.mjs`; workflow `.github/workflows/sp35-staging-only.yml` runs real staging smoke AFTER deploy, no model.
+- Early first staging one-shot run https://github.com/NFF98/appf2-build/actions/runs/41316281418 FAILED early on ESLint (2 game scripts max-depth + staging smoke Node globals), **not** a 413 logic failure. Precisely scoped lint fixes committed `4f3e97e`, `36823f4`, `e14a468`. Second isolated staging one-shot run **https://github.com/NFF98/appf2-build/actions/runs/41316476210** was started with one marker `[SP35-G0-FREE-STAGING-ONCE]`; Foundation https://github.com/NFF98/appf2-build/actions/runs/41316476230. Read actual final conclusions and live smoke evidence; if pending, continue in same work. These are **free** staging and QA, not new paid App.
+- Cost: G3/G4 each 44c **per-Job maximum reservation** with one 20c successful CODE ceiling each; **NOT provider invoices**. Earlier November 1 total SUCCEEDED model ceiling was 188c before G3, and October 31 unresolved IN_FLIGHT/BLOCKED_UNCERTAIN 32c risk; read-only reconcile with Supabase `xxwnxetwufwyiisgaqhl`, never assume uncertain exposure is zero. User authorizes additional bounded progress but no unlimited spend; propose finite per-Job 44c and do not exceed without explicit approval. Never spawn multiple paid Jobs in a loop, retry an unresolved model call, or reset old ledger. Do not print secrets.
+
+## Continue executing, not just reporting
+
+1. Inspect latest existing two PR HEADs and SPEC. Inspect staging run #41316476210 logs/steps and free Foundation run #41316476230; fix real failures **within at most 2 focused evidence-backed repair rounds** in the SAME Build PR, SPEC first where appropriate. Do not repeatedly fire Workflows with old paid markers.
+2. Verify in current **isolated Staging** `https://appf2-sp35-417-staging.juiyuang69.workers.dev` that invalid-PoP long Chinese share payload >1400 and <=4096 gets **404 not 413**; >4096 gets **413**; other Agent >1400 gets **413**; health/readiness 200. This is a SECURITY/INGRESS PASS only, NOT product 3/9.
+3. Run free existing published-App multi-browser reuse to confirm no regression; never re-generate paid source to prove regression. If necessary adjust only deploy/tests code in existing PR.
+4. After confirmed fix and **only with explicit finite budget for a new distinct creative App**, use native website owner P-256 consent to start one NEW model Job capped 44c. Freeze original 7 QA criteria based on human requirement BEFORE AI. Capture publish POST HTTP status/code and UI alert while the **original owner Chrome context remains alive**; on 5xx at most one same-owner same-idempotency free retry, 4xx FAIL_CLOSED. Require new published ACTIVE share URL and fresh separate visitor Chrome interacting with actual immutable App. Save jobId/shareId/Run IDs/console and evidence. Advance 2→3/9 only if ALL PASS.
+5. Iterate one genuinely distinct App at a time toward 9/9 within user-approved costs; simple tools, games, and PostgreSQL apps. Each independent acceptance must prove original use case with functional actions, persistence for DB, share/reload, no fake App. Two repairs max before root-cause strategy switch. Never imply Work or CI will autonomously monitor for eternity; deliver saved handoff if session ends.
+6. Every meaningful milestone report in Traditional Chinese concise **real product PASS x/9 (%), new job count, paid ceilings vs verified invoices, last error/code, next concrete action**. Do not claim success based only on unit/CI.
+
+## Work products
+
+- Commit changes only in Build PR #419 / Design PR #45; always cite GitHub Actions evidence and actual Postgres rows for count decisions.
+- No merge, no Production deploy, no Sprint 4. Prioritize user-visible functional Stage A: one sentence → real interactive App card → saved, shared, reused.
+- No asking user to open Cursor, paste PowerShell, or repeat context. If budget or external permissions really block, say the exact blocker and preserve the current version.
