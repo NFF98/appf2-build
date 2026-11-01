@@ -89,8 +89,16 @@ for(const stage of stages){
    console.log("C4 SOURCE RESTORED: original saved Job, NO additional model POST");
    break;
   }
-  if(before.checkpoint?.step%2!==0)
+  // A paid REPAIR result may have committed CODING→REPAIRING but lost
+  // its second source CAS response. The server recovers ONLY the identical
+  // SUCCEEDED journal row tied to that parent's hash; no fresh paid POST.
+  // All other odd heads remain uncertain and MUST stop, never regenerate.
+  if(before.checkpoint?.step%2!==0&&
+     !(stage==="REPAIR"&&before.status==="REPAIRING"&&
+       before.revision===requiredSteps-1))
    throw Error("C2_INCOMPLETE_CHECKPOINT_STOP_NO_NEW_MODEL_CALL");
+  if(before.checkpoint?.step%2!==0)
+   console.log("C4 SAVED HALF-CHECKPOINT: same owner recovers prior paid result, no new model reservation");
   let result;
   try{
    result=await signed(base+"/free-ai-stage",{
