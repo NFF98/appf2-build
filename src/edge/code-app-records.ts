@@ -87,7 +87,8 @@ export async function routeCodeAppRecords(ctx:{request:Request;url:URL;
   }
   const statement=data.action==="read"?READ:data.action==="create"?CREATE:
    data.action==="update"?UPDATE:DELETE;
-  const row=(await client.query<Row>(statement,args)).rows[0];
+  const values=data.action==="create"||data.action==="update"?args:args.slice(0,3);
+  const row=(await client.query<Row>(statement,values)).rows[0];
   return row?reply(data.action==="create"?201:200,{data:row}):denied();
  }catch{return reply(503,{error:"CODE_RECORD_DB_UNAVAILABLE"});}
  finally{await client.close().catch(()=>undefined);}
