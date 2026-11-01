@@ -115,6 +115,7 @@ export function validFreeManualRepairInput(raw:unknown):raw is FreeManualRepairI
  return Number.isSafeInteger(x.expected_revision)&&
   Number(x.expected_revision)>=2&&Number(x.expected_revision)<=6;
 }
+// eslint-disable-next-line complexity -- Owner PoP, independent QA failure, CAS and zero budget fences.
 export async function importOwnerFreeRepair(input:FreeManualRepairInput,ctx:{
  readonly db:AgentJobExecutor;readonly jobId:string;readonly ownerThumb:string;
 }):Promise<{status:"MANUAL_REPAIR_SAVED_NO_AI";project_hash:string;
