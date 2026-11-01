@@ -54,7 +54,7 @@ async function worker(path,body,limit=25000){
 const source=await worker("/api/v1/internal/free-ai-runner/source",{});
 const request=source?.request;
 if(source?.model!=="gpt-6.1-sol"||
- !/^sp35_free_ai_(?:qa|code|repair)_v1$/u.test(source.call_key??"")||
+ !/^sp35_free_ai_(?:qa_v1|code_v1|repair_v[123])$/u.test(source.call_key??"")||
  !request||request.model!=="gpt-6.1-sol"||
  request.background!==true||request.store!==true||
  typeof request.input!=="string"||request.input.length>45000)
@@ -64,7 +64,8 @@ if(source?.model!=="gpt-6.1-sol"||
 // on input token count; max_output_tokens bounds reasoning + visible output.
 // This estimate is NOT a provider invoice or a blanket billing guarantee.
 const caps={sp35_free_ai_qa_v1:8,sp35_free_ai_code_v1:20,
- sp35_free_ai_repair_v1:16};
+ sp35_free_ai_repair_v1:16,sp35_free_ai_repair_v2:16,
+ sp35_free_ai_repair_v3:16};
 const cap=caps[source.call_key];
 const maxOutput=request.max_output_tokens;
 if(!Number.isSafeInteger(maxOutput)||maxOutput<1||maxOutput>12000||
