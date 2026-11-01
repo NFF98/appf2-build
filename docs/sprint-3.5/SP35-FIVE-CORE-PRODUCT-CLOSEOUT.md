@@ -444,6 +444,15 @@
 - 前一輪 [Staging 真實部署 #41274139106](https://github.com/NFF98/appf2-build/actions/runs/41274139106) **SUCCESS**；[免費 CI #41274484003](https://github.com/NFF98/appf2-build/actions/runs/41274484003) **SUCCESS**。本輪新增腳本先使 #41275097224 的 lint FAIL，已用 `a3150d9` 修正，不得將舊 CI 當成目前最新提交的 PASS。
 - 結論：C4 保存＋真 Chromium 管線已由**人工修復**證實，C5 三失敗歷程已由**人工修復**證實；C4 新付費 GPT-6 自動修復、C5 GPT-6 真的根因換策略仍欠實際同 Job E2E。舊一次授權支付不可當作可無限開新付費 Job；不重收舊費、不假報百分比、不合併、不部署 Production、不開新 PR。
 
+### 2026-11-01 ④⑤免費產品級修復接續：已寫入原 PR #419，模型費用 0
+
+- C4：原 Job 已付款 GPT-6.1 Sol 成功回應須用原建立者 PoP 金鑰才可兌換，舊 E2E ephemeral owner 金鑰已消失，不得冒領或重扣。先前 `46d1e5f` 修補半完成 checkpoint 的測試 runner 判斷。本輪新增 `c7c5292` 在正式 `runFreeCiAiStage` API 程式路徑回歸測試中，建立同原 owner、Job、已保存 `SUCCEEDED` paid response、`REPAIRING` 半完成 CAS 的模擬資料，驗證**直接接續原回應、僅執行一個來源寫回 CAS、revision 3→4、排入免費 QA、模型 network POST 次數 0**。這是有真實程式路徑的**免費 fixture 測試**，不是原失聯付費 Job 真實 Chromium PASS，不得報 C4 全部完成。
+- C5：修復原 `free-ci-repair-policy.ts`，抽出**同一個** `analyzeFreeCiFailureStreak` 作為「只讀真實歷史判斷」，`decideFreeCiRepair` 繼續強制 44／60／76 美分逐回合成本上限及 max 8 durable steps，不能從查證直接啟動付費模型。Commit `7838a21`、`287f6d0`、`608fc15`；修輸入驗證分流及 TypeScript 錯誤 `975a67f`、`a916693`。新增原建立者簽署的 `/free-ai-repair-evidence` 路由，只讀真實 Job 對應、凍結原 QA、三份原專案血緣與 OIDC 真實 FAIL 收據，回傳 `RETHINK_ROOT_CAUSE` 或 `FIX_FAILED_CHECKS`、已證實失敗數；不收費、不修改 Job、不發布。
+- 新增 `2bdf3f4` 真實 C5 見證檢查：原先三個免費 Docker／Chromium FAIL 後，必須從已部署的 Staging 輸入原 owner 簽章讀出相同正式策略引擎的 `RETHINK_ROOT_CAUSE`、`repeated_failure_count=3`、`paid_model_requests_issued_by_inspection=0`，再測第四版人工修復 PASS。原 workflow `a833f36` 已觸發 [#41280692687](https://github.com/NFF98/appf2-build/actions/runs/41280692687) 真實執行，本段寫入時**尚待完整結果**，不可預先報成功。
+- 新策略 API 的 GitHub Actions Staging 部署 [#41280583924](https://github.com/NFF98/appf2-build/actions/runs/41280583924) 已通過 Worker Deploy 步驟，其他原有全鏈 E2E 步驟仍以 workflow 最終結論為準。無 Containers 費用、無 Browser Run 費用、無新的 GPT-6 請求。
+- [最新免費完整 Foundation CI #41280798435](https://github.com/NFF98/appf2-build/actions/runs/41280798435) **SUCCESS**：TypeScript、ESLint、API（包括 C4 已付費原答案修復 CAS source write 與 C5 策略/費用分離）、runtime、免費 Docker Chromium／Staging 原 Job 驗證都按現有門檻 PASS；**沒有**因此取得新 paid GPT-6 E2E PASS。
+- 目前五核狀態：C4 自動化**程式路徑**已修並有免費測試，不等於真 GPT-6 端到端成功；C5 三失敗實證已成立，線上共用策略判斷正在驗證，不等於 AI 已付費換策略或自主修復通過。不得做 Sprint 4、Production merge／發布、新 PR 或無授權付費模型呼叫。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
