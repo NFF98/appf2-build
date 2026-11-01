@@ -49,7 +49,7 @@ if(process.env.APPF2_SP35_G3_EXPLICIT_PAID_OK!=="1"||
  process.env.GITHUB_ACTIONS!=="true")
  throw Error("SP35_G3_PAUSED_BUDGET_NO_EXPLICIT_SAFE_ONE_SHOT");
 let newJobId=null,shareId=null,created=0,published=0;
-let startedAt=0,qaReadyAt=0;
+let startedAt,qaReadyAt;
 const browser=await chromium.launch({headless:true});
 const contexts=[];
 try{
