@@ -34,6 +34,8 @@ jobs:
           node --check deploy/scripts/sp35-staging-only.mjs
           node --check deploy/scripts/sp35-live-agent-db-smoke.mjs
           node --check deploy/scripts/sp35-g1-paid-real-dice-e2e.mjs
+          node --check deploy/scripts/sp35-g1-one-real-db-app-e2e.mjs
+          node --check deploy/scripts/sp35-real-code-builder-staging-e2e.mjs
       - name: Compile platform
         run: npm run build
       - name: API tests (no paid AI)
