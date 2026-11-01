@@ -396,6 +396,14 @@
 - Source inspection indicates a possible model-call request fingerprint mismatch on re-entry and/or persisted revision state transition; root cause is **not confirmed**. Commit `bddd873` adds only fixed, non-sensitive error classification at the owner-signed endpoint for request hash, checkpoint, CAS, source edit, and invalid paid source so the next authorized operation can identify its real blocker. It adds no new charge, keeps original owner proof required, and cannot recover an exited GitHub test runner's original private key.
 - Acceptance still requires an *actual* same-Job revision-3/4 saved repaired source, fresh independent Chromium original-plan QA receipt for the new hash, all required PASS, plus for C5 three authentic consecutive failure snapshots → model strategy switch → eventual PASS. Existing successes for C1/C2/C3 stay valid and separate.
 
+
+### 2026-11-01 — C4 503 待驗修復：已付費結果恢復，不靠新費用
+
+- 「6 項」是單一四人計分板的獨立瀏覽器點擊驗收（首次 1 PASS／5 FAIL），**不是五核的 5 項驗收、不是產品 6/6，也不能替代完整產品 E2E**。
+- 目前已證實 GPT-6 初次 CODE 和第一輪 REPAIR 兩筆回應在 PostgreSQL model journal 都為 SUCCEEDED；但原 Job revision 停在 2，repaired source 沒保存，原 signed harness 收到 HTTP503。其原 owner 簽章金鑰在那次 runner 退出後不可恢復，**不得自動重試該已付費呼叫、改 owner 或偽造 PASS**。
+- 已實作 `recoveredPaidResponse`：若 model call 是 SUCCEEDED 且原建立者 PoP 已驗、`job_id`／`owner_anonymous_id`／`job_revision`／`checkpoint_hash`／模型／單次付費上限全部與原 Job 相符，直接取回同一筆已付款回應，無須重做模型 POST；新部署後 prompt 格式即使有改動，也不再先因重新計算的 request digest 不符就攔截**已完成**回應。對未完成的模型預約仍維持嚴格 request digest 比對。附上正常、異主、異 Job、版本或 checkpoint 不符、尚未完成等 fail-closed 測試。
+- Commit `84b8830` 為實作；`b0904c0` 為新測試。此項尚未通過完整 CI／新實際 signed runner 重演時，**僅能稱修正已提交，不可稱 C4 PASS**。C5 真實 3 次連續失敗後策略切換與 Chromium PASS 仍未驗證；不要再把單一 App 六項功能當成五核完成比例。
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
