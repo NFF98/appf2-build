@@ -558,3 +558,5 @@ jobs:
 # Recheck the same final focused fix after splitting receipt-observer lint, with no model calls.
 
 # Same focused code fix; disabled legacy QA stays uniform 404 in FREE_ONLY, never opened for test success.
+
+# Complete explicit private adapter CSP hash and test-fixture lint before the same strategy proof; no App/code/model regeneration.
