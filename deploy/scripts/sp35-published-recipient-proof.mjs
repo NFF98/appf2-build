@@ -4,8 +4,8 @@ const meal=[{"action":"fill","args":["餐費","1000"]},{"action":"fill","args":[
 const sample=process.env.APPF2_SP35_SAMPLE;
 const candidate=sample==="g5-meal"?{id:sample,category:"tool",guest:meal}:scenarios[sample];
 if(process.argv.includes("--preflight-only")){
- if(Object.keys(scenarios).length!==6||meal.length<20)throw Error("FROZEN_GUESTS_MISSING");
- console.log("SEVEN_FROZEN_PUBLISHED_GUEST_FLOWS_READY_ZERO_MODEL");
+ if(Object.keys(scenarios).length!==8||meal.length<20)throw Error("FROZEN_GUESTS_MISSING");
+ console.log("NINE_FROZEN_PUBLISHED_GUEST_FLOWS_READY_ZERO_MODEL");
  process.exit(0);
 }
 const share=process.env.APPF2_EXISTING_SHARE_ID??"";
