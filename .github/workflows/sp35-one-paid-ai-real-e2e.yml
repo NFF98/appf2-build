@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cancel-empty-g5-prejob:
-    # Fixed already-inspected run: its exact prompt hash has no Job/paid call.
+    # Fixed already-inspected run: its frozen Job has no paid call or generated source; retain the Job.
     # This is cancellation only, never a rerun, model call or replacement Job.
     if: contains(github.event.head_commit.message, '[SP35-G5-CANCEL-EMPTY-PREJOB]')
     runs-on: ubuntu-latest
@@ -25,11 +25,11 @@ jobs:
           GH_CANCEL_TOKEN: ${{ github.token }}
         run: |
           node --input-type=module <<'JS'
-          const base="https://api.github.com/repos/NFF98/appf2-build/actions/runs/41326123312";
+          const base="https://api.github.com/repos/NFF98/appf2-build/actions/runs/41327212659";
           const headers={Authorization:"Bearer "+process.env.GH_CANCEL_TOKEN,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};
           const found=await fetch(base,{headers});
           const run=await found.json();
-          if(!found.ok||run.head_sha!=="65584fc0240da2985b65205e71c888e514e238d3")throw Error("FIXED_RUN_MISMATCH");
+          if(!found.ok||run.head_sha!=="a06d4cd793b383615f638f3ae810aad2286a1bb9")throw Error("FIXED_RUN_MISMATCH");
           if(run.status==="completed"){console.log("EMPTY_PREJOB_ALREADY_FINISHED");process.exit(0);}
           const result=await fetch(base+"/cancel",{method:"POST",headers});
           if(result.status!==202)throw Error("FIXED_RUN_CANCEL_HTTP_"+result.status);
