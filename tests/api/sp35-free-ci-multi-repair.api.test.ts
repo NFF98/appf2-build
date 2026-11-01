@@ -11,7 +11,14 @@ const plan:QaPlan={version:"1",criteria:[{
 const hash=(x:string)=>"sha256:"+x.repeat(64);
 async function receipt(label:string,verdict:"FAIL"|"PASS"|"UNTESTED"="FAIL"):
  Promise<FreeCiRepairHistory>{
- return {project_hash:hash(label),receipt_json:{
+ const versions:Record<string,{revision:number;parent:string}>={
+  a:{revision:2,parent:"0"},b:{revision:3,parent:"a"},
+  c:{revision:4,parent:"b"}
+ };
+ const version=versions[label];
+ if(!version)throw Error("UNKNOWN_TEST_REVISION");
+ return {project_hash:hash(label),project_revision:version.revision,
+  parent_hash:hash(version.parent),receipt_json:{
   version:"APPF2_FREE_CI_SMOKE_V1",
   qa_plan_hash:await frozenFreeCiPlanHash(plan),
   qa_checks:[{criterion_id:"score",verdict,
@@ -54,6 +61,30 @@ describe("C4 + C5 active GPT-6 free-runner multi-repair policy",()=>{
   await expect(decideFreeCiRepair(plan,[unknown],unknown.project_hash,2,2,44,8))
    .rejects.toThrow("CURRENT_PROVEN_FAILURE_MISSING");
   await expect(decideFreeCiRepair(plan,[fake],a.project_hash,2,2,44,8))
+   .rejects.toThrow("CURRENT_PROVEN_FAILURE_MISSING");
+ });
+ it("never calls three failures consecutive if their source lineage is forged or missing",async()=>{
+  const a=await receipt("a"),b=await receipt("b"),c=await receipt("c");
+  // Old code sorted by receipt timestamp and would incorrectly switch.
+  const fork={...c,parent_hash:hash("d")};
+  const wrongParent=await decideFreeCiRepair(plan,[fork,b,a],
+   c.project_hash,4,6,76,8);
+  expect(wrongParent.mode).toBe("FIX_FAILED_CHECKS");
+  expect(wrongParent.repeated_failure_count).toBe(1);
+  const changedMiddle={...b,parent_hash:hash("d")};
+  const interrupted=await decideFreeCiRepair(plan,[c,changedMiddle,a],
+   c.project_hash,4,6,76,8);
+  expect(interrupted.repeated_failure_count).toBe(2);
+  expect(interrupted.mode).toBe("FIX_FAILED_CHECKS");
+  const wrongRevision={...b,project_revision:2};
+  const missing=await decideFreeCiRepair(plan,[c,wrongRevision,a],
+   c.project_hash,4,6,76,8);
+  expect(missing.repeated_failure_count).toBe(1);
+  await expect(decideFreeCiRepair(plan,[b,a],a.project_hash,2,2,44,8))
+   .rejects.toThrow("CURRENT_PROVEN_FAILURE_MISSING");
+  const noCurrent={...c,project_revision:2};
+  await expect(decideFreeCiRepair(plan,[noCurrent,b,a],
+   c.project_hash,4,6,76,8))
    .rejects.toThrow("CURRENT_PROVEN_FAILURE_MISSING");
  });
  it("switches strategy only after three matching independently verified failures",async()=>{
