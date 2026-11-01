@@ -1,10 +1,22 @@
 # SP35-FIVE-CORE-PRODUCT-CLOSEOUT — Sprint 3.5 五核產品閉環收尾計畫
 
 > **版本**：2026-10-31（使用者指定的交接識別，持續更新此檔，不開重複計畫）
-> **狀態**：執行計畫已建立；產品 **NOT_DONE / LIVE E2E NOT_VERIFIED**；不代表已完成修復、雲端部署或付費 E2E。
+> **狀態（2026-11-01 最新）**：整體產品 **NOT_DONE**；真網站全新 AI App **2/9（22.2%）完整 E2E PASS，剩 7/9**。舊節 0/9、1/9 為不可改寫的歷史快照；不得冒充五核全域 100%。
 > **產品語意唯一來源**：Design PR #45 `working/architecture-evolution/BLUEPRINT-CODE-ARTIFACT-HYBRID.md` §0（Design commit `a9651594baf79753a05b1f608466cbc93a316c51`），以及各現行 Phase 1 Fxx Working owner。**本檔只管 HOW／執行次數／證據，絕不取代 Design SSOT。**
 > **唯一產品開發 PR**：[Build #419](https://github.com/NFF98/appf2-build/pull/419)；Design 只沿用 [#45](https://github.com/NFF98/appf2-design/pull/45)。不開 Sprint 4，不建立平行的 Product Spec 或其他開發 PR。
 
+
+## 0.T 2026-11-01 真正網站新 AI App **2/9 = 22.2%**：第二個客戶備忘錄真 PG E2E PASS（最新，歷史 0/9、1/9 快照保留）
+
+**已先更新 Design SPEC 結算：**既有 [Design PR #45 H-001 §0.10 frozen acceptance + §0.11 verified result](https://github.com/NFF98/appf2-design/commit/f3423410e37c8caa8375cff7296db6a7b2b736fe)，仍受原 3 類 × 3 個新 Job、真模型、QA、分享、重開、資料隔離及費用約束；不以 CI green 替代產品。新增 Design commit `f3423410` 在本 Build 記錄之前，未另開 PR。
+
+- **已驗產品**：第一個 [真正計數器 App 全網站 E2E #41302303356](https://github.com/NFF98/appf2-build/actions/runs/41302303356) 保持 PASS（5/5 QA + 真網站公開及二瀏覽器操作，13m26s 全鏈時間）。第二個全新網站原 Job `a2689c78-5362-43a2-8f7c-a4cfd8b6affb` 由 GPT-6.1 Sol 首次 CODE 得 4 檔 `src/main.ts`、`src/store.ts`、`src/view.ts`、`src/style.css`，本次**未再產生/修復同一付費 Job**。原需求 frozen QA [#41307455393](https://github.com/NFF98/appf2-build/actions/runs/41307455393) 6/6 PASS；已真網站 owner 同意公開的 [ACTIVE 客戶備忘錄 App](https://appf2-sp35-417-staging.juiyuang69.workers.dev/code/e29027dd-cd71-4424-a182-3fb7706614b8)，`share_id=e29027dd-cd71-4424-a182-3fb7706614b8`、`public_opt_in=true`。
+- **不可抹去首輪 FAIL**：[完整 E2E #41306946235](https://github.com/NFF98/appf2-build/actions/runs/41306946235) `G2_REAL_SIGNED_PG_WORKER_REQUESTS_NOT_VERIFIED`，當時 UI 進過但請求數無法驗證；不是 PASS，直到本次免費重驗才閉環。
+- **本次真正免費網站驗收 PASS**：[Run #41307944305](https://github.com/NFF98/appf2-build/actions/runs/41307944305) `g2-free-published-original-browser-retest` **SUCCESS**（GitHub final `completed/success`，原 Run HEAD `983ddc78be6e9e6033782269c0f9121d2798dbf5`），使用 `deploy/scripts/sp35-g2-published-db-free-browser-e2e.mjs` 真 Playwright 進 Staging **已發布的 AI 原版 iframe**；禁止 iframe `appf2Records` evaluate/injection 和模型重產。A、B 兩獨立 Chromium context 直接點 AI 原 UI 真新增「咖啡」、A 刷新仍在、B 初始 0 且看不到 A、B 另新增私有紀錄、A 修改「茶」刷新仍在且 B 不可見、A/B 各刪除並 reload 仍為 0。實際 `POST /api/v1/code-apps/<share_id>/records` **2xx HTTP receipts**：A `list/create/read/update/delete`、**14 requests**；B `list/create/read/delete`、**6 requests**；任一要求動作缺失或非 2xx 都會 throw FAIL。原 Log 2026-11-01 12:47:41 UTC 有 `SP35 G2 REAL ORIGINAL AI APP POST-PUBLISH FULL E2E PASS: 2/9` 及 `SP35 G2 STRICT PG HTTP RECEIPT A=... B=...`。這是生成 UI → signed Worker → 真 PostgreSQL，而非 injected CRUD harness。
+- **精確範圍**：本次重驗確立真正產品 **2/9=22.2%**，剩 **7/9**，**不是**九次或五核全域 100%；此重驗只做 reload、不冒稱已關閉 Chromium process 並冷重啟原 Job（歷史獨立持久身份測試見 §0.7），不代表任意 server/npm runtime 支援。仍須補 3×3 的其餘工具、遊戲、資料型 App 真網站新生成；速度 P50/P95、複雜互動遊戲品質、多樣性、長流程恢復與 C5 第三輪模型策略尚未完整 PASS。
+- **新增費用**：本次 `0` 個 GPT-6 模型請求；只重用已產生／已公開的 App，GitHub 免費 Chromium。此前兩筆歷史 Job conservative ceiling 20c+20c，第一真網站 Job ceiling 44c，第二真網站 Job ceiling 44c，合計**最高預留／授權 128c = US$1.28**，不是 provider invoice；實際 `NOT_VERIFIED`。這是此次 User 另追加 US$0.28 的口徑；**下一個七 App 未獲批逐筆新模型費用**，絕不把本次免費重驗當作擁有剩餘七次 paid 授權。
+- **變更控制**：仍只 Design #45 / Build #419，Sprint 3.5，兩 PR **OPEN / NOT_MERGED**，Staging only，無 Production、無 Sprint 4。本次只寫 SPEC 結算與本原 SSOT，沒有重新測付費 GPT、不改已公開 App 原碼、不建第二計畫。
+- **下一個首要缺口**：先按 Design §0.4/§0.5 核對剩餘 7 個不同新自然語言 Job 的類別分配與每 Job budget admission，找出可免費驗證的真網站／持久身份／QA 根因及交付效能瓶頸；**新付費前**必須能證明逐筆額度和跨 Job 硬上限，再在原網站啟動第三個新 Job；若費用資料不可證明就保持 `PAUSED_BUDGET`，不可偷換模型/拿人工 fixture 冒充 3/9。
 
 ### 0.S.1 2026-11-01 下一輪「繼續突破」：拆分可見文字 QA **根因與免費 10/10 真 Chromium PASS**
 
