@@ -320,6 +320,10 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
       await worker.freezeOriginalQaPlan();
      else await worker.freeAiStage("QA",()=>stop.current);
     }
+    setSnapshot({job:current,progress:null,
+     message:"GPT-6 正在編寫原需求的完整 App。模型和免費 Runner 都可能排隊；"+
+      "可以停止此頁等待，日後由原 Job 接續，不需要重新生成。",
+     completed_steps:0});
     const created=await worker.freeAiStage("CODE",()=>stop.current);
     current=await worker.read();
     setSnapshot({job:current,progress:null,
@@ -383,10 +387,18 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
       }
       receiptSeen=false;
       if(stop.current)break;
+      setSnapshot({job:current,progress:null,
+       message:"第 "+nextRound+" 輪 GPT-6 根據真實 Chromium 失敗證據修復中；"+
+        "仍使用原 Job 和原 QA，尚未確認新版本 PASS。",
+       completed_steps:0});
       const repair=await worker.freeAiStage("REPAIR",()=>stop.current);
       if(repair.status!=="AI_SOURCE_SAVED_FREE_CI_QUEUED")
        throw Error("修復原始碼已保存，但免費 Docker 再派發未確認；停止等待。");
       repaired++;
+      current=await worker.read();
+      setSnapshot({job:current,progress:null,
+       message:"GPT-6 修復原始碼已寫回原 Job；重新等待免費 Chromium 驗證，"+
+        "目前不能視為 PASS。",completed_steps:0});
       continue;
      }
      setQaOutcome(nextRound>3?
