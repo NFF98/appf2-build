@@ -355,6 +355,15 @@
 - **下一項實際測試**：`deploy/scripts/sp35-live-owner-browser-reopen-e2e.mjs`（建立費用上限 0 的實際 Staging PostgreSQL Job、真 P-256、完全關閉瀏覽器、同 profile 新程序讀原 Job，再用不同鑰匙讀取要 404）。已加入原免費 Staging 部署工作流；首次 run #41263035031 被新測試腳本單一 ESLint complexity 警告攔住，未部署；已於 `44ea392` 拆出反向檢查，下一輪須確認真正 live PASS。
 - **本期仍不能宣稱全部五核 PASS**：此單一案例證明了 GPT-6 生成與原需求三項瀏覽器操作 PASS，但 C1 任意後端、C4 模型收到 FAIL 後真付費修復至 PASS、C5 真實三次失敗換策略接續並經瀏覽器 PASS，仍缺獨立完整收據。GitHub Actions 臨時私鑰不應寫入公開 artifact／log；改用產品瀏覽器已持久保存的原建立者簽章，並為多次獨立 Runner 設計另行核准的受限授權，不得冒充同一人。
 
+
+### 2026-11-01 — C2 REAL PostgreSQL + browser full process close/reopen PASS
+
+- **Live Staging PASS:** [GitHub Action #41263322804](https://github.com/NFF98/appf2-build/actions/runs/41263322804), exact step `LIVE C2 close Chromium completely, reopen same owner signer and PostgreSQL Job` conclusion **SUCCESS**. Test source: `deploy/scripts/sp35-live-owner-browser-reopen-e2e.mjs`.
+- From the REAL Staging site origin, Chromium generated a **nonextractable P-256 private signing key**, stored it in origin IndexedDB, created a REAL PostgreSQL Job through creator-signed Worker API **with `max_cost_cents=0`** and recorded its immutable Job ID/project hash locally. Test fully closed the Chromium process, re-opened another Chromium process with the SAME profile, loaded the ORIGINAL nonextractable key, signed a new request and read back the **same Job ID, same immutable project hash, same revision 0, same checkpoint step 0**. A completely different signing key attempting to read this Job using the same claimed anonymous UUID got **HTTP404**. No model, Cloudflare Containers, paid Browser Run or Production deployment.
+- This is substantially stronger than [offline browser-close fixture run #41262716623](https://github.com/NFF98/appf2-build/actions/runs/41262716623) (also SUCCESS): both real browser identity persistence and the actual Worker/PostgreSQL ownership enforcement are now attested. Existing C1 actual iframe record CRUD and two-viewer isolation also re-passed in the same deployment.
+- Free-only resumed paid-source QA path: signed existing Job with saved generated source (revision>=2, step>=2, CODING, no current QA receipt) can requeue **only FREE Docker QA** from the original web UI on explicit resume; it never generates a new source or initiates a paid model call. Source guard and tests passed in #41262716623. This path is not a substitute for proving a real lost-network-response recovery scenario.
+- C2 **scoped original-browser identity + same-PostgreSQL-Job resume = verified PASS**; further full five-core signoff still requires true owner continuity after a paid interrupted model call and autonomous C4/C5 repair. Temporary one-shot GitHub Actions signer remains intentionally nonportable: never save that private key to a public artifact or claim recovery of the old abandoned 76c ephemeral-owner Job.
+
 ## G. 執行交接（只寫已證實事實）
 
 | 關卡 | 真實狀態 | 證據／下一阻斷 |
