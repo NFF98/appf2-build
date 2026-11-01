@@ -1,3 +1,21 @@
+# 2026-11-02 JST 最新 checkpoint：G5已付費成功、7/7、ACTIVE，但公開form互動FAIL，策略修正驗證中
+
+**真產品仍2/9（22.2%），禁止加分。** Model G5 `8880979c-d09d-44ef-aaa7-bd114a31a967` **CODE SUCCEEDED**，1889 input/5042 output，max_charge20¢（不是invoice）；44¢Job cap。這是已批准7個/308¢中的**第1個paid Job**，後續6個名額264¢。舊32¢未決保留。**不要重送CODE，不要重生餐費**。
+
+- 原生Cua Browser tab **1 / ownerTab**，已markHandoff，原owner非匯出式key/Job/QA全在同profile；不要關閉。tab **3 / mealPublicTab** 是已發布頁面，URL已實際開啟 `https://appf2-sp35-417-staging.juiyuang69.workers.dev/code/760b46d4-19b7-4092-b53a-d5276eaf9068`。
+- Model [#41328942825](https://github.com/NFF98/appf2-build/actions/runs/41328942825) SUCCESS；6檔（3 TS模組）snapshot project `sha256:4ed7629c245c14fa76e68a145b38de5091fc26bb932ed6360445a296872fcf0d`，原碼永久保留。
+- [Docker/獨立QA #41329192200](https://github.com/NFF98/appf2-build/actions/runs/41329192200) SUCCESS，7/7；built artifact `sha256:278c251d4e04422fe5222ac66d0c4db2be27360dae340eab77ad3eacd9fc51fe`。
+- 原owner UI另勾明確公開同意並發布，PG確認share `760b46d4-19b7-4092-b53a-d5276eaf9068` **ACTIVE/public_opt_in/同owner**，blueprint `sha256:1e8806cb43f40f6ddc7e1ee0fab35d76199fe6a1a3b3141ee4a8f7ac1c842be1`。**只ACTIVE不算產品成功**。
+- [免費獨立公開訪客 #41329592905](https://github.com/NFF98/appf2-build/actions/runs/41329592905) **FAIL**：1000/4/10填好點計算，沒有1100。Cua在公開tab3與私人tab1都真重現，未假PASS。
+- 根因已分析：原Vite JS 5871字完整包於公開13619字JS（起點7749），沒有漏原碼；計算listener綁form submit。sandbox **allow-scripts** 會在派發submit之前拒絕原生forms，普通plain-page QA因而不代表真sandbox（HTML標準）。不應付費重寫餐費邏輯或偷偷加allow-forms。
+- Design #45 **§0.21 SPEC first**（6b149c0），在兩輪入口修復後換**通用受信任DOM事件適配策略**：submit button真click→preventDefault原生動作→驗證欄位→在同opaque frame派發cancelable SubmitEvent。**不加allow-forms/same-origin、不改CSP禁網/禁form-action、不動AI artifact/code/hash**；私人和公開frame共用固定adapter、各加精確CSP hash；原source/Job保留，新增模型0。
+- Build已有 `src/app/runtime/code-dom-events.ts` + public/private renderer；可信免費因果/安全實驗 `deploy/scripts/sp35-no-network-form-events-e2e.mjs`（無adapter負例、public/private計算/重設、invalid驗證、click preventDefault不重複、惡意_top/_blank表單不能送網路）。它使用同實際renderer，不執行App特定計算以冒充產品。
+- 最終策略候選 HEAD **412de4c4e7274dac913a528e96cb357f9ad84b42**，免費Foundation **#41330733610**、Staging **#41330733503** 執行中，需讀最終結論。早先c16d6ea跑的lint FAIL（私有CSP漏引用eventHash、fixture max-depth）已精確修正，不能改稱PASS。沒有新增App/費用。
+- **接續**：若免費因果/安全實驗SUCCESS且Staging完整SUCCESS，先reload **公開tab3**（只重開既有card、0AI）按相同1000/4/10證明1100/275；保留owner tab1不生成新Job。再用GitHub `rerun_workflow_job` **只重跑 #41329592905的published-recipient-free-only那個免費job**（先fetch jobs取id；其他paid jobs全部SKIPPED，不重跑整個paid workflow）。測試腳本含100/3/5 holdout、錯誤/重設/reload/0generation。新公開完整PASS+PG同hash不變才3/9。
+- 策略實驗FAIL時保留原證據，先根因分析，不假PASS。後續六件原文/42條QA已在§0.19和manifest，依下方詳細指南逐一同owner原生UI推進。持續到9/9或真實超額/不可解阻斷；不再重問這7件已批准費用。
+
+---
+
 # 2026-11-02 JST — 正在執行，最新狀態優先於下方舊交接
 
 Human已回覆「批准繼續做完全部」。已在Design #45 H-001 §0.17記錄有限上限：**剩餘7個新paid Job，每個≤44¢，合計≤308¢**，一次一個，不限額重問、不批次並發；舊32¢未決風險另列、不重送。原產品仍**2/9（22.2%）**，到真ACTIVE＋獨立新browser通過才加分。
