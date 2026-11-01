@@ -357,6 +357,11 @@ jobs:
         run: node deploy/scripts/sp35-staging-only.mjs
       - name: Real Worker first-hop smoke (not full Creation)
         run: node deploy/scripts/sp35-staging-smoke.mjs
+      - name: Owner publication 413 boundary: real staging, no identity, zero paid calls
+        # Deliberately INVALID PoP. Legal long UTF-8 payload must pass only
+        # the size gate (404), never bypass signed owner or publish a card.
+        # The same probe asserts >4096 publish and >1400 other route stay 413.
+        run: node deploy/scripts/sp35-staging-publish-size-readonly-smoke.mjs
       - name: REAL staging signed Agent CREATE and PostgreSQL source REOPEN (NO AI)
         if: env.APPF2_STAGING_BOOTSTRAP_ONLY != '1'
         run: node deploy/scripts/sp35-live-agent-db-smoke.mjs
