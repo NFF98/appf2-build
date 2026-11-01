@@ -12,6 +12,7 @@ import {validGenerateQaBody} from "../../dist/src/edge/agent-qa-generate.js";
 import {qaRepairCallKey} from "../../dist/src/platform/agent/qa-repair-key.js";
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import http from "node:http";
 import {fileURLToPath} from "node:url";
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../..");
@@ -38,6 +39,7 @@ const savedQaChecks=[{criterion_id:"req_1",category:"BROWSER",
  verdict:"FAIL",evidence_hash:null}];
 let privatePreviewFetches=0;
 let server=null,browser=null;
+const profile=await fs.mkdtemp(path.join(os.tmpdir(),"sp35-browser-identity-"));
 function json(res,status,data){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8",
   "Cache-Control":"no-store","X-Content-Type-Options":"nosniff"});
@@ -272,8 +274,8 @@ try{
  });
  await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
  const port=server.address().port;
- browser=await chromium.launch({headless:true});
- const page=await browser.newPage();
+ browser=await chromium.launchPersistentContext(profile,{headless:true});
+ let page=await browser.newPage();
  const pageErrors=[];
  page.on("pageerror",e=>pageErrors.push(e.message));
  const origin="http://127.0.0.1:"+port;
@@ -443,8 +445,32 @@ try{
  if(autoQaPending||qaRunCount!==2||qaRepairCount!==2||
   lastRepairKey!==qaRepairCallKey(job.project_hash)||stepCount!==2)
   throw Error("AGENT_AUTOMATED_QA_REPAIR_NOT_PROVEN_IN_CHROMIUM");
+ // C2 hard acceptance: close the ENTIRE Chromium browser process and
+ // reopen the SAME profile (not merely reload the same tab). IndexedDB must
+ // preserve the original nonextractable P-256 signing key and localStorage
+ // must preserve the original Job/creator; read-only restore must never bill.
+ const beforeFullRestart={qaRunCount,qaRepairCount,stepCount,planCount,
+  autoPlanCount,proofCount};
+ await page.close();
+ await browser.close();
+ browser=await chromium.launchPersistentContext(profile,{headless:true});
+ page=await browser.newPage();
+ await page.goto(origin+"/",{waitUntil:"domcontentloaded",timeout:15000});
+ await page.getByRole("button",{
+  name:"開啟／重用："+prompt}).click();
+ await page.getByText("已恢復保存的專案，不重新執行 AI 或雲端建置。")
+  .waitFor({timeout:15000});
+ if(job.job_id!==jobId||qaRunCount!==beforeFullRestart.qaRunCount||
+  qaRepairCount!==beforeFullRestart.qaRepairCount||
+  stepCount!==beforeFullRestart.stepCount||
+  planCount!==beforeFullRestart.planCount||
+  autoPlanCount!==beforeFullRestart.autoPlanCount||
+  proofCount<=beforeFullRestart.proofCount)
+  throw Error("AGENT_BROWSER_PROCESS_RESTART_LOST_OWNER_OR_REBILLED");
+ console.log("SP35 C2 REAL CHROMIUM PROCESS CLOSED → PROFILE REOPENED → ORIGINAL P-256 PROOF + SAME JOB HEAD; ZERO EXTRA AI CALLS: PASS (mock Worker)");
  console.log("SP35 REAL FIRST-PARTY CHROMIUM → ONE SENTENCE → AUTOMATIC PRE-CODE QA PLAN → SIGNED QA FAILURE → ONE-SHOT REPAIR: PASS (MOCK QA/MODEL, NO CLOUD)");
 }finally{
  if(browser)await browser.close();
  if(server)await new Promise(resolve=>server.close(resolve));
+ await fs.rm(profile,{recursive:true,force:true});
 }
