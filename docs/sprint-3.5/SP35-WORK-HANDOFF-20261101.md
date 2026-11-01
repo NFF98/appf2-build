@@ -1,3 +1,18 @@
+# 最新 2026-11-02 JST：真產品已 3/9（33.3%），G6正在原owner網站執行
+
+**覆蓋下方舊2/9/公開FAIL checkpoint。G5最終全鏈已真PASS，不重生不再付費。**
+- 原G5 `8880979c-d09d-44ef-aaa7-bd114a31a967` CODE1次/20¢上限，1889/5042 tokens；QA #41329192200 7/7；ACTIVE share `760b46d4-19b7-4092-b53a-d5276eaf9068`，原碼/source/blueprint hash完全未改。
+- 表單事件策略的最終 **Foundation #41330733610、完整Staging #41330733503均SUCCESS**，7種因果/安全變體全PASS：without-adapter負例、public/private、已preventDefault不雙執行、invalid、惡意top/blank無表單網路/彈窗，仍allow-scripts/no allow-forms/CSP網路none。
+- **公開訪客 #41329592905 attempt2 SUCCESS，job124920698547**：真新Chromium計算1100/275、600/3=200、零人拒絕/無Infinity NaN舊結果、重設、holdout100/3/5=35、reload再算，model/Job POST0。已只重跑該free recipient job，未rerun paid模型。Cua公開tab3另真算1100/275，截圖已取得；tab3已markDeliverable。
+- PG重核同原owner、ACTIVE/public_opt_in、blueprint `sha256:1e8806cb43f40f6ddc7e1ee0fab35d76199fe6a1a3b3141ee4a8f7ac1c842be1`，model_calls1/ceiling20¢。因此**原2+新G5=3/9**，不是拿工程fixture或舊重開加分。詳細已寫固定closeout最新頂端（6fd2b4e）。
+- **活動中G6長度換算器 Job `3d494f27-6fdc-4037-b607-831e0f881620`**，17:24:34Z由**同持續Cua tab1 / ownerTab**真網站新需求建立，7原QA入庫、44¢ cap；request_hash `sha256:878be5f8f6e8aa82bc6ac8b529fc7992ce5706c32fbde8577bf01992e6670dbb`。先查其model journal/run/QA/UI，**不要新建同需求Job/不要重送CODE**。
+- Cua REPL已保留 `frozenInputs`（六項原文/plan，從已凍結manifest轉為純JSON共享檔）、`prepareFrozenSample(id)` helper（只填原UI和44¢/5同意，不點生成），`ownerTab` tab1（已markHandoff）、`mealPublicTab` tab3（已markDeliverable）。共享純輸入檔 main `/workspace/scratch/sp35-frozen-browser-input.json` ↔ browser `/home/oai/share/sp35-frozen-browser-input.json`，非金鑰。若REPL不可用，先依cua文檔綁既有tab1，不關原profile；可重新從該JSON取純prompt/QA資料填UI。每新候選只做一次初始生成click，Pub需等QA後另勾同意/點發布；保持原Job可恢復。
+- 至G5完成批准的7新paid名額已用1（Job reserve44¢/模型ceiling20¢），G6是第2個將占44¢；最大仍7×44=308¢，舊未決32¢另列，不重送。G6完成再依g7-memory/g8-lights/g9-connect/g10-books/g11-water，逐件，不同時model。所有已付原碼進度保留。
+- 每件完成後在 `.github/workflows/sp35-one-paid-ai-real-e2e.yml` **只修改published-recipient-free-only job**的sample/env真share UUID，用 `[SP35-RECIPIENT-FREE-ONCE]` 啟動免費新Chromium原App操作；不包含paid marker。不重用G5的share冒充新生成。DB兩件還須真HTTP CRUD/refresh/第二獨立browser隔離與只讀PG records核對。這個免費job的script `sp35-published-recipient-proof.mjs` 已有六manifest操作，無新生成route。若免費test失敗，保存原Job而非重付源碼。
+- 繼續工作到9/9或真費用/外部阻斷；用每里程碑約100字繁中回報。只原#419/#45，不merge/Production/Sprint4。
+
+---
+
 # 2026-11-02 JST 最新 checkpoint：G5已付費成功、7/7、ACTIVE，但公開form互動FAIL，策略修正驗證中
 
 **真產品仍2/9（22.2%），禁止加分。** Model G5 `8880979c-d09d-44ef-aaa7-bd114a31a967` **CODE SUCCEEDED**，1889 input/5042 output，max_charge20¢（不是invoice）；44¢Job cap。這是已批准7個/308¢中的**第1個paid Job**，後續6個名額264¢。舊32¢未決保留。**不要重送CODE，不要重生餐費**。
