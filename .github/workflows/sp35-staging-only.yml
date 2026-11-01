@@ -376,7 +376,7 @@ jobs:
         run: node deploy/scripts/sp35-live-public-cards-e2e.mjs
       - name: Real Staging result adjustment with zero AI (F16 entry vs F03 input)
         run: node deploy/scripts/sp35-result-adjustment-no-ai-e2e.mjs
-      - name: Real AI Code Builder -> Blueprint v2 -> public card (one paid call only if no existing example)
+      - name: Existing published Code App reuse; NO new generation/model charge on this staging run
         run: node deploy/scripts/sp35-real-code-builder-staging-e2e.mjs
       - name: Universal acceptance against real published artifact (NO AI)
         run: node deploy/scripts/sp35-universal-real-acceptance.mjs
@@ -523,3 +523,5 @@ jobs:
           if-no-files-found: error
 
 # 2026-11-01 second and final free Staging verification after precise F05 test selector repair; no paid model dispatch.
+
+# 2026-11-01 Human $1 batch: ONE free Staging UI compatibility and no-hidden-spend verification; the paid QA flow remains separate.
