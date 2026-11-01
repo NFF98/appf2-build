@@ -542,3 +542,5 @@ jobs:
 # SP35 live record bridge: real Staging PostgreSQL CRUD browser isolation, no paid generation; run once only.
 
 # SP35 SPEC H-001 0.7: browser-process COLD restart 2x true identity/data E2E; $0 paid model; not 9 new AI creations.
+
+# 2026-11-01 one isolated staging-only 413 share ingress correction; no paid model or Production; original P-256 signing and source QA unchanged. [SP35-G0-FREE-STAGING-ONCE]
