@@ -188,3 +188,5 @@ jobs:
 # Human $1 aggregate paid-test command: EXACTLY ONE new PostgreSQL App Job max 44c; NO other paid markers, no Prod.
 
 # SP35 2026-11-01 Human already authorized US$1 aggregate. At activation ledger verified 2 succeeded max20c each, 0 unresolved, new Job max44c => conservative max84c; ONE use only.
+
+# Human 2026-11-01 latest: notified extra $0.28, aggregate cap $1.28; 4 prior succeeded model calls max76c, zero unresolved. ONE G2 new model Job cap44c; no other paid marker.
