@@ -244,6 +244,10 @@ try{
    const data=await response.json().catch(()=>null);
    if(typeof data?.data?.job_id==="string")newJobId=data.data.job_id;
   }
+  if(route.endsWith("/free-ai-stage")&&response.status()>=400){
+   const body=await response.json().catch(()=>null);
+   console.log("SP35 G5 CODING HTTP FAILURE: "+response.status()+" "+String(body?.error??"UNKNOWN").slice(0,100));
+  }
   if(route.endsWith("/publish-code-app")){
    published++;
    const body=await response.json().catch(()=>null);
@@ -287,7 +291,7 @@ try{
  for(let poll=0;poll<170;poll++){
   if(createRejected)throw Error("SP35_G5_CREATE_HTTP_"+createRejected+"_NO_JOB");
   const alerts=(await page.getByRole("alert").allTextContents()).filter(Boolean);
-  if(!newJobId&&alerts.length)throw Error("SP35_G5_PRE_JOB_REFUSED "+alerts.join(" ").slice(0,180));
+  if(alerts.length)throw Error("SP35_G5_PRE_JOB_REFUSED "+alerts.join(" ").slice(0,180));
   if(await region.isVisible())break;
   const text=await page.locator("body").innerText();
   if(/PAUSED_BUDGET|原 Job QA 失敗已保存|已達三輪修復上限|SP35_REPAIR_CONTEXT_EXCEEDS_APPROVED_BUDGET|原 Job 保存，不重送付費 AI/u.test(text)){
@@ -348,7 +352,7 @@ try{
  const href=await publishedLink.getAttribute("href");
  const match=/^\/code\/([0-9a-f-]{36})$/iu.exec(href??"");
  if(!match||published<1||published>2||
-    publishResponses.filter(x=>x.http===200).length!==1)
+    publishResponses.filter(x=>x.http===200||x.http===201).length!==1)
   throw Error("SP35_G5_PUBLICATION_NOT_SINGLE_VERIFIED_ACTIVE");
  shareId=match[1];
  guestBrowser=await chromium.launch({headless:true});
