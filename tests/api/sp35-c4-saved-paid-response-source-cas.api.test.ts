@@ -129,4 +129,77 @@ describe("C4 paid GPT-6 saved answer real source-write path after half committed
     expect.stringContaining("reserve_agent_model_call"),expect.anything());
   }finally{modelFetch.mockRestore();}
  });
+
+ it("resumes first saved paid CODE from PLANNING to a new source without a second charge",async()=>{
+  vi.clearAllMocks();
+  const project=await createProjectSnapshot("VITE_WEB","index.html",[
+   {path:"index.html",content:"<html><body><div id='app'></div></body></html>"},
+   {path:"src/main.ts",content:"document.querySelector('#app')!.textContent='Waiting';"},
+   {path:"src/style.css",content:"body { color: black; }"}
+  ]);
+  const requestHash=await sha256CodeBytes(new TextEncoder().encode(
+   "APPF2_AGENT_REQUEST_V1\u0000"+prompt));
+  const half:AgentJobRow={job_id:id,owner_anonymous_id:owner,
+   request_hash:requestHash,project_hash:project.project_hash,
+   revision:1,job_state:"PLANNING",checkpoint_hash:halfHash,
+   checkpoint:{version:"APPF2_AGENT_CHECKPOINT_V1",job_id:id,
+    state:"PLANNING",project_hash:project.project_hash,
+    step:1,tokens_used:100,cost_cents:8,
+    budget:{max_steps:8,max_tokens:8192,max_cost_cents:76},
+    completed_call_ids:[],previous_checkpoint_id:oldHash}
+  };
+  const goodMain="import './style.css'; const root=document.querySelector('#app'); if (root) root.textContent='分數：1';";
+  const goodCss="body { font-size: 16px; }";
+  const saved:ModelCallRow={job_id:id,owner_anonymous_id:owner,
+   call_key:"sp35_free_ai_code_v1",job_revision:0,
+   checkpoint_hash:oldHash,request_hash:oldHash,
+   model:"gpt-6.1-sol",max_charge_cents:20,status:"SUCCEEDED",
+   response_json:{status:"completed",output:[{type:"message",
+    content:[{type:"output_text",
+     text:JSON.stringify({main_ts:goodMain,style_css:goodCss})}]}]},
+   response_id:"resp_paid_saved_code",input_tokens:200,output_tokens:300
+  };
+  const db={query:vi.fn(async(sql:string,params:readonly unknown[]=[])=>{
+   if(sql.includes("owner_key_thumbprint"))return {rows:[{job_id:id}]};
+   if(sql.includes("FROM public.appf2_agent_qa_plan"))
+    return {rows:[{original_plan:plan}]};
+   if(sql.includes("FROM public.appf2_agent_model_call"))
+    return {rows:params[2]==="sp35_free_ai_code_v1"?[saved]:[]};
+   throw Error("UNEXPECTED_INITIAL_CODE_DB_QUERY");
+  })} as unknown as AgentJobExecutor;
+  fake.recover.mockResolvedValue({job:half,project});
+  fake.advance.mockImplementation(async(_db:unknown,prev:AgentJobRow,
+   _owner:string,next:AgentJobRow["checkpoint"],
+   source:typeof project)=>({
+    job:{...prev,revision:2,job_state:"CODING" as const,
+     checkpoint_hash:"sha256:"+"c".repeat(64),
+     checkpoint:next,project_hash:source.project_hash},
+    project:source
+   }));
+  fake.dispatch.mockResolvedValue({status:"FREE_CI_QUEUED"});
+  const modelFetch=vi.spyOn(globalThis,"fetch").mockRejectedValue(
+   Error("SECOND_PAID_AI_POST_IS_FORBIDDEN"));
+  try{
+   const result=await runFreeCiAiStage({
+    anonymous_id:owner,original_prompt:prompt,
+    expected_project_hash:project.project_hash,stage:"CODE",
+    explicit_ai_consent:true,explicit_free_ci_consent:true
+   },{db,jobId:id,ownerThumb:"stored-original-owner",
+    modelKey:"sk-existing-server-only",githubToken:"github-token-strong-enough",
+    ticketSecret:"existing-secret",nowMs:Date.now()});
+   expect(result).toMatchObject({status:"AI_SOURCE_SAVED_FREE_CI_QUEUED",
+    revision:2,paid_model_call_saved:true,app_published:false});
+   expect(fake.advance).toHaveBeenCalledTimes(1);
+   const call=fake.advance.mock.calls[0]!;
+   expect(call[3]).toMatchObject({state:"CODING",step:2,
+    cost_cents:28,previous_checkpoint_id:halfHash});
+   expect(call[4].revision).toBe(2);
+   expect(call[4].files.find((v:{path:string})=>
+    v.path==="src/main.ts").content).toBe(goodMain);
+   expect(modelFetch).not.toHaveBeenCalled();
+   expect(db.query).not.toHaveBeenCalledWith(
+    expect.stringContaining("reserve_agent_model_call"),expect.anything());
+   expect(fake.dispatch).toHaveBeenCalledTimes(1);
+  }finally{modelFetch.mockRestore();}
+ });
 });
