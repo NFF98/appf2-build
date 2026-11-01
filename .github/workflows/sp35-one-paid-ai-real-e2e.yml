@@ -1,4 +1,4 @@
-name: Sprint 3.5 ONE paid AI model → free Docker real E2E (60c test budget)
+name: Sprint 3.5 ONE bounded real GPT-6 QA/repair chain (76c maximum reservation)
 on:
   push:
     branches:
@@ -50,3 +50,5 @@ jobs:
 # Authorized single-call AI E2E rerun after pre-request syntax repair.
 
 # Bounded one-call recheck using official strict OpenAI Responses JSON schema; no automatic retry.
+
+# C4/C5 real browser acceptance: one 76-cent-maximum-approved test Job, six frozen four-player score checks, up to 3 paid repairs; no recurring trigger.
