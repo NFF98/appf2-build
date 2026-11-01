@@ -44,6 +44,12 @@
 
 **既有優先順序**：1. 舊已部署 Staging health／Free-AI readiness 真讀（不付費）；2. 限一次新 owner Job、模型費用最高 76 cents；3. 同 Job 的 CI 受限 Docker/真 Chromium，自修最多 3 回且總預算不超額；4. 保存 GitHub/PG 收據、問題與下一筆工作；5. 再衡量 G0 速度與 G1 DB，不偷跑第二付費 Job。無法通過 preflight 就不呼叫 provider；任何未確定 paid outcome 禁止新 Job 盲重試。**費用批准不等於產品 E2E PASS 或合併／發布許可。**
 
+**首筆新付費樣本確切資料（2026-11-01 UTC，直接核對 Staging PostgreSQL；Runner QA 尚未結算）**：
+- 來源 GitHub [G1 paid Workflow #41289801351](https://github.com/NFF98/appf2-build/actions/runs/41289801351)，精確觸發 Commit `4fdac81af824cfdb85cedf446589c18446e05c26`，AI 模型 Runner [#41289882766](https://github.com/NFF98/appf2-build/actions/runs/41289882766) **SUCCESS**；同一 PR #419／同一 G1 原建立者 Job `0fa5022f-5d09-42ef-b5e1-eb8ee3dac5b8`。完整原 prompt 與六條凍結 QA 在 `deploy/scripts/sp35-g1-paid-real-dice-e2e.mjs`，未重定義驗收。
+- Staging 模型 call journal: `sp35_free_ai_code_v1`、`gpt-6.1-sol`、`SUCCEEDED`，**1,007 input + 6,775 output tokens**，該次模型 reservation upper bound **20 cents**（非 invoice），原 Job 整體經建立者核准上限 **76 cents**。不存 API Key／簽章私鑰。此刻本 Job 已發出 **1 筆真正 paid provider POST**，不可改成「新增 AI 費用 0」。
+- 原 Job `revision=2`、`job_state=CODING`、`project_hash=sha256:762b9a689108da4d70d094081c178c1e42c5389c377b1a1c7bf34ffdd61bceae`；真正模型來源快照 **7 檔（4 TypeScript，其中 3 檔有相對 import）**，不是手寫 fixture。中途費用、QA、私人預覽及產品完整 18 啦規則均 **NOT_YET_VERIFIED**，不能算 G1/產品 PASS。
+- 相同 source 已派發免費 OIDC Docker／Chromium [Runner #41290104432](https://github.com/NFF98/appf2-build/actions/runs/41290104432)，啟動時 `IN_PROGRESS`；此筆需依收據後續原位補寫 PASS/FAIL 和策略判斷。此 G1 樣本的 CI P-256 owner 金鑰是本次 Runner ephemeral，不能冒稱後續可由任意新 Runner 代替該 owner 接續。
+
 **執行前狀態**：`AUTHORIZED_NOT_SPENT`；本節提交時新 AI provider POST = 0、保留上限 76 cents、累計本輪實際帳單 `NOT_VERIFIED`。後續以本節直接原位追加真實 Workflow、Job 與收據，不另開 SSOT。
 
 ## 0. 2026-10-31 Free-only 執行決議（Human 最新指示）
