@@ -130,6 +130,8 @@ describe("C4 paid GPT-6 saved answer real source-write path after half committed
   }finally{modelFetch.mockRestore();}
  });
 
+});
+describe("C4 initial CODE saved response after half checkpoint",()=>{
  it("resumes first saved paid CODE from PLANNING to a new source without a second charge",async()=>{
   vi.clearAllMocks();
   const project=await createProjectSnapshot("VITE_WEB","index.html",[
