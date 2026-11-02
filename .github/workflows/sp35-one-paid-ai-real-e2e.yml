@@ -60,6 +60,7 @@ jobs:
           node --input-type=module -e 'import fs from "node:fs";if(!fs.readFileSync("refusal.log","utf8").includes("PAUSED_BUDGET"))process.exit(1)'
   # SPEC H-001 0.24+0.27: new g12-reading ONLY, pre-read ledger 212c +44c <=308c.
   # SPEC H-001 0.25: one new G14 escape game, ledger 232c + 44c <= 308c, no replay.
+  # SPEC H-001 0.29/0.30: FINAL G15 original RPS, free 10/70 PASS; 252c+44c=296c<=308c.
   one-remaining-native-original-request:
     # One selected unseen request, never a generation loop. Operator verifies
     # original journal and remaining 308c conservative liability per SPEC 0.24 before marker.
