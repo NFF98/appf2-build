@@ -2,14 +2,17 @@
  * No generated SQL, no model privileges, and no access to another viewer.
  */
 import {verifyMutationProof} from "./create-proof.js";
+import {validRecordQueryFilters,validRecordQueryLimit,type CodeRecordFilters}
+ from "../platform/blueprint/code-record-query.js";
 import {WorkerPostgresExecutor} from "../platform/blueprint/worker-postgres-executor.js";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
 const ROUTE=/^\/api\/v1\/code-apps\/([0-9a-f-]{36})\/records$/iu;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const KEY=/^[A-Za-z0-9_-]{8,128}$/u;
 type RecordDb={query:<T>(sql:string,values:readonly unknown[])=>Promise<{rows:readonly T[]}>;close:()=>Promise<void>};
-type Input={action:"list"|"read"|"create"|"update"|"delete";record_id?:string;
- value?:Record<string,unknown>;expected_value?:Record<string,unknown>};
+type Input={action:"list"|"query"|"read"|"create"|"update"|"delete";record_id?:string;
+ value?:Record<string,unknown>;expected_value?:Record<string,unknown>;
+ filters?:CodeRecordFilters;limit?:number};
 type Row={record_id:string;value:Record<string,unknown>;created_at?:string;updated_at?:string};
 export type CodeAppRecordDeps={db?:(env:Appf2WorkerEnv,thumbprint:string)=>RecordDb};
 const reply=(status:number,body:unknown)=>new Response(JSON.stringify(body),{status,headers:{
@@ -29,6 +32,8 @@ export function validCodeRecordInput(x:unknown):x is Input{
  if(!object(x)||typeof x.action!=="string")return false;
  const keys=Object.keys(x).sort().join(",");
  if(x.action==="list")return keys==="action";
+ if(x.action==="query")return keys==="action,filters,limit"&&
+  validRecordQueryFilters(x.filters)&&validRecordQueryLimit(x.limit);
  if(!UUID.test(String(x.record_id)))return false;
  if(x.action==="read")return keys==="action,record_id";
  if(x.action==="create")return keys==="action,record_id,value"&&validPayload(x.value);
@@ -52,6 +57,10 @@ const CREATE=`INSERT INTO public.appf2_code_app_record
 const LIST=`SELECT record_id::text,payload AS value,created_at,updated_at
  FROM public.appf2_code_app_record WHERE share_id=$1::uuid
  AND viewer_key_thumbprint=$2::text ORDER BY created_at,record_id LIMIT 100`;
+const QUERY=`SELECT record_id::text,payload AS value,created_at,updated_at
+ FROM public.appf2_code_app_record WHERE share_id=$1::uuid
+ AND viewer_key_thumbprint=$2::text AND payload @> $3::jsonb
+ ORDER BY created_at,record_id LIMIT $4::integer`;
 const READ=`SELECT record_id::text,payload AS value,created_at,updated_at
  FROM public.appf2_code_app_record WHERE share_id=$1::uuid
  AND viewer_key_thumbprint=$2::text AND record_id=$3::uuid LIMIT 1`;
@@ -107,6 +116,13 @@ export async function operateCodeRecord(client:RecordDb,share:string,thumbprint:
  const target=[share,thumbprint,id];
  if(data.action==="list"){
   const rows=(await client.query<Row>(LIST,target.slice(0,2))).rows;
+  return reply(200,{data:{records:rows}});
+ }
+ if(data.action==="query"){
+  if(!validRecordQueryFilters(data.filters)||!validRecordQueryLimit(data.limit))
+   return denied();
+  const rows=(await client.query<Row>(QUERY,[share,thumbprint,
+   JSON.stringify(data.filters),data.limit])).rows;
   return reply(200,{data:{records:rows}});
  }
  if(data.action==="read"){

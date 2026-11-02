@@ -2,6 +2,8 @@
  * Generated JS never receives an identity key, cookie, URL capability or SQL.
  */
 import {encodeBase64Url,mutationProofTranscript} from "../../edge/create-proof.js";
+import {validRecordQueryFilters,validRecordQueryLimit,type CodeRecordFilters}
+ from "../../platform/blueprint/code-record-query.js";
 import {keyThumbprint} from "../../edge/create-proof.js";
 import {createBrowserPopKeyPersistence} from "../shell/tab-app-recovery.js";
 import type {StoredPopMaterial} from "../create/pop-keyring.js";
@@ -9,9 +11,10 @@ import type {StoredPopMaterial} from "../create/pop-keyring.js";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const DAYS=3650*24*60*60*1000;
 const identityCache=new Map<string,Promise<StoredPopMaterial>>();
-type Operation={action:"list"|"read"|"create"|"update"|"delete";
- record_id?:string;value?:Record<string,unknown>;expected_value?:Record<string,unknown>};
-const ACTIONS=new Set(["list","read","create","update","delete"]);
+type Operation={action:"list"|"query"|"read"|"create"|"update"|"delete";
+ record_id?:string;value?:Record<string,unknown>;expected_value?:Record<string,unknown>;
+ filters?:CodeRecordFilters;limit?:number};
+const ACTIONS=new Set(["list","query","read","create","update","delete"]);
 
 async function recordIdentity(shareId:string):Promise<StoredPopMaterial>{
  const existing=identityCache.get(shareId);
@@ -84,6 +87,9 @@ export function operationOf(message:Record<string,unknown>):Operation|null{
  if(typeof message.action!=="string"||!ACTIONS.has(message.action))return null;
  const action=message.action as Operation["action"];
  if(action==="list")return {action};
+ if(action==="query")return validRecordQueryFilters(message.filters)&&
+  validRecordQueryLimit(message.limit)?
+  {action,filters:message.filters,limit:message.limit}:null;
  const rawId=action==="create"?message.record_id??crypto.randomUUID():message.record_id;
  if(!UUID.test(String(rawId)))return null;
  const record_id=String(rawId);
@@ -145,17 +151,18 @@ export const CODE_RECORD_IFRAME_SCRIPT=`(()=>{
   return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+
    h.slice(16,20)+"-"+h.slice(20);
  };
- const run=(action,record_id,value,expected_value)=>new Promise((resolve,reject)=>{
+ const run=(action,record_id,value,expected_value,filters,limit)=>new Promise((resolve,reject)=>{
   if(pending.size>=4){reject(Error("CODE_RECORD_BUSY"));return;}
   const id=String(++count);
   const timer=setTimeout(()=>{pending.delete(id);reject(Error("CODE_RECORD_TIMEOUT"));},20000);
   pending.set(id,{resolve,reject,timer});
-  parent.postMessage({kind:"APPF2_RECORD_REQUEST_V1",id,action,record_id,value,expected_value},"*");
+  parent.postMessage({kind:"APPF2_RECORD_REQUEST_V1",id,action,record_id,value,expected_value,filters,limit},"*");
  });
  Object.defineProperty(window,"appf2Records",{configurable:false,writable:false,
   value:Object.freeze({
    newId,
    list:()=>run("list"),
+   query:(filters,limit=20)=>run("query",undefined,undefined,undefined,filters,limit),
    create:(value,id)=>run("create",id,value),
    read:id=>run("read",id),
    update:(id,value,expected)=>run("update",id,value,expected),
