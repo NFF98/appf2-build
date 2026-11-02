@@ -41,6 +41,7 @@ jobs:
           path: ${{ runner.temp }}/sp35-recipient-*.png
           if-no-files-found: error
 
+  # Design H-001 0.29: G15 third game preflight ALL 10 frozen scenarios/70 criteria only, zero model.
   remaining-free-preflight:
     if: contains(github.event.head_commit.message, '[SP35-REMAINING-FREE-PREFLIGHT]')
     runs-on: ubuntu-latest
@@ -67,7 +68,7 @@ jobs:
     timeout-minutes: 35
     env:
       APPF2_SP35_REMAINING_EXPLICIT_PAID_OK: '1'
-      APPF2_SP35_SAMPLE: ${{ contains(github.event.head_commit.message, '[SP35-SAMPLE-g6-length]') && 'g6-length' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g7-memory]') && 'g7-memory' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g8-lights]') && 'g8-lights' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g9-connect]') && 'g9-connect' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g10-books]') && 'g10-books' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g11-water]') && 'g11-water' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g12-reading]') && 'g12-reading' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g13-order]') && 'g13-order' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g14-escape]') && 'g14-escape' || '' }}
+      APPF2_SP35_SAMPLE: ${{ contains(github.event.head_commit.message, '[SP35-SAMPLE-g6-length]') && 'g6-length' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g7-memory]') && 'g7-memory' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g8-lights]') && 'g8-lights' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g9-connect]') && 'g9-connect' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g10-books]') && 'g10-books' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g11-water]') && 'g11-water' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g12-reading]') && 'g12-reading' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g13-order]') && 'g13-order' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g14-escape]') && 'g14-escape' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g15-rps]') && 'g15-rps' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
