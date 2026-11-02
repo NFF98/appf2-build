@@ -44,6 +44,17 @@ describe("universal independent acceptance (not dice-specific)",()=>{
   expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
   expect(parseQaPlan({version:"1",criteria:[{...c,assertions:[{...c.assertions[0],function_name:"alert();"}]}]},prompt)).toBeNull();
  });
+ it("accepts real checkbox/select actions and denies forged navigation or scripts",()=>{
+  const c={...criteria[0],steps:[{action:"check",role:"checkbox",name:"同意"}],
+   assertions:[{kind:"text_appears",text:"已同意：是"}]};
+  expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,steps:[{action:"check",role:"checkbox",name:"同意",url:"https://evil.example"}]}]},prompt)).toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,steps:[{action:"check",role:"button",name:"同意"}]}]},prompt)).toBeNull();
+  const select={...c,steps:[{action:"select",role:"combobox",name:"配送方式",value:"express"}]};
+  expect(parseQaPlan({version:"1",criteria:[select]},prompt)).not.toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...select,steps:[{action:"select",role:"combobox",name:"配送方式",value:""}]}]},prompt)).toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...select,steps:[{action:"select",role:"combobox",name:"配送方式",value:"express",script:"alert(1)"}]}]},prompt)).toBeNull();
+ });
  it("freezes same-origin reload as an exact, no-navigation QA action",()=>{
   const c={...criteria[0],
    steps:[{action:"click",role:"button",name:"增加"},{action:"reload"}],
