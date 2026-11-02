@@ -6,6 +6,7 @@
 import type {ProjectSnapshot} from "./project-workspace.js";
 export const PINNED_VITE_BIN="/opt/appf2/node_modules/vite/bin/vite.js";
 export const PINNED_WEB_SMOKE="/opt/appf2/web-smoke.mjs";
+const VITE_BUILD=["node",PINNED_VITE_BIN,"build",".","--outDir","dist","--emptyOutDir"] as const;
 export const PINNED_MODULES="/opt/appf2/node_modules";
 /**
  * A deleted file must never survive into a newer immutable project revision.
@@ -28,7 +29,7 @@ export function sandboxCommand(project:ProjectSnapshot,
  tool:"run_build"|"run_test"):readonly string[]{
  if(project.profile==="VITE_WEB"){
   return tool==="run_build"?
-   ["node",PINNED_VITE_BIN,"build",".","--outDir","dist","--emptyOutDir"]:
+   VITE_BUILD:
    ["node",PINNED_WEB_SMOKE];
  }
  if(project.profile==="NODE"){
@@ -38,6 +39,16 @@ export function sandboxCommand(project:ProjectSnapshot,
  }
  throw Error("SANDBOX_PROFILE_NOT_READY");
 }
+/** Model can never select commands. Both front/backend commands are fixed in the image. */
+export function sandboxCommands(project:ProjectSnapshot,
+ tool:"run_build"|"run_test"):readonly (readonly string[])[]{
+ if(project.profile==="VITE_NODE"){
+  return tool==="run_build"?
+   [VITE_BUILD,["node","--check","server/index.mjs"],["node","--check","server/test.mjs"]]:
+   [["node",PINNED_WEB_SMOKE],["node","--test","server/test.mjs"]];
+ }
+ return [sandboxCommand(project,tool)];
+}
 export function sandboxNeedsPinnedDeps(project:ProjectSnapshot):boolean{
- return project.profile==="VITE_WEB";
+ return project.profile==="VITE_WEB"||project.profile==="VITE_NODE";
 }

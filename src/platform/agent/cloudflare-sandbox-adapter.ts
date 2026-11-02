@@ -9,7 +9,7 @@ import {validateSandboxLimits,type CloudSandboxAdapter,type SandboxLimits,
  type SandboxEvidence} from "./sandbox-adapter.js";
 import {verifyProjectSnapshot,type ProjectSnapshot} from "./project-workspace.js";
 import {sha256CodeBytes} from "../blueprint/code-artifact-v2.js";
-import {sandboxCommand,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,PINNED_MODULES} from "./sandbox-commands.js";
+import {sandboxCommands,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,PINNED_MODULES} from "./sandbox-commands.js";
 export interface IsolatedProcess{
  output(options:{encoding:"utf8";maxBytes:number;timeout:number}):Promise<{
   stdout:string;stderr:string;exitCode:number|null;timedOut?:boolean;truncated?:boolean
@@ -93,18 +93,22 @@ export class CloudflareIsolatedSandboxAdapter implements CloudSandboxAdapter{
    if(result.exitCode!==0||result.timedOut)
     throw Error("SANDBOX_PINNED_DEPENDENCIES_MISSING");
   }
-  const proc=await runtime.exec(sandboxCommand(project,call.name),{
-   cwd:root,timeout:limits.wall_time_ms
-  });
-  try{
-   const out=await proc.output({encoding:"utf8",maxBytes:2048,timeout:limits.wall_time_ms});
-   if(out.timedOut)await proc.kill(9);
-   return evidence(call,out.exitCode,Boolean(out.timedOut),
-    (out.stdout+"\n"+out.stderr).slice(0,4096));
-  }catch{
-   await proc.kill(9).catch(()=>undefined);
-   return evidence(call,null,true,"SANDBOX_PROCESS_TIMEOUT_OR_CRASH");
+  const commands=sandboxCommands(project,call.name);
+  const details:string[]=[];
+  for(const argv of commands){
+   const proc=await runtime.exec(argv,{cwd:root,timeout:limits.wall_time_ms});
+   try{
+    const out=await proc.output({encoding:"utf8",maxBytes:2048,timeout:limits.wall_time_ms});
+    if(out.timedOut)await proc.kill(9);
+    details.push((out.stdout+"\n"+out.stderr).slice(0,2048));
+    if(out.timedOut||out.exitCode!==0)
+     return evidence(call,out.exitCode,Boolean(out.timedOut),details.join("\n").slice(0,4096));
+   }catch{
+    await proc.kill(9).catch(()=>undefined);
+    return evidence(call,null,true,"SANDBOX_PROCESS_TIMEOUT_OR_CRASH");
+   }
   }
+  return evidence(call,0,false,details.join("\n").slice(0,4096));
  }
  async destroy(sandbox_id:string):Promise<void>{
   const runtime=this.containers.get(sandbox_id);

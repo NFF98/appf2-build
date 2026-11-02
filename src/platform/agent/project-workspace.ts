@@ -10,7 +10,18 @@ export const MAX_PROJECT_BYTES=4*1024*1024;
 const HASH=/^sha256:[a-f0-9]{64}$/u;
 const PATH=/^[A-Za-z0-9_@.-]+(?:\/[A-Za-z0-9_@.-]+)*$/u;
 const DENY_SEGMENTS=new Set([".","..",".git",".env",".github","node_modules","dist","build",".wrangler","secrets"]);
-export type ProjectProfile="VITE_WEB"|"NODE"|"PYTHON";
+/** Only VITE_NODE enforces both parts and immutable pinned toolchain. */
+const FULLSTACK_CONFIG=/(?:^|\/)(?:package(?:-lock)?\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock|vite\.config\.[^/]+|rollup\.config\.[^/]+|postcss\.config\.[^/]+|tailwind\.config\.[^/]+|tsconfig(?:\.[^/]*)?\.json)$/iu;
+function validFullstackFiles(entrypoint:string,files:readonly {path:string;content:string}[]):boolean{
+ const paths=new Set(files.map(f=>f.path));
+ return entrypoint==="index.html"&&paths.has("index.html")&&
+  paths.has("server/index.mjs")&&paths.has("server/test.mjs")&&
+  files.every(f=>!FULLSTACK_CONFIG.test(f.path)&&
+   (f.path==="index.html"||
+    /^src\/[A-Za-z0-9_@./-]+\.(?:ts|tsx|js|jsx|css|json|svg)$/u.test(f.path)||
+    /^server\/[A-Za-z0-9_@./-]+\.mjs$/u.test(f.path)));
+}
+export type ProjectProfile="VITE_WEB"|"NODE"|"PYTHON"|"VITE_NODE";
 export type ProjectFile={readonly path:string;readonly content:string;readonly bytes:number;readonly hash:string};
 export type ProjectSnapshot={
  readonly schema_version:typeof PROJECT_SCHEMA;
@@ -60,7 +71,7 @@ async function digest(s:string):Promise<string>{
 // eslint-disable-next-line complexity -- Project integrity constraints fail closed at every boundary.
 async function assemble(profile:ProjectProfile,entrypoint:string,revision:number,
  parent_hash:string|null,files:readonly {path:string;content:string}[]):Promise<ProjectSnapshot>{
- if(!["VITE_WEB","NODE","PYTHON"].includes(profile)||!Number.isSafeInteger(revision)||
+ if(!["VITE_WEB","NODE","PYTHON","VITE_NODE"].includes(profile)||!Number.isSafeInteger(revision)||
     revision<1||(revision===1?parent_hash!==null:!parent_hash||!HASH.test(parent_hash)))
     throw Error("PROJECT_INVALID_REVISION");
  assertWorkspacePath(entrypoint);
@@ -81,6 +92,8 @@ async function assemble(profile:ProjectProfile,entrypoint:string,revision:number
  }
  if(!used.has(entrypoint.toLowerCase())||!indexed.some(f=>f.path===entrypoint))
   throw Error("PROJECT_ENTRYPOINT_MISSING");
+ if(profile==="VITE_NODE"&&!validFullstackFiles(entrypoint,indexed))
+  throw Error("PROJECT_FULLSTACK_SOURCE_INVALID");
  indexed.sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);
  const metadata={schema_version:PROJECT_SCHEMA,profile,entrypoint,revision,parent_hash,
   files:indexed.map(({path,bytes,hash})=>({path,bytes,hash}))};
