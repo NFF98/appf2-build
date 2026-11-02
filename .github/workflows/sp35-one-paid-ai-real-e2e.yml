@@ -11,6 +11,7 @@ concurrency:
   group: ${{ contains(github.event.head_commit.message, '[SP35-G5-CANCEL-EMPTY-PREJOB]') && 'sp35-g5-cancel-empty-prejob' || 'sp35-one-explicit-paid-ai-e2e' }}
   cancel-in-progress: false
 jobs:
+  # SPEC H-001 0.26: original G11 published card, bounded 45s PG UI checks, zero new AI.
   published-recipient-free-only:
     # Existing ACTIVE share only. Never calls an owner generation endpoint.
     if: contains(github.event.head_commit.message, '[SP35-RECIPIENT-FREE-ONCE]')
