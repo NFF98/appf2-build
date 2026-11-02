@@ -48,6 +48,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Independent Chromium temporal QA 0→1→0 positive and no-op negative (NO AI)
         run: node deploy/scripts/sp35-free-ci-browser-temporal-e2e.mjs
+      - name: Unknown App actual reload persistence QA — saved PASS, memory-only FAIL (NO AI)
+        run: node deploy/scripts/sp35-unknown-app-persistence-chromium-e2e.mjs
       - name: Same NO_NETWORK submit-event semantics as public and private runtime (NO AI)
         run: node deploy/scripts/sp35-no-network-form-events-e2e.mjs
       - name: Actual trusted multi-file Vite build and browser click
