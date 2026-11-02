@@ -25,6 +25,15 @@ async function perform(frame,step){
  const control=await one(frame,step.role,step.name);
  if(step.action==="click")await control.click({timeout:3000});
  else if(step.action==="fill")await control.fill(step.value,{timeout:3000});
+ else if(step.action==="check"){
+  if(await control.isChecked())throw Error("QA_CHECK_NO_TRANSITION");
+  await control.check({timeout:3000});
+  if(!await control.isChecked())throw Error("QA_CHECK_DID_NOT_APPLY");
+ }else if(step.action==="select"){
+  if(await control.inputValue()===step.value)throw Error("QA_SELECT_NO_TRANSITION");
+  await control.selectOption(step.value,{timeout:3000});
+  if(await control.inputValue()!==step.value)throw Error("QA_SELECT_DID_NOT_APPLY");
+ }
  else throw Error("QA_ACTION_NOT_ALLOWED");
 }
 async function assertExpected(page,check,before){
