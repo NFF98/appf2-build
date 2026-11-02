@@ -43,20 +43,39 @@ async function launchViewer(){
  await app.waitFor({state:"visible",timeout:25000});
  return {page,frame,app,stats};
 }
+// SPEC H-001 §0.26: preserve every frozen action and visible assertion.
+// Real signed PostgreSQL CRUD has bounded network/bridge propagation, not instant fixtures.
+const waitPolls=candidate.category==="postgres"?225:90;
 async function waitText(view,text,absent=false){
- for(let n=0;n<90;n++){
+ const started=Date.now();
+ for(let n=0;n<waitPolls;n++){
   const found=(await view.app.innerText().catch(()=>"")).includes(text);
-  if(found!==absent)return;
+  if(found!==absent){
+   const ms=Date.now()-started;
+   console.log("REAL_PUBLISHED_UI_WAIT_MS="+ms+" postgres="+
+    (candidate.category==="postgres")+" assert="+(absent?"absent":"visible"));
+   if(ms>15000)console.log("PERFORMANCE_SLOW postgres_ui_wait_ms="+ms);
+   return;
+  }
   await view.page.waitForTimeout(200);
  }
+ const ms=Date.now()-started;
+ console.error("REAL_PUBLISHED_UI_TIMEOUT_MS="+ms+" successful_record_actions="+
+  [...view.stats.actions].sort().join(",")+" list_receipts="+view.stats.list);
  throw Error("REAL_PUBLISHED_UI_ASSERTION_"+(absent?"ABSENT_":"MISSING_")+text);
 }
 async function waitList(view,after=0){
- for(let n=0;n<90;n++){
-  if(view.stats.list>after)return;
+ const started=Date.now();
+ for(let n=0;n<waitPolls;n++){
+  if(view.stats.list>after){
+   const ms=Date.now()-started;
+   console.log("REAL_PG_LIST_WAIT_MS="+ms);
+   if(ms>15000)console.log("PERFORMANCE_SLOW pg_list_wait_ms="+ms);
+   return;
+  }
   await view.page.waitForTimeout(200);
  }
- throw Error("REAL_PG_LIST_RESPONSE_REQUIRED");
+ throw Error("REAL_PG_LIST_RESPONSE_REQUIRED after_ms="+(Date.now()-started));
 }
 try{
  const view=await launchViewer();
