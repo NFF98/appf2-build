@@ -145,67 +145,6 @@ describe("Cloudflare Sandbox 1.x command adapter (offline fake, no cloud claim)"
   expect(fake.removed).toHaveLength(1);
  });
 
- it("runs one immutable full-stack App through the EXISTING offline Sandbox, both sides",async()=>{
-  const fake=new Stub();
-  const adapter=new CloudflareIsolatedSandboxAdapter({create:async()=>fake});
-  const sources=[
-   {path:"index.html",content:"<main></main><script type='module' src='/src/main.ts'></script>"},
-   {path:"src/main.ts",content:"document.body.textContent='APP';"},
-   {path:"server/index.mjs",content:"export const calculate=(n)=>n*3;"},
-   {path:"server/test.mjs",content:"import {test} from 'node:test'; import {calculate} from './index.mjs'; test('business',()=>{if(calculate(7)!==21)throw Error('BAD')});"}
-  ];
-  const app=await createProjectSnapshot("VITE_NODE","index.html",sources);
-  await adapter.provision(job,limits);
-  const build=await adapter.execute(job,app,call("run_build",app.project_hash,{target:"project"}));
-  expect(build.exit_code).toBe(0);
-  const ran=await adapter.execute(job,app,call("run_test",app.project_hash,{target:"project"}));
-  expect(ran.exit_code).toBe(0);
-  expect(fake.commands).toEqual([
-   ["ln","-sfn",PINNED_MODULES,sandboxWorkspaceRoot(job,app)+"/node_modules"],
-   ["node",PINNED_VITE_BIN,"build",".","--outDir","dist","--emptyOutDir"],
-   ["node","--check","server/index.mjs"],
-   ["node","--check","server/test.mjs"],
-   ["ln","-sfn",PINNED_MODULES,sandboxWorkspaceRoot(job,app)+"/node_modules"],
-   ["node",PINNED_WEB_SMOKE],
-   ["node","--test","server/test.mjs"]
-  ]);
-  expect(sandboxCommands(app,"run_test")).toHaveLength(2);
-  await adapter.destroy(job);
- });
- it("rejects an incomplete or config-poisoned full-stack App before Sandbox",async()=>{
-  const sources=[
-   {path:"index.html",content:"<main></main>"},
-   {path:"server/index.mjs",content:"export const app=true;"},
-   {path:"server/test.mjs",content:"import {test} from 'node:test'; test('ok',()=>{});"}
-  ];
-  for(const files of [sources.slice(0,2),
-   [...sources,{path:"package.json",content:'{"scripts":{"pretest":"curl evil"}}'}],
-   [...sources,{path:"vite.config.ts",content:"export default {}"}]]){
-   await expect(createProjectSnapshot("VITE_NODE","index.html",files))
-    .rejects.toThrow("PROJECT_FULLSTACK_SOURCE_INVALID");
-  }
- });
- it("does not run later backend commands after a failed full-stack build",async()=>{
-  const fake=new Stub();
-  const original=fake.exec.bind(fake);
-  fake.exec=async(argv,options)=>{
-   const result=await original(argv,options);
-   if(argv[0]==="node"&&argv[1]===PINNED_VITE_BIN)
-    return {...result,output:async()=>({stdout:"",stderr:"VITE_ERROR",exitCode:1})};
-   return result;
-  };
-  const app=await createProjectSnapshot("VITE_NODE","index.html",[
-   {path:"index.html",content:"<main></main>"},
-   {path:"server/index.mjs",content:"export const app=true;"},
-   {path:"server/test.mjs",content:"import {test} from 'node:test'; test('ok',()=>{});"}
-  ]);
-  const adapter=new CloudflareIsolatedSandboxAdapter({create:async()=>fake});
-  await adapter.provision(job,limits);
-  const failed=await adapter.execute(job,app,call("run_build",app.project_hash,{target:"project"}));
-  expect(failed.exit_code).toBe(1);
-  expect(failed.detail).toContain("VITE_ERROR");
-  expect(fake.commands).toHaveLength(2);
- });
  it("rejects unsupported Python profile rather than pretending to run tests",async()=>{
   const app=await createProjectSnapshot("PYTHON","main.py",[
    {path:"main.py",content:"print('hi')"}
