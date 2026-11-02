@@ -84,7 +84,11 @@ function recordWriteOperation(action:"create"|"update",record_id:string,
 }
 function remainingRecordOperation(action:Operation["action"],record_id:string,
  expected:Record<string,unknown>|undefined,message:Record<string,unknown>):Operation|null{
- return remainingRecordOperation(action,record_id,expected,message);
+ if(action==="create"||action==="update")
+  return recordWriteOperation(action,record_id,expected,message);
+ if(action==="delete")return expected===undefined?{action,record_id}:
+  {action,record_id,expected_value:expected};
+ return {action,record_id};
 }
 /** Guest message grammar only; actual share and signing identity stay host-owned. */
 export function operationOf(message:Record<string,unknown>):Operation|null{
@@ -99,11 +103,7 @@ export function operationOf(message:Record<string,unknown>):Operation|null{
  const record_id=String(rawId);
  const expected=expectedFor(message);
  if(expected===null||action==="create"&&expected!==undefined)return null;
- if(action==="create"||action==="update")
-  return recordWriteOperation(action,record_id,expected,message);
- if(action==="delete")return expected===undefined?{action,record_id}:
-  {action,record_id,expected_value:expected};
- return {action,record_id};
+ return remainingRecordOperation(action,record_id,expected,message);
 }
 /** Called only after verifying a published App's immutable artifact hash.
  * Each frame has an independent rate limit; its data is isolated per viewer.
