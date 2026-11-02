@@ -9,8 +9,10 @@ const origin="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
 const share="61864019-0773-48c6-b095-4bd51391bed0";
 const path="/api/v1/code-apps/"+share+"/records";
 const id=randomUUID();
+const secondId=randomUUID();
 const valueA={kind:"unknown-workflow",sku:"experimental-"+id,quantity:4,approved:false};
 const editedA={...valueA,quantity:7,approved:true};
+const secondA={kind:"unknown-workflow",sku:"second-"+secondId,quantity:4,approved:false};
 const valueB={kind:"other-viewer",sku:"isolated-"+id,quantity:99};
 const browser=await chromium.launch({headless:true});
 const sessions=[];
@@ -106,13 +108,35 @@ try{
  const second=expectStatus(await send(B,{action:"list"}),200,"B_LIST_START");
  ensure(Array.isArray(second.records)&&second.records.length===0,"B_INITIAL_EMPTY");
  const created=expectStatus(await send(A,{action:"create",record_id:id,value:valueA}),201,"A_CREATE");
- cleanup.push({client:A});
+ cleanup.push({client:A,record_id:id});
  ensure(created.record_id===id&&created.value?.quantity===4,"CREATE_PAYLOAD");
+ const secondCreated=expectStatus(await send(A,{action:"create",record_id:secondId,value:secondA}),201,"A_SECOND_CREATE");
+ cleanup.push({client:A,record_id:secondId});
+ ensure(secondCreated.record_id===secondId,"A_SECOND_ID");
+ const two=expectStatus(await send(A,{action:"query",filters:
+  {kind:"unknown-workflow",quantity:4},limit:20}),200,"A_GENERIC_QUERY_INTERSECTION");
+ ensure(Array.isArray(two.records)&&two.records.length===2&&
+  two.records.some(x=>x.record_id===id)&&two.records.some(x=>x.record_id===secondId),
+  "UNKNOWN_MULTIFIELD_INTERSECTION");
+ const one=expectStatus(await send(A,{action:"query",filters:
+  {kind:"unknown-workflow",quantity:4},limit:1}),200,"A_LIMITED_GENERIC_QUERY");
+ ensure(one.records.length===1,"UNKNOWN_QUERY_LIMIT");
+ const precise=expectStatus(await send(A,{action:"query",filters:
+  {sku:"experimental-"+id,quantity:4},limit:10}),200,"A_SCHEMA_NEW_FIELD_QUERY");
+ ensure(precise.records.length===1&&precise.records[0].record_id===id,"UNKNOWN_SCHEMA_FIELD_FILTER");
+ const none=expectStatus(await send(A,{action:"query",filters:
+  {approved:true,quantity:4},limit:10}),200,"A_EMPTY_INTERSECTION");
+ ensure(none.records.length===0,"UNKNOWN_QUERY_FALSE_MATCH");
+ const malformed=await send(A,{action:"query",filters:{"$where":"DROP TABLE"},limit:20});
+ expectStatus(malformed,404,"INVALID_QUERY_REJECTED");
  const replay=expectStatus(await send(A,{action:"create",record_id:id,value:valueA}),200,"A_REPLAY");
  ensure(replay.record_id===id,"IDEMPOTENT_REPLAY");
  expectStatus(await send(A,{action:"create",record_id:id,value:editedA}),409,"A_CONFLICTING_CREATE");
  const read=expectStatus(await send(A,{action:"read",record_id:id}),200,"A_READ");
  ensure(read.value?.quantity===4,"A_READ_BYTES");
+ const bQuery=expectStatus(await send(B,{action:"query",filters:
+  {kind:"unknown-workflow",quantity:4},limit:20}),200,"B_QUERY_CANNOT_DISCOVER_A");
+ ensure(bQuery.records.length===0,"UNKNOWN_QUERY_CROSS_VIEWER_ISOLATED");
  const bList=expectStatus(await send(B,{action:"list"}),200,"B_EMPTY_AFTER_A_CREATE");
  ensure(bList.records.length===0,"B_ISOLATED_LIST");
  expectStatus(await send(B,{action:"read",record_id:id}),404,"B_CANNOT_READ_A");
@@ -120,7 +144,7 @@ try{
  expectStatus(await send(B,{action:"delete",record_id:id}),404,"B_CANNOT_DELETE_A");
  // Exact same record UUID is allowed for a different independently signed viewer.
  const bCreate=expectStatus(await send(B,{action:"create",record_id:id,value:valueB}),201,"B_OWN_ID_CREATE");
- cleanup.push({client:B});
+ cleanup.push({client:B,record_id:id});
  ensure(bCreate.value?.quantity===99,"B_OWN_DATA");
  // A real browser reload must recover the same nonextractable signing identity.
  await A.page.reload({waitUntil:"domcontentloaded",timeout:25000});
@@ -130,6 +154,10 @@ try{
  const updated=expectStatus(await send(A,{action:"update",record_id:id,value:editedA,
   expected_value:valueA}),200,"A_CAS_UPDATE");
  ensure(updated.value?.quantity===7&&updated.value?.approved===true,"CAS_VISIBLE_VALUE");
+ const approved=expectStatus(await send(A,{action:"query",filters:
+  {approved:true,quantity:7},limit:10}),200,"A_QUERY_UPDATED_STATE");
+ ensure(approved.records.length===1&&approved.records[0].record_id===id,
+  "UNKNOWN_QUERY_REFLECTS_REAL_PG_WRITE");
  expectStatus(await send(A,{action:"update",record_id:id,value:valueA,
   expected_value:valueA}),409,"A_STALE_CAS");
  const bIndependent=expectStatus(await send(B,{action:"read",record_id:id}),200,"B_UNAFFECTED");
@@ -139,10 +167,12 @@ try{
  expectStatus(await send(A,{action:"delete",record_id:id,
   expected_value:editedA}),200,"A_DELETE");
  expectStatus(await send(A,{action:"read",record_id:id}),404,"A_DELETED");
+ expectStatus(await send(A,{action:"delete",record_id:secondId,
+  expected_value:secondA}),200,"A_SECOND_DELETE");
  expectStatus(await send(B,{action:"delete",record_id:id,
   expected_value:valueB}),200,"B_DELETE");
  expectStatus(await send(B,{action:"read",record_id:id}),404,"B_DELETED");
- console.log("SP35 UNKNOWN BACKEND REAL CHROMIUM+WORKER+POSTGRES PROOF PASS: 2 new unrelated browser P256 identities; real PostgreSQL CRUD, CAS stale-conflict, idempotent replay, same-UUID viewer isolation, reload persisted key and saved DB data. Not a newly AI-generated App; 0 AI jobs/paid model calls.");
+ console.log("SP35 UNKNOWN BACKEND NEW MULTIFIELD QUERY + CHROMIUM+WORKER+POSTGRES PROOF PASS: independently signed P256 viewers; unknown business-schema JSONB intersection and limit, live update reflected in query, cross-viewer filter isolation, real CRUD/CAS/replay/reload, zero AI/paid model calls. Platform only, not a newly generated App.");
 }catch(e){
  problem=e;
  console.error("SP35 UNKNOWN BACKEND PLATFORM FAIL: "+String(e instanceof Error?e.message:e).slice(0,350));
@@ -150,7 +180,7 @@ try{
  const cleanupFailures=[];
  for(const entry of cleanup){
   try{
-   const r=await send(entry.client,{action:"delete",record_id:id});
+   const r=await send(entry.client,{action:"delete",record_id:entry.record_id});
    if(![200,404].includes(r.status))cleanupFailures.push(entry.client.which+":"+r.status);
   }catch{cleanupFailures.push(entry.client.which+":UNAVAILABLE");}
  }
