@@ -5,6 +5,8 @@
 export type QaStep =
  | {readonly action:"click";readonly role:"button"|"tab"|"link";readonly name:string}
  | {readonly action:"fill";readonly role:"textbox"|"spinbutton";readonly name:string;readonly value:string}
+ | {readonly action:"check";readonly role:"checkbox";readonly name:string}
+ | {readonly action:"select";readonly role:"combobox";readonly name:string;readonly value:string}
  | {readonly action:"reload"};
 export type QaAssertion =
  | {readonly kind:"text_includes";readonly text:string}
@@ -26,6 +28,11 @@ function step(x:unknown):x is QaStep{
  if(!RECORD(x))return false;
  // Only same-page refresh; never permit an AI-supplied URL, role or extra fields.
  if(x.action==="reload")return Object.keys(x).length===1;
+ if(x.action==="check")return x.role==="checkbox"&&NAME(x.name)&&
+  Object.keys(x).sort().join(",")==="action,name,role";
+ if(x.action==="select")return x.role==="combobox"&&NAME(x.name)&&
+  typeof x.value==="string"&&x.value.length>0&&x.value.length<=120&&
+  Object.keys(x).sort().join(",")==="action,name,role,value";
  if(typeof x.name!=="string"||x.name.length>120)return false;
  if(x.action==="click")return NAME(x.name)&&["button","tab","link"].includes(String(x.role));
  return x.action==="fill"&&["textbox","spinbutton"].includes(String(x.role))&&
