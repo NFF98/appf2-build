@@ -1,3 +1,11 @@
+# 2026-11-02 JST 最新：5/9（55.6%），G10 完整驗收關閉
+
+G10 閱讀書單原Job `9eecc831-4bb9-4af4-ac88-546fd159c22d`、唯一CODE20¢ SUCCEEDED（1313/6652tokens）；QA [41364310433](https://github.com/NFF98/appf2-build/actions/runs/41364310433) 7/7；原網站 [41363905501](https://github.com/NFF98/appf2-build/actions/runs/41363905501) SUCCESS、1 CREATE/1 HTTP201 publish；ACTIVE `4c07f75f-1f4b-43d2-9a66-dab6761b8414`、blueprint `sha256:710314711d4704a81c380f537ab67225fc86632d430e5d510b26ad2fcbcab738`。額外免費 [41364683866](https://github.com/NFF98/appf2-build/actions/runs/41364683866) SUCCESS：list/create/update/delete 2xx、兩新Chromium/viewer隔離、已讀刷新保留、刪除刷新、再次新增重讀、0 model/Job POST。PG有兩個獨立測試viewer各自真payload {title:小王子,read:false}。同owner anonymous ID；分享creatorKey與Agent ownerThumb為不同表示，不能直接等值join判不存在，已依正式publish驗證及原log核對。
+
+baseline2+G5+G9+G10=5/9（工具2/遊戲1/PG2）；本新增批次6個paid Job，完整3、blocked/failed3。G10付費命令關閉，不再自動修復。新增授權保守風險192¢（3closed×20+3blocked×44）；8calls上界152¢，非invoice。下一G11單Job44→236<=308¢；舊32¢不重送。已唯讀確認尚無每日喝水紀錄Job，下一件只啟動g11-water一次，禁止paid rerun；只原#419/#45、不merge/Production/Sprint4。
+
+---
+
 # 活動中：G10 原 Job 已建立，禁止重送（2026-11-02 JST）
 
 接管已啟動唯一一次 G10 閱讀書單；[原網站工作流41363905501](https://github.com/NFF98/appf2-build/actions/runs/41363905501)，原 Job `9eecc831-4bb9-4af4-ac88-546fd159c22d`。模型 runner [41364070765](https://github.com/NFF98/appf2-build/actions/runs/41364070765)，CODE journal IN_FLIGHT、max20¢，整Job44¢，尚無QA/ACTIVE，不計分。不能重新跑paid workflow或同prompt；先只讀原journal/runner/QA/公開結果。
