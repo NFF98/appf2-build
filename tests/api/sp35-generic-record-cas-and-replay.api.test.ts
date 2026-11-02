@@ -50,6 +50,13 @@ class MockScopedRecordSql{
   if(sql.startsWith("SELECT share_id::text"))
    return {rows:(requestedShare===share?[{share_id:share}]:[]) as T[]};
   const existing=this.rows.get(this.key(thumb,record));
+  if(sql.startsWith("SELECT record_id::text")&&sql.includes("payload @>")){
+   const filters=JSON.parse(record) as Record<string,unknown>,limit=Number(raw);
+   const own=[...this.rows.entries()].filter(([k,v])=>k.startsWith(thumb+":")&&
+    Object.entries(filters).every(([field,expected])=>v.value[field]===expected))
+    .map(([,v])=>v).slice(0,limit);
+   return {rows:own as T[]};
+  }
   if(sql.startsWith("SELECT record_id::text"))
    return this.selectRows<T>(sql,thumb,record,raw,existing);
   if(sql.startsWith("INSERT INTO public.appf2_code_app_record"))
@@ -75,6 +82,28 @@ describe("Sprint 3.5 generic backend CRUD reliability — SQL-shaped integration
    {action:"update",record_id:id,value:{v:2},expected_value:{secret:"x".repeat(4900)}},
    {action:"update",record_id:id,value:{v:2},expected_value:{v:1},url:"https://example.com"}
   ])expect(validCodeRecordInput(bad)).toBe(false);
+ });
+ it("queries unknown multi-field schema without leaking viewer data or allowing unlimited SQL",async()=>{
+  const db=new MockScopedRecordSql();
+  const two="a889a71d-503b-420a-83e9-f3e05abf9d14";
+  expect((await operateCodeRecord(db,share,owner,
+   {action:"create",record_id:id,value:{status:"open",priority:2}})).status).toBe(201);
+  expect((await operateCodeRecord(db,share,owner,
+   {action:"create",record_id:two,value:{status:"open",priority:2}})).status).toBe(201);
+  expect((await operateCodeRecord(db,share,visitor,
+   {action:"create",record_id:id,value:{status:"open",priority:2}})).status).toBe(201);
+  const query=(thumb:string,filters:Record<string,string|number|boolean>,limit=20)=>
+   operateCodeRecord(db,share,thumb,{action:"query",filters,limit});
+  const both=await body(await query(owner,{status:"open",priority:2}));
+  expect(both.data?.records).toHaveLength(2);
+  const limited=await body(await query(owner,{status:"open"},1));
+  expect(limited.data?.records).toHaveLength(1);
+  const other=await body(await query(visitor,{status:"open",priority:2}));
+  expect(other.data?.records).toHaveLength(1);
+  const absent=await body(await query(owner,{status:"closed",priority:2}));
+  expect(absent.data?.records).toHaveLength(0);
+  expect(db.statements.some(sql=>sql.includes("payload @> $3::jsonb")&&
+   sql.includes("viewer_key_thumbprint=$2::text")&&sql.includes("LIMIT $4::integer"))).toBe(true);
  });
  it("replays identical create but conflicts on reused UUID with different payload",async()=>{
   const db=new MockScopedRecordSql();
