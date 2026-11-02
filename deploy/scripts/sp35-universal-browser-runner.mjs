@@ -30,6 +30,15 @@ async function perform(frame,step){
  const target=await locator(frame,step.role,step.name);
  if(step.action==="click")await target.click({timeout:2500});
  else if(step.action==="fill")await target.fill(step.value,{timeout:2500});
+ else if(step.action==="check"){
+  if(await target.isChecked())throw Error("QA_CHECK_NO_TRANSITION");
+  await target.check({timeout:2500});
+  if(!await target.isChecked())throw Error("QA_CHECK_DID_NOT_APPLY");
+ }else if(step.action==="select"){
+  if(await target.inputValue()===step.value)throw Error("QA_SELECT_NO_TRANSITION");
+  await target.selectOption(step.value,{timeout:2500});
+  if(await target.inputValue()!==step.value)throw Error("QA_SELECT_DID_NOT_APPLY");
+ }
  else throw Error("QA_UNSUPPORTED_ACTION");
 }
 async function check(frame,assertion,before){
