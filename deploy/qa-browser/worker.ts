@@ -86,6 +86,7 @@ const roles:Readonly<Record<string,string>>={
  tab:'[role="tab"]',link:'a,[role="link"]',
  textbox:'textarea,input[type="text"],input:not([type]),[role="textbox"]',
  spinbutton:'input[type="number"],[role="spinbutton"]',
+ checkbox:'input[type="checkbox"]',combobox:'select',
  heading:'h1,h2,h3,h4,h5,h6,[role="heading"]',
  list:'ul,ol,[role="list"]'
 };
@@ -132,7 +133,20 @@ async function applyStep(page:Page,s:QaStep):Promise<void>{
  }
  const h=await named(page,s.role,s.name);
  if(s.action==="click")await h.click();
- else {await h.click({clickCount:3});await h.type(s.value);}
+ else if(s.action==="fill"){await h.click({clickCount:3});await h.type(s.value);}
+ else if(s.action==="check"){
+  const before=await h.evaluate(el=>(el as HTMLInputElement).checked);
+  if(before)throw Error("QA_CHECK_NO_TRANSITION");
+  await h.click();
+  if(!await h.evaluate(el=>(el as HTMLInputElement).checked))
+   throw Error("QA_CHECK_DID_NOT_APPLY");
+ }else if(s.action==="select"){
+  const before=await h.evaluate(el=>(el as HTMLSelectElement).value);
+  if(before===s.value)throw Error("QA_SELECT_NO_TRANSITION");
+  await h.select(s.value);
+  if(await h.evaluate(el=>(el as HTMLSelectElement).value)!==s.value)
+   throw Error("QA_SELECT_DID_NOT_APPLY");
+ }
 }
 async function assertion(page:Page,a:QaAssertion,before:string,
  old:Map<string,string>):Promise<boolean>{
