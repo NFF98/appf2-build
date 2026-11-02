@@ -82,6 +82,10 @@ function recordWriteOperation(action:"create"|"update",record_id:string,
  return expected===undefined?{action,record_id,value}:
   {action,record_id,value,expected_value:expected};
 }
+function remainingRecordOperation(action:Operation["action"],record_id:string,
+ expected:Record<string,unknown>|undefined,message:Record<string,unknown>):Operation|null{
+ return remainingRecordOperation(action,record_id,expected,message);
+}
 /** Guest message grammar only; actual share and signing identity stay host-owned. */
 export function operationOf(message:Record<string,unknown>):Operation|null{
  if(typeof message.action!=="string"||!ACTIONS.has(message.action))return null;

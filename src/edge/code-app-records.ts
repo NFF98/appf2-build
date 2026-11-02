@@ -107,6 +107,14 @@ async function createRecord(client:RecordDb,target:readonly unknown[],value:stri
  const prior=(await client.query<Row>(READ,target)).rows[0];
  return prior?conflict():denied();
 }
+async function queryCodeRecords(client:RecordDb,share:string,thumbprint:string,
+ data:Input):Promise<Response>{
+ if(!validRecordQueryFilters(data.filters)||!validRecordQueryLimit(data.limit))
+  return denied();
+ const rows=(await client.query<Row>(QUERY,[share,thumbprint,
+  JSON.stringify(data.filters),data.limit])).rows;
+ return reply(200,{data:{records:rows}});
+}
 /** Trusted record operation; route must authenticate a signed viewer key BEFORE entering. */
 export async function operateCodeRecord(client:RecordDb,share:string,thumbprint:string,
  data:Input):Promise<Response>{
@@ -118,13 +126,7 @@ export async function operateCodeRecord(client:RecordDb,share:string,thumbprint:
   const rows=(await client.query<Row>(LIST,target.slice(0,2))).rows;
   return reply(200,{data:{records:rows}});
  }
- if(data.action==="query"){
-  if(!validRecordQueryFilters(data.filters)||!validRecordQueryLimit(data.limit))
-   return denied();
-  const rows=(await client.query<Row>(QUERY,[share,thumbprint,
-   JSON.stringify(data.filters),data.limit])).rows;
-  return reply(200,{data:{records:rows}});
- }
+ if(data.action==="query")return queryCodeRecords(client,share,thumbprint,data);
  if(data.action==="read"){
   const row=(await client.query<Row>(READ,target)).rows[0];
   return row?reply(200,{data:row}):denied();
