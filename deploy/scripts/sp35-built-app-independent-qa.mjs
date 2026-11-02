@@ -17,6 +17,11 @@ async function one(frame,role,name){
  return found;
 }
 async function perform(frame,step){
+ if(step.action==="reload"){
+  await frame.reload({waitUntil:"domcontentloaded",timeout:9000});
+  await frame.locator("body").waitFor({state:"visible",timeout:3500});
+  return;
+ }
  const control=await one(frame,step.role,step.name);
  if(step.action==="click")await control.click({timeout:3000});
  else if(step.action==="fill")await control.fill(step.value,{timeout:3000});
