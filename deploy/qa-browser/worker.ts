@@ -125,6 +125,11 @@ async function bodyText(page:Page):Promise<string>{
  return page.$eval("body",el=>(el as HTMLElement).innerText??"");
 }
 async function applyStep(page:Page,s:QaStep):Promise<void>{
+ if(s.action==="reload"){
+  await page.reload({waitUntil:"domcontentloaded",timeout:8000});
+  await page.waitForSelector("body",{visible:true,timeout:3500});
+  return;
+ }
  const h=await named(page,s.role,s.name);
  if(s.action==="click")await h.click();
  else {await h.click({clickCount:3});await h.type(s.value);}
