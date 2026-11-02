@@ -67,12 +67,14 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
     const allowed=role==="button"?["button",'[role="button"]']:
      role==="tab"?['[role="tab"]',"button"]:
      role==="link"?["a"]:role==="textbox"?['input:not([type="hidden"])',"textarea"]:
-     role==="heading"?["h1","h2","h3","h4"]:role==="list"?["ul","ol",'[role="list"]']:["input"];
+     role==="heading"?["h1","h2","h3","h4"]:role==="list"?["ul","ol",'[role="list"]']:
+     role==="checkbox"?['input[type="checkbox"]']:role==="combobox"?["select"]:["input"];
     const candidates=Array.from(document.querySelectorAll(allowed.join(","))).filter(el=>{
      const explicit=el.getAttribute("aria-label");
      const describedBy=el.getAttribute("aria-labelledby");
      const referenced=describedBy?describedBy.split(/\s+/u).map(id=>document.getElementById(id)?.textContent??"").join(" "):"";
-     const labels=el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement?
+     const labels=el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement||
+       el instanceof HTMLSelectElement?
        Array.from(el.labels??[]).map(x=>x.textContent??"").join(" "):"";
      const candidate=(explicit||referenced||labels||el.getAttribute("placeholder")||el.textContent||"").trim();
      return name===""||candidate===name;
@@ -89,7 +91,21 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
     const el=find(step.role,step.name);
     if(!el)return {ok:false,detail:"MISSING_CONTROL:"+step.name};
     if(step.action==="click")(el as HTMLElement).click();
-    else if(step.action==="fill"){
+    else if(step.action==="check"){
+     const input=el as HTMLInputElement;
+     if(input.type!=="checkbox"||input.checked)return {ok:false,detail:"QA_CHECK_NO_TRANSITION"};
+     input.click();
+     if(!input.checked)return {ok:false,detail:"QA_CHECK_DID_NOT_APPLY"};
+    }else if(step.action==="select"){
+     const input=el as HTMLSelectElement;
+     if(input.tagName!=="SELECT"||input.value===step.value||
+       !Array.from(input.options).some(o=>o.value===step.value))
+      return {ok:false,detail:"QA_SELECT_NO_TRANSITION"};
+     input.value=step.value;
+     input.dispatchEvent(new Event("input",{bubbles:true}));
+     input.dispatchEvent(new Event("change",{bubbles:true}));
+     if(input.value!==step.value)return {ok:false,detail:"QA_SELECT_DID_NOT_APPLY"};
+    }else if(step.action==="fill"){
      const input=el as HTMLInputElement;input.value=step.value;
      input.dispatchEvent(new Event("input",{bubbles:true}));
      input.dispatchEvent(new Event("change",{bubbles:true}));
