@@ -5,8 +5,8 @@ const connectHoldouts=[{"action":"click","args":["重新開始"]},{"action":"cli
 const sample=process.env.APPF2_SP35_SAMPLE;
 const candidate=sample==="g5-meal"?{id:sample,category:"tool",guest:meal}:scenarios[sample]?{...scenarios[sample],guest:[...scenarios[sample].guest,...(sample==="g9-connect"?connectHoldouts:[])]}:undefined;
 if(process.argv.includes("--preflight-only")){
- if(Object.keys(scenarios).length!==9||meal.length<20||connectHoldouts.length<40)throw Error("FROZEN_GUESTS_MISSING");
- console.log("TEN_FROZEN_PUBLISHED_GUEST_FLOWS_READY_ZERO_MODEL");
+ if(Object.keys(scenarios).length!==10||meal.length<20||connectHoldouts.length<40)throw Error("FROZEN_GUESTS_MISSING");
+ console.log("ELEVEN_FROZEN_PUBLISHED_GUEST_FLOWS_READY_ZERO_MODEL");
  process.exit(0);
 }
 const share=process.env.APPF2_EXISTING_SHARE_ID??"";
