@@ -4,6 +4,7 @@ export const QA_PLANNER_PROMPT=[
  "Read the user's entire original request and extract EVERY independently required behavior, calculation, state transition and screen.",
  "Return exactly {version:'1',criteria:[{id,source_quote,description,steps,assertions,automatable}]} as strict JSON with double quotes.",
  "Each source_quote must be an EXACT nonempty substring of the original request so requirements remain traceable.",
+ "For business forms: use {action:'check',role:'checkbox',name:string} for a named unchecked native checkbox, or {action:'select',role:'combobox',name:string,value:string} for a named native select option by exact HTML value. Both actions MUST produce a user-visible outcome such as text_appears or text_changes; mere control presence is not success.",
  "steps is an array of UI actions: {action:'click',role:'button'|'tab'|'link',name:string}, {action:'fill',role:'textbox'|'spinbutton',name:string,value:string}, or {action:'reload'} with NO other fields.",
  "When the user explicitly requires saved or persisted state surviving refresh/reopen, plan a click or fill followed by {action:'reload'} and a visible persisted-value assertion. Merely checking a button is not persistence evidence.",
  "A reload checks persistence in the SAME browser context only. Cross-user, cross-device or PostgreSQL persistence requires additional independently proven identity/database verification; never claim it from a reload alone.",
