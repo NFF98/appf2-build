@@ -24,15 +24,21 @@ export type QaPlan={readonly version:"1";readonly criteria:readonly QaCriterion[
 const RECORD=(x:unknown):x is Record<string,unknown>=>typeof x==="object"&&x!==null&&!Array.isArray(x);
 const NAME=(x:unknown):x is string=>typeof x==="string"&&x.length>0&&x.length<=120;
 const ALLOWED_SELECTOR=/^(#[a-z][\w-]{0,63}|\.[a-z][\w-]{0,63}|\[data-testid="[a-z][\w-]{0,63}"\])$/iu;
+function checkStep(x:Record<string,unknown>):boolean{
+ return x.role==="checkbox"&&NAME(x.name)&&
+  Object.keys(x).sort().join(",")==="action,name,role";
+}
+function selectStep(x:Record<string,unknown>):boolean{
+ return x.role==="combobox"&&NAME(x.name)&&
+  typeof x.value==="string"&&x.value.length>0&&x.value.length<=120&&
+  Object.keys(x).sort().join(",")==="action,name,role,value";
+}
 function step(x:unknown):x is QaStep{
  if(!RECORD(x))return false;
  // Only same-page refresh; never permit an AI-supplied URL, role or extra fields.
  if(x.action==="reload")return Object.keys(x).length===1;
- if(x.action==="check")return x.role==="checkbox"&&NAME(x.name)&&
-  Object.keys(x).sort().join(",")==="action,name,role";
- if(x.action==="select")return x.role==="combobox"&&NAME(x.name)&&
-  typeof x.value==="string"&&x.value.length>0&&x.value.length<=120&&
-  Object.keys(x).sort().join(",")==="action,name,role,value";
+ if(x.action==="check")return checkStep(x);
+ if(x.action==="select")return selectStep(x);
  if(typeof x.name!=="string"||x.name.length>120)return false;
  if(x.action==="click")return NAME(x.name)&&["button","tab","link"].includes(String(x.role));
  return x.action==="fill"&&["textbox","spinbutton"].includes(String(x.role))&&
