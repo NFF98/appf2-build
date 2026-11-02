@@ -2224,5 +2224,363 @@ export const scenarios={
     ]
    }
   ]
+ },
+ "g15-rps": {
+   "id": "g15-rps",
+   "title": "雙人猜拳對決",
+   "category": "game",
+   "prompt": "製作「雙人猜拳對決」。標題顯示「雙人猜拳對決」。這是兩名玩家在同一螢幕依序出拳的三回合猜拳遊戲，甲先、乙後，直到乙出拳前不得揭露甲的選擇。初始顯示「回合：1」「甲分：0」「乙分：0」。六個選擇按鈕固定叫「甲選石頭」「甲選剪刀」「甲選布」「乙選石頭」「乙選剪刀」「乙選布」，另有「下一回合」「重新開始」。按甲選石頭顯示「甲已出拳」；按甲選石頭再按乙選剪刀顯示「甲分：1」及「本回合：甲勝」。按甲選石頭再按乙選布顯示「乙分：1」及「本回合：乙勝」。按甲選石頭再按乙選石頭顯示「本回合：平手」，平手雙方不得得分。出拳前後不得重複計分，乙不得搶先出拳，未比完一回合不可下一回合。完成該回合才能按下一回合，回合顯示從1到2到3；三回合後按累計得分顯示「總冠軍：甲」「總冠軍：乙」或「總冠軍：平手」，不能再改分數或開下一回合。按甲選石頭、乙選剪刀再按重新開始顯示「甲分：0」，同時「回合：1」「乙分：0」，且清除舊回合及冠軍文字。重新整理後可重新開始一局。任何勝負及完成文字必須在實際結果後才出現在可見遊戲結果區，不得在玩法說明或隱藏節點預印QA字串。要由AI自由寫至少三個互相import的src/ TypeScript模組和CSS，可手機真實操作，不得硬編固定成功畫面、外部網路、外部套件、localStorage或模板。",
+   "cases": [
+     [
+       "title",
+       "標題顯示「雙人猜拳對決」",
+       [],
+       {
+         "kind": "text_includes",
+         "text": "雙人猜拳對決"
+       }
+     ],
+     [
+       "initial",
+       "初始顯示「回合：1」",
+       [],
+       {
+         "kind": "text_includes",
+         "text": "回合：1"
+       }
+     ],
+     [
+       "first",
+       "按甲選石頭顯示「甲已出拳」",
+       [
+         {
+           "action": "click",
+           "role": "button",
+           "name": "甲選石頭"
+         }
+       ],
+       {
+         "kind": "text_appears",
+         "text": "甲已出拳"
+       }
+     ],
+     [
+       "a_win",
+       "按甲選石頭再按乙選剪刀顯示「甲分：1」",
+       [
+         {
+           "action": "click",
+           "role": "button",
+           "name": "甲選石頭"
+         },
+         {
+           "action": "click",
+           "role": "button",
+           "name": "乙選剪刀"
+         }
+       ],
+       {
+         "kind": "text_appears",
+         "text": "甲分：1"
+       }
+     ],
+     [
+       "b_win",
+       "按甲選石頭再按乙選布顯示「乙分：1」",
+       [
+         {
+           "action": "click",
+           "role": "button",
+           "name": "甲選石頭"
+         },
+         {
+           "action": "click",
+           "role": "button",
+           "name": "乙選布"
+         }
+       ],
+       {
+         "kind": "text_appears",
+         "text": "乙分：1"
+       }
+     ],
+     [
+       "draw",
+       "按甲選石頭再按乙選石頭顯示「本回合：平手」",
+       [
+         {
+           "action": "click",
+           "role": "button",
+           "name": "甲選石頭"
+         },
+         {
+           "action": "click",
+           "role": "button",
+           "name": "乙選石頭"
+         }
+       ],
+       {
+         "kind": "text_appears",
+         "text": "本回合：平手"
+       }
+     ],
+     [
+       "reset",
+       "按甲選石頭、乙選剪刀再按重新開始顯示「甲分：0」",
+       [
+         {
+           "action": "click",
+           "role": "button",
+           "name": "甲選石頭"
+         },
+         {
+           "action": "click",
+           "role": "button",
+           "name": "乙選剪刀"
+         },
+         {
+           "action": "click",
+           "role": "button",
+           "name": "重新開始"
+         }
+       ],
+       {
+         "kind": "text_appears",
+         "text": "甲分：0"
+       }
+     ]
+   ],
+   "guest": [
+     {
+       "action": "expect",
+       "args": [
+         "回合：1"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "甲分：0"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "乙分：0"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "甲選石頭"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "甲已出拳"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "乙選剪刀"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "甲分：1"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "本回合：甲勝"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "下一回合"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "回合：2"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "甲選布"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "乙選石頭"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "甲分：2"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "下一回合"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "回合：3"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "甲選剪刀"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "乙選布"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "甲分：3"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "總冠軍：甲"
+       ]
+     },
+     {
+       "action": "blocked",
+       "args": [
+         [
+           "甲選石頭",
+           "乙選布",
+           "下一回合"
+         ]
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "重新開始"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "回合：1"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "甲分：0"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "乙分：0"
+       ]
+     },
+     {
+       "action": "absent",
+       "args": [
+         "總冠軍：甲"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "甲選石頭"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "乙選布"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "乙分：1"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "本回合：乙勝"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "下一回合"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "甲選石頭"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "乙選石頭"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "本回合：平手"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "乙分：1"
+       ]
+     },
+     {
+       "action": "reload",
+       "args": []
+     },
+     {
+       "action": "click",
+       "args": [
+         "甲選石頭"
+       ]
+     },
+     {
+       "action": "click",
+       "args": [
+         "乙選剪刀"
+       ]
+     },
+     {
+       "action": "expect",
+       "args": [
+         "甲分：1"
+       ]
+     }
+   ]
  }
 };
