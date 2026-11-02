@@ -44,6 +44,15 @@ describe("universal independent acceptance (not dice-specific)",()=>{
   expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
   expect(parseQaPlan({version:"1",criteria:[{...c,assertions:[{...c.assertions[0],function_name:"alert();"}]}]},prompt)).toBeNull();
  });
+ it("freezes same-origin reload as an exact, no-navigation QA action",()=>{
+  const c={...criteria[0],
+   steps:[{action:"click",role:"button",name:"增加"},{action:"reload"}],
+   assertions:[{kind:"text_appears",text:"得分：1"}]};
+  expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,steps:[{action:"reload",url:"https://example.com"}]}]},prompt)).toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,steps:[{action:"reload",role:"button"}]}]},prompt)).toBeNull();
+  expect(parseQaPlan({version:"1",criteria:[{...c,steps:[{action:"navigate",url:"https://example.com"}]}]},prompt)).toBeNull();
+ });
  it("only allows new-visible-text evidence following a real action",()=>{
   const c={...criteria[0],assertions:[{kind:"text_appears",text:"收藏數：1"}]};
   expect(parseQaPlan({version:"1",criteria:[c]},prompt)).not.toBeNull();
