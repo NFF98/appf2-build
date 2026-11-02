@@ -5,7 +5,7 @@ import {CloudflareIsolatedSandboxAdapter,type IsolatedContainer,
  from "../../src/platform/agent/cloudflare-sandbox-adapter.js";
 import type {SandboxLimits} from "../../src/platform/agent/sandbox-adapter.js";
 import type {AgentToolName,AgentToolCall} from "../../src/platform/agent/agent-contract.js";
-import {PINNED_VITE_BIN,PINNED_MODULES,PINNED_WEB_SMOKE,sandboxCommand,sandboxCommands,sandboxWorkspaceRoot,sandboxBuildResetArgv}
+import {PINNED_VITE_BIN,PINNED_MODULES,PINNED_WEB_SMOKE,sandboxCommand,sandboxWorkspaceRoot,sandboxBuildResetArgv}
  from "../../src/platform/agent/sandbox-commands.js";
 const job="job_12345678";
 const limits:SandboxLimits={wall_time_ms:2000,cpu_millis:1000,
