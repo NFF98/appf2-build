@@ -85,6 +85,7 @@ async function checkCriterion(browser:Awaited<ReturnType<typeof puppeteer.launch
    for(const a of test.assertions)if(a.kind==="text_changes")
     before.set(a.selector,document.querySelector(a.selector)?.textContent??"");
    for(const step of test.steps){
+    if(step.action==="reload")return {ok:false,detail:"QA_RELOAD_REQUIRES_PERSISTENT_ORIGIN"};
     const el=find(step.role,step.name);
     if(!el)return {ok:false,detail:"MISSING_CONTROL:"+step.name};
     if(step.action==="click")(el as HTMLElement).click();
