@@ -1,0 +1,33 @@
+name: Sprint 3.5 unknown-app backend — free real PostgreSQL browser proof
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+    paths:
+      - deploy/scripts/sp35-unknown-backend-postgres-chromium-e2e.mjs
+      - .github/workflows/sp35-unknown-backend-platform-free.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: appf2-sp35-unknown-backend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  independent-platform-proof:
+    if: github.repository == 'NFF98/appf2-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Syntax check, no AI or App regeneration
+        run: node --check deploy/scripts/sp35-unknown-backend-postgres-chromium-e2e.mjs
+      - name: Two new Chromium identities to real Staging Worker/PostgreSQL CRUD/CAS
+        run: node deploy/scripts/sp35-unknown-backend-postgres-chromium-e2e.mjs
