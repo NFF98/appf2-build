@@ -26,6 +26,7 @@ async function locator(frame,role,name){
  return found.first();
 }
 async function perform(frame,step){
+ if(step.action==="reload")throw Error("QA_SINGLE_FILE_RELOAD_UNSUPPORTED");
  const target=await locator(frame,step.role,step.name);
  if(step.action==="click")await target.click({timeout:2500});
  else if(step.action==="fill")await target.fill(step.value,{timeout:2500});
