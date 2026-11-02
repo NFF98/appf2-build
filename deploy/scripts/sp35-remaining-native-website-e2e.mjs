@@ -18,7 +18,7 @@ function validate(candidate){
 }
 if(process.argv.includes("--preflight-all")){
  for(const item of Object.values(scenarios))validate(item);
- console.log("SP35 NINE FROZEN REQUIREMENT PLANS PASS: 63 source-bound criteria; zero Job/model");
+ console.log("SP35 "+Object.keys(scenarios).length+" FROZEN REQUIREMENT PLANS PASS: "+Object.values(scenarios).reduce((sum,c)=>sum+c.cases.length,0)+" source-bound criteria; zero Job/model");
  process.exit(0);
 }
 const candidate=scenarios[selected];
