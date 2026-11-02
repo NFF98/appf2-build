@@ -4,7 +4,8 @@
  */
 export type QaStep =
  | {readonly action:"click";readonly role:"button"|"tab"|"link";readonly name:string}
- | {readonly action:"fill";readonly role:"textbox"|"spinbutton";readonly name:string;readonly value:string};
+ | {readonly action:"fill";readonly role:"textbox"|"spinbutton";readonly name:string;readonly value:string}
+ | {readonly action:"reload"};
 export type QaAssertion =
  | {readonly kind:"text_includes";readonly text:string}
  | {readonly kind:"text_appears";readonly text:string}
@@ -22,7 +23,10 @@ const RECORD=(x:unknown):x is Record<string,unknown>=>typeof x==="object"&&x!==n
 const NAME=(x:unknown):x is string=>typeof x==="string"&&x.length>0&&x.length<=120;
 const ALLOWED_SELECTOR=/^(#[a-z][\w-]{0,63}|\.[a-z][\w-]{0,63}|\[data-testid="[a-z][\w-]{0,63}"\])$/iu;
 function step(x:unknown):x is QaStep{
- if(!RECORD(x)||typeof x.name!=="string"||x.name.length>120)return false;
+ if(!RECORD(x))return false;
+ // Only same-page refresh; never permit an AI-supplied URL, role or extra fields.
+ if(x.action==="reload")return Object.keys(x).length===1;
+ if(typeof x.name!=="string"||x.name.length>120)return false;
  if(x.action==="click")return NAME(x.name)&&["button","tab","link"].includes(String(x.role));
  return x.action==="fill"&&["textbox","spinbutton"].includes(String(x.role))&&
   typeof x.value==="string"&&x.value.length<=120;
