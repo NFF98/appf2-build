@@ -69,6 +69,16 @@ function expectedFor(message:Record<string,unknown>):Record<string,unknown>|null
  if(message.expected_value===undefined)return undefined;
  return boundedRecordValue(message.expected_value)?message.expected_value:null;
 }
+/** Create and update use the same bounded data path, without SQL capabilities. */
+function recordWriteOperation(action:"create"|"update",record_id:string,
+ expected:Record<string,unknown>|undefined,message:Record<string,unknown>):Operation|null{
+ if(!boundedRecordValue(message.value))return null;
+ const value=message.value;
+ if(expected!==undefined&&new TextEncoder().encode(
+  JSON.stringify({value,expected_value:expected})).byteLength>4800)return null;
+ return expected===undefined?{action,record_id,value}:
+  {action,record_id,value,expected_value:expected};
+}
 /** Guest message grammar only; actual share and signing identity stay host-owned. */
 export function operationOf(message:Record<string,unknown>):Operation|null{
  if(typeof message.action!=="string"||!ACTIONS.has(message.action))return null;
@@ -79,14 +89,8 @@ export function operationOf(message:Record<string,unknown>):Operation|null{
  const record_id=String(rawId);
  const expected=expectedFor(message);
  if(expected===null||action==="create"&&expected!==undefined)return null;
- if(action==="create"||action==="update"){
-  if(!boundedRecordValue(message.value))return null;
-  const value=message.value;
-  if(expected!==undefined&&new TextEncoder().encode(
-   JSON.stringify({value,expected_value:expected})).byteLength>4800)return null;
-  return expected===undefined?{action,record_id,value}:
-   {action,record_id,value,expected_value:expected};
- }
+ if(action==="create"||action==="update")
+  return recordWriteOperation(action,record_id,expected,message);
  if(action==="delete")return expected===undefined?{action,record_id}:
   {action,record_id,expected_value:expected};
  return {action,record_id};

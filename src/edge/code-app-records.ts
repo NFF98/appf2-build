@@ -88,6 +88,16 @@ async function parseSignedBody(request:Request,url:URL,nowMs:number):Promise<{
   body:raw,idempotencyKey:key,headers:request.headers},nowMs);
  return proof?{input,thumbprint:proof.keyThumbprint}:null;
 }
+/** Distinguish true replay from conflicting UUID, without touching another viewer. */
+async function createRecord(client:RecordDb,target:readonly unknown[],value:string|null)
+ :Promise<Response>{
+ const created=(await client.query<Row>(CREATE,[...target,value])).rows[0];
+ if(created)return reply(201,{data:created});
+ const replay=(await client.query<Row>(MATCH,[...target,value])).rows[0];
+ if(replay)return reply(200,{data:replay});
+ const prior=(await client.query<Row>(READ,target)).rows[0];
+ return prior?conflict():denied();
+}
 /** Trusted record operation; route must authenticate a signed viewer key BEFORE entering. */
 export async function operateCodeRecord(client:RecordDb,share:string,thumbprint:string,
  data:Input):Promise<Response>{
@@ -105,16 +115,7 @@ export async function operateCodeRecord(client:RecordDb,share:string,thumbprint:
  }
  const expected=data.expected_value===undefined?null:JSON.stringify(data.expected_value);
  const value=data.value===undefined?null:JSON.stringify(data.value);
- if(data.action==="create"){
-  const created=(await client.query<Row>(CREATE,[...target,value])).rows[0];
-  if(created)return reply(201,{data:created});
-  // A lost create response is safely recovered without a second insert. The
-  // payload must be semantically equal as PostgreSQL JSONB, not JS key-order.
-  const replay=(await client.query<Row>(MATCH,[...target,value])).rows[0];
-  if(replay)return reply(200,{data:replay});
-  const prior=(await client.query<Row>(READ,target)).rows[0];
-  return prior?conflict():denied();
- }
+ if(data.action==="create")return createRecord(client,target,value);
  const statement=data.action==="update"?UPDATE:DELETE;
  const args=data.action==="update"?[...target,value,expected]:[...target,expected];
  const row=(await client.query<Row>(statement,args)).rows[0];

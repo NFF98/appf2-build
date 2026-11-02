@@ -13,40 +13,51 @@ class MockScopedRecordSql{
  readonly rows=new Map<string,Entry>();
  readonly statements:string[]=[];
  readonly key=(thumb:string,record:string)=>thumb+":"+record;
+ private selectRows<T>(sql:string,thumb:string,record:string,raw:string,existing:Entry|undefined)
+  :{rows:readonly T[]}{
+  if(sql.includes("ORDER BY"))
+   return {rows:[...this.rows.entries()].filter(([k])=>k.startsWith(thumb+":"))
+    .map(([,v])=>v) as T[]};
+  const matches=existing&&(!sql.includes("payload=$4::jsonb")||
+   canonical(existing.value)===canonical(JSON.parse(raw)));
+  return {rows:(matches?[existing]:[]) as T[]};
+ }
+ private insertRow<T>(thumb:string,record:string,raw:string,existing:Entry|undefined)
+  :{rows:readonly T[]}{
+  if(existing)return {rows:[]};
+  const row:Entry={record_id:record,value:JSON.parse(raw),created_at:"2026-11-03",updated_at:"2026-11-03"};
+  this.rows.set(this.key(thumb,record),row);
+  return {rows:[row] as T[]};
+ }
+ private updateRow<T>(thumb:string,record:string,raw:string,expectedRaw:string,existing:Entry|undefined)
+  :{rows:readonly T[]}{
+  if(!existing||expectedRaw!=="null"&&canonical(existing.value)!==canonical(JSON.parse(expectedRaw)))
+   return {rows:[]};
+  const next={...existing,value:JSON.parse(raw),updated_at:"2026-11-04"};
+  this.rows.set(this.key(thumb,record),next);
+  return {rows:[next] as T[]};
+ }
+ private deleteRow<T>(thumb:string,record:string,raw:string,existing:Entry|undefined)
+  :{rows:readonly T[]}{
+  if(!existing||raw!=="null"&&canonical(existing.value)!==canonical(JSON.parse(raw)))
+   return {rows:[]};
+  this.rows.delete(this.key(thumb,record));
+  return {rows:[{record_id:record}] as T[]};
+ }
  async query<T>(sql:string,args:readonly unknown[]):Promise<{rows:readonly T[]}>{
   this.statements.push(sql);
   const [requestedShare,thumb,record,raw,expectedRaw]=args.map(String);
-  if(sql.startsWith("SELECT share_id::text")){
+  if(sql.startsWith("SELECT share_id::text"))
    return {rows:(requestedShare===share?[{share_id:share}]:[]) as T[]};
-  }
   const existing=this.rows.get(this.key(thumb,record));
-  if(sql.startsWith("SELECT record_id::text")&&sql.includes("ORDER BY")){
-   return {rows:[...this.rows.entries()].filter(([k])=>k.startsWith(thumb+":")).map(([,v])=>v) as T[]};
-  }
-  if(sql.startsWith("SELECT record_id::text")){
-   const matches=existing&&(!sql.includes("payload=$4::jsonb")||
-    canonical(existing.value)===canonical(JSON.parse(raw)));
-   return {rows:(matches?[existing]:[]) as T[]};
-  }
-  if(sql.startsWith("INSERT INTO public.appf2_code_app_record")){
-   if(existing)return {rows:[]};
-   const row:Entry={record_id:record,value:JSON.parse(raw),created_at:"2026-11-03",updated_at:"2026-11-03"};
-   this.rows.set(this.key(thumb,record),row);
-   return {rows:[row] as T[]};
-  }
-  if(sql.startsWith("UPDATE public.appf2_code_app_record")){
-   if(!existing||expectedRaw!=="null"&&canonical(existing.value)!==canonical(JSON.parse(expectedRaw)))
-    return {rows:[]};
-   const next={...existing,value:JSON.parse(raw),updated_at:"2026-11-04"};
-   this.rows.set(this.key(thumb,record),next);
-   return {rows:[next] as T[]};
-  }
-  if(sql.startsWith("DELETE FROM public.appf2_code_app_record")){
-   if(!existing||raw!=="null"&&canonical(existing.value)!==canonical(JSON.parse(raw)))
-    return {rows:[]};
-   this.rows.delete(this.key(thumb,record));
-   return {rows:[{record_id:record}] as T[]};
-  }
+  if(sql.startsWith("SELECT record_id::text"))
+   return this.selectRows<T>(sql,thumb,record,raw,existing);
+  if(sql.startsWith("INSERT INTO public.appf2_code_app_record"))
+   return this.insertRow<T>(thumb,record,raw,existing);
+  if(sql.startsWith("UPDATE public.appf2_code_app_record"))
+   return this.updateRow<T>(thumb,record,raw,expectedRaw,existing);
+  if(sql.startsWith("DELETE FROM public.appf2_code_app_record"))
+   return this.deleteRow<T>(thumb,record,raw,existing);
   throw Error("UNKNOWN_SQL_IN_MOCK");
  }
  close=async()=>undefined;

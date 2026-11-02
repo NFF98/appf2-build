@@ -15,11 +15,11 @@ try{
  await page.setContent('<iframe title="trusted-record-client" sandbox="allow-scripts" '+
   'srcdoc="'+escape(source)+'"></iframe>');
  await page.evaluate(()=>{
-  window.__recordMessages=[];
-  window.addEventListener("message",event=>{
+  globalThis.__recordMessages=[];
+  globalThis.addEventListener("message",event=>{
    const data=event.data;
    if(data?.kind!=="APPF2_RECORD_REQUEST_V1"||!event.source)return;
-   window.__recordMessages.push(data);
+   globalThis.__recordMessages.push(data);
    event.source.postMessage({
     kind:"APPF2_RECORD_REPLY_V1",id:data.id,
     ok:data.action!=="update",
@@ -31,7 +31,7 @@ try{
  const frame=page.frameLocator('iframe[sandbox="allow-scripts"]');
  await frame.locator("body").waitFor({state:"visible",timeout:8000});
  const result=await frame.locator("body").evaluate(async()=>{
-  const api=window.appf2Records;
+  const api=globalThis.appf2Records;
   const id=api.newId();
   const created=await api.create({item:"bookmark",status:"draft"},id);
   let conflict="";
@@ -42,7 +42,7 @@ try{
   const deleted=await api.delete(id,{item:"bookmark",status:"draft"});
   return {id,created,deleted,conflict};
  });
- const requests=await page.evaluate(()=>window.__recordMessages);
+ const requests=await page.evaluate(()=>globalThis.__recordMessages);
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(result.id))
   throw Error("BRIDGE_GUEST_NEW_UUID_INVALID");
  if(requests.length!==3||

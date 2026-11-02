@@ -4,10 +4,11 @@
  * Existing published share is a record namespace only; NEVER regenerate an App.
  */
 import {chromium} from "@playwright/test";
+import {randomUUID} from "node:crypto";
 const origin="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
 const share="61864019-0773-48c6-b095-4bd51391bed0";
 const path="/api/v1/code-apps/"+share+"/records";
-const id=crypto.randomUUID();
+const id=randomUUID();
 const valueA={kind:"unknown-workflow",sku:"experimental-"+id,quantity:4,approved:false};
 const editedA={...valueA,quantity:7,approved:true};
 const valueB={kind:"other-viewer",sku:"isolated-"+id,quantity:99};
@@ -19,7 +20,7 @@ async function install(page){
  await page.evaluate(async pathname=>{
   // IndexedDB stores only a nonextractable P-256 CryptoKey, never credentials.
   const db=await new Promise((resolve,reject)=>{
-   const req=indexedDB.open("appf2-sp35-backend-proof-v1",1);
+   const req=globalThis.indexedDB.open("appf2-sp35-backend-proof-v1",1);
    req.onupgradeneeded=()=>req.result.createObjectStore("identity");
    req.onsuccess=()=>resolve(req.result);
    req.onerror=()=>reject(Error("BACKEND_QA_KEYSTORE_OPEN_FAILED"));
@@ -31,7 +32,7 @@ async function install(page){
   });
   let pair=await get();
   if(!pair){
-   pair=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},false,["sign","verify"]);
+   pair=await globalThis.crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},false,["sign","verify"]);
    await new Promise((resolve,reject)=>{
     const tx=db.transaction("identity","readwrite");
     tx.objectStore("identity").put(pair,"viewer");
@@ -42,18 +43,18 @@ async function install(page){
   db.close();
   const b64=bytes=>{
    let raw="";for(const b of bytes)raw+=String.fromCharCode(b);
-   return btoa(raw).replaceAll("+","-").replaceAll("/","_").replace(/=+$/u,"");
+   return globalThis.btoa(raw).replaceAll("+","-").replaceAll("/","_").replace(/=+$/u,"");
   };
-  const spki=b64(new Uint8Array(await crypto.subtle.exportKey("spki",pair.publicKey)));
-  window.__appf2Sp35BackendSend=async body=>{
-   const raw=new TextEncoder().encode(JSON.stringify(body));
-   const key="backend_"+crypto.randomUUID().replaceAll("-","");
+  const spki=b64(new Uint8Array(await globalThis.crypto.subtle.exportKey("spki",pair.publicKey)));
+  globalThis.__appf2Sp35BackendSend=async body=>{
+   const raw=new globalThis.TextEncoder().encode(JSON.stringify(body));
+   const key="backend_"+globalThis.crypto.randomUUID().replaceAll("-","");
    const timestamp=Date.now();
-   const digest=b64(new Uint8Array(await crypto.subtle.digest("SHA-256",raw)));
-   const statement=new TextEncoder().encode(JSON.stringify([
+   const digest=b64(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256",raw)));
+   const statement=new globalThis.TextEncoder().encode(JSON.stringify([
     "APPF2_MUTATION_PoP_V1","POST",pathname,digest,key,timestamp
    ]));
-   const sig=b64(new Uint8Array(await crypto.subtle.sign(
+   const sig=b64(new Uint8Array(await globalThis.crypto.subtle.sign(
     {name:"ECDSA",hash:"SHA-256"},pair.privateKey,statement)));
    const response=await fetch(pathname,{
     method:"POST",cache:"no-store",redirect:"error",
@@ -90,9 +91,9 @@ async function open(which){
  await install(page);
  return {page,which};
 }
-const send=(client,payload)=>client.page.evaluate(v=>window.__appf2Sp35BackendSend(v),payload);
+const send=(client,payload)=>client.page.evaluate(v=>globalThis.__appf2Sp35BackendSend(v),payload);
 function expectStatus(result,status,stage){
- if(result?.status!==status)throw Error("BACKEND_QA_"+stage+"_HTTP_"+result?.status+"_EXPECTED_"+status);
+ if(result?.status!==status)throw Error("BACKEND_QA_"+stage+"_HTTP_"+result?.status+"_EXPECTED_"+status+"_ERROR_"+String(result?.error??"NONE"));
  return result.data;
 }
 const ensure=(bool,stage)=>{if(!bool)throw Error("BACKEND_QA_"+stage);};
@@ -151,7 +152,7 @@ try{
   try{
    const r=await send(entry.client,{action:"delete",record_id:id});
    if(![200,404].includes(r.status))cleanupFailures.push(entry.client.which+":"+r.status);
-  }catch(e){cleanupFailures.push(entry.client.which+":UNAVAILABLE");}
+  }catch{cleanupFailures.push(entry.client.which+":UNAVAILABLE");}
  }
  for(const context of sessions)await context.close().catch(()=>undefined);
  await browser.close();
@@ -160,6 +161,6 @@ try{
   console.error("SP35 UNKNOWN BACKEND CLEANUP/NETWORK FAIL: "+cleanupFailures.join(","));
   problem??=Error("BACKEND_QA_CLEANUP_OR_UNEXPECTED_NETWORK");
  }
- if(problem)throw problem;
- console.log("SP35 UNKNOWN BACKEND CLEANUP PASS: ephemeral test records removed; source untouched; signed record POSTs="+requests);
 }
+if(problem)throw problem;
+console.log("SP35 UNKNOWN BACKEND CLEANUP PASS: ephemeral test records removed; source untouched; signed record POSTs="+requests);
