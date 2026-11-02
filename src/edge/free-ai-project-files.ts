@@ -16,12 +16,14 @@ export const aiProjectSchema={
 export type AiSourceFile={readonly path:string;readonly content:string};
 const MAIN="src/main.ts",STYLE="src/style.css";
 const FILE=/^src\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.(?:ts|css|json)$/u;
+const SERVER=/^server\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.mjs$/u;
 const FORBIDDEN=/https?:\/\/|import\s*\(['"]https?:|<\/script|\u0000/u;
-function validOne(value:unknown):value is AiSourceFile{
+function validOne(value:unknown,profile:"VITE_WEB"|"VITE_NODE"):value is AiSourceFile{
  if(typeof value!=="object"||value===null||Array.isArray(value))return false;
  const file=value as Record<string,unknown>;
  return Object.keys(file).sort().join(",")==="content,path"&&
-  typeof file.path==="string"&&FILE.test(file.path)&&
+  typeof file.path==="string"&&(FILE.test(file.path)||
+   profile==="VITE_NODE"&&SERVER.test(file.path))&&
   typeof file.content==="string"&&file.content.length>0&&
   file.content.length<=65000&&!FORBIDDEN.test(file.content);
 }
@@ -30,21 +32,23 @@ function validOne(value:unknown):value is AiSourceFile{
  * Do not auto-fill missing entrypoints or fake an App out of partial output.
  */
 // eslint-disable-next-line complexity -- Independently enforce path, legacy replay, bounded bytes and required entrypoint integrity.
-export function parseAiProjectFiles(raw:unknown):readonly AiSourceFile[]|null{
+export function parseAiProjectFiles(raw:unknown,
+ profile:"VITE_WEB"|"VITE_NODE"="VITE_WEB"):readonly AiSourceFile[]|null{
  if(typeof raw!=="object"||raw===null||Array.isArray(raw))return null;
  const value=raw as Record<string,unknown>,keys=Object.keys(value).sort().join(",");
  const legacy=keys==="main_ts,style_css";
  if(!legacy&&keys!=="files")return null;
+ if(profile==="VITE_NODE"&&legacy)return null;
  const files:unknown=legacy?[
   {path:MAIN,content:value.main_ts},
   {path:STYLE,content:value.style_css}
  ]:value.files;
  if(!Array.isArray(files)||files.length<2||files.length>12)return null;
  const seen=new Set<string>();
- let size=0,main=false,style=false;
+ let size=0,main=false,style=false,backend=false,backendTest=false;
  const validated:AiSourceFile[]=[];
  for(const file of files){
-  if(!validOne(file))return null;
+  if(!validOne(file,profile))return null;
   const normalized=file.path.toLowerCase();
   if(seen.has(normalized))return null;
   seen.add(normalized);
@@ -52,8 +56,10 @@ export function parseAiProjectFiles(raw:unknown):readonly AiSourceFile[]|null{
   if(size>85000)return null;
   if(file.path===MAIN){main=file.content.length>=20;}
   if(file.path===STYLE){style=file.content.length>=20;}
+  if(file.path==="server/index.mjs"){backend=file.content.length>=20;}
+  if(file.path==="server/test.mjs"){backendTest=file.content.length>=20;}
   validated.push({path:file.path,content:file.content});
  }
- if(!main||!style)return null;
+ if(!main||!style||profile==="VITE_NODE"&&(!backend||!backendTest))return null;
  return validated;
 }
