@@ -2,6 +2,7 @@
  * Never an original requirement QA PASS, a publication or a share grant.
  */
 import {openFreeCiTicket} from "../platform/agent/free-ci-ticket.js";
+import {effectiveEditQaPlan} from "./agent-user-edit.js";
 import {canonicalArtifactJson,sha256CodeBytes}
  from "../platform/blueprint/code-artifact-v2.js";
 import type {QaPlan} from "../platform/qa/requirement-contract.js";
@@ -203,8 +204,9 @@ export async function routeFreeCiResult(request:Request,url:URL,
    "SELECT original_plan FROM public.appf2_agent_qa_plan "+
    "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid LIMIT 1",
    [ticket.job_id,ticket.owner])).rows[0]?.original_plan??null;
+  const plan=await effectiveEditQaPlan(db,ticket.job_id,ticket.owner,ticket.project_hash)??frozen;
   const status=await persistFreeCiSmoke(db,{jobId:ticket.job_id,
-   owner:ticket.owner,projectHash:ticket.project_hash,runId},parsed.result,frozen);
+   owner:ticket.owner,projectHash:ticket.project_hash,runId},parsed.result,plan);
   return new Response(JSON.stringify({data:{status,job_id:ticket.job_id,
    project_hash:ticket.project_hash,app_published:false,
    original_requirements_qa:false}}),{status:200,headers:HEADERS});
