@@ -66,14 +66,34 @@ BEGIN
   ON p.job_id=r.job_id AND p.owner_anonymous_id=r.owner_anonymous_id
   AND p.project_hash=r.project_hash AND p.run_id=r.run_id AND p.artifact_hash=r.built_artifact_hash
  WHERE r.job_id=p_job AND r.owner_anonymous_id=p_owner AND r.project_hash=e.candidate_project_hash;
- IF NOT FOUND OR r.receipt_json->>'version'<>'APPF2_FREE_CI_SMOKE_V1' OR
-  r.receipt_json->>'qa_plan_hash'<>e.combined_qa_hash OR
-  jsonb_typeof(r.receipt_json->'qa_checks')<>'array' OR
+ IF NOT FOUND OR (r.receipt_json->>'version') IS DISTINCT FROM 'APPF2_FREE_CI_SMOKE_V1' OR
+  (r.receipt_json->>'qa_plan_hash') IS DISTINCT FROM e.combined_qa_hash OR
+  jsonb_typeof(r.receipt_json->'qa_checks') IS DISTINCT FROM 'array' OR
   jsonb_array_length(r.receipt_json->'qa_checks')<>jsonb_array_length(e.combined_qa_plan->'criteria') OR
   EXISTS(SELECT 1 FROM jsonb_array_elements(r.receipt_json->'qa_checks') WITH ORDINALITY AS checks(c,i)
     JOIN LATERAL (SELECT e.combined_qa_plan->'criteria'->(checks.i::int-1) AS criterion) expected ON true
-    WHERE checks.c->>'verdict'<>'PASS' OR checks.c->>'criterion_id'<>expected.criterion->>'id'
-    OR checks.c->>'evidence_hash' !~ '^sha256:[a-f0-9]{64}$'
+    WHERE (checks.c->>'verdict') IS DISTINCT FROM 'PASS' OR (checks.c->>'criterion_id') IS DISTINCT FROM (expected.criterion->>'id')
+    OR coalesce(checks.c->>'evidence_hash','') !~ '^sha256:[a-f0-9]{64}
+    OR (expected.criterion->>'automatable') IS DISTINCT FROM 'true')
+ THEN RAISE EXCEPTION 'SP35_EDIT_INCOMPLETE_QA';
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.appf2_agent_job j WHERE j.job_id=p_job
+   AND j.owner_anonymous_id=p_owner AND j.project_hash=e.candidate_project_hash) THEN
+  RAISE EXCEPTION 'SP35_EDIT_JOB_HEAD_CHANGED';
+ END IF;
+ UPDATE public.appf2_agent_accepted_version SET project_hash=e.candidate_project_hash,
+  project_revision=e.candidate_project_revision,qa_plan=e.combined_qa_plan,
+  qa_plan_hash=e.combined_qa_hash,
+  requirements_text=a.requirements_text||E'\n'||e.user_request,
+  generation=generation+1,updated_at=now()
+ WHERE job_id=p_job AND owner_anonymous_id=p_owner;
+ UPDATE public.appf2_agent_user_edit SET state='ACCEPTED',updated_at=now() WHERE edit_id=p_edit;
+ accepted:=a.generation+1;
+ RETURN accepted;
+END $$;
+REVOKE ALL ON FUNCTION appf2_internal.accept_user_edit(uuid,uuid,uuid,text,integer) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION appf2_internal.accept_user_edit(uuid,uuid,uuid,text,integer) TO appf2_worker;
+
     OR expected.criterion->>'automatable'<>'true')
  THEN RAISE EXCEPTION 'SP35_EDIT_INCOMPLETE_QA';
  END IF;
