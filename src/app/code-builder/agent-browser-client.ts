@@ -150,7 +150,8 @@ export type CandidateSnapshot={readonly job:CandidateJob;readonly progress:Progr
 export type AgentStoredTarget={readonly jobId:string;readonly prompt:string;
  readonly firstModelKey:string;readonly qaPlan?:QaPlan};
 export type AgentBrowserOptions={readonly allowAi:boolean;
- readonly allowContainer:boolean;readonly approvedCents:number};
+ readonly allowContainer:boolean;readonly approvedCents:number;
+ readonly fullstack?:boolean};
 const encoder=new TextEncoder();
 function validatedTarget(v:unknown):AgentStoredTarget|null{
  if(typeof v!=="object"||v===null||Array.isArray(v))return null;
@@ -364,7 +365,8 @@ export class BrowserCodingAgent {
   const key=await this.keys.keyForCreate(logical);
   const data=await signedPost<{job_id:string}>("/api/v1/agent-jobs",{
    anonymous_id:this.owner,prompt:prompt.trim(),
-   explicit_ai_consent:true,max_cost_cents:opts.approvedCents
+   explicit_ai_consent:true,max_cost_cents:opts.approvedCents,
+   ...(opts.fullstack?{project_profile:"VITE_NODE" as const}:{})
   },key);
   if(!ID.test(data.job_id))throw Error("Agent 專案識別碼無效。");
   // Server created an empty, zero-cost Job. Persist and verify the same

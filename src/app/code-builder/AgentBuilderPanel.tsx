@@ -20,6 +20,7 @@ function failureMessage(e:unknown):string{
 // eslint-disable-next-line complexity, max-lines-per-function -- Signed authoring, QA and repair controls share the immutable candidate state.
 export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [prompt,setPrompt]=useState(suggestedPrompt?.text??"");
+ const [fullstack,setFullstack]=useState(false);
  const [aiConsent,setAiConsent]=useState(false);
  const [containerConsent,setContainerConsent]=useState(false);
  const [browserQaConsent,setBrowserQaConsent]=useState(false);
@@ -126,7 +127,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   return plan;
  };
  const options=():AgentBrowserOptions=>({
-  allowAi:aiConsent,allowContainer:containerConsent,approvedCents});
+  allowAi:aiConsent,allowContainer:containerConsent,approvedCents,fullstack});
  /** No paid dispatch: select a stored card then verify the original owner
   * signing key against the current persisted DB head before showing source.
   */
@@ -597,6 +598,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   <textarea id="code-builder-prompt" className="composer-input" value={prompt}
    maxLength={800} disabled={busy} onChange={e=>setPrompt(e.target.value)}
    placeholder="例如：製作能四人同時玩的十八啦骰子遊戲，有計分、動畫、規則與排行榜。" />
+  <label className="code-builder-consent"><input type="checkbox" checked={fullstack}
+   disabled={busy||saved} onChange={e=>setFullstack(e.target.checked)}/>
+   這個 App 需要專屬後端：同一個專案產生前端及 Node 伺服器程式。
+   目前可在隔離 Sandbox 建置與測試，但後端正式上線前不會宣稱 App 已完整發布。
+  </label>
   <details>
    <summary>進階：開發前鎖定獨立 QA 驗收計畫（選填）</summary>
    <p className="saved-apps-note">一般使用者不必寫 JSON：留白會在 AI 編碼前，自動花費最多 8 美分產生並凍結驗收計畫。只在需要自行指定測試時貼上 JSON。AI 計畫仍需通過引用原始需求、操作與預期結果的驗證。</p>
