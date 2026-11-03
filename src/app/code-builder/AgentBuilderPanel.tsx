@@ -171,7 +171,17 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   finally{setBusy(false);}
  };
  const saveStyleCandidate=async()=>{
-  setStyleResult("請在確認原 App 通過測試後再修改。");
+  if(busy)return;
+  setBusy(true);setError("");setStyleResult("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("原始 App 未通過簽章驗證。");
+   const savedJob=await worker.safeStyleEdit(styleTheme);
+   setSnapshot({job:savedJob,progress:null,message:"候選版已保存，須重新完成原需求驗收。",completed_steps:0});
+   setStyleResult("修改已保存；不會自動發布或花費 AI。");
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
  };
  const extend=async()=>{
   if(busy||!saved)return;
