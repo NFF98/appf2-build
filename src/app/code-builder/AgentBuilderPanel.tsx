@@ -273,6 +273,27 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
+ const runUserEditFreeQa=async()=>{
+  if(busy||!freeCiConsent||!userEditSelected)return;
+  setBusy(true);setError("");setUserEditMessage("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("原始 App 建立者簽章不可用。");
+   const ledger=await worker.userEditLedger();
+   const selected=ledger.edits.find(e=>e.edit_id===userEditSelected);
+   if(!selected||selected.state!=="QA_REQUIRED"||
+    !selected.candidate_project_hash)
+    throw Error("尚未保存 AI 修改候選版，不能執行新的免費 QA。");
+   const current=await worker.read();
+   if(current.project_hash!==selected.candidate_project_hash)
+    throw Error("Job 已變更，不能針對不同版本執行 QA。");
+   if(current.free_ci)throw Error("此候選已有 QA 收據，禁止盲目重跑。");
+   await worker.dispatchFreeCiBuild(true);
+   setUserEditMessage("已派送此候選版本的免費 Docker／Chromium；須取回完整原＋新 QA 收據後才能接受。");
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
  const acceptUserEditCandidate=async()=>{
   if(busy||!userEditLedger?.accepted||!userEditSelected)return;
   setBusy(true);setError("");setUserEditMessage("");
@@ -787,6 +808,11 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
       <button type="button" className="btn btn-secondary"
        disabled={busy||!userEditSelected||!userEditAiApproved}
        onClick={()=>{void runUserEditModel();}}>對原 App 執行一次 AI 修改（只建候選）</button>
+      <button type="button" className="btn btn-secondary"
+       disabled={busy||!userEditSelected||!freeCiConsent}
+       onClick={()=>{void runUserEditFreeQa();}}>
+       啟動此候選的免費 Docker＋Chromium 舊／新需求 QA</button>
+      <p className="saved-apps-note">此操作需要下方的「免費 GitHub Actions 隔離建置」授權；已存在的 QA 收據不會盲目重跑。</p>
       <button type="button" className="btn btn-secondary"
        disabled={busy||!userEditSelected}
        onClick={()=>{void acceptUserEditCandidate();}}>完整 QA 通過後，確認接受候選版本</button>
