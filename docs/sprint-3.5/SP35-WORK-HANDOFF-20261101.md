@@ -1,3 +1,26 @@
+# Sprint 3.5 — 通用 AI 引擎真正產品進度 SSOT／唯一下一關（2026-11-03，置頂覆蓋舊樣本標題）
+
+**最高指令：目標不是繼續修平台，而是讓真正產品從 22.2% 突破到 100%。禁止每次修改都沒有實際產品進度。**
+**現況：通用未知複雜 App 產品驗收 2/9 = 22.2%；本次僅更新 SSOT，新增產品 PASS = 0，完成率不變。**
+
+本文件舊段落的「7/9、8/9、9/9」屬已知 Staging 範例/舊九案例帳本，**不得與本次通用未知複雜完整 App 產品帳本混算**。設計唯一規格來源：Design PR #45 `working/architecture-evolution/SP35-UNKNOWN-MULTIFILE-RELIABILITY-20261103.md` 首段「產品完成率唯一執行目標 SSOT」。
+
+## 三階段交付目標（按真正產品驗收計分）
+
+1. **55.6%（5/9）：新增 3 個真正產品 PASS。** 既有 AI + 既有 Sandbox + 同一份多檔 App（前端、Node 後端）+ 真後端執行 + 實際 PostgreSQL 打通。以全新、未知的複雜要求在**真網站**驗證自然語言生成、實際操作、真 DB 寫讀、保存重開；不以 Node 自測、固定 CRUD 或 Docker CI 代替。
+2. **88.9%（8/9）：再新增 3 個真正產品 PASS。** 對真錯誤做編譯、Runtime、API、DB 的根因診斷與自動修復；原 Job 可靠持續／中斷恢復；驗證完整 App 的保存、分享及重用，重開無重新付費。真瀏覽器、真後端、真資料庫及可稽核 Job 版本缺一不可。
+3. **100%（9/9）：最後新增 1 個真正產品 PASS。** 使用未預先告知的未知複雜完整 App 需求，證明一般使用者只輸入自然語言，AI 自主完成生成、建置、獨立驗收、錯誤修復、後端資料流、授權交付；無 Cursor、PowerShell、Docker 或人工手改程式。未通過就不能宣稱 100%。
+
+## 每次修改必須推進下一個產品驗收（無證據不加分）
+
+- **眼前唯一產品目標：2/9 → 3/9 = 33.3%。** 直接處理「全新未知 AI 生成的完整 App 在真網站透過真後端 API 操作 PostgreSQL，保存並重開」的最早阻斷；不是做另一輪平台 smoke、既有範本或免費 CI。
+- 每個 Build PR #419 修改，在提交前標明**一項未過的原產品 Gate + 真正阻斷 + 預期證據**，先更新 Design #45 SPEC，再 Implement；修改後只以**新真網站產品 E2E**和逐項驗收記錄升級計分。不能為了有 commit 而添加無關功能。沒有新增產品 PASS 則回報 **x/9 不變、失敗根因、證據、唯一待修點**，不虛報或以平台 PASS 灌水。
+- 同一阻斷最多兩輪**有根因證據**的集中修復，沒改善即停止亂試並重估架構；保留原 Job/程式/失敗 receipt。不得重送未知結算的模型請求，不重複付費；新付費需先獲具體金額限額授權。只用原 Design #45、Build #419；不開 PR、不合併、不 Production、不 Sprint 4。
+- **每回合進度回報欄位：** 真正產品 PASS x/9（%）；這次新增幾項 PASS；哪個實際新網站 App/原始自然語言；真網站／Sandbox／API／PG／重開／分享驗收證據及連結；阻斷／根因；模型 paid POST 次數、額度 ceiling、invoice 核帳狀態。**0 新 PASS 不得稱「真正產品突破」。**
+- 上一工程基礎驗證 [#41550471325](https://github.com/NFF98/appf2-build/actions/runs/41550471325) 已 SUCCESS：既有網路隔離 Docker 內，同一 VITE_NODE 專案前端建置及 Node 後端自測成功，**不是**全新 AI 生成的長駐後端、真 PG 網站 E2E，故沒有讓產品 22.2% 上升；本文件不將它算成第 3 關。
+
+---
+
 # 2026-11-02 JST 第八件真網站產品通過，8/9=88.9%；最後G15先SPEC後免費preflight
 
 - **G14 真網站 E2E SUCCESS**：唯一本批GPT-6新遊戲 `0aa5c5b9-9b59-429c-b246-d9530a232853`，CODE一次20¢ ceiling（1309/8326 tokens），新owner [41451412153](https://github.com/NFF98/appf2-build/actions/runs/41451412153) **completed/SUCCESS**，免費原QA [41452392255](https://github.com/NFF98/appf2-build/actions/runs/41452392255) 7/7 PASS，原網站HTTP201正式 ACTIVE，PG `public_opt_in=true`，公開 `https://appf2-sp35-417-staging.juiyuang69.workers.dev/code/f6377216-86c2-400b-bc27-91586609836a`，blueprint hash `sha256:1d2a542f034672fa45a50c4b8d6d9ec7764f42a579a9d4eca4afd89fd4e7b40a`。全新Chromium真按未開門→需鑰匙→撿鑰匙→開門→出門逃脫→完成後不能再改→restart→reload重玩，`SP35 REMAINING CANDIDATE FULL PRODUCT PROOF PASS: g14-escape`；訪客`model_or_job_POST=0`。確實**8/9**，工具3、遊戲2、Postgres3，距9/9**只欠第三款不同遊戲**。
