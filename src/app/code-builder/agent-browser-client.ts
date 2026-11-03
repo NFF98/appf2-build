@@ -409,6 +409,32 @@ export class BrowserCodingAgent {
  async timeline():Promise<AgentJobTimeline>{
   return this.post("/job-timeline",{anonymous_id:this.owner});
  }
+ /** No-model, owner-signed edit of an existing tested App.
+  * Never publishes or replaces its immutable previous public share.
+  */
+ async safeStyleEdit(theme:"blue"|"green"|"sand"):Promise<CandidateJob>{
+  const current=await this.read();
+  if(!current.free_ci?.preview_ready||
+   !allFrozenFreeCiChecksPassed(this.target?.qaPlan,
+    current.free_ci.qa_checks)||current.status!=="CODING")
+   throw Error("原 App 尚無完整 Browser QA PASS，不能修改已驗收基礎。");
+  const result=await this.post<{status:string;project_hash:string;
+   previous_project_hash:string;revision:number;app_published:false;
+   paid_ai_calls:0}>("/safe-style-edit",{
+    anonymous_id:this.owner,expected_revision:current.revision,
+    expected_project_hash:current.project_hash,theme
+   });
+  if(result.status!=="STYLE_CANDIDATE_SAVED_QA_REQUIRED"||
+   result.previous_project_hash!==current.project_hash||
+   result.revision!==current.revision+1||result.paid_ai_calls!==0||
+   result.app_published!==false)
+   throw Error("修改結果無法驗證，原有版本仍保留。");
+  const updated=await this.read();
+  if(updated.project_hash!==result.project_hash||
+   updated.revision!==result.revision)
+   throw Error("修改版本尚未完成資料庫核對，請先讀取進度。");
+  return updated;
+ }
  /** A fresh explicit owner-signed step-only renewal. No additional money is
   * authorized, no saved tool is replayed, and this never dispatches AI/containers.
   */
