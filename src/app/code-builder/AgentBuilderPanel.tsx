@@ -609,6 +609,23 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
     </button>
    </li>)}</ul>
   </section>:null}
+  {snapshot?.job.status==="CODING"&&snapshot.job.free_ci?.preview_ready&&
+   allFrozenFreeCiChecksPassed(savedCandidateTarget()?.qaPlan,
+    snapshot.job.free_ci.qa_checks)?
+   <section aria-label="修改已驗收的 App">
+    <h3>修改現有 App 的背景（免費）</h3>
+    <label htmlFor="agent-safe-style-colour">背景顏色</label>
+    <select id="agent-safe-style-colour" value={styleTheme} disabled={busy}
+     onChange={e=>setStyleTheme(e.target.value as "blue"|"green"|"sand")}>
+     <option value="blue">淺藍</option>
+     <option value="green">淺綠</option>
+     <option value="sand">米色</option>
+    </select>
+    <button type="button" className="btn btn-secondary" disabled={busy}
+     onClick={()=>{void saveStyleCandidate();}}>保存外觀修改候選版（不扣 AI）</button>
+    <p className="saved-apps-note">新版本須重新通過原始 QA，舊公開 App 不會被修改。</p>
+    {styleResult?<p role="status">{styleResult}</p>:null}
+   </section>:null}
   <label htmlFor="code-builder-prompt">用一句話描述要做的 App</label>
   <textarea id="code-builder-prompt" className="composer-input" value={prompt}
    maxLength={800} disabled={busy} onChange={e=>setPrompt(e.target.value)}
