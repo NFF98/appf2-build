@@ -1,5 +1,20 @@
 # Sprint 3.5 — 通用 AI 引擎真正產品進度 SSOT／唯一下一關（2026-11-03，置頂覆蓋舊樣本標題）
 
+## 2026-11-03 SSOT 覆核完成：真正已發布 App 網站 E2E 4/9 = 44.4%（修正錯誤的 2/9 最新置頂）
+
+依使用者「兩個已跑過的複雜 App，先去看」指令，已獨立讀原 GitHub Actions + Supabase Postgres **現存的實際證據**，不是再做免費平台測試，更沒有重新花模型費。原已有 2/9 即時計數器+客戶備忘錄之外，**本輪補認既有兩項不同 AI App 產品成功**：
+
+1. **#3 G10 閱讀書單（帶真 PG CRUD）**：AI Job `9eecc831-4bb9-4af4-ac88-546fd159c22d`，CODE `SUCCEEDED`、單筆 20¢ ceiling；原 frozen Docker QA [41364310433](https://github.com/NFF98/appf2-build/actions/runs/41364310433) 7/7，原網站 [41363905501](https://github.com/NFF98/appf2-build/actions/runs/41363905501) SUCCESS。獨立 Chromium 真網站／Postgres viewer 寫入、變更已讀、刪除、重新載入、另一 viewer 隔離 [41364683866](https://github.com/NFF98/appf2-build/actions/runs/41364683866) SUCCESS，log `REAL_PUBLISHED_RECIPIENT_FULL_PASS sample=g10-books`、`model_or_job_POST=0`。Supabase live `appf2_code_app`: share `4c07f75f-1f4b-43d2-9a66-dab6761b8414`, `ACTIVE/public_opt_in=true`, 原 bluehash `sha256:710314711d4704a81c380f537ab67225fc86632d430e5d510b26ad2fcbcab738`；現存 2 筆 viewer 測試紀錄。
+2. **#4 G11 每日喝水紀錄（帶真 PG CRUD）**：AI Job `224ba726-de85-4a1c-ad3c-aef7eb0f334b`，CODE `SUCCEEDED`、單筆 20¢ ceiling；原 QA [41365402062](https://github.com/NFF98/appf2-build/actions/runs/41365402062) 7/7；原 owner workflow [41364911735](https://github.com/NFF98/appf2-build/actions/runs/41364911735) **FAILURE（保留歷史，絕不改寫）**，但 HTTP201 原 owner 已建 ACTIVE，後續獨立真網站 [41449070224](https://github.com/NFF98/appf2-build/actions/runs/41449070224) SUCCESS：新 Chromium 0→1→2→3、reload 保留、另一 viewer 隔離、刪除/重建、真 Worker/PG CRUD 2xx，`REAL_PUBLISHED_RECIPIENT_FULL_PASS sample=g11-water`，訪客 `model_or_job_POST=0`。Supabase live share `4acf553e-09a8-4568-86f2-20a78caceb4d` `ACTIVE/public_opt_in=true`、bluehash `sha256:d29d72c588335eb70fd51cee4dbf314ce6f28aa5d0b49d92ce261e01c0a374cb`，現存 PG 4 rows。真 UI 曾 >15s，標 `PERFORMANCE_SLOW`，不可算速度完成。
+3. **帳本區別：** 這 4/9 是四個不同、可操作、已發布、可重用的 AI App 真網站 E2E；**不是** 4 件任意 AI 生成 Node 後端證明。G10/G11 當時 `VITE_WEB`、用平台已簽署的 `appf2Records` Worker→Postgres bridge，沒有證明原 `VITE_NODE` 的任意業務後端可長駐、正式服務 API。原 SSOT「2/9」置頂是在沒有檢視上述真證據下錯誤寫入，**此段正式取代該現況**；其他歷史 9/9 已知樣本不得自動灌成通用未知全端滿分。
+4. **下一個唯一產品 Gate：** **4/9→5/9＝55.6%**，要全新複雜 App 真正 AI→多檔前端+其自寫後端→既有免費 Docker 隔離執行→對網站供應真 API→PostgreSQL（受控資料權限）→原 QA/獨立實際 Chromium/關閉重開/分享，且在同原 Job 留可追溯模型費用／錯誤修復。僅 CI/Node self-test、平台通用 CRUD、新 commit 均不得再 +1。
+5. **費用/變更：** 本回合 provider POST=0，無新模型 charge，無新產品重測，供應商 invoice 仍未核實；舊 G10+G11 原 CODE 各 20¢ `max_charge_cents` 為 ceiling 而非本回合扣款。只因真實已完成但被漏算的產品驗收更新 SSOT；不得重發已付回應、開新 PR、合併、發 Production 或 Sprint4。
+
+**權威 SPEC：** Design PR #45 `working/architecture-evolution/SP35-UNKNOWN-MULTIFILE-RELIABILITY-20261103.md` 頂端「產品帳本更正」，由原 GitHub 工作流程與 live Supabase DB 支持。以下舊紀錄保留歷史，只以本段為現況報表。
+
+---
+
+
 **最高指令：目標不是繼續修平台，而是讓真正產品從 22.2% 突破到 100%。禁止每次修改都沒有實際產品進度。**
 **現況：通用未知複雜 App 產品驗收 2/9 = 22.2%；本次僅更新 SSOT，新增產品 PASS = 0，完成率不變。**
 
