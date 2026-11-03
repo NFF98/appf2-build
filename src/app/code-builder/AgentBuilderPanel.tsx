@@ -178,6 +178,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    agent.current=worker;
    if(!await worker.restore())throw Error("原始 App 未通過簽章驗證。");
    const savedJob=await worker.safeStyleEdit(styleTheme);
+   previewHost.current?.replaceChildren();setPreviewReady(false);
    setSnapshot({job:savedJob,progress:null,message:"候選版已保存，須重新完成原需求驗收。",completed_steps:0});
    setStyleResult("修改已保存；不會自動發布或花費 AI。");
   }catch(e){setError(failureMessage(e));}
