@@ -55,7 +55,8 @@ export async function publishVerifiedPrivateApp(input:PublishOwnerAppBody,ctx:{
  const current=await recoverAgentJob(ctx.db,ctx.jobId,input.anonymous_id);
  const digest=await sha256CodeBytes(new TextEncoder().encode(
   "APPF2_AGENT_REQUEST_V1\u0000"+input.original_prompt.trim()));
- if(!current||current.job.request_hash!==digest||
+ if(!current||current.project.profile!=="VITE_WEB"||
+  current.job.request_hash!==digest||
   current.project.project_hash!==input.expected_project_hash||
   current.project.revision<2)throw Error("SP35_SHARE_STALE_OR_WRONG_PROMPT");
  const receipt=(await ctx.db.query<Evidence>(

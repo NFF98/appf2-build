@@ -18,15 +18,18 @@ const FIXED_SCAFFOLD_MANIFEST=JSON.stringify({name:"appf2-candidate",private:tru
 const ignoredManifest=item=>item.path==="package.json"&&
  item.content===FIXED_SCAFFOLD_MANIFEST;
 const OK=/^(?:index\.html|[A-Za-z0-9_@.-]+(?:\/[A-Za-z0-9_@.-]+)*\.(?:html|js|jsx|ts|tsx|css|json|svg|txt|webp|png))$/iu;
+const SERVER=/^server\/[A-Za-z0-9_@.-]+(?:\/[A-Za-z0-9_@.-]+)*\.mjs$/iu;
 export async function stageVerifiedFreeCiProject(snapshot,destination){
  if(!await verifyProjectSnapshot(snapshot)||
-  snapshot.profile!=="VITE_WEB"||snapshot.entrypoint!=="index.html")
+  !["VITE_WEB","VITE_NODE"].includes(snapshot.profile)||
+  snapshot.entrypoint!=="index.html")
   throw Error("FREE_CI_SNAPSHOT_INVALID");
  if(snapshot.files.length>64||snapshot.files.reduce((n,f)=>n+f.bytes,0)>1024*1024)
   throw Error("FREE_CI_RESOURCE_LIMIT");
  for(const item of snapshot.files){
   if(ignoredManifest(item))continue;
-  if(DENIED.test(item.path)||!OK.test(item.path)||
+  if(DENIED.test(item.path)||
+     !(OK.test(item.path)||snapshot.profile==="VITE_NODE"&&SERVER.test(item.path))||
      item.path.split("/").some(s=>s.startsWith(".")))
    throw Error("FREE_CI_SOURCE_CONFIG_DENIED");
  }

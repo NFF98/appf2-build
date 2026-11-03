@@ -170,6 +170,27 @@ try{
    await persistFailure("BUILD",String(err));
   throw err;
  }
+ if(project.profile==="VITE_NODE"){
+  // Check and execute a bounded server self-test INSIDE the same locked
+  // --network none container. Never execute generated server code on host.
+  try{
+   for(const args of [
+    ["--check","server/index.mjs"],
+    ["--check","server/test.mjs"],
+    ["--test","server/test.mjs"]
+   ])docker(["run","--rm","--network","none","--cap-drop","ALL",
+    "--security-opt","no-new-privileges","--pids-limit","100",
+    "--memory","768m","--cpus","1","--user",uid+":"+gid,
+    "--tmpfs","/tmp:rw,nosuid,size=64m",
+    "-v",tmp+":/workspace/agent:ro","-w","/workspace/agent",
+    "appf2-sp35-free-ci:oidc","node",...args]);
+  }catch(err){
+   if(/^FREE_CI_BUILD_FAILED:[1-9][0-9]*:/u.test(String(err)))
+    await persistFailure("BUILD",String(err));
+   throw err;
+  }
+  console.log("SP35 FULLSTACK: locked offline Node backend self-tests PASS; independently required backend E2E NOT YET PASS");
+ }
  const html=await fs.readFile(path.join(tmp,"dist/index.html"),"utf8");
  if(html.length<50)throw Error("FREE_CI_BUILD_HTML_EMPTY");
  server=http.createServer(async(req,res)=>{
