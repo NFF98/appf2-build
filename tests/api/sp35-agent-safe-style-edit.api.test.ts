@@ -36,6 +36,12 @@ async function setup(){
   {path:"src/style.css",content:"body{margin:0;background:white}"},
   {path:"src/main.ts",content:"document.querySelector('#app')"}
  ]);
+ const source=initial.files.find(f=>f.path==="src/main.ts");
+ if(!source)throw Error("MISSING_SOURCE");
+ const project=await applyProjectEdits(initial,initial.project_hash,[{
+  operation:"replace",path:"src/main.ts",previous_hash:source.hash,
+  content:source.content+"; // accepted implementation"
+ }]);
  const job:AgentJobRow={
   job_id:jobId,owner_anonymous_id:owner,request_hash:hash,
   project_hash:project.project_hash,revision:2,checkpoint_hash:hash,
