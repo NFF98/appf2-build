@@ -110,9 +110,17 @@ export async function extendApprovedAgentBudget(db:AgentJobExecutor,
   !Number.isSafeInteger(newSteps)||newSteps<=cp.budget.max_steps||
   newSteps>cp.budget.max_steps+16||newSteps>512||
   !Number.isSafeInteger(newCostCents)||
-  newCostCents<cp.budget.max_cost_cents||newCostCents>100||
+  newCostCents<cp.budget.max_cost_cents||newCostCents>200||
   cp.state==="READY"||cp.state==="FAILED")
   throw Error("AGENT_BUDGET_EXTENSION_DENIED");
+ if(newCostCents>100){
+  // The former 100c cap is extended ONLY for an already QA-accepted App.
+  const eligible=(await db.query<{ok:boolean}>(
+   "SELECT EXISTS(SELECT 1 FROM public.appf2_agent_accepted_version "+
+   "WHERE job_id=$1::uuid AND owner_anonymous_id=$2::uuid) AS ok",
+   [previous.job_id,owner])).rows[0];
+  if(eligible?.ok!==true)throw Error("AGENT_USER_EDIT_BUDGET_NOT_INITIALIZED");
+ }
  const next:AgentCheckpoint={...cp,
   budget:{...cp.budget,max_steps:newSteps,max_cost_cents:newCostCents},
   previous_checkpoint_id:previous.checkpoint_hash};
