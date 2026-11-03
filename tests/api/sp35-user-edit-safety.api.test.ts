@@ -29,7 +29,7 @@ const accepted={project_hash:hash,project_revision:2,generation:0,
 function dbFake(opts:{ownerOk?:boolean;accept?:typeof accepted;
  editState?:string}={}){
  const queries:string[]=[];
- const db:AgentJobExecutor={query:async <T>(sql:string,params?:unknown[])=>{
+ const db:AgentJobExecutor={query:async <T>(sql:string,params:readonly unknown[])=>{
   queries.push(sql);
   if(sql.includes("owner_key_thumbprint"))
    return {rows:opts.ownerOk===false?[]:[{job_id:jobId} as T]};
