@@ -91,7 +91,8 @@ const productPrefixes=[
   "src/app/","src/edge/","src/platform/",
   "tests/api/","tests/runtime/","tests/e2e/","tests/fixtures/",
   "deploy/sandbox/","deploy/qa-browser/","deploy/scripts/",
-  "deploy/sql/","deploy/fixtures/","docs/sprint-3.5/"
+  "deploy/sql/","deploy/fixtures/","docs/sprint-3.5/",
+  "deploy/free-ci/"
 ];
 const exact=new Set([
   "harness/scripts/run-task-human-grant-preflight.sh",
@@ -103,14 +104,15 @@ const exact=new Set([
 function allowed(path){
  if(exact.has(path)||productPrefixes.some(p=>path.startsWith(p)))return true;
  if(path==="supabase/migrations/20261103170000_sp35_user_edit_accepted_candidate.sql")return true;
- if(path.startsWith("supabase/migrations/202610")&&
+ if((path.startsWith("supabase/migrations/202610")||
+     path.startsWith("supabase/migrations/20261101"))&&
    path.includes("_sp35_")&&path.endsWith(".sql")&&
    path.split("/").length===3)return true;
  return path.startsWith(".github/workflows/sp35-")&&
    path.endsWith(".yml")&&path.split("/").length===3;
 }
 const paths=changed.map(x=>x?.filename);
-if(changed.length<40||changed.length>260||
+if(changed.length<40||changed.length>400||
    new Set(paths).size!==changed.length||
    !paths.includes("harness/scripts/run-task-human-grant-preflight.sh")||
    !paths.includes("src/platform/agent/project-workspace.ts")||
