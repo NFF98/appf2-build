@@ -13,6 +13,7 @@ import {routePrivateFreeCiPreview,FREE_CI_OWNER_PREVIEW,
  validFreeCiOwnerPreviewInput,readSignedFreeCiBuiltPreview} from "./free-ci-preview.js";
 import {importOwnerFreeSource,validFreeImportInput,importOwnerFreeRepair,validFreeManualRepairInput} from "./agent-import-files.js";
 import {dispatchFreeCiJob,validFreeCiDispatchInput} from "./free-ci-dispatch.js";
+import {saveSafeStyleCandidate,validSafeStyleEditInput} from "./agent-safe-style-edit.js";
 import {publishVerifiedPrivateApp,validPublishOwnerAppBody}
  from "./agent-share-publish.js";
 import {runFreeCiAiStage,validFreeAiCodeInput,validFreeCiAiEvidenceInput,inspectFreeCiRepairEvidence} from "./free-ci-ai-code.js";
@@ -65,6 +66,7 @@ const PREVIEW_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/preview-asset$/u;
 const FREE_CI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ci-dispatch$/u;
 const FREE_IMPORT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-files$/u;
 const FREE_REPAIR_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/import-repair$/u;
+const SAFE_STYLE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/safe-style-edit$/u;
 const FREE_SHARE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/publish-code-app$/u;
 const FREE_AI_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-stage$/u;
 const FREE_AI_EVIDENCE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/free-ai-repair-evidence$/u;
@@ -191,7 +193,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
 /** Return undefined only if this is not one of our routes. */
 // eslint-disable-next-line complexity, max-lines-per-function -- Independent origin, PoP, size, schema and owner gates must fail closed.
 export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|undefined>{
- const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),timelineMatch=TIMELINE_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeRepairMatch=FREE_REPAIR_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname),freeAiEvidenceMatch=FREE_AI_EVIDENCE_ITEM.exec(url.pathname);
+ const {request,url,env,nowMs}=ctx,match=ITEM.exec(url.pathname),modelMatch=MODEL_ITEM.exec(url.pathname),applyMatch=APPLY_ITEM.exec(url.pathname),continueMatch=CONTINUE_ITEM.exec(url.pathname),statusMatch=STATUS_ITEM.exec(url.pathname),sandboxMatch=SANDBOX_ITEM.exec(url.pathname),budgetMatch=BUDGET_ITEM.exec(url.pathname),autoMatch=AUTOSTEP_ITEM.exec(url.pathname),seqMatch=SEQUENCE_ITEM.exec(url.pathname),progressMatch=PROGRESS_ITEM.exec(url.pathname),timelineMatch=TIMELINE_ITEM.exec(url.pathname),qaMatch=QA_REVIEW_ITEM.exec(url.pathname),qaRunMatch=QA_RUN_ITEM.exec(url.pathname),qaRepairMatch=QA_REPAIR_ITEM.exec(url.pathname),qaPlanMatch=QA_PLAN_ITEM.exec(url.pathname),qaGenerateMatch=QA_GENERATE_ITEM.exec(url.pathname),previewMatch=PREVIEW_ITEM.exec(url.pathname),freeCiMatch=FREE_CI_ITEM.exec(url.pathname),freeImportMatch=FREE_IMPORT_ITEM.exec(url.pathname),freeRepairMatch=FREE_REPAIR_ITEM.exec(url.pathname),styleMatch=SAFE_STYLE_ITEM.exec(url.pathname),freeCiPreviewMatch=FREE_CI_OWNER_PREVIEW.exec(url.pathname),freeShareMatch=FREE_SHARE_ITEM.exec(url.pathname),freeAiMatch=FREE_AI_ITEM.exec(url.pathname),freeAiProbeMatch=FREE_AI_PROBE_ITEM.exec(url.pathname),freeAiEvidenceMatch=FREE_AI_EVIDENCE_ITEM.exec(url.pathname);
  const paidRunnerSource=await routeFreeAiRunnerSource(request,url,env,nowMs);
  if(paidRunnerSource!==undefined)return paidRunnerSource;
  const paidRunnerResult=await routeFreeAiRunnerResult(request,url,env,nowMs);
@@ -208,7 +210,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(env.APPF2_AGENT_FREE_ONLY==="1"&&
   (modelMatch||continueMatch||qaRepairMatch||qaGenerateMatch||
    sandboxMatch||autoMatch||seqMatch||qaRunMatch))return denied();
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!timelineMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeRepairMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch&&!freeAiEvidenceMatch)return undefined;
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!timelineMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeRepairMatch&&!styleMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch&&!freeAiEvidenceMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -249,6 +251,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   freeCiPreviewMatch?(validFreeCiOwnerPreviewInput(parsed)?parsed:null):
   freeImportMatch?(validFreeImportInput(parsed)?parsed:null):
   freeRepairMatch?(validFreeManualRepairInput(parsed)?parsed:null):
+  styleMatch?(validSafeStyleEditInput(parsed)?parsed:null):
   freeCiMatch?(validFreeCiDispatchInput(parsed)?parsed:null):
   qaGenerateMatch?(validGenerateQaBody(parsed)?parsed:null):
   qaPlanMatch?(validFreezeQaPlanBody(parsed)?parsed:null):
@@ -378,6 +381,13 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
     !validFreeManualRepairInput(info))return denied();
    const saved=await importOwnerFreeRepair(info,{db,
     jobId:freeRepairMatch[1]??"",ownerThumb});
+   return json(200,{data:saved});
+  }
+  if(styleMatch){
+   if(env.APPF2_AGENT_FREE_ONLY!=="1"||!validSafeStyleEditInput(info))
+    return denied();
+   const saved=await saveSafeStyleCandidate(info,{db,
+    jobId:styleMatch[1]??"",ownerThumb});
    return json(200,{data:saved});
   }
   if(freeCiMatch){
