@@ -177,7 +177,7 @@ function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
   "Current saved source files (repair them, do not start over): "+JSON.stringify(files)]:[])
  ].join("\n");
 }
-function parsedOutput(raw:unknown):unknown{
+export function parsedOutput(raw:unknown):unknown{
  if(typeof raw!=="object"||raw===null)return null;
  const r=raw as {status?:unknown;output?:unknown};
  if(r.status!=="completed"||!Array.isArray(r.output))return null;
