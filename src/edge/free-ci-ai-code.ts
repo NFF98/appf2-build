@@ -104,9 +104,10 @@ const qaSchema={type:"object",additionalProperties:false,required:["criteria"],
    expected_text:{type:"string"},click_count:{type:"integer"}}}}}} as const;
 function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
  files:readonly {path:string;content:string}[],evidence:{failed:string;
- strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE";omittedStyle?:boolean},
- profile:"VITE_WEB"|"VITE_NODE"="VITE_WEB"):string{
- const {failed,strategy="FIX_FAILED_CHECKS",omittedStyle=false}=evidence;
+ strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE";omittedStyle?:boolean;
+ profile?:"VITE_WEB"|"VITE_NODE"}):string{
+ const {failed,strategy="FIX_FAILED_CHECKS",omittedStyle=false,
+  profile="VITE_WEB"}=evidence;
  if(phase==="QA")return [
   "You are an independent PRE-CODE acceptance planner. You have NOT seen any generated code.",
   "Reply ONLY with JSON matching the schema, 1-6 criteria. No markdown.",
@@ -422,8 +423,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   input:modelPrompt(input.stage,
    input.original_prompt,plan,repairing?repairContext.files:[],
    {failed:failure,strategy:strategy?.mode,
-    omittedStyle:repairing&&repairContext.omittedStyle},
-    job.project.profile==="VITE_NODE"?"VITE_NODE":"VITE_WEB"),
+    omittedStyle:repairing&&repairContext.omittedStyle,
+    profile:job.project.profile==="VITE_NODE"?"VITE_NODE":"VITE_WEB"}),
   max_output_tokens:repairing?9000:12000,background:true,store:true,text:{format:{type:"json_schema",
    name:"appf2_free_ci_source_files_v2",strict:true,schema:aiProjectSchema}}};
  // Prevent a large saved project from exceeding the per-repair model cap
