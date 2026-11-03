@@ -1,3 +1,13 @@
+# 2026-11-03 既有 App 受控修改第一條真產品入口：免費 CI 成功，正式網站驗收未到
+
+依使用者「繼續，把五次版本保護接入真產品」指示，本回合**先 Design 原 PR #45 SPEC → Build 原 PR #419**，在 AgentBuilderPanel 現存保存私人 App 上新增「修改背景（淺藍／淺綠／米色）」入口。簽章後端 `safe-style-edit` 只接受原 owner、VITE_WEB、原 frozen QA 全 PASS + 已保存預覽、舊版 project hash、revision + 額度，產生新的 immutable source CAS revision；舊公開 App/share/hash 不更新，候選新版未驗證不會發布。新候選須另由 owner 授權免費 Docker／Chromium、原 QA 全通過才能單獨分享。此功能僅限配色，不宣稱已支援自由 AI 修改。
+
+**免費 GitHub Actions [#41596214939](https://github.com/NFF98/appf2-build/actions/runs/41596214939) completed/SUCCESS**：TS、Lint、Build PASS；新安全修改 API 5/5 PASS（含原 owner、stale CAS、原 QA FAIL 禁止、不可變舊版及零 AI）；原累積五次 Chromium 編輯 5/5 PASS、故意破壞擋下、V1 保留＋重新開啟。前一輪測試假資料錯設初始 revision 造成 FAIL，已修正 fixture 而非放寬安全門檻。Supabase 唯讀資料查核：52 現存 candidate Job 符合 `VITE_WEB` + PASS preview + style.css + 剩餘步數的資料條件，但未證明個別建立者簽章可恢復。
+
+**費用/邊界：** 新模型 POST=0、Container 啟動=0、Production 部署=0；GitHub 免費 CI 額度實際結算未知、模型 provider invoice 未核；無新真網站 Staging 使用者改版 E2E，新增產品 PASS **0**、通用產品 **仍 4/9=44.4%**，五項完整能力仍不能標 PASS。CI/platform/mock 成功絕不替代真用戶 AI 修改驗收。Design #45 詳見「既有 App 受控修改」規格與收據。下一唯一阻斷：Staging 必須真正部署新 Worker/UI，拿真原建立者簽章完成既有 App→新版 QA→新獨立分享→兩版重開，且不做未授權付費操作。
+
+---
+
 # Sprint 3.5 — 通用 AI 引擎真正產品進度 SSOT／唯一下一關（2026-11-03，置頂覆蓋舊樣本標題）
 
 ## 2026-11-03 SSOT 覆核完成：真正已發布 App 網站 E2E 4/9 = 44.4%（修正錯誤的 2/9 最新置頂）
