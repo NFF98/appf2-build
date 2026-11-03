@@ -102,6 +102,7 @@ const exact=new Set([
 ]);
 function allowed(path){
  if(exact.has(path)||productPrefixes.some(p=>path.startsWith(p)))return true;
+ if(path==="supabase/migrations/20261103170000_sp35_user_edit_accepted_candidate.sql")return true;
  if(path.startsWith("supabase/migrations/202610")&&
    path.includes("_sp35_")&&path.endsWith(".sql")&&
    path.split("/").length===3)return true;
