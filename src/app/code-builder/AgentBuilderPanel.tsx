@@ -3,7 +3,7 @@ import {BrowserCodingAgent,savedCandidateTarget,readSavedCandidateLibrary,
  chooseSavedCandidate,paidAgentReconciliationRequired,allFrozenFreeCiChecksPassed,
  canResumeSavedFreeCiOnly,
  type AgentBrowserOptions,
- type CandidateSnapshot,type AgentJobTimeline} from "./agent-browser-client.js";
+ type CandidateSnapshot,type AgentJobTimeline,type UserEditLedger} from "./agent-browser-client.js";
 import {parseQaPlan,type QaPlan} from "../../platform/qa/requirement-contract.js";
 import {advanceWithApprovedQaRepair} from "./agent-lifecycle.js";
 import {savedAgentProjectZip} from "./agent-project-zip.js";
@@ -32,6 +32,14 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [qaJson,setQaJson]=useState("");
  const [styleTheme,setStyleTheme]=useState<"blue"|"green"|"sand">("blue");
  const [styleResult,setStyleResult]=useState("");
+ const [userEditLedger,setUserEditLedger]=useState<UserEditLedger|null>(null);
+ const [userEditText,setUserEditText]=useState("");
+ const [userEditExpected,setUserEditExpected]=useState("");
+ const [userEditButton,setUserEditButton]=useState("");
+ const [userEditQaConfirmed,setUserEditQaConfirmed]=useState(false);
+ const [userEditAiApproved,setUserEditAiApproved]=useState(false);
+ const [userEditSelected,setUserEditSelected]=useState("");
+ const [userEditMessage,setUserEditMessage]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
  const [qaChecks,setQaChecks]=useState<readonly {criterion_id:string;verdict:string;
   failure_code?:string}[]>([]);
@@ -154,6 +162,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      "已恢復保存的專案，不重新執行 AI 或雲端建置。",
     completed_steps:0});
    setCatalog([...readSavedCandidateLibrary()]);
+   try{setUserEditLedger(await worker.userEditLedger());}
+   catch{setUserEditLedger(null);}
    // Opening a saved app card must use the DB-verified exact existing
    // Vite bundle; never regenerate, rebuild, expose, or publish source.
    if(job.free_ci?.preview_ready){
@@ -181,6 +191,76 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    previewHost.current?.replaceChildren();setPreviewReady(false);
    setSnapshot({job:savedJob,progress:null,message:"候選版已保存，須重新完成原需求驗收。",completed_steps:0});
    setStyleResult("修改已保存；不會自動發布或花費 AI。");
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
+ const initializeUserEdit=async()=>{
+  if(busy)return;
+  setBusy(true);setError("");setUserEditMessage("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("原建立者簽章無法恢復。");
+   const accepted=await worker.initializeUserEdit();
+   setUserEditLedger(await worker.userEditLedger());
+   setUserEditMessage("已保存的原 App 通過原始 QA；Accepted "+accepted.project_hash.slice(0,21));
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
+ const createUserEditDraft=async()=>{
+  if(busy||!userEditQaConfirmed)return;
+  setBusy(true);setError("");setUserEditMessage("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("原建立者簽章無法恢復。");
+   const req=userEditText.trim(),expected=userEditExpected.trim();
+   if(req.length<5||expected.length<2||expected.length>160)
+    throw Error("需要一句具體修改要求，以及可在畫面驗證的預期結果。");
+   const button=userEditButton.trim();
+   if(button.length>120)throw Error("按鈕名稱過長，請重新確認。");
+   const qa:QaPlan={version:"1",criteria:[{
+    id:"edit_"+crypto.randomUUID().replace(/-/gu,"").slice(0,16),
+    source_quote:req.slice(0,Math.min(req.length,160)),
+    description:"新修改後應符合已確認的畫面結果",
+    automatable:true,
+    steps:button?[{action:"click",role:"button",name:button}]:[],
+    assertions:[{kind:"text_includes",text:expected}]
+   }]};
+   const id=await worker.createUserEdit(req,qa);
+   setUserEditSelected(id);
+   setUserEditLedger(await worker.userEditLedger());
+   setUserEditAiApproved(false);
+   setUserEditMessage("新需求與驗收條件已保存；尚未呼叫 AI、容器或變更現行產品。");
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
+ const runUserEditModel=async()=>{
+  if(busy||!userEditAiApproved||!userEditSelected)return;
+  setBusy(true);setError("");setUserEditMessage("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("無法恢復原建立者簽章。");
+   await worker.generateUserEdit(userEditSelected,true,()=>stop.current);
+   setUserEditLedger(await worker.userEditLedger());
+   setSnapshot({job:await worker.read(),progress:await worker.progress(),
+    message:"AI 只保存了候選版。須執行原＋新需求全部 Chromium QA，尚未接受。",
+    completed_steps:0});
+   setUserEditMessage("AI 候選版已保存；目前 Accepted 完全未改變。");
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
+ const acceptUserEditCandidate=async()=>{
+  if(busy||!userEditLedger?.accepted||!userEditSelected)return;
+  setBusy(true);setError("");setUserEditMessage("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("無法恢復原建立者簽章。");
+   const accepted=await worker.acceptUserEdit(userEditSelected,userEditLedger.accepted);
+   setUserEditLedger(await worker.userEditLedger());
+   setUserEditMessage("完整原＋新 QA 已由後端驗證，已接受版本 "+accepted.project_hash.slice(0,21));
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
@@ -626,6 +706,59 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      onClick={()=>{void saveStyleCandidate();}}>保存外觀修改候選版（不扣 AI）</button>
     <p className="saved-apps-note">新版本須重新通過原始 QA，舊公開 App 不會被修改。</p>
     {styleResult?<p role="status">{styleResult}</p>:null}
+   </section>:null}
+  {saved&&snapshot?.job?
+   <section aria-label="同一 App 的 USER_EDIT 安全修改">
+    <h3>持續修改同一個 App（USER_EDIT）</h3>
+    <p className="saved-apps-note">已接受版本與候選版本分開保存。新要求先確認再保存；任何未完成 QA 的候選版不能取代 Accepted。</p>
+    {userEditLedger?.accepted?
+     <p>現行 Accepted：<code>{userEditLedger.accepted.project_hash.slice(0,24)}</code>
+      （已接受 {userEditLedger.accepted.generation} 輪修改）</p>:
+     <button type="button" className="btn btn-secondary" disabled={busy}
+      onClick={()=>{void initializeUserEdit();}}>依原 App 完整 QA 建立已接受版本（免費）</button>}
+    {userEditLedger?.accepted?<>
+     <label htmlFor="agent-user-edit-text">對這個 App 要修改甚麼？</label>
+     <textarea id="agent-user-edit-text" className="composer-input" disabled={busy}
+      maxLength={800} value={userEditText} onChange={e=>setUserEditText(e.target.value)}
+      placeholder="例如：新增「匯出清單」按鈕，點擊後顯示「匯出完成」。" />
+     <label htmlFor="agent-user-edit-expected">修改成功後，畫面應顯示的文字</label>
+     <input id="agent-user-edit-expected" disabled={busy} maxLength={160}
+      value={userEditExpected} onChange={e=>setUserEditExpected(e.target.value)}
+      placeholder="例如：匯出完成" />
+     <label htmlFor="agent-user-edit-button">要先按哪個按鈕？（選填）</label>
+     <input id="agent-user-edit-button" disabled={busy} maxLength={120}
+      value={userEditButton} onChange={e=>setUserEditButton(e.target.value)}
+      placeholder="例如：匯出清單" />
+     <label className="code-builder-consent"><input type="checkbox"
+      disabled={busy} checked={userEditQaConfirmed}
+      onChange={e=>setUserEditQaConfirmed(e.target.checked)}/>
+      我已確認這項新需求與預期操作／結果。所有原有驗收條件必須保留。</label>
+     <button type="button" className="btn btn-secondary"
+      disabled={busy||!userEditQaConfirmed}
+      onClick={()=>{void createUserEditDraft();}}>先保存 USER_EDIT 需求及 QA（免費，不改舊版）</button>
+     {userEditLedger.edits.length>0?<>
+      <label htmlFor="agent-user-edit-select">已保存的修改需求</label>
+      <select id="agent-user-edit-select" disabled={busy}
+       value={userEditSelected} onChange={e=>setUserEditSelected(e.target.value)}>
+       <option value="">請選擇一筆修改</option>
+       {userEditLedger.edits.map(x=><option key={x.edit_id} value={x.edit_id}>
+        {x.user_request.slice(0,55)}（{x.state}）</option>)}
+      </select>
+      <p className="saved-apps-note">候選版：{userEditLedger.edits.find(x=>x.edit_id===userEditSelected)?.candidate_project_hash??"尚未產生"}。
+       新舊 QA 必須在免費 Chromium 全部 PASS 才可按下接受。</p>
+      <label className="code-builder-consent"><input type="checkbox"
+       checked={userEditAiApproved} disabled={busy}
+       onChange={e=>setUserEditAiApproved(e.target.checked)}/>
+       本次明確核准 USER_EDIT 付費 AI（單次預留最高 20 美分，仍受伺服器累計預算限制；不使用付費 Container）。</label>
+      <button type="button" className="btn btn-secondary"
+       disabled={busy||!userEditSelected||!userEditAiApproved}
+       onClick={()=>{void runUserEditModel();}}>對原 App 執行一次 AI 修改（只建候選）</button>
+      <button type="button" className="btn btn-secondary"
+       disabled={busy||!userEditSelected}
+       onClick={()=>{void acceptUserEditCandidate();}}>完整 QA 通過後，確認接受候選版本</button>
+     </>:null}
+    </>:null}
+    {userEditMessage?<p role="status">{userEditMessage}</p>:null}
    </section>:null}
   <label htmlFor="code-builder-prompt">用一句話描述要做的 App</label>
   <textarea id="code-builder-prompt" className="composer-input" value={prompt}
