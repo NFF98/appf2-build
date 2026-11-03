@@ -30,6 +30,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [autoRepairConsent,setAutoRepairConsent]=useState(false);
  const [publishedUrl,setPublishedUrl]=useState("");
  const [qaJson,setQaJson]=useState("");
+ const [styleTheme,setStyleTheme]=useState<"blue"|"green"|"sand">("blue");
+ const [styleResult,setStyleResult]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
  const [qaChecks,setQaChecks]=useState<readonly {criterion_id:string;verdict:string;
   failure_code?:string}[]>([]);
