@@ -520,6 +520,28 @@ export class BrowserCodingAgent {
    throw Error("新版尚未通過完整驗收或接受紀錄未更新。");
   return result.accepted;
  }
+ /** This is a separate explicit cumulative-cost authorization, NOT AI dispatch.
+  * Only an initialized Accepted App may raise the original 100-cent budget.
+  */
+ async extendUserEditBudget(maxCents:number,explicitConsent:boolean):Promise<CandidateJob>{
+  if(!explicitConsent||!Number.isSafeInteger(maxCents)||maxCents>200)
+   throw Error("USER_EDIT 累計費用上限需要獨立核准，最多 200 美分。");
+  const ledger=await this.userEditLedger();
+  if(!ledger.accepted)throw Error("尚無已驗收 Accepted 版本。");
+  const current=await this.read(),cp=current.checkpoint;
+  if(maxCents<=cp.budget.max_cost_cents||
+   cp.budget.max_steps>=512)throw Error("請輸入比現有額度更高的金額。");
+  const newSteps=Math.min(512,cp.budget.max_steps+16);
+  await this.post("/extend-budget",{anonymous_id:this.owner,
+   expected_revision:current.revision,explicit_budget_consent:true,
+   new_max_steps:newSteps,new_max_cost_cents:maxCents});
+  const after=await this.read();
+  if(after.project_hash!==current.project_hash||
+   after.checkpoint.budget.max_cost_cents!==maxCents||
+   after.checkpoint.budget.max_steps!==newSteps)
+   throw Error("費用/步數授權未安全保存，禁止執行新模型。");
+  return after;
+ }
  /** A fresh explicit owner-signed step-only renewal. No additional money is
   * authorized, no saved tool is replayed, and this never dispatches AI/containers.
   */
