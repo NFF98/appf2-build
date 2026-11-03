@@ -162,13 +162,17 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      "已恢復保存的專案，不重新執行 AI 或雲端建置。",
     completed_steps:0});
    setCatalog([...readSavedCandidateLibrary()]);
-   try{setUserEditLedger(await worker.userEditLedger());}
-   catch{setUserEditLedger(null);}
-   // Opening a saved app card must use the DB-verified exact existing
-   // Vite bundle; never regenerate, rebuild, expose, or publish source.
-   if(job.free_ci?.preview_ready){
+   let accepted:UserEditLedger["accepted"]=null;
+   try{
+    const ledger=await worker.userEditLedger();
+    accepted=ledger.accepted;setUserEditLedger(ledger);
+   }catch{setUserEditLedger(null);}
+   // An unaccepted working head NEVER masquerades as the saved product.
+   // Accepted's immutable, QA-sealed old build is always preferred.
+   if(accepted||job.free_ci?.preview_ready){
     try{
-     const asset=await worker.freeCiPreview();
+     const asset=accepted?await worker.acceptedFreeCiPreview(accepted):
+      await worker.freeCiPreview();
      const frame=await createPrivatePreviewFrame(asset,document);
      previewHost.current?.replaceChildren(frame);
      setPreviewReady(true);
