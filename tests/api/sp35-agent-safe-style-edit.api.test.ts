@@ -31,7 +31,7 @@ const checked={status:"BUILD_BROWSER_SMOKE",run_id:"123",artifact_hash:hash,
  original_requirements_qa:false,app_published:false} as const;
 
 async function setup(){
- const project=await createProjectSnapshot("VITE_WEB","index.html",[
+ const initial=await createProjectSnapshot("VITE_WEB","index.html",[
   {path:"index.html",content:"<main id='app'></main>"},
   {path:"src/style.css",content:"body{margin:0;background:white}"},
   {path:"src/main.ts",content:"document.querySelector('#app')"}
