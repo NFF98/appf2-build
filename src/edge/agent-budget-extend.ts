@@ -20,7 +20,7 @@ export function validExtendBudgetBody(value:unknown):value is ExtendBudgetInput{
   Number.isSafeInteger(x.expected_revision)&&Number(x.expected_revision)>=0&&
   Number.isSafeInteger(x.new_max_steps)&&Number(x.new_max_steps)>=9&&
   Number(x.new_max_steps)<=512&&Number.isSafeInteger(x.new_max_cost_cents)&&
-  Number(x.new_max_cost_cents)>=0&&Number(x.new_max_cost_cents)<=100&&
+  Number(x.new_max_cost_cents)>=0&&Number(x.new_max_cost_cents)<=200&&
   x.explicit_budget_consent===true;
 }
 export async function extendSignedAgentBudget(input:ExtendBudgetInput,deps:ExtendBudgetDeps){
