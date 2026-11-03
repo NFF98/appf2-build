@@ -60,8 +60,8 @@ export async function publishVerifiedPrivateApp(input:PublishOwnerAppBody,ctx:{
   current.job.request_hash!==digest||
   current.project.project_hash!==input.expected_project_hash||
   current.project.revision<2)throw Error("SP35_SHARE_STALE_OR_WRONG_PROMPT");
- const accepted=await readAccepted(ctx.db,ctx.jobId,input.anonymous_id);
- if(accepted&&accepted.project_hash!==input.expected_project_hash)
+ const acceptedVersion=await readAccepted(ctx.db,ctx.jobId,input.anonymous_id);
+ if(acceptedVersion&&acceptedVersion.project_hash!==input.expected_project_hash)
   throw Error("SP35_SHARE_EDIT_CANDIDATE_NOT_ACCEPTED");
  const receipt=(await ctx.db.query<Evidence>(
   "SELECT r.run_id,r.built_artifact_hash,r.receipt_json,p.preview_json,q.original_plan "+
@@ -74,8 +74,8 @@ export async function publishVerifiedPrivateApp(input:PublishOwnerAppBody,ctx:{
   "WHERE r.job_id=$1::uuid AND r.owner_anonymous_id=$2::uuid "+
   "AND r.project_hash=$3::text LIMIT 1",
   [ctx.jobId,input.anonymous_id,input.expected_project_hash])).rows[0];
- const plan=accepted?
-  parseQaPlan(accepted.qa_plan,accepted.requirements_text):
+ const plan=acceptedVersion?
+  parseQaPlan(acceptedVersion.qa_plan,acceptedVersion.requirements_text):
   parseQaPlan(receipt?.original_plan,input.original_prompt);
  const evidence=receipt?.receipt_json as {qa_checks?:unknown;qa_plan_hash?:unknown;
   original_requirements_qa?:unknown;app_published?:unknown}|null;
