@@ -38,6 +38,8 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  const [userEditButton,setUserEditButton]=useState("");
  const [userEditQaConfirmed,setUserEditQaConfirmed]=useState(false);
  const [userEditAiApproved,setUserEditAiApproved]=useState(false);
+ const [userEditBudgetCents,setUserEditBudgetCents]=useState(160);
+ const [userEditBudgetConsent,setUserEditBudgetConsent]=useState(false);
  const [userEditSelected,setUserEditSelected]=useState("");
  const [userEditMessage,setUserEditMessage]=useState("");
  const [qaOutcome,setQaOutcome]=useState("");
@@ -208,6 +210,21 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
    const accepted=await worker.initializeUserEdit();
    setUserEditLedger(await worker.userEditLedger());
    setUserEditMessage("已保存的原 App 通過原始 QA；Accepted "+accepted.project_hash.slice(0,21));
+  }catch(e){setError(failureMessage(e));}
+  finally{setBusy(false);}
+ };
+ const extendUserEditBudget=async()=>{
+  if(busy||!userEditBudgetConsent)return;
+  setBusy(true);setError("");setUserEditMessage("");
+  try{
+   const worker=agent.current??new BrowserCodingAgent();
+   agent.current=worker;
+   if(!await worker.restore())throw Error("原始 App 簽章失效。");
+   const updated=await worker.extendUserEditBudget(userEditBudgetCents,true);
+   setSnapshot({job:updated,progress:null,completed_steps:0,
+    message:"已獨立保存 owner 簽署的 AI 累計費用上限，未呼叫 AI。"});
+   setUserEditBudgetConsent(false);
+   setUserEditMessage("已核准新的總上限 "+userEditBudgetCents+" 美分；不代表已花費。");
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
@@ -721,6 +738,18 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
      <button type="button" className="btn btn-secondary" disabled={busy}
       onClick={()=>{void initializeUserEdit();}}>依原 App 完整 QA 建立已接受版本（免費）</button>}
     {userEditLedger?.accepted?<>
+     <details><summary>五次修改前，獨立核准總額度（不自動扣費）</summary>
+      <label htmlFor="agent-edit-budget-cents">整個原專案累計 AI 費用上限（美分，最多 200）</label>
+      <input id="agent-edit-budget-cents" type="number" min={1} max={200}
+       value={userEditBudgetCents} disabled={busy}
+       onChange={e=>setUserEditBudgetCents(Number(e.target.value))}/>
+      <label className="code-builder-consent"><input type="checkbox"
+       disabled={busy} checked={userEditBudgetConsent}
+       onChange={e=>setUserEditBudgetConsent(e.target.checked)}/>
+       我明確核准這個 App 增加整體預算上限（不會因此啟動模型或收費）。</label>
+      <button className="btn btn-secondary" type="button" disabled={busy||!userEditBudgetConsent}
+       onClick={()=>{void extendUserEditBudget();}}>只更新上限，不呼叫 AI</button>
+     </details>
      <label htmlFor="agent-user-edit-text">對這個 App 要修改甚麼？</label>
      <textarea id="agent-user-edit-text" className="composer-input" disabled={busy}
       maxLength={800} value={userEditText} onChange={e=>setUserEditText(e.target.value)}
