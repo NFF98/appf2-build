@@ -1,5 +1,5 @@
 import {beforeEach,describe,expect,it,vi} from "vitest";
-import {createProjectSnapshot,verifyProjectSnapshot}
+import {createProjectSnapshot,applyProjectEdits,verifyProjectSnapshot}
  from "../../src/platform/agent/project-workspace.js";
 import {saveSafeStyleCandidate,safeStyleCss,validSafeStyleEditInput}
  from "../../src/edge/agent-safe-style-edit.js";
