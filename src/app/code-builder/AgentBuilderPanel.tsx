@@ -170,6 +170,9 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
   }catch(e){setError(failureMessage(e));}
   finally{setBusy(false);}
  };
+ const saveStyleCandidate=async()=>{
+  setStyleResult("請在確認原 App 通過測試後再修改。");
+ };
  const extend=async()=>{
   if(busy||!saved)return;
   setBusy(true);setError("");
