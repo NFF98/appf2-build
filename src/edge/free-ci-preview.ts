@@ -78,13 +78,15 @@ export async function readSignedFreeCiBuiltPreview(db:AgentJobExecutor,input:{
   "AND owner_anonymous_id=$2::uuid AND owner_key_thumbprint=$3::text LIMIT 1",
   [scope.jobId,input.anonymous_id,scope.ownerThumb]);
  if(owner.rows[0]?.job_id!==scope.jobId)throw Error("FREE_CI_PREVIEW_NOT_OWNER");
- const saved=await recoverAgentJob(db,scope.jobId,input.anonymous_id);
  if(acceptedOnly){
   const accepted=await readAccepted(db,scope.jobId,input.anonymous_id);
   if(!accepted||accepted.project_hash!==input.expected_project_hash)
    throw Error("FREE_CI_PREVIEW_NOT_ACCEPTED");
- }else if(!saved||saved.project.project_hash!==input.expected_project_hash)
-  throw Error("FREE_CI_PREVIEW_STALE_SOURCE");
+ }else{
+  const saved=await recoverAgentJob(db,scope.jobId,input.anonymous_id);
+  if(!saved||saved.project.project_hash!==input.expected_project_hash)
+   throw Error("FREE_CI_PREVIEW_STALE_SOURCE");
+ }
  const rows=await db.query<{preview_json:unknown;artifact_hash:string}>(
   "SELECT p.preview_json,p.artifact_hash FROM public.appf2_agent_free_ci_preview p "+
   "JOIN public.appf2_agent_free_ci_receipt r ON "+
