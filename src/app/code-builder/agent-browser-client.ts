@@ -60,6 +60,17 @@ export function allFrozenFreeCiChecksPassed(plan:Pick<QaPlan,"criteria">|null|un
  return plan.criteria.every((criterion,i)=>criterion.automatable&&
   checks[i]?.criterion_id===criterion.id&&checks[i]?.verdict==="PASS");
 }
+export type UserAcceptedVersion={readonly project_hash:string;
+ readonly project_revision:number;readonly generation:number;
+ readonly requirements_text:string;readonly qa_plan:QaPlan;
+ readonly qa_plan_hash:string};
+export type UserEditRevision={readonly edit_id:string;readonly state:string;
+ readonly user_request:string;readonly base_project_hash:string;
+ readonly base_generation:number;readonly candidate_project_hash:string|null;
+ readonly candidate_project_revision:number|null;
+ readonly combined_qa_plan:QaPlan;readonly combined_qa_hash:string};
+export type UserEditLedger={readonly accepted:UserAcceptedVersion|null;
+ readonly edits:readonly UserEditRevision[];readonly paid_ai_calls:0};
 export type CandidateJob={readonly job_id:string;readonly revision:number;
  readonly free_ci?:SavedFreeCiSmoke|null;
  readonly project_hash:string;readonly status:string;
@@ -434,6 +445,80 @@ export class BrowserCodingAgent {
    updated.revision!==result.revision)
    throw Error("修改版本尚未完成資料庫核對，請先讀取進度。");
   return updated;
+ }
+ /** Only independently verified old QA may become the ACCEPTED baseline. */
+ async initializeUserEdit():Promise<UserAcceptedVersion>{
+  const target=this.target;
+  if(!target)throw Error("沒有原始 App 的保存紀錄。");
+  const job=await this.read();
+  const saved=await this.post<{status:string;accepted:UserAcceptedVersion}>(
+   "/user-edits/initialize",{anonymous_id:this.owner,
+    original_prompt:target.prompt,expected_project_hash:job.project_hash,
+    expected_revision:job.revision});
+  if(saved.status!=="ACCEPTED_BASELINE_CONFIRMED"||
+   saved.accepted.project_hash!==job.project_hash)
+   throw Error("舊版 QA 尚未確認，不能設為已接受產品。");
+  return saved.accepted;
+ }
+ async userEditLedger():Promise<UserEditLedger>{
+  return this.post("/user-edits/state",{anonymous_id:this.owner});
+ }
+ /** Natural-language user request and a user-confirmed independent QA plan.
+  * This POST is FREE; no model call, container or source mutation.
+  */
+ async createUserEdit(request:string,plan:QaPlan):Promise<string>{
+  const saved=await this.userEditLedger(),current=await this.read();
+  if(!saved.accepted)throw Error("請先確認已通過 QA 的原版本。");
+  const text=request.trim();
+  if(text.length<5||text.length>800||!parseQaPlan(plan,text))
+   throw Error("新需求及驗收標準不完整，尚未保存。");
+  const result=await this.post<{status:string;edit_id:string;paid_ai_calls:0}>(
+   "/user-edits",{anonymous_id:this.owner,
+    expected_project_hash:saved.accepted.project_hash,
+    expected_revision:current.revision,
+    expected_generation:saved.accepted.generation,
+    user_request:text,new_qa_plan:plan});
+  if(result.status!=="USER_EDIT_DRAFT_SAVED_NO_AI"||!ID.test(result.edit_id)||
+   result.paid_ai_calls!==0)throw Error("修改要求未安全保存。");
+  return result.edit_id;
+ }
+ /** A separately consented USER_EDIT model turn, never a REPAIR or new App. */
+ async generateUserEdit(editId:string,approved:boolean,
+  shouldPause:()=>boolean=()=>false):Promise<void>{
+  if(!approved||!ID.test(editId))
+   throw Error("請單獨核准本次 AI 修改最高 20 美分。");
+  for(let i=0;i<75;i++){
+   if(shouldPause())throw Error("已停止畫面等待；模型可能仍在執行，不會重複付費。");
+   const ledger=await this.userEditLedger();
+   const accepted=ledger.accepted,edit=ledger.edits.find(x=>x.edit_id===editId);
+   if(!accepted||!edit)throw Error("無法找到原已接受版及修改需求。");
+   if(edit.state==="QA_REQUIRED"&&edit.candidate_project_hash)return;
+   const job=await this.read();
+   const result=await this.post<{status:string;app_published:false}>(
+    "/user-edits/"+editId+"/generate",{anonymous_id:this.owner,
+     edit_id:editId,expected_accepted_hash:accepted.project_hash,
+     expected_generation:accepted.generation,expected_revision:job.revision,
+     explicit_ai_consent:true,explicit_free_ci_consent:true});
+   if(result.app_published!==false)throw Error("候選版不可自動發布。");
+   if(result.status==="USER_EDIT_CANDIDATE_SAVED_QA_REQUIRED")return;
+   if(result.status!=="AI_BACKGROUND_PENDING")
+    throw Error("AI 修改結果狀態不明；請使用已保存的日誌接續。");
+   if(i===74)throw Error("AI 修改仍在背景處理，可從同一 App 繼續，禁止重新付費。");
+   await new Promise<void>(resolve=>window.setTimeout(resolve,6500));
+  }
+ }
+ /** Explicit, separately creator-signed acceptance, SERVER-verified full QA. */
+ async acceptUserEdit(editId:string,accepted:UserAcceptedVersion):Promise<UserAcceptedVersion>{
+  if(!ID.test(editId))throw Error("修改識別碼無效。");
+  const result=await this.post<{status:string;accepted:UserAcceptedVersion}>(
+   "/user-edits/"+editId+"/accept",{
+    anonymous_id:this.owner,expected_accepted_hash:accepted.project_hash,
+    expected_generation:accepted.generation,explicit_accept_consent:true});
+  if(result.status!=="USER_EDIT_ACCEPTED"||
+   result.accepted.generation!==accepted.generation+1||
+   result.accepted.project_hash===accepted.project_hash)
+   throw Error("新版尚未通過完整驗收或接受紀錄未更新。");
+  return result.accepted;
  }
  /** A fresh explicit owner-signed step-only renewal. No additional money is
   * authorized, no saved tool is replayed, and this never dispatches AI/containers.
