@@ -68,6 +68,7 @@ export function validFreeCiOwnerPreviewInput(raw:unknown):raw is {
   typeof raw.anonymous_id==="string"&&UUID.test(raw.anonymous_id)&&
   typeof raw.expected_project_hash==="string"&&SHA.test(raw.expected_project_hash);
 }
+// eslint-disable-next-line complexity -- Creator proof, accepted/working version identity and immutable QA artifact checks.
 export async function readSignedFreeCiBuiltPreview(db:AgentJobExecutor,input:{
  readonly anonymous_id:string;readonly expected_project_hash:string;
 },scope:{jobId:string;ownerThumb:string},acceptedOnly=false):Promise<FreeCiPrivateSource>{
