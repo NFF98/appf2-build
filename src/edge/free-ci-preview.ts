@@ -6,6 +6,7 @@ import {openFreeCiTicket} from "../platform/agent/free-ci-ticket.js";
 import {verifiedLiveFreeCiOidcRunId} from "./free-ci-oidc.js";
 import {WorkerPostgresExecutor} from "../platform/blueprint/worker-postgres-executor.js";
 import {recoverAgentJob} from "../platform/agent/durable-agent-service.js";
+import {readAccepted} from "./agent-user-edit.js";
 import {canonicalArtifactJson} from "../platform/blueprint/code-artifact-v2.js";
 import type {AgentJobExecutor} from "../platform/agent/postgres-agent-jobs.js";
 import type {Appf2WorkerEnv} from "./worker-composition.js";
@@ -69,7 +70,7 @@ export function validFreeCiOwnerPreviewInput(raw:unknown):raw is {
 }
 export async function readSignedFreeCiBuiltPreview(db:AgentJobExecutor,input:{
  readonly anonymous_id:string;readonly expected_project_hash:string;
-},scope:{jobId:string;ownerThumb:string}):Promise<FreeCiPrivateSource>{
+},scope:{jobId:string;ownerThumb:string},acceptedOnly=false):Promise<FreeCiPrivateSource>{
  if(!UUID.test(input.anonymous_id)||!SHA.test(input.expected_project_hash))
   throw Error("FREE_CI_PREVIEW_INVALID");
  const owner=await db.query<{job_id:string}>(
@@ -78,7 +79,11 @@ export async function readSignedFreeCiBuiltPreview(db:AgentJobExecutor,input:{
   [scope.jobId,input.anonymous_id,scope.ownerThumb]);
  if(owner.rows[0]?.job_id!==scope.jobId)throw Error("FREE_CI_PREVIEW_NOT_OWNER");
  const saved=await recoverAgentJob(db,scope.jobId,input.anonymous_id);
- if(!saved||saved.project.project_hash!==input.expected_project_hash)
+ if(acceptedOnly){
+  const accepted=await readAccepted(db,scope.jobId,input.anonymous_id);
+  if(!accepted||accepted.project_hash!==input.expected_project_hash)
+   throw Error("FREE_CI_PREVIEW_NOT_ACCEPTED");
+ }else if(!saved||saved.project.project_hash!==input.expected_project_hash)
   throw Error("FREE_CI_PREVIEW_STALE_SOURCE");
  const rows=await db.query<{preview_json:unknown;artifact_hash:string}>(
   "SELECT p.preview_json,p.artifact_hash FROM public.appf2_agent_free_ci_preview p "+
