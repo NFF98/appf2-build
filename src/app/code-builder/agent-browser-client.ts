@@ -685,6 +685,17 @@ export class BrowserCodingAgent {
    throw Error("免費 Docker 私人預覽版本不符，停止讀取。");
   return result;
  }
+ /** Accepted is not the mutable Job head. Reopen only the immutable,
+  * owner-signed and separately QA-approved previously built asset.
+  */
+ async acceptedFreeCiPreview(accepted:UserAcceptedVersion):Promise<PreviewSource>{
+  const result=await this.post<PreviewSource&{app_published:false}>(
+   "/user-edits/accepted-preview",{anonymous_id:this.owner,
+    expected_project_hash:accepted.project_hash});
+  if(result.project_hash!==accepted.project_hash||
+   result.app_published!==false)throw Error("已接受版的建置資料不符，不能重開。");
+  return result;
+ }
  /** Read already built assets using the original creator PoP. This may wake
   * the private container, so it requires a fresh explicit click consent.
   * No AI, build, test, or publication occurs here.
