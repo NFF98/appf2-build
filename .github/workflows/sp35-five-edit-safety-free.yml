@@ -1,0 +1,30 @@
+name: Sprint 3.5 free five-edit regression (no paid providers)
+on:
+  pull_request:
+    paths:
+      - deploy/scripts/sp35-five-edit-safety-chromium-e2e.mjs
+      - .github/workflows/sp35-five-edit-safety-free.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sp35-five-edit-free-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  five-edits:
+    if: github.repository == 'NFF98/appf2-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: 5 edits, blocked regression, old snapshot and same-user reopen
+        run: node deploy/scripts/sp35-five-edit-safety-chromium-e2e.mjs
