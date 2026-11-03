@@ -38,6 +38,7 @@ export function validInitializeEdit(x:unknown):x is InitializeEditInput{
   typeof v.original_prompt==="string"&&v.original_prompt.trim().length>=5&&
   v.original_prompt.length<=800;
 }
+// eslint-disable-next-line complexity -- Exact owner, version and QA contract fields.
 export function validCreateUserEdit(x:unknown):x is CreateUserEditInput{
  if(!x||typeof x!=="object"||Array.isArray(x))return false;
  const v=x as Record<string,unknown>;
@@ -98,6 +99,7 @@ export async function effectiveEditQaPlan(db:AgentJobExecutor,jobId:string,
  return null;
 }
 /** Idempotent one-time promotion of a *previously independently tested* baseline. */
+// eslint-disable-next-line complexity -- Must verify old owner, source, immutable QA and real receipt before accepting.
 export async function initializeAcceptedVersion(input:InitializeEditInput,ctx:Ctx){
  if(!validInitializeEdit(input))throw Error("SP35_USER_EDIT_INIT_INPUT");
  await assertEditOwner(input.anonymous_id,ctx);
