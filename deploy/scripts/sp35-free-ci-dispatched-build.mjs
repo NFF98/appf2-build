@@ -219,6 +219,21 @@ try{
    value:Object.freeze({
     list:async()=>({records:Array.from(rows.entries()).map(([record_id,value])=>({
      record_id,value:clone(value)}))}),
+    query:async(filters,limit=20)=>{
+     if(!filters||typeof filters!=="object"||Array.isArray(filters)||
+        Object.keys(filters).length<1||Object.keys(filters).length>4||
+        !Number.isInteger(limit)||limit<1||limit>100||
+        Object.entries(filters).some(([key,value])=>
+         !/^[A-Za-z][A-Za-z0-9_]{0,31}$/u.test(key)||
+         !(typeof value==="string"&&value.length<=128||
+           typeof value==="boolean"||
+           typeof value==="number"&&Number.isSafeInteger(value)&&
+           Math.abs(value)<=1000000000)))
+      throw Error("CODE_RECORD_QUERY_INVALID");
+     return {records:[...rows.entries()].filter(([,value])=>
+      Object.entries(filters).every(([key,want])=>value?.[key]===want))
+      .slice(0,limit).map(([record_id,value])=>({record_id,value:clone(value)}))};
+    },
     create:async value=>{
      const record_id=globalThis.crypto.randomUUID();
      rows.set(record_id,clone(value));
