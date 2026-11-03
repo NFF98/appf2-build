@@ -143,6 +143,7 @@ export function AgentBuilderPanel({suggestedPrompt}:Props){
  /** No paid dispatch: select a stored card then verify the original owner
   * signing key against the current persisted DB head before showing source.
   */
+ // eslint-disable-next-line complexity -- Verified accepted and working preview follow separate owner-signed recovery paths.
  const openSavedCandidate=async(jobId:string)=>{
   if(busy)return;
   setBusy(true);setError("");setQaOutcome("");setQaChecks([]);
