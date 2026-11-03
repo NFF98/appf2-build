@@ -77,10 +77,12 @@ export class StoreTransaction {
   public constructor(
     private readonly index: ExecutionIndex,
     private readonly committed: CommittedStore,
-    private readonly guard?: (boundary: RecomputeBoundary) => void
+    private readonly guard?: (boundary: RecomputeBoundary) => void,
+    localDay?: string
   ) {
     this.rng = new Pcg32Cursor(committed.rng);
-    this.env = { readState: (key) => this.readState(key), readRule: (ruleId) => this.readRule(ruleId) };
+    this.env = { readState: (key) => this.readState(key), readRule: (ruleId) => this.readRule(ruleId),
+      ...(localDay === undefined ? {} : { localDay }) };
   }
 
   public readState(key: string): RuntimeValue {

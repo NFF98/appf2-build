@@ -28,14 +28,64 @@ if(!current.implementation_enabled){
     ["src/edge/","src/app/","src/platform/compiler/","src/platform/blueprint/","src/platform/runtime/","tests/api/","tests/e2e/","tests/runtime/"].some(prefix=>p.startsWith(prefix)) ||
     ["tooling/web/vite.config.ts","tooling/web/worker-origin.ts","deploy/scripts/sp35-staging-only.mjs","deploy/scripts/sp35-staging-smoke.mjs",
       "deploy/scripts/sp35-staging-live-create.mjs","deploy/scripts/sp35-staging-browser-e2e.mjs",
-      ".github/workflows/sp35-staging-only.yml",".gitignore","ci/run-product-ci.mjs",
+      ".github/workflows/sp35-staging-only.yml",".github/workflows/governance-gate.yml",".gitignore","ci/run-product-ci.mjs",
       "harness/scripts/run-task-human-grant-preflight.sh",
       "harness/scripts/validate-change-scope.mjs",
-      "harness/scripts/validate-constitutional-change.mjs"].includes(p);
+      "harness/scripts/validate-constitutional-change.mjs",
+       "harness/scripts/gpt-preflight.mjs"].includes(p);
   const sp35=base==="04e44228354a659c3742c8666316bc42aa455aba" &&
     sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
     changed.length>0 && changed.includes("tooling/web/vite.config.ts") && changed.every(allowed);
-  if(sp35){
+  const sp35Followup=base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b" &&
+    sprint.status==="HOLD" && sprint.active_sprint===null && current.active_baseline==="BS-P1-025" &&
+    changed.length>0 && changed.length<=17 &&
+    changed.includes("tests/api/sp35-complex-intent-budget.api.test.ts") &&
+    changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
+    changed.every(allowed);
+  // The five-core Agent refactor lives in the existing PR #419, not the old
+  // 17-file T001-only scope. The immutable PR identity and bounded changed-file
+  // inventory are independently verified by the preceding Human preflight.
+  // This grants execution of REAL free product tests, not implementation
+  // authority, Cloudflare deployment, merge or a synthetic release PASS.
+  // eslint-disable-next-line complexity -- Exact PR identity, bounded paths and HOLD safeguards are all independent.
+  const sp35FiveCore=(()=>{
+    if(process.env.GITHUB_EVENT_NAME!=="pull_request"||
+      base!=="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b"||
+      sprint.status!=="HOLD"||sprint.active_sprint!==null||
+      current.active_baseline!=="BS-P1-025"||
+      changed.length<40||changed.length>260||
+      !changed.includes("src/platform/agent/project-workspace.ts")||
+      !changed.includes("tests/api/sp35-agent-foundation.api.test.ts")||
+      !changed.includes("harness/scripts/run-task-human-grant-preflight.sh"))
+      return false;
+    let event;
+    try{event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,"utf8"));}
+    catch{return false;}
+    const pr=event.pull_request;
+    if(event.repository?.full_name!=="NFF98/appf2-build"||
+      pr?.number!==419||pr?.state!=="open"||
+      pr?.base?.ref!=="main"||
+      pr?.base?.sha!==base||
+      pr?.head?.ref!=="product/sprint-3.5-complex-intent-recovery-20261026"||
+      pr?.head?.repo?.full_name!=="NFF98/appf2-build")return false;
+    const prefixes=["src/app/","src/edge/","src/platform/",
+      "tests/api/","tests/e2e/","tests/runtime/","tests/fixtures/",
+      "deploy/sandbox/","deploy/qa-browser/","deploy/scripts/",
+      "deploy/sql/","deploy/fixtures/","docs/sprint-3.5/"];
+    const exact=new Set(["ci/run-product-ci.mjs",
+      "harness/scripts/run-task-human-grant-preflight.sh",
+      "harness/scripts/validate-constitutional-change.mjs",
+      "harness/scripts/gpt-preflight.mjs",
+      ".github/workflows/ci.yml",".github/workflows/governance-gate.yml"]);
+    return new Set(changed).size===changed.length&&changed.every(path=>
+      exact.has(path)||prefixes.some(prefix=>path.startsWith(prefix))||
+      (path.startsWith("supabase/migrations/202610")&&
+       path.includes("_sp35_")&&path.endsWith(".sql")&&
+       path.split("/").length===3)||
+      (path.startsWith(".github/workflows/sp35-")&&
+       path.endsWith(".yml")&&path.split("/").length===3));
+  })();
+  if(sp35 || sp35Followup || sp35FiveCore){
     console.log("PRODUCT CI: Sprint 3.5 narrowly bounded HOLD recovery — running product tests, NOT live E2E");
     for(const script of ["check:types","check:lint","build","test:api","test:runtime"]){
       console.log("\n> npm run "+script);

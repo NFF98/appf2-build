@@ -188,6 +188,8 @@ export interface HarnessOptions {
   readonly body?: unknown;
   readonly effects?: LocalEffectPort;
   readonly evidenceSink?: (record: RuntimeEvidenceRecord) => void;
+  readonly restoreState?: (contentHash: string) => unknown;
+  readonly calendarDay?: () => string;
 }
 
 export interface RuntimeHarness {
@@ -226,7 +228,9 @@ export async function runtimeHarness(blueprint: JsonRecord, options: HarnessOpti
         scheduler,
         seedSource: options.seedSource ?? (() => options.seed ?? DEFAULT_SEED),
         evidence: { record: options.evidenceSink ?? ((record) => evidence.push(record)) },
-        effects: options.effects
+        effects: options.effects,
+        restoreState: options.restoreState,
+        ...(options.calendarDay === undefined ? {} : { calendarDay: options.calendarDay })
       }
     }
   );

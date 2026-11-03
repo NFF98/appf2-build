@@ -82,7 +82,7 @@ export type RuntimeAppLaunch = { readonly ok: true; readonly app: RuntimeAppHand
 
 /** F03 browser host: hydrates a delivered Blueprint into a fresh Instance and hands back only its App handle. */
 export interface RuntimeAppHost {
-  launch(delivery: RuntimeAppDelivery): Promise<RuntimeAppLaunch>;
+  launch(delivery: RuntimeAppDelivery, intentId?: string): Promise<RuntimeAppLaunch>;
 }
 
 export interface RuntimeOperationHandle {

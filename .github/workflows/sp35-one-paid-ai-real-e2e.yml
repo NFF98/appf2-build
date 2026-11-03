@@ -1,0 +1,536 @@
+name: Sprint 3.5 ONE bounded real GPT-6 QA/repair chain (76c maximum reservation)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+    paths:
+      - .github/workflows/sp35-one-paid-ai-real-e2e.yml
+permissions:
+  contents: read
+concurrency:
+  group: ${{ contains(github.event.head_commit.message, '[SP35-G5-CANCEL-EMPTY-PREJOB]') && 'sp35-g5-cancel-empty-prejob' || 'sp35-one-explicit-paid-ai-e2e' }}
+  cancel-in-progress: false
+jobs:
+  # SPEC H-001 0.26: original G11 published card, bounded 45s PG UI checks, zero new AI.
+  published-recipient-free-only:
+    # Existing ACTIVE share only. Never calls an owner generation endpoint.
+    if: contains(github.event.head_commit.message, '[SP35-RECIPIENT-FREE-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      APPF2_RECIPIENT_FREE_OK: '1'
+      APPF2_SP35_SAMPLE: 'g11-water'
+      APPF2_EXISTING_SHARE_ID: '4acf553e-09a8-4568-86f2-20a78caceb4d'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node deploy/scripts/sp35-published-recipient-proof.mjs --preflight-only
+      - run: npx playwright install --with-deps chromium
+      - name: Independent real UI, reload, no generation, and PG viewer isolation when required
+        run: node deploy/scripts/sp35-published-recipient-proof.mjs
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: sp35-real-published-recipient
+          path: ${{ runner.temp }}/sp35-recipient-*.png
+          if-no-files-found: error
+
+  # Design H-001 0.29: G15 third game preflight ALL 10 frozen scenarios/70 criteria only, zero model.
+  remaining-free-preflight:
+    if: contains(github.event.head_commit.message, '[SP35-REMAINING-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: All frozen original requirements, syntax and no-budget refusal (zero models)
+        run: |
+          node --check deploy/scripts/sp35-remaining-native-website-e2e.mjs
+          node deploy/scripts/sp35-remaining-native-website-e2e.mjs --preflight-all
+          if APPF2_SP35_SAMPLE=g6-length node deploy/scripts/sp35-remaining-native-website-e2e.mjs > refusal.log 2>&1; then exit 1; fi
+          node --input-type=module -e 'import fs from "node:fs";if(!fs.readFileSync("refusal.log","utf8").includes("PAUSED_BUDGET"))process.exit(1)'
+  # SPEC H-001 0.24+0.27: new g12-reading ONLY, pre-read ledger 212c +44c <=308c.
+  # SPEC H-001 0.25: one new G14 escape game, ledger 232c + 44c <= 308c, no replay.
+  # SPEC H-001 0.29/0.30: FINAL G15 original RPS, free 10/70 PASS; 252c+44c=296c<=308c.
+  one-remaining-native-original-request:
+    # One selected unseen request, never a generation loop. Operator verifies
+    # original journal and remaining 308c conservative liability per SPEC 0.24 before marker.
+    if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-REMAINING-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_REMAINING_EXPLICIT_PAID_OK: '1'
+      APPF2_SP35_SAMPLE: ${{ contains(github.event.head_commit.message, '[SP35-SAMPLE-g6-length]') && 'g6-length' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g7-memory]') && 'g7-memory' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g8-lights]') && 'g8-lights' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g9-connect]') && 'g9-connect' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g10-books]') && 'g10-books' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g11-water]') && 'g11-water' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g12-reading]') && 'g12-reading' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g13-order]') && 'g13-order' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g14-escape]') && 'g14-escape' || contains(github.event.head_commit.message, '[SP35-SAMPLE-g15-rps]') && 'g15-rps' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frozen selected requirement before one charge
+        run: node deploy/scripts/sp35-remaining-native-website-e2e.mjs --preflight-only
+      - run: npx playwright install --with-deps chromium
+      - name: Exactly one 44c owner Job, Docker Chromium QA and new recipient UI
+        run: node deploy/scripts/sp35-remaining-native-website-e2e.mjs
+
+  cancel-empty-g5-prejob:
+    # Fixed already-inspected run: its frozen Job has no paid call or generated source; retain the Job.
+    # This is cancellation only, never a rerun, model call or replacement Job.
+    if: contains(github.event.head_commit.message, '[SP35-G5-CANCEL-EMPTY-PREJOB]')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Cancel only the exhausted pre-Job waiter
+        env:
+          GH_CANCEL_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'JS'
+          const base="https://api.github.com/repos/NFF98/appf2-build/actions/runs/41327212659";
+          const headers={Authorization:"Bearer "+process.env.GH_CANCEL_TOKEN,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};
+          const found=await fetch(base,{headers});
+          const run=await found.json();
+          if(!found.ok||run.head_sha!=="a06d4cd793b383615f638f3ae810aad2286a1bb9")throw Error("FIXED_RUN_MISMATCH");
+          if(run.status==="completed"){console.log("EMPTY_PREJOB_ALREADY_FINISHED");process.exit(0);}
+          const result=await fetch(base+"/cancel",{method:"POST",headers});
+          if(result.status!==202)throw Error("FIXED_RUN_CANCEL_HTTP_"+result.status);
+          console.log("EMPTY_PREJOB_CANCEL_REQUESTED_NO_MODEL_NO_NEW_JOB");
+          JS
+
+  g5-one-website-gpt6-meal:
+    # Prepared only. The unique paid marker may be committed ONLY after
+    # explicit new 44c approval and fresh read-only journal reconciliation.
+    # Never re-run this job if a paid model response is uncertain.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G5-MEAL-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_G5_EXPLICIT_PAID_OK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked dependencies and frozen plan before any new Job
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --check deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs
+          node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs --preflight-only
+      - name: Free Chromium install
+        run: npx playwright install --with-deps chromium
+      - name: Exactly one newly authorized owner Job, maximum 44c
+        run: node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs
+
+  g5-meal-free-preflight:
+    # PREPARED only: no creator Job, no model POST, no paid consent.
+    if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-G5-MEAL-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Frozen seven-criterion plan and unpaid refusal before browser import
+        run: |
+          node --check deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs
+          node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs --preflight-only
+          if node deploy/scripts/sp35-fifth-native-website-meal-tool-e2e.mjs > refusal.log 2>&1; then
+            echo "ERROR unpaid execution should have refused"
+            exit 1
+          fi
+          node --input-type=module -e 'import fs from "node:fs"; if(!fs.readFileSync("refusal.log","utf8").includes("SP35_G5_PAUSED_BUDGET_NO_EXPLICIT_SAFE_ONE_SHOT"))process.exit(1)'
+      - name: Staging model admission readiness GET only
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",{signal:AbortSignal.timeout(20000)});
+          const j=await r.json();
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)throw Error("G5_NOT_READY_ZERO_PAID_POST");
+          console.log("G5_READY_GET_ONLY_NO_MODEL_NO_JOB");
+          JS
+
+  g4-stones-free-frozen-plan-preflight:
+    # Distinct game from G3. Zero paid AI, no Job, no false product 3/9.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G4-STONES-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Locked deps, no AI
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Free syntax and seven source-bound tests
+        run: |
+          node --check deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs
+          node deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs --preflight-only
+      - name: GET-only Agent readiness, no new Job
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",{signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G4_NOT_READY_NO_AI_CALL");
+          console.log("SP35 G4 READONLY READY, zero model POST");
+          JS
+
+  g4-one-website-gpt6-stones:
+    # A different natural-language game from G3. Explicit one-time 44c cap;
+    # never use a paid marker just to replay/resume the old tic-tac-toe Job.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G4-STONES-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_G4_EXPLICIT_PAID_OK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Frozen requirements and syntax before any charge
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --check deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs
+          node deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs --preflight-only
+      - name: Prepaid staging GET safety check
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",{signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G4_PAID_NOT_READY_ZERO_AI_POST");
+          console.log("SP35 G4 FREE PAID-READINESS PASS");
+          JS
+      - name: Free Chromium
+        run: npx playwright install --with-deps chromium
+      - name: ONE distinct GPT-6 native website stones game, 7/7 QA, signed publish HTTP and stranger real game
+        run: node deploy/scripts/sp35-fourth-native-website-stones-game-e2e.mjs
+
+  g3-game-free-frozen-plan-preflight:
+    # One FREE check only: no new owner Job or model API POST.
+    # SPEC is Design PR #45 H-001 §0.12; green here is NOT product 3/9.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G3-GAME-FREE-PREFLIGHT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install existing locked dependencies, no model
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Syntax check game proof
+        run: node --check deploy/scripts/sp35-third-native-website-game-e2e.mjs
+      - name: Frozen requirements and seven QA source quotes; no browser, no model
+        run: node deploy/scripts/sp35-third-native-website-game-e2e.mjs --preflight-only
+      - name: Signed AI model readiness is reported separately; GET only
+        run: |
+          node --input-type=module <<'JS'
+          const url="https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness";
+          const r=await fetch(url,{signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          console.log("SP35 G3 READONLY: status="+r.status+
+            " paid_available="+String(j?.data?.free_ci_paid_ai_available===true));
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G3_STAGING_NOT_READY_NO_MODEL_CALL");
+          JS
+
+  g3-one-website-gpt6-new-game:
+    # Inert on ordinary pushes. Never activate without a NEW explicit per-Job
+    # Human model budget + cross-Job ledger reconciliation + owner consent.
+    # A free plan-preflight marker does NOT trigger this job.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G3-GAME-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      APPF2_SP35_G3_EXPLICIT_PAID_OK: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Free syntax, locked deps and frozen seven QA preflight FIRST
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --check deploy/scripts/sp35-third-native-website-game-e2e.mjs
+          node deploy/scripts/sp35-third-native-website-game-e2e.mjs --preflight-only
+      - name: Free staging GET readiness before any model request
+        run: |
+          node --input-type=module <<'JS'
+          const r=await fetch("https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness",
+            {signal:AbortSignal.timeout(20000)});
+          const j=await r.json().catch(()=>null);
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("SP35_G3_PREPAID_READINESS_FAIL_ZERO_MODEL_POST");
+          console.log("SP35 G3 READY, still zero model calls");
+          JS
+      - name: Install free Chromium once
+        run: npx playwright install --with-deps chromium
+      - name: ONE true website GPT-6 multi-module game, frozen QA 7/7, share and fresh guest play
+        run: node deploy/scripts/sp35-third-native-website-game-e2e.mjs
+
+  g2-free-published-original-browser-retest:
+    # NO MODEL, no new Job. Already published AI-authored original DB App,
+    # one fail-closed check based on actual signed PG verbs and 2xx statuses.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G2-PUBLISHED-DB-FREE-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Zero model-charge syntax check
+        run: node --check deploy/scripts/sp35-g2-published-db-free-browser-e2e.mjs
+      - name: Included no-charge Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Exact published AI App real UI -> signed Worker -> PG verbs, 2 viewer isolation and reopen
+        run: node deploy/scripts/sp35-g2-published-db-free-browser-e2e.mjs
+
+  second-native-website-gpt6-postgres:
+    # Human: if more credit needed, notify and go. Already notified +$0.28.
+    # One NEW App max44c, aggregate prior job ceilings84c => $1.28.
+    # Requires exact once-only marker; every ordinary push costs ZERO.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G2-REAL-DB-WEB-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Free no-model syntax and Staging readiness
+        run: |
+          node --check deploy/scripts/sp35-second-native-website-db-e2e.mjs
+          node --input-type=module <<'JS'
+          const url="https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness";
+          const r=await fetch(url,{signal:AbortSignal.timeout(20000)});
+          const j=await r.json();
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+           throw Error("SP35_G2_STAGING_PAID_NOT_READY_ZERO_AI_CALLS");
+          console.log("SP35 G2 FREE PREPAID READY PASS");
+          JS
+      - name: Reuse free GitHub Actions and Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: ONE native website new GPT-6 App → independent free QA → true published Postgres CRUD via UI and two viewers
+        run: node deploy/scripts/sp35-second-native-website-db-e2e.mjs
+
+  first-native-website-new-gpt6-tool:
+    # Human's aggregate US$1 hard cap: historical journal 20c+20c=40c,
+    # at most ONE new Job authorized 44c => 84c conservative reservation.
+    # Manual read-only Supabase reconciliation is REQUIRED before activating.
+    # Without exact marker there is ZERO provider POST by this job.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-FIRST-NATIVE-WEB-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Free syntax and direct Staging readiness first
+        run: |
+          node --check deploy/scripts/sp35-first-native-website-paid-e2e.mjs
+          node --input-type=module <<'JS'
+          const url="https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness";
+          const res=await fetch(url,{signal:AbortSignal.timeout(20000)});
+          const json=await res.json();
+          if(res.status!==200||json?.data?.free_ci_paid_ai_available!==true)
+           throw Error("SP35_NO_SAFE_STAGING_NO_AI_POST");
+          console.log("SP35 NATIVE WEB PREPAID READINESS PASS: no model call");
+          JS
+      - name: Install existing included free Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: ONE real website UI → new GPT-6 multi-file tool → original QA → owner share → second browser
+        run: node deploy/scripts/sp35-first-native-website-paid-e2e.mjs
+
+  once-paid-ai-e2e:
+    # Never bill another model call on an ordinary push. One-time marker
+    # requires a separate human-authorized commit in addition to this branch.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-PAID-AI-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: ONE real OpenAI Responses call → original signed Staging Job → real free Docker + browser QA + saved App
+        env:
+          APPF2_PAID_AI_E2E_KEY: ${{ secrets.APPF2_OPENAI_AGENT_API_KEY || secrets.APPF2_MODEL_API_KEY || secrets.OPENAI_API_KEY }}
+          APPF2_STAGING_URL: https://appf2-sp35-417-staging.juiyuang69.workers.dev
+        run: node deploy/scripts/sp35-one-paid-ai-real-e2e.mjs
+
+  g1-dice-multimodule-first-paid-sample:
+    # Human 2026-11-01 approval recorded BEFORE spend in the original
+    # docs/sprint-3.5/SP35-FIVE-CORE-PRODUCT-CLOSEOUT.md §0.P.2.
+    # ONE new owner/Job, total 76c ceiling; never trigger on ordinary push.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-G1-PAID-ONE-SHOT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Free syntax check BEFORE any possible GPT-6 fee
+        run: node --check deploy/scripts/sp35-g1-paid-real-dice-e2e.mjs
+      - name: Free Staging readiness check; do NOT make any paid call when unavailable
+        run: |
+          node --input-type=module <<'JS'
+          const u="https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness";
+          const r=await fetch(u,{signal:AbortSignal.timeout(18000)});
+          const j=await r.json();
+          console.log("G1 PREPAID READINESS: "+r.status+" free_ci_paid_ai_available="+String(j?.data?.free_ci_paid_ai_available===true));
+          if(r.status!==200||j?.data?.free_ci_paid_ai_available!==true)
+            throw Error("STAGING_FREE_AI_NOT_READY_NO_MODEL_SPEND");
+          JS
+      - name: ONE GPT-6.1 source Job max 76c -> saved model journal -> free Docker/Chromium
+        run: node deploy/scripts/sp35-g1-paid-real-dice-e2e.mjs
+
+  g1-one-real-postgres-db-app:
+    # Human $1 aggregate cap; one new Job max 44c, previous G1 GPT-6
+    # model call upper reserve 20c: conservative combined <=64c.
+    # This job is opt-in by ONE exact commit marker only; no ordinary push cost.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-DB-PAID-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: No-fee syntax verification, before AI
+        run: node --check deploy/scripts/sp35-g1-one-real-db-app-e2e.mjs
+      - name: No-fee Staging readiness, before AI
+        run: |
+          node --input-type=module <<'JS'
+          const url="https://appf2-sp35-417-staging.juiyuang69.workers.dev/api/v1/agent-readiness";
+          const response=await fetch(url,{signal:AbortSignal.timeout(20000)});
+          const data=await response.json();
+          console.log("SP35_DB_PREPAID_READY="+String(response.status===200&&data?.data?.free_ci_paid_ai_available===true));
+          if(response.status!==200||data?.data?.free_ci_paid_ai_available!==true)
+           throw Error("SP35_DB_PREPAID_READINESS_FAIL_ZERO_MODEL_CALLS");
+          JS
+      - name: Reuse free included GitHub Actions and pinned Chromium for REAL browser proof
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: ONE GPT-6.1 Postgres-records App max 44c; independent QA and true 2-browser RLS CRUD
+        run: node deploy/scripts/sp35-g1-one-real-db-app-e2e.mjs
+
+  five-core-real-owner-chain:
+    # One explicit existing-PR human-authorized test; NO periodic paid calls.
+    # No direct model key in this runner; Staging Worker journals spend FIRST,
+    # then dispatches the already-protected GitHub OIDC model runner.
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026' && contains(github.event.head_commit.message, '[SP35-FIVE-CORE-LIVE-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: One owner-signed GPT-6.1 model → genuine QA → up to 3 bounded repairs → saved App re-open
+        run: node deploy/scripts/sp35-five-core-gpt6-live-owner-e2e.mjs
+
+# Authorized single-call AI E2E rerun after pre-request syntax repair.
+
+# Bounded one-call recheck using official strict OpenAI Responses JSON schema; no automatic retry.
+
+# C4/C5 real browser acceptance: one 76-cent-maximum-approved test Job, six frozen four-player score checks, up to 3 paid repairs; no recurring trigger.
+
+# 2026-11-01 human authorizes exactly ONE fresh original-owner C4/C5 GPT-6 paid Job, approved cumulative maximum 76 cents, no production. [SP35-FIVE-CORE-LIVE-ONCE]
+
+# Human $1 aggregate paid-test command: EXACTLY ONE new PostgreSQL App Job max 44c; NO other paid markers, no Prod.
+
+# SP35 2026-11-01 Human already authorized US$1 aggregate. At activation ledger verified 2 succeeded max20c each, 0 unresolved, new Job max44c => conservative max84c; ONE use only.
+
+# Human 2026-11-01 latest: notified extra $0.28, aggregate cap $1.28; 4 prior succeeded model calls max76c, zero unresolved. ONE G2 new model Job cap44c; no other paid marker.
+
+# SP35 2026-11-01 once-only free browser verification of already-published GPT-6 DB App e29027dd..., 0 new model calls.
+
+# 2026-11-01 G3 third independent game: FREE frozen-plan proof only; paid marker is intentionally absent.
+
+# SP35 2026-11-01 Human explicit new G3 one-shot 44c approved after design spec commit 0ab71c5 and Build SSOT 699ad2b. NO OTHER paid marker. [SP35-G3-GAME-PAID-ONE-SHOT]
+
+# SP35 G4 a NEW distinct take-stones game; ZERO model calls; source-frozen seven-check PREPAID proof. [SP35-G4-STONES-FREE-PREFLIGHT]
+
+# 2026-11-01 Human approved one additional different-game 44c cap after G3 first original game 7/7 QA but publish link FAIL. One G4 stone Job only, never regeneration of G3. [SP35-G4-STONES-PAID-ONE-SHOT]
+
+# 2026-11-02 JST Human approved the requested ONE G5 meal-tool Job, max 44 cents; PG ledger reconciled, historical 32c uncertainty preserved. Never rerun paid phase.
+
+# 2026-11-02 JST G5 same approved 44c admission after exact CREATE 413 correction; prior run cancelled before any matching Job/model. Free Staging 41326481475 SUCCESS, old waiter never rerun.
+
+# G5 original native owner published 760b46d4-19b7-4092-b53a-d5276eaf9068; existing artifact recipient proof only, zero generation.
+
+# Original G6 model already SUCCEEDED, browser environment unavailable: preserve its journal; authorize only next distinct g7-memory once under existing 7-Job/308c approval, max44c.
+
+# G7 original failed QA preserved, no further charge. Next unseen g8-lights, one native owner Job44c under existing total308c; never rerun paid G6/G7.
+
+# SPEC 0.24 preserves total308c / Job44c; eight immutable plans, zero generation in this free preflight.
+
+# G8 two 6/7 receipts preserved, no further paid repair; new G9 once. Ledger112c issued, liability152c + new44c=196c <=308c; old32c separate.
+
+# Optional g14 frozen in Design0a021ded before generation; no new charge. Dollar cap unchanged308c/Job44c.
+
+# G9 ACTIVE exact original artifact. Additional free independent horizontal/two diagonal/full-column/reload proof only; ZERO new Job or model.
+
+# 2026-11-02 JST 核帳 G5/G9 closed20 each + G6/G7/G8 reserved44 each=172c; ONE new G10 cap44 ->216c <= existing308c. No existing reading-book Job; old uncertain32c separate. Never rerun paid.
+
+# G10 complete closed20c; total conservative192c + one unseen g11-water44c=236c <=308c. Eight issued calls152c, invoice unknown; old32c separate. One G11 only.

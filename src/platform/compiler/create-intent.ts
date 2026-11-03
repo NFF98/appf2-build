@@ -87,12 +87,41 @@ export type CreateIntentCommand = {
 /** Pre-decision states a (re-)acquired attempt analyses; any later state is replayed from durable truth. */
 const NEEDS_ANALYSIS_STATES: ReadonlySet<IntentLifecycleStatus> = new Set(["RECEIVED", "ANALYZING", "ANALYSIS_FAILED"]);
 
+/** Shape-only diagnostics: no AI text, values, identifiers or provenance refs. */
+function analysisShapeDiagnostic(normalized: JsonValue, paths: readonly string[]): string[] {
+  if (!isPlainRecord(normalized)) return [];
+  const types = new Set(["STRING","NUMBER","BOOLEAN","ENUM","LIST","RECORD"]);
+  const states = new Set(["CONFIRMED","PROPOSED","UNRESOLVED"]);
+  // eslint-disable-next-line complexity -- Each check only classifies permitted non-sensitive shape metadata.
+  return paths.slice(0, 8).flatMap(path => {
+    const m = /^\$\.(constraints|candidate_rules|missing_fields|ambiguities|assumptions)\[([0-9]{1,3})\]\.(resolved_value|proposed_default)$/.exec(path);
+    if (!m) return [];
+    const rows = normalized[m[1]!];
+    const item = Array.isArray(rows) ? rows[Number(m[2])] : undefined;
+    if (!isPlainRecord(item)) return [];
+    const value = item[m[3]!];
+    const actual = Array.isArray(value) ? "LIST" : isPlainRecord(value) ? "RECORD" :
+      typeof value === "string" ? "STRING" : typeof value === "number" ? "NUMBER" :
+      typeof value === "boolean" ? "BOOLEAN" : "OTHER";
+    const expected = typeof item.expected_value_type === "string" && types.has(item.expected_value_type)
+      ? item.expected_value_type : "OTHER";
+    const state = typeof item.resolution_state === "string" && states.has(item.resolution_state)
+      ? item.resolution_state : "OTHER";
+    const source = item.source === "USER_EXPLICIT" ? "USER_EXPLICIT" : "OTHER";
+    const choices = Array.isArray(item.alternatives) ? Math.min(item.alternatives.length, 99) : -1;
+    const risk = Array.isArray(item.policy_risk_flags) ? Math.min(item.policy_risk_flags.length, 9) : -1;
+    return [m[1] + "." + m[3] + ":" + expected + "/" + actual +
+      ":S=" + state + ":U=" + source + ":C=" + choices + ":R=" + risk];
+  });
+}
+
 /** The server stamps its own prompt_version; Prompt A cannot claim provenance metadata. */
-function acceptAnalysis(output: JsonValue): TrustedIntentState | null {
+function acceptAnalysis(output: JsonValue, originalUserIntent?: string): TrustedIntentState | null {
   if (!isPlainRecord(output)) return null;
   const metadata = isPlainRecord(output.analysis_metadata) ? output.analysis_metadata : {};
+  const normalized = normalizeAnalysisDescriptorFlags(output, originalUserIntent);
   try {
-    return startIntentClarification({ ...(normalizeAnalysisDescriptorFlags(output) as typeof output), analysis_metadata: { ...metadata, prompt_version: PROMPT_A_VERSION } });
+    return startIntentClarification({ ...(normalized as typeof output), analysis_metadata: { ...metadata, prompt_version: PROMPT_A_VERSION } });
   } catch (error: unknown) {
     if (error instanceof IntentContractError) {
       // Safe production diagnostics: only fixed validator reason codes, never AI output or user text.
@@ -103,6 +132,10 @@ function acceptAnalysis(output: JsonValue): TrustedIntentState | null {
         return reason + ":" + fieldPath;
       });
       console.warn("APPF2_MODEL_ANALYSIS_INVALID=" + reasons.join("|"));
+      const mismatches = error.violations.filter(v => v.reason === "RESOLVED_VALUE_SHAPE_MISMATCH" ||
+        v.reason === "PROPOSED_DEFAULT_SHAPE_MISMATCH").map(v => v.path);
+      if (mismatches.length) console.warn("APPF2_MODEL_ANALYSIS_SHAPE=" +
+        analysisShapeDiagnostic(normalized, mismatches).join("|"));
       return null;
     }
     throw error;
@@ -197,7 +230,7 @@ async function analyze(scope: AnalysisScope, record: IntentRecord): Promise<Inte
   try {
     analysis = await callProviderWithBoundedRetry(
       { gateway: dependencies.gateway, runs: dependencies.runs, guard, deadline, intentId: record.intent_id, traceId: scope.traceId, registryVersion: REGISTRY_VERSION, now: dependencies.clock, newId: dependencies.newId, evidence: scope.evidence },
-      { operation: "INTENT_ANALYSIS", promptVersion: PROMPT_A_VERSION, schemaVersion: ENVELOPE_VERSION, responseSchema: ANALYSIS_RESPONSE_SCHEMA, inputPayload: analysisInput(scope.body), accept: acceptAnalysis, rejectedOutputCode: "F01-ERR-002" }
+      { operation: "INTENT_ANALYSIS", promptVersion: PROMPT_A_VERSION, schemaVersion: ENVELOPE_VERSION, responseSchema: ANALYSIS_RESPONSE_SCHEMA, inputPayload: analysisInput(scope.body), accept: value => acceptAnalysis(value, scope.body.raw_intent), rejectedOutputCode: "F01-ERR-002" }
     );
   } catch (error: unknown) {
     if (error instanceof IntentApiError && !(error instanceof StaleAttemptError)) {

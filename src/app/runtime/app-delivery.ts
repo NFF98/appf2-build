@@ -21,19 +21,30 @@ class DeliveryStop extends Error {
 
 function statusFailure(status: number): DeliveryFailure {
   if (status === 404) return "NOT_FOUND";
-  if (status === 503) return "TEMPORARILY_UNAVAILABLE";
+  if (status === 502 || status === 503 || status === 504) return "TEMPORARILY_UNAVAILABLE";
   return status === 410 || status === 422 || status === 500 ? "NOT_EXECUTABLE" : "MALFORMED";
 }
 
+/** Transient GET-only retry: grants, Blueprint body and admission are read-only;
+ * POST mutations are never replayed here. Do not retry 401/403/404, revoked or
+ * non-executable responses; any last failure still fails closed. */
 async function getOk(fetchImpl: FetchLike, path: string, headers: Record<string, string>): Promise<Response> {
-  let response: Response;
-  try {
-    response = await fetchImpl(path, { method: "GET", headers, credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer" });
-  } catch {
-    throw new DeliveryStop("NETWORK");
+  const init: RequestInit = { method: "GET", headers, credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer" };
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    let response: Response;
+    try {
+      response = await fetchImpl(path, init);
+    } catch {
+      if (attempt === 3) throw new DeliveryStop("NETWORK");
+      continue;
+    }
+    if (response.ok) return response;
+    if (![502, 503, 504].includes(response.status) || attempt === 3) {
+      throw new DeliveryStop(statusFailure(response.status));
+    }
+    await response.body?.cancel().catch(() => {});
   }
-  if (!response.ok) throw new DeliveryStop(statusFailure(response.status));
-  return response;
+  throw new DeliveryStop("NETWORK");
 }
 
 async function dataOf(response: Response): Promise<Record<string, unknown>> {
@@ -60,7 +71,7 @@ function readAdmission(data: Record<string, unknown>, contentHash: string): Exec
  */
 export function createAppDeliveryClient(fetchImpl: FetchLike, keyring: PopKeyring): AppDeliveryClient {
   const deliver = async (intentId: string, contentHash: string): Promise<RuntimeAppDelivery> => {
-    const key = keyring.keyForIntent(intentId);
+    const key = keyring.keyForIntent(intentId) ?? await keyring.recoverForIntent(intentId);
     if (key === undefined) throw new DeliveryStop("KEY_UNAVAILABLE");
     const grantPath = `/api/v1/intents/${encodeURIComponent(intentId)}/blueprint-access-grant`;
     const proof = await key.proofHeaders((timestampMs) => readProofTranscript(grantPath, contentHash, timestampMs));
@@ -85,4 +96,33 @@ export function createAppDeliveryClient(fetchImpl: FetchLike, keyring: PopKeyrin
       }
     }
   };
+}
+
+/** F05 public recipient: a signed creator-published ACTIVE Share, NOT a known content hash,
+ * grants read of the exact immutable App definition only. Zero F01 and zero model calls. */
+export type PublishedDeliveryResult =
+  | { readonly ok:true;readonly contentHash:string;readonly admitted:RuntimeAppDelivery }
+  | { readonly ok:false;readonly failure:DeliveryFailure };
+export interface PublishedShareDeliveryClient {
+  deliverShared(shareId:string):Promise<PublishedDeliveryResult>;
+}
+const SHARE_ID_PATTERN=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+export function createPublishedShareDeliveryClient(fetchImpl:FetchLike):PublishedShareDeliveryClient{
+  const fetchOne=async(shareId:string):Promise<PublishedDeliveryResult>=>{
+    if(!SHARE_ID_PATTERN.test(shareId))throw new DeliveryStop("NOT_FOUND");
+    const data=await dataOf(await getOk(fetchImpl,`/api/v1/shares/${shareId}`,{}));
+    const hash=data.blueprint_hash;
+    if(data.share_id!==shareId||data.status!=="ACTIVE"||typeof hash!=="string"||
+      !/^sha256:[a-f0-9]{64}$/u.test(hash))throw new DeliveryStop("MALFORMED");
+    const headers={"X-Appf2-Share-Id":shareId};
+    const response=await getOk(fetchImpl,`/b/${hash}`,headers);
+    const body=await response.text();
+    const admission=readAdmission(await dataOf(await getOk(fetchImpl,
+      `/api/v1/blueprints/${hash}/execution-admission`,headers)),hash);
+    return {ok:true,contentHash:hash,admitted:{body,admission}};
+  };
+  return {deliverShared:async shareId=>{
+    try{return await fetchOne(shareId);}
+    catch(e:unknown){return {ok:false,failure:e instanceof DeliveryStop?e.failure:"NETWORK"};}
+  }};
 }

@@ -41,6 +41,8 @@ export type ExtractorInput = {
   readonly constraints: readonly ExtractorConstraintSource[];
   readonly traceable_item_ids: ReadonlySet<string>;
   readonly intent_classes: ReadonlySet<string>;
+  /** Authoritative USER_EXPLICIT material facts marked required_for_execution in trusted F01 admission. */
+  readonly required_user_item_ids?: ReadonlySet<string>;
 };
 
 const sortedTokens = (tokens: readonly ValueType[]): ValueType[] => [...new Set(tokens)].sort();
@@ -83,7 +85,10 @@ export function extractCapabilityRequirements(input: ExtractorInput): Capability
     assertTraceable(hint, input);
     const tuple = {
       semantic_need: hint.semantic_need,
-      required: hint.required,
+      // A model hint cannot downgrade a confirmed user-required fact to optional.
+      required: hint.required || [...hint.source_item_ids, ...hint.constraint_item_ids].some(
+        (id) => input.required_user_item_ids?.has(id) === true
+      ),
       impact_level: hint.impact_level,
       input_types: sortedTokens(hint.input_types),
       output_types: sortedTokens(hint.output_types),

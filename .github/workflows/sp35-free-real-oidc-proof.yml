@@ -1,0 +1,31 @@
+name: Sprint 3.5 free real OIDC Docker Chromium receipt (no AI)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+    paths:
+      - .github/workflows/sp35-free-real-oidc-proof.yml
+permissions:
+  contents: read
+jobs:
+  real-free-receipt:
+    if: github.repository == 'NFF98/appf2-build' && github.ref == 'refs/heads/product/sprint-3.5-complex-intent-recovery-20261026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: REAL P-256 Job to GitHub OIDC locked Docker Chromium and original PostgreSQL receipt
+        env:
+          APPF2_STAGING_URL: https://appf2-sp35-417-staging.juiyuang69.workers.dev
+        run: node deploy/scripts/sp35-free-live-dispatch-e2e.mjs
+
+# Retry real signed free OIDC source only; no new model, Containers or Production.
+
+# OIDC official run-actions Azure host allowlisted; retry signed source without bypass.
+
+# Verify the OIDC ticket stays out of GitHub step environment logs.

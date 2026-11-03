@@ -1,0 +1,50 @@
+name: Sprint 3.5 C4 real signed FAIL→manual repair→Chromium PASS (zero AI)
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+    paths:
+      - .github/workflows/sp35-c4-free-repair-live-once.yml
+permissions:
+  contents: read
+concurrency:
+  group: appf2-c4-free-repair-real-once
+  cancel-in-progress: false
+jobs:
+  original-job-repair-e2e:
+    if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-C4-FREE-LIVE-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: One actual P256 signed Job → real QA FAIL → manual source revision → new real QA PASS and reopen
+        run: node deploy/scripts/sp35-c4-signed-fail-repair-pass-live.mjs
+
+# This proves persistence/Chromium plumbing only. Never claim AI autonomous repair.
+# Absolutely NO provider API key, paid model call, private container or production deploy.
+
+# C4 manual-source no-charge real staging [SP35-C4-FREE-LIVE-ONCE] one owner, two immutable Chromium QA receipts.
+# 2026-11-01 C4 zero-AI staging E2E verification of signed original Job source repair continuity. Reuse existing workflow; no AI, no production.
+
+  three-real-failures:
+    if: github.repository == 'NFF98/appf2-build' && contains(github.event.head_commit.message, '[SP35-C5-FREE-LIVE-ONCE]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Three owner-signed saved source revisions each real Docker Chrome FAIL; manual changed source then Chrome PASS
+        run: node deploy/scripts/sp35-c5-three-real-failures-free-live.mjs
+
+# C5 2026-11-01 [SP35-C5-FREE-LIVE-ONCE] genuine three independent QA FAIL receipts, no paid AI and NO model-switch claim.
+
+# 2026-11-01 C5 signed live rerun: first three real Chromium FAIL then shared Staging strategy analyzer MUST recommend RETHINK_ROOT_CAUSE (no paid model). [SP35-C5-FREE-LIVE-ONCE]

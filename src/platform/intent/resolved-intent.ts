@@ -224,7 +224,10 @@ export function projectResolvedIntent(admission: ResolvedIntentAdmission, intent
     hints: envelope.capability_hints,
     constraints: constraints.map((item) => ({ id: item.id, value: item.value, value_type: item.value_type })),
     traceable_item_ids: new Set([...provenance.keys(), ...ephemeralRequirements.map((requirement) => requirement.id)]),
-    intent_classes: COMPILER_CATALOG_INTENT_CLASSES
+    intent_classes: COMPILER_CATALOG_INTENT_CLASSES,
+    required_user_item_ids: new Set(envelope.constraints
+      .filter(item => item.source === "USER_EXPLICIT" && item.materiality === "MATERIAL" && item.required_for_execution)
+      .map(item => item.id))
   });
   const resolved: ResolvedIntent = {
     resolved_intent_version: RESOLVED_INTENT_VERSION,

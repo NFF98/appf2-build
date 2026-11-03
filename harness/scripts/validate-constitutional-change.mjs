@@ -230,12 +230,104 @@ const sp35RecoveryDiffMatches = changed =>
   changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
   changed.every(p=>typeof p==="string" && sp35RecoveryAllowedPaths.some(re=>re.test(p)));
 
+// PR419 follows #417's isolated Staging success. This strictly permits
+// *executing* real gates on the exact follow-up diff. It is not approval.
+const sp35ComplexAllowed=new Set([
+  ".github/workflows/sp35-staging-only.yml",
+  "deploy/scripts/sp35-staging-only.mjs",
+  "src/edge/worker-composition.ts",
+  "src/platform/compiler/appf2-model-provider.ts",
+  "src/platform/compiler/rate-limit-failover-gateway.ts",
+  "tests/api/sp35-model-failover.api.test.ts",
+  "tests/api/sp35-rate-limit-ui.api.test.ts",
+  "tests/api/sp35-rate-limit-failover.api.test.ts",
+  ".github/workflows/governance-gate.yml",
+  "deploy/scripts/sp35-staging-browser-e2e.mjs",
+  "deploy/scripts/sp35-staging-live-create.mjs",
+  "src/app/create/CreateWorkspace.tsx",
+  "src/app/create/creation-controller.ts",
+  "src/app/create/creation-session.ts",
+  "src/app/runtime/app-delivery.ts",
+  "src/platform/compiler/idempotency.ts",
+  "src/platform/compiler/model-gateway.ts",
+  "src/platform/compiler/provider-attempts.ts",
+  "src/platform/compiler/compose-validate.ts",
+  "src/platform/compiler/compile-intent.ts",
+  "src/platform/compiler/prompts.ts",
+  "src/app/create/f01-wire.ts",
+  "src/platform/intent/capability-requirements.ts",
+  "src/platform/capabilities/coverage.ts",
+  "src/platform/intent/resolved-intent.ts",
+  "src/platform/blueprint/value-source-typing.ts",
+  "src/platform/runtime/expression-vm.ts",
+  "src/platform/runtime/runtime-operation.ts",
+  "src/platform/runtime/runtime-instance.ts",
+  "src/platform/runtime/browser/browser-runtime.ts",
+  "src/platform/runtime/browser/runtime-app-host.tsx",
+  "src/app/runtime/app-launcher.ts",
+  "src/platform/compiler/normalize-analysis-shape.ts",
+  "tests/api/normalize-analysis-shape.api.test.ts",
+  "tests/api/intent-api.api.test.ts",
+  "tests/api/sp35-complex-intent-budget.api.test.ts",
+  "tests/api/sp35-root-tree-repair.api.test.ts",
+  "tests/api/sp35-required-feature-coverage.api.test.ts",
+  "tests/api/sp35-unsupported-feature-feedback.api.test.ts",
+  "tests/api/sp35-coverage-class.api.test.ts",
+  "tests/api/sp35-list-edit-runtime.api.test.ts",
+  "tests/api/sp35-record-list-runtime.api.test.ts",
+  "tests/api/sp35-record-blueprint.api.test.ts",
+  "tests/api/sp35-tab-persistence.api.test.ts",
+  "tests/runtime/runtime-fixtures.ts",
+  "tests/runtime/sp35-state-restore.runtime.test.ts",
+  "tests/runtime/sp35-list-actions.runtime.test.ts",
+  "tests/runtime/sp35-live-counter.runtime.test.ts",
+  "tests/runtime/sp35-expense-total.runtime.test.ts",
+  "tests/api/sp35-delivery-retry.api.test.ts",
+  "harness/scripts/run-task-human-grant-preflight.sh",
+  "harness/scripts/validate-constitutional-change.mjs",
+  "harness/scripts/gpt-preflight.mjs",
+  "ci/run-product-ci.mjs"
+]);
+function sp35ComplexStateMatches({base,cs,build}) {
+  return [
+    base==="4d59ef4c64d0b6a632c4e54ecd7e8777da18506b",
+    cs?.status==="HOLD", cs?.active_sprint===null, cs?.active_build_spec===null,
+    cs?.active_task===null, build?.active_baseline==="BS-P1-025",
+    build?.implementation_enabled===false
+  ].every(Boolean);
+}
+function sp35ComplexEventMatches(event,base) {
+  const pr=event?.pull_request;
+  return [
+    process.env.GITHUB_EVENT_NAME==="pull_request",
+    process.env.GITHUB_REPOSITORY==="NFF98/appf2-build",
+    event?.repository?.full_name==="NFF98/appf2-build",
+    pr?.number===419, pr?.state==="open",
+    pr?.base?.ref==="main", pr?.base?.sha===base,
+    pr?.head?.ref==="product/sprint-3.5-complex-intent-recovery-20261026",
+    pr?.head?.repo?.full_name==="NFF98/appf2-build"
+  ].every(Boolean);
+}
+function sp35ComplexDiffMatches(changed) {
+  return Array.isArray(changed) &&
+    changed.length>0 && changed.length<=sp35ComplexAllowed.size &&
+    changed.includes("harness/scripts/run-task-human-grant-preflight.sh") &&
+    changed.includes("tests/api/sp35-complex-intent-budget.api.test.ts") &&
+    changed.every(p=>sp35ComplexAllowed.has(p));
+}
+function sp35ComplexRecoveryTestOnly(context,event) {
+  return sp35ComplexStateMatches(context) &&
+    sp35ComplexEventMatches(event,context.base) &&
+    sp35ComplexDiffMatches(context.changed);
+}
+
 export function isSp35ProductRecoveryTestOnly({changed,base,cs,build}) {
-  if(!sp35RecoveryStateMatches({base,cs,build})) return false;
   let event;
   try{event=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,"utf8"));}
   catch{return false;}
-  return sp35RecoveryEventMatches(event,base) && sp35RecoveryDiffMatches(changed);
+  const oldPr=sp35RecoveryStateMatches({base,cs,build}) &&
+    sp35RecoveryEventMatches(event,base) && sp35RecoveryDiffMatches(changed);
+  return oldPr || sp35ComplexRecoveryTestOnly({changed,base,cs,build},event);
 }
 
 export function inspectConstitutionalChange({changed,base,cs,build,policy,root}){

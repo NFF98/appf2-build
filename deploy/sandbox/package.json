@@ -1,0 +1,11 @@
+{
+ "name": "appf2-sp35-private-sandbox",
+ "private": true,
+ "type": "module",
+ "scripts": {
+  "check": "wrangler deploy --dry-run --config wrangler.jsonc",
+  "deploy": "wrangler deploy --config wrangler.jsonc"
+ },
+ "dependencies": {"@cloudflare/sandbox": "1.0.1"},
+ "devDependencies": {"wrangler": "4.135.0", "typescript": "6.0.3"}
+}

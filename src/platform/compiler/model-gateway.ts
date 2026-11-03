@@ -64,9 +64,27 @@ export interface ModelGateway {
 
 /** F01-POL-007 Phase 1 timeouts and attempt ceiling. */
 export const MODEL_OPERATION_TIMEOUT_MS: Readonly<Record<ModelOperation, number>> = Object.freeze({
-  INTENT_ANALYSIS: 15_000,
+  INTENT_ANALYSIS: 35_000,
   BLUEPRINT_COMPOSE: 20_000
 });
+/** F02: one initial Blueprint and at most two validation-guided corrections. */
+export const BLUEPRINT_ATTEMPT_TIMEOUTS_MS: readonly number[] = Object.freeze([45_000, 25_000, 25_000]);
+/** Complex un-certified composition: allocate enough time for one coherent
+ * large Blueprint before bounded small corrections. Total 100s < 110s route lease.
+ * Ordinary and certified task-list compositions keep their original budget. */
+export const COMPLEX_BLUEPRINT_ATTEMPT_TIMEOUTS_MS: readonly number[] = Object.freeze([75_000, 15_000, 10_000]);
+/** Complex, naturally phrased F01 requests can generate many independently
+ * typed required hints. Give one OpenAI request enough time rather than
+ * spending two paid attempts of 35s each. The existing 80s CREATE lease
+ * remains the hard cap; no automatic retries on TIMEOUT. */
+export const COMPLEX_ANALYSIS_TIMEOUT_MS = 66_000;
+export const COMPLEX_ANALYSIS_TEXT_THRESHOLD = 180;
+export function analysisTimeoutLimit(payload: Readonly<Record<string, unknown>>): number {
+  const raw = payload.raw_user_intent;
+  return typeof raw === "string" && [...raw].length >= COMPLEX_ANALYSIS_TEXT_THRESHOLD
+    ? COMPLEX_ANALYSIS_TIMEOUT_MS : MODEL_OPERATION_TIMEOUT_MS.INTENT_ANALYSIS;
+}
+
 export const MAX_PROVIDER_ATTEMPTS = 2;
 
 export const DEFAULT_PROVIDER_POLICY: ProviderPolicy = Object.freeze({
@@ -91,7 +109,7 @@ export class RequestDeadline {
     return Math.max(0, this.deadlineMs - this.clock());
   }
 
-  public attemptTimeoutMs(operation: ModelOperation): number {
-    return Math.min(MODEL_OPERATION_TIMEOUT_MS[operation], this.remainingMs());
+  public attemptTimeoutMs(operation: ModelOperation, requestedLimitMs = MODEL_OPERATION_TIMEOUT_MS[operation]): number {
+    return Math.min(requestedLimitMs, this.remainingMs());
   }
 }

@@ -39,6 +39,13 @@ const RECOVERY_DETAIL: Readonly<Record<RecoveryReason, string>> = {
   REJECTED: "這個內容目前無法處理，請修改後再試。"
 };
 
+const SPECIFIC_FAILURE_DETAIL: Readonly<Record<string, string>> = {
+  "F01-ERR-002": "AI 已回覆，但需求分析的資料格式不符合要求。原文仍保留；可先縮小範圍再試。再次嘗試可能產生 AI 費用。",
+  "F01-ERR-009": "AI 分析超過時間上限。原文仍保留；複雜需求可分成幾個步驟建立。再次嘗試可能產生 AI 費用。",
+  "F01-ERR-011": "AI 產生的 App 未通過正式規格檢查。原文仍保留，可修改後再試。",
+  "F01-ERR-008": "目前的元件還不支援部分要求。原文仍保留，可先建立支援的核心功能。"
+};
+
 const DECISION_LABELS = { ACCEPT: "接受", REJECT: "不使用", EDIT: "修改為" } as const;
 
 function ProvidedSummary({ provided }: { readonly provided: readonly ProvidedAnswer[] }) {
@@ -137,6 +144,18 @@ function DecisionBody({ session, controller, onEditIntent }: BodyProps) {
   );
 }
 
+function MissingFeatureNotice({ features, total }: { readonly features?: readonly string[]; readonly total?: number }) {
+  if (features === undefined || features.length === 0) return null;
+  const remaining = Math.max(0, (total ?? features.length) - features.length);
+  return (
+    <div className="workspace-detail">
+      <p>目前尚無法提供的必要功能（不是已完成的 App）：</p>
+      <ul>{features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+      {remaining > 0 ? <p>另外還有 {remaining} 項尚未支援。</p> : null}
+    </div>
+  );
+}
+
 /** F12 recovery: only actions that can actually help — no Retry when the identical request must fail again. */
 function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
   const phase = session.phase;
@@ -148,7 +167,9 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
       <h1 className="workspace-title" tabIndex={-1}>
         目前沒完成，但你的內容還在。
       </h1>
-      <p className="workspace-detail">{RECOVERY_DETAIL[phase.reason]}</p>
+      <p className="workspace-detail">{phase.httpStatus === 429 ? "AI 供應商無法處理這次建立，可能是 API 可用點數不足或請求頻率受限，並非你的需求寫錯。內容已保留；若一直出現，需檢查 API 帳單與可用餘額，反覆重試不會補足點數。" : phase.code !== undefined ? (SPECIFIC_FAILURE_DETAIL[phase.code] ?? RECOVERY_DETAIL[phase.reason]) : RECOVERY_DETAIL[phase.reason]}</p>
+      {phase.code === "F01-ERR-008" ? <MissingFeatureNotice features={phase.unsupportedFeatures} total={phase.unsupportedCount} /> : null}
+      {phase.code !== undefined ? <p className="workspace-detail">錯誤代碼：{phase.code}</p> : null}
       <UnsentSummary step={phase.step} />
       <div className="workspace-actions">
         <button type="button" className="btn btn-secondary" onClick={onEditIntent}>
@@ -161,7 +182,7 @@ function RecoveryBody({ session, controller, onEditIntent }: BodyProps) {
         ) : null}
         {phase.reason === "RETRYABLE" ? (
           <button type="button" className="btn btn-primary" disabled={session.busy} onClick={() => controller.retry()}>
-            再試一次
+            {phase.httpStatus === 429 ? "稍後再試一次" : "再試一次"}
           </button>
         ) : null}
         {reanalysable ? (

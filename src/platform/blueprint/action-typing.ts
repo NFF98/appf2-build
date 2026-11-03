@@ -18,11 +18,15 @@ export interface TypedNode {
   readonly path: string;
   readonly scope: ReadonlyMap<string, TypeDescriptor>;
   readonly hasRepeatAncestor: boolean;
+  /** Maps a repeated index alias to the original mutable source LIST key.
+   * null means this is a filtered/computed view index, unsafe for source-list writes. */
+  readonly repeatIndexSources: ReadonlyMap<string, string | null>;
 }
 
 interface DispatchSite {
   readonly payload: TypeDescriptor;
   readonly scope: ReadonlyMap<string, TypeDescriptor>;
+  readonly repeatIndexSources: ReadonlyMap<string, string | null>;
 }
 
 const DISPATCH_KINDS: ReadonlySet<ValueSource["kind"]> = new Set(["EVENT", "SCOPE"]);
@@ -38,7 +42,7 @@ function collectDispatchSites(
   context: TypingContext
 ): ReadonlyMap<string, DispatchSite[]> {
   const sites = new Map<string, DispatchSite[]>();
-  for (const { fields, path, scope } of typedNodes) {
+  for (const { fields, path, scope, repeatIndexSources } of typedNodes) {
     for (const [eventName, actionId] of Object.entries(fields.node.events)) {
       const eventPath = `${path}.events.${eventName}`;
       if (!actionIds.has(actionId)) {
@@ -46,7 +50,7 @@ function collectDispatchSites(
       }
       const payload = resolveEventPayload(fields, eventName, eventPath, context);
       const actionSites = sites.get(actionId) ?? [];
-      actionSites.push({ payload, scope });
+      actionSites.push({ payload, scope, repeatIndexSources });
       sites.set(actionId, actionSites);
     }
     for (const [bindingKey, contract] of Object.entries(fields.capability.validator.bindings)) {
@@ -167,6 +171,35 @@ function dispatchContexts(
   return sites.map((site) => ({ ...base, event: site.payload, scope: site.scope }));
 }
 
+/**
+ * A visible row index is a source-list index ONLY when the repeat iterates
+ * that exact mutable list directly. Filtered views renumber their rows, and
+ * indexing any original list with their positions can edit/delete the wrong item.
+ */
+function requireOriginalListIndex(action: BlueprintAction, path: string, site: DispatchSite): void {
+  action.steps.forEach((step, stepIndex) => {
+    if (step.type !== "SET_STATE") return;
+    const inspect = (source: ValueSource, location: string): void => {
+      if (source.kind !== "OP") return;
+      if (source.op === "LIST_REMOVE_AT" || source.op === "LIST_REPLACE_AT") {
+        const list = source.args[0];
+        const position = source.args[1];
+        if (position?.kind === "SCOPE" && position.path === "" &&
+            site.repeatIndexSources.has(position.name)) {
+          const original = site.repeatIndexSources.get(position.name);
+          if (original === null || original !== step.target ||
+              list?.kind !== "STATE" || list.key !== original) {
+            actionError(location + ".args[1]",
+              "A repeat index may edit only its direct original STATE list, never a filtered or different list.");
+          }
+        }
+      }
+      source.args.forEach((arg, index) => inspect(arg, location + ".args[" + index + "]"));
+    };
+    inspect(step.value, path + ".steps[" + stepIndex + "].value");
+  });
+}
+
 export function validateActions(blueprint: Blueprint, typedNodes: readonly TypedNode[], types: ExpressionTypes): void {
   const base: TypingContext = { errorCode: "F02-ERR-010", stage: "V08", ...types };
   const actionIds = new Set(blueprint.actions.map((action) => action.id));
@@ -174,8 +207,11 @@ export function validateActions(blueprint: Blueprint, typedNodes: readonly Typed
   const nodesById = new Map(typedNodes.map((typed) => [typed.fields.node.id, typed] as const));
   blueprint.actions.forEach((action, index) => {
     const path = `$.actions[${index}]`;
-    for (const context of dispatchContexts(action, path, sites.get(action.id) ?? [], base)) {
+    const dispatchSites = sites.get(action.id) ?? [];
+    dispatchContexts(action, path, dispatchSites, base).forEach((context, siteIndex) => {
+      const site = dispatchSites[siteIndex];
+      if (site !== undefined) requireOriginalListIndex(action, path, site);
       action.steps.forEach((step, stepIndex) => typeStep(step, `${path}.steps[${stepIndex}]`, context, types, nodesById));
-    }
+    });
   });
 }

@@ -1,0 +1,126 @@
+name: Sprint 3.5 Cloudflare sandbox read-only preflight
+on:
+  push:
+    branches:
+      - product/sprint-3.5-complex-intent-recovery-20261026
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cloudflare-capabilities:
+    if: github.repository == 'NFF98/appf2-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify Cloudflare plan without creating paid resources
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node --input-type=module <<'JS'
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID?.trim()||"";
+          const token=process.env.CLOUDFLARE_API_TOKEN?.trim()||"";
+          if(!/^[a-f0-9]{32}$/i.test(account)||token.length<20){
+            console.log("SANDBOX PLAN: UNKNOWN — Cloudflare credentials not available");
+            process.exit(0);
+          }
+          const endpoint="https://api.cloudflare.com/client/v4/accounts/"+account+"/subscriptions";
+          const res=await fetch(endpoint,{
+            method:"GET",headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+            signal:AbortSignal.timeout(10000)
+          }).catch(()=>null);
+          if(!res){
+            console.log("SANDBOX PLAN: UNKNOWN — read-only API unavailable");
+            process.exit(0);
+          }
+          if(!res.ok){
+            console.log("SANDBOX PLAN: UNKNOWN — subscriptions GET HTTP "+res.status);
+            process.exit(0);
+          }
+          const data=await res.json().catch(()=>({}));
+          const list=Array.isArray(data.result)?data.result:[];
+          const workers=list.filter(x=>/worker/i.test(String(x?.rate_plan?.id||"")+" "+String(x?.rate_plan?.name||"")));
+          const paid=workers.some(x=>/paid|standard|bundled|unbound/i.test(String(x.rate_plan?.id||"")+" "+String(x.rate_plan?.name||""))&&
+            /active|paid|provisioned/i.test(String(x.state||"")));
+          console.log("SANDBOX WORKERS PAID PLAN: "+(paid?"POSSIBLE — dashboard verification required":
+            "NOT CONFIRMED — do not deploy paid Containers"));
+          console.log("CLOUDFLARE READ-ONLY: SUCCESS; zero Worker deploys, containers or paid AI calls");
+          JS
+      - name: Verify real staging Worker health and private script presence (GET only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node --input-type=module <<'JS'
+          // No Wrangler deploy, no provider dispatch, no container/Browser Run.
+          const origin="https://appf2-sp35-417-staging.juiyuang69.workers.dev";
+          let health="UNREACHABLE";
+          try{
+            const response=await fetch(origin+"/api/v1/health",{
+              method:"GET",redirect:"manual",signal:AbortSignal.timeout(8000)
+            });
+            const kind=response.headers.get("content-type")||"";
+            const data=kind.includes("application/json")?
+              await response.json().catch(()=>null):null;
+            health=response.status===200&&data?.data?.status==="UP"?
+              "PASS_JSON_UP":"NOT_UP_HTTP_"+response.status+
+              (kind.includes("application/json")?"_JSON":"_NON_JSON");
+          }catch{/* Network errors are unknown, not a product PASS. */}
+          console.log("SP35 STAGING LIVE HEALTH: "+health);
+          // A live old Worker may return JSON health even when Agent APIs
+          // and private service bindings are absent. Detect that separately.
+          try{
+            const response=await fetch(origin+"/api/v1/agent-readiness",{
+              method:"GET",redirect:"manual",signal:AbortSignal.timeout(8000)});
+            const kind=response.headers.get("content-type")||"";
+            const body=kind.includes("application/json")?
+              await response.json().catch(()=>null):null;
+            if(response.status===200&&
+              (body?.data?.status==="CONFIGURED_NOT_VERIFIED"||
+               body?.data?.status==="BLOCKED")&&
+              typeof body?.data?.can_start_paid_generation==="boolean"){
+              console.log("SP35 STAGING AGENT CODE: DEPLOYED");
+              console.log("SP35 STAGING AGENT CONFIG: "+
+                (body.data.can_start_paid_generation?
+                  "CONFIGURED_NOT_LIVE_E2E_VERIFIED":
+                  "BLOCKED_MISSING_"+(Array.isArray(body.data.missing)?
+                    body.data.missing.filter(x=>typeof x==="string").join("_"):
+                    "UNKNOWN")));
+            }else{
+              console.log("SP35 STAGING AGENT CODE: NOT_VERIFIED_HTTP_"+
+                response.status);
+            }
+          }catch{
+            console.log("SP35 STAGING AGENT CODE: UNKNOWN_NETWORK");
+          }
+          const token=process.env.CLOUDFLARE_API_TOKEN?.trim()||"";
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID?.trim()||"";
+          if(token.length<20||!/^[a-f0-9]{32}$/i.test(account)){
+            console.log("SP35 PRIVATE WORKER SCRIPTS: UNKNOWN_NO_CREDENTIALS");
+            process.exit(0);
+          }
+          const endpoint="https://api.cloudflare.com/client/v4/accounts/"+
+            account+"/workers/scripts";
+          try{
+            const response=await fetch(endpoint,{method:"GET",
+              headers:{Authorization:"Bearer "+token,Accept:"application/json"},
+              signal:AbortSignal.timeout(8000)});
+            if(!response.ok){
+              console.log("SP35 PRIVATE WORKER SCRIPTS: UNKNOWN_HTTP_"+response.status);
+              process.exit(0);
+            }
+            const payload=await response.json().catch(()=>null);
+            if(payload?.success!==true||!Array.isArray(payload.result)){
+              console.log("SP35 PRIVATE WORKER SCRIPTS: UNKNOWN_RESPONSE");
+              process.exit(0);
+            }
+            const names=new Set(payload.result.map(x=>x.id||x.name));
+            for(const expected of ["appf2-sp35-417-staging",
+              "appf2-sp35-private-sandbox","appf2-sp35-private-browser-qa"]){
+              console.log("SP35 WORKER "+expected+": "+
+                (names.has(expected)?"EXISTS_NOT_PROVEN_ACTIVE":"NOT_LISTED"));
+            }
+          }catch{
+            console.log("SP35 PRIVATE WORKER SCRIPTS: UNKNOWN_NETWORK");
+          }
+          JS

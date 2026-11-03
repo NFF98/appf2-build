@@ -69,6 +69,8 @@ export interface CoverageGap {
 }
 
 export interface CoverageResult {
+  /** F04-certified semantic wiring profile; never inferred from the presence of arbitrary UI components. */
+  readonly certifiedProfile?: "RECORD_LIST" | "RECORD_LIST_TODAY";
   readonly registryVersion: string;
   readonly registryDigest: string;
   readonly status: CoverageStatus;
@@ -191,6 +193,56 @@ function recordUnregisteredSuggestions(
   }
 }
 
+/** Only canonical scalar form hints can choose an unambiguous registered input.
+ * Multi-field workflows and compound task CRUD stay UNSUPPORTED until proven;
+ * no fuzzy text matching, new registry entry or fabricated capability grant. */
+function typedFormCandidate(
+  requirement: CapabilityRequirement,
+  matches: readonly CapabilityDefinition[]
+): readonly CapabilityDefinition[] {
+  if (requirement.interaction_class !== "form" ||
+      requirement.input_types.length !== 1 ||
+      requirement.output_types.length !== 1 ||
+      requirement.input_types[0] !== requirement.output_types[0]) return [];
+  const id = requirement.input_types[0] === "BOOLEAN" ? "input.toggle" :
+    requirement.input_types[0] === "STRING" ? "input.text" : null;
+  if (id === null) return [];
+  return matches.filter((candidate) => candidate.id === id);
+}
+
+/** A read-only numeric counter is a data.stat, not a new stateful control.
+ * Only the display-only NUMBER shape can be resolved without inventing APIs. */
+function typedNumericCounter(
+  requirement: CapabilityRequirement,
+  matches: ReadonlyMap<string, CapabilityDefinition>
+): readonly CapabilityDefinition[] {
+  if (requirement.interaction_class !== "counter" ||
+    requirement.input_types.length !== 0 ||
+    requirement.output_types.length !== 1 ||
+    requirement.output_types[0] !== "NUMBER") return [];
+  const candidate = matches.get("data.stat@1.0.0");
+  return candidate === undefined ? [] : [candidate];
+}
+
+/** A UI primitive is not a CRUD workflow. In particular, a button has no
+ * record/list payload, and a list only PRESENTS records (it does not edit them).
+ * Reject composite hint signatures before class-only capability matching can
+ * incorrectly report FULLY_SUPPORTED. Exact registry admission still applies. */
+function matchesPrimitiveShape(requirement: CapabilityRequirement, candidate: CapabilityDefinition): boolean {
+  const inputs = requirement.input_types;
+  const outputs = requirement.output_types;
+  if (candidate.id === "action.button") return inputs.length === 0 && outputs.length === 0;
+  if (candidate.id === "content.list") return (
+    (inputs.length === 0 || (inputs.length === 1 && inputs[0] === "LIST")) &&
+    outputs.length === 1 && outputs[0] === "LIST");
+  if (candidate.id === "data.stat") return outputs.length === 1 &&
+    ["NUMBER", "STRING", "BOOLEAN", "ENUM"].includes(outputs[0]!) &&
+    // Existing numeric result hints legitimately carry their displayed value
+    // as an input. This is still a pure display, never a LIST or RECORD edit.
+    (inputs.length === 0 || (inputs.length === 1 && inputs[0] === outputs[0]));
+  return true;
+}
+
 function orderedCandidates(
   requirement: CapabilityRequirement,
   request: CoverageResolutionRequest,
@@ -201,8 +253,17 @@ function orderedCandidates(
   // exact canonical phrases. Use only a unique, registered intent class when
   // no exact phrase matches: never fuzzy-match or guess between capabilities.
   const classMatches = state.definitionsBySemanticNeed.get(requirement.interaction_class) ?? [];
-  const semanticMatches = exact.length > 0 ? exact : classMatches.length === 1 ? classMatches : [];
-  const matchingRefs = new Set(semanticMatches.map((definition) => refKey(toRef(definition))));
+  const typedForm = typedFormCandidate(requirement, classMatches);
+  const numericCounter = typedNumericCounter(requirement, state.definitionsByRef);
+  // The "counter" class also denotes mutable logic.score in the registry.
+  // Only a display-only NUMBER requirement maps to data.stat; mutating or
+  // list-shaped counter demands must not silently become a scoring widget.
+  const semanticMatches = requirement.interaction_class === "counter" ? numericCounter :
+    exact.length > 0 ? exact :
+      classMatches.length === 1 ? classMatches :
+        typedForm.length === 1 ? typedForm : [];
+  const atomicMatches = semanticMatches.filter((candidate) => matchesPrimitiveShape(requirement, candidate));
+  const matchingRefs = new Set(atomicMatches.map((definition) => refKey(toRef(definition))));
   const suggestedRefs = request.suggestedCapabilities?.[requirement.requirement_id] ?? [];
   recordUnregisteredSuggestions(suggestedRefs, state);
   const suggested = suggestedRefs
@@ -212,7 +273,7 @@ function orderedCandidates(
         definition !== undefined && matchingRefs.has(refKey(toRef(definition)))
     );
   const ordered = new Map<string, CapabilityDefinition>();
-  for (const definition of [...suggested, ...semanticMatches]) {
+  for (const definition of [...suggested, ...atomicMatches]) {
     ordered.set(refKey(toRef(definition)), definition);
   }
   return [...ordered.values()];
