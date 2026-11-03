@@ -65,6 +65,32 @@ try{
  ];
  run("docker",[...isolation,"node","/opt/appf2/build-locked.mjs"],3);
  run("docker",[...isolation,"node","/opt/appf2/web-smoke.mjs"],2);
+ // NEW STRUCTURAL GATE: one immutable snapshot includes real front+server
+ // source, verified and run in SAME pre-existing free locked Docker Sandbox.
+ // These trusted committed fixtures are NOT arbitrary AI generation or live
+ // backend hosting; they prove the previously disconnected backend execution.
+ const serverSources=[
+  ...sources,{path:"server/index.mjs",content:
+   "export function plan(tasks){return tasks.filter(t=>t.ready).sort((a,b)=>b.priority-a.priority).map(t=>t.id);}" },
+  {path:"server/test.mjs",content:
+   "import {test} from 'node:test'; import {plan} from './index.mjs';"+
+   "test('dynamic backend prioritization',()=>{const actual=plan(["+
+   "{id:'backlog',ready:false,priority:9},{id:'urgent',ready:true,priority:4},"+
+   "{id:'routine',ready:true,priority:1}]);if(actual.join(',')!=='urgent,routine')"+
+   "throw Error('BACKEND_BUSINESS_LOGIC_FAILED');});"}
+ ];
+ const fullstack=await createProjectSnapshot("VITE_NODE","index.html",serverSources);
+ const fullstackRoot=path.join(tmp,"fullstack");
+ const stagedBackend=await stageVerifiedFreeCiProject(fullstack,fullstackRoot);
+ if(stagedBackend.project_hash!==fullstack.project_hash)
+  throw Error("SP35_FULLSTACK_STAGED_HASH_CHANGED");
+ const isolatedFullstack=isolation.map(arg=>arg==="/workspace/trusted"?
+  "/workspace/trusted/fullstack":arg);
+ run("docker",[...isolatedFullstack,"node","/opt/appf2/build-locked.mjs"],3);
+ run("docker",[...isolatedFullstack,"node","--check","server/index.mjs"],2);
+ run("docker",[...isolatedFullstack,"node","--check","server/test.mjs"],2);
+ run("docker",[...isolatedFullstack,"node","--test","server/test.mjs"],2);
+ console.log("SP35 SAME-APP VITE+NODE LOCKED DOCKER: real frontend build and actual backend Node test PASS; no network, paid AI, cloud service or App publication.");
  const compiled=await fs.readFile(path.join(tmp,"dist","index.html"),"utf8");
  if(!compiled.includes("/assets/"))throw Error("APPF2_CONTAINER_VITE_OUTPUT_MISSING");
  const cachedAssetPaths=viteCompiledAssetPaths(compiled);

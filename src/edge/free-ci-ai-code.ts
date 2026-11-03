@@ -137,7 +137,7 @@ function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
   "Include src/main.ts and src/style.css plus optional relative imports under src/.",
   "May split complex features into src/*.ts and src/*/*.ts modules (max 12 files).",
   "All imports must use relative paths to other supplied source files. No npm",
-  "packages, network, external URLs, dynamic remote imports, or server processes.",
+  "packages, network, external URLs, dynamic remote imports, or live server processes.",
   ...(profile==="VITE_NODE"?[
    "This ONE App has a front-end and server. Include complete server/index.mjs and server/test.mjs.",
    "Backend may import only Node built-ins or supplied relative server/*.mjs modules.",
