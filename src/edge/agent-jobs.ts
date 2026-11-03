@@ -92,23 +92,29 @@ const denied=()=>json(404,{error:"AGENT_JOB_NOT_FOUND"});
 function isObject(x:unknown):x is Record<string,unknown>{
  return typeof x==="object"&&x!==null&&!Array.isArray(x);
 }
-type VerifiedJobBody={anonymous_id:string;prompt?:string;max_cost_cents?:number;explicit_ai_consent?:boolean};
+type VerifiedJobBody={anonymous_id:string;prompt?:string;max_cost_cents?:number;
+ explicit_ai_consent?:boolean;project_profile?:"VITE_NODE"};
 // eslint-disable-next-line complexity -- Explicit AI consent and zero-cost default must remain fail-closed.
 function verifiedBody(raw:unknown,create:boolean):VerifiedJobBody|null{
  if(!isObject(raw)||!UUID.test(String(raw.anonymous_id)))return null;
  const fields=Object.keys(raw).sort().join(",");
  if(create){
-  const permitted=fields==="anonymous_id,prompt"||
-   fields==="anonymous_id,explicit_ai_consent,max_cost_cents,prompt";
+  const paid=Object.hasOwn(raw,"explicit_ai_consent");
+  const profile=Object.hasOwn(raw,"project_profile");
+  const permitted=fields===(paid?
+   profile?"anonymous_id,explicit_ai_consent,max_cost_cents,project_profile,prompt":
+    "anonymous_id,explicit_ai_consent,max_cost_cents,prompt":
+   profile?"anonymous_id,project_profile,prompt":"anonymous_id,prompt");
+  if(profile&&raw.project_profile!=="VITE_NODE")return null;
   if(!permitted||typeof raw.prompt!=="string"||
    raw.prompt.trim().length<5||raw.prompt.length>800)return null;
-  if(fields!=="anonymous_id,prompt"&&(
+  if(paid&&(
    raw.explicit_ai_consent!==true||typeof raw.max_cost_cents!=="number"||
    !Number.isSafeInteger(raw.max_cost_cents)||raw.max_cost_cents<1||
    raw.max_cost_cents>100))return null;
   return {anonymous_id:String(raw.anonymous_id),prompt:raw.prompt.trim(),
-   ...(fields==="anonymous_id,prompt"?{}:
-    {max_cost_cents:raw.max_cost_cents as number,explicit_ai_consent:true})};
+   ...(paid?{max_cost_cents:raw.max_cost_cents as number,explicit_ai_consent:true}:{}),
+   ...(profile?{project_profile:"VITE_NODE" as const}:{})};
  }
  return fields==="anonymous_id"?{anonymous_id:String(raw.anonymous_id)}:null;
 }
@@ -126,20 +132,26 @@ async function requestHash(prompt:string):Promise<string>{
  return sha256CodeBytes(new TextEncoder().encode("APPF2_AGENT_REQUEST_V1\u0000"+prompt));
 }
 /** Safe initial source: no untrusted script interpolation, dependency downloads or execution. */
-export async function createInitialAgentProject(prompt:string){
+export async function createInitialAgentProject(prompt:string,
+ profile:"VITE_WEB"|"VITE_NODE"="VITE_WEB"){
  const title=prompt.trim().slice(0,90);
- return createProjectSnapshot("VITE_WEB","index.html",[
+ return createProjectSnapshot(profile,"index.html",[
   {path:"index.html",content:`<!doctype html><html lang="zh-Hant"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="app"></div><script type="module" src="/src/main.ts"></script></body></html>`},
   {path:"src/main.ts",content:`import "./style.css";const app=document.querySelector<HTMLDivElement>("#app");if(!app)throw Error("root missing");const h=document.createElement("h1");h.textContent="APPf2 候選專案";const p=document.createElement("p");p.textContent=${JSON.stringify(title)};const status=document.createElement("p");status.textContent="已保存初始專案；AI 生成尚未開始";app.replaceChildren(h,p,status);`},
   {path:"src/style.css",content:"body{font-family:system-ui,sans-serif;margin:0;padding:32px;background:#f8fafc;color:#172033}#app{max-width:720px;margin:auto;background:white;padding:32px;border-radius:18px;box-shadow:0 8px 30px #0001}"},
-  {path:"package.json",content:JSON.stringify({name:"appf2-candidate",private:true,type:"module",scripts:{build:"vite build"},devDependencies:{vite:"^6.0.0",typescript:"^5.0.0"}})}
+  ...(profile==="VITE_NODE"?[
+   {path:"server/index.mjs",content:"export function health(){return {ok:true};}"},
+   {path:"server/test.mjs",content:"import {test} from 'node:test';import {health} from './index.mjs';test('health',()=>{if(!health().ok)throw Error('BACKEND_NOT_READY');});"}
+  ]:[
+   {path:"package.json",content:JSON.stringify({name:"appf2-candidate",private:true,type:"module",scripts:{build:"vite build"},devDependencies:{vite:"^6.0.0",typescript:"^5.0.0"}})}
+  ])
  ]);
 }
 // eslint-disable-next-line max-params -- DB, PoP-bound owner and input are separate trust boundaries.
 async function create(db:Db,owner:string,thumb:string,key:string,
  input:VerifiedJobBody,newJobId:()=>string):Promise<Response>{
  const prompt=input.prompt??"";
- const project=await createInitialAgentProject(prompt);
+ const project=await createInitialAgentProject(prompt,input.project_profile??"VITE_WEB");
  const jobId=newJobId();
  const checkpoint:AgentCheckpoint={
   version:"APPF2_AGENT_CHECKPOINT_V1",job_id:jobId,state:"CREATED",
@@ -151,7 +163,7 @@ async function create(db:Db,owner:string,thumb:string,key:string,
   idempotency:key,request_hash:await requestHash(prompt),checkpoint,project});
  return json(201,{data:{job_id:saved.job.job_id,
   status:saved.job.job_state,revision:saved.job.revision,
-  project_hash:saved.project.project_hash,
+  project_hash:saved.project.project_hash,project_profile:saved.project.profile,
   files:saved.project.files.map(f=>({path:f.path,bytes:f.bytes})),
   ai_started:false,app_published:false,
   approved_max_cost_cents:checkpoint.budget.max_cost_cents}});
@@ -172,6 +184,7 @@ async function read(db:Db,owner:string,thumb:string,jobId:string):Promise<Respon
   recovered.job.checkpoint.step>0;
  return json(200,{data:{free_ci:freeCi,job_id:recovered.job.job_id,status:recovered.job.job_state,
   revision:recovered.job.revision,project_hash:recovered.project.project_hash,
+  project_profile:recovered.project.profile,
   files:recovered.project.files,checkpoint:recovered.job.checkpoint,
   ai_started:aiStarted,app_published:false}});
 }
