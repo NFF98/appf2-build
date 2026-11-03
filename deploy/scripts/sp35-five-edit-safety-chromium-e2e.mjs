@@ -86,7 +86,6 @@ try{
  const initial=active;
  const flags={};
  const changes=['decrement','reset','step','persist','dark'];
- let observed=1;
  for(let i=0;i<changes.length;i++){
   flags[changes[i]]=true;
   const prior=active.files.find(f=>f.path==='index.html');
@@ -99,7 +98,6 @@ try{
    'REJECTED_VALID_EDIT_'+changes[i]+' '+JSON.stringify(checks));
   await keep(candidate);
   active=candidate;
-  observed+=checks.length;
   console.log('SP35 FREE SAFE EDIT '+(i+1)+'/5 PASS '+changes[i]+' cumulative_checks='+checks.length);
  }
  assert.equal(active.revision,6);
