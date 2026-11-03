@@ -104,7 +104,8 @@ const qaSchema={type:"object",additionalProperties:false,required:["criteria"],
    expected_text:{type:"string"},click_count:{type:"integer"}}}}}} as const;
 function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
  files:readonly {path:string;content:string}[],evidence:{failed:string;
- strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE";omittedStyle?:boolean}):string{
+ strategy?:"FIX_FAILED_CHECKS"|"RETHINK_ROOT_CAUSE";omittedStyle?:boolean},
+ profile:"VITE_WEB"|"VITE_NODE"="VITE_WEB"):string{
  const {failed,strategy="FIX_FAILED_CHECKS",omittedStyle=false}=evidence;
  if(phase==="QA")return [
   "You are an independent PRE-CODE acceptance planner. You have NOT seen any generated code.",
@@ -137,8 +138,17 @@ function modelPrompt(phase:Phase,prompt:string,plan:QaPlan|null,
   "May split complex features into src/*.ts and src/*/*.ts modules (max 12 files).",
   "All imports must use relative paths to other supplied source files. No npm",
   "packages, network, external URLs, dynamic remote imports, or server processes.",
-  "Do not invent npm/backend/deployment files. Existing Vite package, index.html",
-  "with #app and src/main.ts entrypoint are already present and immutable.",
+  ...(profile==="VITE_NODE"?[
+   "This ONE App has a front-end and server. Include complete server/index.mjs and server/test.mjs.",
+   "Backend may import only Node built-ins or supplied relative server/*.mjs modules.",
+   "Node backend runs ONLY inside the existing restricted no-network Sandbox.",
+   "server/test.mjs must exercise backend business logic with node:test.",
+   "Do not claim model-authored tests prove independent QA or a deployed server.",
+   "No npm, package, config, deployment, SQL, secrets or external network."
+  ]:[
+   "Do not invent npm/backend/deployment files. Existing Vite package, index.html"
+  ]),
+  "index.html with #app and src/main.ts entrypoint are immutable.",
   "Use native browser DOM, CSS and modular TypeScript; no UI templates.",
   "Preserve exact expected accessible button names for original independent QA.",
   "If complexity requires state, define reusable modules and true event handlers.",
@@ -410,7 +420,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
   input:modelPrompt(input.stage,
    input.original_prompt,plan,repairing?repairContext.files:[],
    {failed:failure,strategy:strategy?.mode,
-    omittedStyle:repairing&&repairContext.omittedStyle}),
+    omittedStyle:repairing&&repairContext.omittedStyle},
+    job.project.profile==="VITE_NODE"?"VITE_NODE":"VITE_WEB"),
   max_output_tokens:repairing?9000:12000,background:true,store:true,text:{format:{type:"json_schema",
    name:"appf2_free_ci_source_files_v2",strict:true,schema:aiProjectSchema}}};
  // Prevent a large saved project from exceeding the per-repair model cap
@@ -420,7 +431,8 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  const turn=await paidModelTurn(ctx.db,job,input.anonymous_id,
   input.stage,req,ctx.modelKey,ctx.githubToken,ctx.ticketSecret,ctx.nowMs,
   strategy?.round??1,resumeRepair||resumeCode);
- const files=parseAiProjectFiles(parsedOutput(turn.response));
+ const files=parseAiProjectFiles(parsedOutput(turn.response),
+  job.project.profile==="VITE_NODE"?"VITE_NODE":"VITE_WEB");
  if(!files)throw Error("SP35_PAID_CODE_INVALID_NO_RECHARGE");
  // Validate the entire paid source and calculate immutable new bytes
  // BEFORE writing the intermediate checkpoint. Invalid model files must
@@ -430,7 +442,9 @@ export async function runFreeCiAiStage(input:Input,ctx:Context){
  // retire an obsolete helper module, without touching immutable scaffold,
  // package.json, deployment settings, secrets or the owner data bridge.
  const listed=new Set(files.map(f=>f.path));
- const retired=job.project.files.filter(f=>f.path.startsWith("src/")&&
+ const retired=job.project.files.filter(f=>
+  (f.path.startsWith("src/")||job.project.profile==="VITE_NODE"&&
+   f.path.startsWith("server/"))&&
   !listed.has(f.path)).map(f=>({operation:"delete" as const,path:f.path,
    previous_hash:f.hash}));
  const edits=[...files.map(f=>{
