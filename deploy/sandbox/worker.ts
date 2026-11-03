@@ -15,7 +15,7 @@ import {verifyProjectSnapshot,type ProjectSnapshot}
 import {parseAgentToolCall,type AgentToolCall}
  from "../../src/platform/agent/agent-contract.js";
 import {sha256CodeBytes} from "../../src/platform/blueprint/code-artifact-v2.js";
-import {sandboxCommand,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,sandboxBuildResetArgv,PINNED_MODULES}
+import {sandboxCommands,sandboxNeedsPinnedDeps,sandboxWorkspaceRoot,sandboxBuildResetArgv,PINNED_MODULES}
  from "../../src/platform/agent/sandbox-commands.js";
 const JOB=/^[A-Za-z0-9_-]{8,80}$/u;
 const MAX_BODY=4*1024*1024+128*1024;
@@ -187,7 +187,7 @@ export class SandboxJob extends DurableObject<Env>{
   }
   const count=await this.ctx.storage.get<number>("job_call_count")??0;
   if(count>=MAX_JOB_CALLS)throw Error("SANDBOX_JOB_CALL_LIMIT");
-  const command=sandboxCommand(task.project,task.call.name as "run_build"|"run_test");
+  const commands=sandboxCommands(task.project,task.call.name as "run_build"|"run_test");
   if(task.call.name==="run_test"){
    const priorBuild=await this.ctx.storage.get<string>("verified_build_project_hash");
    if(priorBuild!==task.project.project_hash)
@@ -231,21 +231,39 @@ export class SandboxJob extends DurableObject<Env>{
    if(linking.exitCode!==0||linking.timedOut)
     throw Error("SANDBOX_PINNED_DEPENDENCIES_MISSING");
   }
-  if(task.call.name==="run_test"&&task.project.profile==="VITE_WEB")
+  if(task.call.name==="run_test"&&
+   ["VITE_WEB","VITE_NODE"].includes(task.project.profile))
    await this.restoreCompiledAssets(task,dir,containerWasRunning);
-  const proc=await container.exec(command,{cwd:dir,timeout:MAX_RUNTIME_MS});
-  let result:Receipt;
-  try{
-   const out=await proc.output({encoding:"utf8",maxBytes:2048,timeout:MAX_RUNTIME_MS});
-   if(out.timedOut)await proc.kill(9);
-   result=await receipt(task,out.exitCode,Boolean(out.timedOut),
-    String(out.stdout??"")+"\n"+String(out.stderr??""));
-  }catch{
-   await proc.kill(9).catch(()=>undefined);
-   result=await receipt(task,null,true,"SANDBOX_TIMEOUT_OR_CRASH");
+  // Real broker must use the SAME locked multi-step commands as free Docker.
+  // One total walltime cap prevents a fullstack job multiplying container usage.
+  const deadline=Date.now()+MAX_RUNTIME_MS;
+  const details:string[]=[];
+  let code:number|null=0;
+  let timedOut=false;
+  for(const command of commands){
+   const remaining=deadline-Date.now();
+   if(remaining<=0){
+    code=null;timedOut=true;details.push("SANDBOX_TOTAL_WALLTIME_EXCEEDED");
+    break;
+   }
+   let proc:Awaited<ReturnType<typeof container.exec>>|undefined;
+   try{
+    proc=await container.exec(command,{cwd:dir,timeout:remaining});
+    const out=await proc.output({encoding:"utf8",maxBytes:2048,timeout:remaining});
+    if(out.timedOut)await proc.kill(9);
+    code=out.exitCode;
+    timedOut=Boolean(out.timedOut);
+    details.push((String(out.stdout??"")+"\n"+String(out.stderr??"")).slice(0,2048));
+    if(code!==0||timedOut)break;
+   }catch{
+    await proc?.kill(9).catch(()=>undefined);
+    code=null;timedOut=true;details.push("SANDBOX_TIMEOUT_OR_CRASH");
+    break;
+   }
   }
+  let result=await receipt(task,code,timedOut,details.join("\n"));
   if(task.call.name==="run_build"&&result.exit_code===0&&!result.timed_out){
-   if(task.project.profile==="VITE_WEB"){
+   if(["VITE_WEB","VITE_NODE"].includes(task.project.profile)){
     try{await this.saveCompiledAssets(task,dir);}
     catch{
      // No durable compiled output means no reusable App or Browser QA PASS.
