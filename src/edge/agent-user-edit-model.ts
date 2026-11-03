@@ -7,7 +7,7 @@ import {recoverAgentJob,advanceDurableAgentJob}
 import {readAgentProjectSnapshot} from "../platform/agent/postgres-project-snapshots.js";
 import {applyProjectEdits,type ProjectSnapshot}
  from "../platform/agent/project-workspace.js";
-import {getModelCall,reserveModelCall,getModelBackgroundId}
+import {getModelCall,reserveModelCall}
  from "../platform/agent/postgres-model-calls.js";
 import {dispatchAiRunner} from "./free-ai-dispatch.js";
 import {parseAiProjectFiles,aiProjectSchema} from "./free-ai-project-files.js";
@@ -24,6 +24,7 @@ export type UserEditGenerateInput={readonly anonymous_id:string;
  readonly edit_id:string;readonly expected_accepted_hash:string;
  readonly expected_revision:number;readonly expected_generation:number;
  readonly explicit_ai_consent:true;readonly explicit_free_ci_consent:true};
+// eslint-disable-next-line complexity -- Required exact consent, identity and immutable version checks.
 export function validUserEditGenerate(x:unknown):x is UserEditGenerateInput{
  if(!x||typeof x!=="object"||Array.isArray(x))return false;
  const v=x as Record<string,unknown>;
@@ -95,7 +96,7 @@ async function persistEditCandidate(ctx:Ctx,owner:string,editId:string,
   app_published:false as const};
 }
 /** One-shot generation + crash reconciliation. Never substitutes Job head for Accepted. */
-// eslint-disable-next-line complexity, max-lines-per-function -- Durable owner, cost, source and CAS checks all required.
+// eslint-disable-next-line complexity -- Durable owner, cost, source and CAS checks all required.
 export async function generateUserEdit(input:UserEditGenerateInput,ctx:Ctx){
  if(!validUserEditGenerate(input)||ctx.modelKey.length<16||
   ctx.githubToken.length<20||ctx.ticketSecret.length<32)
@@ -144,8 +145,8 @@ export async function generateUserEdit(input:UserEditGenerateInput,ctx:Ctx){
   throw Error("SP35_USER_EDIT_CONTEXT_TOO_LARGE_NO_CHARGE");
  const requestHash=await sha256CodeBytes(new TextEncoder().encode(
   "APPF2_SP35_FREE_AI_REQUEST_V1\u0000"+requestJson));
- let response=prior?.response_json;
- let inputTokens=prior?.input_tokens??0,outputTokens=prior?.output_tokens??0;
+ const response=prior?.response_json;
+ const inputTokens=prior?.input_tokens??0,outputTokens=prior?.output_tokens??0;
  if(prior){
   if(prior.request_hash!==requestHash||prior.job_revision!==current.job.revision||
    prior.checkpoint_hash!==current.job.checkpoint_hash||
