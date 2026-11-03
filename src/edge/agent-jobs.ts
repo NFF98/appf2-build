@@ -17,6 +17,7 @@ import {saveSafeStyleCandidate,validSafeStyleEditInput} from "./agent-safe-style
 import {initializeAcceptedVersion,createUserEdit,inspectUserEditState,acceptUserEdit,
  validInitializeEdit,validCreateUserEdit,validAcceptUserEdit}
  from "./agent-user-edit.js";
+import {generateUserEdit,validUserEditGenerate} from "./agent-user-edit-model.js";
 import {publishVerifiedPrivateApp,validPublishOwnerAppBody}
  from "./agent-share-publish.js";
 import {runFreeCiAiStage,validFreeAiCodeInput,validFreeCiAiEvidenceInput,inspectFreeCiRepairEvidence} from "./free-ci-ai-code.js";
@@ -78,6 +79,7 @@ const QA_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/qa-generate$/u;
 const EDIT_INIT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/user-edits\/initialize$/u;
 const EDIT_STATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/user-edits\/state$/u;
 const EDIT_CREATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/user-edits$/u;
+const EDIT_GENERATE_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/user-edits\/([0-9a-f-]{36})\/generate$/u;
 const EDIT_ACCEPT_ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})\/user-edits\/([0-9a-f-]{36})\/accept$/u;
 const ITEM=/^\/api\/v1\/agent-jobs\/([0-9a-f-]{36})$/u;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -205,6 +207,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  const editStateMatch=EDIT_STATE_ITEM.exec(url.pathname);
  const editCreateMatch=EDIT_CREATE_ITEM.exec(url.pathname);
  const editAcceptMatch=EDIT_ACCEPT_ITEM.exec(url.pathname);
+ const editGenerateMatch=EDIT_GENERATE_ITEM.exec(url.pathname);
  const paidRunnerSource=await routeFreeAiRunnerSource(request,url,env,nowMs);
  if(paidRunnerSource!==undefined)return paidRunnerSource;
  const paidRunnerResult=await routeFreeAiRunnerResult(request,url,env,nowMs);
@@ -221,7 +224,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(env.APPF2_AGENT_FREE_ONLY==="1"&&
   (modelMatch||continueMatch||qaRepairMatch||qaGenerateMatch||
    sandboxMatch||autoMatch||seqMatch||qaRunMatch))return denied();
- if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!timelineMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeRepairMatch&&!styleMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch&&!freeAiEvidenceMatch&&!editInitMatch&&!editStateMatch&&!editCreateMatch&&!editAcceptMatch)return undefined;
+ if(url.pathname!==CREATE&&!match&&!modelMatch&&!applyMatch&&!continueMatch&&!statusMatch&&!sandboxMatch&&!budgetMatch&&!autoMatch&&!seqMatch&&!progressMatch&&!timelineMatch&&!qaMatch&&!qaRunMatch&&!qaRepairMatch&&!qaPlanMatch&&!qaGenerateMatch&&!previewMatch&&!freeCiMatch&&!freeImportMatch&&!freeRepairMatch&&!styleMatch&&!freeCiPreviewMatch&&!freeShareMatch&&!freeAiMatch&&!freeAiProbeMatch&&!freeAiEvidenceMatch&&!editInitMatch&&!editStateMatch&&!editCreateMatch&&!editAcceptMatch&&!editGenerateMatch)return undefined;
  if(env.APPF2_AGENT_CANDIDATE_ENABLED!=="1")return denied();
  if(request.method!=="POST"||url.search||!sameOrigin(request,url)||
   request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase()!=="application/json")
@@ -235,7 +238,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  // Keep the default 1400-byte Agent ingress and all proof/QA gates.
  const maxBytes=freeImportMatch||freeRepairMatch?200000:
   qaMatch||qaRunMatch||qaRepairMatch||qaPlanMatch||editCreateMatch?24000:
-  url.pathname===CREATE||freeShareMatch||freeAiMatch||
+  url.pathname===CREATE||freeShareMatch||freeAiMatch||editGenerateMatch||
   freeAiEvidenceMatch||qaGenerateMatch?4096:1400;
  if(Number(request.headers.get("Content-Length")??0)>maxBytes)return json(413,{error:"AGENT_JOB_TOO_LARGE"});
  const bytes=new Uint8Array(await request.arrayBuffer());
@@ -255,7 +258,8 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
  if(qaMatch&&(env.APPF2_AGENT_QA_REVIEW_ENABLED!=="1"||
   !env.APPF2_AGENT_QA_VERIFIER_SECRET))return denied();
  if((autoMatch||seqMatch)&&env.APPF2_AGENT_AUTOSTEP_ENABLED!=="1")return denied();
- const info=editInitMatch?(validInitializeEdit(parsed)?parsed:null):
+ const info=editGenerateMatch?(validUserEditGenerate(parsed)?parsed:null):
+   editInitMatch?(validInitializeEdit(parsed)?parsed:null):
    editCreateMatch?(validCreateUserEdit(parsed)?parsed:null):
    editAcceptMatch?(validAcceptUserEdit(parsed)?parsed:null):
    editStateMatch?verifiedBody(parsed,false):
@@ -414,6 +418,18 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
     if(env.APPF2_AGENT_FREE_ONLY!=="1")return denied();
     const data=await inspectUserEditState(info.anonymous_id,{db,
      jobId:editStateMatch[1]??"",ownerThumb});
+    return json(200,{data});
+   }
+   if(editGenerateMatch){
+    if(env.APPF2_AGENT_FREE_ONLY!=="1"||
+     env.APPF2_FREE_AI_GENERATION_ENABLED!=="1"||
+     !env.APPF2_FREE_AI_KEY||!validUserEditGenerate(info)||
+     info.edit_id!==editGenerateMatch[2])return denied();
+    const data=await generateUserEdit(info,{db,
+     jobId:editGenerateMatch[1]??"",ownerThumb,
+     modelKey:env.APPF2_FREE_AI_KEY,
+     githubToken:env.APPF2_FREE_CI_GITHUB_TOKEN??"",
+     ticketSecret:env.APPF2_IDENTITY_COOKIE_SECRET,nowMs});
     return json(200,{data});
    }
    if(editAcceptMatch){
@@ -581,7 +597,7 @@ export async function routeAgentJobs(ctx:AgentJobRouteContext):Promise<Response|
   // A background response ID is already durably stored. The browser may
   // query the SAME provider response by signed GET-only continuation; a new
   // paid model POST is prohibited for this Job+phase.
-  if(freeAiMatch&&e instanceof Error&&(
+  if((freeAiMatch||editGenerateMatch)&&e instanceof Error&&(
    e.message==="SP35_BACKGROUND_MODEL_PENDING_NO_POST"||
    e.message==="SP35_BACKGROUND_GET_UNAVAILABLE_NO_POST"))
    return json(202,{data:{status:"AI_BACKGROUND_PENDING",
