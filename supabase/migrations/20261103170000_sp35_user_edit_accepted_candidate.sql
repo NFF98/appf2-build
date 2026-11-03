@@ -93,23 +93,3 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION appf2_internal.accept_user_edit(uuid,uuid,uuid,text,integer) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION appf2_internal.accept_user_edit(uuid,uuid,uuid,text,integer) TO appf2_worker;
-
-    OR expected.criterion->>'automatable'<>'true')
- THEN RAISE EXCEPTION 'SP35_EDIT_INCOMPLETE_QA';
- END IF;
- IF NOT EXISTS(SELECT 1 FROM public.appf2_agent_job j WHERE j.job_id=p_job
-   AND j.owner_anonymous_id=p_owner AND j.project_hash=e.candidate_project_hash) THEN
-  RAISE EXCEPTION 'SP35_EDIT_JOB_HEAD_CHANGED';
- END IF;
- UPDATE public.appf2_agent_accepted_version SET project_hash=e.candidate_project_hash,
-  project_revision=e.candidate_project_revision,qa_plan=e.combined_qa_plan,
-  qa_plan_hash=e.combined_qa_hash,
-  requirements_text=a.requirements_text||E'\n'||e.user_request,
-  generation=generation+1,updated_at=now()
- WHERE job_id=p_job AND owner_anonymous_id=p_owner;
- UPDATE public.appf2_agent_user_edit SET state='ACCEPTED',updated_at=now() WHERE edit_id=p_edit;
- accepted:=a.generation+1;
- RETURN accepted;
-END $$;
-REVOKE ALL ON FUNCTION appf2_internal.accept_user_edit(uuid,uuid,uuid,text,integer) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION appf2_internal.accept_user_edit(uuid,uuid,uuid,text,integer) TO appf2_worker;
